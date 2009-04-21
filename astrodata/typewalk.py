@@ -2,6 +2,7 @@
 
 # import pdb
 
+import astrodata 
 from DataSpider import *
 from AstroData import *
 from optparse import OptionParser

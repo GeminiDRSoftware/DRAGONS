@@ -62,32 +62,34 @@ if (True):
     # WALK the config space as a directory structure
     print "D61: here I am"
     for root, dirn, files in configWalk(DESCRIPTORSPACE):
-        sys.path.append(root)
-        print "adding->", root
-        for dfile in files:
-            if (re.match(calculatorIndexREMask, dfile)):
-                fullpath = os.path.join(root, dfile)
-                diFile = open(fullpath)
-                exec diFile
-                diFile.close()
-                # file must declare calculatorIndex = {}
+        if root not in sys.path:
+	        sys.path.append(root)
+        if True:
+            print "adding->", root
+            for dfile in files:
+                if (re.match(calculatorIndexREMask, dfile)):
+                    fullpath = os.path.join(root, dfile)
+                    diFile = open(fullpath)
+                    exec diFile
+                    diFile.close()
+                    # file must declare calculatorIndex = {}
                 
-                # note, it might be confusing to find out if
-                # one index entry stomps another... so I'm going to 
-                # check that this dict doesn't have keys already
-                # in the central dict
+                    # note, it might be confusing to find out if
+                    # one index entry stomps another... so I'm going to 
+                    # check that this dict doesn't have keys already
+                    # in the central dict
                 
-                for key in calculatorIndex.keys():
-                    if centralCalculatorIndex.has_key(key):
-                        # @@log
-                        msg = "Descriptor Index CONFLICT\n"
-                        msg += "... type %s redefined in\n" % key
-                        msg += "... %s\n" % fullpath
-                        msg += "... was already set to %s\n" %centralCalculatorIndex[key]
-                        msg += "... this is a fatal error"
-                        raise DescriptorExcept(msg)
+                    for key in calculatorIndex.keys():
+                        if centralCalculatorIndex.has_key(key):
+                            # @@log
+                            msg = "Descriptor Index CONFLICT\n"
+                            msg += "... type %s redefined in\n" % key
+                            msg += "... %s\n" % fullpath
+                            msg += "... was already set to %s\n" %centralCalculatorIndex[key]
+                            msg += "... this is a fatal error"
+                            raise DescriptorExcept(msg)
                         
-                centralCalculatorIndex.update(calculatorIndex)
+                    centralCalculatorIndex.update(calculatorIndex)
 
 firstrun = False
 

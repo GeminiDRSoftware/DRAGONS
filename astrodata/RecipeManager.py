@@ -5,6 +5,7 @@ import new
 import socket # to get host name for local statistics
 import ReductionObjects
 from ReductionObjects import ReductionObject
+import ConfigSpace
 
 from datetime import datetime
 from copy import deepcopy
@@ -444,6 +445,7 @@ class RecipeLibrary(object):
 
         # get the types
         types = astrod.getTypes()
+        print "RM448:", types
         # look up recipes, fill list
         reclist = []
         recdict = {}
@@ -465,7 +467,7 @@ class RecipeLibrary(object):
         
         
     def retrieveRecipe(self, name, astrotype=None):
-        defkey = name
+	print "RM470:", name
         cri = centralRecipeIndex
         if astrotype:
             akey = name+"."+astrotype
@@ -651,10 +653,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
     # and exec the structureIndex.***.py files
     # These indexes are meant to append it to the centralDescriptorIndex
 
-    rootpath = os.path.dirname(os.path.abspath(__file__))
-    rootpath = rootpath+"/recipes"
-
-    for root, dirn, files in os.walk(rootpath):
+    for root, dirn, files in ConfigSpace.configWalk("recipes"):
         sys.path.append(root)
         for sfilename in files:
             m = re.match(recipeREMask, sfilename)
@@ -665,8 +664,10 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
             
             if m:
                 recname = m.group("recipename")
-                #print sfilename
-                #print "complete recipe name(%s)" % m.group("recipename")
+                if False:
+                    print sfilename
+                    print "complete recipe name(%s)" % m.group("recipename")
+                    print "RM668:",recname,fullpath
                 centralRecipeIndex.update({recname: fullpath})
                 
                 am = re.match(recipeAstroTypeREMask, m.group("recipename"))
@@ -680,8 +681,8 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 centralPrimitivesIndex.update(localPrimitiveIndex)
             elif mro: # reduction object file... contains  primitives as members
                 centralReductionMap.update({sfilename: fullpath})
-            
             elif mri: # this is a recipe index
+                print "RM 684:", fullpath
                 efile = open(fullpath, "r")
                 # print fullpath
                 exec efile
@@ -694,7 +695,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 
                 centralAstroTypeRecipeIndex.update(localAstroTypeRecipeIndex)
             
-         
+            print "RM697:", centralAstroTypeRecipeIndex
             # look for recipe
             # 
         

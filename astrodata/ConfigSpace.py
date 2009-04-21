@@ -5,9 +5,11 @@ CONFIGMARKER = "ADCONFIG"
 spaces = {  "descriptors":"descriptors",
             "structures":"structures",
             "types":"classifications/types",
-            "status": "classifications/status"
+            "status": "classifications/status",
             }
+RECIPEMARKER = "RECIPES_"
 
+cs = None
 class ConfigSpaceExcept:
     """This class is an exception class for the ConfigSpace module"""
     def __init__(self, msg="Exception Raised in ConfigSpace system"):
@@ -34,6 +36,11 @@ class ConfigSpace(object):
     such as in relational databases.  This flexibility is useful due to the
     many deployment contexts of the Gemini Reduction Package."""
     
+    configdirs = None
+    recipedirs = None
+    
+    def __init__(self):
+        self.configdirs = {}
     
     def configWalk(self, spacename):
         """This function can be iterated over in the style of os.walk()
@@ -42,13 +49,22 @@ class ConfigSpace(object):
         @param spacename: string
         @returns: via yeild, a (root, dirn, files) tuple"""
         
-        dirs = self.getDirs(spacename)
-        print "C46: dirs: ", dirs
+        if spacename == "recipes":
+            dirs = self.getRecipeDirs()
+        else:
+            print "CS52:", spacename
+            dirs = self.getConfigDirs(spacename)
+        # print "C46: dirs: ", dirs
         for directory in dirs:
             for elem in os.walk(directory):
-                yield elem
+                path = elem[0]
+                goodpath = (".svn" not in path) and ("CVS" not in path)
+                if goodpath:
+                    yield elem
+
+	# @@@WARN if there are NO good paths, this will have a problem, there is no yeild
                 
-    def getDirs(self, spacename):
+    def getConfigDirs(self, spacename):
         """This function returns a list of directories to walk for a given 
         configuration space.
         @param spacename: name of the config space to collect directories for
@@ -56,10 +72,14 @@ class ConfigSpace(object):
         @returns: list of directories
         @rtype: list"""
         
+        if (self.configdirs != None):
+            if spacename in self.configdirs:
+                return self.configdirs[spacename]
+            
         # get the config space standard postfix for directories
         try:
             postfix = spaces[spacename]
-            print "CS61:", postfix
+            # print "CS61:", postfix
         except KeyError:
             raise ConfigSpaceExcept("Given ConfigSpace name not recognized (%s)" % spacename)
         
@@ -69,24 +89,64 @@ class ConfigSpace(object):
         adconfdirs = []
         i = 1
         for path in sys.path:
-            # print "@@@@@@@@:", path,
+            # print "@@@@@@@@:",".svn" in path,":::",  path
             if os.path.isdir(path):
-                # print "ISADIR"
-                subdirs = os.listdir(path)
-                for subpath in subdirs:
-                    print "CS77:", CONFIGMARKER, subpath, 
-                    if CONFIGMARKER in subpath:
-                        fullpath = os.path.join(path, subpath, postfix)
-                        print "full", fullpath
-                        if os.path.isdir(fullpath):
-                            # then this is one of the config space directories
-                            adconfdirs.append(fullpath)
-            else:
-                pass # print ""
-                
+                        # print "ISADIR"
+                        subdirs = os.listdir(path)
+                        for subpath in subdirs:
+                            # print "CS77:", CONFIGMARKER, subpath
+                            if CONFIGMARKER in subpath:
+                                fullpath = os.path.join(path, subpath, postfix)
+                                # print "full", fullpath
+                                if os.path.isdir(fullpath):
+                                    # then this is one of the config space directories
+                                    adconfdirs.append(fullpath)
+                        else:
+                            pass # print ""
+                            
+        self.configdirs.update({spacename: adconfdirs})
+
         return adconfdirs
 
+    def getRecipeDirs(self):
+        """This function returns a list of directories to walk for a given 
+        configuration space.
+        @param spacename: name of the config space to collect directories for
+        @type spacename: string
+        @returns: list of directories
+        @rtype: list"""
+        
+        if (self.recipedirs != None):
+            return self.recipedirs
+        
+        retdirs = []
+        
+        # get the ADCONFIG package dirs
+        adconfdirs = []
+        i = 1
+        for path in sys.path:
+            # print "@@@@@@@@:",".svn" in path,":::",  path
+            if os.path.isdir(path):
+                        # print "ISADIR"
+                        subdirs = os.listdir(path)
+                        for subpath in subdirs:
+                            # print "CS77:", CONFIGMARKER, subpath
+                            if RECIPEMARKER in subpath:
+                                fullpath = os.path.join(path, subpath)
+                                # print "full", fullpath
+                                if os.path.isdir(fullpath):
+                                    # then this is one of the config space directories
+                                    adconfdirs.append(fullpath)
+                        else:
+                            pass # print ""
+        self.recipedirs = adconfdirs
+        return adconfdirs
+
+        
 def configWalk( spacename = None):
-    cs = ConfigSpace()
+    global cs
+    if (cs == None):
+        cs = ConfigSpace()
+        
     for trip in cs.configWalk(spacename):
         yield trip

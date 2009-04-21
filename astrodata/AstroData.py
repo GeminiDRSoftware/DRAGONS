@@ -1,8 +1,14 @@
 #!/bin/env pyth
 
+print "AstroData import"
+import sys
 import pyfits
+
 from AstroDataType import *
+
 import Descriptors
+
+
 from CalculatorInterface import CalculatorInterface
 import Calculator
 import re
@@ -567,6 +573,8 @@ lse, the return value is a list which is in fact
         """
         if (self.types == None):
             cl = self.getClassificationLibrary()
+            print "AD545:", cl.typeDict
+
             alltypes = cl.discoverTypes(self, all=True)
             self.types = alltypes["all"]
             self.typesStatus = alltypes["status"]

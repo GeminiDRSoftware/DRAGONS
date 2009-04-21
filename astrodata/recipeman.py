@@ -1,4 +1,5 @@
 #!/bin/env python
+import astrodata
 from datetime import datetime
 
 a = datetime.now()
@@ -41,10 +42,10 @@ useTK =  options.bMonitor
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
 from tkMonitor import *
 
-infile   = "test/test_data/recipedata/N20020606S0141.fits"
-biasfile = "test/test_data/recipedata/N20020507S0045_bias.fits"
-flatfile = "test/test_data/recipedata/N20020606S0149_flat.fits"
-adatadir = "test/test_data/recipedata/"
+infile   = "./recipedata/N20020606S0141.fits"
+biasfile = "./recipedata/N20020507S0045_bias.fits"
+flatfile = "./recipedata/N20020606S0149_flat.fits"
+adatadir = "./recipedata/"
 
 try:
     files = glob.glob("*.fits")

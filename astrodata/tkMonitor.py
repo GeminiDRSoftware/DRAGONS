@@ -145,6 +145,7 @@ class TkRecipeControl( threading.Thread):
         
         for cmdevent in myqueue:
             cmd = cmdevent["cmd"]
+            print "tk148:", cmd
             #print "TK85: ",cmd
             if  cmd == "running":
                 recipe = cmdevent["recipe"]
