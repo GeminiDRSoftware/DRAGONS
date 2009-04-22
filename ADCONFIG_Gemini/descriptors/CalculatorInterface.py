@@ -1,4 +1,4 @@
-import astrodata.Descriptors
+from astrodata import Descriptors
 
 class CalculatorInterface:
        
