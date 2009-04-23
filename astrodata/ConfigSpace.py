@@ -1,14 +1,22 @@
 import sys
 import os
 
-CONFIGMARKER = "ADCONFIG"
+# OPTIMISATION IDEAS #
+#
+# () use configdirs cache for subsequent config space calls
+# () load all configdirs at startup, say iterating over "spaces"
+#
+######################
+
+
+CONFIGMARKER = "ADCONFIG_"
 spaces = {  "descriptors":"descriptors",
             "structures":"structures",
             "types":"classifications/types",
             "status": "classifications/status",
             }
 RECIPEMARKER = "RECIPES_"
-
+LOOKUPDIRNAME = "lookups"
 cs = None
 class ConfigSpaceExcept:
     """This class is an exception class for the ConfigSpace module"""
@@ -38,9 +46,11 @@ class ConfigSpace(object):
     
     configdirs = None
     recipedirs = None
+    configpacks = None
     
     def __init__(self):
         self.configdirs = {}
+        self.configpacks = []
     
     def configWalk(self, spacename):
         """This function can be iterated over in the style of os.walk()
@@ -89,13 +99,17 @@ class ConfigSpace(object):
         adconfdirs = []
         i = 1
         for path in sys.path:
-            # print "@@@@@@@@:",".svn" in path,":::",  path
+            print "CS92:@@@@@@@@:",path
             if os.path.isdir(path):
                         # print "ISADIR"
                         subdirs = os.listdir(path)
                         for subpath in subdirs:
                             # print "CS77:", CONFIGMARKER, subpath
                             if CONFIGMARKER in subpath:
+                                print "CS101:", CONFIGMARKER, subpath
+                                packdir = os.path.join(path,subpath)
+                                if packdir not in self.configpacks:
+                                    self.configpacks.append(packdir)
                                 fullpath = os.path.join(path, subpath, postfix)
                                 # print "full", fullpath
                                 if os.path.isdir(fullpath):
@@ -149,4 +163,36 @@ def configWalk( spacename = None):
         cs = ConfigSpace()
         
     for trip in cs.configWalk(spacename):
-        yield trip
+        yield trip\
+
+def lookupPath(name):
+    """This module level function takes a lookup name and returns a path to the file."""
+    global cs
+    if (cs == None):
+        cs = ConfigSpace()
+        
+    a = name.split("/")
+    print a
+    domain = a[0]
+    pack = CONFIGMARKER + domain
+    tpath = None
+    print "CS166", cs.configpacks, cs.configdirs
+    for path in cs.configpacks:
+        print "CS163:", pack, path, len(pack), path[-(len(pack)):0]
+        
+        if path[-(len(pack)):] == pack:
+            # got the right package
+            tpath = path
+            break
+            
+    if tpath == None:
+        raise ConfigSpaceExcept("No Configuration Package Associated with %s" % domain)
+    print "CS171:", tpath
+    fpath = os.path.join(tpath, LOOKUPDIRNAME, *a[1:])
+    
+    if (fpath[-3:] != ".py"):
+        fpath += ".py"
+
+    print "CS187:", tpath, fpath
+        
+    return fpath

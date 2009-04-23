@@ -1,4 +1,5 @@
 import os
+import ConfigSpace
 
 def getLookupTable(modname, *lookup):
     """
@@ -24,10 +25,13 @@ def getLookupTable(modname, *lookup):
     @param lookup: name of the lookup table to load
     @type lookup: string
     """
-    if (modname[-3:0] != ".py"):
-        modname += ".py"
-        
-    modname = os.path.dirname(os.path.abspath(__file__))+"/lookups/"+modname
+    if False: # OLD WAY, here to compare while making change to lookups 
+        if (modname[-3:0] != ".py"):
+            modname += ".py"
+        print "L30:", modname
+        modname = os.path.dirname(os.path.abspath(__file__))+"/lookups/"+modname
+
+    modname = ConfigSpace.lookupPath(modname)
     
     f = file(modname)
     exec(f)

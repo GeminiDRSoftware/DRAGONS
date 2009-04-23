@@ -107,7 +107,7 @@ class GMOS_IMAGEReduction(GEMINIReduction):
             print "Subtracting off bias "+co.calFilename("bias")+" from "+co.inputsAsStr()
             gemini.gmos.gireduce(co.inputsAsStr(), fl_over=no,
                 fl_trim=no, fl_bias=yes,bias=co.calFilename("bias"),
-                fl_flat=no, outpref="biassub_",fl_mult=no)
+                fl_flat=no, outpref="biassub_") # this flag was removed?,fl_mult=no)
             co.reportOutput(co.prependNames("biassub_"))
         except:
             print "Problem subtracting bias"
