@@ -62,7 +62,6 @@ class ConfigSpace(object):
         if spacename == "recipes":
             dirs = self.getRecipeDirs()
         else:
-            print "CS52:", spacename
             dirs = self.getConfigDirs(spacename)
         # print "C46: dirs: ", dirs
         for directory in dirs:
@@ -89,7 +88,6 @@ class ConfigSpace(object):
         # get the config space standard postfix for directories
         try:
             postfix = spaces[spacename]
-            # print "CS61:", postfix
         except KeyError:
             raise ConfigSpaceExcept("Given ConfigSpace name not recognized (%s)" % spacename)
         
@@ -99,14 +97,11 @@ class ConfigSpace(object):
         adconfdirs = []
         i = 1
         for path in sys.path:
-            print "CS92:@@@@@@@@:",path
             if os.path.isdir(path):
                         # print "ISADIR"
                         subdirs = os.listdir(path)
                         for subpath in subdirs:
-                            # print "CS77:", CONFIGMARKER, subpath
                             if CONFIGMARKER in subpath:
-                                print "CS101:", CONFIGMARKER, subpath
                                 packdir = os.path.join(path,subpath)
                                 if packdir not in self.configpacks:
                                     self.configpacks.append(packdir)
@@ -144,7 +139,6 @@ class ConfigSpace(object):
                         # print "ISADIR"
                         subdirs = os.listdir(path)
                         for subpath in subdirs:
-                            # print "CS77:", CONFIGMARKER, subpath
                             if RECIPEMARKER in subpath:
                                 fullpath = os.path.join(path, subpath)
                                 # print "full", fullpath
@@ -178,7 +172,6 @@ def lookupPath(name):
     tpath = None
     print "CS166", cs.configpacks, cs.configdirs
     for path in cs.configpacks:
-        print "CS163:", pack, path, len(pack), path[-(len(pack)):0]
         
         if path[-(len(pack)):] == pack:
             # got the right package
@@ -187,12 +180,10 @@ def lookupPath(name):
             
     if tpath == None:
         raise ConfigSpaceExcept("No Configuration Package Associated with %s" % domain)
-    print "CS171:", tpath
     fpath = os.path.join(tpath, LOOKUPDIRNAME, *a[1:])
     
     if (fpath[-3:] != ".py"):
         fpath += ".py"
 
-    print "CS187:", tpath, fpath
         
     return fpath

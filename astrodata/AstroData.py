@@ -1,6 +1,4 @@
 #!/bin/env pyth
-
-print "AstroData import"
 import sys
 import pyfits
 
@@ -548,7 +546,6 @@ class AstroData(object, CalculatorInterface):
                 for supertyp in retary:
                     if typ != supertyp:
                         if to.isSubtypeOf(supertyp):
-                            # print "AD 442: ", supertyp
                             # then remove supertype, only subtypes allowed in pruned list
                             if supertyp in pary:
                                 pary.remove(supertyp)
@@ -573,7 +570,6 @@ lse, the return value is a list which is in fact
         """
         if (self.types == None):
             cl = self.getClassificationLibrary()
-            print "AD545:", cl.typeDict
 
             alltypes = cl.discoverTypes(self, all=True)
             self.types = alltypes["all"]

@@ -17,8 +17,6 @@ call the appropriate member function of the calculator associated with
 their dataset.
 """
 
-print "SD20: in descriptors module"
-
 from ConfigSpace import configWalk
 DESCRIPTORSPACE = "descriptors"
 
@@ -60,7 +58,6 @@ if (True):
     centralCalculatorIndex = {}
     loadedCalculatorIndex = {}
     # WALK the config space as a directory structure
-    print "D61: here I am"
     for root, dirn, files in configWalk(DESCRIPTORSPACE):
         if root not in sys.path:
 	        sys.path.append(root)

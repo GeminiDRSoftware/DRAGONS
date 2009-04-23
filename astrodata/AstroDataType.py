@@ -859,7 +859,6 @@ class ClassificationLibrary (object):
         for root, dirn, files in configWalk(spacename):
             #print "_+_+",root, dirn,files
             for dfile in files:
-                print "ADT861:",dfile
                 if (re.match(self.definitionsStorageREMask, dfile)):
                     # this is a definition file then, according to the filenaming convention, that is.
                     

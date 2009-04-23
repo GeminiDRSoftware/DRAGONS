@@ -445,7 +445,6 @@ class RecipeLibrary(object):
 
         # get the types
         types = astrod.getTypes()
-        print "RM448:", types
         # look up recipes, fill list
         reclist = []
         recdict = {}
@@ -467,7 +466,6 @@ class RecipeLibrary(object):
         
         
     def retrieveRecipe(self, name, astrotype=None):
-	print "RM470:", name
         cri = centralRecipeIndex
         if astrotype:
             akey = name+"."+astrotype
@@ -503,7 +501,6 @@ class RecipeLibrary(object):
             b = datetime.now()
             ro = eval (importname+"."+centralPrimitivesIndex[astrotype][1]+"()")
             c = datetime.now()
-            print "RM236: %s + %s = %s" % (str(b-a),str(c-b),str(c-a))
         elif dataset != None:
             gd, bnc = openIfName(file)
             types = gd.getTypes()
@@ -547,7 +544,6 @@ class RecipeLibrary(object):
             ro = eval (importname+"."+centralPrimitivesIndex[rotype][1]+"()")
             c = datetime.now()
             closeIfName(gd, bnc)
-            print "RM276: %s + %s = %s" % ( str(b-a), str(c-b), str(c-a))
         else:
             ro = ReductionObjects.ReductionObject()
             raise ("Tried to retrive base Reduction Object,\n" + \
@@ -667,7 +663,6 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 if False:
                     print sfilename
                     print "complete recipe name(%s)" % m.group("recipename")
-                    print "RM668:",recname,fullpath
                 centralRecipeIndex.update({recname: fullpath})
                 
                 am = re.match(recipeAstroTypeREMask, m.group("recipename"))
@@ -682,7 +677,6 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
             elif mro: # reduction object file... contains  primitives as members
                 centralReductionMap.update({sfilename: fullpath})
             elif mri: # this is a recipe index
-                print "RM 684:", fullpath
                 efile = open(fullpath, "r")
                 # print fullpath
                 exec efile
@@ -695,7 +689,6 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 
                 centralAstroTypeRecipeIndex.update(localAstroTypeRecipeIndex)
             
-            print "RM697:", centralAstroTypeRecipeIndex
             # look for recipe
             # 
         
