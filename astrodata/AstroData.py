@@ -797,7 +797,7 @@ lse, the return value is a list which is in fact
         
         return count
         
-    def getHDU(extid):
+    def getHDU(self, extid):
         """This function returns the HDU identified by the C{extid} argument. This
         argument can be an integer or (EXTNAME, EXTVER) tuple.
         @param extid: specifies the extention (pyfits.HDU) to return.
@@ -805,7 +805,10 @@ lse, the return value is a list which is in fact
         @returns:the extension specified
         @rtype:pyfits.HDU
         """
-        return hdulist[extid]
+        return self.hdulist[extid]
+        
+    def getPHUHeader(self):
+        return self.getHDU(0).header
             
         
 # SERVICE FUNCTIONS and FACTORIES

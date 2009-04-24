@@ -62,7 +62,6 @@ if (True):
         if root not in sys.path:
 	        sys.path.append(root)
         if True:
-            print "adding->", root
             for dfile in files:
                 if (re.match(calculatorIndexREMask, dfile)):
                     fullpath = os.path.join(root, dfile)
