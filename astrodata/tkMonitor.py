@@ -62,6 +62,8 @@ class TkRecipeControl( threading.Thread):
     recipes = None
     initX = 0
     initY = 0
+    statusBar = None
+    
     def __init__(self, recipe=None, recipes=None, bThread=True):
         if recipes != None: # then it has a list interface please
             self.recipes = copy(recipes)
@@ -136,13 +138,13 @@ class TkRecipeControl( threading.Thread):
         # print "TK98: " , self.initY
         self.bReady = True
         self.mainWindow.mainloop()
+        print "done with mainloop"
         
     def processCmdQueue(self):
         #schedule myself again
-        self.mainWindow.after(100, self.processCmdQueue)
         myqueue = copy(self.cmdQueue)
         self.cmdQueue = []
-        
+        print "processCmdQueue"
         for cmdevent in myqueue:
             cmd = cmdevent["cmd"]
             print "tk148:", cmd
@@ -196,6 +198,8 @@ class TkRecipeControl( threading.Thread):
                 self.setContext(context)
                 
                 #self.monitor = MonitorWindow(root)
+        
+        self.mainWindow.after(100, self.processCmdQueue)
             
 class RecipeControl:
     co = None

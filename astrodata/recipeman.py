@@ -47,14 +47,16 @@ biasfile = "./recipedata/N20020507S0045_bias.fits"
 flatfile = "./recipedata/N20020606S0149_flat.fits"
 adatadir = "./recipedata/"
 
-try:
-    files = glob.glob("*.fits")
-    for fil in files:
-        os.remove(fil)
+if (False): # this code will delete all *.fits in the current directory, was convienient for testing at one point
+            # kept around for a bit as it may make a reappearance as a command line flag driven behavior.
+    try:
+        files = glob.glob("*.fits")
+        for fil in files:
+            os.remove(fil)
 
-except TypeError:
-    # this happens if glob returned 0 files, no previous outputs
-    raise
+    except TypeError:
+        # this happens if glob returned 0 files, no previous outputs
+        raise
 
 # end of arguments kluge (hard coded filenames)
 generate_pycallgraphs = False

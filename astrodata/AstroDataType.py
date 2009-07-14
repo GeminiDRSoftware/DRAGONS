@@ -855,7 +855,6 @@ class ClassificationLibrary (object):
         and it is important to add the new class to the C{newtypes} variable
         in the definition file, or else the load function will not see it.
         """
-        print "AD858:", spacename
         for root, dirn, files in configWalk(spacename):
             #print "_+_+",root, dirn,files
             for dfile in files:
