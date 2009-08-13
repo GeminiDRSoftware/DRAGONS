@@ -381,7 +381,7 @@ class AstroData(object, CalculatorInterface):
             return retv
         else: 
             hdl = self.gethdul()
-            retv = hdl[extension]
+            retv = hdl[extension].header
             self.relhdul()
             return retv
             
