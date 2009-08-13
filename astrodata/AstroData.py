@@ -380,7 +380,7 @@ class AstroData(object, CalculatorInterface):
             self.relhdul()
             return retv
         else: 
-            self.gethdul()
+            hdl = self.gethdul()
             retv = hdl[extension]
             self.relhdul()
             return retv
