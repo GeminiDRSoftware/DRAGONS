@@ -380,12 +380,11 @@ class AstroData(object, CalculatorInterface):
             self.relhdul()
             return retv
         else: 
-            retv = htl[extension]
+            self.gethdul()
+            retv = hdl[extension]
             self.relhdul()
             return retv
             
-
-
     def setHeader(self, header, extension=None):
         """
         Function sets the extension header member for SINGLE EXTENSION MEFs 
