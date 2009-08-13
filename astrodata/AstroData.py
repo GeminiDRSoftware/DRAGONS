@@ -356,7 +356,7 @@ class AstroData(object, CalculatorInterface):
         
     data = property(getData, setData)
     
-    def getHeader(self):
+    def getHeader(self, extension = None):
         """
         Function returns header member for SINGLE EXTENSION MEFs (which are those that
         have only one extension plus PHU). This case 
@@ -369,17 +369,24 @@ class AstroData(object, CalculatorInterface):
         @return: header
         @rtype: pyfits.Header
         """
-        hdl = self.gethdul()
-        if len(hdl) == 2:
-            retv = hdl[1].header
-        else:
-            print "numexts = %d" % len(hdl)
-            raise gdExcept()
+        if extension == None:
+            hdl = self.gethdul()
+            if len(hdl) == 2:
+                retv = hdl[1].header
+            else:
+                print "numexts = %d" % len(hdl)
+                raise gdExcept()
 
-        self.relhdul()
-        return retv
+            self.relhdul()
+            return retv
+        else: 
+            retv = htl[extension]
+            self.relhdul()
+            return retv
+            
 
-    def setHeader(self, newheader):
+
+    def setHeader(self, header, extension=None):
         """
         Function sets the extension header member for SINGLE EXTENSION MEFs 
         (which are those that have only one extension plus PHU). This case 
@@ -387,16 +394,28 @@ class AstroData(object, CalculatorInterface):
         
         for gd in dataset[SCI]: ...
         
+        @param header: header to set for given extension
+        @type header: pyfits.Header
+        
+        @param extension: Extension index from which to retrieve header, if None or not present then this must be
+        a single extension AstroData instance, which contains just the PHU and a single data extension, and the data
+        extension's header is returned.
+        @type extension: int or tuple, pyfits compatible extension index
+        
         @raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
             (note: The PHU is not considered an extension in this case)
         """
-        hdl = self.gethdul()
-        if len(hdl) == 2:
-            hdl[1].header = newheader
-        else:
-            raise gdExcept()
+        if extension == None:
+            hdl = self.gethdul()
+            if len(hdl) == 2:
+                hdl[1].header = header
+            else:
+                raise gdExcept("Not single extension AstroData instance, cannot call without explicit extension index.")
 
-        self.relhdul()
+            self.relhdul()
+        else:
+            self.hdulist[extension].header = header
+                    
     header = property(getHeader,setHeader)
 
     def getHeaders(self):
