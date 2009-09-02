@@ -13,8 +13,6 @@ import time
 
 b = datetime.now()
 
-
-
 ############################################################
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as

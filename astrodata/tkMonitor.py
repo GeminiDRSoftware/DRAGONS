@@ -141,6 +141,9 @@ class TkRecipeControl( threading.Thread):
         print "done with mainloop"
         
     def processCmdQueue(self):
+        # to reschedule this function on a tk timer
+        reschedule = True
+        
         #schedule myself again
         myqueue = copy(self.cmdQueue)
         self.cmdQueue = []
@@ -158,6 +161,7 @@ class TkRecipeControl( threading.Thread):
                         self.recBtns[rec].configure(foreground = "black")
             elif cmd == "quit":
                 self.mainWindow.destroy()
+                reschedule = False
             elif cmd == "done":
                 for rec in self.recBtns.keys():
                     self.recBtns[rec].configure(foreground = "black")
@@ -199,7 +203,8 @@ class TkRecipeControl( threading.Thread):
                 
                 #self.monitor = MonitorWindow(root)
         
-        self.mainWindow.after(100, self.processCmdQueue)
+        if reschedule:
+            self.mainWindow.after(100, self.processCmdQueue)
             
 class RecipeControl:
     co = None
