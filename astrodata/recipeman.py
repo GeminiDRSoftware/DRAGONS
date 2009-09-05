@@ -121,7 +121,8 @@ for rec in reclist:
     
     except KeyboardInterrupt:
         co.isFinished(True)
-        cw.quit()
+        if (useTK):
+            cw.quit()
         print "Ctrl-C Exit"
         sys.exit(0)
     except:
@@ -144,14 +145,24 @@ for rec in reclist:
     co.isFinished(True)
 
 if useTK:
-    cw.done()
-    raw_input("Press Enter to Close Monitor Windows:")
-    cw.quit()
-    
+    try:
+        cw.done()
+        cw.mainWindow.after_cancel(cw.pcqid)
+        raw_input("Press Enter to Close Monitor Windows:")
+        print cw.pcqid
+        cw.mainWindow.quit()
+    except:
+        raise
+        cw.quit()    
 
 if (generate_pycallgraphs):
     pycallgraph.make_dot_graph("recipman-callgraph.png")
 
+from time import sleep
+while (False):
+    for th in threading.enumerate():
+        print str(th)
+    sleep(5.)
 # print co.reportHistory()
 # main()
     

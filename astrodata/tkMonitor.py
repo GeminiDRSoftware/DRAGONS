@@ -52,6 +52,7 @@ class StatusBar:
         self.label.update_idletasks()
          
 class TkRecipeControl( threading.Thread):
+    pcqid = 0
     control = None
     main = None
     monitor = None
@@ -138,7 +139,7 @@ class TkRecipeControl( threading.Thread):
         # print "TK98: " , self.initY
         self.bReady = True
         self.mainWindow.mainloop()
-        print "done with mainloop"
+        #print "done with mainloop"
         
     def processCmdQueue(self):
         # to reschedule this function on a tk timer
@@ -147,10 +148,10 @@ class TkRecipeControl( threading.Thread):
         #schedule myself again
         myqueue = copy(self.cmdQueue)
         self.cmdQueue = []
-        print "processCmdQueue"
+        # print "processCmdQueue"
         for cmdevent in myqueue:
             cmd = cmdevent["cmd"]
-            print "tk148:", cmd
+            # print "tk148:", cmd
             #print "TK85: ",cmd
             if  cmd == "running":
                 recipe = cmdevent["recipe"]
@@ -161,6 +162,7 @@ class TkRecipeControl( threading.Thread):
                         self.recBtns[rec].configure(foreground = "black")
             elif cmd == "quit":
                 self.mainWindow.destroy()
+                self.mainWindow.quit()
                 reschedule = False
             elif cmd == "done":
                 for rec in self.recBtns.keys():
@@ -204,7 +206,7 @@ class TkRecipeControl( threading.Thread):
                 #self.monitor = MonitorWindow(root)
         
         if reschedule:
-            self.mainWindow.after(100, self.processCmdQueue)
+            self.pcqid = self.mainWindow.after(10, self.processCmdQueue)
             
 class RecipeControl:
     co = None
