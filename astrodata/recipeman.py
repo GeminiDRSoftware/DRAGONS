@@ -85,13 +85,15 @@ cwlist = []
 if (useTK):
     cw = TkRecipeControl(recipes = reclist)
     cw.start()
+    
 
 for rec in reclist:
 
     try:
         # create fresh context object
         # @@TODO:possible: see if deepcopy can do this better 
-        co = ContextObject() 
+        co = ContextObject()
+        
         # add input file
         co.addInput(infile)
         # add biases
@@ -104,6 +106,8 @@ for rec in reclist:
                 # did it to give the tk thread a chance to get running
                 time.sleep(.1)
             cw.newControlWindow(rec,co)
+            cw.mainWindow.protocol("WM_DELETE_WINDOW", co.finish) 
+
 
         # @@TODO:evaluate use of init for each recipe vs. for all recipes
         ro.init(co)
@@ -148,8 +152,9 @@ if useTK:
     try:
         cw.done()
         cw.mainWindow.after_cancel(cw.pcqid)
-        raw_input("Press Enter to Close Monitor Windows:")
-        print cw.pcqid
+        if cw.killed == True:
+            raw_input("Press Enter to Close Monitor Windows:")
+        # After ID print cw.pcqid
         cw.mainWindow.quit()
     except:
         raise

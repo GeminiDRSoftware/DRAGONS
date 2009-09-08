@@ -69,6 +69,9 @@ class ContextObject(dict):
             elif self.status != "FINISHED":
                 raise RecipeExcept("Attempt to change status from %s to FINISHED" % self.status)
         return self.isFinished()
+    
+    def finish(self):
+        self.isFinished(True)
         
     finished = property(isFinished, isFinished)
 

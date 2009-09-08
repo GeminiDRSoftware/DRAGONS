@@ -2,4 +2,5 @@
 
 localAstroTypeRecipeIndex = {  #"GEMINI": ["test_two"],
                                "GMOS_OBJECT_RAW": ["sciReduce"]
+                               #"GMOS_OBJECT_RAW": ["test_one"]
                             }

@@ -7,6 +7,7 @@ from datetime import timedelta
 from copy import copy
 
 import re, string, time
+from time import sleep
 
  
 class GUIExcept:
@@ -54,7 +55,7 @@ class StatusBar:
 class TkRecipeControl( threading.Thread):
     pcqid = 0
     control = None
-    main = None
+    # main = None
     monitor = None
     bReady = False
     xloc = 0
@@ -64,6 +65,8 @@ class TkRecipeControl( threading.Thread):
     initX = 0
     initY = 0
     statusBar = None
+    mainWindow = None
+    killed = False
     
     def __init__(self, recipe=None, recipes=None, bThread=True):
         if recipes != None: # then it has a list interface please
@@ -108,8 +111,8 @@ class TkRecipeControl( threading.Thread):
         self.co = co
         if (self.control != None):
             self.control.co = co
-        if (self.main != None):
-            self.main.co = co
+        if (self.mainWindow != None):
+            self.mainWindow.co = co
         if (self.monitor != None):
             self.monitor.co = co
         if (self.statusBar != None):
@@ -120,7 +123,8 @@ class TkRecipeControl( threading.Thread):
         self.mainWindow = Tk()
         self.mainWindow.title("Recipe Manager Control")
         self.recBtns = {}
-        
+        self.mainWindow.protocol("WM_DELETE_WINDOW", self.finish) 
+
         #self.statusBar = StatusBar(self.mainWindow)
         for rec in self.recipes:
             recBtn = Button(self.mainWindow, text=rec)
@@ -140,6 +144,14 @@ class TkRecipeControl( threading.Thread):
         self.bReady = True
         self.mainWindow.mainloop()
         #print "done with mainloop"
+        
+    def finish(self):
+        for cw in self.controlWindows:
+            cw.context.finish()
+            cw.destroy()
+        self.mainWindow.destroy()
+        self.mainWindow.quit()
+        self.killed=True
         
     def processCmdQueue(self):
         # to reschedule this function on a tk timer
@@ -175,6 +187,8 @@ class TkRecipeControl( threading.Thread):
 
                 controlWindow = Toplevel(self.mainWindow)
                 self.controlWindows.append(controlWindow)
+                controlWindow.protocol("WM_DELETE_WINDOW", context.finish)
+                
                 cw = controlWindow # alias
                 cw.context = context
                 cw.recipe  = recipe
