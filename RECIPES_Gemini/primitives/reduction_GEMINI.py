@@ -39,4 +39,3 @@ class GEMINIReduction(ReductionObject):
         print "gem_produce_bias step called"
         co.update({"bias" :co.calibrations[(co.inputs[0], "bias")]})
         yield co
-    
