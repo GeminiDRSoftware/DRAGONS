@@ -10,6 +10,7 @@ import ConfigSpace
 from datetime import datetime
 from copy import deepcopy
 
+from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
 
 # this module operates like a singleton
 
@@ -56,7 +57,8 @@ class ContextObject(dict):
         self.outputs = {"standard":[]}
         self.stephistory = {}
         self.hostname = socket.gethostname()
-        
+        # TESTING
+        self.cdl = CalibrationDefinitionLibrary()
         # undeclared
         self.indent=0 
     
@@ -232,6 +234,13 @@ class ContextObject(dict):
         
         key = (fname, caltyp)
         self.calibrations.update({key: calname})
+    
+    def getCal(self, caltype):        
+        addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
+        '''
+        for cmd in addToCmdQueue:
+            self.cmdQueue.add( cmd )
+        '''
         
     def calFilename(self, caltype):
         """returns a local filename for a retrieved calibration"""

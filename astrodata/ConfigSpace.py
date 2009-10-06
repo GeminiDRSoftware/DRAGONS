@@ -14,6 +14,8 @@ spaces = {  "descriptors":"descriptors",
             "structures":"structures",
             "types":"classifications/types",
             "status": "classifications/status",
+            "xmlcalibrations":"xmlcalibrations",
+            "calibrations":"calibrations",
             }
 RECIPEMARKER = "RECIPES_"
 LOOKUPDIRNAME = "lookups"
@@ -80,7 +82,6 @@ class ConfigSpace(object):
         @type spacename: string
         @returns: list of directories
         @rtype: list"""
-        
         if (self.configdirs != None):
             if spacename in self.configdirs:
                 return self.configdirs[spacename]
@@ -114,7 +115,7 @@ class ConfigSpace(object):
                             pass # print ""
                             
         self.configdirs.update({spacename: adconfdirs})
-
+        
         return adconfdirs
 
     def getRecipeDirs(self):
@@ -158,6 +159,8 @@ def configWalk( spacename = None):
         
     for trip in cs.configWalk(spacename):
         yield trip\
+
+
 
 def lookupPath(name):
     """This module level function takes a lookup name and returns a path to the file."""

@@ -1,0 +1,3 @@
+
+class ReductionObjectEvent( object ):
+    pass
