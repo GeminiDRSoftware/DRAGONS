@@ -161,3 +161,12 @@ class GMOS_IMAGEReduction(GEMINIReduction):
           print "Problem in IMCOADD"
           raise
        yield co
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++   
+    def getProcessedBias(self, co):
+        try:
+            print "getting bias"
+            co.getCal( "bias" )
+        except:
+            print "problem getting bias"
+            raise
+        yield co
