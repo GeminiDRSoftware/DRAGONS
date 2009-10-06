@@ -15,7 +15,6 @@ spaces = {  "descriptors":"descriptors",
             "types":"classifications/types",
             "status": "classifications/status",
             "xmlcalibrations":"xmlcalibrations",
-            "calibrations":"calibrations",
             }
 RECIPEMARKER = "RECIPES_"
 LOOKUPDIRNAME = "lookups"

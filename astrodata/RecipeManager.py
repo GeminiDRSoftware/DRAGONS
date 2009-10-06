@@ -666,7 +666,7 @@ primitivesIndexREMask = r"primitivesIndex\.(?P<modname>.*?)\.py$"
 recipeIndexREMask = r"recipeIndex\.(?P<modname>.*?)\.py$"
 #theorectically could be automatically correlated by modname
 
-reductionObjREMask = r"reduction_(?P<redname>.*?)\.py$"
+reductionObjREMask = r"primitives_(?P<redname>.*?)\.py$"
 
 
 recipeREMask = r"recipe\.(?P<recipename>.*?)$"
