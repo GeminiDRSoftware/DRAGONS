@@ -1,5 +1,5 @@
 #from Reductionobjects import Reductionobject
-from reduction_GEMINI import GEMINIReduction
+from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 
 from pyraf.iraf import tables, stsdas, images
@@ -16,10 +16,10 @@ no = pyraf.iraf.no
 gemini()
 gemini.gmos()
 
-class GMOS_IMAGEReduction(GEMINIReduction):
+class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def init(self, co):
         pyraf.iraf.set (adata=co["adata"])  
-        GEMINIReduction.init(self, co)
+        GEMINIPrimitives.init(self, co)
         return co
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
