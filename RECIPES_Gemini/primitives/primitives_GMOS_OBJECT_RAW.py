@@ -165,7 +165,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def getProcessedBias(self, co):
         try:
             print "getting bias"
-            co.getCal( "bias" )
+            co.rqCal( "bias" )
         except:
             print "problem getting bias"
             raise
