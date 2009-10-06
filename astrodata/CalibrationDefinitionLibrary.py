@@ -82,6 +82,7 @@ class CalibrationDefinitionLibrary( object ):
         '''
        
         calReqEvent = CalibrationRequestEvent()
+        calReqEvent.caltype = caltype
         query = xmlDomQueryNode
         if( query.hasAttribute("id") ):
             if( query.getAttribute("id") == caltype ):

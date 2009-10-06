@@ -1,4 +1,5 @@
 from ReductionObjectEvent import ReductionObjectEvent
+from datetime import datetime
 
 class CalibrationRequestEvent( ReductionObjectEvent ):
     '''
@@ -11,6 +12,8 @@ class CalibrationRequestEvent( ReductionObjectEvent ):
         self.identifiers = {}
         self.criteria = {}
         self.priorities = {}
+        self.caltype = None
+        self.datetime = datetime.now()
     
     def __str__(self):
         tempStr = """inputFilename: %(name)s

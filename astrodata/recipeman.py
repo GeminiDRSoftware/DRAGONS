@@ -115,13 +115,25 @@ for rec in reclist:
         rl.loadAndBindRecipe(ro,rec, file=infile)
         if (useTK):
             cw.running(rec)
+            
+        ################
+        # CONTROL LOOP #
+        ################
         for coi in ro.substeps(rec, co):
             coi.processCmdReq()
             while (coi.paused):
                 time.sleep(.100)
             if co.finished:
                 break
-            pass
+            
+            #process calibration requests
+            for rq in coi.calrqs:
+                fn = rq.inputFilename
+                typ = rq.caltype
+                calname = coi.getCal(fn, typ)
+                print fn, typ, calname
+                if calname == None:
+                    coi.addCal(fn, typ, None)
     
     except KeyboardInterrupt:
         co.isFinished(True)

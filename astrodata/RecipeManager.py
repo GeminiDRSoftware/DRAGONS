@@ -42,6 +42,7 @@ class ContextObject(dict):
     inputsHistory = None
     outputs = None
     calibrations = None
+    calrqs = None
     status = "EXTANT"
     reason = "EXTANT"
     cmdRequest = "NONE"
@@ -54,6 +55,7 @@ class ContextObject(dict):
         self.inputs = []
         self.inputsHistory = []
         self.calibrations = {}
+        self.calrqs = []
         self.outputs = {"standard":[]}
         self.stephistory = {}
         self.hostname = socket.gethostname()
@@ -228,15 +230,35 @@ class ContextObject(dict):
             else:
                 return ", ".join([os.path.basename(path) for path in self.outputs])
         
-    def addCal(self, fname, caltyp, calname):
+    def addCal(self, fname, caltyp, calname, timestamp = None):
+        if timestamp == None:
+            timestamp = datetime.now()
+        else:
+            timestamp = timestamp
+        @@workpoint@@
         if self.calibrations == None:
             self.calibrations = {}
         
         key = (fname, caltyp)
         self.calibrations.update({key: calname})
     
-    def getCal(self, caltype):        
+    def getCal(self, filename, caltype):
+        key = (filename, caltype)
+        print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
+        if key in self.calibrations.keys():
+            return self.calibrations[(filename,caltype)]
+        return None
+        
+    def addCalRq(self, calrq):
+        if self.calrqs == None:
+            self.calrqs = []
+        self.calrqs.append(calrq)
+    
+    def rqCal(self, caltype):        
         addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
+        for re in addToCmdQueue:
+            self.addCalRq(re)
+        
         '''
         for cmd in addToCmdQueue:
             self.cmdQueue.add( cmd )
