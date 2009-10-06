@@ -165,12 +165,8 @@ class GMOS_IMAGEReduction(GEMINIReduction):
     def getProcessedBias(self, co):
         try:
             print "getting bias"
-            co.rqCal( "bias" )
+            co.getCal( "bias" )
         except:
             print "problem getting bias"
             raise
-        #print str(co.calibrations)
-        #print "GOR173: yield"
         yield co
-        
-        #print str(co.calibrations)
