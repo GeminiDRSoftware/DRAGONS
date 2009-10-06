@@ -235,7 +235,7 @@ class ContextObject(dict):
             timestamp = datetime.now()
         else:
             timestamp = timestamp
-        @@workpoint@@
+        # @@workpoint@@
         if self.calibrations == None:
             self.calibrations = {}
         
