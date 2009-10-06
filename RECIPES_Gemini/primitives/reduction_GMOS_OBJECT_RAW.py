@@ -169,8 +169,8 @@ class GMOS_IMAGEReduction(GEMINIReduction):
         except:
             print "problem getting bias"
             raise
-        print str(co.calibrations)
-        print "GOR173: yield"
+        #print str(co.calibrations)
+        #print "GOR173: yield"
         yield co
         
-        print str(co.calibrations)
+        #print str(co.calibrations)
