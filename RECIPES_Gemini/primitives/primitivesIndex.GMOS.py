@@ -3,6 +3,6 @@
 # NOTE: primitives are the member functions of a Reduction Object.
 
 localPrimitiveIndex = {
-    "GEMINI": ("reduction_GEMINI.py", "GEMINIReduction"),
-    "GMOS_OBJECT_RAW": ("reduction_GMOS_OBJECT_RAW.py", "GMOS_IMAGEReduction")
+    "GEMINI": ("primitives_GEMINI.py", "GEMINIPrimitives"),
+    "GMOS_OBJECT_RAW": ("primitives_GMOS_OBJECT_RAW.py", "GMOS_IMAGEPrimitives")
     }
