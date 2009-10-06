@@ -244,7 +244,7 @@ class ContextObject(dict):
     
     def getCal(self, filename, caltype):
         key = (filename, caltype)
-        print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
+        #print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
         if key in self.calibrations.keys():
             return self.calibrations[(filename,caltype)]
         return None

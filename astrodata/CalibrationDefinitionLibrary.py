@@ -56,7 +56,8 @@ class CalibrationDefinitionLibrary( object ):
             except:
                 raise "Error opening '%s'" %calXMLURI
             finally:
-                calXMLFile.close()            
+                calXMLFile.close() 
+            #childNodes is the query tag           
             calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input )            
             reqEvents.append(calReqEvent)
         #goes to reduction context object to add to queue
@@ -132,7 +133,7 @@ class CalibrationDefinitionLibrary( object ):
                     #value = child.getAttribute( "value" ) 
                     #this has to come from the input header                
                     calReqEvent.priorities.update( {key:(extension,elemType,value)} )            
-        calReqEvent.inputFilename = input                           
+        calReqEvent.filename = input                           
         return calReqEvent
                     
                 

@@ -128,10 +128,10 @@ for rec in reclist:
             
             #process calibration requests
             for rq in coi.calrqs:
-                fn = rq.inputFilename
+                fn = rq.filename
                 typ = rq.caltype
                 calname = coi.getCal(fn, typ)
-                print fn, typ, calname
+                #print fn, typ, calname
                 if calname == None:
                     coi.addCal(fn, typ, None)
     
