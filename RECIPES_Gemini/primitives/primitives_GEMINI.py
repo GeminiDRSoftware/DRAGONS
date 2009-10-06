@@ -2,7 +2,7 @@ from time import sleep
 from ReductionObjects import ReductionObject
 
 stepduration = 1.
-class GEMINIReduction(ReductionObject):
+class GEMINIPrimitives(ReductionObject):
     
     # primitives
     def init(self, co):
