@@ -27,8 +27,7 @@ class GEMINIPrimitives(ReductionObject):
         print "done with task"
         for i in range(0,5):
             sleep(stepduration)
-            yield co
-        
+            yield co        
     
     def gem_produce_im_flat(self, co):
         print "gem_produce_imflat step called"
@@ -38,5 +37,13 @@ class GEMINIPrimitives(ReductionObject):
     def gem_produce_bias(self, co):
         print "gem_produce_bias step called"
         co.update({"bias" :co.calibrations[(co.inputs[0], "bias")]})
+        yield co    
+   
+    def getProcessedBias(self, co):
+        try:
+            print "getting bias"
+            co.rqCal( "bias" )
+        except:
+            print "problem getting bias"
+            raise
         yield co
-    
