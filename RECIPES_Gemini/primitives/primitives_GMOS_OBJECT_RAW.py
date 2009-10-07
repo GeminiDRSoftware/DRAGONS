@@ -161,12 +161,4 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
           print "Problem in IMCOADD"
           raise
        yield co
-    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++   
-    def getProcessedBias(self, co):
-        try:
-            print "getting bias"
-            co.rqCal( "bias" )
-        except:
-            print "problem getting bias"
-            raise
-        yield co
+    
