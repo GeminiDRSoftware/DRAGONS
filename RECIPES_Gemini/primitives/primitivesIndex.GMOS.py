@@ -4,5 +4,5 @@
 
 localPrimitiveIndex = {
     "GEMINI": ("primitives_GEMINI.py", "GEMINIPrimitives"),
-    "GMOS_IMAGE": ("primitives_GMOS_OBJECT_RAW.py", "GMOS_IMAGEPrimitives")
+    "GMOS_IMAGE": ("primitives_GMOS_IMAGE.py", "GMOS_IMAGEPrimitives")
     }
