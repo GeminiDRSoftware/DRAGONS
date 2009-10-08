@@ -10,7 +10,8 @@ import ConfigSpace
 from datetime import datetime
 from copy import deepcopy
 
-from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
+from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary, CalibrationRecord
+import pickle # for persisting the calibration index
 
 # this module operates like a singleton
 
@@ -19,6 +20,7 @@ centralRecipeIndex = {}
 centralReductionMap = { }
 centralAstroTypeRecipeIndex = {}
   
+
 class RecipeExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -49,6 +51,13 @@ class ContextObject(dict):
     hostname = None
     
     stephistory = None
+    
+    def persistCalIndex(self, filename):
+        pickle.dump(self.calibrations, filename)
+        
+    def restoreCalIndex(self, filename):
+        self.calibration = pickle.load(filename)
+        
     def __init__(self):
         """The ContextObject constructor creates empty dictionaries and lists, members set to
         None in the class."""
@@ -235,18 +244,19 @@ class ContextObject(dict):
             timestamp = datetime.now()
         else:
             timestamp = timestamp
-        # @@workpoint@@
+        
         if self.calibrations == None:
             self.calibrations = {}
         
+        calrec = CalibrationRecord(fname, calname, caltyp, timestamp)
         key = (fname, caltyp)
-        self.calibrations.update({key: calname})
+        self.calibrations.update({key: calrec})
     
     def getCal(self, filename, caltype):
         key = (filename, caltype)
         #print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
         if key in self.calibrations.keys():
-            return self.calibrations[(filename,caltype)]
+            return self.calibrations[(filename,caltype)].filename
         return None
         
     def addCalRq(self, calrq):

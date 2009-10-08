@@ -1,10 +1,23 @@
 from AstroData import AstroData
 from CalibrationRequestEvent import CalibrationRequestEvent
 from xml.dom.minidom import parse
+from datetime import datetime
 import os
 import ConfigSpace
 import pyfits
-
+class CalibrationRecord(object):
+    sciFilename = None
+    caltype = None
+    filename = None
+    timestamp = None
+    
+    def __init__(self, sciFilename, filename, caltype, timestamp = None):
+        if timestamp == None:
+            timestamp = datetime.now()
+        self.sciFilename = sciFilename
+        self.filename = filename
+        self.caltype = caltype
+        
 class CalibrationDefinitionLibrary( object ):
     '''
     This class deals with obtaining request data from XML calibration files.    
