@@ -1,4 +1,4 @@
-# no longer used, use AstroTypesData.py
+# no longer used, use AstroDataType.py
 
 class gtdExcept:
     pass
