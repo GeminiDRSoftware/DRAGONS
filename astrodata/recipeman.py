@@ -40,10 +40,15 @@ useTK =  options.bMonitor
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
 from tkMonitor import *
 
-infile   = "./recipedata/N20020606S0141.fits"
-biasfile = "./recipedata/N20020507S0045_bias.fits"
-flatfile = "./recipedata/N20020606S0149_flat.fits"
+#infile   = "./recipedata/N20020606S0141.fits"
+#biasfile = "./recipedata/N20020507S0045_bias.fits"
+#flatfile = "./recipedata/N20020606S0149_flat.fits"
 adatadir = "./recipedata/"
+
+#this is the new testdata 2009
+infile   = "./recipedata/N20091002S0219.fits"
+biasfile = "./recipedata/N20090822S0207_bias.fits"
+flatfile = "./recipedata/N20090823S0102_flat.fits"
 
 if (False): # this code will delete all *.fits in the current directory, was convienient for testing at one point
             # kept around for a bit as it may make a reappearance as a command line flag driven behavior.

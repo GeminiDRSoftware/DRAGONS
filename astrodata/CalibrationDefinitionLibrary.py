@@ -1,4 +1,5 @@
 from AstroData import AstroData
+#from AstroDataType import *
 from CalibrationRequestEvent import CalibrationRequestEvent
 from xml.dom.minidom import parse
 from datetime import datetime
@@ -33,7 +34,7 @@ class CalibrationDefinitionLibrary( object ):
                 for file in files:
                     self.xmlIndex.update( {file:os.path.join(str(dpath), file)} )
         except:
-            raise "Could not load XML Index."         
+            raise "Could not load XML Index."
         
     def getCalReq(self, inputs, caltype):
         """
@@ -51,17 +52,38 @@ class CalibrationDefinitionLibrary( object ):
         """
         reqEvents = []
         for input in inputs:
-            """
-            ad = AstroData( input )
-            adType = ad.getTypes( prune=False )
-            print "ASTRO TYPE UNPRUNED:", adType
-            adType = ad.getTypes( tmp=True )
-            print "ASTRO TYPE:", adType
-            """           
-            #include astrodata type search here to find adType
-            adType = "GMOS_OBJECT_RAW"            
-           
-            filename = adType + "-" + caltype + ".xml" 
+            ad = AstroData( input )       
+            #print 'new image type', ad.getTypes( prune=False )
+            leafTypes = ad.getTypes( prune=True )
+            #print 'leaf types:', leafTypes
+            typesWithCal = []
+            for adType in leafTypes:
+                filename = adType + "-" + caltype + ".xml"
+                if filename in self.xmlIndex.keys():
+                    typesWithCal.append( filename )
+                else:
+                    #search parents if no xml exist
+                    try:
+                        cl = ad.getClassificationLibrary()
+                        #adType becomes dataClassification object
+                        adType = cl.getTypeObj( adType )
+                        parents = adType.getSuperTypes()
+                        for supType in parents:
+                            filename = supType.name + "-" + caltype + ".xml"
+                            if filename in self.xmlIndex.keys():
+                                typesWithCal.append( filename )
+                                break                        
+                    except:
+                        print "Error getting adtype parents."
+                        pass
+                    
+            print "TYPES W/ CALS:", typesWithCal
+            if len( typesWithCal ) == 0:
+                print "No Available calibration xml files for types", leafTypes
+            elif len( typesWithCal ) > 1:
+                print "More than one calibration xml file" 
+            
+            filename = typesWithCal[0]
             try:
                 calXMLURI = self.xmlIndex[filename]
                 calXMLFile = open( calXMLURI, 'r' )

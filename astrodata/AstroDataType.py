@@ -281,7 +281,24 @@ class DataClassification(object):
         # didn't make it... no one is the super
         return False
         
+    def getSuperTypes( self ):
+        '''
+        Returns a list of all parents and grandparents of self.
         
+        @return: A List of parents and grandparents of DataClassificationType. To
+        get the name of the type, simply take an element from the list use the '.name'.
+        @rtype: list
+        '''
+        superTypes = []
+        for superType in self.typeReqs:
+            # Convert from string to DataClassification Type
+            superType = self.library.getTypeObj( superType )
+            # Add to list recursively
+            superTypes.append( superType )
+            superTypes = superTypes + superType.getSuperTypes()
+            
+        return list( set(superTypes) ) # Removes duplicates
+    
     def pythonClass(self):
         ''' This function generates a DataClassification Class based on self.
         The purpose of this is to support classification editors.
