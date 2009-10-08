@@ -3,3 +3,4 @@
 logFilename
 displayStructure
 summarize
+getProcessedBias
