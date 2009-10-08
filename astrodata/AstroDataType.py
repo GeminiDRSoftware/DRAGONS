@@ -292,11 +292,11 @@ class DataClassification(object):
         superTypes = []
         for superType in self.typeReqs:
             # Convert from string to DataClassification Type
-            superType = self.library.getTypeObj( superType )
-            # Add to list recursively
+            superType = self.library.getTypeObj( superType )           
             superTypes.append( superType )
-            superTypes = superTypes + superType.getSuperTypes()
-            
+        #orders immediate parents first               
+        for superType in superTypes:
+            superTypes = superTypes + superType.getSuperTypes()            
         return list( set(superTypes) ) # Removes duplicates
     
     def pythonClass(self):
