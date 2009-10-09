@@ -5,6 +5,7 @@ from pyraf import iraf
 import os
 
 def main():
+    print 'benchmarking test for girmfringe begin:\n'
     print 'Gemini North Data test (two images)'
     os.system("rm testout*")   
     starttime = time.time()
@@ -24,7 +25,7 @@ def main():
         
     print 'Gemini South Data test (one image)'
     starttime = time.time()
-    girmfringe.girmfringe("rgS20031031S0035.fits", "../../test_data/girmfringe_data/S20031031S0034_fringe.fits", \
+    girmfringe.girmfringe("../../test_data/girmfringe_data/rgS20031031S0035.fits", "../../test_data/girmfringe_data/S20031031S0034_fringe.fits", \
              outimages="testout_S_python")
     endtime = time.time()
     print "Time for PYTHON version of girmfringe :",(endtime-starttime)
@@ -34,6 +35,7 @@ def main():
         scale=1.0, logfile="testgirmfringe.log", verbose = False)
     endtime = time.time()
     print "Time for CL version of girmfringe:",(endtime-starttime) 
+    print 'benchmarking test for girmfringe end'
       
 if __name__ == "__main__":
     main()
