@@ -24,7 +24,7 @@ class CalibrationRecord(object):
     sciFilename = %s
     caltype     = %s
     filename    = %s
-    timestamp   = %s """ % (self.sciFilename, self.caltype, self.filename, self.timestamp)
+    timestamp   = %s \n""" % (self.sciFilename, self.caltype, self.filename, self.timestamp)
         return rets
         
 class CalibrationDefinitionLibrary( object ):
