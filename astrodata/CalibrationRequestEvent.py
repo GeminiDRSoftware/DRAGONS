@@ -1,5 +1,4 @@
 from ReductionObjectEvent import ReductionObjectEvent
-from datetime import datetime
 
 class CalibrationRequestEvent( ReductionObjectEvent ):
     '''
@@ -8,15 +7,17 @@ class CalibrationRequestEvent( ReductionObjectEvent ):
     It is used by the control loop to be added to the request queue.
     '''
     def __init__(self):
+        super( CalibrationRequestEvent, self ).__init__()
         self.filename = None
         self.identifiers = {}
         self.criteria = {}
         self.priorities = {}
         self.caltype = None
-        self.datetime = datetime.now()
+        
     
     def __str__(self):
-        tempStr = """filename: %(name)s
+        tempStr = super( CalibrationRequestEvent, self ).__str__()
+        tempStr = tempStr + """filename: %(name)s
 Identifiers: %(id)s
 Criteria: %(crit)s
 Priorities: %(pri)s

@@ -13,6 +13,8 @@ from copy import deepcopy
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary, CalibrationRecord
 import pickle # for persisting the calibration index
 
+import IDFactory as idFac
+from StackableEvents import UpdateStackableEvent, GetStackableEvent
 # this module operates like a singleton
 
 centralPrimitivesIndex = {}
@@ -268,12 +270,25 @@ class ContextObject(dict):
         addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
         for re in addToCmdQueue:
             self.addCalRq(re)
+    
+    def rqStackUpdate(self):
+        ver = "1_0"
+        # Not sure how version stuff is going to be done. This version stuff is temporary.
+        Sid = idFac.generateStackableID( self.inputs, ver )
+        stackUEv = UpdateStackableEvent()
+        stackUEv.stkID = Sid
+        stackUEv.stkList = self.inputs
+        self.addCalRq( stackUEv )
         
-        '''
-        for cmd in addToCmdQueue:
-            self.cmdQueue.add( cmd )
-        '''
         
+    def rqStackGet(self):
+        ver = "1_0"
+        # Not sure how version stuff is going to be done. This version stuff is temporary.
+        Sid = idFac.generateStackableID( self.inputs, ver )
+        stackUEv = GetStackableEvent()
+        stackUEv.stkID = Sid
+        self.addCalRq( stackUEv )
+    
     def calFilename(self, caltype):
         """returns a local filename for a retrieved calibration"""
         if self.originalInputs == None:
