@@ -158,6 +158,9 @@ for rec in reclist:
                 if calname == None:
                     # raise "RM150"
                     coi.addCal(fn, typ, None)
+                    
+            for rq in coi.stkrqs:
+                print "RD147: STACKABLE REQS:", rq
     
     except KeyboardInterrupt:
         co.isFinished(True)
