@@ -38,7 +38,7 @@ class GEMINIPrimitives(ReductionObject):
         print "gem_produce_bias step called"
         co.update({"bias" :co.calibrations[(co.inputs[0], "bias")]})
         yield co    
-   
+
     def getProcessedBias(self, co):
         try:
             print "getting bias"
