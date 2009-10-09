@@ -224,7 +224,7 @@ class ContextObject(dict):
             return ""
         else:
             if strippath == False:
-                print self.inputs
+                print "RM227:", self.inputs
                 return ", ".join(self.inputs)
             else:
                 return ", ".join([os.path.basename(path) for path in self.inputs])
@@ -590,7 +590,7 @@ class RecipeLibrary(object):
             closeIfName(gd, bnc)
         else:
             ro = ReductionObjects.ReductionObject()
-            raise ("Tried to retrive base Reduction Object,\n" + \
+            raise ("Tried to retrieve base Reduction Object,\n" + \
                    "not allowed at this time." )
             
         ro.recipeLib = self
@@ -619,6 +619,7 @@ def %(name)s(self,cfgObj):
         for line in recipelines:
             line = line.strip()
             if line == "" or line[0]=="#":
+                print "RM622:",line
                 continue
             newl =  """
 \tfor co in self.substeps('%s', cfgObj):
@@ -643,7 +644,7 @@ def %(name)s(self,cfgObj):
     def checkMethod(self, redobj, primitivename):
         methstr = "redobj.%s" % primitivename
         try:
-            # print methstr
+            print "RM647:",methstr ,"EORM647"
             func = eval(methstr)
         except AttributeError:
             # then it does not exist

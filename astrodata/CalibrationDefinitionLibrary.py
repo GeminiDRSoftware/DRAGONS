@@ -81,7 +81,8 @@ class CalibrationDefinitionLibrary( object ):
             if len( typesWithCal ) == 0:
                 print "No Available calibration xml files for types", leafTypes
             elif len( typesWithCal ) > 1:
-                print "More than one calibration xml file" 
+                print "More than one calibration xml file"
+                print "CDL85:", str(typesWithCal) 
             
             filename = typesWithCal[0]
             try:

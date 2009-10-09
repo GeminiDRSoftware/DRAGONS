@@ -72,7 +72,7 @@ gd = GeminiData(infile)
 # start the Gemini Specific class code
 
 rl = RecipeLibrary()
-ro = rl.retrieveReductionObject(astrotype="GMOS_OBJECT_RAW") # can be done by filename
+ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
 
 reclist = rl.getApplicableRecipes(infile)
 recdict = rl.getApplicableRecipes(infile, collate=True)

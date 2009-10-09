@@ -22,8 +22,9 @@ b = datetime.now()
 parser = OptionParser()
 # parser.add_option("-r", "--reduce", dest="twdir", default =".",
 #        help="Recursively walk given directory and put type information to stdout.")
-parser.add_option("-r", "--reduce", dest="bReduce", action="store_true",
-                  help="Select the appropriate recipe(s) and execute them on the given file(S)")
+parser.add_option("-r", "--recipe", dest="recipename", default=None,
+                  help="Specify which recipe to run by name.")
+
 parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
                   default = False,
                   help= "Open TkInter Window to Monitor Progress of" + \
@@ -67,10 +68,17 @@ gd = GeminiData(infile)
 # start the Gemini Specific class code
 
 rl = RecipeLibrary()
-ro = rl.retrieveReductionObject(astrotype="GMOS_OBJECT_RAW") # can be done by filename
+ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
 
-reclist = rl.getApplicableRecipes(infile)
-recdict = rl.getApplicableRecipes(infile, collate=True)
+print str(ro)
+
+if options.recipename == None:
+    reclist = rl.getApplicableRecipes(infile)
+    recdict = rl.getApplicableRecipes(infile, collate=True)
+else:
+    #force recipe
+    reclist = [options.recipename]
+    recdict = {"all": [options.recipename]}
 
 types = gd.getTypes()
 print "\nProcessing dataset %s\n\tRecipes found by type:" % infile
@@ -111,7 +119,7 @@ for rec in reclist:
 
         # @@TODO:evaluate use of init for each recipe vs. for all recipes
         ro.init(co)
-        print "running recipe '%s'" % rec
+        print "running recipe \n'%s'" % rec
         rl.loadAndBindRecipe(ro,rec, file=infile)
         if (useTK):
             cw.running(rec)
