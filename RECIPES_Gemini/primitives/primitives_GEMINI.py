@@ -47,3 +47,21 @@ class GEMINIPrimitives(ReductionObject):
             print "problem getting bias"
             raise
         yield co
+        
+    def setStackable(self, co):
+        try:
+            print "updating stackable with input"
+            co.rqStackUpdate()
+        except:
+            print "problem stacking input"
+            raise
+        yield co
+        
+    def getStackable(self, co):
+        try:
+            print "getting stack"
+            co.rqStackGet()
+        except:
+            print "problem getting stack"
+            raise
+        yield co
