@@ -53,9 +53,9 @@ class CalibrationDefinitionLibrary( object ):
         reqEvents = []
         for input in inputs:
             ad = AstroData( input )       
-            #print 'new image type', ad.getTypes( prune=False )
+            print 'new image type', ad.getTypes( prune=False )
             leafTypes = ad.getTypes( prune=True )
-            #print 'leaf types:', leafTypes
+            print 'leaf types:', leafTypes
             typesWithCal = []
             for adType in leafTypes:
                 filename = adType + "-" + caltype + ".xml"
@@ -78,6 +78,7 @@ class CalibrationDefinitionLibrary( object ):
                         pass
                     
             print "TYPES W/ CALS:", typesWithCal
+            typesWithCal = list( set( typesWithCal ) )
             if len( typesWithCal ) == 0:
                 print "No Available calibration xml files for types", leafTypes
             elif len( typesWithCal ) > 1:
