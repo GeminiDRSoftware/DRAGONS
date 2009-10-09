@@ -4,4 +4,4 @@
 # require a better re to change variable names 
 
 
-find /path/to/start/from/ -type f | xargs perl -pi -e 's/originalclass/newclass/g'
+find . -type f | xargs perl -pi -e 's/originalclass/newclass/g'
