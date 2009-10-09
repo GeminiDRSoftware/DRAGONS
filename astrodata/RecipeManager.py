@@ -36,8 +36,8 @@ class RecipeExcept:
         return self.message
         
         
-class ContextObject(dict):
-    """The ContextObject is used by primitives and recipies, hidden in the later case,
+class ReductionContext(dict):
+    """The ReductionContext is used by primitives and recipies, hidden in the later case,
     to get input and report output. This allows primitives to be controlled in many different
     running environments, from pipelines to command line interactive reduction.
     """
@@ -57,7 +57,6 @@ class ContextObject(dict):
     
     def persistCalIndex(self, filename):
         try:
-            print "RM57:", filename
             pickle.dump(self.calibrations, open(filename, "w"))
         except:
             print "problem"
@@ -69,13 +68,13 @@ class ContextObject(dict):
     def calsummary(self, mode = "text"):
         rets = ""
         for key in self.calibrations.keys():
-            rets += str(key) + "\n"
+            rets += str(key)
             rets += str(self.calibrations[key])
         return rets
 
         
     def __init__(self):
-        """The ContextObject constructor creates empty dictionaries and lists, members set to
+        """The ReductionContext constructor creates empty dictionaries and lists, members set to
         None in the class."""
         self.inputs = []
         self.inputsHistory = []
@@ -241,7 +240,7 @@ class ContextObject(dict):
             return ""
         else:
             if strippath == False:
-                print "RM227:", self.inputs
+                # print "RM227:", self.inputs
                 return ", ".join(self.inputs)
             else:
                 return ", ".join([os.path.basename(path) for path in self.inputs])
@@ -257,6 +256,9 @@ class ContextObject(dict):
                 return ", ".join([os.path.basename(path) for path in self.outputs])
         
     def addCal(self, fname, caltyp, calname, timestamp = None):
+        fname = os.path.abspath(fname)
+        calname = os.path.abspath(calname)
+        
         if timestamp == None:
             timestamp = datetime.now()
         else:
@@ -270,6 +272,7 @@ class ContextObject(dict):
         self.calibrations.update({key: calrec})
     
     def getCal(self, filename, caltype):
+        filename = os.path.abspath(filename)
         key = (filename, caltype)
         # print "RM266:", key
         # print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
@@ -644,9 +647,9 @@ class RecipeLibrary(object):
     def composeRecipe(self, name, recipebuffer):
         templ = """
 def %(name)s(self,cfgObj):
-\tprint "RECIPE STARTS %(name)s"
+\tprint "${BOLD}RECIPE BEGINS: %(name)s${NORMAL}"
 %(lines)s
-\tprint "RECIPE ENDS   %(name)s"
+\tprint "${BOLD}RECIPE ENDS:   %(name)s${NORMAL}"
 \tyield cfgObj
 """
         recipelines = recipebuffer.splitlines()

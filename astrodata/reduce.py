@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import astrodata
+import terminal
+from terminal import TerminalController
+from astrodata.AstroData import AstroData
 from datetime import datetime
-
+term = TerminalController()
 a = datetime.now()
 
-from RecipeManager import ContextObject
+from RecipeManager import ReductionContext
 from RecipeManager import RecipeLibrary
 from GeminiData import GeminiData
 from optparse import OptionParser
@@ -41,36 +44,31 @@ useTK =  options.bMonitor
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
 from tkMonitor import *
 
-infile   = "./recipedata/N20020606S0141.fits"
-biasfile = "./recipedata/N20020507S0045_bias.fits"
-flatfile = "./recipedata/N20020606S0149_flat.fits"
+
+term = TerminalController()
+REALSTDOUT = sys.stdout
+sys.stdout = terminal.ColorStdout(REALSTDOUT, term)
+
+try:
+    infile   = args[0] # "./recipedata/N20020606S0141.fits"
+except IndexError:
+    print "${RED}NO INPUT FILE${NORMAL}"
+    sys.exit(1)
 adatadir = "./recipedata/"
 
-if (False): # this code will delete all *.fits in the current directory, was convienient for testing at one point
-            # kept around for a bit as it may make a reappearance as a command line flag driven behavior.
-    try:
-        files = glob.glob("*.fits")
-        for fil in files:
-            os.remove(fil)
-
-    except TypeError:
-        # this happens if glob returned 0 files, no previous outputs
-        raise
-
-# end of arguments kluge (hard coded filenames)
 generate_pycallgraphs = False
 if (generate_pycallgraphs):
     import pycallgraph
     pycallgraph.start_trace()
     
-gd = GeminiData(infile)
-
+gd = AstroData(infile)
 # start the Gemini Specific class code
 
+# get RecipeLibrary
 rl = RecipeLibrary()
-ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
 
-print str(ro)
+# get ReductionObject for this dataset
+ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
 
 if options.recipename == None:
     reclist = rl.getApplicableRecipes(infile)
@@ -81,12 +79,27 @@ else:
     recdict = {"all": [options.recipename]}
 
 types = gd.getTypes()
-print "\nProcessing dataset %s\n\tRecipes found by type:" % infile
+
+
+title = "  Processing dataset: %s  " % infile
+tl = len(title)
+tb = " " * tl
+print "${REVERSE}" + tb
+print title
+print tb + "${NORMAL}"
+
+if options.recipename == None:
+    print ("\n${UNDERLINE}Recipe(s) found by dataset type:${NORMAL}")
+else:
+    print ("\n${UNDERLINE}A recipe was specified:${NORMAL}")
+    
 for typ in recdict.keys():
     recs = recdict[typ]
-    print "\ttype %s" % typ
+    print "  for type: %s" % typ
     for rec in recs:
-        print "\t\t%s" % rec
+        print "    %s" % rec
+
+print 
 
 bReportHistory = False
 cwlist = []
@@ -100,19 +113,15 @@ for rec in reclist:
     try:
         # create fresh context object
         # @@TODO:possible: see if deepcopy can do this better 
-        co = ContextObject()
+        co = ReductionContext()
         # restore cache
         if not os.path.exists(".reducecache"):
             os.mkdir(".reducecache")
         calindfile = "./.reducecache/calindex.pkl"
         co.restoreCalIndex(calindfile)
-        print "r109:", co.calsummary()
         
         # add input file
         co.addInput(infile)
-        # add biases
-        # co.addCal(infile, "bias", biasfile)
-        # co.addCal(infile, "flat", flatfile)
         co.update({"adata":adatadir})
         if (useTK):
             while cw.bReady == False:
@@ -125,7 +134,7 @@ for rec in reclist:
 
         # @@TODO:evaluate use of init for each recipe vs. for all recipes
         ro.init(co)
-        print "running recipe \n'%s'" % rec
+        print term.render("${GREEN}running recipe: '%s'${NORMAL}\n") % rec
         rl.loadAndBindRecipe(ro,rec, file=infile)
         if (useTK):
             cw.running(rec)
@@ -179,7 +188,6 @@ for rec in reclist:
         
     co.isFinished(True)
 
-    print "r180:",co.calsummary()
 if useTK:
     try:
         cw.done()

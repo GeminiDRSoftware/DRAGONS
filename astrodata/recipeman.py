@@ -4,7 +4,7 @@ from datetime import datetime
 
 a = datetime.now()
 
-from RecipeManager import ContextObject
+from RecipeManager import ReductionContext
 from RecipeManager import RecipeLibrary
 from GeminiData import GeminiData
 from optparse import OptionParser
@@ -30,12 +30,46 @@ parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
                   "execution. " + \
                   "Note: One window is opened for each recipe which " + \
                   "will run")
+parser.add_option("-s", "--showcalindex", dest = "showcalindex", action="store_true",
+                    default = False,
+                    help="Use to show reduce (reduce.py) persistent calibration index.")
+parser.add_option("-c", "--createcalindex", dest = "createcalindex", action = "store_true",
+                    default = False,
+                    help = "Used to create a static calibration index in lieu of creating it as the result of an actual calibration search")
 (options,  args) = parser.parse_args()
 
 useTK =  options.bMonitor
 
 # some built in arguments for now during testing to save long command lines
 
+earlyExit = False
+if (options.createcalindex):
+    co = ReductionContext()
+    # add biases
+    infile   = "./recipedata/N20020606S0141.fits"
+    biasfile = "./recipedata/N20020507S0045_bias.fits"
+    flatfile = "./recipedata/N20020606S0149_flat.fits"
+    co.addCal(infile, "bias", biasfile)
+    co.addCal(infile, "flat", flatfile)
+    if not os.path.exists(".reducecache"):
+        os.mkdir(".reducecache")
+    co.persistCalIndex("./.reducecache/calindex.pkl")
+    earlyExit = True
+    print "    CREATED ./.reducecache/calindex.pkl"
+
+if (options.showcalindex):
+    co = ReductionContext()
+    co.restoreCalIndex("./.reducecache/calindex.pkl")
+    print "\nCONTENTS OF ./.reducecache/calindex.pkl"
+    cs = co.calsummary()
+    if cs == "":
+        print "    No Calibration Index Persisted"
+    else:
+        print co.calsummary()
+    earlyExit = True
+
+if earlyExit:
+    sys.exit(1)
 # ------
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
 from tkMonitor import *
@@ -97,7 +131,7 @@ for rec in reclist:
     try:
         # create fresh context object
         # @@TODO:possible: see if deepcopy can do this better 
-        co = ContextObject()
+        co = ReductionContext()
         
         # add input file
         co.addInput(infile)
