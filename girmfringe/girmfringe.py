@@ -16,14 +16,13 @@
 import pyfits as pf
 import numpy as np
 import os 
-import geminiLogger
 
-import gemutil
+from utils import gemutil, mefutil, paramutil, geminiLogger
+
 reload(gemutil)
-import mefutil
 reload(mefutil)
-import paramutil
 reload(paramutil)
+reload(geminiLogger)
 
 def girmfringe(inimages,fringe, outimages="", outpref="", fl_statscale=False,\
              statsec="[SCI,2][*,*]", scale=1.0, logfile="girmfringe.log", verbose=False):                
