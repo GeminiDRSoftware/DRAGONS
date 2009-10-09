@@ -3,18 +3,28 @@ from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 
 from pyraf.iraf import tables, stsdas, images
+from pyraf.iraf import gemini
+import pyraf
+
+
 import pyfits
 import numdisplay
 import string
 
-from pyraf.iraf import gemini
-import pyraf
 
 yes = pyraf.iraf.yes
 no = pyraf.iraf.no
 
+# NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
+# don't execute pyraf code and so do not need to print this interactive 
+# package init display (it shows something akin to the dir(gmos)
+import sys, StringIO
+SAVEOUT = sys.stdout
+capture = StringIO.StringIO()
+sys.stdout = capture
 gemini()
 gemini.gmos()
+sys.stdout = SAVEOUT
 
 class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def init(self, co):
