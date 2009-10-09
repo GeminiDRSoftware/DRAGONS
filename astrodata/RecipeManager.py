@@ -274,8 +274,6 @@ class ReductionContext(dict):
     def getCal(self, filename, caltype):
         filename = os.path.abspath(filename)
         key = (filename, caltype)
-        # print "RM266:", key
-        # print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
         if key in self.calibrations.keys():
             return self.calibrations[(filename,caltype)].filename
         return None

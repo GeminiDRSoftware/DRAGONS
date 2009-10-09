@@ -54,6 +54,13 @@ if (options.createcalindex):
     if not os.path.exists(".reducecache"):
         os.mkdir(".reducecache")
     co.persistCalIndex("./.reducecache/calindex.pkl")
+    
+    infile   = "./recipedata/N20091002S0219.fits"
+    biasfile = "./recipedata/N20090822S0207_bias.fits"
+    flatfile = "./recipedata/N20090823S0102_flat.fits"
+    co.addCal(infile, "bias", biasfile)
+    co.addCal(infile, "flat", flatfile)
+    co.persistCalIndex("./.reducecache/calindex.pkl")
     earlyExit = True
     print "    CREATED ./.reducecache/calindex.pkl"
 

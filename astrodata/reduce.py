@@ -89,9 +89,11 @@ print title
 print tb + "${NORMAL}"
 
 if options.recipename == None:
-    print ("\n${UNDERLINE}Recipe(s) found by dataset type:${NORMAL}")
+    #print ("\n${UNDERLINE}Recipe(s) found by dataset type:${NORMAL}")
+    print "\nRecipe(s) found by dataset type:"
 else:
-    print ("\n${UNDERLINE}A recipe was specified:${NORMAL}")
+    #print ("\n${UNDERLINE}A recipe was specified:${NORMAL}")
+    print "\nA recipe was specified:"
     
 for typ in recdict.keys():
     recs = recdict[typ]
@@ -154,9 +156,10 @@ for rec in reclist:
                 fn = rq.filename
                 typ = rq.caltype
                 calname = coi.getCal(fn, typ)
-                #print fn, typ, calname
                 if calname == None:
                     # raise "RM150"
+                    # This will end up being where the calibration search
+                    # algorithm basically is.
                     coi.addCal(fn, typ, None)
                     
             for rq in coi.stkrqs:
