@@ -19,6 +19,14 @@ class CalibrationRecord(object):
         self.filename = filename
         self.caltype = caltype
         
+    def __str__(self):
+        rets = """
+    sciFilename = %s
+    caltype     = %s
+    filename    = %s
+    timestamp   = %s """ % (self.sciFilename, self.caltype, self.filename, self.timestamp)
+        return rets
+        
 class CalibrationDefinitionLibrary( object ):
     '''
     This class deals with obtaining request data from XML calibration files.    
@@ -53,9 +61,9 @@ class CalibrationDefinitionLibrary( object ):
         reqEvents = []
         for input in inputs:
             ad = AstroData( input )       
-            print 'new image type', ad.getTypes( prune=False )
+            # print 'new image type', ad.getTypes( prune=False )
             leafTypes = ad.getTypes( prune=True )
-            print 'leaf types:', leafTypes
+            # print 'leaf types:', leafTypes
             typesWithCal = []
             for adType in leafTypes:
                 filename = adType + "-" + caltype + ".xml"

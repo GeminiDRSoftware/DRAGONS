@@ -56,10 +56,23 @@ class ContextObject(dict):
     stephistory = None
     
     def persistCalIndex(self, filename):
-        pickle.dump(self.calibrations, filename)
-        
+        try:
+            print "RM57:", filename
+            pickle.dump(self.calibrations, open(filename, "w"))
+        except:
+            print "problem"
+            raise 
     def restoreCalIndex(self, filename):
-        self.calibration = pickle.load(filename)
+        if os.path.exists(filename):
+            self.calibrations = pickle.load(open(filename))
+            
+    def calsummary(self, mode = "text"):
+        rets = ""
+        for key in self.calibrations.keys():
+            rets += str(key) + "\n"
+            rets += str(self.calibrations[key])
+        return rets
+
         
     def __init__(self):
         """The ContextObject constructor creates empty dictionaries and lists, members set to
@@ -258,7 +271,8 @@ class ContextObject(dict):
     
     def getCal(self, filename, caltype):
         key = (filename, caltype)
-        #print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
+        # print "RM266:", key
+        # print "RM241:", filename, caltype, self.calibrations.keys(), key in self.calibrations
         if key in self.calibrations.keys():
             return self.calibrations[(filename,caltype)].filename
         return None
@@ -641,7 +655,6 @@ def %(name)s(self,cfgObj):
         for line in recipelines:
             line = line.strip()
             if line == "" or line[0]=="#":
-                print "RM622:",line
                 continue
             newl =  """
 \tfor co in self.substeps('%s', cfgObj):
@@ -666,7 +679,7 @@ def %(name)s(self,cfgObj):
     def checkMethod(self, redobj, primitivename):
         methstr = "redobj.%s" % primitivename
         try:
-            print "RM647:",methstr ,"EORM647"
+            # print "RM647:",methstr ,"EORM647"
             func = eval(methstr)
         except AttributeError:
             # then it does not exist

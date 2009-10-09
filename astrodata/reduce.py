@@ -101,12 +101,18 @@ for rec in reclist:
         # create fresh context object
         # @@TODO:possible: see if deepcopy can do this better 
         co = ContextObject()
+        # restore cache
+        if not os.path.exists(".reducecache"):
+            os.mkdir(".reducecache")
+        calindfile = "./.reducecache/calindex.pkl"
+        co.restoreCalIndex(calindfile)
+        print "r109:", co.calsummary()
         
         # add input file
         co.addInput(infile)
         # add biases
-        co.addCal(infile, "bias", biasfile)
-        co.addCal(infile, "flat", flatfile)
+        # co.addCal(infile, "bias", biasfile)
+        # co.addCal(infile, "flat", flatfile)
         co.update({"adata":adatadir})
         if (useTK):
             while cw.bReady == False:
@@ -141,22 +147,27 @@ for rec in reclist:
                 calname = coi.getCal(fn, typ)
                 #print fn, typ, calname
                 if calname == None:
+                    # raise "RM150"
                     coi.addCal(fn, typ, None)
     
     except KeyboardInterrupt:
         co.isFinished(True)
         if (useTK):
             cw.quit()
+        co.persistCalIndex(calindfile)
         print "Ctrl-C Exit"
         sys.exit(0)
     except:
         print "CONTEXT AFTER FATAL ERROR"
         print "--------------------------"
+        raise
+        co.persistCalIndex(calindfile)
         if (bReportHistory):
             co.reportHistory()
             rl.reportHistory()
         co.isFinished(True)
         raise
+    co.persistCalIndex(calindfile)
 
     if (bReportHistory):
 
@@ -168,6 +179,7 @@ for rec in reclist:
         
     co.isFinished(True)
 
+    print "r180:",co.calsummary()
 if useTK:
     try:
         cw.done()
