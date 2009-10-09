@@ -3,7 +3,7 @@ import hashlib
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
 
 
-def generateStackID( inputs, version ):
+def generateStackableID( inputs, version ):
     '''
     
     
@@ -41,7 +41,7 @@ def generateRecipeID( inputs, version ):
         
     return shaObj.hexdigest()
     
-def generateDisplayID( inputs, version ):
+def generateDisplayableID( inputs, version ):
     '''
     
     

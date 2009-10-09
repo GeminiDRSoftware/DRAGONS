@@ -55,6 +55,8 @@ if (options.createcalindex):
         os.mkdir(".reducecache")
     co.persistCalIndex("./.reducecache/calindex.pkl")
     
+    # This is an ugly addition, but it also ensures that the 2009 fits file has its
+    # calibrations as well...so getProcessedBias works.
     infile   = "./recipedata/N20091002S0219.fits"
     biasfile = "./recipedata/N20090822S0207_bias.fits"
     flatfile = "./recipedata/N20090823S0102_flat.fits"
