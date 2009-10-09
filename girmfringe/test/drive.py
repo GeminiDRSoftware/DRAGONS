@@ -14,7 +14,7 @@ def main():
     endtime = time.time()
     print "Time for PYTHON version of girmfringe:",(endtime-starttime)  
     
-    """ 
+    
     starttime = time.time()
     iraf.girmfringe(inimages="@inlist", fringe="../../test_data/girmfringe_data/rgN20031023S0132_fringe", \
         outimages="@outlist_cl", outpref="", statsec="[SCI,2][*,*]", 
@@ -37,7 +37,7 @@ def main():
     endtime = time.time()
     print "Time for CL version of girmfringe:",(endtime-starttime) 
     print 'benchmarking test for girmfringe end'
-    """
+    
       
 if __name__ == "__main__":
     main()
