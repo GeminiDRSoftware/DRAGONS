@@ -139,6 +139,9 @@ for rec in reclist:
                 #print fn, typ, calname
                 if calname == None:
                     coi.addCal(fn, typ, None)
+                    
+            for rq in coi.stkrqs:
+                print "RM144: STACKABLE REQS:", rq
     
     except KeyboardInterrupt:
         co.isFinished(True)

@@ -47,6 +47,7 @@ class ContextObject(dict):
     outputs = None
     calibrations = None
     calrqs = None
+    stkrqs = None
     status = "EXTANT"
     reason = "EXTANT"
     cmdRequest = "NONE"
@@ -67,6 +68,7 @@ class ContextObject(dict):
         self.inputsHistory = []
         self.calibrations = {}
         self.calrqs = []
+        self.stkrqs = []
         self.outputs = {"standard":[]}
         self.stephistory = {}
         self.hostname = socket.gethostname()
@@ -266,6 +268,11 @@ class ContextObject(dict):
             self.calrqs = []
         self.calrqs.append(calrq)
     
+    def addStkRq(self, stkrq):
+        if self.stkrqs == None:
+            self.stkrqs = []
+        self.stkrqs.append( stkrq )
+    
     def rqCal(self, caltype):        
         addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
         for re in addToCmdQueue:
@@ -278,7 +285,7 @@ class ContextObject(dict):
         stackUEv = UpdateStackableEvent()
         stackUEv.stkID = Sid
         stackUEv.stkList = self.inputs
-        self.addCalRq( stackUEv )
+        self.addStkRq( stackUEv )
         
         
     def rqStackGet(self):
@@ -287,7 +294,7 @@ class ContextObject(dict):
         Sid = idFac.generateStackableID( self.inputs, ver )
         stackUEv = GetStackableEvent()
         stackUEv.stkID = Sid
-        self.addCalRq( stackUEv )
+        self.addStkRq( stackUEv )
     
     def calFilename(self, caltype):
         """returns a local filename for a retrieved calibration"""
