@@ -158,7 +158,6 @@ for rec in reclist:
             #process calibration requests
             for rq in coi.rorqs:
                 if type(rq) == CalibrationRequestEvent:
-                    print "ITS A HARD KNOCK LIFE, FOR US"
                     fn = rq.filename
                     typ = rq.caltype
                     calname = coi.getCal(fn, typ)
