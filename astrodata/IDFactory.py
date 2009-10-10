@@ -1,9 +1,9 @@
 import hashlib
-
+import pyfits as pf
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
 
 
-def generateStackableID( inputs, version ):
+def generateStackableID( inputf, version ):
     '''
     
     
@@ -14,11 +14,11 @@ def generateStackableID( inputs, version ):
         except:
             raise "Version: '" + version + "' is either invalid or not supported." 
         
-        return idFunc( inputs, version )
+        return idFunc( inputf, version )
     
     shaObj = hashlib.sha1()
-    for input in inputs: 
-        shaObj.update( input )
+    phu = pf.getheader( inputf[0], 0 )
+    shaObj.update( phu['OBSID'] )
     
     return shaObj.hexdigest()
 
@@ -41,7 +41,7 @@ def generateRecipeID( inputs, version ):
         
     return shaObj.hexdigest()
     
-def generateDisplayableID( inputs, version ):
+def generateDisplayableID( inputf, version ):
     '''
     
     
@@ -52,11 +52,11 @@ def generateDisplayableID( inputs, version ):
         except:
             raise "Version: '" + version + "' is either invalid or not supported."
         
-        return idFunc( inputs, version )
+        return idFunc( inputf, version )
     
     shaObj = hashlib.sha1()
-    for input in inputs: 
-        shaObj.update( input )
+    phu = pf.getheader( inputf[0], 0 )
+    shaObj.update( phu['OBSID'] )
     
     return shaObj.hexdigest()
 

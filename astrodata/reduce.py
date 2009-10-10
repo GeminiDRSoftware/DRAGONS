@@ -11,6 +11,10 @@ from RecipeManager import ReductionContext
 from RecipeManager import RecipeLibrary
 from GeminiData import GeminiData
 from optparse import OptionParser
+
+from CalibrationRequestEvent import CalibrationRequestEvent
+from StackableEvents import UpdateStackableEvent, GetStackableEvent
+
 import sys, os, glob
 import time
 
@@ -152,18 +156,22 @@ for rec in reclist:
                 break
             
             #process calibration requests
-            for rq in coi.calrqs:
-                fn = rq.filename
-                typ = rq.caltype
-                calname = coi.getCal(fn, typ)
-                if calname == None:
-                    # raise "RM150"
-                    # This will end up being where the calibration search
-                    # algorithm basically is.
-                    coi.addCal(fn, typ, None)
-                    
-            for rq in coi.stkrqs:
-                print "RD147: STACKABLE REQS:", rq
+            for rq in coi.rorqs:
+                if type(rq) == CalibrationRequestEvent:
+                    print "ITS A HARD KNOCK LIFE, FOR US"
+                    fn = rq.filename
+                    typ = rq.caltype
+                    calname = coi.getCal(fn, typ)
+                    if calname == None:
+                        # raise "RM150"
+                        # This will end up being where the calibration service search
+                        # algorithm basically is.
+                        coi.addCal(fn, typ, None)
+                elif type(rq) == UpdateStackableEvent:
+                    print "RD170: UPDATE STACKABLE REQS:", rq
+                elif type(rq) == GetStackableEvent:
+                    print "RD172: GET STACKABLE REQS:", rq    
+        
     
     except KeyboardInterrupt:
         co.isFinished(True)

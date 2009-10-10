@@ -2,30 +2,11 @@ from AstroData import AstroData
 #from AstroDataType import *
 from CalibrationRequestEvent import CalibrationRequestEvent
 from xml.dom.minidom import parse
-from datetime import datetime
+#from datetime import datetime
 import os
 import ConfigSpace
 import pyfits
-class CalibrationRecord(object):
-    sciFilename = None
-    caltype = None
-    filename = None
-    timestamp = None
-    
-    def __init__(self, sciFilename, filename, caltype, timestamp = None):
-        if timestamp == None:
-            timestamp = datetime.now()
-        self.sciFilename = sciFilename
-        self.filename = filename
-        self.caltype = caltype
-        
-    def __str__(self):
-        rets = """
-    sciFilename = %s
-    caltype     = %s
-    filename    = %s
-    timestamp   = %s \n""" % (self.sciFilename, self.caltype, self.filename, self.timestamp)
-        return rets
+
         
 class CalibrationDefinitionLibrary( object ):
     '''

@@ -10,18 +10,20 @@ import ConfigSpace
 from datetime import datetime
 from copy import deepcopy
 
-from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary, CalibrationRecord
+from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
+from ReductionContextRecord import CalibrationRecord, StackableRecord
 import pickle # for persisting the calibration index
 
-import IDFactory as idFac
+import IDFactory as idFac # id hashing functions
 from StackableEvents import UpdateStackableEvent, GetStackableEvent
+
 # this module operates like a singleton
 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
 centralReductionMap = { }
 centralAstroTypeRecipeIndex = {}
-  
+
 
 class RecipeExcept:
     """ This is the general exception the classes and functions in the
@@ -46,8 +48,8 @@ class ReductionContext(dict):
     inputsHistory = None
     outputs = None
     calibrations = None
-    calrqs = None
-    stkrqs = None
+    stackables = None
+    rorqs = None
     status = "EXTANT"
     reason = "EXTANT"
     cmdRequest = "NONE"
@@ -79,7 +81,8 @@ class ReductionContext(dict):
         self.inputs = []
         self.inputsHistory = []
         self.calibrations = {}
-        self.calrqs = []
+        self.stackables = {}
+        self.rorqs = []
         self.stkrqs = []
         self.outputs = {"standard":[]}
         self.stephistory = {}
@@ -278,20 +281,24 @@ class ReductionContext(dict):
             return self.calibrations[(filename,caltype)].filename
         return None
         
-    def addCalRq(self, calrq):
-        if self.calrqs == None:
-            self.calrqs = []
-        self.calrqs.append(calrq)
-    
-    def addStkRq(self, stkrq):
-        if self.stkrqs == None:
-            self.stkrqs = []
-        self.stkrqs.append( stkrq )
+    def addRq(self, rq):
+        if self.rorqs == None:
+            self.rorqs = []
+        self.rorqs.append(rq)
     
     def rqCal(self, caltype):        
         addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
         for re in addToCmdQueue:
-            self.addCalRq(re)
+            self.addRq(re)
+    
+    def addStk(self, stID, filelist ):
+        if stID not in self.stackables.keys():   
+            stkRec = StackableRecord( stID, filelist )
+            self.stackables.update( stID, stkRec )
+        else:
+            stkRec = self.stackables[stID]
+            stkRec.filelist = stkRec.filelist + filelist
+            self.stackables = stkRec
     
     def rqStackUpdate(self):
         ver = "1_0"
@@ -300,7 +307,7 @@ class ReductionContext(dict):
         stackUEv = UpdateStackableEvent()
         stackUEv.stkID = Sid
         stackUEv.stkList = self.inputs
-        self.addStkRq( stackUEv )
+        self.addRq( stackUEv )
         
         
     def rqStackGet(self):
@@ -309,7 +316,7 @@ class ReductionContext(dict):
         Sid = idFac.generateStackableID( self.inputs, ver )
         stackUEv = GetStackableEvent()
         stackUEv.stkID = Sid
-        self.addStkRq( stackUEv )
+        self.addRq( stackUEv )
     
     def calFilename(self, caltype):
         """returns a local filename for a retrieved calibration"""

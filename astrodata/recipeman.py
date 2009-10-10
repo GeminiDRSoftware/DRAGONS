@@ -175,7 +175,7 @@ for rec in reclist:
                 break
             
             #process calibration requests
-            for rq in coi.calrqs:
+            for rq in coi.rorqs:
                 fn = rq.filename
                 typ = rq.caltype
                 calname = coi.getCal(fn, typ)
