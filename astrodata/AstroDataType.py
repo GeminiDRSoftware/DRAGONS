@@ -281,7 +281,7 @@ class DataClassification(object):
         # didn't make it... no one is the super
         return False
         
-    def getSuperTypes( self ):
+    def getSuperTypes( self , oneGeneration  = False):
         '''
         Returns a list of all parents and grandparents of self.
         
@@ -294,9 +294,10 @@ class DataClassification(object):
             # Convert from string to DataClassification Type
             superType = self.library.getTypeObj( superType )           
             superTypes.append( superType )
-        #orders immediate parents first               
-        for superType in superTypes:
-            superTypes = superTypes + superType.getSuperTypes()            
+        #orders immediate parents first             
+        if oneGeneration != True:
+            for superType in superTypes:
+                superTypes = superTypes + superType.getSuperTypes()            
         return list( set(superTypes) ) # Removes duplicates
     
     def pythonClass(self):
@@ -605,7 +606,61 @@ class ORClassification(DataClassification):
             
         # NOTE: 
         return satisfies
+    
+    def isSubtypeOf(self,supertype):
+        """This function is used to check type relationships. For this type to be
+            a "subtype" of the given type both must occur in a linked tree.
+            A
+            node which is a relative leaf is a considered a subtype of its relative root.
+            This is used to resolve conflicts that can occur when objects, features
+            or subsystems are associated with a given classification. Since AstroData
+            instances generally have more than one classification which applies to them
+            and some associated objects, features, or subsystems require that
+            they are the only one ultimately associated with a particular AstroData
+            instance, such as is the case with Descriptors, this function is used
+            to correct the most common case of this, in which one of the types is
+            a subtype of the other, and therefore can be taken to override the
+            parent level association.
+            @param supertype: string name for "supertype"
+            @type supertype: string
+            @rtype: Bool
+            @returns: True if the classification detected by this DataClassification 
+            is subtype of the named C{supertype}.
+        """
+        # the task is to seek supertype in my parent (typeReqs).
+        if supertype in self.typeORs:
+            #easy to check by string if in typeReqs (aka parent types)
+            return True
+            
+        # otherwise check each supertype (recursively)
+        for typ in self.typeORs:
+            to = self.library.getTypeObj(typ)
+            if to != None:
+                if to.isSubtypeOf(supertype):
+                    return True
         
+        # didn't make it... no one is the super
+        return False
+        
+    def getSuperTypes( self , oneGeneration  = False):
+        '''
+        Returns a list of all parents and grandparents of self.
+        
+        @return: A List of parents and grandparents of DataClassificationType. To
+        get the name of the type, simply take an element from the list use the '.name'.
+        @rtype: list
+        '''
+        superTypes = []
+        for superType in self.typeORs:
+            # Convert from string to DataClassification Type
+            superType = self.library.getTypeObj( superType )           
+            superTypes.append( superType )
+        #orders immediate parents first             
+        if oneGeneration != True:
+            for superType in superTypes:
+                superTypes = superTypes + superType.getSuperTypes()            
+        return list( set(superTypes) ) # Removes duplicates
+    
     # graphviz section, uses DOT language to make directed graphs
     # of the type dictionary
     def gvizLinks(self):
@@ -1119,8 +1174,12 @@ class ClassificationLibrary (object):
             
             os.system("dot -Tpng -o/var/www/html/gdwf/gemdtype.viz.png -Tsvg -o/var/www/html/gdwf/gemdtype.viz.svg /var/www/html/gdwf/gemdtype.viz.dot")
             
-        
         return retstr
-    
+
 # @@DOCPROJECT@@: done pass 1
-        
+
+def getClassificationLibrary():
+    if ClassificationLibrary.__single != None:
+        return ClassificationLibrary.__single
+    else:
+       ClassificationLibrary.__single = ClassificationLibrary()

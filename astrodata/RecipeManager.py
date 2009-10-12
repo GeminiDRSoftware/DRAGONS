@@ -1,11 +1,12 @@
-from GeminiData import GeminiData
 from AstroData import AstroData
+import AstroDataType
 
 import new
 import socket # to get host name for local statistics
 import ReductionObjects
 from ReductionObjects import ReductionObject
 import ConfigSpace
+from gdpgutil import pickConfig
 
 from datetime import datetime
 from copy import deepcopy
@@ -440,7 +441,7 @@ def openIfName(dataset):
     
     if type(dataset) == str:
         bNeedsClosing = True
-        gd = GeminiData(dataset)
+        gd = AstroData(dataset)
     elif isinstance(dataset, AstroData):
         bNeedsClosing = False
         gd = dataset
@@ -579,6 +580,23 @@ class RecipeLibrary(object):
             
     def retrieveReductionObject(self, dataset = None, astrotype=None):
         a = datetime.now()
+        
+        # if astrotpye is None, but dataset is set, then we need to get the astrotype from the 
+        # dataset.  For reduction objects, there can be only one assigned to a real object
+        # if there are multiple reduction objects associated with type we must find out through
+        # inheritance relationships which one applies. E.g. if a dataset is GMOS_SPEC and
+        # GMOS_IFU, then an inheritance relationship is sought, and the child type has priority.
+        # If they cannot be resolved, because there are unrelated types or through multiple
+        # inheritance multiple ROs may apply, then we raise an exceptions, this is a configuration
+        # problem.
+        
+        if (astrotype == None) and (dataset != None):
+            val = pickConfig(dataset, centralPrimitivesIndex)
+            k = val.keys()
+            if len(k) > 1:
+                raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
+            astrotype = k[0]
+            
         if (astrotype != None) and (astrotype in centralPrimitivesIndex):
             rfilename = centralPrimitivesIndex[astrotype][0]
             rpathname = centralReductionMap[rfilename]
@@ -589,49 +607,6 @@ class RecipeLibrary(object):
             b = datetime.now()
             ro = eval (importname+"."+centralPrimitivesIndex[astrotype][1]+"()")
             c = datetime.now()
-        elif dataset != None:
-            gd, bnc = openIfName(file)
-            types = gd.getTypes()
-            ropaths = []
-            ropath = None
-            for typ in types:
-                if typ in centralPrimitivesIndex:
-                    rfilename = centralPrimitivesIndex[typ][0]
-                    if rfilename in centralReductionMap:
-                        rpathname = centralReductionMap[rfilename]
-                        rootpath = os.path.dirname(rpathname)
-                    else:
-                        raise RecipeExcept("Error in centralReductionMap")          
-                newrotyp = typ
-                newropath = rpathname
-                if ropath == None:
-                    # first one, then it's fine
-                    ropath = newropath
-                    rotyp  = newrotyp
-                else:
-                    # not first one, then 
-                    #  a) there must be a type/subtype relationship
-                    #  b) the subtype takes precedence as the 
-                    #     "more special" type
-                    nt = gd.getClasificationLibrary().getTypeObj(newrotyp)
-                    if nt.isSubtypeOf(rotyp):
-                        # subtypes "win" the assignment
-                        ropath = newropath
-                        rotyp = newrotyp
-                    else:
-                        ot = cl.getTypeObj(rotyp)
-                        if not ot.isSubtypeOf(newrotyp):
-                            raise RecipeExcept(
-                                "CONFLICTING PRIMITIVES ASSIGNMENT\n"+ \
-                                '\t type: "%s" conflicts with type: "%s"' % \
-                                (rotyp, newrotype) )
-            importname = os.path.splitext(ropath)[0]
-            a = datetime.now()
-            exec ("import " + importname)
-            b = datetime.now()
-            ro = eval (importname+"."+centralPrimitivesIndex[rotype][1]+"()")
-            c = datetime.now()
-            closeIfName(gd, bnc)
         else:
             ro = ReductionObjects.ReductionObject()
             raise ("Tried to retrieve base Reduction Object,\n" + \
@@ -646,6 +621,8 @@ class RecipeLibrary(object):
             source = "FILE: " + dataset
         else:
             source = "UNKNOWN"
+            
+        #@@perform: monitory real performance loading primitives
         self.addLoadTime(source, a, b)
         return ro
         

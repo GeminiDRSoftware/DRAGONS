@@ -48,11 +48,12 @@ useTK =  options.bMonitor
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
 from tkMonitor import *
 
-
+# start color printing filter for xgtermc
 term = TerminalController()
 REALSTDOUT = sys.stdout
 sys.stdout = terminal.ColorStdout(REALSTDOUT, term)
 
+print "${NORMAL}"
 try:
     infile   = args[0] # "./recipedata/N20020606S0141.fits"
 except IndexError:
@@ -72,7 +73,8 @@ gd = AstroData(infile)
 rl = RecipeLibrary()
 
 # get ReductionObject for this dataset
-ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
+#ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
+ro = rl.retrieveReductionObject(infile) # can be done by filename
 
 if options.recipename == None:
     reclist = rl.getApplicableRecipes(infile)
