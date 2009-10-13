@@ -52,7 +52,7 @@ def inheritConfig(typ, index, cl = None):
         return {typ:index[typ]}
     else:
         typo = cl.getTypeObj(typ)
-        supertypos = typo.getSuperTypes(oneGeneration = True)
+        supertypos = typo.getSuperTypes()
         cfgs = {}
         for supertypo in supertypos:
             cfg = inheritConfig(supertypo.name, index, cl = cl)
@@ -85,7 +85,7 @@ def pickConfig(dataset, index, style = "unique"):
             # sys.exit(1)
         # style unique this can only be one thing
         k = candidates.keys()
-        if len(k)>1:
+        if len(k)!=1:
             raise (GDPGUtil)
         
     closeIfName(ad, obn)

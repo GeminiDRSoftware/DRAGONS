@@ -6,7 +6,7 @@ from xml.dom.minidom import parse
 import os
 import ConfigSpace
 import pyfits
-
+import gdpgutil
         
 class CalibrationDefinitionLibrary( object ):
     '''
@@ -25,6 +25,8 @@ class CalibrationDefinitionLibrary( object ):
         except:
             raise "Could not load XML Index."
         
+        print 'CDL28: CAL INDEX FOR BIAS', self.generateCalIndex( 'bias' )
+        
     def getCalReq(self, inputs, caltype):
         """
         For each input finds astrodata type to find corresponding xml file,
@@ -41,6 +43,7 @@ class CalibrationDefinitionLibrary( object ):
         """
         reqEvents = []
         for input in inputs:
+            """
             ad = AstroData( input )       
             # print 'new image type', ad.getTypes( prune=False )
             leafTypes = ad.getTypes( prune=True )
@@ -56,7 +59,7 @@ class CalibrationDefinitionLibrary( object ):
                         cl = ad.getClassificationLibrary()
                         #adType becomes dataClassification object
                         adType = cl.getTypeObj( adType )
-                        parents = adType.getSuperTypes()
+                        parents = adType.getAllSuperTypes()
                         for supType in parents:
                             filename = supType.name + "-" + caltype + ".xml"
                             if filename in self.xmlIndex.keys():
@@ -65,9 +68,14 @@ class CalibrationDefinitionLibrary( object ):
                     except:
                         print "Error getting adtype parents."
                         pass
-                    
-            print "TYPES W/ CALS:", typesWithCal
-            typesWithCal = list( set( typesWithCal ) )
+            """
+            calIndex = self.generateCalIndex( caltype)
+            retDict = gdpgutil.pickConfig( input, self.generateCalIndex(caltype) )
+            key = retDict.keys()[0]
+            print "KEY:", key
+            typesWithCal = [calIndex[key]]
+            #typesWithCal = list( set( typesWithCal ) )
+            print "Types with Cals:", typesWithCal
             if len( typesWithCal ) == 0:
                 print "No Available calibration xml files for types", leafTypes
             elif len( typesWithCal ) > 1:
@@ -162,6 +170,26 @@ class CalibrationDefinitionLibrary( object ):
         calReqEvent.filename = input                           
         return calReqEvent
                     
-                
+    def generateCalIndex( self, caltype ):
+        '''
+        Generate an xml URI index for each caltype. 
         
+        @param caltype: The calibration needed to generate the index.
+        @type caltype: string    
+        
+        @return: Returns a dictionary of the form: {DataClassification.name:xmlFile}.
+        For example: {'GMOS':'GMOS-bias.xml','NIRI':'NIRI-bias.xml'}. 
+        @rtype: dict
+        '''
+        calIndex = {}
+        
+        for calFile in self.xmlIndex.keys():
+            # calFile will look like 'GMOS-bias.xml', for split reference below.
+            temp = calFile.split( "-" )
+            adType = temp[0]
+            tempCal = temp[1].split( '.' )[0]
+            if tempCal == caltype:
+                calIndex.update( {adType:calFile} )
+
+        return calIndex
 

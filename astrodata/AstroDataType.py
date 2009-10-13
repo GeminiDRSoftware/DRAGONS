@@ -281,11 +281,11 @@ class DataClassification(object):
         # didn't make it... no one is the super
         return False
         
-    def getSuperTypes( self , oneGeneration  = False):
+    def getSuperTypes( self ):
         '''
-        Returns a list of all parents and grandparents of self.
+        Returns a list of all immediate parents.
         
-        @return: A List of parents and grandparents of DataClassificationType. To
+        @return: A List of parents of DataClassificationType. To
         get the name of the type, simply take an element from the list use the '.name'.
         @rtype: list
         '''
@@ -294,11 +294,49 @@ class DataClassification(object):
             # Convert from string to DataClassification Type
             superType = self.library.getTypeObj( superType )           
             superTypes.append( superType )
-        #orders immediate parents first             
-        if oneGeneration != True:
-            for superType in superTypes:
-                superTypes = superTypes + superType.getSuperTypes()            
-        return list( set(superTypes) ) # Removes duplicates
+        return list( set(superTypes) ) # Removes duplicates in the offchance there are some
+        
+    
+    def getAllSuperTypes( self, height=0 ):
+        '''
+        Returns a list of all parents and grandparents of self in level order of self. Within each
+        level, sorting is based on how typereqs was input. For example, if typereqs = [a,b,d,c], then
+        that level will be [a,b,d,c] and the first parents in the level above will be from a, then b, 
+        then d and then c.
+        
+        @param height: The height from which to get achieve parents up to. A height <= 0, will return 
+        all parents/grandparents.
+        @type height: int
+        
+        @return: A List of parents and grandparents of DataClassificationType. To
+        get the name of the type, simply take an element from the list use the '.name'.
+        @rtype: list
+        '''
+        
+        immediate_superTypes = self.getSuperTypes()
+        all_superTypes = immediate_superTypes
+        
+        if height <= 0 or height > 1000:
+            height = 1000
+        
+        counter = 0  
+        while counter < height:
+            next_superTypes = []
+            for superType in immediate_superTypes:
+                temp = superType.getSuperTypes()
+                next_superTypes += temp
+                all_superTypes += temp
+            immediate_superTypes = list( set(next_superTypes) ) # Remove duplicates
+            if immediate_superTypes == []:
+                # There are no more parents
+                break
+            counter += 1
+        
+        if counter >= 1000:
+            raise "Somewhere in '%(name)s's parents' typereqs exists a cycle causing an " + \
+                "infinite loop." %{"name":str(self)}
+        
+        return list( set(all_superTypes) ) # Removes duplicates
     
     def pythonClass(self):
         ''' This function generates a DataClassification Class based on self.
