@@ -201,6 +201,8 @@ class ColorStdout:
     def __init__(self,rso, term):
         self.REALSTDOUT = rso
         self.term = term
+    def flush(self):
+        return self.REALSTDOUT.flush()
         
     def write(self, arg):
         out = self.term.render(arg)
