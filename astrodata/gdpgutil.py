@@ -48,6 +48,7 @@ def inheritConfig(typ, index, cl = None):
         cl = AstroDataType.getClassificationLibrary()
 
     if typ in index:
+        print "GU51:", typ, index[typ]
         return {typ:index[typ]}
     else:
         typo = cl.getTypeObj(typ)
@@ -56,7 +57,7 @@ def inheritConfig(typ, index, cl = None):
         for supertypo in supertypos:
             cfg = inheritConfig(supertypo.name, index, cl = cl)
             if cfg != None:
-                cfgs.update({supertypo.name: cfg})
+                cfgs.update(cfg)
         if len(cfgs) == 0:
             return None
         else:

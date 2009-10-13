@@ -71,6 +71,8 @@ class CalibrationDefinitionLibrary( object ):
             """
             calIndex = self.generateCalIndex( caltype)
             retDict = gdpgutil.pickConfig( input, self.generateCalIndex(caltype) )
+            print "CDL74:",self.generateCalIndex(caltype), retDict
+            
             key = retDict.keys()[0]
             print "KEY:", key
             typesWithCal = [calIndex[key]]
