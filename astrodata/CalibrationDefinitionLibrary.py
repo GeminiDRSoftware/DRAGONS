@@ -25,7 +25,6 @@ class CalibrationDefinitionLibrary( object ):
         except:
             raise "Could not load XML Index."
         
-        print 'CDL28: CAL INDEX FOR BIAS', self.generateCalIndex( 'bias' )
         
     def getCalReq(self, inputs, caltype):
         """
@@ -71,8 +70,6 @@ class CalibrationDefinitionLibrary( object ):
             """
             calIndex = self.generateCalIndex( caltype)
             retDict = gdpgutil.pickConfig( input, self.generateCalIndex(caltype) )
-            print "CDL74:",self.generateCalIndex(caltype), retDict
-            
             key = retDict.keys()[0]
             print "KEY:", key
             typesWithCal = [calIndex[key]]
@@ -93,7 +90,7 @@ class CalibrationDefinitionLibrary( object ):
                 raise "Error opening '%s'" %calXMLURI
             finally:
                 calXMLFile.close() 
-            #childNodes is the query tag           
+            #childNodes is the <query> tag           
             calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input )            
             reqEvents.append(calReqEvent)
         #goes to reduction context object to add to queue

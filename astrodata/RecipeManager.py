@@ -47,7 +47,6 @@ class ReductionContext(dict):
     inputsHistory = None
     outputs = None
     calibrations = None
-    stackables = None
     rorqs = None
     status = "EXTANT"
     reason = "EXTANT"
@@ -63,9 +62,26 @@ class ReductionContext(dict):
         except:
             print "problem"
             raise 
+    
     def restoreCalIndex(self, filename):
         if os.path.exists(filename):
             self.calibrations = pickle.load(open(filename))
+    
+    def persistStkIndex(self, filename ):
+        try:
+            pickle.dump( self.stackeep.stackLists, open(filename, "w") )
+        except:
+            print "Could not persist the stackable cache."
+            raise
+    
+    def restoreStkIndex( self, filename ):
+        '''
+        
+        '''
+        if os.path.exists( filename ):
+            self.stackeep.stackLists = pickle.load( open(filename, 'r') )
+        else:
+            pickle.dump( {}, open( filename, 'w' ) )
             
     def calsummary(self, mode = "text"):
         rets = ""
@@ -80,7 +96,6 @@ class ReductionContext(dict):
         self.inputs = []
         self.inputsHistory = []
         self.calibrations = {}
-        self.stackables = {}
         self.rorqs = []
         self.stkrqs = []
         self.outputs = {"standard":[]}
@@ -96,7 +111,7 @@ class ReductionContext(dict):
         self.stackeep = StackKeeper()
     
     def stackAppend(self, ID, files):
-        self.stackeep.append(ID, files)
+        self.stackeep.add( ID, files )
     
     def getStack(self, ID=None):
         if ID == None:
@@ -306,16 +321,7 @@ class ReductionContext(dict):
         addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
         for re in addToCmdQueue:
             self.addRq(re)
-    
-    def addStk(self, stID, filelist ):
-        if stID not in self.stackables.keys():   
-            stkRec = StackableRecord( stID, filelist )
-            self.stackables.update( stID, stkRec )
-        else:
-            stkRec = self.stackables[stID]
-            stkRec.filelist = stkRec.filelist + filelist
-            self.stackables = stkRec
-    
+        
     def rqStackUpdate(self):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.

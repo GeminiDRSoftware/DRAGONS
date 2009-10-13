@@ -8,7 +8,7 @@ class ReductionContextRecord( object ):
     '''
     timestamp = None
     
-    def __init__(self, timestamp):
+    def __init__( self, timestamp ):
         if timestamp == None:
             timestamp = datetime.now()
         self.timestamp = timestamp
@@ -44,8 +44,17 @@ class StackableRecord( ReductionContextRecord ):
     
     
     '''
-    def __init__(self):
-        pass
+    stkid = None
+    filelist = []
+    
+    def __init__( self, stkid, filelist, timestamp=None ):
+        super( StackableRecord, self ).__init__( timestamp )
+        self.stkid = stkid
+        self.filelist = filelist
     
     def __str__(self):
-        pass    
+        rets = """
+    stkid     = %s
+    filelist  = %s
+    timestamp = %s \n""" % ( str(self.stkid), str(self.filelist), self.timestamp )
+        return rets

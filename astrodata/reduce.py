@@ -125,6 +125,9 @@ for rec in reclist:
             os.mkdir(".reducecache")
         calindfile = "./.reducecache/calindex.pkl"
         co.restoreCalIndex(calindfile)
+        stkindfile = "./.reducecache/stkindex.pkl"
+        co.restoreStkIndex( stkindfile )
+        
         
         # add input file
         co.addInput(infile)
@@ -168,6 +171,7 @@ for rec in reclist:
                         coi.addCal(fn, typ, None)
                 elif type(rq) == UpdateStackableEvent:
                     coi.stackAppend(rq.stkID, rq.stkList)
+                    coi.persistStkIndex( stkindfile )
                 elif type(rq) == GetStackableEvent:
                     pass
                     # Don't actually do anything, because this primitive allows the control system to
