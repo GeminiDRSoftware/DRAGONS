@@ -1,5 +1,6 @@
 from time import sleep
 from ReductionObjects import ReductionObject
+import IDFactory
 
 stepduration = 1.
 class GEMINIPrimitives(ReductionObject):
@@ -64,4 +65,12 @@ class GEMINIPrimitives(ReductionObject):
         except:
             print "problem getting stack"
             raise
+        yield co
+        
+    def printStackable(self, co):
+        ID = IDFactory.generateStackableID(co.inputs, "1_0")
+        ls = co.getStack(ID)
+        print "ID = ", ID
+        for item in ls:
+            print "\t",item
         yield co
