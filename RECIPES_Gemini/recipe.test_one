@@ -2,3 +2,6 @@
 # displayStructure
 # summarize
 getProcessedBias
+setStackable
+getStackable
+printStackable
