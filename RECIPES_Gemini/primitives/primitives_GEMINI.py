@@ -70,7 +70,8 @@ class GEMINIPrimitives(ReductionObject):
     def printStackable(self, co):
         ID = IDFactory.generateStackableID(co.inputs, "1_0")
         ls = co.getStack(ID)
-        print "ID = ", ID
-        for item in ls:
-            print "\t",item
+        print "STACKABLE"
+        print "ID:", ID
+        for item in ls.filelist:
+            print "\t", item
         yield co
