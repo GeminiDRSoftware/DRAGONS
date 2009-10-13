@@ -11,7 +11,7 @@ from RecipeManager import ReductionContext
 from RecipeManager import RecipeLibrary
 from GeminiData import GeminiData
 from optparse import OptionParser
-
+from StackKeeper import StackKeeper
 from CalibrationRequestEvent import CalibrationRequestEvent
 from StackableEvents import UpdateStackableEvent, GetStackableEvent
 
@@ -41,9 +41,6 @@ parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
 (options,  args) = parser.parse_args()
 
 useTK =  options.bMonitor
-
-# some built in arguments for now during testing to save long command lines
-
 # ------
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
 from tkMonitor import *
@@ -59,6 +56,7 @@ try:
 except IndexError:
     print "${RED}NO INPUT FILE${NORMAL}"
     sys.exit(1)
+
 adatadir = "./recipedata/"
 
 generate_pycallgraphs = False
@@ -169,9 +167,15 @@ for rec in reclist:
                         # algorithm basically is.
                         coi.addCal(fn, typ, None)
                 elif type(rq) == UpdateStackableEvent:
-                    print "RD170: UPDATE STACKABLE REQS:", rq
+                    coi.stackAppend(rq.stkID, rq.stkList)
                 elif type(rq) == GetStackableEvent:
-                    print "RD172: GET STACKABLE REQS:", rq    
+                    pass
+                    # Don't actually do anything, because this primitive allows the control system to
+                    #  retrieve the list from another resource, but reduce lets ReductionContext keep the
+                    # cache.
+                    #print "RD172: GET STACKABLE REQS:", rq
+            # CLEAR THE REQUEST LEAGUE
+            coi.clearRqs()
         
     
     except KeyboardInterrupt:

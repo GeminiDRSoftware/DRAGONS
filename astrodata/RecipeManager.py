@@ -17,9 +17,8 @@ import pickle # for persisting the calibration index
 
 import IDFactory as idFac # id hashing functions
 from StackableEvents import UpdateStackableEvent, GetStackableEvent
-
+from StackKeeper import StackKeeper
 # this module operates like a singleton
-
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
 centralReductionMap = { }
@@ -37,8 +36,7 @@ class RecipeExcept:
         """This str conversion member returns the message given by the user (or the default message)
         when the exception is not caught."""
         return self.message
-        
-        
+
 class ReductionContext(dict):
     """The ReductionContext is used by primitives and recipies, hidden in the later case,
     to get input and report output. This allows primitives to be controlled in many different
@@ -57,6 +55,7 @@ class ReductionContext(dict):
     hostname = None
     
     stephistory = None
+    stackeep = None
     
     def persistCalIndex(self, filename):
         try:
@@ -75,7 +74,6 @@ class ReductionContext(dict):
             rets += str(self.calibrations[key])
         return rets
 
-        
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to
         None in the class."""
@@ -92,7 +90,21 @@ class ReductionContext(dict):
         self.cdl = CalibrationDefinitionLibrary()
         # undeclared
         self.indent=0 
+        
+        # Stack Keep is a resource for all RecipeManager functions... one shared StackKeeper to simulate the shared ObservationServie
+        # used in PRS mode.
+        self.stackeep = StackKeeper()
     
+    def stackAppend(self, ID, files):
+        self.stackeep.append(ID, files)
+    
+    def getStack(self, ID=None):
+        if ID == None:
+            ver = "1_0"
+            # Not sure how version stuff is going to be done. This version stuff is temporary.
+            ID = idFac.generateStackableID( self.inputs, ver )
+        return self.stackeep.get(ID)
+        
     def isFinished(self,arg = None):
         if arg == None:
             return self.status == "FINISHED"
@@ -287,6 +299,9 @@ class ReductionContext(dict):
             self.rorqs = []
         self.rorqs.append(rq)
     
+    def clearRqs(self):
+        self.rorqs = []
+        
     def rqCal(self, caltype):        
         addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
         for re in addToCmdQueue:
@@ -524,7 +539,7 @@ class RecipeLibrary(object):
         Get list of recipes associated with all the types that apply to this dataset.
         """
         if  type(dataset) == str:
-            astrod = GeminiData(dataset)
+            astrod = AstroData(dataset)
             byfname = True
         elif isinstance(dataset, AstroData.AstroData):
             byfname = false

@@ -2,7 +2,6 @@ import AstroDataType
 import sys
 from AstroData import AstroData
 
-
 class GDPGUtilExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
