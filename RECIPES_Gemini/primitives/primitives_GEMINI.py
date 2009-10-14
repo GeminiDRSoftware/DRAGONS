@@ -75,3 +75,12 @@ class GEMINIPrimitives(ReductionObject):
         for item in ls.filelist:
             print "\t", item
         yield co
+        
+    def setDisplayable(self, co):
+        try:
+            print "setting displayable"
+        except:
+            print "problem setting output as displayable"
+            raise
+        yield co
+        
