@@ -57,7 +57,7 @@ class ReductionContext(dict):
     stackeep = None
     
     def persistCalIndex(self, filename):
-        print "Calibration List Before Persist:"
+        #print "Calibration List Before Persist:"
         print self.calsummary()
         try:
             pickle.dump(self.calibrations, open(filename, "w"))
@@ -228,8 +228,15 @@ class ReductionContext(dict):
             # don't do this if the set is empty, it's a non-IO primitive
             if self.originalInputs == None:
                 self.originalInputs = deepcopy(self.inputs)
-                
-            self.inputs = self.outputs["standard"]
+            
+            #print "OUTPUTS:", self.outputs["standard"]
+            if type( self.outputs["standard"][0] ) == OutputRecord:
+                newinputlist = []
+                for inp in self.outputs["standard"]:
+                    newinputlist.append( inp.filename )
+                self.inputs = newinputlist
+            else:
+                self.inputs = self.outputs["standard"]
             self.outputs.update({"standard":[]})
             
     
@@ -279,11 +286,26 @@ class ReductionContext(dict):
         if self.inputs == None:
             return ""
         else:
+            #print "RM282:", self.inputs
+            # This is a quick fix to deal with the initial string / 
+            # OutputRecord stuff. The first input (which is str),
+            # all ensuing output is OutputRecord [which has metadata]
+            # -Riv
+            """
+            inputlist = []
+            for inp in self.inputs:
+                if type(inp) == str:
+                    inputlist.append( inp )
+                elif type(inp) == OutputRecord:
+                    inputlist.append( inp.filename )
+            print "RM289:", inputlist
+            """
             if strippath == False:
                 # print "RM227:", self.inputs
-                return ", ".join(self.inputs)
+                return ", ".join( self.inputs )
             else:
                 return ", ".join([os.path.basename(path) for path in self.inputs])
+                                      
 
     def outputsAsStr(self, strippath = True):
         if self.outputs == None:
@@ -327,14 +349,14 @@ class ReductionContext(dict):
         self.rorqs = []
         
     def rqCal(self, caltype):        
-        addToCmdQueue = self.cdl.getCalReq( self.inputs, caltype )
+        addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
         for re in addToCmdQueue:
             self.addRq(re)
         
     def rqStackUpdate(self):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        Sid = idFac.generateStackableID( self.inputs, ver )
+        Sid = idFac.generateStackableID( self.originalInputs, ver )
         stackUEv = UpdateStackableEvent()
         stackUEv.stkID = Sid
         stackUEv.stkList = self.inputs
@@ -344,7 +366,7 @@ class ReductionContext(dict):
     def rqStackGet(self):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        Sid = idFac.generateStackableID( self.inputs, ver )
+        Sid = idFac.generateStackableID( self.originalInputs, ver )
         stackUEv = GetStackableEvent()
         stackUEv.stkID = Sid
         self.addRq( stackUEv )
@@ -356,9 +378,9 @@ class ReductionContext(dict):
         if len(self.originalInputs) == 0:
             return None
         elif len(self.originalInputs) == 1:
-            fname = self.originalInputs[0]
+            fname = os.path.abspath( self.originalInputs[0] )
             key = (fname, caltype)
-            return self.calibrations[key]
+            return self.calibrations[key].filename
         else:
             retl = []
             for inp in self.originalInputs:

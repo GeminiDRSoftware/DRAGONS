@@ -12,7 +12,6 @@ class CalibrationService( object ):
         '''
         This is definitely going to change, and is entirely temporary.
         '''
-        print "LCS15~ SEARCHING CALIBRATIONS USING:\n", calRq
         
         inputfile = calRq.filename
         uri = None
