@@ -15,6 +15,8 @@ from StackKeeper import StackKeeper
 from CalibrationRequestEvent import CalibrationRequestEvent
 from StackableEvents import UpdateStackableEvent, GetStackableEvent
 
+from LocalCalibrationService import CalibrationService
+
 import sys, os, glob
 import time
 
@@ -83,6 +85,9 @@ else:
     recdict = {"all": [options.recipename]}
 
 types = gd.getTypes()
+
+# Local Calibration Service Setup
+cs = CalibrationService()
 
 
 title = "  Processing dataset: %s  " % infile
@@ -165,10 +170,16 @@ for rec in reclist:
                     typ = rq.caltype
                     calname = coi.getCal(fn, typ)
                     if calname == None:
-                        # raise "RM150"
-                        # This will end up being where the calibration service search
-                        # algorithm basically is.
-                        coi.addCal(fn, typ, None)
+                        # Do the calibration search
+                        calname = cs.search( rq )
+                        if calname == None:
+                            print "No suitable calibration for '" + fn + "'."
+                        elif len( calname ) >= 1:
+                            # Not sure if this is where the one returned calibration is chosen, or if
+                            # that is done in the calibration service, etc.
+                            calname = calname[0]
+                        coi.addCal(fn, typ, calname)
+                        coi.persistCalIndex( calindfile )
                 elif type(rq) == UpdateStackableEvent:
                     coi.stackAppend(rq.stkID, rq.stkList)
                     coi.persistStkIndex( stkindfile )

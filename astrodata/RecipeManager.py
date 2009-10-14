@@ -57,15 +57,19 @@ class ReductionContext(dict):
     stackeep = None
     
     def persistCalIndex(self, filename):
+        print "Calibration List Before Persist:"
+        print self.calsummary()
         try:
             pickle.dump(self.calibrations, open(filename, "w"))
         except:
-            print "problem"
+            print "Could not persist the calibration cache."
             raise 
     
     def restoreCalIndex(self, filename):
-        if os.path.exists(filename):
-            self.calibrations = pickle.load(open(filename))
+        if os.path.exists( filename ):
+            self.calibrations = pickle.load( open(filename, 'r') )
+        else:
+            pickle.dump( {}, open( filename, 'w' ) )
     
     def persistStkIndex(self, filename ):
         try:
@@ -208,6 +212,7 @@ class ReductionContext(dict):
             self.outputs["standard"].append(filename)
         elif type(filename) == list:
             self.outputs["standard"].extend(filename)
+    
     def finalizeOutputs(self):
         """ This function means there are no more outputs, generally called
         in a control loop when a generator function primitive ends.  Standard
