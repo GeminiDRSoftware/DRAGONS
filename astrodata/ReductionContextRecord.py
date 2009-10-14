@@ -57,4 +57,17 @@ class StackableRecord( ReductionContextRecord ):
     stkid     = %s
     filelist  = %s
     timestamp = %s \n""" % ( str(self.stkid), str(self.filelist), self.timestamp )
-        return rets
+        return rets  
+    
+class OutputRecord( ReductionContextRecord ):
+    '''
+    
+    '''
+    displayable = None
+    filename = None
+    
+    def __init__(self, filename, displayable= None, timestamp = None):
+        super( OutputRecord, self ).__init__( timestamp )
+        self.filename = filename
+        self.displayable = displayable
+        

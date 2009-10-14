@@ -12,7 +12,7 @@ from datetime import datetime
 from copy import deepcopy
 
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
-from ReductionContextRecord import CalibrationRecord, StackableRecord
+from ReductionContextRecord import CalibrationRecord, StackableRecord, OutputRecord
 import pickle # for persisting the calibration index
 
 import IDFactory as idFac # id hashing functions
@@ -52,7 +52,7 @@ class ReductionContext(dict):
     reason = "EXTANT"
     cmdRequest = "NONE"
     hostname = None
-    
+    displayName = None
     stephistory = None
     stackeep = None
     
@@ -105,6 +105,7 @@ class ReductionContext(dict):
         self.outputs = {"standard":[]}
         self.stephistory = {}
         self.hostname = socket.gethostname()
+        self.displayName = None
         # TESTING
         self.cdl = CalibrationDefinitionLibrary()
         # undeclared
@@ -209,9 +210,12 @@ class ReductionContext(dict):
             raise RecipeExcept("You may only use " +
                 "'standard' category output at this time.")
         if type(filename) == str:
-            self.outputs["standard"].append(filename)
+            self.outputs["standard"].append( OutputRecord(filename,self.displayName) )
         elif type(filename) == list:
-            self.outputs["standard"].extend(filename)
+            for temp in filename:
+                orecord = OutputRecord( temp,self.displayName )
+                self.outputs["standard"].append( orecord )
+            
     
     def finalizeOutputs(self):
         """ This function means there are no more outputs, generally called
