@@ -16,7 +16,7 @@ from ReductionContextRecord import CalibrationRecord, StackableRecord, OutputRec
 import pickle # for persisting the calibration index
 
 import IDFactory as idFac # id hashing functions
-from StackableEvents import UpdateStackableEvent, GetStackableEvent
+from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest
 from StackKeeper import StackKeeper
 # this module operates like a singleton
 centralPrimitivesIndex = {}
@@ -369,7 +369,7 @@ class ReductionContext(dict):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         Sid = idFac.generateStackableID( self.originalInputs, ver )
-        stackUEv = UpdateStackableEvent()
+        stackUEv = UpdateStackableRequest()
         stackUEv.stkID = Sid
         stackUEv.stkList = self.inputs
         self.addRq( stackUEv )
@@ -379,7 +379,7 @@ class ReductionContext(dict):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         Sid = idFac.generateStackableID( self.originalInputs, ver )
-        stackUEv = GetStackableEvent()
+        stackUEv = GetStackableRequest()
         stackUEv.stkID = Sid
         self.addRq( stackUEv )
     

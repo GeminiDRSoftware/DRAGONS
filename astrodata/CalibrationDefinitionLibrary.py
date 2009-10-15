@@ -1,8 +1,6 @@
 from AstroData import AstroData
-#from AstroDataType import *
-from CalibrationRequestEvent import CalibrationRequestEvent
+from ReductionObjectRequests import CalibrationRequest
 from xml.dom.minidom import parse
-#from datetime import datetime
 import os
 import ConfigSpace
 import pyfits
@@ -107,7 +105,7 @@ class CalibrationDefinitionLibrary( object ):
         @rtype: CalibrationRequestEvent
         '''
        
-        calReqEvent = CalibrationRequestEvent()
+        calReqEvent = CalibrationRequest()
         calReqEvent.caltype = caltype
         query = xmlDomQueryNode
         if( query.hasAttribute("id") ):

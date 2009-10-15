@@ -1,4 +1,4 @@
-import CalibrationRequestEvent
+from ReductionObjectRequests import CalibrationRequest
 
 class CalibrationService( object ):
     '''

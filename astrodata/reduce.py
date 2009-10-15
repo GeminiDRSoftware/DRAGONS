@@ -12,8 +12,8 @@ from RecipeManager import RecipeLibrary
 from GeminiData import GeminiData
 from optparse import OptionParser
 from StackKeeper import StackKeeper
-from CalibrationRequestEvent import CalibrationRequestEvent
-from StackableEvents import UpdateStackableEvent, GetStackableEvent
+from ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, GetStackableRequest
+
 
 from LocalCalibrationService import CalibrationService
 
@@ -165,7 +165,7 @@ for rec in reclist:
             
             #process calibration requests
             for rq in coi.rorqs:
-                if type(rq) == CalibrationRequestEvent:
+                if type(rq) == CalibrationRequest:
                     fn = rq.filename
                     typ = rq.caltype
                     calname = coi.getCal(fn, typ)
@@ -180,10 +180,10 @@ for rec in reclist:
                             calname = calname[0]
                         coi.addCal(fn, typ, calname)
                         coi.persistCalIndex( calindfile )
-                elif type(rq) == UpdateStackableEvent:
+                elif type(rq) == UpdateStackableRequest:
                     coi.stackAppend(rq.stkID, rq.stkList)
                     coi.persistStkIndex( stkindfile )
-                elif type(rq) == GetStackableEvent:
+                elif type(rq) == GetStackableRequest:
                     pass
                     # Don't actually do anything, because this primitive allows the control system to
                     #  retrieve the list from another resource, but reduce lets ReductionContext keep the
