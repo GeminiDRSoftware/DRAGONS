@@ -55,6 +55,8 @@ class ReductionContext(dict):
     displayName = None
     stephistory = None
     stackeep = None
+    displayMode = None
+    displayID = None
     
     def persistCalIndex(self, filename):
         #print "Calibration List Before Persist:"
@@ -93,6 +95,9 @@ class ReductionContext(dict):
             rets += str(key)
             rets += str(self.calibrations[key])
         return rets
+    
+    def prepDisplay(self):
+        pass
 
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to
@@ -203,6 +208,10 @@ class ReductionContext(dict):
         
     def addInput(self, filename):
         self.inputs.append(filename)
+        # This is kluge and needs to change as we potentially deal with lists
+        if self.originalInputs == None:
+            self.originalInputs = self.inputs
+        
         
     def reportOutput(self, filename, category="standard"):
         # note, other categories not supported yet
@@ -210,10 +219,10 @@ class ReductionContext(dict):
             raise RecipeExcept("You may only use " +
                 "'standard' category output at this time.")
         if type(filename) == str:
-            self.outputs["standard"].append( OutputRecord(filename,self.displayName) )
+            self.outputs["standard"].append( OutputRecord(filename,self.displayID) )
         elif type(filename) == list:
             for temp in filename:
-                orecord = OutputRecord( temp,self.displayName )
+                orecord = OutputRecord( temp,self.displayID )
                 self.outputs["standard"].append( orecord )
             
     
@@ -237,6 +246,9 @@ class ReductionContext(dict):
                 self.inputs = newinputlist
             else:
                 self.inputs = self.outputs["standard"]
+                
+            #for temp in self.outputs["standard"]:
+            #   print "TEMP:", temp
             self.outputs.update({"standard":[]})
             
     
@@ -348,7 +360,8 @@ class ReductionContext(dict):
     def clearRqs(self):
         self.rorqs = []
         
-    def rqCal(self, caltype):        
+    def rqCal(self, caltype):
+        print 'i am in rqCal -- ', self.originalInputs        
         addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
         for re in addToCmdQueue:
             self.addRq(re)

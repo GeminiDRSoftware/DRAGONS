@@ -1,7 +1,12 @@
 # logFilename
 # displayStructure
 # summarize
+
+prepare
 getProcessedBias
-setStackable
-getStackable
-printStackable
+setDisplayable
+biasSub
+
+#setStackable
+#getStackable
+

@@ -75,10 +75,19 @@ class GEMINIPrimitives(ReductionObject):
         for item in ls.filelist:
             print "\t", item
         yield co
-        
+                
     def setDisplayable(self, co):
         try:
             print "setting displayable"
+            mode = 'default'
+            display = None
+            if mode == 'default':
+                if co.displayID == None:
+                    co.displayID = '1'
+                else:
+                    co.displayID = str(int(co.displayID)+1)
+            # @@TODO: add code here when parameters are active to continue primitive
+            
         except:
             print "problem setting output as displayable"
             raise

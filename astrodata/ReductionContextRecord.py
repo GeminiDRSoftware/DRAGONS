@@ -63,11 +63,17 @@ class OutputRecord( ReductionContextRecord ):
     '''
     
     '''
-    displayable = None
+    displayID = None
     filename = None
     
-    def __init__(self, filename, displayable= None, timestamp = None):
+    def __init__(self, filename, displayID= None, timestamp = None):
         super( OutputRecord, self ).__init__( timestamp )
         self.filename = filename
-        self.displayable = displayable
-        
+        self.displayID = displayID
+    
+    def __str__(self):
+        rets = """
+    displayID     = %s
+    filename  = %s
+    timestamp = %s \n""" % ( str(self.displayID), str(self.filename), self.timestamp )
+        return rets  
