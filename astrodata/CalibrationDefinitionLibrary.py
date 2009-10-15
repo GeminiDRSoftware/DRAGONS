@@ -72,16 +72,8 @@ class CalibrationDefinitionLibrary( object ):
             retDict = gdpgutil.pickConfig( input, self.generateCalIndex(caltype) )
             key = retDict.keys()[0]
             print "KEY:", key
-            typesWithCal = [calIndex[key]]
-            #typesWithCal = list( set( typesWithCal ) )
-            print "Types with Cals:", typesWithCal
-            if len( typesWithCal ) == 0:
-                print "No Available calibration xml files for types", leafTypes
-            elif len( typesWithCal ) > 1:
-                print "More than one calibration xml file"
-                print "CDL85:", str(typesWithCal) 
-            
-            filename = typesWithCal[0]
+            filename = calIndex[key]            
+            print "Types with Cals:", filename 
             try:
                 calXMLURI = self.xmlIndex[filename]
                 calXMLFile = open( calXMLURI, 'r' )

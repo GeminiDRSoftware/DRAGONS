@@ -60,7 +60,7 @@ class ReductionContext(dict):
     
     def persistCalIndex(self, filename):
         #print "Calibration List Before Persist:"
-        print self.calsummary()
+        #print self.calsummary()
         try:
             pickle.dump(self.calibrations, open(filename, "w"))
         except:
