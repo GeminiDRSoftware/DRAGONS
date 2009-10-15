@@ -360,8 +360,7 @@ class ReductionContext(dict):
     def clearRqs(self):
         self.rorqs = []
         
-    def rqCal(self, caltype):
-        print 'i am in rqCal -- ', self.originalInputs        
+    def rqCal(self, caltype): 
         addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
         for re in addToCmdQueue:
             self.addRq(re)
