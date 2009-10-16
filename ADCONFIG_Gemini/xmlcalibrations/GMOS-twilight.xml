@@ -1,0 +1,17 @@
+<query id="twilight">
+	<identifier>
+		<property key="OBJECT" extension="PHU" type="string" value="Twilight" /><property
+			key="MASKNAME" extension="PHU" type="string" value="None">
+</property>
+	</identifier>
+	<criteria>
+		<property key="CCDSUM" extension="SCI,1" type="string" />
+		<property key="DETSEC" extension="SCI,1" type="string" />
+		<property key="INSTRUME" extension="PHU" type="string" />
+		<property key="GRATING" extension="PHU" type="string" ></property>
+		<property key="FILTER" extension="PHU" type="string"></property>
+	</criteria>
+	<priorities>
+		<property key="OBSEPOCH" extension="PHU" type="real" value=""/>
+	</priorities>
+</query>
