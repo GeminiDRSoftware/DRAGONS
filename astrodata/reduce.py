@@ -31,6 +31,12 @@ b = datetime.now()
 parser = OptionParser()
 # parser.add_option("-r", "--reduce", dest="twdir", default =".",
 #        help="Recursively walk given directory and put type information to stdout.")
+version = '1_0'
+parser.set_description( 
+"""The standalone recipe processor from Gemini. Created by Craig Allen (callen@gemini.edu)."""
+ )
+parser.set_usage( parser.get_usage()[:-1] + " file.fits\n" )
+# Testing
 parser.add_option("-r", "--recipe", dest="recipename", default=None,
                   help="Specify which recipe to run by name.")
 
@@ -53,8 +59,7 @@ parser.add_option("--remcal", dest="rem_cal", default=False, action="store_true"
                   "example of what this would look like: \n" + \
                   "reduce --remcal --caltype=bias N20091002S0219.fits" )
 parser.add_option("--clrcal", dest="clr_cal", default=False, action="store_true",
-                  help="Remove all calibrations. If a fits file is passed, it will remove " + \
-                  "all calibrations associated with the fits file.")
+                  help="Remove all calibrations.")
 parser.add_option("--caltype", dest="cal_type", default=None, type="string",
                   help="Works in conjunction with '--addcal'. Ignored otherwise. " + \
                   "This should be the type of calibration in lowercase and one word. " + \
@@ -88,23 +93,9 @@ def command_line():
     if options.clr_cal:
         clrFile = None
         
-        if len( args ) > 0:
-            if not os.access( args[0], os.R_OK ):
-                print "'" + args[0] + "' does not or cannot be accessed."
-                sys.exit(1)
-            else:
-                clrFile = args[0]
-        
         co = ReductionContext()
         co.restoreCalIndex(calindfile)
-        if clrFile == None:
-            co.calibrations = {}
-            print "Entire calibration cache cleared."
-        else:
-            for key in co.calibrations.keys():
-                if clrFile in key:
-                    co.calibrations.pop( key )
-            print "All calibrations for " + clrFile + "' were removed."
+        co.calibrations = {}
         co.persistCalIndex( calindfile )
         
         sys.exit(0)
@@ -115,6 +106,7 @@ def command_line():
     except IndexError:
         
         print "${RED}NO INPUT FILE${NORMAL}"
+        parser.print_help()
         sys.exit(1)
 
     if options.add_cal != None:
@@ -138,6 +130,7 @@ def command_line():
         co.persistCalIndex( calindfile )
         print "'" + options.add_cal + "' was successfully added for '" + args[0] + "'."
         sys.exit(0)
+        
     elif options.rem_cal:
         if options.cal_type == None:
             print "Reduce requires a calibration type. Use --cal-type. For more " + \
