@@ -152,9 +152,12 @@ class CalibrationDefinitionLibrary( object ):
                     key = child.getAttribute( "key" )                    
                     extension = child.getAttribute( "extension" )                    
                     elemType = child.getAttribute( "type" )
-                    #unfinished priority value                    
-                    #value = child.getAttribute( "value" ) 
-                    #this has to come from the input header                
+                    if extension == "PHU":
+                        header = 0
+                    else:
+                        #split used to obtain science extension number from string, ie.  [SCI, 1]
+                        header = int( extension.split(']')[0][-1] )                     
+                    value = inputHdulist[header].header[str(key)]              
                     calReqEvent.priorities.update( {key:(extension,elemType,value)} )            
         calReqEvent.filename = input                           
         return calReqEvent
