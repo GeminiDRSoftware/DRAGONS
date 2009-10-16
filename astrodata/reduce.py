@@ -40,7 +40,27 @@ parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
                   "execution. " + \
                   "Note: One window is opened for each recipe which " + \
                   "will run")
+parser.add_option("--addcal", dest="add_cal", default=None, type="string",
+                  help="'--caltype' Must be specified as well when using this! " + \
+                  "Provide the filename for a calibration. This is will overwrite " + \
+                  "an existing calibration if in the index. An example of what " + \
+                  "this would look like: \n" + \
+                  "reduce --addcal=N2009_bias.fits --caltype=bias N20091002S0219.fits" )
+parser.add_option("--remcal", dest="rem_cal", default=False, action="store_true",
+                  help="'--caltype' Must be specified as well when using this! " + \
+                  "This will remove the calibration for that file from cache. By making --caltype " + \
+                  "'all', all the associated calibrations for that file will be removed. An " + \
+                  "example of what this would look like: \n" + \
+                  "reduce --remcal --caltype=bias N20091002S0219.fits" )
+parser.add_option("--clrcal", dest="clr_cal", default=False, action="store_true",
+                  help="Remove all calibrations. If a fits file is passed, it will remove " + \
+                  "all calibrations associated with the fits file.")
+parser.add_option("--caltype", dest="cal_type", default=None, type="string",
+                  help="Works in conjunction with '--addcal'. Ignored otherwise. " + \
+                  "This should be the type of calibration in lowercase and one word. " + \
+                  "For example: 'bias', 'twilightflat'.")
 (options,  args) = parser.parse_args()
+
 
 useTK =  options.bMonitor
 # ------
@@ -52,15 +72,102 @@ term = TerminalController()
 REALSTDOUT = sys.stdout
 sys.stdout = terminal.ColorStdout(REALSTDOUT, term)
 
-print "${NORMAL}"
-try:
-    infile   = args[0] # "./recipedata/N20020606S0141.fits"
-except IndexError:
-    print "${RED}NO INPUT FILE${NORMAL}"
-    sys.exit(1)
 
 adatadir = "./recipedata/"
+calindfile = "./.reducecache/calindex.pkl"
+stkindfile = "./.reducecache/stkindex.pkl"
 
+
+
+def command_line():
+    '''
+    This function is just here so that all the command line oriented parsing is one common location.
+    Hopefully, this makes things look a little cleaner.
+    '''
+    infile = None
+    if options.clr_cal:
+        clrFile = None
+        
+        if len( args ) > 0:
+            if not os.access( args[0], os.R_OK ):
+                print "'" + args[0] + "' does not or cannot be accessed."
+                sys.exit(1)
+            else:
+                clrFile = args[0]
+        
+        co = ReductionContext()
+        co.restoreCalIndex(calindfile)
+        if clrFile == None:
+            co.calibrations = {}
+            print "Entire calibration cache cleared."
+        else:
+            for key in co.calibrations.keys():
+                if clrFile in key:
+                    co.calibrations.pop( key )
+            print "All calibrations for " + clrFile + "' were removed."
+        co.persistCalIndex( calindfile )
+        
+        sys.exit(0)
+    
+    print "${NORMAL}"
+    try:
+        infile   = args[0] # "./recipedata/N20020606S0141.fits"
+    except IndexError:
+        
+        print "${RED}NO INPUT FILE${NORMAL}"
+        sys.exit(1)
+
+    if options.add_cal != None:
+        if options.cal_type == None:
+            print "Reduce requires a calibration type. Use --cal-type. For more " + \
+            "information use '-h' or '--help'."
+            sys.exit(1)
+        elif not os.access( options.add_cal, os.R_OK ):
+            print "'" + options.add_cal + "' does not or cannot be accessed."
+            sys.exit(1)
+        elif not os.access( args[0], os.R_OK ):
+            print "'" + args[0] + "' does not or cannot be accessed."
+            sys.exit(1)
+        
+        # @@TODO: Perhaps need a list of valid calibration types.
+        # @@TODO: Need testing if passed in calibration type is valid.
+        
+        co = ReductionContext()
+        co.restoreCalIndex(calindfile)
+        co.addCal( args[0], options.cal_type, os.path.abspath(options.add_cal) )
+        co.persistCalIndex( calindfile )
+        print "'" + options.add_cal + "' was successfully added for '" + args[0] + "'."
+        sys.exit(0)
+    elif options.rem_cal:
+        if options.cal_type == None:
+            print "Reduce requires a calibration type. Use --cal-type. For more " + \
+            "information use '-h' or '--help'."
+            sys.exit(1)
+        elif not os.access( args[0], os.R_OK ):
+            print "'" + args[0] + "' does not or cannot be accessed."
+            sys.exit(1)
+        
+        # @@TODO: Perhaps need a list of valid calibration types.
+        # @@TODO: Need testing if passed in calibration type is valid.
+        
+        co = ReductionContext()
+        co.restoreCalIndex(calindfile)
+        if cal_type == 'all':
+            for key in co.calibrations.keys():
+                if args[0] in key:
+                    co.calibrations.pop( key )
+            print "All calibrations for " + args[0] + "' were removed."
+        else:
+            co.calibrations.pop( (args[0], options.cal_type) )
+            print "'" + options.cal_type + "' was removed from '" + args[0] + "'."
+        co.persistCalIndex( calindfile )
+        sys.exit(0)
+    
+    return infile
+    
+
+infile = command_line()
+    
 generate_pycallgraphs = False
 if (generate_pycallgraphs):
     import pycallgraph
@@ -75,6 +182,7 @@ rl = RecipeLibrary()
 # get ReductionObject for this dataset
 #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
 ro = rl.retrieveReductionObject(infile) # can be done by filename
+
 
 if options.recipename == None:
     reclist = rl.getApplicableRecipes(infile)
@@ -128,9 +236,9 @@ for rec in reclist:
         # restore cache
         if not os.path.exists(".reducecache"):
             os.mkdir(".reducecache")
-        calindfile = "./.reducecache/calindex.pkl"
+        
         co.restoreCalIndex(calindfile)
-        stkindfile = "./.reducecache/stkindex.pkl"
+        
         co.restoreStkIndex( stkindfile )
         
         
@@ -246,5 +354,86 @@ while (False):
 # main()
     
 
+def command_line():
+    '''
+    This function is just here so that all the command line oriented parsing is one common location.
+    Hopefully, this makes things look a little cleaner.
+    '''
+    if options.clr_cal:
+        clrFile = None
+        
+        if len( args ) > 0:
+            if not os.access( args[0], os.R_OK ):
+                print "'" + args[0] + "' does not or cannot be accessed."
+                sys.exit(1)
+            else:
+                clrFile = args[0]
+        
+        co = ReductionContext()
+        co.restoreCalIndex(calindfile)
+        if clrFile == None:
+            co.calibrations = {}
+            print "Entire calibration cache cleared."
+        else:
+            for key in co.calibrations.keys():
+                if clrFile in key:
+                    co.calibrations.pop( key )
+            print "All calibrations for " + clrFile + "' were removed."
+        co.persistCalIndex( calindfile )
+        
+        sys.exit(0)
+    
+    print "${NORMAL}"
+    try:
+        infile   = args[0] # "./recipedata/N20020606S0141.fits"
+    except IndexError:
+        
+        print "${RED}NO INPUT FILE${NORMAL}"
+        sys.exit(1)
 
+    if options.add_cal != None:
+        if options.cal_type == None:
+            print "Reduce requires a calibration type. Use --cal-type. For more " + \
+            "information use '-h' or '--help'."
+            sys.exit(1)
+        elif not os.access( options.add_cal, os.R_OK ):
+            print "'" + options.add_cal + "' does not or cannot be accessed."
+            sys.exit(1)
+        elif not os.access( args[0], os.R_OK ):
+            print "'" + args[0] + "' does not or cannot be accessed."
+            sys.exit(1)
+        
+        # @@TODO: Perhaps need a list of valid calibration types.
+        # @@TODO: Need testing if passed in calibration type is valid.
+        
+        co = ReductionContext()
+        co.restoreCalIndex(calindfile)
+        co.addCal( args[0], options.cal_type, os.path.abspath(options.add_cal) )
+        co.persistCalIndex( calindfile )
+        print "'" + options.add_cal + "' was successfully added for '" + args[0] + "'."
+        sys.exit(0)
 
+    if options.rem_cal:
+        if options.cal_type == None:
+            print "Reduce requires a calibration type. Use --cal-type. For more " + \
+            "information use '-h' or '--help'."
+            sys.exit(1)
+        elif not os.access( args[0], os.R_OK ):
+            print "'" + args[0] + "' does not or cannot be accessed."
+            sys.exit(1)
+        
+        # @@TODO: Perhaps need a list of valid calibration types.
+        # @@TODO: Need testing if passed in calibration type is valid.
+        
+        co = ReductionContext()
+        co.restoreCalIndex(calindfile)
+        if cal_type == 'all':
+            for key in co.calibrations.keys():
+                if args[0] in key:
+                    co.calibrations.pop( key )
+            print "All calibrations for " + args[0] + "' were removed."
+        else:
+            co.calibrations.pop( (args[0], options.cal_type) )
+            print "'" + options.cal_type + "' was removed from '" + args[0] + "'."
+        co.persistCalIndex( calindfile )
+        sys.exit(0)
