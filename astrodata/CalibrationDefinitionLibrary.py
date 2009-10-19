@@ -5,6 +5,7 @@ import os
 import ConfigSpace
 import pyfits
 import gdpgutil
+import Descriptors
         
 class CalibrationDefinitionLibrary( object ):
     '''
@@ -111,10 +112,12 @@ class CalibrationDefinitionLibrary( object ):
         if( query.hasAttribute("id") ):
             if( query.getAttribute("id") == caltype ):
                 identifiers = query.getElementsByTagName( "identifier" )
+                
                 if len( identifiers ) > 0:
                     identifiers = identifiers[0]
                 else:
-                    raise "XML calibration has no identifiers"
+                    raise "Improperly formed. XML calibration has no identifiers."
+                
                 for child in identifiers.getElementsByTagName( "property" ):
                     key = child.getAttribute( "key" )                    
                     extension = child.getAttribute( "extension" )                    
@@ -125,12 +128,17 @@ class CalibrationDefinitionLibrary( object ):
                     calReqEvent.identifiers.update( {key:(extension,elemType,value)} ) 
                 
                 #creates hdulist for looking up header values                   
-                inputHdulist = pyfits.open( input )                
+                inputHdulist = pyfits.open( input )
+                ad = AstroData( input )
+                desc = Descriptors.getCalculator( ad )
+                        
                 criteria = query.getElementsByTagName( "criteria" )
                 if len( criteria ) > 0:
                     criteria = criteria[0]
                 else:
-                    raise "XML calibration has no identifiers"   
+                    raise "Improperly formed. XML calibration has no criteria" 
+                
+                  
                 for child in criteria.getElementsByTagName( "property" ):
                     key = child.getAttribute( "key" )                    
                     extension = child.getAttribute( "extension" )                    
@@ -139,15 +147,20 @@ class CalibrationDefinitionLibrary( object ):
                         header = 0
                     else:
                         #split used to obtain science extension number from string, ie.  [SCI, 1]
-                        header = int( extension.split(']')[0][-1] )                     
-                    value = inputHdulist[header].header[str(key)]                                    
+                        header = int( extension.split(',')[1] )
+                    
+                    value = inputHdulist[header].header[str(key)]
+                    tomogatchi = desc.fetchValue( key, ad )
+                    #print "TESTING DESCRIPTOR!", key, tomogatchi, value                                   
                     calReqEvent.criteria.update( {key:(extension,elemType,value)} )
                     
                 priorities = query.getElementsByTagName( "priorities" )
                 if len( priorities ) > 0:
                     priorities = priorities[0]
                 else:
-                    raise "XML calibration has no identifiers"    
+                    raise "Improperly formed. XML calibration has no priorities"
+                
+                
                 for child in priorities.getElementsByTagName( "property" ):
                     key = child.getAttribute( "key" )                    
                     extension = child.getAttribute( "extension" )                    
@@ -156,12 +169,64 @@ class CalibrationDefinitionLibrary( object ):
                         header = 0
                     else:
                         #split used to obtain science extension number from string, ie.  [SCI, 1]
-                        header = int( extension.split(']')[0][-1] )                     
-                    value = inputHdulist[header].header[str(key)]              
-                    calReqEvent.priorities.update( {key:(extension,elemType,value)} )            
+                        header = int( extension.split(',')[1] )                     
+                    
+                    if key == "OBSEPOCH":
+                        value = inputHdulist[0].header['DATE-OBS']
+                        value = value + "T" + inputHdulist[0].header['TIME-OBS']
+                        
+                    else:
+                        value = inputHdulist[header].header[str(key)]
+                        
+                    tomogatchi = desc.fetchValue( str(key), ad )
+                    #print "TESTING DESCRIPTOR!", key, tomogatchi, value
+                    calReqEvent.priorities.update( {key:(extension,elemType,value)} )
+                    
+                inputHdulist.close()
+                          
         calReqEvent.filename = input                           
         return calReqEvent
                     
+    def parseProperty( self, propertyNode, desc, ad ):
+        '''
+        Parses a xmldom property, returning a {key:(extension,elemType,value)}.
+        
+        @param propertyNode: xmlDom Element, that should be a 'property'. Consult the xml calibration file
+        definitions for more information.
+        @type propertyNode:  Dom Element
+        
+        @param desc: Descriptor for the type ad.
+        @type desc: Calculator
+        
+        @param ad: An Astrodata instance for the input file.
+        @type ad: Astrodata instance
+        
+        @return: {key:(extension,elemType,value)}, based of calibration xml attributes.
+        @rtype: dict
+        '''
+        #--KEY-------------------------------------------------------------------------- 
+        if not propertyNode.hasAttribute( "key" ):
+            raise "Improperly formed XML calibration. A 'key' attribute is missing in one " + \
+                "of the 'property' elements."
+        key = propertyNode.getAttribute( "key" )
+        
+        #--EXT-------------------------------------------------------------------------- 
+        # This might become obsolete
+        extension = "PHU"
+        if propertyNode.hasAttribute( "extension" ):
+            extension = propertyNode.getAttribute( "extension" )
+        
+        #--TYP-------------------------------------------------------------------------- 
+        # This might become obsolete
+        elemType = "string"
+        if propertyNode.hasAttribute( "type" ):
+            elemType = propertyNode.getAttribute( "type" )
+        
+        #--VAL-------------------------------------------------------------------------- 
+        value = desc.fetchValue( str(key), ad )
+        
+        return {key:(extension,elemType,value)}
+    
     def generateCalIndex( self, caltype ):
         '''
         Generate an xml URI index for each caltype. 

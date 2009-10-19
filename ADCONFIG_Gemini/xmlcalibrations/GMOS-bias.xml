@@ -9,6 +9,6 @@
 		<property key="RDNOISE" extension="SCI,1" type="real" />
 	</criteria>
 	<priorities>
-		<property key="OBSEPOCH" extension="PHU" type="real" value="sci_frame_value_search"/>
+		<property key="OBSEPOCH" extension="PHU" type="real" value=""/>
 	</priorities>
 </query>

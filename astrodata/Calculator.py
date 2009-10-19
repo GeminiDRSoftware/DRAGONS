@@ -53,7 +53,6 @@ class Calculator(object):
     
     @ivar usage: Used to document this Descriptor.    
     """
-    
     usage = ""
         
     stdkeyDict = globalStdkeyDict
@@ -117,4 +116,55 @@ class Calculator(object):
             #!!!! DEVELOPMENT @: should return descriptor value, 0. is placeholder
         return retval
     
+    
+    def fetchValue( self, keyname, dataset ):
+        """
+        A test utility function that, given a keyname, whether it be something in the header like 'INSTRUME'
+        or something not in the header like 'filtername', it will either return the value from the associated
+        function, or grab the value from the header.
+        
+        @param keyname: Name of key to get value for.
+        @type keyname: string
+        
+        @param dataset: an AstroData set instance.
+        @type dataset: AstroData
+         
+        @param extension: Look in a specific extension. By default, it is PHU. (No other extensions implemented at
+        this time, so DO NOT USE.
+        @type extension: int
+        
+        @return: The value in a list form.
+        @rtype: list 
+        """
+        retval = None
+        if hasattr( self, str(keyname).lower() ):
+            keyfunc = getattr( self, str(keyname).lower() )
+            retval = keyfunc( dataset ) 
+        else:
+            for ext in dataset.getHDUList():
+                #print "KAPLAH"
+                try:
+                    retval = ext.header[str(keyname)]
+                    break
+                except:
+                    continue
+                
+            if retval is None:
+                raise CalculatorExcept("Standard Descriptor Key \"%s\" not in PHU (generic descriptor fails)" % keyname)
+            
+        #if type( retval ) != list:
+        #    retval = [retval]
+        
+        return retval
+    
+    def obsepoch( self, dataset ):
+        '''
+        
+        
+        '''    
+        value = dataset.phuHeader("DATE-OBS")
+        value = value + "T" + dataset.phuHeader('TIME-OBS')
+        return value
+        
+
 #@@DOCPROJECT@@ done with pass 1
