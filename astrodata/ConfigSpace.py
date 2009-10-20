@@ -199,7 +199,7 @@ def lookupPath(name):
     domain = a[0]
     pack = CONFIGMARKER + domain
     tpath = None
-    print "CS166", cs.configpacks, cs.configdirs
+    #print "CS166", cs.configpacks, cs.configdirs
     for path in cs.configpacks:
         
         if path[-(len(pack)):] == pack:

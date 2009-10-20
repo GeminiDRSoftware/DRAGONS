@@ -1,11 +1,13 @@
-from AstroData import AstroData
-from ReductionObjectRequests import CalibrationRequest
-from xml.dom.minidom import parse
 import os
-import ConfigSpace
 import pyfits
-import gdpgutil
+from xml.dom.minidom import parse
+
+from AstroData import AstroData
+import ConfigSpace
 import Descriptors
+import gdpgutil
+from ReductionObjectRequests import CalibrationRequest
+#------------------------------------------------------------------------------ 
         
 class CalibrationDefinitionLibrary( object ):
     '''
@@ -14,7 +16,7 @@ class CalibrationDefinitionLibrary( object ):
     
     def __init__( self ):
         '''
-        Goes into ConfigSpace and gets all the file URIs and creates an XML index.
+        Goes into ConfigSpace and gets all the file URIs to create a XML index.
         '''
         self.xmlIndex = {}
         try:
@@ -41,38 +43,11 @@ class CalibrationDefinitionLibrary( object ):
         """
         reqEvents = []
         for input in inputs:
-            """
-            ad = AstroData( input )       
-            # print 'new image type', ad.getTypes( prune=False )
-            leafTypes = ad.getTypes( prune=True )
-            # print 'leaf types:', leafTypes
-            typesWithCal = []
-            for adType in leafTypes:
-                filename = adType + "-" + caltype + ".xml"
-                if filename in self.xmlIndex.keys():
-                    typesWithCal.append( filename )
-                else:
-                    #search parents if no xml exist
-                    try:
-                        cl = ad.getClassificationLibrary()
-                        #adType becomes dataClassification object
-                        adType = cl.getTypeObj( adType )
-                        parents = adType.getAllSuperTypes()
-                        for supType in parents:
-                            filename = supType.name + "-" + caltype + ".xml"
-                            if filename in self.xmlIndex.keys():
-                                typesWithCal.append( filename )
-                                break                        
-                    except:
-                        print "Error getting adtype parents."
-                        pass
-            """
             calIndex = self.generateCalIndex( caltype)
             retDict = gdpgutil.pickConfig( input, self.generateCalIndex(caltype) )
             key = retDict.keys()[0]
-            print "KEY:", key
             filename = calIndex[key]            
-            print "Types with Cals:", filename 
+            
             try:
                 calXMLURI = self.xmlIndex[filename]
                 calXMLFile = open( calXMLURI, 'r' )
@@ -80,13 +55,15 @@ class CalibrationDefinitionLibrary( object ):
             except:
                 raise "Error opening '%s'" %calXMLURI
             finally:
-                calXMLFile.close() 
-            #childNodes is the <query> tag           
+                calXMLFile.close()
+                
+            # childNodes is the <query> tag(s)           
             calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input )            
             reqEvents.append(calReqEvent)
-        #goes to reduction context object to add to queue
+        # Goes to reduction context object to add to queue
         return reqEvents
-            
+    
+    
     def parseQuery(self, xmlDomQueryNode, caltype, input ):
         '''
         Parses a query from XML Calibration File and returns a Calibration
@@ -109,84 +86,59 @@ class CalibrationDefinitionLibrary( object ):
         calReqEvent = CalibrationRequest()
         calReqEvent.caltype = caltype
         query = xmlDomQueryNode
-        if( query.hasAttribute("id") ):
-            if( query.getAttribute("id") == caltype ):
-                identifiers = query.getElementsByTagName( "identifier" )
-                
-                if len( identifiers ) > 0:
-                    identifiers = identifiers[0]
-                else:
-                    raise "Improperly formed. XML calibration has no identifiers."
-                
-                for child in identifiers.getElementsByTagName( "property" ):
-                    key = child.getAttribute( "key" )                    
-                    extension = child.getAttribute( "extension" )                    
-                    elemType = child.getAttribute( "type" )                    
-                    value = child.getAttribute( "value" ) 
-                    
-                    #creates dictionary object with multiple values               
-                    calReqEvent.identifiers.update( {key:(extension,elemType,value)} ) 
-                
-                #creates hdulist for looking up header values                   
-                inputHdulist = pyfits.open( input )
-                ad = AstroData( input )
-                desc = Descriptors.getCalculator( ad )
-                        
-                criteria = query.getElementsByTagName( "criteria" )
-                if len( criteria ) > 0:
-                    criteria = criteria[0]
-                else:
-                    raise "Improperly formed. XML calibration has no criteria" 
-                
-                  
-                for child in criteria.getElementsByTagName( "property" ):
-                    key = child.getAttribute( "key" )                    
-                    extension = child.getAttribute( "extension" )                    
-                    elemType = child.getAttribute( "type" )
-                    if extension == "PHU":
-                        header = 0
-                    else:
-                        #split used to obtain science extension number from string, ie.  [SCI, 1]
-                        header = int( extension.split(',')[1] )
-                    
-                    value = inputHdulist[header].header[str(key)]
-                    tomogatchi = desc.fetchValue( key, ad )
-                    #print "TESTING DESCRIPTOR!", key, tomogatchi, value                                   
-                    calReqEvent.criteria.update( {key:(extension,elemType,value)} )
-                    
-                priorities = query.getElementsByTagName( "priorities" )
-                if len( priorities ) > 0:
-                    priorities = priorities[0]
-                else:
-                    raise "Improperly formed. XML calibration has no priorities"
-                
-                
-                for child in priorities.getElementsByTagName( "property" ):
-                    key = child.getAttribute( "key" )                    
-                    extension = child.getAttribute( "extension" )                    
-                    elemType = child.getAttribute( "type" )
-                    if extension == "PHU":
-                        header = 0
-                    else:
-                        #split used to obtain science extension number from string, ie.  [SCI, 1]
-                        header = int( extension.split(',')[1] )                     
-                    
-                    if key == "OBSEPOCH":
-                        value = inputHdulist[0].header['DATE-OBS']
-                        value = value + "T" + inputHdulist[0].header['TIME-OBS']
-                        
-                    else:
-                        value = inputHdulist[header].header[str(key)]
-                        
-                    tomogatchi = desc.fetchValue( str(key), ad )
-                    #print "TESTING DESCRIPTOR!", key, tomogatchi, value
-                    calReqEvent.priorities.update( {key:(extension,elemType,value)} )
-                    
-                inputHdulist.close()
-                          
+        
+        if not query.hasAttribute("id"):
+            raise "Improperly formed. QUERY needs an id, for example 'bias'."
+        
+        tempcal = str(query.getAttribute("id"))
+        
+        if( tempcal != caltype ):
+            raise "The id in the query does not match the caltype '"+tempcal+"' '"+str(caltype)+"'."
+        
+        ad = AstroData( input )
+        desc = Descriptors.getCalculator( ad )
+        #===============================================================
+        # IDENTIFIERS
+        #===============================================================
+        identifiers = query.getElementsByTagName( "identifier" )
+        if len( identifiers ) > 0:
+            identifiers = identifiers[0]
+        else:
+            raise "Improperly formed. XML calibration has no identifiers."
+        
+        for child in identifiers.getElementsByTagName( "property" ):
+            #creates dictionary object with multiple values               
+            calReqEvent.identifiers.update( self.parseProperty(child, desc, ad) ) 
+        
+        #===============================================================
+        # CRITERIA
+        #===============================================================
+        criteria = query.getElementsByTagName( "criteria" )
+        if len( criteria ) > 0:
+            criteria = criteria[0]
+        else:
+            raise "Improperly formed. XML calibration has no criteria" 
+        
+        for child in criteria.getElementsByTagName( "property" ):
+            calReqEvent.criteria.update( self.parseProperty(child, desc, ad) )
+        
+        #===============================================================
+        # PRIORITIES
+        #===============================================================
+        priorities = query.getElementsByTagName( "priorities" )
+        if len( priorities ) > 0:
+            priorities = priorities[0]
+        else:
+            raise "Improperly formed. XML calibration has no priorities"
+        
+        for child in priorities.getElementsByTagName( "property" ):
+            calReqEvent.priorities.update( self.parseProperty(child, desc, ad) )
+        
+        #print "CDL137 PRIORITIES:", calReqEvent.priorities
         calReqEvent.filename = input                           
         return calReqEvent
-                    
+    
+                  
     def parseProperty( self, propertyNode, desc, ad ):
         '''
         Parses a xmldom property, returning a {key:(extension,elemType,value)}.
@@ -223,13 +175,17 @@ class CalibrationDefinitionLibrary( object ):
             elemType = propertyNode.getAttribute( "type" )
         
         #--VAL-------------------------------------------------------------------------- 
-        value = desc.fetchValue( str(key), ad )
+        if propertyNode.hasAttribute( "value" ) and propertyNode.getAttribute( "value" ) != "":
+            value = propertyNode.getAttribute( "value" )
+        else:
+            value = desc.fetchValue( str(key), ad )
         
         return {key:(extension,elemType,value)}
     
+    
     def generateCalIndex( self, caltype ):
         '''
-        Generate an xml URI index for each caltype. 
+        Generate a xml URI index for each caltype. 
         
         @param caltype: The calibration needed to generate the index.
         @type caltype: string    

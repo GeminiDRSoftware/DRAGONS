@@ -85,7 +85,8 @@ class Calculator(object):
             retval.append(gain)
             
         return retval
-                  
+    
+    
     def filtername(self, dataset):
         """This function returns the filter descriptor, which cannot be "filter"
         in python since that is a reserved word. As with all the descriptors 
@@ -150,7 +151,7 @@ class Calculator(object):
                     continue
                 
             if retval is None:
-                raise CalculatorExcept("Standard Descriptor Key \"%s\" not in PHU (generic descriptor fails)" % keyname)
+                print CalculatorExcept("Standard Descriptor Key \"%s\" not in PHU (generic descriptor fails)" % keyname)
             
         #if type( retval ) != list:
         #    retval = [retval]

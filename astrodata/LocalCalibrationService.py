@@ -1,13 +1,14 @@
-import pyfits as pf
-
-from ReductionObjectRequests import CalibrationRequest
-import Descriptors
-import AstroData
-import ConfigSpace
 from datetime import datetime
+import pyfits as pf
 from time import mktime
 import urllib2 as ulib
 #from mx.URL import *
+
+from AstroData import AstroData
+import ConfigSpace
+import Descriptors
+from ReductionObjectRequests import CalibrationRequest
+#------------------------------------------------------------------------------ 
 
 class CalibrationService( object ):
     '''
@@ -19,7 +20,7 @@ class CalibrationService( object ):
     calList = []
     
     def __init__( self, calDirectoryURIs=["http://rallen:riverallen@chara/svn/DRSoftware/gemini_python/test_data/recipedata", 
-                  "recipedata/calibrations"], mode="local_disk" ):
+                  "recipedata"], mode="local_disk" ):
         
         # calList will contain absolute paths/filenames
         self.calList = []
@@ -39,9 +40,10 @@ class CalibrationService( object ):
         # 1) set up, and send out appropriate messages
         # 2) while !not shutdown or restart message:
         # 3)  wait on message
-        # 4)  when request received, basically thread pool or exec a processRequest
-        # 5)  send out processedRequestMessage
+        # 4)  when request received, basically thread pool or exec() a processRequest or One run CalService
+        # 5)  Child sends out processedRequestMessage and is terminates
         # 6) shutdown or restart
+    
     
     def processRequest( self, message ):
         '''
@@ -54,9 +56,10 @@ class CalibrationService( object ):
         # 2) run 'search'
         # 3) return results in output message for message bus.
     
+    
     def search( self, calRq ):
         '''
-        Based on the info from the calibration req
+        Based on the info from the calibration request.
         '''
         
         inputfile = calRq.filename
@@ -83,18 +86,17 @@ class CalibrationService( object ):
         #"""
         for calfile in self.calList:
             print "CS90: Checking if '" + calfile + "' is viable."
-            headers = self.getAllHeaders( calfile )
             ad = AstroData( calfile )
             desc = Descriptors.getCalculator( ad )
             
-            if not self.searchIdentifiers( calRq.identifiers, headers, desc, ad ):
+            if not self.searchIdentifiers( calRq.identifiers, desc, ad ):
                 #print "FAILED IDENTIFIERS"
                 continue
-            if not self.searchCriteria( calRq.criteria, headers, desc, ad ):
+            if not self.searchCriteria( calRq.criteria, desc, ad ):
                 #print "FAILED CRITERIA"
                 continue
             print "CS98: This '" + calfile + "' succeeded!"
-            urilist.append( (calfile, headers, desc, ad) )
+            urilist.append( (calfile, desc, ad) )
             
         urilist = self.sortPriority( urilist, calRq.priorities )
             
@@ -105,8 +107,9 @@ class CalibrationService( object ):
         print "CS96 urilist --\n", urilist
         #"""
         return urilist
-
-    def searchIdentifiers( self, identifiers, headers, desc, ad ):
+    
+    
+    def searchIdentifiers( self, identifiers, desc, ad ):
         '''
         Will perform the 'identifier' search  -- matching values must be identical.
         
@@ -121,12 +124,12 @@ class CalibrationService( object ):
         '''
         
         for prop in identifiers.keys():
-            if not self.compareProperty( {prop:identifiers[prop]}, headers ):
+            if not self.compareProperty( {prop:identifiers[prop]}, desc, ad ):
                 return False
         return True
     
     
-    def searchCriteria( self, criteria, headers, desc, ad, err=400000. ):
+    def searchCriteria( self, criteria, desc, ad, err=400000. ):
         '''
         Will perform the 'criteria' search  -- matching values must be identical or within tolerable error.
         
@@ -136,12 +139,16 @@ class CalibrationService( object ):
         @param headers: List with all the headers for the fits file currently being searched.
         @type headers: list
         
+        @param err: Theoretically, this might be used as some sort of below err threshhold in order for 
+        it to be considered.
+        @type err: float
+        
         @return: True if all match, False otherwise.
         @rtype: boolean
         '''
         
         for prop in criteria.keys():
-            compareRet = self.compareProperty( {prop:criteria[prop]}, headers )
+            compareRet = self.compareProperty( {prop:criteria[prop]}, desc, ad )
             if type( compareRet ) == bool:
                 if not compareRet:
                     #print "FAILED ON:", compareRet
@@ -152,29 +159,32 @@ class CalibrationService( object ):
                     return False
         return True
     
+    
     def sortPriority( self, listoffits, priorities ):
         '''
         Will sort the listoffits based on the priorities.       .
         
-        @param listoffits: A list with a tuple containing the (calibration filename, calibrations headers)
+        @param listoffits: A list with a tuple containing the (calibration filename, Descriptor, Astrodata).
+        This seems a bit 'perlish', but it makes the most sense at the time of creating this comment.
         @type listoffits: list
         
         @param priorities: Priorities from xml calibration file.
         @type priorities: dict
         
-        @return: The sorted urllist
+        @return: The sorted urllist (just the list of calibration URLs).
         @rtype: list
         '''
         
         # @@TODO: This entire sorting algorithm is incredibly inefficient, and needs to be changed
         # at some point.
         sortList = []
-        for ffile, headers in listoffits:
+        for ffile, desc, ad in listoffits:
             sortvalue = []
             for prior in priorities.keys():
-                compareRet = self.compareProperty( {prior:priorities[prior]}, headers )
+                compareRet = self.compareProperty( {prior:priorities[prior]}, desc, ad )
                 sortvalue.append( compareRet )
             sortvalue.append( ffile )
+            # Template: sortvalue - [prior1, prior2, prior3, ..., file]
             sortList.append( sortvalue )
         
         sortList.sort()
@@ -188,30 +198,9 @@ class CalibrationService( object ):
         
         print "CS172:", sortList
         return sortList
-
-    def getAllHeaders( self, fname ):
-        '''
-        Returns a list with all the headers for a given fits file.
-        
-        @param fname: path/filename for the fits file
-        @type fname: string
-        
-        @return: List with all the headers.
-        @rtype: list
-        '''
-        try:
-            fitsfile = pf.open( fname )
-        except:
-            raise "Could not open '" + str(fname) + "'."
-        
-        headerlist = []
-        for ext in fitsfile:
-            headerlist.append( ext.header )
-            
-        fitsfile.close()
-        return headerlist
-
-    def compareProperty( self, prop, headers, desc, ad):
+    
+    
+    def compareProperty( self, prop, desc, ad):
         '''
         Compares a property (in xml calibration sense), to the headers of a calibration fits file.
         
@@ -225,70 +214,43 @@ class CalibrationService( object ):
         @type: int, float, or None
         '''
         compareOn, compareAttrs, extension, typ, compValue = self.getCompareInfo( prop )
-        ziggyTemp = desc.fetchValue( ad )
-        print "ZIGGY:", ziggyTemp
-        
+        # Use the descriptor to obtain header key or 'tag'(i.e. filternames) values.
+        retVal = desc.fetchValue( compareOn, ad )
+
         if compareOn.upper() == "OBSEPOCH":
-            retVal = headers[extension]['DATE-OBS']
-            retVal = retVal + "T" + headers[extension]['TIME-OBS']
-            conRetVal = self.convertGemToUnixTime(retVal)
-            conValue = self.convertGemToUnixTime(compValue)
-            #print 'retval:', conRetVal
-            #print 'comval:', conValue
+            conRetVal = self.convertGemToUnixTime( retVal )
+            conValue = self.convertGemToUnixTime( compValue )
+            # Will return a single unix time value
             return abs( conRetVal - conValue )
         
-        retVal = headers[extension][compareOn]
-        print "NOSTRO:", retVal
-        ziggyTemp = desc.fetchValue( ad )
-        print "ZIGGY:", ziggyTemp
+        if type(compValue) == list:
+            #print "LSC227 (list):", retVal, compValue 
+            return compValue == retVal
         
         if typ.upper() == 'STRING':
-            #print "COMPARING: '"+retVal.upper()+"' '"+compValue.upper()+"'"
-            if retVal.upper() == compValue.upper():
-                return True
-            
-            return False 
+            #print "LSC236 (str):", retVal.upper(), compValue.upper()
+            return retVal.upper() == compValue.upper()
+
         elif typ.upper() == 'REAL':
-            #print "NUMS:", float(retVal), float(compValue)
+            #print "LSC236 (real):", retVal, compValue
             return abs( float(retVal) - float(compValue) )
         else:
-            #print "SOMETHING BAD HERE:", typ, retVal
+            raise "", typ, retVal
             return False
+    
     
     def getCompareInfo( self, prop ):
         '''
-        Descriptor stuff should go here.
-        (ie) Custom Headers not actually in fits file (ie) FILTER, TIME, RDNOISE, ..etc
-        
-        This should theoretically return lists of stuff
+        Unpacks the calibration request dict and tuple.
         '''
         compareOn = str( prop.keys()[0] )
         compareAttrs = prop.values()[0]
-        extension = self.getExtensionNumber( str(compareAttrs[0]) )
+        extension = str( compareAttrs[0] )
         typ = str( compareAttrs[1] )
-        value = str( compareAttrs[2] )
+        value = compareAttrs[2]
         return compareOn, compareAttrs, extension, typ, value
-        
-        
-    def getExtensionNumber( self, extensionName ):
-        '''
-        Takes the extension name and returns the corresponding extension number.
-        
-        @param extensionName: Extension value found in a xml calibration property. (i.e. 'PHU' or '[SCI,1]')
-        @type extensionName: str
-        
-        @return: An integer value  
-        @rtype: 
-        '''
-        
-        if extensionName.upper() == 'PHU':
-            return 0
-        elif 'SCI,' in extensionName.upper():
-            # 'SCI,1'
-            return int( extensionName.split(',')[1] )  
-        else:
-            raise "Invalid extension passed: '" + extensionName + "'"
-        
+    
+    
     def convertGemToUnixTime( self, date, format="%Y-%m-%dT%H:%M:%S" ):
         '''
         This should convert a gemini time (in fits header) to a unix float time. 
