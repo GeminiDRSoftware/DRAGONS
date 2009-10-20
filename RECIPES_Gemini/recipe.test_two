@@ -1,3 +1,9 @@
-logFilename
-test_one
-summarize
+#mimic rtf testgireduce test4
+getProcessedBias
+getProcessedFlat
+prepare
+overscanSub
+overscanTrim
+biasSub
+flatField
+mosaic
