@@ -48,6 +48,16 @@ class GEMINIPrimitives(ReductionObject):
             print "problem getting bias"
             raise
         yield co
+    
+    def getProcessedFlat(self, co):
+        try:
+            print "getting flat"
+            #co.rqCal( "flat" )
+        except:
+            print "problem getting flat"
+            raise
+        yield co    
+        
         
     def setStackable(self, co):
         try:

@@ -167,8 +167,20 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
           print "shifting and combining images"
           gemini.imcoadd(co.stack_inputsAsStr(),fwhm=5, threshold=100, fl_over=yes, fl_avg=yes)
        except:
-          print "Problem shifting and combining images "+co.inputsAsStr()
+          print "Problem shifting and combining images "
           print "Problem in IMCOADD"
+          raise
+       yield co
+       
+       #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def mosaic(self, co):
+       try:
+          print "producing image mosaic"
+          mstr = 'flatdiv_'+co.inputsAsStr()
+          print 'mstr =' , mstr
+          gemini.gmosaic( mstr  )
+       except:
+          print "Problem producing image mosaic"         
           raise
        yield co
     
