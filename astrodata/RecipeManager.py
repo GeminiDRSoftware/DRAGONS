@@ -410,6 +410,7 @@ class ReductionContext(dict):
             for inp in self.originalInputs:
                 key = (inp, caltype)
                 retl.append(self.calibrations[key])
+            return retl
         
     def reportHistory(self):
         

@@ -85,7 +85,7 @@ class CalibrationService( object ):
         
         #"""
         for calfile in self.calList:
-            print "CS90: Checking if '" + calfile + "' is viable."
+            #print "CS90: Checking if '" + calfile + "' is viable."
             ad = AstroData( calfile )
             desc = Descriptors.getCalculator( ad )
             
@@ -95,7 +95,7 @@ class CalibrationService( object ):
             if not self.searchCriteria( calRq.criteria, desc, ad ):
                 #print "FAILED CRITERIA"
                 continue
-            print "CS98: This '" + calfile + "' succeeded!"
+            #print "CS98: This '" + calfile + "' succeeded!"
             urilist.append( (calfile, desc, ad) )
             
         urilist = self.sortPriority( urilist, calRq.priorities )

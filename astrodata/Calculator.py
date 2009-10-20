@@ -121,7 +121,7 @@ class Calculator(object):
     def fetchValue( self, keyname, dataset ):
         """
         A test utility function that, given a keyname, whether it be something in the header like 'INSTRUME'
-        or something not in the header like 'filtername', it will either return the value from the associated
+        or something not in the header like 'FILTERNAME', it will either return the value from the associated
         function, or grab the value from the header.
         
         @param keyname: Name of key to get value for.
@@ -160,8 +160,13 @@ class Calculator(object):
     
     def obsepoch( self, dataset ):
         '''
+        Grabs observed time.
         
+        @param dataset: an AstroData set instance.
+        @type dataset: AstroData
         
+        @return: Time, in the format: 2009-10-02T02:32:43.44 (%Y-%m-%dT%H:%M:%S.%f)
+        @rtype: string
         '''    
         value = dataset.phuHeader("DATE-OBS")
         value = value + "T" + dataset.phuHeader('TIME-OBS')
