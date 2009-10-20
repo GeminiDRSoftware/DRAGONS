@@ -116,7 +116,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         try:
             print "Subtracting off bias "+co.calFilename("bias")+" from "+co.inputsAsStr()
             gemini.gmos.gireduce(co.inputsAsStr(), fl_over=no,
-                fl_trim=yes, fl_bias=yes,bias=co.calFilename("bias"),
+                fl_trim=no, fl_bias=yes,bias=co.calFilename("bias"),
                 fl_flat=no, outpref="biassub_") # this flag was removed?,fl_mult=no)
             co.reportOutput(co.prependNames("biassub_"))
         except:
@@ -165,7 +165,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def findshiftsAndCombine(self, co):
        try:
           print "shifting and combining images"
-          gemini.imcoadd(co.inputsAsStr())
+          gemini.imcoadd(co.stack_inputsAsStr(),fwhm=5, threshold=100, fl_over=yes, fl_avg=yes)
        except:
           print "Problem shifting and combining images "+co.inputsAsStr()
           print "Problem in IMCOADD"
