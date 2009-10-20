@@ -154,8 +154,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def findshiftsAndCombine(self, co):
        try:
-          print "shifting and combining images"
-          gemini.imcoadd(co.inputsAsStr())
+          print "shifting and combining images"          
+          gemini.imcoadd(co.stack_inputsAsStr())
        except:
           print "Problem shifting and combining images "+co.inputsAsStr()
           print "Problem in IMCOADD"
