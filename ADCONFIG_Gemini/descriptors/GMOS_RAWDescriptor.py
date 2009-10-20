@@ -107,4 +107,72 @@ class GMOS_RAWDescriptorCalc(Calculator):
 
         return retary
         
+    
+    def gainorig( self, dataset ):
+        '''
         
+        
+        '''
+        # Epic klugin' right here.
+        try:
+            dataset[1].header["GAINORIG"]
+        except:
+            return self.gain( dataset )
+        
+        hdulist = dataset.hdulist
+        # data is raw, not yet named:::: numsci = dataset.countExts("SCI")
+
+        # initializations that should happen outside the loop
+        ampinteg = dataset.phuHeader("AMPINTEG")
+        datestr = dataset.phuHeader("DATE-OBS")
+        obsdate = datetime(*strptime(datestr, "%Y-%m-%d")[0:6])
+        oldampdate = datetime(2006,8,31,0,0)
+
+        retary = []  
+        for ext in dataset:
+            # get the values
+            gain = ext.header["GAINORIG"]
+            ampname = ext.header[stdkeyDictGMOS["key_gmos_ampname"]]
+            # gmode
+            if (gain > 3.0):
+                gmode = "high"
+            else:
+                gmode = "low"
+
+            # rmode
+            if (ampinteg == None):
+                rmode = "slow"
+            else:
+                if (ampinteg == 1000):
+                    rmode = "fast"
+                else:
+                    rmode = "slow"
+
+            gainkey = (rmode, gmode, ampname)
+            
+            try:
+                if (obsdate > oldampdate):
+                    gain = self.gmosamps[gainkey]
+                else:
+                    gain = self.gmosampsBefore20060831[gainkey]
+            except KeyError:
+                gain = None   
+            retary.append(gain)       
+ 
+        dataset.relhdul()
+
+        return retary
+        
+    def ronorig( self, dataset ):
+        '''
+        
+        '''
+        # Epic klugin' right here.
+        try:
+            temp = dataset[1].header["RONORIG"]
+        except:
+            return self.fetchValue( "RDNOISE", dataset )
+        
+        return temp
+            
+    

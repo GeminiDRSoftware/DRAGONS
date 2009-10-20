@@ -5,8 +5,8 @@
 	<criteria>
 		<property key="CCDSUM" extension="SCI,1" type="string" />
 		<property key="DETSEC" extension="SCI,1" type="string" />
-		<property key="GAIN" extension="SCI,1" type="real" />
-		<property key="RDNOISE" extension="SCI,1" type="real" />
+		<property key="GAINORIG" extension="SCI,1" type="real" />
+		<property key="RONORIG" extension="SCI,1" type="real" />
 	</criteria>
 	<priorities>
 		<property key="OBSEPOCH" extension="PHU" type="real" value=""/>
