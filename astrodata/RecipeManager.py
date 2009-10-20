@@ -98,7 +98,19 @@ class ReductionContext(dict):
     
     def prepDisplay(self):
         pass
-
+    
+    
+    def stack_inputsAsStr( self ):
+        
+        #pass back the stack files as strings            
+        ID = idFac.generateStackableID(self.inputs)        
+        print 'ID: ', ID
+        stack = self.stackeep.get(ID)
+        print 'stack_inputsAsStr returns:  ', ", ".join(stack.filelist) 
+        return ", ".join(stack.filelist)
+      
+    
+    
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to
         None in the class."""
@@ -314,7 +326,7 @@ class ReductionContext(dict):
             """
             if strippath == False:
                 # print "RM227:", self.inputs
-                return ", ".join( self.inputs )
+                return ", ".join( self.inputs )                
             else:
                 return ", ".join([os.path.basename(path) for path in self.inputs])
                                       
