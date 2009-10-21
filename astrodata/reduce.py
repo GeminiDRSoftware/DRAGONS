@@ -21,6 +21,13 @@ from LocalCalibrationService import CalibrationService
 import sys, os, glob
 import time
 
+#import pyfits as pf
+#import numdisplay
+#import numpy as np
+from pyraf import iraf
+from pyraf.iraf import gemini
+gemini()
+gemini.gmos()
 b = datetime.now()
 
 ############################################################
@@ -265,6 +272,8 @@ for infile in infiles:
             if (useTK):
                 cw.running(rec)
                 
+                
+            frameForDisplay = 1
             ################
             # CONTROL LOOP #
             ################
@@ -302,8 +311,18 @@ for infile in infiles:
                         # cache.
                         #print "RD172: GET STACKABLE REQS:", rq
                     elif type(rq) == DisplayRequest:
-                        print 'you made it!'
+                        #print 'you made it!'
                         print rq
+                        ##@@TODO: This os.system way, is very kluged and should be changed. 
+                        if os.system( 'ps -e | grep ds9' ) > 0:
+                            os.system( 'ds9&' )
+                            time.sleep( 2 )
+                        iraf.set(stdimage='imtgmos')
+                        gemini.gmos.gdisplay( rq.disList[0], frameForDisplay )
+                        # To display images in own tile, uncomment next line.
+                        #frameForDisplay += 1
+                        
+                        
                 # CLEAR THE REQUEST LEAGUE
                 coi.clearRqs()
             
