@@ -47,23 +47,29 @@ def generateRecipeID( inputs, version ):
         
     return shaObj.hexdigest()
     
-def generateDisplayableID( inputf, version ):
+def generateDisplayID( inputf, version ):
     '''
     
     
     '''
     if version != version_index['displayID']:
         try:
+            # designed to call generateStackableID_
             idFunc = getattr( globals()['IDFactory'], 'generateDisplayID_' + version )
         except:
-            raise "Version: '" + version + "' is either invalid or not supported."
+            raise "Version: '" + version + "' is either invalid or not supported." 
         
         return idFunc( inputf, version )
     
-    shaObj = hashlib.sha1()
-    phu = pf.getheader( inputf[0], 0 )
-    shaObj.update( phu['OBSID'] )
+    if (False):
+        shaObj = hashlib.sha1()
+        phu = pf.getheader( inputf[0], 0 )
+        shaObj.update( phu['OBSID'] )
+        shaObj.update( phu['OBJECT'] )
     
-    return shaObj.hexdigest()
+    phu = pf.getheader( inputf[0], 0)
+    ID = version + "_" + phu['OBSID'] + "_" + phu["OBJECT"]
+    return ID
+    # return shaObj.hexdigest()
 
     

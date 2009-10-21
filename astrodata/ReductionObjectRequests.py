@@ -2,7 +2,11 @@ from datetime import datetime
 
 class ReductionObjectRequest( object ):
     '''
-    
+    Current Requests:
+        CalibrationRequest
+        UpdateStackableRequest
+        GetStackableRequest
+        DisplayRequest
     '''
     
     def __init__(self):
@@ -86,5 +90,27 @@ class GetStackableRequest( ReductionObjectRequest ):
         
         tempStr = super( GetStackableRequest, self ).__str__()
         tempStr = tempStr + "ID: " + str( self.stkID )
+        
+        return tempStr
+
+class DisplayRequest( ReductionObjectRequest ):
+    '''
+    
+    '''
+    def __init__( self, disID=None, disList=[] ):
+        super( DisplayRequest, self ).__init__()
+        self.disID = disID
+        self.disList = disList
+        
+        
+    def __str__(self):
+        '''
+        
+        
+        '''
+                
+        tempStr = super( DisplayRequest, self ).__str__()
+        tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
+                    "DISPLAY LIST: " + str( self.disList )
         
         return tempStr

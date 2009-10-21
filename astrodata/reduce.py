@@ -12,7 +12,8 @@ from RecipeManager import RecipeLibrary
 from GeminiData import GeminiData
 from optparse import OptionParser
 from StackKeeper import StackKeeper
-from ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, GetStackableRequest
+from ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
+        GetStackableRequest, DisplayRequest
 
 
 from LocalCalibrationService import CalibrationService
@@ -300,6 +301,9 @@ for infile in infiles:
                         #  retrieve the list from another resource, but reduce lets ReductionContext keep the
                         # cache.
                         #print "RD172: GET STACKABLE REQS:", rq
+                    elif type(rq) == DisplayRequest:
+                        print 'you made it!'
+                        print rq
                 # CLEAR THE REQUEST LEAGUE
                 coi.clearRqs()
             
