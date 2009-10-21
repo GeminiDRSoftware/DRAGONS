@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from AstroData import AstroData
 
 class ReductionContextRecord( object ):
     '''
@@ -22,7 +22,6 @@ class CalibrationRecord( ReductionContextRecord ):
     sciFilename = None
     caltype = None
     filename = None
-    
     
     def __init__(self, sciFilename, filename, caltype, timestamp = None):
         super( CalibrationRecord, self ).__init__( timestamp )
@@ -65,15 +64,19 @@ class OutputRecord( ReductionContextRecord ):
     '''
     displayID = None
     filename = None
+    ad = None
     
-    def __init__(self, filename, displayID= None, timestamp = None):
+    def __init__(self, filename, displayID= None, timestamp = None, ad=None):
         super( OutputRecord, self ).__init__( timestamp )
         self.filename = filename
+        #displayID may be obsolete
         self.displayID = displayID
+        self.ad = Astrodata( filename )
     
     def __str__(self):
         rets = """
     displayID     = %s
     filename  = %s
-    timestamp = %s \n""" % ( str(self.displayID), str(self.filename), self.timestamp )
+    timestamp = %s
+    astrodata = %s \n""" % ( str(self.displayID), str(self.filename), self.timestamp, str(self.ad) )
         return rets  

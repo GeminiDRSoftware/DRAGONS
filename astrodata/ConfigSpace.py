@@ -195,7 +195,7 @@ def lookupPath(name):
         cs = ConfigSpace()
         
     a = name.split("/")
-    print a
+    #print "CS198LookupPath:", a
     domain = a[0]
     pack = CONFIGMARKER + domain
     tpath = None

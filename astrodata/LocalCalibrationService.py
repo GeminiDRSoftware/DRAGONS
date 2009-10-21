@@ -27,7 +27,7 @@ class CalibrationService( object ):
         for path in calDirectoryURIs:
             self.calList.extend( ConfigSpace.generalWalk(path) )
         
-        print "CS24:", self.calList
+        #print "CS30:", self.calList
     
     
     def run(self):
@@ -104,7 +104,7 @@ class CalibrationService( object ):
             # Nothing found, return None
             return None
         
-        print "CS96 urilist --\n", urilist
+        #print "CS96 urilist --\n", urilist
         #"""
         return urilist
     
@@ -196,7 +196,7 @@ class CalibrationService( object ):
             sortList[ind] = sortList[ind][-1]
             ind += 1
         
-        print "CS172:", sortList
+        #print "CS172:", sortList
         return sortList
     
     

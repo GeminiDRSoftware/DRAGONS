@@ -48,7 +48,7 @@ def inheritConfig(typ, index, cl = None):
         cl = AstroDataType.getClassificationLibrary()
 
     if typ in index:
-        print "GU51:", typ, index[typ]
+        #print "GU51:", typ, index[typ]
         return {typ:index[typ]}
     else:
         typo = cl.getTypeObj(typ)

@@ -87,7 +87,6 @@ class GetStackableRequest( ReductionObjectRequest ):
         
         
         '''
-        
         tempStr = super( GetStackableRequest, self ).__str__()
         tempStr = tempStr + "ID: " + str( self.stkID )
         
@@ -108,7 +107,6 @@ class DisplayRequest( ReductionObjectRequest ):
         
         
         '''
-                
         tempStr = super( DisplayRequest, self ).__str__()
         tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
                     "DISPLAY LIST: " + str( self.disList )

@@ -124,7 +124,7 @@ class DataClassification(object):
         # CHECK THE typeReqs
         for typ in self.typeReqs:
             #print "type(%s)" % typ
-            if (verbt) : print self.typeReqs
+            if (verbt) : print "ADT127 TYPES:", self.typeReqs
             if (self.library.checkType(typ, hdulist)):   #'hdulist' should be called 'hdulist'
                 if(verbt) : print "satisfied"
                 numsatisfied = numsatisfied + 1

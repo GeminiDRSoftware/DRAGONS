@@ -571,32 +571,7 @@ class AstroData(object, CalculatorInterface):
                             if supertyp in pary:
                                 pary.remove(supertyp)
             retary = pary
-        """
-        elif tmp:
-            # since there is no particular order to identifying types, I've deced to do this
-            # here rather than try to build the list with this in mind (i.e. passing prune to
-            # ClassificationLibrary.discoverTypes()
-            #  basic algo: run through types, if one is a supertype of another, 
-            #  remove the supertype
-            
-            cl = self.getClassificationLibrary()
-            pary = copy(retary)
-            
-            for typ in retary:
-                print "TYPE BEING CHECKED:", typ
-                to = cl.getTypeObj(typ) 
-                for supertyp in retary:
-                    print "SUPERTYPE BEING CHECKED:", supertyp
-                    if typ != supertyp:
-                        if to.isSubtypeOf(supertyp):
-                            # then remove supertype, only subtypes allowed in pruned list
-                            if supertyp in pary:
-                                print "REMOVING:", supertyp
-                                print pary
-                                pary.remove(supertyp)
-                                print pary
-            retary = pary
-        """
+        
         return retary
         
     def discoverTypes(self, all = False):
