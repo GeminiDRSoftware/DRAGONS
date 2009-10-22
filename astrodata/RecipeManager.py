@@ -633,6 +633,7 @@ class RecipeLibrary(object):
         """
         # NOTE: sort out precedence of one type over another
         # in all cases.
+        #print "RM636: KAPLAH"
         if astrotype != None:
             # get recipe source
             rec = self.retrieveRecipe(name, astrotype= astrotype)
@@ -691,32 +692,7 @@ class RecipeLibrary(object):
         else:
             return recdict
         
-    def getApplicableParameters(self, dataset):
-        '''
-        
-        '''
-        if  type(dataset) == str:
-            astrod = AstroData(dataset)
-            byfname = True
-        elif type(dataset) == AstroData:
-            byfname = false
-            astrod = dataset
-        else:
-            raise BadArgument()
-        
-        # get the types
-        types = astrod.getTypes()
-        # look up recipes, fill list
-        reclist = []
-        recdict = {}
-        #print "RM 695:", centralAstroTypeParametersIndex.keys()
-        for typ in types:
-            if typ in centralAstroTypeParametersIndex.keys():
-                recnames = centralAstroTypeParametersIndex[typ]
-                reclist.extend(recnames)
-                recdict.update({typ: recnames})
     
-        return reclist
     
     def retrieveRecipe(self, name, astrotype=None):
         cri = centralRecipeIndex
@@ -740,6 +716,7 @@ class RecipeLibrary(object):
 
         rfile = file(fname, "r")
         rtext = rfile.read()
+        #print "RM718:", rtext
         return rtext
             
     def retrieveReductionObject(self, dataset = None, astrotype=None):
@@ -800,9 +777,10 @@ def %(name)s(self,cfgObj):
 """
         recipelines = recipebuffer.splitlines()
         lines = ""
-        # print recipelines
+        
         for line in recipelines:
             line = line.strip()
+            #print "RM778:", line
             if line == "" or line[0]=="#":
                 continue
             newl =  """
@@ -844,7 +822,34 @@ def %(name)s(self,cfgObj):
             self.loadAndBindRecipe(redobj, name, file=context.inputs[0])
             return True
 
-    def retrieveParameters(self, dataset, redobj, name):
+    def getApplicableParameters(self, dataset):
+        '''
+        
+        '''
+        if  type(dataset) == str:
+            astrod = AstroData(dataset)
+            byfname = True
+        elif type(dataset) == AstroData:
+            byfname = false
+            astrod = dataset
+        else:
+            raise BadArgument()
+        
+        # get the types
+        types = astrod.getTypes()
+        # look up recipes, fill list
+        reclist = []
+        recdict = {}
+        #print "RM 695:", centralAstroTypeParametersIndex.keys()
+        for typ in types:
+            if typ in centralAstroTypeParametersIndex.keys():
+                recnames = centralAstroTypeParametersIndex[typ]
+                reclist.extend(recnames)
+                recdict.update({typ: recnames})
+    
+        return reclist
+
+    def retrieveParameters(self, dataset, contextobj, name):
         '''
         
         '''
@@ -852,22 +857,22 @@ def %(name)s(self,cfgObj):
         defaultParamFiles = self.getApplicableParameters(dataset)
         #print "RM836:", defaultParamFiles
         for defaultParams in defaultParamFiles:
-            redobj.update( centralParametersIndex[defaultParams] )
+            contextobj.update( centralParametersIndex[defaultParams] )
         
         #print "RM841:", redobj.values()
         # Load local if it exists
         if centralParametersIndex.has_key( name ):
             for recKey in centralParametersIndex[name]:
-                if recKey in redobj.keys():
-                    if redobj[recKey].overwrite:
-                        redobj.update( {recKey:centralParametersIndex[name][recKey]} )
+                if recKey in contextobj.keys():
+                    if contextobj[recKey].overwrite:
+                        contextobj.update( {recKey:centralParametersIndex[name][recKey]} )
                     else:
                         print "Attempting to overwrite Parameter '" + str(recKey) + "'. This is not allowed."
                 else:
                     print "Parameter '"+ str(recKey) + "' was not found. Adding..."
-                    redobj.update( {recKey:centralParametersIndex[name][recKey]} )
+                    contextobj.update( {recKey:centralParametersIndex[name][recKey]} )
         
-        #print "RM851:", redobj
+        
         
 
 
