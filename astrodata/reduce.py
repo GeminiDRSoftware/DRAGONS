@@ -272,6 +272,7 @@ for infile in infiles:
                 
                 
             frameForDisplay = 1
+            controlLoopCounter = 1
             ################
             # CONTROL LOOP #
             ################
@@ -312,8 +313,7 @@ for infile in infiles:
                         from pyraf import iraf
                         from pyraf.iraf import gemini
                         gemini()
-                        gemini.gmos()
-                        #print 'you made it!'
+                        gemini.gmos()                        
                         #print rq
                         ##@@TODO: This os.system way, is very kluged and should be changed. 
                         if os.system( 'ps -e | grep ds9' ) > 0:
@@ -325,6 +325,11 @@ for infile in infiles:
                         #frameForDisplay += 1
                         
                         
+                #dump the reduction context object 
+                #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
+                #controlLoopCounter += 1
+                #print str( coi )
+                #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
                 # CLEAR THE REQUEST LEAGUE
                 coi.clearRqs()
             

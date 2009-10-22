@@ -118,6 +118,14 @@ class ReductionContext(dict):
         for item in stack.filelist:
             fh.writelines(item + '\n')        
         return "@inlist"
+ 
+ 
+ 
+ 
+ #################################################################################
+ 
+ 
+ 
     
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to
@@ -140,17 +148,38 @@ class ReductionContext(dict):
         # used in PRS mode.
         self.stackeep = StackKeeper()
         
-    def __str___(self):
+    def __str__(self):
         """Used to dump Reduction Context(co) into file for test system
         """
         tempStr = super( ReductionContext, self ).__str__()
-        tempStr = tempStr + "inputs = " + str( self.inputs ) + "\n" + \
-                "inputsHistory =  " + str( self.inputsHistory )+ "\n" + \
-                "calibrations = " + str( self.calibrations )+ "\n" + \
-                "rorqs = " + str( self.rorqs ) + "\n" + \
-                "stkrqs = " + str( self.stkrqs ) + "\n" + \
-                "outputs = " + str( outputs )
+        tempStr = tempStr +"\n############################################" + \
+            "\n\n\tREDUCTION CONTEXT OBJECT (CO)" + \
+            "\n\n1. inputs = " + str( self.inputs ) + \
+            "\n\n2. inputsHistory =  " + str( self.inputsHistory )+ \
+            "\n\n3. calibrations = \n\n" + self.calsummary() + \
+            "\n4. rorqs = " 
+        if self.rorqs != []:
+            for rq_obj in self.rorqs:            
+                tempStr = tempStr + str( rq_obj )
+        else:
+            tempStr = tempStr + str( self.rorqs )
+        #no loop initiated for stkrqs object printouts yet
+        tempStr = tempStr +  "\n\n5. stkrqs = " + str( self.stkrqs ) + \
+            "\n\n5. outputs = " 
+        if self.outputs["standard"] != []:
+            for out_obj in self.outputs["standard"]:
+                tempStr = tempStr + str( out_obj )
+        else:
+            tempStr = tempStr + str( self.outputs )
+        tempStr = tempStr + "\n\n6. stephistory = " + str( self.stephistory ) + \
+            "\n\n7. hostname = " + str( self.hostname ) + \
+            "\n\n8. displayName = " + str( self.displayName ) + \
+            "\n\n9. cdl = " + str( self.cdl ) + \
+            "\n\n10. indent = " + str( self.indent ) + \
+            "\n\n11. stackeep = " + str( self.stackeep )  
+        tempStr = tempStr + "\n\n############################################\n\n"
         return tempStr
+               
     
     def stackAppend(self, ID, files):
         self.stackeep.add( ID, files )

@@ -17,7 +17,7 @@ class ReductionObjectRequest( object ):
         '''
         
         '''
-        tempStr = "VERSION: " + str( self.ver ) + \
+        tempStr = "\n\nVERSION: " + str( self.ver ) + \
                     "\nTIMESTAMP: " + str( self.timestamp ) + "\n"
                     
         return tempStr
