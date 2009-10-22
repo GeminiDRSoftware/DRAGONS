@@ -136,6 +136,18 @@ class ReductionContext(dict):
         # Stack Keep is a resource for all RecipeManager functions... one shared StackKeeper to simulate the shared ObservationServie
         # used in PRS mode.
         self.stackeep = StackKeeper()
+        
+    def __str___(self):
+        """Used to dump Reduction Context(co) into file for test system
+        """
+        tempStr = super( ReductionContext, self ).__str__()
+        tempStr = tempStr + "inputs = " + str( self.inputs ) + "\n" + \
+                "inputsHistory =  " + str( self.inputsHistory )+ "\n" + \
+                "calibrations = " + str( self.calibrations )+ "\n" + \
+                "rorqs = " + str( self.rorqs ) + "\n" + \
+                "stkrqs = " + str( self.stkrqs ) + "\n" + \
+                "outputs = " + str( outputs )
+        return tempStr
     
     def stackAppend(self, ID, files):
         self.stackeep.add( ID, files )
