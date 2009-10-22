@@ -24,7 +24,10 @@ centralRecipeIndex = {}
 centralReductionMap = { }
 centralAstroTypeRecipeIndex = {}
 
-
+##@@FIXME: I think this should be done better.
+defaultParamKey = "default"
+centralParametersIndex = {}
+centralAstroTypeParametersIndex = {}
 class RecipeExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -328,11 +331,12 @@ class ReductionContext(dict):
             return ""
         else:
             #print "RM282:", self.inputs
+            #@@TODO: Quick-fix for getting ad stuff working, may need re-visit.
             # This is a quick fix to deal with the initial string / 
             # OutputRecord stuff. The first input (which is str),
             # all ensuing output is OutputRecord [which has metadata]
             # -Riv
-            """
+            #"""
             inputlist = []
             for inp in self.inputs:
                 if type(inp) == str:
@@ -340,23 +344,38 @@ class ReductionContext(dict):
                 elif type(inp) == OutputRecord:
                     inputlist.append( inp.filename )
             print "RM289:", inputlist
-            """
+            #"""
             if strippath == False:
                 # print "RM227:", self.inputs
-                return ", ".join( self.inputs )                
+                return ", ".join( inputlist )                
             else:
-                return ", ".join([os.path.basename(path) for path in self.inputs])
+                return ", ".join([os.path.basename(path) for path in inputlist])
                                       
 
     def outputsAsStr(self, strippath = True):
         if self.outputs == None:
             return ""
         else:
+            #print "RM282:", self.inputs
+            #@@TODO: Quick-fix for getting ad stuff working, may need re-visit.
+            # This is a quick fix to deal with the initial string / 
+            # OutputRecord stuff. The first input (which is str),
+            # all ensuing output is OutputRecord [which has metadata]
+            # -Riv
+            #"""
+            outputlist = []
+            for inp in self.outputs:
+                if type(inp) == str:
+                    outputlist.append( inp )
+                elif type(inp) == OutputRecord:
+                    outputlist.append( inp.filename )
+            print "RM289:", outputlist
+            #"""
             if strippath == False:
                 # print self.inputs
-                return ", ".join(self.outputs)
+                return ", ".join(outputlist)
             else:
-                return ", ".join([os.path.basename(path) for path in self.outputs])
+                return ", ".join([os.path.basename(path) for path in outputlist])
         
     def addCal(self, fname, caltyp, calname, timestamp = None):
         fname = os.path.abspath(fname)
@@ -628,7 +647,7 @@ class RecipeLibrary(object):
         if  type(dataset) == str:
             astrod = AstroData(dataset)
             byfname = True
-        elif isinstance(dataset, AstroData.AstroData):
+        elif type(dataset) == AstroData:
             byfname = false
             astrod = dataset
         else:
@@ -655,7 +674,33 @@ class RecipeLibrary(object):
         else:
             return recdict
         
+    def getApplicableParameters(self, dataset):
+        '''
         
+        '''
+        if  type(dataset) == str:
+            astrod = AstroData(dataset)
+            byfname = True
+        elif type(dataset) == AstroData:
+            byfname = false
+            astrod = dataset
+        else:
+            raise BadArgument()
+        
+        # get the types
+        types = astrod.getTypes()
+        # look up recipes, fill list
+        reclist = []
+        recdict = {}
+        #print "RM 695:", centralAstroTypeParametersIndex.keys()
+        for typ in types:
+            if typ in centralAstroTypeParametersIndex.keys():
+                recnames = centralAstroTypeParametersIndex[typ]
+                reclist.extend(recnames)
+                recdict.update({typ: recnames})
+    
+        return reclist
+    
     def retrieveRecipe(self, name, astrotype=None):
         cri = centralRecipeIndex
         if astrotype:
@@ -782,6 +827,32 @@ def %(name)s(self,cfgObj):
             self.loadAndBindRecipe(redobj, name, file=context.inputs[0])
             return True
 
+    def retrieveParameters(self, dataset, redobj, name):
+        '''
+        
+        '''
+        # Load defaults
+        defaultParamFiles = self.getApplicableParameters(dataset)
+        #print "RM836:", defaultParamFiles
+        for defaultParams in defaultParamFiles:
+            redobj.update( centralParametersIndex[defaultParams] )
+        
+        #print "RM841:", redobj.values()
+        # Load local if it exists
+        if centralParametersIndex.has_key( name ):
+            for recKey in centralParametersIndex[name]:
+                if recKey in redobj.keys():
+                    if redobj[recKey].overwrite:
+                        redobj.update( {recKey:centralParametersIndex[name][recKey]} )
+                    else:
+                        print "Attempting to overwrite Parameter '" + str(recKey) + "'. This is not allowed."
+                else:
+                    print "Parameter '"+ str(recKey) + "' was not found. Adding..."
+                    redobj.update( {recKey:centralParametersIndex[name][recKey]} )
+        
+        #print "RM851:", redobj
+        
+
 
 # CODE THAT RUNS ON IMPORT
 # THIS MODULE ACTS AS A SINGLETON FOR RECIPE FEATURES
@@ -797,6 +868,7 @@ def %(name)s(self,cfgObj):
 #: are those with tables relating type names to structure types
 primitivesIndexREMask = r"primitivesIndex\.(?P<modname>.*?)\.py$"
 recipeIndexREMask = r"recipeIndex\.(?P<modname>.*?)\.py$"
+parameterIndexREMask = r"parametersIndex\.(?P<modname>.*?)\.py$"
 #theorectically could be automatically correlated by modname
 
 reductionObjREMask = r"primitives_(?P<redname>.*?)\.py$"
@@ -804,6 +876,8 @@ reductionObjREMask = r"primitives_(?P<redname>.*?)\.py$"
 
 recipeREMask = r"recipe\.(?P<recipename>.*?)$"
 recipeAstroTypeREMask = r"(?P<recipename>.*?)\.(?P<astrotype>.*?)$"
+
+parameterREMask = r"parameters\.(?P<recipename>.*?)\.py$"
 
 
 
@@ -817,12 +891,15 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
     # These indexes are meant to append it to the centralDescriptorIndex
 
     for root, dirn, files in ConfigSpace.configWalk("recipes"):
+        #print "RM840:", root
         sys.path.append(root)
         for sfilename in files:
             m = re.match(recipeREMask, sfilename)
             mpI = re.match(primitivesIndexREMask, sfilename)
             mri = re.match(recipeIndexREMask, sfilename)
-            mro = re.match(reductionObjREMask,sfilename)            
+            mro = re.match(reductionObjREMask,sfilename) 
+            mpa = re.match(parameterREMask, sfilename)
+            mpaI = re.match(parameterIndexREMask, sfilename)
             fullpath = os.path.join(root, sfilename)
             
             if m:
@@ -830,6 +907,17 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 if False:
                     print sfilename
                     print "complete recipe name(%s)" % m.group("recipename")
+                # For duplicate recipe names, until another solution is decided upon.
+                if centralRecipeIndex.has_key( recname ):
+                    print "-"*35+" WARNING "+"-"*35
+                    print "There are two recipes with the same name."
+                    print "The duplicate:"
+                    print fullpath
+                    print "Using:"
+                    print centralRecipeIndex[recname]
+                    print
+                    continue
+                
                 centralRecipeIndex.update({recname: fullpath})
                 
                 am = re.match(recipeAstroTypeREMask, m.group("recipename"))
@@ -855,7 +943,25 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         localAstroTypeRecipeIndex.update({key: curl})
                 
                 centralAstroTypeRecipeIndex.update(localAstroTypeRecipeIndex)
-            
+            elif mpa: # Parameter file
+                efile = open(fullpath, "r")
+                exec(efile)
+                efile.close()
+                recname = mpa.group("recipename")
+                centralParametersIndex.update({recname:localParameterIndex})
+            elif mpaI: # ParameterIndex file
+                efile = open(fullpath, "r")
+                exec(efile)
+                efile.close()
+                for key in localparameterTypeIndex.keys():
+                    if centralParametersIndex.has_key(key):
+                        curl = centralParametersIndex[key]
+                        curl.append( localparameterTypeIndex[key])
+                        localparameterTypeIndex.update({key: curl})
+                
+                centralAstroTypeParametersIndex.update(localparameterTypeIndex)
+                
+                
             # look for recipe
             # 
         

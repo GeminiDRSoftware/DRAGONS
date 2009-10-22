@@ -252,7 +252,8 @@ for infile in infiles:
             
             # add input file
             co.addInput(infile)
-            co.update({"adata":adatadir})
+            #co.update({"adata":adatadir})
+            rl.retrieveParameters(infile, co, rec)
             if (useTK):
                 while cw.bReady == False:
                     # this is hopefully not really needed

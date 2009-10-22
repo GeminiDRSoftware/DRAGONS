@@ -28,24 +28,15 @@ def generateStackableID( inputf, version = "1_0" ):
     return ID
     # return shaObj.hexdigest()
 
-def generateRecipeID( inputs, version ):
+def generateRecipeID( recname ):
     '''
     
     
     '''
-    if version != version_index['recipeID']:
-        try:
-            idFunc = getattr( globals()['IDFactory'], 'generateRecipeID_' + version )
-        except:
-            raise "Version: '" + version + "' is either invalid or not supported."
-        
-        return idFunc( inputs, version )
-    
     shaObj = hashlib.sha1()
-    for input in inputs: 
-        shaObj.update( input )
+    shaObj.update( recname )
         
-    return shaObj.hexdigest()
+    return shaObj.hexdigest()[:20]
     
 def generateDisplayID( inputf, version ):
     '''

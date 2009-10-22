@@ -5,15 +5,19 @@ class PrimitiveParameter( object ):
     
     '''
     name = None
-    overwriteable = None
+    value = None
+    overwrite = None
     
-    def __init__(self, name, overwriteable=False):
+    def __init__(self, name, value=None, overwrite=False):
         self.name = name
-        self.overwriteable = overwriteable
+        self.value = value
+        self.overwrite = overwrite
 
     def __str__(self):
-        retstr = "Primitive Paremeter: " + str(self.name) + '\n'
+        retstr = "Primitive Parameter (" + str(self.name) + '):'
         retstr = retstr + \
 """
-Overwritable: %(overwriteable)s\n
-""" % {'overwriteable':str(self.overwriteable)}
+Value     : %(value)s
+Overwrite : %(overwrite)s
+""" % {'value':str(self.value), 'overwrite':str(self.overwrite)}
+        return retstr
