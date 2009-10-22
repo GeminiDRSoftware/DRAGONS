@@ -100,16 +100,21 @@ class ReductionContext(dict):
         pass
     
     
-    def stack_inputsAsStr( self ):
-        
+    def stack_inputsAsStr(self):        
         #pass back the stack files as strings            
         ID = idFac.generateStackableID(self.inputs)        
         print 'ID: ', ID
         stack = self.stackeep.get(ID)
         print 'stack_inputsAsStr returns:  ', ", ".join(stack.filelist) 
         return ", ".join(stack.filelist)
-      
     
+    def makeInlistFile(self):
+        fh = open( "inlist","w" )
+        ID = idFac.generateStackableID(self.inputs)
+        stack = self.stackeep.get(ID)
+        for item in stack.filelist:
+            fh.writelines(item + '\n')        
+        return "@inlist"
     
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to

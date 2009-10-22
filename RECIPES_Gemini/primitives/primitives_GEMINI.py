@@ -1,6 +1,14 @@
 from time import sleep
 from ReductionObjects import ReductionObject
+from utils import filesystem
 import IDFactory
+
+from pyraf.iraf import tables, stsdas, images
+from pyraf.iraf import gemini
+import pyraf
+
+gemini()
+
 
 stepduration = 1.
 class GEMINIPrimitives(ReductionObject):
@@ -93,5 +101,31 @@ class GEMINIPrimitives(ReductionObject):
         except:
             print "problem displaying output"
             raise
+        yield co        
+    
+    def mosaic(self, co):
+       try:
+          print "producing image mosaic"
+          mstr = 'flatdiv_'+co.inputsAsStr()          
+          gemini.gmosaic( mstr  )
+       except:
+          print "Problem producing image mosaic"         
+          raise
+       yield co
+       
+    def averageCombine(self, co):
+        try:
+            # @@TODO: need to include parameter options here
+            print "Combining and averaging" 
+            filesystem.deleteFile('inlist')
+            #print 'now check inlist dude:', co.makeInlistFile()           
+            gemini.gemcombine( co.makeInlistFile(),  "tstgemcombine1.fits",\
+               combine="median", reject="none" )
+            
+        except:
+            print "Problem combining and averaging"
+            raise 
         yield co
+        
+        
         
