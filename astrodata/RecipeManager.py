@@ -296,6 +296,23 @@ class ReductionContext(dict):
             newlist.append(newpath)
         return newlist
     
+    def suffixNames(self, suffix, currentDir=True):
+        '''
+        
+        '''
+        newlist = []
+        for nam in self.inputs:
+            if currentDir == True:
+                path = os.getcwd()
+            else:
+                path = os.path.dirname(nam)
+            fn   = os.path.basename(nam)
+            finame, ext = os.path.splitext(fn)
+            fn = finame + "_" + suffix + ext
+            newpath = os.path.join( path, fn ) 
+            newlist.append(newpath)
+        return newlist
+    
     def stepMoment(self, stepname, mark):
         val = { "stepname"  : stepname,
                 "indent"    : self.indent,
