@@ -11,7 +11,6 @@ import pyfits
 import numdisplay
 import string
 
-
 yes = pyraf.iraf.yes
 no = pyraf.iraf.no
 
@@ -165,22 +164,16 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def findshiftsAndCombine(self, co):
        try:
           print "shifting and combining images"
-          gemini.imcoadd(co.stack_inputsAsStr(),fwhm=5, threshold=100, fl_over=yes, fl_avg=yes)
+          # @@TODO hardcoded parmeters and ***imcoadd.dat may need to move from 
+          # imcoadd_data/test4 to test_data dir before running
+          gemini.imcoadd(co.stack_inputsAsStr(),fwhm=5, threshold=100,\
+                fl_over=yes, fl_avg=yes)
        except:
           print "Problem shifting and combining images "
           print "Problem in IMCOADD"
           raise
        yield co
        
-       #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def mosaic(self, co):
-       try:
-          print "producing image mosaic"
-          mstr = 'flatdiv_'+co.inputsAsStr()
-          print 'mstr =' , mstr
-          gemini.gmosaic( mstr  )
-       except:
-          print "Problem producing image mosaic"         
-          raise
-       yield co
+    
+    
     
