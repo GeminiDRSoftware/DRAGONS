@@ -1,4 +1,2 @@
-# logFilename
-# displayStructure
-# summarize
-getProcessedBias
+# This is to test distinct
+printParameters
