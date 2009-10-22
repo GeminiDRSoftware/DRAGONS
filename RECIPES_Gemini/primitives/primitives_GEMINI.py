@@ -93,6 +93,16 @@ class GEMINIPrimitives(ReductionObject):
         for item in ls.filelist:
             print "\t", item
         yield co
+        
+    def printParameters(self, co):
+        print "printing parameters"
+        list_of_keys = co.keys()
+        list_of_keys.sort()
+        print "-"*40
+        for param in list_of_keys:
+            print co[param]
+            print "-"*40
+        yield co
                 
     def display(self, co):
         try:
@@ -101,7 +111,7 @@ class GEMINIPrimitives(ReductionObject):
         except:
             print "problem displaying output"
             raise
-        yield co        
+        yield co
     
     def mosaic(self, co):
        try:
