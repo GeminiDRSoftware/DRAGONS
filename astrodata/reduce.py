@@ -18,7 +18,7 @@ from ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, 
 
 from LocalCalibrationService import CalibrationService
 
-import sys, os, glob
+import sys, os, glob, subprocess
 import time
 
 #import pyfits as pf
@@ -313,14 +313,13 @@ for infile in infiles:
                         from pyraf import iraf
                         from pyraf.iraf import gemini
                         gemini()
-                        gemini.gmos()                        
-                        #print rq
-                        ##@@TODO: This os.system way, is very kluged and should be changed. 
+                        gemini.gmos()
+                        ##@@FIXME: This os.system way, is very kluged and should be changed. 
                         if os.system( 'ps -e | grep ds9' ) > 0:
-                            os.system( 'ds9&' )
-                            time.sleep( 2 )
-                        iraf.set(stdimage='imtgmos')
-                        gemini.gmos.gdisplay( rq.disList[0], frameForDisplay )
+                            print "CANNOT DISPLAY: No ds9 running."
+                        else:
+                            iraf.set(stdimage='imtgmos')
+                            gemini.gmos.gdisplay( rq.disList[0], frameForDisplay )
                         # To display images in own tile, uncomment next line.
                         #frameForDisplay += 1
                         

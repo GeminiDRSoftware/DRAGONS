@@ -9,7 +9,7 @@ import ConfigSpace
 from gdpgutil import pickConfig
 
 from datetime import datetime
-from copy import deepcopy
+from copy import deepcopy, copy
 
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
 from ReductionContextRecord import CalibrationRecord, StackableRecord, OutputRecord
@@ -23,11 +23,9 @@ centralPrimitivesIndex = {}
 centralRecipeIndex = {}
 centralReductionMap = { }
 centralAstroTypeRecipeIndex = {}
-
-##@@FIXME: I think this should be done better.
-defaultParamKey = "default"
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
+
 class RecipeExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -283,7 +281,7 @@ class ReductionContext(dict):
             self.outputs["standard"].append( OutputRecord(filename,self.displayID) )
         elif type(filename) == list:
             for temp in filename:
-                orecord = OutputRecord( temp,self.displayID )
+                orecord = OutputRecord( temp, self.displayID )
                 self.outputs["standard"].append( orecord )
             
     
@@ -346,8 +344,8 @@ class ReductionContext(dict):
         val = { "stepname"  : stepname,
                 "indent"    : self.indent,
                 "mark"      : mark,
-                "inputs"    : deepcopy(self.inputs),
-                "outputs"   : deepcopy(self.outputs),
+                "inputs"    : copy(self.inputs),
+                "outputs"   : copy(self.outputs),
                 "processed" : False
                 }
         return val       

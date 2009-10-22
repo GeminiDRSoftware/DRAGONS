@@ -71,7 +71,7 @@ class OutputRecord( ReductionContextRecord ):
         self.filename = filename
         #displayID may be obsolete
         self.displayID = displayID
-        self.ad = None #AstroData( filename )
+        self.ad = AstroData( filename )
     
     def __str__(self):
         rets = """
