@@ -1,2 +1,4 @@
-# This is to test distinct
-printParameters
+##############################################
+# This is for testing parameter related stuff.
+##############################################
+	printParameters
