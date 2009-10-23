@@ -1,6 +1,7 @@
 #
 from astrodata.ParamObject import PrimitiveParameter
 
-localParameterIndex = {'theta':PrimitiveParameter('theta', 10, True), 
-                      'sigma':PrimitiveParameter('sigma', 15, False)
+localParameterIndex = {'theta':PrimitiveParameter('theta', value=10), 
+                      'sigma':PrimitiveParameter('sigma', value=15),
+                      'kaplah':PrimitiveParameter('kaplah', value="?")
                      }

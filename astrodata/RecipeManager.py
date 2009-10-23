@@ -18,6 +18,7 @@ import pickle # for persisting the calibration index
 import IDFactory as idFac # id hashing functions
 from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest
 from StackKeeper import StackKeeper
+from ParamObject import PrimitiveParameter
 # this module operates like a singleton
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
@@ -893,12 +894,16 @@ def %(name)s(self,cfgObj):
             for recKey in centralParametersIndex[name]:
                 if recKey in contextobj.keys():
                     if contextobj[recKey].overwrite:
-                        contextobj.update( {recKey:centralParametersIndex[name][recKey]} )
+                        # This code looks a little confusing, but its purpose is to make sure
+                        # everything in the default, except the value, is the same.
+                        contextobj[recKey].value = centralParametersIndex[name][recKey].value
                     else:
                         print "Attempting to overwrite Parameter '" + str(recKey) + "'. This is not allowed."
                 else:
                     print "Parameter '"+ str(recKey) + "' was not found. Adding..."
-                    contextobj.update( {recKey:centralParametersIndex[name][recKey]} )
+                    userParam = centralParametersIndex[name][recKey]
+                    updateParam = PrimitiveParameter( userParam.name, userParam.value, overwrite=True, help="User Defined.")
+                    contextobj.update( {recKey:updateParam} )
         
         
         
