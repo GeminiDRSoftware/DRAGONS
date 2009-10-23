@@ -1,7 +1,10 @@
-prepare
-getProcessedBias
-display
-overscanSub    
-overscanTrim
-biasSub
-display
+##############################################
+# My test sciReduce.
+##############################################
+	prepare
+	getProcessedBias
+	display
+	overscanSub    
+	overscanTrim
+	biasSub
+	display
