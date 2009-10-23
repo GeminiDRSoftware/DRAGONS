@@ -69,6 +69,10 @@ parser.add_option("--caltype", dest="cal_type", default=None, type="string",
                   help="Works in conjunction with '--addcal'. Ignored otherwise. " + \
                   "This should be the type of calibration in lowercase and one word. " + \
                   "For example: 'bias', 'twilight'.")
+##@@FIXME: This next option should not be put into the package
+parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_true",
+                  help="Only used for rtf.")
+
 (options,  args) = parser.parse_args()
 
 
@@ -325,12 +329,18 @@ for infile in infiles:
                         
                         
                 #dump the reduction context object 
-                #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
-                #controlLoopCounter += 1
-                #print str( coi )
-                #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
-                # CLEAR THE REQUEST LEAGUE
-                coi.clearRqs()
+                if options.rtf:
+                    results = open( "test.result", "a" )
+                    #results.write( "\t\t\t<< CONTROL LOOP " + str(controlLoopCounter" >>\n")
+                    #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
+                    #print "#" * 80
+                    #controlLoopCounter += 1
+                    results.write( str( coi ) )
+                    results.close()
+                    #print "#" * 80
+                    #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
+                    # CLEAR THE REQUEST LEAGUE
+                    coi.clearRqs()
             
         
         except KeyboardInterrupt:

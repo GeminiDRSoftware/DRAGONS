@@ -34,7 +34,7 @@ class CalibrationRecord( ReductionContextRecord ):
     sciFilename = %s
     caltype     = %s
     filename    = %s
-    timestamp   = %s \n""" % (self.sciFilename, self.caltype, self.filename, self.timestamp)
+    timestamp   = %s \n""" % (self.sciFilename, self.caltype, self.filename, "test")
         return rets
     
     
@@ -55,7 +55,7 @@ class StackableRecord( ReductionContextRecord ):
         rets = """
     stkid     = %s
     filelist  = %s
-    timestamp = %s \n""" % ( str(self.stkid), str(self.filelist), self.timestamp )
+    timestamp = %s \n""" % ( str(self.stkid), str(self.filelist), "test" )
         return rets  
     
 class OutputRecord( ReductionContextRecord ):
@@ -78,5 +78,5 @@ class OutputRecord( ReductionContextRecord ):
     displayID     = %s
     filename  = %s
     timestamp = %s
-    astrodata = %s \n""" % ( str(self.displayID), str(self.filename), self.timestamp, str(self.ad) )
+    astrodata = %s \n""" % ( str(self.displayID), str(self.filename), "test", str(self.ad) )
         return rets  

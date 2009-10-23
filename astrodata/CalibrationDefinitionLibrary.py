@@ -185,7 +185,7 @@ class CalibrationDefinitionLibrary( object ):
     
     def generateCalIndex( self, caltype ):
         '''
-        Generate a xml URI index for each caltype. 
+        Generate a xml URI index for each caltype.
         
         @param caltype: The calibration needed to generate the index.
         @type caltype: string    
@@ -206,3 +206,6 @@ class CalibrationDefinitionLibrary( object ):
 
         return calIndex
 
+
+    def __str__(self):
+        return str(self.xmlIndex)

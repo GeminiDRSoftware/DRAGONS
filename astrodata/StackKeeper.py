@@ -34,3 +34,11 @@ class StackKeeper(object):
             return None
         else:
             return self.stackLists[ID]
+
+    def __str__(self):
+        tempstr = ""
+        for item in self.stackLists.values():
+            tempstr += str(item) + "\n"
+        return tempstr
+
+    

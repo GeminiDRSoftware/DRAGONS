@@ -132,7 +132,6 @@ class ReductionContext(dict):
         self.inputsHistory = []
         self.calibrations = {}
         self.rorqs = []
-        self.stkrqs = []
         self.outputs = {"standard":[]}
         self.stephistory = {}
         self.hostname = socket.gethostname()
@@ -149,33 +148,35 @@ class ReductionContext(dict):
     def __str__(self):
         """Used to dump Reduction Context(co) into file for test system
         """
-        tempStr = super( ReductionContext, self ).__str__()
-        tempStr = tempStr +"\n############################################" + \
-            "\n\n\tREDUCTION CONTEXT OBJECT (CO)" + \
-            "\n\n1. inputs = " + str( self.inputs ) + \
-            "\n\n2. inputsHistory =  " + str( self.inputsHistory )+ \
-            "\n\n3. calibrations = \n\n" + self.calsummary() + \
-            "\n4. rorqs = " 
+        tempStr = ""
+        tempStr = tempStr + "REDUCTION CONTEXT OBJECT (CO)\n" + \
+            "inputs = " + str( self.inputs ) + \
+            "\ninputsHistory =  " + str( self.inputsHistory )+ \
+            "\ncalibrations = \n" + self.calsummary() + \
+            "\nrorqs = " 
         if self.rorqs != []:
             for rq_obj in self.rorqs:            
                 tempStr = tempStr + str( rq_obj )
         else:
             tempStr = tempStr + str( self.rorqs )
+        
         #no loop initiated for stkrqs object printouts yet
-        tempStr = tempStr +  "\n\n5. stkrqs = " + str( self.stkrqs ) + \
-            "\n\n5. outputs = " 
+        tempStr = tempStr + "\noutputs = " 
+        
         if self.outputs["standard"] != []:
             for out_obj in self.outputs["standard"]:
                 tempStr = tempStr + str( out_obj )
         else:
             tempStr = tempStr + str( self.outputs )
-        tempStr = tempStr + "\n\n6. stephistory = " + str( self.stephistory ) + \
-            "\n\n7. hostname = " + str( self.hostname ) + \
-            "\n\n8. displayName = " + str( self.displayName ) + \
-            "\n\n9. cdl = " + str( self.cdl ) + \
-            "\n\n10. indent = " + str( self.indent ) + \
-            "\n\n11. stackeep = " + str( self.stackeep )  
-        tempStr = tempStr + "\n\n############################################\n\n"
+        #"stephistory = " + str( self.stephistory ) + \
+        tempStr = tempStr +  "\nhostname = " + str( self.hostname ) + \
+            "\ndisplayName = " + str( self.displayName ) + \
+            "\ncdl = " + str( self.cdl ) + \
+            "\nindent = " + str( self.indent ) + \
+            "\nstackeep = " + str( self.stackeep )
+        for param in self.values():
+            tempStr += "\n" + str(param)
+             
         return tempStr
                
     
