@@ -77,6 +77,7 @@ class ReductionContext(dict):
     
     def persistStkIndex(self, filename ):
         try:
+            #print "RM80:", self.stackeep
             pickle.dump( self.stackeep.stackLists, open(filename, "w") )
         except:
             print "Could not persist the stackable cache."
@@ -268,22 +269,31 @@ class ReductionContext(dict):
         return self.cmdRequest        
         
     def addInput(self, filename):
-        self.inputs.append(filename)
+        if type(filename) == list:
+            self.inputs.extend(filename)
+        else:
+            self.inputs.append(filename)
         # This is kluge and needs to change as we potentially deal with lists
         if self.originalInputs == None:
             self.originalInputs = self.inputs
         
         
-    def reportOutput(self, filename, category="standard"):
+    def reportOutput(self, inp, category="standard"):
         # note, other categories not supported yet
         if category != "standard":
             raise RecipeExcept("You may only use " +
                 "'standard' category output at this time.")
-        if type(filename) == str:
-            self.outputs["standard"].append( OutputRecord(filename,self.displayID) )
-        elif type(filename) == list:
-            for temp in filename:
-                orecord = OutputRecord( temp, self.displayID )
+        if type(inp) == str:
+            self.outputs["standard"].append( OutputRecord(inp,self.displayID) )
+        elif type(inp) == list:
+            for temp in inp:
+                #print "RM287:", type(temp), temp
+                if type(temp) == AstroData:
+                    orecord = OutputRecord( temp.filename, self.displayID, temp )
+                elif type(temp) == str:
+                    orecord = OutputRecord( temp, self.displayID )
+                else:
+                    raise "RM292 type: " + str(type(temp))
                 self.outputs["standard"].append( orecord )
             
     
@@ -296,31 +306,53 @@ class ReductionContext(dict):
         # only push is outputs is filled
         if len(self.outputs["standard"]) != 0:
             # don't do this if the set is empty, it's a non-IO primitive
+            ##@@TODO: The below if statement could be redundant because this is done
+            # in addInputs
             if self.originalInputs == None:
                 self.originalInputs = deepcopy(self.inputs)
             
             #print "OUTPUTS:", self.outputs["standard"]
-            if type( self.outputs["standard"][0] ) == OutputRecord:
-                newinputlist = []
-                for inp in self.outputs["standard"]:
-                    newinputlist.append( inp.filename )
-                self.inputs = newinputlist
-            else:
-                self.inputs = self.outputs["standard"]
-                
+            newinputlist = []
+            for out in self.outputs['standard']:
+                if type( out ) == OutputRecord:
+                    newinputlist.append( out.ad )
+                else:
+                    newinputlist.append( out )
+            
+            self.inputs = newinputlist
             #for temp in self.outputs["standard"]:
             #   print "TEMP:", temp
             self.outputs.update({"standard":[]})
             
     
     def prependNames(self, prepend, currentDir = True):
+        '''
+        Prepend a string to a filename.
+        
+        @param prepend: The string to be put at the front of the file.
+        @type prepend: string
+        
+        @param currentDir: Used if the filename (astrodata filename) is in the
+        current working directory.
+        @type currentDir: boolean
+        
+        @return: List of new prepended paths.
+        @rtype: list  
+        '''
         newlist = []
         for nam in self.inputs:
+            if type( nam ) == AstroData:
+                prePath = nam.filename
+            else:
+                prePath = nam
+            
             if currentDir == True:
                 path = os.getcwd()
             else:
-                path = os.path.dirname(nam)
-            fn   = os.path.basename(nam)
+                path = os.path.dirname(prePath)
+            # nam is an astrodata instance.
+            #print "RM337:", type(prePath), prePath
+            fn   = os.path.basename(prePath)
             newpath = path + "/" + prepend + fn
             newlist.append(newpath)
         return newlist
@@ -334,8 +366,9 @@ class ReductionContext(dict):
             if currentDir == True:
                 path = os.getcwd()
             else:
-                path = os.path.dirname(nam)
-            fn   = os.path.basename(nam)
+                path = os.path.dirname(nam.filename)
+            
+            fn   = os.path.basename(nam.filename)
             finame, ext = os.path.splitext(fn)
             fn = finame + "_" + suffix + ext
             newpath = os.path.join( path, fn ) 
@@ -354,7 +387,7 @@ class ReductionContext(dict):
         
     def begin(self, stepname):
         key = datetime.now()
-        # value = dictonary
+        # value = dictionary
         val = self.stepMoment(stepname, "begin")
         self.indent += 1
         self.stephistory.update({key: val}) 
@@ -387,9 +420,9 @@ class ReductionContext(dict):
             for inp in self.inputs:
                 if type(inp) == str:
                     inputlist.append( inp )
-                elif type(inp) == OutputRecord:
+                elif type(inp) == AstroData:
                     inputlist.append( inp.filename )
-            print "RM289:", inputlist
+            #print "RM289:", inputlist
             #"""
             if strippath == False:
                 # print "RM227:", self.inputs
@@ -465,7 +498,7 @@ class ReductionContext(dict):
         Sid = idFac.generateStackableID( self.originalInputs, ver )
         stackUEv = UpdateStackableRequest()
         stackUEv.stkID = Sid
-        stackUEv.stkList = self.inputs
+        stackUEv.stkList = self.originalInputs
         self.addRq( stackUEv )
         
     def rqDisplay(self):

@@ -318,15 +318,24 @@ for infile in infiles:
                         from pyraf.iraf import gemini
                         gemini()
                         gemini.gmos()
+                        
+                        frameForDisplay = 1
                         ##@@FIXME: This os.system way, is very kluged and should be changed. 
                         if os.system( 'ps -e | grep ds9' ) > 0:
                             print "CANNOT DISPLAY: No ds9 running."
                         else:
                             iraf.set(stdimage='imtgmos')
-                            gemini.gmos.gdisplay( rq.disList[0], frameForDisplay )
-                        # To display images in own tile, uncomment next line.
-                        #frameForDisplay += 1
-                        
+                            for tmpImage in rq.disList:
+                                if type(tmpImage) != str:
+                                    #print "RED329:", tmpImage.filename
+                                    tmpImage = tmpImage.filename
+                                    
+                                # tmpImage should be a string at this point.
+                                #print "RED332:", type(tmpImage), tmpImage
+                                gemini.gmos.gdisplay( tmpImage, frameForDisplay )
+                                frameForDisplay += 1
+                
+                coi.clearRqs()      
                         
                 #dump the reduction context object 
                 if options.rtf:
@@ -340,7 +349,7 @@ for infile in infiles:
                     #print "#" * 80
                     #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
                     # CLEAR THE REQUEST LEAGUE
-                    coi.clearRqs()
+                   
             
         
         except KeyboardInterrupt:

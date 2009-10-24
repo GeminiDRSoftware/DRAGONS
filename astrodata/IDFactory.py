@@ -1,6 +1,8 @@
 import hashlib
 import pyfits as pf
+from AstroData import AstroData
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
+
 
 
 def generateStackableID( inputf, version = "1_0" ):
@@ -31,9 +33,12 @@ def generateStackableID( inputf, version = "1_0" ):
         shaObj.update( phu['OBSID'] )
         shaObj.update( phu['OBJECT'] )
     """
-    
-    phu = pf.getheader( inputf[0], 0)
-    ID = version + "_" + phu['OBSID'] + "_" + phu["OBJECT"]
+    chkAd = inputf[0]
+    if type(chkAd) == str:
+        phu = pf.getheader(chkAd)
+        ID = version + "_" + phu['OBSID'] + "_" + phu['OBJECT'] 
+    elif type(chkAd) == AstroData:
+        ID = version + "_" + chkAd.phuValue('OBSID') + "_" + chkAd.phuValue('OBJECT')
     return ID
     # return shaObj.hexdigest()
 
@@ -49,8 +54,16 @@ def generateRecipeID( recname ):
     
 def generateDisplayID( inputf, version ):
     '''
+    Generate an ID from which all similar stackable data will have in common.
     
+    @param inputf: Input Astrodatas 
+    @type inputf: list of Astrodata instances.
     
+    @param version: The version from which to run.
+    @type version: string
+    
+    @return: A display id.
+    @rtype: string  
     '''
     if version != version_index['displayID']:
         try:
@@ -67,8 +80,8 @@ def generateDisplayID( inputf, version ):
         shaObj.update( phu['OBSID'] )
         shaObj.update( phu['OBJECT'] )
     
-    phu = pf.getheader( inputf[0], 0)
-    ID = version + "_" + phu['OBSID'] + "_" + phu["OBJECT"]
+    chkAd = inputf[0]
+    ID = version + "_" + chkAd.phuValue('OBSID') + "_" + chkAd.phuValue("OBJECT")
     return ID
     # return shaObj.hexdigest()
 
