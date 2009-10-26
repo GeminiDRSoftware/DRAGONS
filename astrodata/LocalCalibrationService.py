@@ -25,7 +25,7 @@ class CalibrationService( object ):
         # calList will contain absolute paths/filenames
         self.calList = []
         for path in calDirectoryURIs:
-            self.calList.extend( ConfigSpace.generalWalk(path) )
+            self.calList.extend( ConfigSpace.generalWalk(path, [".fits"]) )
         
         #print "CS30:", self.calList
     
@@ -63,25 +63,7 @@ class CalibrationService( object ):
         '''
         
         inputfile = calRq.filename
-        urilist = []
-        
-        
-        """
-        # What it looks like: Identifiers: {u'OBSTYPE': (u'PHU', u'string', u'BIAS')}
-        caltype = calRq.identifiers['OBSTYPE'][2]
-        
-        if "N2009" in inputfile:
-            if caltype == 'BIAS':
-                urilist = ["./recipedata/N20090822S0207_bias.fits"]
-            elif caltype == 'FLAT':
-                urilist = ["./recipedata/N20090823S0102_flat.fits"]
-        elif "N2002" in inputfile:
-            if caltype == 'BIAS':
-                urilist = ["./recipedata/N20020507S0045_bias.fits"]
-            elif caltype == 'FLAT':
-                urilist = ["./recipedata/N20020606S0149_flat.fits"]
-        #"""
-        
+        urilist = []     
         
         #"""
         for calfile in self.calList:
@@ -184,14 +166,13 @@ class CalibrationService( object ):
                 compareRet = self.compareProperty( {prior:priorities[prior]}, desc, ad )
                 sortvalue.append( compareRet )
             sortvalue.append( ffile )
-            # Template: sortvalue - [prior1, prior2, prior3, ..., file]
+            # What sortvalue looks like at this point: [priority1, priority2, priority3, ..., file]
             sortList.append( sortvalue )
         
-        sortList.sort()
+        sortList.sort() 
         ind = 0
         while ind < len( sortList ):
             # The list at this point would look something like
-            # [sort property1, sort property2, ..., filename].
             # Thus, this just grabs the last filename.
             sortList[ind] = sortList[ind][-1]
             ind += 1
@@ -230,7 +211,6 @@ class CalibrationService( object ):
         if typ.upper() == 'STRING':
             #print "LSC236 (str):", retVal.upper(), compValue.upper()
             return retVal.upper() == compValue.upper()
-
         elif typ.upper() == 'REAL':
             #print "LSC236 (real):", retVal, compValue
             return abs( float(retVal) - float(compValue) )

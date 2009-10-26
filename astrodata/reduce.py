@@ -18,6 +18,8 @@ from ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, 
 
 from LocalCalibrationService import CalibrationService
 
+from utils import paramutil
+
 import sys, os, glob, subprocess
 import time
 
@@ -113,19 +115,26 @@ def command_line():
     try:
         if len( args ) == 0:
             raise IndexError
-        infile   = args # "./recipedata/N20020606S0141.fits"
-        #print "ARGS:", args
+        infile   = args
     except IndexError:
-        
         print "${RED}NO INPUT FILE${NORMAL}"
         parser.print_help()
         sys.exit(1)
     
+    input_files = []
     for inf in infile:
+        #"""
+        tmpInp = paramutil.checkImageParam( inf )
+        if tmpInp == None:
+            raise "The input had "+ str(inf)+" cannot be loaded."
+        input_files.extend( tmpInp )
+        """
         if not os.access( inf, os.R_OK ):
             print "'" + inf + "' does not exist or cannot be accessed."
             sys.exit(1)
-    
+        #"""
+        #input_files.append(inf)
+        
     if options.add_cal != None:
         if options.cal_type == None:
             print "Reduce requires a calibration type. Use --cal-type. For more " + \
@@ -143,7 +152,7 @@ def command_line():
         for arg in infile:
             co.addCal( arg, options.cal_type, os.path.abspath(options.add_cal) )
         co.persistCalIndex( calindfile )
-        print "'" + options.add_cal + "' was successfully added for '" + str(infile) + "'."
+        print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
         sys.exit(0)
         
     elif options.rem_cal:
@@ -170,11 +179,11 @@ def command_line():
                     co.calibrations.pop( (os.path.abspath(arg), options.cal_type) )
                 except:
                     print arg + ' had no ' + options.cal_type
-            print "'" + options.cal_type + "' was removed from '" + str(infile) + "'."
+            print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
         co.persistCalIndex( calindfile )
         sys.exit(0)
     
-    return infile
+    return input_files
     
 
 infiles = command_line()

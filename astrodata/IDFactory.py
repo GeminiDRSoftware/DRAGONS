@@ -9,8 +9,8 @@ def generateStackableID( inputf, version = "1_0" ):
     '''
     Generate an ID from which all similar stackable data will have in common.
     
-    @param inputf: Input Astrodatas 
-    @type inputf: list of Astrodata instances.
+    @param inputf: Input Astrodatas instances or fits filenames.
+    @type inputf: list of Astrodata instances or str
     
     @param version: The version from which to run.
     @type version: string
@@ -57,7 +57,7 @@ def generateDisplayID( inputf, version ):
     Generate an ID from which all similar stackable data will have in common.
     
     @param inputf: Input Astrodatas 
-    @type inputf: list of Astrodata instances.
+    @type inputf: list of Astrodata instances
     
     @param version: The version from which to run.
     @type version: string

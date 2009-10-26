@@ -150,7 +150,7 @@ class ConfigSpace(object):
         self.recipedirs = adconfdirs
         return adconfdirs
 
-    def generalWalk( self, dir ):
+    def generalWalk( self, dir, exts=[] ):
         '''
         A generalized walk, that ignores all the .svn / .cvs folders. I found this can be a little useful, 
         although it will probably be thrown out.
@@ -168,7 +168,16 @@ class ConfigSpace(object):
             if goodpath:
                 path = os.path.abspath(path)
                 for fname in files:
-                    filelist.append( os.path.join(path, fname) )
+                    if exts != []:
+                        for ext in exts:
+                            if ext == os.path.splitext(fname)[1]:
+                                filelist.append( os.path.join(path, fname) )
+                                break
+                    else:
+                        filelist.append( os.path.join(path, fname) )
+
+                        
+                    
                     
         return filelist
         
@@ -181,12 +190,12 @@ def configWalk( spacename = None):
         yield trip\
 
 # @@TODO: This entire method should probably be removed at some point.
-def generalWalk( spacename = None ):
+def generalWalk( spacename="", exts=[]):
     global cs
     if (cs == None):
         cs = ConfigSpace()
         
-    return cs.generalWalk( spacename )
+    return cs.generalWalk( spacename, exts )
 
 def lookupPath(name):
     """This module level function takes a lookup name and returns a path to the file."""
