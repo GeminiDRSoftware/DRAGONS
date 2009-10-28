@@ -155,13 +155,16 @@ class ConfigSpace(object):
         A generalized walk, that ignores all the .svn / .cvs folders. I found this can be a little useful, 
         although it will probably be thrown out.
         
-        @param path: Path to throw in os.walk
+        @param path: Root path to throw in os.walk.
         @type path: str
+        
+        @param exts: list of valid type extensions to process. If exts is left as [], then everything is valid.
+        the exts should be supplied in the form [".fits",".log",".jpg"].
+        @type exts: list of str  
         
         @return: Basically, takes the output of os.walk, but without the .svn stuff.
         @rtype: yields a 3-tuple (dirpath, dirnames, filenames).
         '''
-        # @@TODO: This entire method should probably be removed at some point.
         filelist = []
         for (path, directories, files) in os.walk(dir):
             goodpath = (".svn" not in path) and ("CVS" not in path)
@@ -175,9 +178,6 @@ class ConfigSpace(object):
                                 break
                     else:
                         filelist.append( os.path.join(path, fname) )
-
-                        
-                    
                     
         return filelist
         

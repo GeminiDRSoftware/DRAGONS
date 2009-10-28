@@ -99,6 +99,34 @@ class ReductionContext(dict):
             rets += str(self.calibrations[key])
         return rets
     
+    def paramsummary(self):
+        char = "-"
+        rets = char*40+"\n"
+        rets += '''------Global Parameters------\n'''
+        
+        globval = "global"
+        
+        def printParam( val, param ):
+            # This temp function prints out the stuff inside an individual parameter.
+            # I have a feeling this and paramsummary will be moved to a util function.
+            tempStr = ""
+            list_of_keys = param.keys()
+            list_of_keys.sort()
+            tempStr += char*40 + "\n"
+            for pars in list_of_keys:
+                tempStr += str(param[pars]) + "\n"
+                tempStr += char*40 + "\n"
+            return tempStr
+            
+        rets += printParam( globval, self[globval])
+        sortkeys = self.keys().sort()
+        for primname in self.keys():
+            if primname != globval:
+                rets += '''------%(prim)s Parameters------\n''' %{'prim':primname}
+                rets += printParam( primname, self[primname] )
+        
+        return rets
+    
     def prepDisplay(self):
         pass
     
@@ -177,7 +205,7 @@ class ReductionContext(dict):
             "\nindent = " + str( self.indent ) + \
             "\nstackeep = " + str( self.stackeep )
         for param in self.values():
-            tempStr += "\n" + str(param)
+            tempStr += "\n" + self.paramsummary()
              
         return tempStr
                
@@ -921,6 +949,7 @@ def %(name)s(self,cfgObj):
         for defaultParams in defaultParamFiles:
             contextobj.update( centralParametersIndex[defaultParams] )
         
+        """
         #print "RM841:", redobj.values()
         # Load local if it exists
         if centralParametersIndex.has_key( name ):
@@ -937,7 +966,7 @@ def %(name)s(self,cfgObj):
                     userParam = centralParametersIndex[name][recKey]
                     updateParam = PrimitiveParameter( userParam.name, userParam.value, overwrite=True, help="User Defined.")
                     contextobj.update( {recKey:updateParam} )
-        
+        """
         
         
 
@@ -1001,10 +1030,10 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                     print "There are two recipes with the same name."
                     print "The duplicate:"
                     print fullpath
-                    print "Using:"
+                    print "The Original:"
                     print centralRecipeIndex[recname]
                     print
-                    continue
+                    raise RecipeExcept( "Two Recipes with the same name." )
                 
                 centralRecipeIndex.update({recname: fullpath})
                 

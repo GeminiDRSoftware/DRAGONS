@@ -26,9 +26,7 @@ class CalibrationService( object ):
         self.calList = []
         for path in calDirectoryURIs:
             self.calList.extend( ConfigSpace.generalWalk(path, [".fits"]) )
-        
-        #print "CS30:", self.calList
-    
+            
     
     def run(self):
         '''

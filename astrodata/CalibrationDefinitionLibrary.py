@@ -19,14 +19,17 @@ class CalibrationDefinitionLibrary( object ):
         Goes into ConfigSpace and gets all the file URIs to create a XML index.
         '''
         self.xmlIndex = {}
+        self.updateXmlIndex()
+        
+    def updateXmlIndex(self):
+        self.xmlIndex = {}
         try:
             for dpath, dnames, files in ConfigSpace.configWalk( "xmlcalibrations" ):
                 for file in files:
                     self.xmlIndex.update( {file:os.path.join(str(dpath), file)} )
         except:
             raise "Could not load XML Index."
-        
-        
+       
     def getCalReq(self, inputs, caltype):
         """
         For each input finds astrodata type to find corresponding xml file,

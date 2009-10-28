@@ -9,18 +9,18 @@ class PrimitiveParameter( object ):
     overwrite = None
     help = ""
     
-    def __init__(self, name, value=None, overwrite=False, help=""):
+    def __init__(self, name, overwrite=False, helps="", value=None):
         self.name = name
         self.value = value
         self.overwrite = overwrite
-        self.help = help
+        self.helps = helps
 
     def __str__(self):
-        retstr = "Primitive Parameter (" + str(self.name) + '):'
+        retstr = "Parameter (" + str(self.name) + '):'
         retstr = retstr + \
 """
 Help      : %(help)s
 Value     : %(value)s
 Overwrite : %(overwrite)s
-""" % {'value':str(self.value), 'overwrite':str(self.overwrite), 'help':str(self.help)}
+""" % {'value':str(self.value), 'overwrite':str(self.overwrite), 'help':str(self.helps)}
         return retstr

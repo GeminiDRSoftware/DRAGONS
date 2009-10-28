@@ -27,7 +27,7 @@ sys.stdout = SAVEOUT
 
 class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def init(self, co):
-        pyraf.iraf.set (adata=co["adata"].value)  
+        pyraf.iraf.set (adata=co["global"]['adata'].value)  
         GEMINIPrimitives.init(self, co)
         return co
 

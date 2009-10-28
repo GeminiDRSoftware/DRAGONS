@@ -3,6 +3,7 @@
 	#
 	
 	#setDisplayable
+	(adata=stackables)
 	setStackable
 	getStackable
 

@@ -33,17 +33,22 @@ def checkImageParam( image ):
     checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
     """
     #logger set up
-    glog = geminiLogger.getLogger( name="checkImageParam") 
+    glog = geminiLogger.getLogger( name="checkImageParam")
+    root = os.path.dirname( image )
+    imageName = os.path.basename( image )
     inList = []    
-    if type(image) == type(""):
-        if image[0] == "@":            
-            image = image[1:]            
-            try:                 
+    if type(imageName) == str:
+        if imageName[0] == "@":       
+            #imageName = imageName[1:]            
+            try:
+                image = os.path.join( root, imageName )         
                 imageFile = open(image, 'r')                
                 inList = imageFile.readlines() 
                 #removes any newline with gemutil method 'pyChomp'                 
                 for i in range(len(inList)):
-                    inList[i] = gemutil.pyChomp(inList[i])   
+                    inList[i] = gemutil.pyChomp(inList[i])
+                    if os.path.dirname(inList[i]) == "":
+                        inList[i] = os.path.join( root, inList[i] )
                 #adds .fits if there is none
                 inList = gemutil.appendFits(inList)                                                                                                
             except:
@@ -55,9 +60,9 @@ def checkImageParam( image ):
             inList.append( image )            
             inList[0] = gemutil.appendFits(inList[0])
     #exception for an image of type 'List'       
-    elif type(image) == type([]):
+    elif type(image) == list:
         for img in image:
-            if type(img) == type(""):
+            if type(img) == str:
                 inList.append( img )
             else:
                 glog.warning('Type'+ str(type(image))+ \
@@ -99,7 +104,7 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
     #logger set up
     glog = geminiLogger.getLogger( name="checkOutputParam") 
     outList = []
-    if type(outfile) == type(""):
+    if type(outfile) == str:
         outfile = checkParam( outfile, type(""), defaultValue )
         if outfile[0] == "@": 
             outfile = outfile[1:]            
@@ -126,9 +131,9 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
         else:
             outList.append( outfile )
             outList[0] = gemutil.appendFits( outList[0] )
-    elif type(outfile) == type([]):
+    elif type(outfile) == list:
         for file in outfile:
-            if type( file ) == type( "" ):
+            if type( file ) == str:
                 inList.append( file )
             else:
                 glog.warning('Type'+ str(type(image))+ \
@@ -210,7 +215,7 @@ def checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
         if paramType == type( 0 ) or paramType == type( 0.0 ):
             if parameter > compareValue:
                 return parameter
-        elif paramType == type(""):
+        elif paramType == str:
             if parameter != "": 
                 return parameter
         else:
