@@ -1,5 +1,5 @@
-localparameterTypeIndex = {  "GEMINI": ["GEMINI_default"],
-                               "GMOS_IMAGE": ["GMOS_IMAGE_default"]
+localparameterTypeIndex = {  "GEMINI": ["GEMINI"],
+                               "GMOS_IMAGE": ["GMOS_IMAGE"]
                                # ["sciReduce"]
                                #"GMOS_OBJECT_RAW": ["test_one"]
                             }

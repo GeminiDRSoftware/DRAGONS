@@ -96,12 +96,7 @@ class GEMINIPrimitives(ReductionObject):
         
     def printParameters(self, co):
         print "printing parameters"
-        list_of_keys = co.keys()
-        list_of_keys.sort()
-        print "-"*40
-        for param in list_of_keys:
-            print co[param]
-            print "-"*40
+        print co.paramsummary()
         yield co
                 
     def display(self, co):
