@@ -121,8 +121,8 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
                         for i in range(len(outList)):  
                             #removes newlines from end of list                      
                             outList[i] = gemutil.pyChomp(outList[i])
-                            #adds .fits if there is none                            
-                            outList = gemutil.appendFits(outList)                
+                        #adds .fits if there is none                            
+                        outList = gemutil.appendFits(outList)                
             except:
                 glog.exception("An error occurred when opening and reading from the outlist file.")
                 return None
