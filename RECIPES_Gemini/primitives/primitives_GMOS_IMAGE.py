@@ -108,8 +108,22 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise 
         yield co
 
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def overscanCorrect(self, co):
+        print "Performing Overscan Correct (overSub, overTrim)"
+        try:
+            gemini.gmos.gireduce(co.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=pyraf.iraf.yes,
+                fl_bias=no, fl_flat=no, outpref="trim_oversub_")
+            co.reportOutput(co.prependNames("trim_oversub_", currentDir = True))
+        except:
+            print "Problem correcting overscan region"
+            raise
+        
+        yield co
+    
+    
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def biasSub(self, co):
+    def biasCorrect(self, co):
         # not really sure we need to use gireduce here. I think we could easily make a
         # more generic bias sub task
         try:
@@ -124,14 +138,13 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise
             
         yield co
-
-    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    def flatField(self, co):
+    
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def flatfieldCorrect(self, co):
         try:
-            print "dividing "+co.calFilename("flat")+" from "+co.inputsAsStr()
+            print "dividing "+co.calFilename("twilight")+" from "+co.inputsAsStr()
             gemini.gmos.gireduce(co.inputsAsStr(), fl_over=no,fl_trim=no,
-                fl_bias=no, flat1=co.calFilename("flat"), fl_flat=yes, outpref="flatdiv_")    
+                fl_bias=no, flat1=co.calFilename("twilight"), fl_flat=yes, outpref="flatdiv_")    
         except:
             print "Problem dividing by normalized flat"
             print "Problem in GIREDUCE"

@@ -2,6 +2,7 @@ from time import sleep
 from ReductionObjects import ReductionObject
 from utils import filesystem
 import IDFactory
+import os
 
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
@@ -60,7 +61,7 @@ class GEMINIPrimitives(ReductionObject):
     def getProcessedFlat(self, co):
         try:
             print "getting flat"
-            #co.rqCal( "flat" )
+            co.rqCal( "twilight" )
         except:
             print "problem getting flat"
             raise
@@ -90,8 +91,11 @@ class GEMINIPrimitives(ReductionObject):
         ls = co.getStack(ID)
         print "STACKABLE"
         print "ID:", ID
-        for item in ls.filelist:
-            print "\t", item
+        if ls is None:
+            print "No Stackable list created for this input."
+        else:
+            for item in ls.filelist:
+                print "\t", item
         yield co
         
     def printParameters(self, co):
@@ -108,11 +112,12 @@ class GEMINIPrimitives(ReductionObject):
             raise
         yield co
     
-    def mosaic(self, co):
+    def mosaicChips(self, co):
        try:
           print "producing image mosaic"
-          mstr = 'flatdiv_'+co.inputsAsStr()          
-          gemini.gmosaic( mstr  )
+          #mstr = 'flatdiv_'+co.inputsAsStr()          
+          gemini.gmosaic( co.inputsAsStr(), outpref="mo_" )
+          co.reportOutput(co.prependNames("mo_", currentDir = True))
        except:
           print "Problem producing image mosaic"         
           raise
@@ -123,10 +128,21 @@ class GEMINIPrimitives(ReductionObject):
             # @@TODO: need to include parameter options here
             print "Combining and averaging" 
             filesystem.deleteFile('inlist')
-            #print 'now check inlist dude:', co.makeInlistFile()           
-            gemini.gemcombine( co.makeInlistFile(),  "tstgemcombine1.fits",\
-               combine="median", reject="none" )
+            stackID = IDFactory.generateStackableID( co.inputs[0] )
+            stacklist = co.stackeep.get( stackID ).filelist
             
+            #@@FIXME: There are a lot of big issues in here. First, we need to backup the
+            # previous average combined file, not delete. Backup is needed if something goes wrong.
+            # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
+            # stackable images are in the same spot which does not seem accurate.
+            if len( stacklist ) > 1:
+                stackname = "avgcomb_" + os.path.basename(stacklist[0])
+                os.system( "rm " + stackname )
+                gemini.gemcombine( co.makeInlistFile(),  output=stackname,
+                   combine="average", reject="none" )
+                co.reportOutput(stackname)
+            else:
+                print "There are not enough images to combine."
         except:
             print "Problem combining and averaging"
             raise 
