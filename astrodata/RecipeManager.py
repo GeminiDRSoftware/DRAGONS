@@ -353,7 +353,7 @@ class ReductionContext(dict):
             self.outputs.update({"standard":[]})
             
     
-    def prependNames(self, prepend, currentDir = True):
+    def prependNames(self, prepend, currentDir = True, filepaths=None):
         '''
         Prepend a string to a filename.
         
@@ -368,7 +368,12 @@ class ReductionContext(dict):
         @rtype: list  
         '''
         newlist = []
-        for nam in self.inputs:
+        if filepaths is None:
+            paths = self.inputs
+        else:
+            paths = filepaths
+            
+        for nam in paths:
             if type( nam ) == AstroData:
                 prePath = nam.filename
             else:
@@ -523,10 +528,10 @@ class ReductionContext(dict):
     def rqStackUpdate(self):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        Sid = idFac.generateStackableID( self.originalInputs, ver )
+        Sid = idFac.generateStackableID( self.inputs, ver )
         stackUEv = UpdateStackableRequest()
         stackUEv.stkID = Sid
-        stackUEv.stkList = self.originalInputs
+        stackUEv.stkList = self.inputs[0].filename
         self.addRq( stackUEv )
         
     def rqDisplay(self):

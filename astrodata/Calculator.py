@@ -172,5 +172,10 @@ class Calculator(object):
         value = value + "T" + dataset.phuHeader('TIME-OBS')
         return value
         
+    def maskname( self, dataset ):
+        if dataset[0].header.has_key( 'MASKNAME' ):
+            return dataset.phuHeader('MASKNAME')
+        else:
+            return 'None'
 
 #@@DOCPROJECT@@ done with pass 1

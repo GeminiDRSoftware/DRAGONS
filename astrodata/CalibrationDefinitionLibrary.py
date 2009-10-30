@@ -27,6 +27,7 @@ class CalibrationDefinitionLibrary( object ):
             for dpath, dnames, files in ConfigSpace.configWalk( "xmlcalibrations" ):
                 for file in files:
                     self.xmlIndex.update( {file:os.path.join(str(dpath), file)} )
+            #print "CDL30", self.xmlIndex
         except:
             raise "Could not load XML Index."
        
@@ -109,9 +110,12 @@ class CalibrationDefinitionLibrary( object ):
         else:
             raise "Improperly formed. XML calibration has no identifiers."
         
+        
         for child in identifiers.getElementsByTagName( "property" ):
-            #creates dictionary object with multiple values               
-            calReqEvent.identifiers.update( self.parseProperty(child, desc, ad) ) 
+            #creates dictionary object with multiple values    
+            temp = self.parseProperty(child, desc, ad)  
+            #print "CDL112:", temp         
+            calReqEvent.identifiers.update( temp ) 
         
         #===============================================================
         # CRITERIA
@@ -206,7 +210,7 @@ class CalibrationDefinitionLibrary( object ):
             tempCal = temp[1].split( '.' )[0]
             if tempCal == caltype:
                 calIndex.update( {adType:calFile} )
-
+        #print "CDL213:", calIndex
         return calIndex
 
 

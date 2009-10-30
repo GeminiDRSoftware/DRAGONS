@@ -19,8 +19,7 @@ class CalibrationService( object ):
     calDirectory = None
     calList = []
     
-    def __init__( self, calDirectoryURIs=["http://rallen:riverallen@chara/svn/DRSoftware/gemini_python/test_data/recipedata", 
-                  "recipedata"], mode="local_disk" ):
+    def __init__( self, calDirectoryURIs=["recipedata"], mode="local_disk" ):
         
         # calList will contain absolute paths/filenames
         self.calList = []
@@ -63,7 +62,7 @@ class CalibrationService( object ):
         inputfile = calRq.filename
         urilist = []     
         
-        #"""
+        
         for calfile in self.calList:
             #print "CS90: Checking if '" + calfile + "' is viable."
             ad = AstroData( calfile )
@@ -79,13 +78,12 @@ class CalibrationService( object ):
             urilist.append( (calfile, desc, ad) )
             
         urilist = self.sortPriority( urilist, calRq.priorities )
-            
+        
+        #print "CS96 urilist --\n", urilist
         if urilist == []:
             # Nothing found, return None
             return None
-        
-        #print "CS96 urilist --\n", urilist
-        #"""
+              
         return urilist
     
     
@@ -105,6 +103,7 @@ class CalibrationService( object ):
         
         for prop in identifiers.keys():
             if not self.compareProperty( {prop:identifiers[prop]}, desc, ad ):
+                #print "LCS108{Failed on:", prop
                 return False
         return True
     
@@ -194,6 +193,7 @@ class CalibrationService( object ):
         '''
         compareOn, compareAttrs, extension, typ, compValue = self.getCompareInfo( prop )
         # Use the descriptor to obtain header key or 'tag'(i.e. filternames) values.
+        
         retVal = desc.fetchValue( compareOn, ad )
 
         if compareOn.upper() == "OBSEPOCH":
@@ -208,7 +208,7 @@ class CalibrationService( object ):
         
         if typ.upper() == 'STRING':
             #print "LSC236 (str):", retVal.upper(), compValue.upper()
-            return retVal.upper() == compValue.upper()
+            return str(retVal).upper() == str(compValue).upper()
         elif typ.upper() == 'REAL':
             #print "LSC236 (real):", retVal, compValue
             return abs( float(retVal) - float(compValue) )

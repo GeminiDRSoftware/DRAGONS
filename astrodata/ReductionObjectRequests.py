@@ -30,13 +30,20 @@ class CalibrationRequest( ReductionObjectRequest ):
     calibration file.
     It is used by the control loop to be added to the request queue.
     '''
+    filename = None
+    identifiers = {}
+    criteria = {}
+    priorities = {}
+    caltype = None
+    
     def __init__( self,  filename=None, identifiers={}, criteria={}, priorities={}, caltype=None ):
         super( CalibrationRequest, self ).__init__()
-        self.filename = filename
-        self.identifiers = identifiers
-        self.criteria = criteria
-        self.priorities = priorities
-        self.caltype = caltype
+        self.filename = None#filename
+        #print "ASDSADSA:", identifiers
+        self.identifiers = {}#identifiers
+        self.criteria = {}#criteria
+        self.priorities = {}#priorities
+        self.caltype = None#caltype
         
     
     def __str__(self):

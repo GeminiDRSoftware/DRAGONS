@@ -192,7 +192,9 @@ generate_pycallgraphs = False
 if (generate_pycallgraphs):
     import pycallgraph
     pycallgraph.start_trace()
-    
+
+
+frameForDisplay = 1 
 for infile in infiles:
     gd = AstroData(infile)
     # start the Gemini Specific class code
@@ -284,7 +286,7 @@ for infile in infiles:
                 cw.running(rec)
                 
                 
-            frameForDisplay = 1
+            
             controlLoopCounter = 1
             ################
             # CONTROL LOOP #
@@ -304,6 +306,7 @@ for infile in infiles:
                         calname = coi.getCal(fn, typ)
                         if calname == None:
                             # Do the calibration search
+#                            print "RED307:", rq
                             calname = cs.search( rq )
                             if calname == None:
                                 print "No suitable calibration for '" + fn + "'."
@@ -328,7 +331,7 @@ for infile in infiles:
                         gemini()
                         gemini.gmos()
                         
-                        frameForDisplay = 1
+                        #frameForDisplay = 1
                         ##@@FIXME: This os.system way, is very kluged and should be changed. 
                         if os.system( 'ps -e | grep ds9' ) > 0:
                             print "CANNOT DISPLAY: No ds9 running."
@@ -341,8 +344,8 @@ for infile in infiles:
                                     
                                 # tmpImage should be a string at this point.
                                 #print "RED332:", type(tmpImage), tmpImage
-                                gemini.gmos.gdisplay( tmpImage, frameForDisplay )
-                                frameForDisplay += 1
+                                gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no )
+                            frameForDisplay += 1    
                 
                 coi.clearRqs()      
                         
