@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+#===============================================================================
+# 
+# This file MUST be above the gemini_python folder in order to work.
+#
+#===============================================================================
+
+
+import os
+
+recdat = 'gemini_python/test_data/recipedata/'
+trunk = 'gemini_python/trunk/'
+
+files = [recdat+'N20090822S0207_bias.fits',
+         recdat+'N20090823S0102_flat.fits',
+         recdat+'N20091002S0219.fits',
+         recdat+'N20020214S059.fits',
+         recdat+'N20020214S060.fits',
+         recdat+'N20020214S061.fits',
+         trunk+'astrodata/*.py',
+         trunk+'astrodata/reduce',
+         trunk+'ADCONFIG_Gemini',
+         trunk+'RECIPES_Gemini',
+         trunk+'utils',
+         'packgempy', # Might as well include self, if someone wants to repack
+         'rundemo'
+         ]
+
+print "taring files, this will take some time..."
+os.system( "tar -czf prototypedemo.tar.gz "+' '.join(files) )
+
