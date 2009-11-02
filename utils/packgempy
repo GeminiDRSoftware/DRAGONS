@@ -2,15 +2,23 @@
 
 #===============================================================================
 # 
-# This file MUST be above the gemini_python folder in order to work.
+# The output tar file will be above the gemini_python folder.
 #
 #===============================================================================
 
 
 import os
 
+fullpath = os.path.abspath( __file__ )
+
+index = fullpath.rfind( 'gemini_python' )
+betterpath = fullpath[:index]
+os.chdir( betterpath )
+
 recdat = 'gemini_python/test_data/recipedata/'
 trunk = 'gemini_python/trunk/'
+
+tarname = 'recipedemo.tar.gz'
 
 files = [recdat+'N20090822S0207_bias.fits',
          recdat+'N20090823S0102_flat.fits',
@@ -23,11 +31,9 @@ files = [recdat+'N20090822S0207_bias.fits',
          trunk+'ADCONFIG_Gemini',
          trunk+'RECIPES_Gemini',
          trunk+'utils',
-         'packgempy', # Might as well include self, if someone wants to repack
-         'rundemo'
          'gemini_python/test_data/clean'
          ]
 
 print "taring files, this will take some time..."
-os.system( "tar -czf prototypedemo.tar.gz "+' '.join(files) )
-
+os.system( "tar -czf "+tarname+' '+' '.join(files) )
+print "Tar file '"+tarname+"' can be found at:", betterpath

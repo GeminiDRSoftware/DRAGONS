@@ -33,6 +33,10 @@ filelist = [
 #!!!
 recipe = 'demo'#'raTest2'
 
+index = fullpath.rfind( 'gemini_python' )
+betterpath = fullpath[:index]
+os.chdir( betterpath )
+
 oldpypath = os.getenv( 'PYTHONPATH' )
 #print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
