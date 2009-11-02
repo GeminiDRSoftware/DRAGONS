@@ -1023,7 +1023,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
             mpa = re.match(parameterREMask, sfilename)
             mpaI = re.match(parameterIndexREMask, sfilename)
             fullpath = os.path.join(root, sfilename)
-            
+            #print "RM1026 FULLPATH", fullpath 
             if m:
                 recname = m.group("recipename")
                 if False:
@@ -1075,12 +1075,12 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 efile = open(fullpath, "r")
                 exec(efile)
                 efile.close()
-                for key in localparameterTypeIndex.keys():
-                    if centralParametersIndex.has_key(key):
-                        curl = centralParametersIndex[key]
-                        curl.append( localparameterTypeIndex[key])
-                        localparameterTypeIndex.update({key: curl})
-                
+                #for key in localparameterTypeIndex.keys():
+                #    if centralParametersIndex.has_key(key):
+                #        curl = centralParametersIndex[key]
+                #        curl.append( localparameterTypeIndex[key])
+                #        localparameterTypeIndex.update({key: curl})
+                 
                 centralAstroTypeParametersIndex.update(localparameterTypeIndex)
                 
                 
