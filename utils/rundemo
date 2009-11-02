@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-
+import time
 #===============================================================================
 # 
 # This file MUST be above the gemini_python folder in order to work.
@@ -23,6 +23,7 @@ N20091002S0219.fits
 '''
 #filelist = ['N20091002S0219.fits']
 filelist = [
+#'N20091002S0219.fits'
 'N20020214S059.fits',
 'N20020214S060.fits',
 'N20020214S061.fits'
@@ -41,13 +42,16 @@ os.environ.update( {'PYTHONPATH':oldpypath + ":../trunk:"} )
 #print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
 try:
-	os.chdir( 'gemini_python/test_data' )
-
-	recdat = 'recipedata/'
-	for fits in filelist:
-		filename = recdat + fits
-		command = reduce + ' -m -r ' + recipe + ' ' + filename
-		os.system( command )
+    os.chdir( 'gemini_python/test_data' )
+    os.system( './clean' ) 
+    recdat = 'recipedata/'
+    start_time = time.time()
+    for fits in filelist:
+        filename = recdat + fits
+        command = reduce + ' -r ' + recipe + ' ' + filename
+        os.system( command )
+    end_time = time.time()
+    print "Total Time:", (end_time - start_time)
 
 except:
 	print "Recipe failed for some reason"
