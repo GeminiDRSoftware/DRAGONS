@@ -25,6 +25,7 @@ files = [recdat+'N20090822S0207_bias.fits',
          trunk+'utils',
          'packgempy', # Might as well include self, if someone wants to repack
          'rundemo'
+         'gemini_python/test_data/clean'
          ]
 
 print "taring files, this will take some time..."
