@@ -12,7 +12,24 @@ import os
 fullpath = os.path.abspath( __file__ )
 
 index = fullpath.rfind( 'gemini_python' )
-betterpath = fullpath[:index]
+if index == -1:
+    betterpath = './'
+else:
+    betterpath = fullpath[:index]
+
+actualpath = "gemini_python/trunk/utils/"
+
+rundemopath = os.path.join(betterpath, 'rundemo')
+packgempath = os.path.join(betterpath, 'packgempy')
+print "B.Path", betterpath
+if not os.path.exists( rundemopath ):
+    os.symlink(os.path.join(actualpath,'rundemo'), rundemopath )
+if not os.path.exists( packgempath ):
+    os.symlink(os.path.join(actualpath,'packgempy'), packgempath )
+
+#if os.path.exists( os.path.join( betterpath, 'packgempy' ) ):
+#	os.system( 'ln -s ' + 'packgempy ' + betterpath )
+
 os.chdir( betterpath )
 
 recdat = 'gemini_python/test_data/recipedata/'
@@ -31,9 +48,13 @@ files = [recdat+'N20090822S0207_bias.fits',
          trunk+'ADCONFIG_Gemini',
          trunk+'RECIPES_Gemini',
          trunk+'utils',
-         'gemini_python/test_data/clean'
+         'gemini_python/test_data/clean',
+         'rundemo',
+         'packgempy'
          ]
 
 print "taring files, this will take some time..."
-os.system( "tar -czf "+tarname+' '+' '.join(files) )
+err = os.system( "tar -czf "+tarname+' '+' '.join(files) )
+if err > 0:
+    raise "Problem tarring the files."
 print "Tar file '"+tarname+"' can be found at:", betterpath
