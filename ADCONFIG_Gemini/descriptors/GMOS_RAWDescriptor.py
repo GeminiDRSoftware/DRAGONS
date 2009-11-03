@@ -113,12 +113,6 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         
         '''
-        # Epic klugin' right here.
-        try:
-            dataset[1].header["GAINORIG"]
-        except:
-            return self.gain( dataset )
-        
         hdulist = dataset.hdulist
         # data is raw, not yet named:::: numsci = dataset.countExts("SCI")
 
@@ -131,7 +125,11 @@ class GMOS_RAWDescriptorCalc(Calculator):
         retary = []  
         for ext in dataset:
             # get the values
-            gain = ext.header["GAINORIG"]
+            #gain = ext.header["GAINORIG"]
+            if ext.header.has_key( 'GAINORIG' ):
+                gain = ext.header["GAINORIG"]
+            else:
+                gain = ext.header["GAIN"]
             ampname = ext.header[stdkeyDictGMOS["key_gmos_ampname"]]
             # gmode
             if (gain > 3.0):
