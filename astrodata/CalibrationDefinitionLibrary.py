@@ -11,7 +11,8 @@ from ReductionObjectRequests import CalibrationRequest
         
 class CalibrationDefinitionLibrary( object ):
     '''
-    This class deals with obtaining request data from XML calibration files.    
+    This class deals with obtaining request data from XML calibration files and generating 
+    the corresponding request.    
     '''    
     
     def __init__( self ):
@@ -22,6 +23,10 @@ class CalibrationDefinitionLibrary( object ):
         self.updateXmlIndex()
         
     def updateXmlIndex(self):
+        '''
+        Re-updates the xml index, could be useful if this becomes long running and there are changes to
+        the xml files, etc.
+        '''
         self.xmlIndex = {}
         try:
             for dpath, dnames, files in ConfigSpace.configWalk( "xmlcalibrations" ):
@@ -141,7 +146,7 @@ class CalibrationDefinitionLibrary( object ):
         for child in priorities.getElementsByTagName( "property" ):
             calReqEvent.priorities.update( self.parseProperty(child, desc, ad) )
         
-        #print "CDL137 PRIORITIES:", calReqEvent.priorities
+        
         calReqEvent.filename = input                           
         return calReqEvent
     
@@ -192,7 +197,8 @@ class CalibrationDefinitionLibrary( object ):
     
     def generateCalIndex( self, caltype ):
         '''
-        Generate a xml URI index for each caltype.
+        Generate a xml URI index for each caltype. This could seem kind of inefficient, but 
+        this is used to take advantage of the generalized utility function pickConfig.
         
         @param caltype: The calibration needed to generate the index.
         @type caltype: string    

@@ -147,8 +147,25 @@ class ReductionContext(dict):
             fh.writelines(item + '\n')        
         return "@inlist"
  
- 
- 
+
+    def printHeaders(self):
+        for inp in self.inputs:
+            if type(inp) == str:
+                ad = AstroData(inp)
+            elif type(inp) == AstroData:
+                ad = inp
+            try:
+                outfile = open(os.path.basename(ad.filename)+".headers", 'w')
+                for ext in ad.hdulist:
+                    outfile.write( "\n"+"*"*80+"\n")
+                    outfile.write( str(ext.header) )
+                
+            except:
+                raise "Error writing headers for '%{name}s'." %{'name':ad.filename}
+            finally:
+                outfile.close()
+            
+            
  
  #################################################################################
  
@@ -445,7 +462,7 @@ class ReductionContext(dict):
             #print "RM282:", self.inputs
             #@@TODO: Quick-fix for getting ad stuff working, may need re-visit.
             # This is a quick fix to deal with the initial string / 
-            # OutputRecord stuff. The first input (which is str),
+            # OutputRecord stuff. The first input (which is str), and then
             # all ensuing output is OutputRecord [which has metadata]
             # -Riv
             #"""

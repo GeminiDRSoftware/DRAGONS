@@ -1,20 +1,31 @@
 from ReductionContextRecord import StackableRecord
 
 class StackKeeper(object):
+    '''
+    A data structure for accessing stackable lists.
+    '''
     stackLists = None
     
     def __init__(self):
         self.stackLists = {}
     
     def add(self, ID, addtostack):
+        '''
+        Add a list of stackables for a given ID. If the ID does not exist, make a new stackable list.
+        
+        @param ID: An id based off that derived from IDFactory.getStackableID. 
+        @type ID: str
+        
+        @param addtostack: A list of files for stacking or a StackableRecord instance.
+        @type addtostack: list or StackableRecord  
+        '''
         if type(addtostack) != list:
             addtostack = [addtostack]
             
         if ID not in self.stackLists:
             self.stackLists.update( {ID:StackableRecord(ID,[])} )
         
-        
-        
+        ##@@FIXME: This code seems pointless if the code above sets it to a list. Check into it.
         if type(addtostack) == list:
             # A quick way to perform diff on a list.
             # This code may not be necessary, but it is nice for testing, so you
@@ -30,6 +41,15 @@ class StackKeeper(object):
         
 
     def get(self, ID):
+        '''
+        Get the stackable list for a given ID.
+        
+        @param ID: An id based off that derived from IDFactory.getStackableID.
+        @type ID: str
+        
+        @return: List of files for stacking.
+        @rtype: list of str
+        '''
         if ID not in self.stackLists:
             return None
         else:

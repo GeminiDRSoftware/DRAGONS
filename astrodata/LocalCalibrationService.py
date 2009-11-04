@@ -56,7 +56,15 @@ class CalibrationService( object ):
     
     def search( self, calRq ):
         '''
-        Based on the info from the calibration request.
+        Searches the various fits files collecting valid calibrations and eventually returning a
+        sorted list of based on the priorities.
+        
+        @param calRq: The Calibration Request. For this localized version, it contains only the most
+        critical information, but on the PRS, this would be a message.
+        @type calRq: CalibrationRequest instance.
+        
+        @return: A sorted list of calibration pathnames.
+        @rtype: list
         '''
         
         inputfile = calRq.filename

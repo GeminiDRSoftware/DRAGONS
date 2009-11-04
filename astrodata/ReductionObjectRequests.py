@@ -1,14 +1,16 @@
 from datetime import datetime
-
-class ReductionObjectRequest( object ):
-    '''
+'''
     Current Requests:
         CalibrationRequest
         UpdateStackableRequest
         GetStackableRequest
         DisplayRequest
+'''
+class ReductionObjectRequest( object ):
     '''
-    
+    The parent of all Requests which contains members prevalent to all requests
+    (i.e. timestamp).
+    '''
     def __init__(self):
         self.ver = None
         self.timestamp = datetime.now()
@@ -21,9 +23,8 @@ class ReductionObjectRequest( object ):
                     "\nTIMESTAMP: " + str( self.timestamp ) + "\n"
                     
         return tempStr
-    
-    
-    
+
+
 class CalibrationRequest( ReductionObjectRequest ):
     '''
     The structure that stores the calibration parameters from the xml 
@@ -59,7 +60,7 @@ Priorities: %(pri)s
 
 class UpdateStackableRequest( ReductionObjectRequest ):
     '''
-    
+    Contains all relevant information to request updating the stackable index.
     '''
     def __init__( self, stkID=None, stkList=[] ):
         super( UpdateStackableRequest, self ).__init__()
@@ -68,11 +69,6 @@ class UpdateStackableRequest( ReductionObjectRequest ):
         
         
     def __str__(self):
-        '''
-        
-        
-        '''
-        
         tempStr = super( UpdateStackableRequest, self ).__str__()
         tempStr = tempStr + "ID: " + str( self.stkID ) + "\n" + \
                     "STACKABLE LIST: " + str( self.stkList )
@@ -82,26 +78,23 @@ class UpdateStackableRequest( ReductionObjectRequest ):
 
 class GetStackableRequest( ReductionObjectRequest ):
     '''
-    
+    The request to get the stackable list. (More of a PRS issue as updating the stack 
+    already does this.)
     '''
     def __init__( self, stkID=None ):
         super( GetStackableRequest, self ).__init__()
         self.stkID = stkID
         
-        
     def __str__(self):
-        '''
-        
-        
-        '''
         tempStr = super( GetStackableRequest, self ).__str__()
         tempStr = tempStr + "ID: " + str( self.stkID )
         
         return tempStr
 
+
 class DisplayRequest( ReductionObjectRequest ):
     '''
-    
+    The request to display a list of fits files.
     '''
     def __init__( self, disID=None, disList=[] ):
         super( DisplayRequest, self ).__init__()
@@ -110,10 +103,6 @@ class DisplayRequest( ReductionObjectRequest ):
         
         
     def __str__(self):
-        '''
-        
-        
-        '''
         tempStr = super( DisplayRequest, self ).__str__()
         tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
                     "DISPLAY LIST: " + str( self.disList )

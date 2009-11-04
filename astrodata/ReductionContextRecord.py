@@ -3,8 +3,7 @@ from AstroData import AstroData
 
 class ReductionContextRecord( object ):
     '''
-    
-    
+    The parent record. Contains all members global to all records. (i.e. timestamp)
     '''
     timestamp = None
     
@@ -16,8 +15,9 @@ class ReductionContextRecord( object ):
     
 class CalibrationRecord( ReductionContextRecord ):
     '''
-    
-    
+    Record for storing all relevant members related to calibration data.
+    This is used specifically by the ReductionContext in its calibrations
+    member.
     '''
     sciFilename = None
     caltype = None
@@ -40,8 +40,8 @@ class CalibrationRecord( ReductionContextRecord ):
     
 class StackableRecord( ReductionContextRecord ):
     '''
-    
-    
+    Contains the local cache information for a particular set of stackable data.
+    Used in the ReductionContext records stackeep.
     '''
     stkid = None
     filelist = []
@@ -58,9 +58,12 @@ class StackableRecord( ReductionContextRecord ):
     timestamp = %s \n""" % ( str(self.stkid), str(self.filelist), self.timestamp )
         return rets  
     
+##@@FIXME: Because of the nature of how Output -> Input, the name of this record may need to change
+## at some point.
 class OutputRecord( ReductionContextRecord ):
     '''
-    
+    Contains any metadata related to output/input within the ReductionContext.
+    This is used specifically in the ReductionContext records inputs and outputs.
     '''
     displayID = None
     filename = None
@@ -69,7 +72,7 @@ class OutputRecord( ReductionContextRecord ):
     def __init__(self, filename, displayID= None, timestamp = None, ad=None):
         super( OutputRecord, self ).__init__( timestamp )
         self.filename = filename
-        #displayID may be obsolete
+        ##@@TODO: displayID may be obsolete
         self.displayID = displayID
         if ad is None:
             self.ad = AstroData( filename )

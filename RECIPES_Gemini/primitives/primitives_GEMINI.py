@@ -134,7 +134,7 @@ class GEMINIPrimitives(ReductionObject):
             #@@FIXME: There are a lot of big issues in here. First, we need to backup the
             # previous average combined file, not delete. Backup is needed if something goes wrong.
             # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
-            # stackable images are in the same spot which does not seem accurate.
+            # stackable images are in the same spot which may not be the case.
             if len( stacklist ) > 1:
                 stackname = "avgcomb_" + os.path.basename(stacklist[0])
                 os.system( "rm " + stackname )
@@ -148,5 +148,11 @@ class GEMINIPrimitives(ReductionObject):
             raise 
         yield co
         
-        
+    def printHeaders(self, co):
+        try:
+            print "writing out headers"
+            co.printHeaders()
+        except:
+            raise "Problem printing out headers"
+        yield co
         

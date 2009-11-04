@@ -153,7 +153,7 @@ class ConfigSpace(object):
     def generalWalk( self, dir, exts=[] ):
         '''
         A generalized walk, that ignores all the .svn / .cvs folders. I found this can be a little useful, 
-        although it will probably be thrown out.
+        although it will probably be thrown out at some point.
         
         @param path: Root path to throw in os.walk.
         @type path: str
@@ -189,7 +189,6 @@ def configWalk( spacename = None):
     for trip in cs.configWalk(spacename):
         yield trip\
 
-# @@TODO: This entire method should probably be removed at some point.
 def generalWalk( spacename="", exts=[]):
     global cs
     if (cs == None):

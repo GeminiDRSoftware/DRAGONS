@@ -1,8 +1,6 @@
- 
 class PrimitiveParameter( object ):
     '''
-    
-    
+    This is the object which contains all relevant variables where primitive parameter data is stored.
     '''
     name = None
     value = None

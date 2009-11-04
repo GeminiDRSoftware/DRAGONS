@@ -4,7 +4,6 @@ from AstroData import AstroData
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
 
 
-
 def generateStackableID( inputf, version = "1_0" ):
     '''
     Generate an ID from which all similar stackable data will have in common.
@@ -41,17 +40,7 @@ def generateStackableID( inputf, version = "1_0" ):
         ID = version + "_" + chkAd.phuValue('OBSID') + "_" + chkAd.phuValue('OBJECT')
     return ID
     # return shaObj.hexdigest()
-
-def generateRecipeID( recname ):
-    '''
-    
-    
-    '''
-    shaObj = hashlib.sha1()
-    shaObj.update( recname )
-        
-    return shaObj.hexdigest()[:20]
-    
+  
 def generateDisplayID( inputf, version ):
     '''
     Generate an ID from which all similar stackable data will have in common.
