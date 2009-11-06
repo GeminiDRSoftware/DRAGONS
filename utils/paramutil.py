@@ -29,7 +29,7 @@ def checkImageParam( image ):
     @type image: String or List of Strings
     
     @return: The list of filenames of images to be run. If an error occurs, None is returned.
-    @rtype: List of Strings or None
+    @rtype: list, None
     checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
     """
     #logger set up
@@ -39,7 +39,7 @@ def checkImageParam( image ):
     inList = []    
     if type(imageName) == str:
         if imageName[0] == "@":       
-            #imageName = imageName[1:]            
+            imageName = imageName[1:]            
             try:
                 image = os.path.join( root, imageName )         
                 imageFile = open(image, 'r')                
@@ -77,7 +77,8 @@ def checkImageParam( image ):
             glog.error('cannot read file: ' + str(img))
             raise 'Cannot read file', img    
     return inList
- #------------------------------------------------------------------------------------------      
+
+#------------------------------------------------------------------------------------------      
         
 def checkOutputParam( outfile, defaultValue="out.fits" ):
     """
@@ -96,13 +97,14 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
     @type outfile: String or List of Strings 
     
     @param defaultValue: If the outfile is "", then the defaultValue will returned.
-    @type defaultValue: String
+    @type defaultValue: str
     
     @return: A list with all the desired output names. If an error occurs, None is returned.
-    @rtype: List of Strings or None
+    @rtype: list, None
     """
     #logger set up
     glog = geminiLogger.getLogger( name="checkOutputParam") 
+    ##@FIXME: This needs to be fixed to work like its input sibling.
     outList = []
     if type(outfile) == str:
         outfile = checkParam( outfile, type(""), defaultValue )
@@ -145,15 +147,17 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
          return None
     return outList
 
+#------------------------------------------------------------------------------ 
+
 def verifyOutlist( inlist, outlist ):
     """
     Verifies that for every file in the inList, there is a corresponding output file.
     
-    @param inList: A list of input files
-    @type inList: List of Strings
+    @param inList: A list of input file paths.
+    @type inList: list
     
-    @param outlist: A list of output files
-    @type outlist: List of Strings    
+    @param outlist: A list of output file paths.
+    @type outlist: list    
     
     """
     #logger set up
@@ -176,11 +180,9 @@ def verifyOutlist( inlist, outlist ):
             return outlist
     except:
         glog.exception('verifyOutlist in paramUtil failure')
-        return None        
-            
-                   
-      
-#------------------------------------------------------------------------------------------
+        return None                
+
+#------------------------------------------------------------------------------ 
 
 def checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
     """
@@ -225,18 +227,18 @@ def checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
         raise "Incorrect Parameter Type", type(parameter)
     return defaultValue
             
-#------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------ 
 
 def checkFileFitExtension( filename ):
     """
     Determines if the fits file has a [X], to see if a particular extension is to be opened.
     
     @param filename: Name of a fits file
-    @type filename: String
+    @type filename: str
     
     @return: Tuple with the filename and extension specified. 0 means all extension > 0. In the case of any error, 0 
     is returned.
-    @rtype: Tuple 
+    @rtype: tuple 
     """
     file_and_extensions = filename.rsplit( "[" )
     if( len(file_and_extensions) > 1 ):
@@ -248,3 +250,5 @@ def checkFileFitExtension( filename ):
         return (file_and_extensions[0], extension_number)
     else:
         return (filename, 0)
+    
+#------------------------------------------------------------------------------ 
