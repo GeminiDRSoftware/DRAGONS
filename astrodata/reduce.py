@@ -309,7 +309,7 @@ for infile in infiles:
 #                            print "RED307:", rq
                             calname = cs.search( rq )
                             if calname == None:
-                                print "No suitable calibration for '" + fn + "'."
+                                print "No suitabe calibration for '" + fn + "'."
                             elif len( calname ) >= 1:
                                 # Not sure if this is where the one returned calibration is chosen, or if
                                 # that is done in the calibration service, etc.

@@ -39,7 +39,7 @@ class CalibrationService( object ):
         # 3)  wait on message
         # 4)  when request received, basically thread pool or exec() a processRequest or One run CalService
         # 5)  Child sends out processedRequestMessage and is terminates
-        # 6) shutdown or restart
+        # 6) shutdown or r      estart
     
     
     def processRequest( self, message ):
@@ -70,17 +70,18 @@ class CalibrationService( object ):
         inputfile = calRq.filename
         urilist = []     
         
+        print "LCS73:", self.calList
         
         for calfile in self.calList:
-            #print "CS90: Checking if '" + calfile + "' is viable."
+            print "CS90: Checking if '" + calfile + "' is viable."
             ad = AstroData( calfile )
             desc = Descriptors.getCalculator( ad )
             
             if not self.searchIdentifiers( calRq.identifiers, desc, ad ):
-                #print "FAILED IDENTIFIERS"
+                print "FAILED IDENTIFIERS"
                 continue
             if not self.searchCriteria( calRq.criteria, desc, ad ):
-                #print "FAILED CRITERIA"
+                print "FAILED CRITERIA"
                 continue
             #print "CS98: This '" + calfile + "' succeeded!"
             urilist.append( (calfile, desc, ad) )
@@ -143,6 +144,7 @@ class CalibrationService( object ):
             else:
                 if abs( compareRet ) > err:
                     #print "FAILED ON:", compareRet
+
                     return False
         return True
     

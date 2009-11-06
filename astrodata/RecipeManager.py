@@ -60,6 +60,7 @@ class ReductionContext(dict):
     displayMode = None
     displayID = None
     
+    
     def persistCalIndex(self, filename):
         #print "Calibration List Before Persist:"
         #print self.calsummary()
@@ -1028,7 +1029,10 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
     # add each directory to the sytem path (from which import can be done)
     # and exec the structureIndex.***.py files
     # These indexes are meant to append it to the centralDescriptorIndex
-
+    print "RM1031: hello"
+    import traceback
+    traceback.print_stack()
+            
     for root, dirn, files in ConfigSpace.configWalk("recipes"):
         #print "RM840:", root
         sys.path.append(root)
