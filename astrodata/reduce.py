@@ -19,6 +19,7 @@ from ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, 
 from LocalCalibrationService import CalibrationService
 
 from utils import paramutil
+import gdpgutil
 
 import sys, os, glob, subprocess
 import time
@@ -74,7 +75,8 @@ parser.add_option("--caltype", dest="cal_type", default=None, type="string",
 ##@@FIXME: This next option should not be put into the package
 parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_true",
                   help="Only used for rtf.")
-
+parser.add_option("-i", "--intelligence", dest='intelligence', default=False, action="store_true",
+                  help="Give the system some intelligence to perform operations faster and smoother.")
 (options,  args) = parser.parse_args()
 
 
@@ -193,35 +195,42 @@ if (generate_pycallgraphs):
     import pycallgraph
     pycallgraph.start_trace()
 
+if options.intelligence:
+    typeIndex = gdpgutil.clusterTypes( infiles )
+    # If there was super intelligence, it would determine ordering. For now, it will 
+    # run recipes in simple ordering, (i.e. the order values() is returned in).
+    infiles = typeIndex.values()
+else:
+    ##@FIXME: This is pretty stupid
+    testla = []
+    for infile in infiles:
+        testla.append( [AstroData(infile)] )
+    infiles = testla
 
 frameForDisplay = 1 
-for infile in infiles:
-    gd = AstroData(infile)
-    # start the Gemini Specific class code
-    
+for infile in infiles: #for dealing with multiple files.   
     # get RecipeLibrary
     rl = RecipeLibrary()
     
     # get ReductionObject for this dataset
     #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
-    ro = rl.retrieveReductionObject(infile) # can be done by filename
-    
+    ro = rl.retrieveReductionObject(infile[0]) # can be done by filename #**
     
     if options.recipename == None:
-        reclist = rl.getApplicableRecipes(infile)
-        recdict = rl.getApplicableRecipes(infile, collate=True)
+        reclist = rl.getApplicableRecipes(infile[0]) #**
+        recdict = rl.getApplicableRecipes(infile[0], collate=True) #**
     else:
         #force recipe
         reclist = [options.recipename]
         recdict = {"all": [options.recipename]}
     
-    types = gd.getTypes()
+    types = infile[0].getTypes()
     
     # Local Calibration Service Setup
     cs = CalibrationService()
     
     
-    title = "  Processing dataset: %s  " % infile
+    title = "  Processing dataset: %s  " % infiles[0] #**
     tl = len(title)
     tb = " " * tl
     print "${REVERSE}" + tb
@@ -261,14 +270,12 @@ for infile in infiles:
                 os.mkdir(".reducecache")
             
             co.restoreCalIndex(calindfile)
-            
             co.restoreStkIndex( stkindfile )
             
-            
-            # add input file
+            # add input files
             co.addInput(infile)
-            #co.update({"adata":adatadir})
-            rl.retrieveParameters(infile, co, rec)
+            
+            rl.retrieveParameters(infile[0], co, rec)
             if (useTK):
                 while cw.bReady == False:
                     # this is hopefully not really needed
@@ -281,11 +288,9 @@ for infile in infiles:
             # @@TODO:evaluate use of init for each recipe vs. for all recipes
             ro.init(co)
             print term.render("${GREEN}running recipe: '%s'${NORMAL}\n") % rec
-            rl.loadAndBindRecipe(ro,rec, file=infile)
+            rl.loadAndBindRecipe(ro,rec, file=infile[0])
             if (useTK):
                 cw.running(rec)
-                
-                
             
             controlLoopCounter = 1
             ################
@@ -306,7 +311,6 @@ for infile in infiles:
                         calname = coi.getCal(fn, typ)
                         if calname == None:
                             # Do the calibration search
-#                            print "RED307:", rq
                             calname = cs.search( rq )
                             if calname == None:
                                 print "No suitabe calibration for '" + fn + "'."

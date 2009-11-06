@@ -4,7 +4,7 @@ from time import mktime
 import urllib2 as ulib
 #from mx.URL import *
 
-from AstroData import AstroData
+from astrodata.AstroData import AstroData
 import ConfigSpace
 import Descriptors
 from ReductionObjectRequests import CalibrationRequest

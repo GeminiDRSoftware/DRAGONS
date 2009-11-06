@@ -1,7 +1,8 @@
 import AstroDataType
 import sys
-from AstroData import AstroData
-
+from astrodata.AstroData import AstroData
+from utils import geminiLogger
+#------------------------------------------------------------------------------ 
 class GDPGUtilExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -13,22 +14,99 @@ class GDPGUtilExcept:
         """This str conversion member returns the message given by the user (or the default message)
         when the exception is not caught."""
         return self.message
+
+#------------------------------------------------------------------------------ 
+
+def checkDataSet( filenames ):
+    '''
+    Takes a list or individual AstroData, filenames, OutputRecords and then verifies and
+    returns list of AstroData instances. Will crash if bad arguments.
+    
+    @param filenames: Parameters you want to verify. 
+    @type filenames: list, AstroData, str, OutputRecord
+    
+    @return: List of verified AstroData instances.
+    @rtype: list
+    '''    
+    if type( filenames ) != list:
+        filenames = [filenames]
+    
+    outlist = []
+    
+    for filename in filenames:
+        if type( filename ) == str:
+            filename = AstroData( filename )
+        elif type( filename ) == AstroData:
+            pass
+        else:
+            raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str or AstroData." 
+                      % {'name':str(filename), 'type':str(type(filename))})
         
+        outlist.append( filename )
+    
+    return outlist
+
+#------------------------------------------------------------------------------ 
+
+def clusterTypes( datalist ):
+    '''
+    Given a list or singleton of filenames, or AstroData, generate an index of AstroData based on 
+    types (e.g. So each file can run under the same recipe).
+    
+    Example Output:
+{('GEMINI_NORTH', 'GEMINI', 'GMOS_N', 'GMOS', 'GMOS_BIAS', 'PREPARED'): [<AstroData object>,
+                                                                         <AstroData object>],
+ ('GEMINI_NORTH', 'GEMINI', 'GMOS_N', 'GMOS_FLAT', 'GMOS', 'PREPARED'): [<AstroData object>],
+ ('GEMINI_NORTH', 'GEMINI', 'GMOS_N', 'GMOS_IMAGE', 'GMOS', 'UNPREPARED', 'GMOS_RAW'): [<AstroData object>]}
+ 
+    @param datalist: The list of data to be clustered.
+    @type datalist: list, str, AstroData
+    
+    @return: Index of AstroDatas keyed by types.
+    @rtype: dict
+    '''
+    log = geminiLogger.getLogger( name='clusterTypes' )
+    log.debug( 'Importing AstroData' )
+    from astrodata.AstroData import AstroData
+    
+    datalist = checkDataSet( datalist )
+    
+    clusterIndex = {}
+    
+    for data in datalist:
+        try:
+            assert( type(data) == AstroData )
+        except:
+            log.exception( "Bad Argument: '%(data)s' '%(astr)s'" %{'data':str(type(data)), 'astr':str(AstroData)})
+            raise
+        
+        types = tuple( data.getTypes() )
+        if clusterIndex.has_key( types ):
+            dlist = clusterIndex[types]
+            dlist.append( data )
+        else:
+            dlist = [data]
+        clusterIndex.update( {types:dlist} )
+    
+    log.debug( 'clusterIndex: ' + str(clusterIndex) )
+    return clusterIndex
+
+#------------------------------------------------------------------------------ 
+
 def openIfName(dataset):
     """Utility function to handle accepting datasets as AstroData
     instances or string filenames. Works in conjunction with closeIfName.
     The way it works, openIfName opens returns an GeminiData isntance"""
     
     bNeedsClosing = False
-    
     if type(dataset) == str:
         bNeedsClosing = True
         gd = AstroData(dataset)
-    elif isinstance(dataset, AstroData):
+    elif type(dataset) == AstroData:
         bNeedsClosing = False
         gd = dataset
     else:
-        raise RecipeExcept("BadArgument in recipe utility function: openIfName(..)\n MUST be filename (string) or GeminiData instrument")
+        raise GDPGUtilExcept("BadArgument in recipe utility function: openIfName(..)\n MUST be filename (string) or GeminiData instrument")
     
     return (gd, bNeedsClosing)
     

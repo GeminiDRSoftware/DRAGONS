@@ -1,5 +1,5 @@
 from datetime import datetime
-from AstroData import AstroData
+from astrodata.AstroData import AstroData
 
 class ReductionContextRecord( object ):
     '''
@@ -69,15 +69,21 @@ class OutputRecord( ReductionContextRecord ):
     filename = None
     ad = None
     
-    def __init__(self, filename, displayID= None, timestamp = None, ad=None):
+    def __init__(self, filename, displayID=None, timestamp=None, ad=None):
         super( OutputRecord, self ).__init__( timestamp )
-        self.filename = filename
+        if type( filename ) == AstroData:
+            self.filename = filename.filename
+            self.ad = filename
+        elif type( filename ) == str:
+            self.filename = filename
+            if ad is None:
+                self.ad = AstroData( filename )
+            else:
+                self.ad = ad
+        else:
+            raise "BAD ARGUMENT"
         ##@@TODO: displayID may be obsolete
         self.displayID = displayID
-        if ad is None:
-            self.ad = AstroData( filename )
-        else:
-            self.ad = ad
         
         
     def __str__(self):

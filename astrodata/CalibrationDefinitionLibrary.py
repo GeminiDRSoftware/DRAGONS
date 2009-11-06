@@ -2,7 +2,7 @@ import os
 import pyfits
 from xml.dom.minidom import parse
 
-from AstroData import AstroData
+from astrodata.AstroData import AstroData
 import ConfigSpace
 import Descriptors
 import gdpgutil
@@ -73,7 +73,7 @@ class CalibrationDefinitionLibrary( object ):
         return reqEvents
     
     
-    def parseQuery(self, xmlDomQueryNode, caltype, input ):
+    def parseQuery(self, xmlDomQueryNode, caltype, inputf ):
         '''
         Parses a query from XML Calibration File and returns a Calibration
         request event with the corresponding information. Unfinished: priority 
@@ -104,7 +104,12 @@ class CalibrationDefinitionLibrary( object ):
         if( tempcal != caltype ):
             raise "The id in the query does not match the caltype '"+tempcal+"' '"+str(caltype)+"'."
         
-        ad = AstroData( input )
+        if type( inputf ) == AstroData:
+            ad = inputf
+        elif type( inputf ) == str:
+            ad = AstroData( inputf )
+        else:
+            raise RuntimeError("Bad Argument: Wrong Type, '%(val)s' '%(typ)s'." %{'val':str(inputf),'typ':str(type(inputf))})
         desc = Descriptors.getCalculator( ad )
         #===============================================================
         # IDENTIFIERS
@@ -147,7 +152,7 @@ class CalibrationDefinitionLibrary( object ):
             calReqEvent.priorities.update( self.parseProperty(child, desc, ad) )
         
         
-        calReqEvent.filename = input                           
+        calReqEvent.filename = inputf
         return calReqEvent
     
                   

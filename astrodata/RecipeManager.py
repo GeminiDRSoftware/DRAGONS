@@ -1,4 +1,4 @@
-from AstroData import AstroData
+from astrodata.AstroData import AstroData
 import AstroDataType
 
 import new
@@ -314,16 +314,38 @@ class ReductionContext(dict):
     def checkControl(self):
         return self.cmdRequest        
         
-    def addInput(self, filename):
-        if type(filename) == list:
-            self.inputs.extend(filename)
-        else:
-            self.inputs.append(filename)
-        # This is kluge and needs to change as we potentially deal with lists
-        if self.originalInputs == None:
-            self.originalInputs = self.inputs
+    def addInput(self, filenames):
+        '''
+        Add input to be processed the next batch around. If this is the first input being added,
+        it is also added to originalInputs.
         
+        @param filenames: Inputs you want added.
+        @type filenames: list, AstroData, str 
+        '''
+        if type(filenames) != list:
+            filenames = [filenames]
         
+        ##@@TODO: Approve that this is acceptable. (i.e. should it be done here or after the first 
+        ## round is complete?)
+        origFlag = False
+        if self.originalInputs is None or self.originalInputs == []:
+            self.originalInputs = []
+            origFlag = True
+        
+        for filename in filenames:
+            if type( filename ) == str:
+                filename = AstroData( filename ) # filename converted from str -> AstroData 
+            elif type( filename ) == AstroData:
+                pass
+            else:
+                raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str or AstroData." 
+                      % {'name':str(filename), 'type':str(type(filename))})
+            
+            self.inputs.append( filename )
+            if origFlag:
+                self.originalInputs.append( filename )
+            
+    
     def reportOutput(self, inp, category="standard"):
         # note, other categories not supported yet
         if category != "standard":
@@ -366,8 +388,6 @@ class ReductionContext(dict):
                     newinputlist.append( out )
             
             self.inputs = newinputlist
-            #for temp in self.outputs["standard"]:
-            #   print "TEMP:", temp
             self.outputs.update({"standard":[]})
             
     
@@ -385,28 +405,33 @@ class ReductionContext(dict):
         @return: List of new prepended paths.
         @rtype: list  
         '''
-        newlist = []
+        retlist = []
         if filepaths is None:
-            paths = self.inputs
+            dataset = self.inputs
         else:
-            paths = filepaths
+            dataset = filepaths
             
-        for nam in paths:
-            if type( nam ) == AstroData:
-                prePath = nam.filename
+        for data in dataset:
+            if type( data ) == AstroData:
+                filename = data.filename
+            elif type( data ) == str:
+                filename = data
+            elif type( data ) == OutputRecord:
+                filename = data.filename
             else:
-                prePath = nam
-            
+                raise RecipeExcept( "BAD ARGUMENT: '%(data)s'->'%(type)s'" %{'data':str(data),'type':str(type(data))} )
+               
             if currentDir == True:
-                path = os.getcwd()
+                root = os.getcwd()
             else:
-                path = os.path.dirname(prePath)
-            # nam is an astrodata instance.
-            #print "RM337:", type(prePath), prePath
-            fn   = os.path.basename(prePath)
-            newpath = path + "/" + prepend + fn
-            newlist.append(newpath)
-        return newlist
+                root = os.path.dirname(filename)
+
+            bname = os.path.basename( filename )
+            prependfile = os.path.join( root, prepend + bname )
+            retlist.append( prependfile )
+        
+        #print "RM429:", retlist
+        return retlist
     
     def suffixNames(self, suffix, currentDir=True):
         '''
@@ -477,9 +502,9 @@ class ReductionContext(dict):
             #"""
             if strippath == False:
                 # print "RM227:", self.inputs
-                return ", ".join( inputlist )                
+                return ",".join( inputlist )                
             else:
-                return ", ".join([os.path.basename(path) for path in inputlist])
+                return ",".join([os.path.basename(path) for path in inputlist])
                                       
 
     def outputsAsStr(self, strippath = True):
@@ -507,7 +532,8 @@ class ReductionContext(dict):
             else:
                 return ", ".join([os.path.basename(path) for path in outputlist])
         
-    def addCal(self, fname, caltyp, calname, timestamp = None):
+    def addCal(self, data, caltyp, calname, timestamp = None):
+        fname = data.filename
         fname = os.path.abspath(fname)
         calname = os.path.abspath(calname)
         
@@ -523,12 +549,16 @@ class ReductionContext(dict):
         key = (fname, caltyp)
         self.calibrations.update({key: calrec})
     
-    def getCal(self, filename, caltype):
+    def getCal(self, data, caltype):
+        #print "RM551:", data, type( data )
+        filename = data.filename
         filename = os.path.abspath(filename)
         key = (filename, caltype)
         if key in self.calibrations.keys():
             return self.calibrations[(filename,caltype)].filename
         return None
+        
+        #pyraf regress.py
         
     def addRq(self, rq):
         if self.rorqs == None:
@@ -582,7 +612,7 @@ class ReductionContext(dict):
         else:
             retl = []
             for inp in self.originalInputs:
-                key = (inp, caltype)
+                key = (inp.filename, caltype)
                 retl.append(self.calibrations[key])
             return retl
         
@@ -779,7 +809,7 @@ class RecipeLibrary(object):
             astrod = AstroData(dataset)
             byfname = True
         elif type(dataset) == AstroData:
-            byfname = false
+            byfname = False
             astrod = dataset
         else:
             raise BadArgument()
@@ -843,7 +873,6 @@ class RecipeLibrary(object):
         # If they cannot be resolved, because there are unrelated types or through multiple
         # inheritance multiple ROs may apply, then we raise an exceptions, this is a configuration
         # problem.
-        
         if (astrotype == None) and (dataset != None):
             val = pickConfig(dataset, centralPrimitivesIndex)
             k = val.keys()
@@ -879,6 +908,7 @@ class RecipeLibrary(object):
         #@@perform: monitory real performance loading primitives
         self.addLoadTime(source, a, b)
         return ro
+        
         
     def composeRecipe(self, name, recipebuffer):
         templ = """
@@ -943,7 +973,7 @@ def %(name)s(self,cfgObj):
             astrod = AstroData(dataset)
             byfname = True
         elif type(dataset) == AstroData:
-            byfname = false
+            byfname = False
             astrod = dataset
         else:
             raise BadArgument()
