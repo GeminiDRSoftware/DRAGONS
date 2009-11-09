@@ -7,10 +7,10 @@ reload(geminiLogger)
 """This file contains the following utilities:
 
     checkImageParam( image )
-    checkOutputParam( outfile, defaultValue="out.fits" ):
+    checkOutputParam( outfile, defaultValue="out.fits" )
     def verifyOutlist( inlist, outlist )
-    checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
-    checkFileFitExtension( filename ):
+    checkParam( parameter, paramType, defaultValue, compareValue=0.0 )
+    checkFileFitExtension( filename )
 """
 def checkImageParam( image ):
     """
@@ -43,14 +43,16 @@ def checkImageParam( image ):
             try:
                 image = os.path.join( root, imageName )         
                 imageFile = open(image, 'r')                
-                inList = imageFile.readlines() 
-                #removes any newline with gemutil method 'pyChomp'                 
-                for i in range(len(inList)):
-                    inList[i] = gemutil.pyChomp(inList[i])
-                    if os.path.dirname(inList[i]) == "":
-                        inList[i] = os.path.join( root, inList[i] )
+                readList = imageFile.readlines() 
+                #removes any newline with gemutil method 'chomp'                 
+                for i in range(len(readList)):
+                    readList[i] = gemutil.chomp(readList[i])
+                    if readList[i] == "" or readList[i] == "\n" or readList[i][0] == "#":
+                        continue
+                    if os.path.dirname(readList[i]) == "":
+                        readList[i] = os.path.join( root, readList[i] )
                 #adds .fits if there is none
-                inList = gemutil.appendFits(inList)                                                                                                
+                    inList.append(gemutil.appendFits(readList[i]))
             except:
                 glog.exception("An error occurred when opening and reading from the image.")
                 return None
@@ -72,7 +74,7 @@ def checkImageParam( image ):
         glog.warning('Type'+ str(type(image))+ \
                     'is not supported. The only supported types are String and List of Strings.')
         return None
-    for img in inList:        
+    for img in inList:
         if not os.access(img,os.R_OK):
             glog.error('cannot read file: ' + str(img))
             raise 'Cannot read file', img    
@@ -122,7 +124,7 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
                     else:              
                         for i in range(len(outList)):  
                             #removes newlines from end of list                      
-                            outList[i] = gemutil.pyChomp(outList[i])
+                            outList[i] = gemutil.chomp(outList[i])
                         #adds .fits if there is none                            
                         outList = gemutil.appendFits(outList)                
             except:
