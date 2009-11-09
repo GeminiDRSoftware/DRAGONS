@@ -21,7 +21,7 @@ import time
     printlog (text, logfile=None, verbose=True)
     removeExtension (images)
     appendFits (images)    
-    pyChomp(line)
+    chomp(line)
 """
 
     
@@ -472,19 +472,22 @@ def appendFits (images):
         return modified[0]
 #---------------------------------------------------------------------------
 
-def pyChomp(line):
-    """removes newline from end of line
-    
-    @param line: a possible corrupted line of code
-    @type line: string 
+def chomp(line):
     """
-    if len(line) > 1:        
+    Removes newline(s) from end of line if present.
+    
+    @param line: A possible corrupted line of code
+    @type line: str
+    
+    @return: Line without any '\n' at the end.
+    @rtype: str
+    """
+    if len(line) >= 1:        
         if line[-1] == '\n':            
             line = line[0:len(line)-1]            
-            return line 
+            return chomp( line )
         else:                 
             return line
     else:
-        print'There is only one character in the string for pyChomp()'
-        return line
+        return ""
     

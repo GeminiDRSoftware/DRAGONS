@@ -313,7 +313,7 @@ for infile in infiles: #for dealing with multiple files.
                             # Do the calibration search
                             calname = cs.search( rq )
                             if calname == None:
-                                print "No suitabe calibration for '" + fn + "'."
+                                raise "No suitabe calibration for '" + fn + "'."
                             elif len( calname ) >= 1:
                                 # Not sure if this is where the one returned calibration is chosen, or if
                                 # that is done in the calibration service, etc.
@@ -335,7 +335,7 @@ for infile in infiles: #for dealing with multiple files.
                         gemini()
                         gemini.gmos()
                         
-                        #frameForDisplay = 1
+                        frameForDisplay = 1
                         ##@@FIXME: This os.system way, is very kluged and should be changed. 
                         if os.system( 'ps -e | grep ds9' ) > 0:
                             print "CANNOT DISPLAY: No ds9 running."
@@ -349,7 +349,7 @@ for infile in infiles: #for dealing with multiple files.
                                 # tmpImage should be a string at this point.
                                 #print "RED332:", type(tmpImage), tmpImage
                                 gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no )
-                            frameForDisplay += 1    
+                                frameForDisplay += 1    
                 
                 coi.clearRqs()      
                         

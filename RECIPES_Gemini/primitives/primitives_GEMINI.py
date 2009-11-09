@@ -128,19 +128,31 @@ class GEMINIPrimitives(ReductionObject):
             # @@TODO: need to include parameter options here
             print "Combining and averaging" 
             filesystem.deleteFile('inlist')
-            stackID = IDFactory.generateStackableID( co.inputs[0] )
-            stacklist = co.stackeep.get( stackID ).filelist
             
-            #@@FIXME: There are a lot of big issues in here. First, we need to backup the
-            # previous average combined file, not delete. Backup is needed if something goes wrong.
-            # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
-            # stackable images are in the same spot which may not be the case.
-            if len( stacklist ) > 1:
-                stackname = "avgcomb_" + os.path.basename(stacklist[0])
-                os.system( "rm " + stackname )
-                gemini.gemcombine( co.makeInlistFile(),  output=stackname,
-                   combine="average", reject="none" )
-                co.reportOutput(stackname)
+            templist = []
+            
+            for inp in co.inputs:
+                 templist.append( IDFactory.generateStackableID( inp.ad ) )
+                 
+            templist = list( set(templist) ) # Removes duplicates.
+            
+            for stackID in templist:
+                #@@FIXME: There are a lot of big issues in here. First, we need to backup the
+                # previous average combined file, not delete. Backup is needed if something goes wrong.
+                # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
+                # stackable images are in the same spot which may not be the case.
+                
+                stacklist = co.getStack( stackID ).filelist
+                print "STACKLIST:", stacklist
+                
+                if len( stacklist ) > 1:
+                    stackname = "avgcomb_" + os.path.basename(stacklist[0])
+                    filesystem.deleteFile( stackname )
+                    gemini.gemcombine( co.makeInlistFile(stackID),  output=stackname,
+                       combine="average", reject="none" )
+                    co.reportOutput(stackname)
+                else:
+                    print "'%s' was not combined because there is only one image." %( stacklist[0] )
             else:
                 print "There are not enough images to combine."
         except:

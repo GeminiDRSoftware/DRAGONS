@@ -12,7 +12,7 @@ from datetime import datetime
 from copy import deepcopy, copy
 
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
-from ReductionContextRecord import CalibrationRecord, StackableRecord, OutputRecord
+from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord
 import pickle # for persisting the calibration index
 
 import IDFactory as idFac # id hashing functions
@@ -22,7 +22,7 @@ from ParamObject import PrimitiveParameter
 # this module operates like a singleton
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
-centralReductionMap = { }
+centralReductionMap = {}
 centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
@@ -101,6 +101,13 @@ class ReductionContext(dict):
         return rets
     
     def paramsummary(self):
+        '''
+        A util function for printing out all the parameters for this reduction 
+        context in a semi-organized fashion.
+        
+        @return: The formatted message for all the current parameters.
+        @rtype: str
+        '''
         char = "-"
         rets = char*40+"\n"
         rets += '''------Global Parameters------\n'''
@@ -128,24 +135,21 @@ class ReductionContext(dict):
         
         return rets
     
-    def prepDisplay(self):
-        pass
-    
-    
-    def stack_inputsAsStr(self):        
-        #pass back the stack files as strings            
-        ID = idFac.generateStackableID(self.inputs)        
-        print 'ID: ', ID
+    def stack_inputsAsStr(self, ID):        
+        #pass back the stack files as strings
         stack = self.stackeep.get(ID)
-        print 'stack_inputsAsStr returns:  ', ", ".join(stack.filelist) 
-        return ", ".join(stack.filelist)
+        return ",".join(stack.filelist)
     
-    def makeInlistFile(self):
-        fh = open( "inlist","w" )
-        ID = idFac.generateStackableID(self.inputs)
-        stack = self.stackeep.get(ID)
-        for item in stack.filelist:
-            fh.writelines(item + '\n')        
+    def makeInlistFile(self, ID):
+        try:
+            fh = open( 'inlist', 'w' )
+            stack = self.stackeep.get(ID)
+            for item in stack.filelist:
+                fh.writelines(item + '\n')
+        except:
+            raise "Could not write inlist file for stacking." 
+        finally:
+            fh.close()
         return "@inlist"
  
 
@@ -165,14 +169,12 @@ class ReductionContext(dict):
                 raise "Error writing headers for '%{name}s'." %{'name':ad.filename}
             finally:
                 outfile.close()
+          
             
-            
  
- #################################################################################
+#################################################################################
  
- 
- 
-    
+     
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to
         None in the class."""
@@ -231,11 +233,7 @@ class ReductionContext(dict):
     def stackAppend(self, ID, files):
         self.stackeep.add( ID, files )
     
-    def getStack(self, ID=None):
-        if ID == None:
-            ver = "1_0"
-            # Not sure how version stuff is going to be done. This version stuff is temporary.
-            ID = idFac.generateStackableID( self.inputs, ver )
+    def getStack(self, ID):
         return self.stackeep.get(ID)
         
     def isFinished(self,arg = None):
@@ -334,34 +332,45 @@ class ReductionContext(dict):
         
         for filename in filenames:
             if type( filename ) == str:
-                filename = AstroData( filename ) # filename converted from str -> AstroData 
+                filename = AstroDataRecord( filename ) # filename converted from str -> AstroData 
             elif type( filename ) == AstroData:
+                filename = AstroDataRecord( filename )
+            elif type( filename ) == AstroDataRecord:
                 pass
             else:
-                raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str or AstroData." 
+                raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str, AstroData, AstroDataRecord." 
                       % {'name':str(filename), 'type':str(type(filename))})
             
             self.inputs.append( filename )
             if origFlag:
                 self.originalInputs.append( filename )
-            
+        
+        #print 'RM357:', self.inputs
+        #print 'RM358:', self.originalInputs
     
     def reportOutput(self, inp, category="standard"):
-        # note, other categories not supported yet
+        ##@@TODO: Read the new way code is done.
         if category != "standard":
             raise RecipeExcept("You may only use " +
                 "'standard' category output at this time.")
         if type(inp) == str:
-            self.outputs["standard"].append( OutputRecord(inp,self.displayID) )
+            self.outputs["standard"].append( AstroDataRecord(inp,self.displayID) )
         elif type(inp) == list:
             for temp in inp:
-                #print "RM287:", type(temp), temp
-                if type(temp) == AstroData:
-                    orecord = OutputRecord( temp.filename, self.displayID, temp )
+                # This is a good way to check if IRAF failed.
+                
+                if type(temp) == tuple:
+                    if not os.path.exists( temp[0] ):
+                        raise "LAST PRIMITIVE FAILED."
+                    orecord = AstroDataRecord( temp[0], self.displayID, parent=temp[1] )
+                    #print 'RM370:', orecord
                 elif type(temp) == str:
-                    orecord = OutputRecord( temp, self.displayID )
+                    if not os.path.exists( temp ):
+                        raise "LAST PRIMITIVE FAILED."
+                    orecord = AstroDataRecord( temp, self.displayID )
                 else:
                     raise "RM292 type: " + str(type(temp))
+                print "RM344:", orecord
                 self.outputs["standard"].append( orecord )
             
     
@@ -382,10 +391,11 @@ class ReductionContext(dict):
             #print "OUTPUTS:", self.outputs["standard"]
             newinputlist = []
             for out in self.outputs['standard']:
-                if type( out ) == OutputRecord:
-                    newinputlist.append( out.ad )
-                else:
+                if type( out ) == AstroDataRecord:
                     newinputlist.append( out )
+                else:
+                    raise RuntimeError("Bad Argument: Wrong Type '%(val)s' '%(typ)s'." 
+                                       %{'val':str(out),'typ':str(type(out))})
             
             self.inputs = newinputlist
             self.outputs.update({"standard":[]})
@@ -412,12 +422,14 @@ class ReductionContext(dict):
             dataset = filepaths
             
         for data in dataset:
+            parent = None
             if type( data ) == AstroData:
                 filename = data.filename
             elif type( data ) == str:
                 filename = data
-            elif type( data ) == OutputRecord:
+            elif type( data ) == AstroDataRecord:
                 filename = data.filename
+                parent = data.parent
             else:
                 raise RecipeExcept( "BAD ARGUMENT: '%(data)s'->'%(type)s'" %{'data':str(data),'type':str(type(data))} )
                
@@ -428,9 +440,11 @@ class ReductionContext(dict):
 
             bname = os.path.basename( filename )
             prependfile = os.path.join( root, prepend + bname )
-            retlist.append( prependfile )
+            if parent is None:
+                retlist.append( prependfile )
+            else:
+                retlist.append( (prependfile, parent) )
         
-        #print "RM429:", retlist
         return retlist
     
     def suffixNames(self, suffix, currentDir=True):
@@ -485,23 +499,11 @@ class ReductionContext(dict):
         if self.inputs == None:
             return ""
         else:
-            #print "RM282:", self.inputs
-            #@@TODO: Quick-fix for getting ad stuff working, may need re-visit.
-            # This is a quick fix to deal with the initial string / 
-            # OutputRecord stuff. The first input (which is str), and then
-            # all ensuing output is OutputRecord [which has metadata]
-            # -Riv
-            #"""
             inputlist = []
             for inp in self.inputs:
-                if type(inp) == str:
-                    inputlist.append( inp )
-                elif type(inp) == AstroData:
-                    inputlist.append( inp.filename )
-            #print "RM289:", inputlist
-            #"""
+                inputlist.append( inp.filename )
+
             if strippath == False:
-                # print "RM227:", self.inputs
                 return ",".join( inputlist )                
             else:
                 return ",".join([os.path.basename(path) for path in inputlist])
@@ -511,20 +513,10 @@ class ReductionContext(dict):
         if self.outputs == None:
             return ""
         else:
-            #print "RM282:", self.inputs
-            #@@TODO: Quick-fix for getting ad stuff working, may need re-visit.
-            # This is a quick fix to deal with the initial string / 
-            # OutputRecord stuff. The first input (which is str),
-            # all ensuing output is OutputRecord [which has metadata]
-            # -Riv
-            #"""
             outputlist = []
             for inp in self.outputs:
-                if type(inp) == str:
-                    outputlist.append( inp )
-                elif type(inp) == OutputRecord:
-                    outputlist.append( inp.filename )
-            print "RM289:", outputlist
+                outputlist.append( inp.filename )
+            #print "RM289:", outputlist
             #"""
             if strippath == False:
                 # print self.inputs
@@ -576,16 +568,17 @@ class ReductionContext(dict):
     def rqStackUpdate(self):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        Sid = idFac.generateStackableID( self.inputs, ver )
-        stackUEv = UpdateStackableRequest()
-        stackUEv.stkID = Sid
-        stackUEv.stkList = self.inputs[0].filename
-        self.addRq( stackUEv )
+        for inp in self.inputs:
+            stackUEv = UpdateStackableRequest()
+            Sid = idFac.generateStackableID( inp.ad, ver )
+            stackUEv.stkID = Sid
+            stackUEv.stkList = inp.filename
+            self.addRq( stackUEv )
         
     def rqDisplay(self):
         ver = "1_0"
-        Did = idFac.generateDisplayID( self.inputs,ver )
         displayObject = DisplayRequest()
+        Did = idFac.generateDisplayID( self.inputs[0].filename,ver )
         displayObject.disID = Did
         displayObject.disList = self.inputs
         self.addRq( displayObject )
@@ -594,10 +587,11 @@ class ReductionContext(dict):
     def rqStackGet(self):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        Sid = idFac.generateStackableID( self.originalInputs, ver )
-        stackUEv = GetStackableRequest()
-        stackUEv.stkID = Sid
-        self.addRq( stackUEv )
+        for orig in self.originalInputs:
+            Sid = idFac.generateStackableID( orig.ad, ver )
+            stackUEv = GetStackableRequest()
+            stackUEv.stkID = Sid
+            self.addRq( stackUEv )
     
     def calFilename(self, caltype):
         """returns a local filename for a retrieved calibration"""
@@ -606,16 +600,37 @@ class ReductionContext(dict):
         if len(self.originalInputs) == 0:
             return None
         elif len(self.originalInputs) == 1:
-            fname = os.path.abspath( self.originalInputs[0] )
+            fname = os.path.abspath( self.originalInputs[0].filename )
             key = (fname, caltype)
-            return self.calibrations[key].filename
+            parentData = self.getInputFromParent( fname )
+            if parentData is None:
+                infile = os.path.basename( fname )
+            else:
+                infile = os.path.basename( self.getInputFromParent( fname ) )
+            return {self.calibrations[key].filename:[infile]}
         else:
-            retl = []
+            # If you are in here, I assume that intelligence has been set.
+            # (i.e. There are improvements / assumptions made in here.)
+            retl = {}
             for inp in self.originalInputs:
-                key = (inp.filename, caltype)
-                retl.append(self.calibrations[key])
+                key = (os.path.abspath(inp.filename), caltype)
+                calfile = self.calibrations[key].filename
+                infile = os.path.basename( self.getInputFromParent( inp.filename ) )
+                if retl.has_key( calfile ):
+                    retl.update( {calfile:retl[calfile] + [infile]} )
+                else:
+                    retl.update( {calfile:[infile]} )
+            #print 'RM607:', retl
             return retl
-        
+    
+    def getInputFromParent(self, parent):
+        '''
+        Very inefficient.
+        '''
+        for inp in self.inputs:
+            if inp.parent == parent:
+                return inp.filename
+    
     def reportHistory(self):
         
         sh = self.stephistory

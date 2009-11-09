@@ -67,7 +67,7 @@ class CalibrationDefinitionLibrary( object ):
                 calXMLFile.close()
                 
             # childNodes is the <query> tag(s)           
-            calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input )            
+            calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input.ad )            
             reqEvents.append(calReqEvent)
         # Goes to reduction context object to add to queue
         return reqEvents

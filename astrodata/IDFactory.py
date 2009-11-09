@@ -4,12 +4,12 @@ from astrodata.AstroData import AstroData
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
 
 
-def generateStackableID( inputf, version = "1_0" ):
+def generateStackableID( dataset, version = "1_0" ):
     '''
     Generate an ID from which all similar stackable data will have in common.
     
-    @param inputf: Input Astrodatas instances or fits filenames.
-    @type inputf: list of Astrodata instances or str
+    @param dataset: Input AstroData instance or fits filename.
+    @type dataset: AstroData instances or str
     
     @param version: The version from which to run.
     @type version: string
@@ -32,21 +32,21 @@ def generateStackableID( inputf, version = "1_0" ):
         shaObj.update( phu['OBSID'] )
         shaObj.update( phu['OBJECT'] )
     """
-    chkAd = inputf[0]
-    if type(chkAd) == str:
-        phu = pf.getheader(chkAd)
+    
+    if type(dataset) == str:
+        phu = pf.getheader(dataset)
         ID = version + "_" + phu['OBSID'] + "_" + phu['OBJECT'] 
-    elif type(chkAd) == AstroData:
-        ID = version + "_" + chkAd.phuValue('OBSID') + "_" + chkAd.phuValue('OBJECT')
+    elif type(dataset) == AstroData:
+        ID = version + "_" + dataset.phuValue('OBSID') + "_" + dataset.phuValue('OBJECT')
     return ID
     # return shaObj.hexdigest()
   
-def generateDisplayID( inputf, version ):
+def generateDisplayID( dataset, version ):
     '''
     Generate an ID from which all similar stackable data will have in common.
     
-    @param inputf: Input Astrodatas 
-    @type inputf: list of Astrodata instances
+    @param dataset: Input AstroData or fits filename
+    @type dataset: list of AstroData instance
     
     @param version: The version from which to run.
     @type version: string
@@ -63,14 +63,18 @@ def generateDisplayID( inputf, version ):
         
         return idFunc( inputf, version )
     
-    if (False):
+    """
         shaObj = hashlib.sha1()
         phu = pf.getheader( inputf[0], 0 )
         shaObj.update( phu['OBSID'] )
         shaObj.update( phu['OBJECT'] )
+    """
     
-    chkAd = inputf[0]
-    ID = version + "_" + chkAd.phuValue('OBSID') + "_" + chkAd.phuValue("OBJECT")
+    if type(dataset) == str:
+        phu = pf.getheader(dataset)
+        ID = version + "_" + phu['OBSID'] + "_" + phu['OBJECT'] 
+    elif type(dataset) == AstroData:
+        ID = version + "_" + dataset.phuValue('OBSID') + "_" + dataset.phuValue('OBJECT')
     return ID
     # return shaObj.hexdigest()
 

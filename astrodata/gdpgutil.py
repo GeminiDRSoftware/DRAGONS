@@ -1,6 +1,7 @@
 import AstroDataType
 import sys
 from astrodata.AstroData import AstroData
+from ReductionContextRecords import AstroDataRecord
 from utils import geminiLogger
 #------------------------------------------------------------------------------ 
 class GDPGUtilExcept:
@@ -19,11 +20,11 @@ class GDPGUtilExcept:
 
 def checkDataSet( filenames ):
     '''
-    Takes a list or individual AstroData, filenames, OutputRecords and then verifies and
+    Takes a list or individual AstroData, filenames, and then verifies and
     returns list of AstroData instances. Will crash if bad arguments.
     
     @param filenames: Parameters you want to verify. 
-    @type filenames: list, AstroData, str, OutputRecord
+    @type filenames: list, AstroData, str
     
     @return: List of verified AstroData instances.
     @rtype: list
@@ -105,6 +106,9 @@ def openIfName(dataset):
     elif type(dataset) == AstroData:
         bNeedsClosing = False
         gd = dataset
+    elif type(dataset) == AstroDataRecord:
+        bNeedsClosing = False
+        gd = dataset.ad
     else:
         raise GDPGUtilExcept("BadArgument in recipe utility function: openIfName(..)\n MUST be filename (string) or GeminiData instrument")
     

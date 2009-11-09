@@ -127,10 +127,13 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         # not really sure we need to use gireduce here. I think we could easily make a
         # more generic bias sub task
         try:
-            print "Subtracting off bias "+co.calFilename("bias")+" from "+co.inputsAsStr()
-            gemini.gmos.gireduce(co.inputsAsStr(), fl_over=no,
-                fl_trim=no, fl_bias=yes,bias=co.calFilename("bias"),
-                fl_flat=no, outpref="biassub_") # this flag was removed?,fl_mult=no)
+            print "Subtracting off bias"
+            cals = co.calFilename( 'bias' )
+            for cal in cals:
+                gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,
+                    fl_trim=no, fl_bias=yes,bias=cal,
+                    fl_flat=no, outpref="biassub_") # this flag was removed?,fl_mult=no)
+            
             co.reportOutput(co.prependNames("biassub_"))
         except:
             print "Problem subtracting bias"
@@ -142,9 +145,12 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def flatfieldCorrect(self, co):
         try:
-            print "dividing "+co.calFilename("twilight")+" from "+co.inputsAsStr()
-            gemini.gmos.gireduce(co.inputsAsStr(), fl_over=no,fl_trim=no,
-                fl_bias=no, flat1=co.calFilename("twilight"), fl_flat=yes, outpref="flatdiv_")    
+            print "Flat field correcting"
+            
+            cals = co.calFilename( 'twilight' )
+            for cal in cals:
+                gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,fl_trim=no,
+                    fl_bias=no, flat1=cal, fl_flat=yes, outpref="flatdiv_")    
         except:
             print "Problem dividing by normalized flat"
             print "Problem in GIREDUCE"

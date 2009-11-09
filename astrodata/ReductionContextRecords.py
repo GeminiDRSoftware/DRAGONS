@@ -60,7 +60,7 @@ class StackableRecord( ReductionContextRecord ):
     
 ##@@FIXME: Because of the nature of how Output -> Input, the name of this record may need to change
 ## at some point.
-class OutputRecord( ReductionContextRecord ):
+class AstroDataRecord( ReductionContextRecord ):
     '''
     Contains any metadata related to output/input within the ReductionContext.
     This is used specifically in the ReductionContext records inputs and outputs.
@@ -68,18 +68,21 @@ class OutputRecord( ReductionContextRecord ):
     displayID = None
     filename = None
     ad = None
+    parent = None
     
-    def __init__(self, filename, displayID=None, timestamp=None, ad=None):
-        super( OutputRecord, self ).__init__( timestamp )
+    def __init__(self, filename, displayID=None, timestamp=None, ad=None, parent=None):
+        super( AstroDataRecord, self ).__init__( timestamp )
         if type( filename ) == AstroData:
             self.filename = filename.filename
             self.ad = filename
+            self.parent = filename.filename
         elif type( filename ) == str:
             self.filename = filename
-            if ad is None:
-                self.ad = AstroData( filename )
-            else:
-                self.ad = ad
+            self.ad = AstroData( filename )
+            self.parent = parent
+        elif type( filename ) == AstroDataRecord:
+            self = filename
+            return
         else:
             raise "BAD ARGUMENT"
         ##@@TODO: displayID may be obsolete
@@ -88,8 +91,9 @@ class OutputRecord( ReductionContextRecord ):
         
     def __str__(self):
         rets = """
-    displayID     = %s
+    displayID = %s
     filename  = %s
     timestamp = %s
-    astrodata = %s \n""" % ( str(self.displayID), str(self.filename), self.timestamp, str(self.ad) )
+    parent    = %s
+    astrodata = %s \n""" % ( str(self.displayID), str(self.filename), self.timestamp, self.parent, str(self.ad) )
         return rets  
