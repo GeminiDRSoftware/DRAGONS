@@ -47,8 +47,9 @@ oldpypath = os.getenv( 'PYTHONPATH' )
 
 print "Temporarily Changing PYTHONPATH"
 reduce = '../trunk/astrodata/reduce'
-sys.path.append(":../trunk:")
-#print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
+#sys.path.append(":../trunk:")
+os.environ.update({'PYTHONPATH':oldpypath+":../trunk:"})
+print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
 try:
     os.chdir( 'gemini_python/test_data' )
@@ -66,7 +67,7 @@ except:
 	print "Recipe failed for some reason"
 finally:
 	print "Changing PYTHONPATH back."
-	#os.environ.update( {'PYTHONPATH':oldpypath} )
+	os.environ.update( {'PYTHONPATH':oldpypath} )
 
-#print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
+print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
