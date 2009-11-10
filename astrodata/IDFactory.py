@@ -1,6 +1,7 @@
 import hashlib
 import pyfits as pf
 from astrodata.AstroData import AstroData
+import Descriptors
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
 
 
@@ -78,4 +79,20 @@ def generateDisplayID( dataset, version ):
     return ID
     # return shaObj.hexdigest()
 
+
+def generateAstroDataID( dataset, version="1_0" ):
+    '''
+    
+    
+    '''
+    if type(dataset) == str:
+        ad = AstroData( dataset )
+        desc = Descriptors.getCalculator( ad )
+        return desc.fetchValue('DATALAB', ad)
+    elif type( dataset ) == AstroData:
+        desc = Descriptors.getCalculator( dataset )
+        return desc.fetchValue('DATALAB', dataset)
+    else:
+        raise "BAD ARGUMENT TYPE"
+    
     

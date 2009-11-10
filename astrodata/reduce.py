@@ -7,12 +7,12 @@ from datetime import datetime
 term = TerminalController()
 a = datetime.now()
 
-from RecipeManager import ReductionContext
-from RecipeManager import RecipeLibrary
-from GeminiData import GeminiData
+from astrodata.RecipeManager import ReductionContext
+from astrodata.RecipeManager import RecipeLibrary
+
 from optparse import OptionParser
 from StackKeeper import StackKeeper
-from ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
+from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
         GetStackableRequest, DisplayRequest
 
 
@@ -312,6 +312,7 @@ for infile in infiles: #for dealing with multiple files.
                         fn = rq.filename
                         typ = rq.caltype
                         calname = coi.getCal(fn, typ)
+                        
                         if calname == None:
                             # Do the calibration search
                             calname = cs.search( rq )

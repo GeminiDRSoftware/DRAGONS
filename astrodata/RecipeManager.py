@@ -16,7 +16,7 @@ from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDat
 import pickle # for persisting the calibration index
 
 import IDFactory as idFac # id hashing functions
-from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest
+from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, CalibrationRequest
 from StackKeeper import StackKeeper
 from ParamObject import PrimitiveParameter
 # this module operates like a singleton
@@ -525,8 +525,8 @@ class ReductionContext(dict):
                 return ", ".join([os.path.basename(path) for path in outputlist])
         
     def addCal(self, data, caltyp, calname, timestamp = None):
-        fname = data.filename
-        fname = os.path.abspath(fname)
+        adID = idFac.generateAstroDataID( data )
+        
         calname = os.path.abspath(calname)
         
         if timestamp == None:
@@ -537,17 +537,18 @@ class ReductionContext(dict):
         if self.calibrations == None:
             self.calibrations = {}
         
-        calrec = CalibrationRecord(fname, calname, caltyp, timestamp)
-        key = (fname, caltyp)
+        calrec = CalibrationRecord(data.filename, calname, caltyp, timestamp)
+        key = (adID, caltyp)
+        print "RM542:", key, calrec
         self.calibrations.update({key: calrec})
     
     def getCal(self, data, caltype):
         #print "RM551:", data, type( data )
-        filename = data.filename
-        filename = os.path.abspath(filename)
-        key = (filename, caltype)
+        adID = idFac.generateAstroDataID(data)
+        #filename = os.path.abspath(filename)
+        key = (adID, caltype)
         if key in self.calibrations.keys():
-            return self.calibrations[(filename,caltype)].filename
+            return self.calibrations[(adID,caltype)].filename
         return None
         
         #pyraf regress.py
@@ -560,7 +561,7 @@ class ReductionContext(dict):
     def clearRqs(self):
         self.rorqs = []
         
-    def rqCal(self, caltype): 
+    def rqCal(self, caltype):
         addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
         for re in addToCmdQueue:
             self.addRq(re)
@@ -600,27 +601,24 @@ class ReductionContext(dict):
         if len(self.originalInputs) == 0:
             return None
         elif len(self.originalInputs) == 1:
-            fname = os.path.abspath( self.originalInputs[0].filename )
-            key = (fname, caltype)
-            parentData = self.getInputFromParent( fname )
-            if parentData is None:
-                infile = os.path.basename( fname )
-            else:
-                infile = os.path.basename( self.getInputFromParent( fname ) )
+            adID = idFac.generateAstroDataID( self.inputs[0].ad )
+            key = (adID, caltype)
+            infile = os.path.basename( self.inputs[0].filename )
+            #print 'RM611:\n', self.calsummary()
             return {self.calibrations[key].filename:[infile]}
         else:
             # If you are in here, I assume that intelligence has been set.
             # (i.e. There are improvements / assumptions made in here.)
             retl = {}
             for inp in self.originalInputs:
-                key = (os.path.abspath(inp.filename), caltype)
+                key = ( idFac.generateAstroDataID(inp.ad), caltype)
                 calfile = self.calibrations[key].filename
-                infile = os.path.basename( self.getInputFromParent( inp.filename ) )
+                infile = os.path.basename( inp.filename )
                 if retl.has_key( calfile ):
                     retl.update( {calfile:retl[calfile] + [infile]} )
                 else:
                     retl.update( {calfile:[infile]} )
-            #print 'RM607:', retl
+            #print 'RM625:', retl
             return retl
     
     def getInputFromParent(self, parent):
