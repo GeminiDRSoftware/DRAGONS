@@ -482,12 +482,10 @@ def chomp(line):
     @return: Line without any '\n' at the end.
     @rtype: str
     """
-    if len(line) >= 1:        
-        if line[-1] == '\n':            
-            line = line[0:len(line)-1]            
-            return chomp( line )
-        else:                 
-            return line
-    else:
-        return ""
+    if type( line ) != str:
+        raise "Bad Argument - Passed parameter is not str", type(line)
+    
+    while len(line) >=1 and line[-1] == '\n':            
+        line = line[:-1]                 
+    return line
     
