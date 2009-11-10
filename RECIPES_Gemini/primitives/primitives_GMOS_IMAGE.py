@@ -17,7 +17,7 @@ no = pyraf.iraf.no
 # NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
 # don't execute pyraf code and so do not need to print this interactive 
 # package init display (it shows something akin to the dir(gmos)
-import sys, StringIO
+import sys, StringIO, os
 SAVEOUT = sys.stdout
 capture = StringIO.StringIO()
 sys.stdout = capture
@@ -27,7 +27,12 @@ sys.stdout = SAVEOUT
 
 class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def init(self, co):
-        pyraf.iraf.set (adata=co["global"]['adata'].value)  
+        if "global" in co and "adata" in co["global"]:
+            pyraf.iraf.set (adata=co["global"]['adata'].value)  
+        else:
+            (root, name) = os.path.split(co.inputs[0])
+            pyraf.iraf.set (adata=root)  
+        
         GEMINIPrimitives.init(self, co)
         return co
 
