@@ -230,7 +230,7 @@ for infile in infiles: #for dealing with multiple files.
     cs = CalibrationService()
     
     
-    title = "  Processing dataset: %s  " % infiles[0] #**
+    title = "  Processing dataset: %s  " % str(infile) #**
     tl = len(title)
     tb = " " * tl
     print "${REVERSE}" + tb
@@ -296,7 +296,10 @@ for infile in infiles: #for dealing with multiple files.
             ################
             # CONTROL LOOP #
             ################
+            print str(dir(TerminalController))
+            print "${DIM}"
             for coi in ro.substeps(rec, co):
+                print ("${NORMAL}")
                 coi.processCmdReq()
                 while (coi.paused):
                     time.sleep(.100)
@@ -366,7 +369,7 @@ for infile in infiles: #for dealing with multiple files.
                     #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
                     # CLEAR THE REQUEST LEAGUE
                    
-            
+                print "${DIM}"
         
         except KeyboardInterrupt:
             co.isFinished(True)
