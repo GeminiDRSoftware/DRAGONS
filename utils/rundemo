@@ -32,8 +32,8 @@ filelist = [
 # Change the recipe in here to change which recipe will be run.
 #!!!
 recipe = 'demo'#'raTest2'
-fullpath = os.path.abspath( __file__ )
-index = fullpath.rfind( 'gemini_python' )
+fullpath = os.path.abspath( "/home/callen")
+index = fullpath.rfind( 'SVN-DPSG' )
 
 if index == -1:
     betterpath = "./"
