@@ -74,6 +74,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def prepare(self, co):
         try:
+            print 'preparing'
             print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
             print "Updating GAIN keyword by calling GGAIN"
             gemini.gmos.gprepare(co.inputsAsStr(strippath = True), rawpath="adata$")

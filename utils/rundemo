@@ -24,9 +24,31 @@ N20091002S0219.fits
 #filelist = ['N20091002S0219.fits']
 filelist = [
 #'N20091002S0219.fits'
-'N20020214S059.fits',
-'N20020214S060.fits',
-'N20020214S061.fits'
+#---
+#'N20090703S0156.fits',
+#'N20090703S0157.fits',
+#'N20090703S0158.fits',
+#'N20090703S0159.fits',
+#'N20090703S0160.fits',
+#'N20090703S0161.fits',
+#'N20090703S0162.fits',
+#'N20090703S0163.fits',
+#----
+'N20091027S0133.fits',
+'N20091027S0134.fits',
+'N20091027S0135.fits',
+'N20091027S0136.fits',
+'N20091027S0137.fits'
+#----
+#'N20091027S0138.fits',
+#'N20091027S0139.fits',
+#'N20091027S0140.fits',
+#'N20091027S0141.fits',
+#'N20091027S0142.fits'
+#----
+#'N20020214S059.fits',
+#'N20020214S060.fits',
+#'N20020214S061.fits'
 			]
 #!!!
 # Change the recipe in here to change which recipe will be run.
