@@ -153,8 +153,6 @@ class GEMINIPrimitives(ReductionObject):
                     co.reportOutput(stackname)
                 else:
                     print "'%s' was not combined because there is only one image." %( stacklist[0] )
-            else:
-                print "There are not enough images to combine."
         except:
             print "Problem combining and averaging"
             raise 

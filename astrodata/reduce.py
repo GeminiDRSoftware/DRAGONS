@@ -229,8 +229,12 @@ for infile in infiles: #for dealing with multiple files.
     # Local Calibration Service Setup
     cs = CalibrationService()
     
-    
-    title = "  Processing dataset: %s  " % str(infile) #**
+    infilenames = []
+    for infs in infiles:
+        for inf in infs:
+            infilenames.append( inf.filename )
+        
+    title = "  Processing dataset: %s  " % str(infilenames) #**
     tl = len(title)
     tb = " " * tl
     print "${REVERSE}" + tb
@@ -296,7 +300,7 @@ for infile in infiles: #for dealing with multiple files.
             ################
             # CONTROL LOOP #
             ################
-            print str(dir(TerminalController))
+            #print str(dir(TerminalController))
             print "${DIM}"
             for coi in ro.substeps(rec, co):
                 print ("${NORMAL}")
@@ -317,7 +321,7 @@ for infile in infiles: #for dealing with multiple files.
                             # Do the calibration search
                             calname = cs.search( rq )
                             if calname == None:
-                                raise "No suitabe calibration for '" + fn + "'."
+                                raise "No suitabe calibration for '" + str(fn) + "'."
                             elif len( calname ) >= 1:
                                 # Not sure if this is where the one returned calibration is chosen, or if
                                 # that is done in the calibration service, etc.

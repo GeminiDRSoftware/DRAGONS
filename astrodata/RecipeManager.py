@@ -16,7 +16,7 @@ from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDat
 import pickle # for persisting the calibration index
 
 import IDFactory as idFac # id hashing functions
-from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, CalibrationRequest
+from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest
 from StackKeeper import StackKeeper
 from ParamObject import PrimitiveParameter
 # this module operates like a singleton
@@ -370,7 +370,7 @@ class ReductionContext(dict):
                     orecord = AstroDataRecord( temp, self.displayID )
                 else:
                     raise "RM292 type: " + str(type(temp))
-                print "RM344:", orecord
+                #print "RM344:", orecord
                 self.outputs["standard"].append( orecord )
             
     
@@ -525,8 +525,23 @@ class ReductionContext(dict):
                 return ", ".join([os.path.basename(path) for path in outputlist])
         
     def addCal(self, data, caltyp, calname, timestamp = None):
-        adID = idFac.generateAstroDataID( data )
+        '''
+        Add a calibration to the calibration index with a key (DATALAB, caltype).
         
+        @param data: The path or AstroData for which the calibration will be applied to.
+        @type data: str or AstroData instance
+        
+        @param caltyp: The type of calibration. For example, 'bias' and 'flat'.
+        @type caltyp: str
+        
+        @param calname: The URI for the MEF calibration file.
+        @type calname: str
+        
+        @param timestamp: Default= None. Timestamp for when calibration was added. The format of time is
+        taken from datetime.datetime.
+        @type timestamp: str
+        '''
+        adID = idFac.generateAstroDataID( data )
         calname = os.path.abspath(calname)
         
         if timestamp == None:
@@ -539,10 +554,22 @@ class ReductionContext(dict):
         
         calrec = CalibrationRecord(data.filename, calname, caltyp, timestamp)
         key = (adID, caltyp)
-        print "RM542:", key, calrec
+        #print "RM542:", key, calrec
         self.calibrations.update({key: calrec})
     
     def getCal(self, data, caltype):
+        '''
+        Retrieve calibration.
+        
+        @param data: File for which calibration will be applied.
+        @type data: str or AstroData instance
+        
+        @param caltype: The type of calibration. For example, 'bias' and 'flat'.
+        @type caltype: str
+        
+        @return: The URI of the currently stored calibration or None.
+        @rtype: str or None 
+        '''
         #print "RM551:", data, type( data )
         adID = idFac.generateAstroDataID(data)
         #filename = os.path.abspath(filename)
@@ -551,22 +578,39 @@ class ReductionContext(dict):
             return self.calibrations[(adID,caltype)].filename
         return None
         
-        #pyraf regress.py
         
     def addRq(self, rq):
+        '''
+        Add a request to be evaluated by the control loop.
+        
+        @param rq: The request.
+        @type rq: ReductionObjectRequests instance
+        '''
         if self.rorqs == None:
             self.rorqs = []
         self.rorqs.append(rq)
     
     def clearRqs(self):
+        '''
+        Clear all requests.
+        '''
         self.rorqs = []
         
     def rqCal(self, caltype):
+        '''
+        Create calibration requests based on raw inputs.
+        
+        @param caltype: The type of calibration. For example, 'bias' and 'flat'.
+        @type caltype: str
+        '''
         addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
         for re in addToCmdQueue:
             self.addRq(re)
         
     def rqStackUpdate(self):
+        '''
+        Create requests to update a stack list.
+        '''
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for inp in self.inputs:
@@ -577,9 +621,12 @@ class ReductionContext(dict):
             self.addRq( stackUEv )
         
     def rqDisplay(self):
+        '''
+        Create requests to display inputs.
+        '''
         ver = "1_0"
         displayObject = DisplayRequest()
-        Did = idFac.generateDisplayID( self.inputs[0].filename,ver )
+        Did = idFac.generateDisplayID( self.inputs[0].filename, ver )
         displayObject.disID = Did
         displayObject.disList = self.inputs
         self.addRq( displayObject )
