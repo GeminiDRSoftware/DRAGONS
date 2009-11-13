@@ -41,12 +41,12 @@ class GEMINIPrimitives(ReductionObject):
     
     def gem_produce_im_flat(self, co):
         print "gem_produce_imflat step called"
-        co.update({"flat" :co.calibrations[(co.inputs[0], "flat")]})
+        # co.update({"flat" :co.calibrations[(co.inputs[0], "flat")]})
         yield co
     
     def gem_produce_bias(self, co):
         print "gem_produce_bias step called"
-        co.update({"bias" :co.calibrations[(co.inputs[0], "bias")]})
+        # co.update({"bias" :co.calibrations[(co.inputs[0], "bias")]})
         yield co    
 
     def getProcessedBias(self, co):

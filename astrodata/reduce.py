@@ -7,6 +7,8 @@ from datetime import datetime
 term = TerminalController()
 a = datetime.now()
 
+import pyraf
+
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
 
@@ -166,6 +168,7 @@ def command_line():
         # @@TODO: Perhaps need a list of valid calibration types.
         # @@TODO: Need testing if passed in calibration type is valid.
         
+
         co = ReductionContext()
         co.restoreCalIndex(calindfile)
         if options.cal_type == 'all':
@@ -291,7 +294,7 @@ for infile in infiles: #for dealing with multiple files.
     
             # @@TODO:evaluate use of init for each recipe vs. for all recipes
             ro.init(co)
-            print term.render("${GREEN}running recipe: '%s'${NORMAL}\n") % rec
+            print term.render("${GREEN}running recipe: ${RED}'%s'${NORMAL}\n") % rec
             rl.loadAndBindRecipe(ro,rec, file=infile[0])
             if (useTK):
                 cw.running(rec)
@@ -301,7 +304,6 @@ for infile in infiles: #for dealing with multiple files.
             # CONTROL LOOP #
             ################
             #print str(dir(TerminalController))
-            print "${DIM}"
             for coi in ro.substeps(rec, co):
                 print ("${NORMAL}")
                 coi.processCmdReq()
@@ -374,8 +376,6 @@ for infile in infiles: #for dealing with multiple files.
                     #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
                     # CLEAR THE REQUEST LEAGUE
                    
-                print "${DIM}"
-        
         except KeyboardInterrupt:
             co.isFinished(True)
             if (useTK):
@@ -386,12 +386,15 @@ for infile in infiles: #for dealing with multiple files.
         except:
             print "CONTEXT AFTER FATAL ERROR"
             print "--------------------------"
-            raise
             co.persistCalIndex(calindfile)
             if (bReportHistory):
                 co.reportHistory()
                 rl.reportHistory()
             co.isFinished(True)
+            if (useTK):
+                cw.killed = True
+                cw.quit()
+            co.persistCalIndex(calindfile)
             raise
         co.persistCalIndex(calindfile)
     
@@ -409,7 +412,7 @@ for infile in infiles: #for dealing with multiple files.
         try:
             cw.done()
             cw.mainWindow.after_cancel(cw.pcqid)
-            if cw.killed == True:
+            if True: #cw.killed == True:
                 raw_input("Press Enter to Close Monitor Windows:")
             # After ID print cw.pcqid
             cw.mainWindow.quit()
@@ -427,3 +430,5 @@ for infile in infiles: #for dealing with multiple files.
         sleep(5.)
     # print co.reportHistory()
     # main()
+    # don't leave the terminal in another color/mode, that's rude
+    print "${NORMAL}"
