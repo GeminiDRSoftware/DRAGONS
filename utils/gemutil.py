@@ -5,6 +5,7 @@ from iraf import gemlocal
 
 import mefutil
 reload(mefutil)
+import strutil
 import time
 
 
@@ -431,7 +432,11 @@ def removeExtension (images):
 
 #---------------------------------------------------------------------------
 def appendFits (images):
-    """Append ".fits" to each name in 'images' that lacks an extension.
+    """
+    !!!NOTE!!! This function calls the appendFits in strutil. Thus, if you want to use appendFits,
+    use the one in there. This remains for backwards compatibility.
+    
+    Append ".fits" to each name in 'images' that lacks an extension.
 
     >>> print appendFits ('abc')
     abc.fits
@@ -448,32 +453,14 @@ def appendFits (images):
     @rtype: list of strings
     """
 
-    if isinstance (images, str):
-        is_a_list = False
-        images = [images]
-    else:
-        is_a_list = True
-    modified = []
-    for image in images:
-        found = False
-        # extensions is a list of recognized filename extensions.
-        for extn in extensions:
-            if image.endswith (extn):
-                found = True
-                break
-        if found:
-            modified.append (image)
-        else:
-            modified.append (image + ".fits")
-
-    if is_a_list:
-        return modified
-    else:
-        return modified[0]
+    return strutil.appendFits( images )
 #---------------------------------------------------------------------------
 
 def chomp(line):
     """
+    !!!NOTE!!! This function calls the chomp in strutil. Thus, if you want to use chomp,
+    use the one in there. This remains for backwards compatibility.
+    
     Removes newline(s) from end of line if present.
     
     @param line: A possible corrupted line of code
@@ -482,10 +469,6 @@ def chomp(line):
     @return: Line without any '\n' at the end.
     @rtype: str
     """
-    if type( line ) != str:
-        raise "Bad Argument - Passed parameter is not str", type(line)
     
-    while len(line) >=1 and line[-1] == '\n':            
-        line = line[:-1]                 
-    return line
+    return strutil.chomp( line )
     
