@@ -45,7 +45,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             gemini.giflat(co.inputsAsStr(), outflat=co["outflat"],
                 bias=co.calName("REDUCED_BIAS"),rawpath=co["caldir"],
                 fl_over=co["fl_over"], fl_trim=co["fl_trim"], 
-                fl_vardq=co["fl_vardq"])
+                fl_vardq=co["fl_vardq"],Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
         except:
             print "problem combining imaging flats with giflat"
             raise
@@ -64,7 +64,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "combining biases to create master bias"
             gemini.gbias(co.inputsAsStr(), outbias=co["outbias"],
                 rawpath=co["caldir"], fl_trim=co["fl_trim"], 
-                fl_over=co["fl_over"], fl_vardq=co["fl_vardq"])
+                fl_over=co["fl_over"], fl_vardq=co["fl_vardq"],
+                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
         except:
             print "problem combining biases with gbias"
             raise SystemExit
@@ -77,7 +78,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print 'preparing'
             print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
             print "Updating GAIN keyword by calling GGAIN"
-            gemini.gmos.gprepare(co.inputsAsStr(strippath = True), rawpath="adata$")
+            gemini.gmos.gprepare(co.inputsAsStr(strippath = True), rawpath="adata$",Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
             co.reportOutput(co.prependNames("g", currentDir = True))
             
         except:
@@ -92,7 +93,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "parameter and BIASSEC header keyword"
             print "Subtracting overscan bias levels using colbias"
             gemini.gmos.gireduce(co.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=no, fl_bias=no, \
-                fl_flat=no, outpref="oversub_")
+                fl_flat=no, outpref="oversub_",Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
             co.reportOutput(co.prependNames("oversub_", currentDir = True))
         except:
             print "Problem subtracting overscan bias"
@@ -106,7 +107,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "Determining overscan region using BIASSEC header keyword"
             print "Trimming off overscan"
             gemini.gmos.gireduce(co.inputsAsStr(), fl_over=no,fl_trim=yes, 
-            fl_bias=no, fl_flat=no, outpref="trim_")
+                fl_bias=no, fl_flat=no, outpref="trim_",Stdout = co.getIrafStdout(),
+                Stderr = co.getIrafStderr())
             co.reportOutput(co.prependNames("trim_"))
         except:
             print "Problem trimming off overscan region"
@@ -119,7 +121,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         print "Performing Overscan Correct (overSub, overTrim)"
         try:
             gemini.gmos.gireduce(co.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=pyraf.iraf.yes,
-                fl_bias=no, fl_flat=no, outpref="trim_oversub_")
+                fl_bias=no, fl_flat=no, outpref="trim_oversub_",
+                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
             co.reportOutput(co.prependNames("trim_oversub_", currentDir = True))
         except:
             print "Problem correcting overscan region"
@@ -138,7 +141,9 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             for cal in cals:
                 gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,
                     fl_trim=no, fl_bias=yes,bias=cal,
-                    fl_flat=no, outpref="biassub_") # this flag was removed?,fl_mult=no)
+                    fl_flat=no, outpref="biassub_",
+                    Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr()
+                    ) # this flag was removed?,fl_mult=no)
             
             co.reportOutput(co.prependNames("biassub_"))
         except:
@@ -156,7 +161,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             cals = co.calFilename( 'twilight' )
             for cal in cals:
                 gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,fl_trim=no,
-                    fl_bias=no, flat1=cal, fl_flat=yes, outpref="flatdiv_")    
+                    fl_bias=no, flat1=cal, fl_flat=yes, outpref="flatdiv_",
+                    Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())    
         except:
             print "Problem dividing by normalized flat"
             print "Problem in GIREDUCE"
@@ -167,7 +173,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def fringeCreate(self, co):
         try:
             print "creating fringe frame"
-            gemini.gifringe(co.inputsAsStr(), "fringe")
+            gemini.gifringe(co.inputsAsStr(), "fringe",
+                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
         except:
             print "Problem creating fringe from "+co.inputsAsStr()
             print "Problem in GIFRINGE"
@@ -178,7 +185,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def fringeSubtract(self, co):
         try:
             print "subtracting fringe frame"
-            gemini.girmfringe(co.inputsAsStr(), co["fringe"])
+            gemini.girmfringe(co.inputsAsStr(), co["fringe"],
+            Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
         except:
             print "Problem subtracting fringe from "+co.inputsAsStr()
             print "Problem in GIRMFRINGE"
@@ -192,7 +200,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
           # @@TODO hardcoded parmeters and ***imcoadd.dat may need to move from 
           # imcoadd_data/test4 to test_data dir before running
           gemini.imcoadd(co.stack_inputsAsStr(),fwhm=5, threshold=100,\
-                fl_over=yes, fl_avg=yes)
+                fl_over=yes, fl_avg=yes,
+                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
        except:
           print "Problem shifting and combining images "
           print "Problem in IMCOADD"

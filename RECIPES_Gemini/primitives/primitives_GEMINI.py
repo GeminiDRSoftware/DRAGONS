@@ -116,7 +116,8 @@ class GEMINIPrimitives(ReductionObject):
        try:
           print "producing image mosaic"
           #mstr = 'flatdiv_'+co.inputsAsStr()          
-          gemini.gmosaic( co.inputsAsStr(), outpref="mo_" )
+          gemini.gmosaic( co.inputsAsStr(), outpref="mo_",
+            Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr() )
           co.reportOutput(co.prependNames("mo_", currentDir = True))
        except:
           print "Problem producing image mosaic"         
@@ -143,7 +144,7 @@ class GEMINIPrimitives(ReductionObject):
                 # stackable images are in the same spot which may not be the case.
                 
                 stacklist = co.getStack( stackID ).filelist
-                print "STACKLIST:", stacklist
+                # print "pG147: STACKLIST:", stacklist
                 
                 if len( stacklist ) > 1:
                     stackname = "avgcomb_" + os.path.basename(stacklist[0])
