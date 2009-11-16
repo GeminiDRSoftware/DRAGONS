@@ -1,13 +1,21 @@
 #!/usr/bin/env python
+import time
+ostart_time = time.time()
+
+
 import astrodata
 import terminal
 from terminal import TerminalController
 from astrodata.AstroData import AstroData
 from datetime import datetime
+
+
+
 term = TerminalController()
 a = datetime.now()
 
 import pyraf
+
 
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
@@ -19,16 +27,21 @@ from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackabl
 
 
 from LocalCalibrationService import CalibrationService
-
+start_time = time.time()
 from utils import paramutil
+end_time = time.time()
+#print 'test IMPORT TIME:', (end_time - start_time)
 import gdpgutil
 
 import sys, os, glob, subprocess
-import time
 
+oend_time = time.time()
+#print 'Overall IMPORT TIME:', (oend_time - ostart_time)
 #import pyfits as pf
 #import numdisplay
 #import numpy as np
+
+#sys.exit()
 
 b = datetime.now()
 
@@ -311,6 +324,7 @@ for infile in infiles: #for dealing with multiple files.
             # CONTROL LOOP #
             ################
             #print str(dir(TerminalController))
+            frameForDisplay = 1
             for coi in ro.substeps(rec, co):
                 print ("${NORMAL}")
                 coi.processCmdReq()
@@ -352,7 +366,7 @@ for infile in infiles: #for dealing with multiple files.
                         gemini()
                         gemini.gmos()
                         
-                        frameForDisplay = 1
+                        
                         ##@@FIXME: This os.system way, is very kluged and should be changed. 
                         if os.system( 'ps -e | grep ds9' ) > 0:
                             print "CANNOT DISPLAY: No ds9 running."
