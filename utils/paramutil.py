@@ -1,8 +1,8 @@
 import os
-import gemutil
-reload(gemutil)
+import strutil
+#reload(strutil)
 import geminiLogger
-reload(geminiLogger)
+#reload(geminiLogger)
 
 """This file contains the following utilities:
 
@@ -44,15 +44,15 @@ def checkImageParam( image ):
                 image = os.path.join( root, imageName )         
                 imageFile = open(image, 'r')                
                 readList = imageFile.readlines() 
-                #removes any newline with gemutil method 'chomp'                 
+                #removes any newline with strutil method 'chomp'                 
                 for i in range(len(readList)):
-                    readList[i] = gemutil.chomp(readList[i])
+                    readList[i] = strutil.chomp(readList[i])
                     if readList[i] == "" or readList[i] == "\n" or readList[i][0] == "#":
                         continue
                     if os.path.dirname(readList[i]) == "":
                         readList[i] = os.path.join( root, readList[i] )
                 #adds .fits if there is none
-                    inList.append(gemutil.appendFits(readList[i]))
+                    inList.append(strutil.appendFits(readList[i]))
             except:
                 glog.exception("An error occurred when opening and reading from the image.")
                 return None
@@ -60,7 +60,7 @@ def checkImageParam( image ):
                 imageFile.close()
         else:
             inList.append( image )            
-            inList[0] = gemutil.appendFits(inList[0])
+            inList[0] = strutil.appendFits(inList[0])
     #exception for an image of type 'List'       
     elif type(image) == list:
         for img in image:
@@ -124,9 +124,9 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
                     else:              
                         for i in range(len(outList)):  
                             #removes newlines from end of list                      
-                            outList[i] = gemutil.chomp(outList[i])
+                            outList[i] = strutil.chomp(outList[i])
                         #adds .fits if there is none                            
-                        outList = gemutil.appendFits(outList)                
+                        outList = strutil.appendFits(outList)                
             except:
                 glog.exception("An error occurred when opening and reading from the outlist file.")
                 return None
@@ -134,7 +134,7 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
                 outListFile.close()            
         else:
             outList.append( outfile )
-            outList[0] = gemutil.appendFits( outList[0] )
+            outList[0] = strutil.appendFits( outList[0] )
     elif type(outfile) == list:
         for file in outfile:
             if type( file ) == str:
@@ -254,3 +254,63 @@ def checkFileFitExtension( filename ):
         return (filename, 0)
     
 #------------------------------------------------------------------------------ 
+
+#---------------------------------------------------------------------------
+def appendFits (images):
+    """Append ".fits" to each name in 'images' that lacks an extension.
+
+    >>> print appendFits ('abc')
+    abc.fits
+    >>> print appendFits ('abc.fits')
+    abc.fits
+    >>> print appendFits (['abc', 'xyz.fits'])
+    ['abc.fits', 'xyz.fits']
+
+    @param images: a file name or a list of file names
+    @type images: a string or a list of strings
+
+    @return: the input file names with ".fits" appended to each, unless
+        the name already ended in a recognized extension.
+    @rtype: list of strings
+    """
+
+    if isinstance (images, str):
+        is_a_list = False
+        images = [images]
+    else:
+        is_a_list = True
+    modified = []
+    for image in images:
+        found = False
+        # extensions is a list of recognized filename extensions.
+        for extn in extensions:
+            if image.endswith (extn):
+                found = True
+                break
+        if found:
+            modified.append (image)
+        else:
+            modified.append (image + ".fits")
+
+    if is_a_list:
+        return modified
+    else:
+        return modified[0]
+#---------------------------------------------------------------------------
+
+def chomp(line):
+    """
+    Removes newline(s) from end of line if present.
+    
+    @param line: A possible corrupted line of code
+    @type line: str
+    
+    @return: Line without any '\n' at the end.
+    @rtype: str
+    """
+    if type( line ) != str:
+        raise "Bad Argument - Passed parameter is not str", type(line)
+    
+    while len(line) >=1 and line[-1] == '\n':            
+        line = line[:-1]                 
+    return line
