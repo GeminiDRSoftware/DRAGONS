@@ -7,6 +7,7 @@ biasCorrect
 flatfieldCorrect
 mosaicChips
 display
+shift
 setStackable
 averageCombine
 display

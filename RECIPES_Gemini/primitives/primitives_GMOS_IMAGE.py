@@ -193,6 +193,56 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise
         yield co
 
+    def shift(self, co):
+        '''
+        !!!NOTE!!!
+        The code in this method was designed only for demo use. It should not be taken seriously.
+        '''
+        try:
+            print 'shifting image'
+            compareval = co.inputs[0].filename
+            
+            if '0133' in compareval:
+                xshift = 0
+                yshift = 0
+            elif '0134' in compareval:
+                xshift = 34.37
+                yshift = -34.23
+            elif '0135' in compareval:
+                xshift = -34.31
+                yshift = -33.78
+            elif '0136' in compareval:
+                xshift = 34.42
+                yshift = 34.66
+            elif '0137' in compareval:
+                xshift = -34.35
+                yshift = 34.33
+            else:
+                xshift = 0
+                yshift = 0
+            
+            os.system( 'rm test.fits' )
+            outfile = os.path.basename( co.prependNames( 'shift_' )[0][0] )
+            infile = co.inputsAsStr() 
+            '''
+            print 'INPUT:'
+            print infile
+            print 'XSHIFT:', xshift, 'YSHIFT:', yshift
+            print 'OUTPUT:'
+            print outfile
+            '''
+            images.imshift( infile + '[1]', output='test.fits', xshift=xshift, yshift=yshift)
+            temp1 = pyfits.open( infile, 'readonly' )
+            temp2 = pyfits.open( 'test.fits' )
+            temp1[1].data = temp2[0].data
+            os.system( 'rm ' + outfile )
+            temp1.writeto( outfile )
+            co.reportOutput( co.prependNames("shift_") )
+        except:
+            print 'problem shifting image'
+            raise
+        yield co
+
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def findshiftsAndCombine(self, co):
        try:

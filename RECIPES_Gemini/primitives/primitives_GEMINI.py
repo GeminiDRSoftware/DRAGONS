@@ -144,7 +144,8 @@ class GEMINIPrimitives(ReductionObject):
                 # stackable images are in the same spot which may not be the case.
                 
                 stacklist = co.getStack( stackID ).filelist
-                # print "pG147: STACKLIST:", stacklist
+                #print "pG147: STACKLIST:", stacklist
+
                 
                 if len( stacklist ) > 1:
                     stackname = "avgcomb_" + os.path.basename(stacklist[0])
