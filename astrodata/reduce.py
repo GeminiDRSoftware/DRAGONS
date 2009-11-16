@@ -74,6 +74,9 @@ parser.add_option("--caltype", dest="cal_type", default=None, type="string",
                   help="Works in conjunction with '--addcal'. Ignored otherwise. " + \
                   "This should be the type of calibration in lowercase and one word. " + \
                   "For example: 'bias', 'twilight'.")
+parser.add_option("--showcolors", dest="show_colors", default=False, action = "store_true",
+                    help="""For debugging any color output problems, shows what colors
+                    reduce thinks are available based on the terminal setting.""")
 ##@@FIXME: This next option should not be put into the package
 parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_true",
                   help="Only used for rtf.")
@@ -92,7 +95,6 @@ term = TerminalController()
 REALSTDOUT = sys.stdout
 sys.stdout = terminal.ColorStdout(REALSTDOUT, term)
 
-
 adatadir = "./recipedata/"
 calindfile = "./.reducecache/calindex.pkl"
 stkindfile = "./.reducecache/stkindex.pkl"
@@ -104,6 +106,10 @@ def command_line():
     This function is just here so that all the command line oriented parsing is one common location.
     Hopefully, this makes things look a little cleaner.
     '''
+    
+    if  options.show_colors:
+        print dir(term)
+        sys.exit(0)
     infile = None
     if options.clr_cal:
         clrFile = None
@@ -281,7 +287,8 @@ for infile in infiles: #for dealing with multiple files.
             
             # add input files
             co.addInput(infile)
-            
+            co.setIrafStdout(terminal.IrafStdout())
+            co.setIrafStderr(terminal.IrafStdout())
             rl.retrieveParameters(infile[0], co, rec)
             if (useTK):
                 while cw.bReady == False:
@@ -358,8 +365,12 @@ for infile in infiles: #for dealing with multiple files.
                                     
                                 # tmpImage should be a string at this point.
                                 #print "RED332:", type(tmpImage), tmpImage
-                                gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no )
-                                frameForDisplay += 1    
+                                try:
+                                    gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
+                                        Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+                                    frameForDisplay += 1    
+                                except:
+                                    print "CANNOT DISPLAY"
                 
                 coi.clearRqs()      
                         

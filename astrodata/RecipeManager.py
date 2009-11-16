@@ -59,8 +59,29 @@ class ReductionContext(dict):
     stackeep = None
     displayMode = None
     displayID = None
+    irafstdout = None
+    irafstderr = None
     
+    def getIrafStdout(self):
+        if self.irafstdout != None:
+            return self.irafstdout
+        else:
+            return sys.stdout
+
+    def setIrafStdout(self, so):
+        self.irafstdout = so
+        return
     
+    def getIrafStderr(self):
+        if self.irafstderr != None:
+            return self.irafstderr
+        else:
+            return sys.stderr
+
+    def setIrafStderr(self, so):
+        self.irafstderr = so
+        return
+        
     def persistCalIndex(self, filename):
         #print "Calibration List Before Persist:"
         #print self.calsummary()

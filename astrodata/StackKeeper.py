@@ -37,7 +37,7 @@ class StackKeeper(object):
             # This will also convert the addtostack to a list
             addtostack = list( set(addtostack.filelist) - set(self.stackLists[ID].filelist) )
         self.stackLists[ID].filelist.extend(addtostack)
-        print "STACKLIST AFTER ADD:", self.stackLists[ID]
+        # print "SK40: STACKLIST AFTER ADD:", self.stackLists[ID]
         
 
     def get(self, ID):

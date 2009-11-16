@@ -83,7 +83,6 @@ class CalibrationService( object ):
             if not self.searchCriteria( calRq.criteria, desc, ad ):
                 #print "FAILED CRITERIA"
                 continue
-            print "CS98: This '" + calfile + "' succeeded!"
             urilist.append( (calfile, desc, ad) )
             
         urilist = self.sortPriority( urilist, calRq.priorities )

@@ -193,7 +193,7 @@ class ProgressBar:
                              self.term.UP + self.term.CLEAR_EOL +
                              self.term.UP + self.term.CLEAR_EOL)
             self.cleared = 1
-
+            
 class ColorStdout:
     REALSTDOUT = None
     term = None
@@ -208,3 +208,23 @@ class ColorStdout:
         out = self.term.render(arg)
         self.REALSTDOUT.write(out)
 
+class IrafStdout:
+    REALSTDOUT = None
+    IRAFSTDOUT = True
+    def __init__(self):
+        self.REALSTDOUT = sys.stdout
+    def flush(self):
+        return self.REALSTDOUT.flush()
+    def write(self, arg):
+        self.REALSTDOUT.write("${BLUE}"+arg+"${NORMAL}")
+
+
+class IrafStderr:
+    REALSTDOUT = None
+    IRAFSTDOUT = True
+    def __init__(self):
+        self.REALSTDOUT = sys.stdout
+    def flush(self):
+        return self.REALSTDOUT.flush()
+    def write(self, arg):
+        self.REALSTDOUT.write("${RED}"+arg+"${NORMAL}")
