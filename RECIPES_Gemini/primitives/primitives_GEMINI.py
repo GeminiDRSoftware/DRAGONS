@@ -10,7 +10,6 @@ import pyraf
 
 gemini()
 
-
 stepduration = 1.
 class GEMINIPrimitives(ReductionObject):
     
