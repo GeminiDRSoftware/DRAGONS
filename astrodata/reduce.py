@@ -324,8 +324,11 @@ for infile in infiles: #for dealing with multiple files.
             # CONTROL LOOP #
             ################
             #print str(dir(TerminalController))
+            primstdout = terminal.PrimitiveStdout(sys.stdout)
+            sys.stdout = primstdout 
             frameForDisplay = 1
             for coi in ro.substeps(rec, co):
+                sys.stdout = primstdout.REALSTDOUT
                 print ("${NORMAL}")
                 coi.processCmdReq()
                 while (coi.paused):
@@ -387,6 +390,7 @@ for infile in infiles: #for dealing with multiple files.
                                     print "CANNOT DISPLAY"
                 
                 coi.clearRqs()      
+                
                         
                 #dump the reduction context object 
                 if options.rtf:
@@ -400,7 +404,12 @@ for infile in infiles: #for dealing with multiple files.
                     #print "#" * 80
                     #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
                     # CLEAR THE REQUEST LEAGUE
-                   
+                sys.stdout = primstdout
+            
+            # return to prev stdout
+            sys.stdout = primstdout.REALSTDOUT
+            
+            
         except KeyboardInterrupt:
             co.isFinished(True)
             if (useTK):

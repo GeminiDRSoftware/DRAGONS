@@ -207,6 +207,34 @@ class ColorStdout:
     def write(self, arg):
         out = self.term.render(arg)
         self.REALSTDOUT.write(out)
+        
+import traceback as tb
+class PrimitiveStdout:
+    REALSTDOUT = None
+    
+    def __init__(self,rso):
+        self.REALSTDOUT = rso
+    def flush(self):
+        return self.REALSTDOUT.flush()
+    def write(self, arg):
+        # add bottom of primitive stack
+        h = "\n${BOLD}"
+        st = tb.extract_stack()
+        started = True # ignore deep part of stack
+        for f in st:
+            if started:
+                if f[2]:
+                    nam = f[2]
+                else:
+                    nam = "{}"
+                if "rimitives" in f[0]:
+                    h += (nam+": ")
+        h += "${NORMAL}"
+        argstrip = arg.strip()
+        if h == "":
+            h = "rsys:"
+        if len(argstrip) > 0:
+            self.REALSTDOUT.write(h+arg)
 
 class IrafStdout:
     REALSTDOUT = None
@@ -216,7 +244,11 @@ class IrafStdout:
     def flush(self):
         return self.REALSTDOUT.flush()
     def write(self, arg):
-        self.REALSTDOUT.write("${BLUE}"+arg+"${NORMAL}")
+        if "PANIC" in arg or "ERROR" in arg:
+            arg = "${RED}" + arg + "${NORMAL}"
+        else:
+            arg = "${BLUE}"+arg+"${NORMAL}"
+        self.REALSTDOUT.write(arg)
 
 
 class IrafStderr:
