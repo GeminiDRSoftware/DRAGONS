@@ -11,17 +11,7 @@ import sys
 #!!!
 # Change the files in here to change which files will be run.
 #!!!
-'''
 
-N20020214S059.fits
-N20020214S060.fits
-N20020214S061.fits
-N20090822S0207_bias.fits
-N20090823S0102_flat.fits
-N20091002S0219.fits
-
-'''
-#filelist = ['N20091002S0219.fits']
 filelist = [
 #'N20091002S0219.fits'
 #---
@@ -53,7 +43,7 @@ filelist = [
 #!!!
 # Change the recipe in here to change which recipe will be run.
 #!!!
-recipe = 'demo'#'raTest2'
+#recipe = 'demo'#'raTest2'
 fullpath = os.path.abspath( "/home/callen")
 index = fullpath.rfind( 'SVN-DPSG' )
 
@@ -80,7 +70,8 @@ try:
     start_time = time.time()
     for fits in filelist:
         filename = recdat + fits
-        command = reduce + ' -r ' + recipe + ' ' + filename
+        #command = reduce + ' -r ' + recipe + ' ' + filename
+        command = reduce + ' ' + filename
         os.system( command )
     end_time = time.time()
     print "Total Time:", (end_time - start_time)
