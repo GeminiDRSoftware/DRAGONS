@@ -8,8 +8,7 @@ import terminal
 from terminal import TerminalController
 from astrodata.AstroData import AstroData
 from datetime import datetime
-
-
+import commands
 
 term = TerminalController()
 a = datetime.now()
@@ -107,7 +106,7 @@ from tkMonitor import *
 term = TerminalController()
 REALSTDOUT = sys.stdout
 sys.stdout = terminal.ColorStdout(REALSTDOUT, term)
-
+sys.stderr = terminal.ColorStdout(sys.stderr, term)
 adatadir = "./recipedata/"
 calindfile = "./.reducecache/calindex.pkl"
 stkindfile = "./.reducecache/stkindex.pkl"
@@ -314,7 +313,7 @@ for infile in infiles: #for dealing with multiple files.
     
             # @@TODO:evaluate use of init for each recipe vs. for all recipes
             ro.init(co)
-            print term.render("${GREEN}running recipe: ${RED}'%s'${NORMAL}\n") % rec
+            print term.render("running recipe: '%s'\n") % rec
             rl.loadAndBindRecipe(ro,rec, file=infile[0])
             if (useTK):
                 cw.running(rec)
@@ -347,7 +346,7 @@ for infile in infiles: #for dealing with multiple files.
                             # Do the calibration search
                             calname = cs.search( rq )
                             if calname == None:
-                                raise "No suitabe calibration for '" + str(fn) + "'."
+                                raise "No suitable calibration for '" + str(fn) + "'."
                             elif len( calname ) >= 1:
                                 # Not sure if this is where the one returned calibration is chosen, or if
                                 # that is done in the calibration service, etc.
@@ -370,8 +369,10 @@ for infile in infiles: #for dealing with multiple files.
                         gemini.gmos()
                         
                         
-                        ##@@FIXME: This os.system way, is very kluged and should be changed. 
-                        if os.system( 'ps -e | grep ds9' ) > 0:
+                        ##@@FIXME: This os.system way, is very kluged and should be changed.
+                        
+                        if   (commands.getstatusoutput('ps -ef > .tmp; grep -q ds9 .tmp' )[0] > 0) \
+                             and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
                             print "CANNOT DISPLAY: No ds9 running."
                         else:
                             iraf.set(stdimage='imtgmos')

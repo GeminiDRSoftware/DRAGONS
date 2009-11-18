@@ -197,7 +197,7 @@ class ProgressBar:
 class ColorStdout:
     REALSTDOUT = None
     term = None
-    
+    on = True
     def __init__(self,rso, term):
         self.REALSTDOUT = rso
         self.term = term
@@ -205,9 +205,23 @@ class ColorStdout:
         return self.REALSTDOUT.flush()
         
     def write(self, arg):
-        out = self.term.render(arg)
-        self.REALSTDOUT.write(out)
-        
+        if arg == "${OFF}":
+            self.REALSTDOUT.write( "OUTPUT OFF")
+            self.on = False
+            self.flush()
+            return
+        if arg == "${ON}":
+            self.REALSTDOUT.write( "OUTPUT ON\n")
+            self.on = True
+            self.flush()
+            return
+        if "usage" in arg:
+            raise arg
+        if self.on:
+            out = self.term.render(arg)
+            self.REALSTDOUT.write(out)
+        else:
+            self.REALSTDOUT.write("")
 import traceback as tb
 class PrimitiveStdout:
     REALSTDOUT = None
@@ -244,11 +258,15 @@ class IrafStdout:
     def flush(self):
         return self.REALSTDOUT.flush()
     def write(self, arg):
+        if len(arg) > 0:
+            if arg[-1] == "\n":
+                arg = arg[:-1]
         if "PANIC" in arg or "ERROR" in arg:
             arg = "${RED}" + arg + "${NORMAL}"
         else:
             arg = "${BLUE}"+arg+"${NORMAL}"
-        self.REALSTDOUT.write(arg)
+        
+        self.REALSTDOUT.write("IRAF: "+ arg + "\n")
 
 
 class IrafStderr:
@@ -259,4 +277,4 @@ class IrafStderr:
     def flush(self):
         return self.REALSTDOUT.flush()
     def write(self, arg):
-        self.REALSTDOUT.write("${RED}"+arg+"${NORMAL}")
+        self.REALSTDOUT.write("IRAF ERROR: " + "${RED}"+arg+"${NORMAL}\n")
