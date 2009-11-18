@@ -2,7 +2,7 @@ getProcessedBias
 getProcessedFlat
 
 prepare
-overscanCorrect
+overscanTrim
 biasCorrect
 flatfieldCorrect
 mosaicChips

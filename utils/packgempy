@@ -38,13 +38,15 @@ trunk = 'gemini_python/trunk/'
 tarname = 'recipedemo.tar.gz'
 
 files = [recdat+'N20090822S0207_bias.fits',
-         recdat+'N20090823S0102_flat.fits',
-         recdat+'N20090415S1011_bias.fits',
-         recdat+'N20090502S0397_flat.fits',
+         recdat+'N20090825S0114_flat.fits',
+         #recdat+'N20090414S0102_flat.fits',
+         #recdat+'N20090823S0102_flat.fits',
+         #recdat+'N20090415S1011_bias.fits',
+         #recdat+'N20090502S0397_flat.fits',
          #recdat+'N20020214S022_bias.fits',
-         recdat+'N20020211S156_flat.fits',
+         #recdat+'N20020211S156_flat.fits',
          #recdat+'N20020507S0045_bias.fits',
-         recdat+'N20020606S0149_flat.fits',
+         #recdat+'N20020606S0149_flat.fits',
          
          #recdat+'N20091002S0219.fits',
          

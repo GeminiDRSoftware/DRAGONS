@@ -172,7 +172,7 @@ def command_line():
         co = ReductionContext()
         co.restoreCalIndex(calindfile)
         for arg in infile:
-            co.addCal( arg, options.cal_type, os.path.abspath(options.add_cal) )
+            co.addCal( AstroData(arg), options.cal_type, os.path.abspath(options.add_cal) )
         co.persistCalIndex( calindfile )
         print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
         sys.exit(0)
