@@ -218,7 +218,7 @@ class PrimitiveStdout:
         return self.REALSTDOUT.flush()
     def write(self, arg):
         # add bottom of primitive stack
-        h = "\n${BOLD}"
+        h = "${BOLD}"
         st = tb.extract_stack()
         started = True # ignore deep part of stack
         for f in st:
@@ -234,7 +234,7 @@ class PrimitiveStdout:
         if h == "":
             h = "rsys:"
         if len(argstrip) > 0:
-            self.REALSTDOUT.write(h+arg)
+            self.REALSTDOUT.write(h+arg+"\n")
 
 class IrafStdout:
     REALSTDOUT = None
