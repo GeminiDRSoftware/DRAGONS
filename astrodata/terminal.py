@@ -257,16 +257,42 @@ class IrafStdout:
         self.REALSTDOUT = sys.stdout
     def flush(self):
         return self.REALSTDOUT.flush()
-    def write(self, arg):
-        if len(arg) > 0:
-            if arg[-1] == "\n":
-                arg = arg[:-1]
-        if "PANIC" in arg or "ERROR" in arg:
-            arg = "${RED}" + arg + "${NORMAL}"
-        else:
-            arg = "${BLUE}"+arg+"${NORMAL}"
-        
-        self.REALSTDOUT.write("IRAF: "+ arg + "\n")
+    def write(self, out):
+        lines = out.split("\n")
+        # arg = out
+        first =  True
+        shortlines = []
+        for line in lines:
+            wid, height = getTerminalSize()
+            wid -= len("IRAF: ")
+            if len(line) > wid:
+                for i in range(0,len(line), wid):
+                    end = i+wid
+                    if end > len(line):
+                        end = len(line)
+                    shortlines.append(line[i:i+wid])
+            else:
+                shortlines.append(line)
+            
+        for arg in shortlines:
+            arg = arg.strip()
+            origlen = len(arg.strip())
+            if origlen == 0:
+                return
+            if len(arg) > 0:
+                if arg[-1] == "\n":
+                    arg = arg[:-1]
+            if "PANIC" in arg or "ERROR" in arg:
+                arg = "${RED}" + arg + "${NORMAL}"
+            else:
+                arg = "${BLUE}"+arg+"${NORMAL}"
+            if first == True:
+                head = "IRAF: "
+                first = False
+            else:
+                head = "${WHITE}IRAF${NORMAL}: " # % repr(arg[1]) 
+            if len (arg.strip()) > 0 :
+                self.REALSTDOUT.write(head + arg + "\n")
 
 
 class IrafStderr:
@@ -278,3 +304,27 @@ class IrafStderr:
         return self.REALSTDOUT.flush()
     def write(self, arg):
         self.REALSTDOUT.write("IRAF ERROR: " + "${RED}"+arg+"${NORMAL}\n")
+
+def getTerminalSize():
+    def ioctl_GWINSZ(fd):
+        try:
+            import fcntl, termios, struct, os
+            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ,
+        '1234'))
+        except:
+            return None
+        return cr
+    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
+    if not cr:
+        try:
+            fd = os.open(os.ctermid(), os.O_RDONLY)
+            cr = ioctl_GWINSZ(fd)
+            os.close(fd)
+        except:
+            pass
+    if not cr:
+        try:
+            cr = (env['LINES'], env['COLUMNS'])
+        except:
+            cr = (25, 80)
+    return int(cr[1]), int(cr[0])
