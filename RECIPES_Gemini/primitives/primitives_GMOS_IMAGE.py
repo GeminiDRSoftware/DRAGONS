@@ -1,7 +1,7 @@
 #from Reductionobjects import Reductionobject
 from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
-
+import time
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
 import pyraf
@@ -162,7 +162,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             for cal in cals:
                 gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,fl_trim=no,
                     fl_bias=no, flat1=cal, fl_flat=yes, outpref="flatdiv_",
-                    Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())    
+                    Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr()) 
+            co.reportOutput(co.prependNames("flatdiv_"))   
         except:
             print "Problem dividing by normalized flat"
             print "Problem in GIREDUCE"
@@ -221,7 +222,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 xshift = 0
                 yshift = 0
             
-            os.system( 'rm test.fits' )
+            os.system( 'rm test.fits &> /dev/null' )
             outfile = os.path.basename( co.prependNames( 'shift_' )[0][0] )
             infile = co.inputsAsStr() 
             '''
@@ -232,10 +233,13 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print outfile
             '''
             images.imshift( infile + '[1]', output='test.fits', xshift=xshift, yshift=yshift)
+            
+            # This pyfits code is for dealing with the fact that imshift does not copy over the PHU of
+            # the fits file.
             temp1 = pyfits.open( infile, 'readonly' )
             temp2 = pyfits.open( 'test.fits' )
             temp1[1].data = temp2[0].data
-            os.system( 'rm ' + outfile )
+            os.system( 'rm ' + outfile + '  &> /dev/null' )
             temp1.writeto( outfile )
             co.reportOutput( co.prependNames("shift_") )
         except:
@@ -247,7 +251,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def findshiftsAndCombine(self, co):
        try:
           print "shifting and combining images"
-          # @@TODO hardcoded parmeters and ***imcoadd.dat may need to move from 
+          #@@TODO: hardcoded parmeters and ***imcoadd.dat may need to move from 
           # imcoadd_data/test4 to test_data dir before running
           gemini.imcoadd(co.stack_inputsAsStr(),fwhm=5, threshold=100,\
                 fl_over=yes, fl_avg=yes,
@@ -259,5 +263,39 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
        yield co
        
     
-    
-    
+#------------------------------------------------------------------------------ 
+    def measureIQ(self, co):
+        try:
+            #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
+            # separate primitives, i.e. detectSources and measureIQ.
+            print "measuring iq"
+            import iqtool
+            from iqtool.iq import getiq
+            '''
+            image, outFile='default', function='both', verbose=True,\
+            residuals=False, display=True, \
+            interactive=False, rawpath='.', prefix='auto', \
+            observatory='gemini-north', clip=True, \
+            sigma=2.3, pymark=True, niters=4, boxSize=2., debug=False):
+            '''
+            for inp in co.inputs:
+                if 'GEMINI_NORTH' in inp.ad.getTypes():
+                    observ = 'gemini-north'
+                elif 'GEMINI_SOUTH' in inp.ad.getTypes():
+                    observ = 'gemini-south'
+                else:
+                    observ = 'gemini-north'
+                st = time.time()
+                iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True)
+                et = time.time()
+                print 'MeasureIQ time:', (et - st)
+                # iqdata is list of tuples with image quality metrics
+                # (ellMean, ellSig, fwhmMean, fwhmSig)
+                co.rqIQ( inp.ad, *iqdata[0] )
+            
+        except:
+            print 'Problem measuring IQ'
+            raise 
+        
+        yield co
+            

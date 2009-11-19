@@ -1,3 +1,5 @@
+# Recipe for the prototype presentation
+
 getProcessedBias
 getProcessedFlat
 
@@ -8,6 +10,7 @@ flatfieldCorrect
 mosaicChips
 display
 shift
+measureIQ
 setStackable
 averageCombine
 display
