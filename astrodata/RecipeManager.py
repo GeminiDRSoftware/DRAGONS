@@ -16,7 +16,8 @@ from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDat
 import pickle # for persisting the calibration index
 
 import IDFactory as idFac # id hashing functions
-from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest
+from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, \
+    ImageQualityRequest
 from StackKeeper import StackKeeper
 from ParamObject import PrimitiveParameter
 # this module operates like a singleton
@@ -661,6 +662,10 @@ class ReductionContext(dict):
             stackUEv = GetStackableRequest()
             stackUEv.stkID = Sid
             self.addRq( stackUEv )
+    
+    def rqIQ( self, ad, eM, eS, fM, fS ):
+        iqReq = ImageQualityRequest( ad, eM, eS, fM, fS )
+        self.addRq( iqReq )
     
     def calFilename(self, caltype):
         """returns a local filename for a retrieved calibration"""

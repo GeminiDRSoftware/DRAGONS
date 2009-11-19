@@ -1,4 +1,5 @@
 from datetime import datetime
+from astrodata import Descriptors
 '''
     Current Requests:
         CalibrationRequest
@@ -19,7 +20,7 @@ class ReductionObjectRequest( object ):
         '''
         
         '''
-        tempStr = "\n\nVERSION: " + str( self.ver ) + \
+        tempStr = "\nVERSION: " + str( self.ver ) + \
                     "\nTIMESTAMP: " + str( self.timestamp ) + "\n"
                     
         return tempStr
@@ -106,5 +107,40 @@ class DisplayRequest( ReductionObjectRequest ):
         tempStr = super( DisplayRequest, self ).__str__()
         tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
                     "DISPLAY LIST: " + str( self.disList )
+        
+        return tempStr
+    
+class ImageQualityRequest( ReductionObjectRequest ):
+    '''
+    A request to publish image quality metrics to the message bus or in the case
+    of stand-alone mode, display overlays, etc. (Demo)
+    '''
+    def __init__( self, ad, ellMean, ellSigma, fWHMMean, fWHMSigma ):
+        super( ImageQualityRequest, self ).__init__()
+        #
+        self.ad = ad
+        self.filename = ad.filename
+        self.ellMean = ellMean
+        self.ellSigma = ellSigma
+        self.fwhmMean = fWHMMean
+        self.fwhmSigma = fWHMSigma
+        desc = Descriptors.getCalculator( ad )
+        self.pixelScale = desc.fetchValue( 'PIXSCALE', ad )
+        self.seeing = self.fwhmMean# * self.pixelScale
+        
+    def __str__(self):
+        tempStr = "-" * 40
+        tempStr = tempStr + \
+"""
+Filename:           %(name)s
+Ellipticity Mean:   %(emea)s 
+Ellipticity Sigma:  %(esig)s                  
+FWHM Mean:          %(fmea)s
+FWHM Sigma:         %(fsig)s
+Seeing:             %(seei)s
+PixelScale:         %(pixs)s""" %{'name':self.filename, 'emea':self.ellMean, 'esig':self.ellSigma, 'fmea':self.fwhmMean,
+      'fsig':self.fwhmSigma, 'seei':self.seeing, 'pixs':self.pixelScale}
+        
+        tempStr = tempStr + super( ImageQualityRequest, self ).__str__()
         
         return tempStr

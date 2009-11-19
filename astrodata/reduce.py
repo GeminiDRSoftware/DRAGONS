@@ -14,6 +14,7 @@ term = TerminalController()
 a = datetime.now()
 
 import pyraf
+from pyraf import iraf
 
 
 from astrodata.RecipeManager import ReductionContext
@@ -22,7 +23,7 @@ from astrodata.RecipeManager import RecipeLibrary
 from optparse import OptionParser
 from StackKeeper import StackKeeper
 from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
-        GetStackableRequest, DisplayRequest
+        GetStackableRequest, DisplayRequest, ImageQualityRequest
 
 
 from LocalCalibrationService import CalibrationService
@@ -337,7 +338,8 @@ for infile in infiles: #for dealing with multiple files.
                 
                 #process calibration requests
                 for rq in coi.rorqs:
-                    if type(rq) == CalibrationRequest:
+                    rqTyp = type(rq)
+                    if rqTyp == CalibrationRequest:
                         fn = rq.filename
                         typ = rq.caltype
                         calname = coi.getCal(fn, typ)
@@ -353,24 +355,23 @@ for infile in infiles: #for dealing with multiple files.
                                 calname = calname[0]
                             coi.addCal(fn, typ, calname)
                             coi.persistCalIndex( calindfile )
-                    elif type(rq) == UpdateStackableRequest:
+                    elif rqTyp == UpdateStackableRequest:
                         coi.stackAppend(rq.stkID, rq.stkList)
                         coi.persistStkIndex( stkindfile )
-                    elif type(rq) == GetStackableRequest:
+                    elif rqTyp == GetStackableRequest:
                         pass
                         # Don't actually do anything, because this primitive allows the control system to
                         #  retrieve the list from another resource, but reduce lets ReductionContext keep the
                         # cache.
                         #print "RD172: GET STACKABLE REQS:", rq
-                    elif type(rq) == DisplayRequest:
-                        from pyraf import iraf
+                    elif rqTyp == DisplayRequest:
+                        
                         from pyraf.iraf import gemini
                         gemini()
                         gemini.gmos()
                         
                         
                         ##@@FIXME: This os.system way, is very kluged and should be changed.
-                        
                         if   (commands.getstatusoutput('ps -ef > .tmp; grep -q ds9 .tmp' )[0] > 0) \
                              and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
                             print "CANNOT DISPLAY: No ds9 running."
@@ -389,7 +390,38 @@ for infile in infiles: #for dealing with multiple files.
                                     frameForDisplay += 1    
                                 except:
                                     print "CANNOT DISPLAY"
-                
+                    elif rqTyp == ImageQualityRequest:
+                        print 'RED394:'
+                        print rq
+                        #@@FIXME: All of this is kluge and will not remotely reflect how the 
+                        # RecipeProcessor will deal with ImageQualityRequests.
+                        
+                        ##@@FIXME: This os.system way, is very kluged and should be changed.
+                        if   (commands.getstatusoutput('ps -e > .tmp; grep -q ds9 .tmp' )[0] > 0) \
+                             and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
+                            print "CANNOT DISPLAY: No ds9 running."
+                        else:
+                            
+                            # The following is annoying IRAF file methodology.
+                            tmpFilename = 'tmpfile.tmp'
+                            tmpFile = open( tmpFilename, 'w' )
+                            coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
+                                                                                 'ell':str(rq.ellMean)}
+                            tmpFile.write( coords )
+                            tmpFile.close()
+                            
+                            #@@FIXME: Kluge to get this to work.
+                            dispFrame = 0
+                            if frameForDisplay > 0:
+                                dispFrame = frameForDisplay - 1
+                            
+                            st = time.time()
+                            iraf.tvmark( frame=dispFrame,coords=tmpFilename,
+                                pointsize=0, color=204, label=pyraf.iraf.yes )
+                            et = time.time()
+                            print 'RED422:', (et - st)
+                        
+                    
                 coi.clearRqs()      
                 
                         
