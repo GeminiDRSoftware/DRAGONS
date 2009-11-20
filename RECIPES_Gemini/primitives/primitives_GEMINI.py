@@ -17,6 +17,10 @@ class GEMINIPrimitives(ReductionObject):
     def init(self, co):
         ReductionObject.init(self, co)
         return co
+        
+    def pause(self, co):
+        co.requestPause()
+        yield co
 #------------------------------------------------------------------------------ 
     def logFilename (self, co):
         print "logFilename"
@@ -110,16 +114,54 @@ class GEMINIPrimitives(ReductionObject):
             raise
         yield co
     
-    
-#------------------------------------------------------------------------------ 
-    def printHeaders(self, co):
+    def mosaicChips(self, co):
+       try:
+          print "producing image mosaic"
+          #mstr = 'flatdiv_'+co.inputsAsStr()          
+          gemini.gmosaic( co.inputsAsStr(), outpref="mo_",
+            Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr() )
+          co.reportOutput(co.prependNames("mo_", currentDir = True))
+       except:
+          print "Problem producing image mosaic"         
+          raise
+       yield co
+       
+    def averageCombine(self, co):
         try:
-            print "writing out headers"
-            co.printHeaders()
+            # @@TODO: need to include parameter options here
+            print "Combining and averaging" 
+            filesystem.deleteFile('inlist')
+            
+            templist = []
+            
+            for inp in co.inputs:
+                 templist.append( IDFactory.generateStackableID( inp.ad ) )
+                 
+            templist = list( set(templist) ) # Removes duplicates.
+            
+            for stackID in templist:
+                #@@FIXME: There are a lot of big issues in here. First, we need to backup the
+                # previous average combined file, not delete. Backup is needed if something goes wrong.
+                # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
+                # stackable images are in the same spot which may not be the case.
+                
+                stacklist = co.getStack( stackID ).filelist
+                #print "pG147: STACKLIST:", stacklist
+
+                
+                if len( stacklist ) > 1:
+                    stackname = "avgcomb_" + os.path.basename(stacklist[0])
+                    filesystem.deleteFile( stackname )
+                    gemini.gemcombine( co.makeInlistFile(stackID),  output=stackname,
+                        combine="average", reject="none", 
+                        Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
+                    co.reportOutput(stackname)
+                else:
+                    print "'%s' was not combined because there is only one image." %( stacklist[0] )
         except:
-            raise "Problem printing out headers"
+            print "Problem combining and averaging"
+            raise 
         yield co
-#------------------------------------------------------------------------------ 
     def measureIQ(self, co):
         try:
             #@@FIXME: Detecting sources is done here as well. This should eventually be split up into

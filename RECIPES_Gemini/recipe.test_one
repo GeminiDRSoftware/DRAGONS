@@ -4,8 +4,8 @@
 
 prepare
 getProcessedBias
-setDisplayable
-biasSub
+display
+# biasSub
 
 #setStackable
 #getStackable
