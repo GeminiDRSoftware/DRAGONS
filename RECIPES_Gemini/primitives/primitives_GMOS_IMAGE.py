@@ -2,6 +2,8 @@
 from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 import time
+from utils import filesystem
+from astrodata import IDFactory
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
 import pyraf
@@ -261,41 +263,54 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
           print "Problem in IMCOADD"
           raise
        yield co
+
+    def mosaicChips(self, co):
+       try:
+          print "producing image mosaic"
+          #mstr = 'flatdiv_'+co.inputsAsStr()          
+          gemini.gmosaic( co.inputsAsStr(), outpref="mo_",
+            Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr() )
+          co.reportOutput(co.prependNames("mo_", currentDir = True))
+       except:
+          print "Problem producing image mosaic"         
+          raise
+       yield co
        
-    
-#------------------------------------------------------------------------------ 
-    def measureIQ(self, co):
+    def averageCombine(self, co):
         try:
-            #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
-            # separate primitives, i.e. detectSources and measureIQ.
-            print "measuring iq"
-            import iqtool
-            from iqtool.iq import getiq
-            '''
-            image, outFile='default', function='both', verbose=True,\
-            residuals=False, display=True, \
-            interactive=False, rawpath='.', prefix='auto', \
-            observatory='gemini-north', clip=True, \
-            sigma=2.3, pymark=True, niters=4, boxSize=2., debug=False):
-            '''
-            for inp in co.inputs:
-                if 'GEMINI_NORTH' in inp.ad.getTypes():
-                    observ = 'gemini-north'
-                elif 'GEMINI_SOUTH' in inp.ad.getTypes():
-                    observ = 'gemini-south'
-                else:
-                    observ = 'gemini-north'
-                st = time.time()
-                iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True)
-                et = time.time()
-                print 'MeasureIQ time:', (et - st)
-                # iqdata is list of tuples with image quality metrics
-                # (ellMean, ellSig, fwhmMean, fwhmSig)
-                co.rqIQ( inp.ad, *iqdata[0] )
+            # @@TODO: need to include parameter options here
+            print "Combining and averaging" 
+            filesystem.deleteFile('inlist')
             
+            templist = []
+            
+            for inp in co.inputs:
+                 templist.append( IDFactory.generateStackableID( inp.ad ) )
+                 
+            templist = list( set(templist) ) # Removes duplicates.
+            
+            for stackID in templist:
+                #@@FIXME: There are a lot of big issues in here. First, we need to backup the
+                # previous average combined file, not delete. Backup is needed if something goes wrong.
+                # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
+                # stackable images are in the same spot which may not be the case.
+                
+                stacklist = co.getStack( stackID ).filelist
+                #print "pG147: STACKLIST:", stacklist
+
+                
+                if len( stacklist ) > 1:
+                    stackname = "avgcomb_" + os.path.basename(stacklist[0])
+                    filesystem.deleteFile( stackname )
+                    gemini.gemcombine( co.makeInlistFile(stackID),  output=stackname,
+                       combine="average", reject="none" )
+                    co.reportOutput(stackname)
+                else:
+                    print "'%s' was not combined because there is only one image." %( stacklist[0] )
         except:
-            print 'Problem measuring IQ'
+            print "Problem combining and averaging"
             raise 
-        
-        yield co
+        yield co    
+    
+
             

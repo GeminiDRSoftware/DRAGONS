@@ -372,7 +372,7 @@ for infile in infiles: #for dealing with multiple files.
                         
                         
                         ##@@FIXME: This os.system way, is very kluged and should be changed.
-                        if   (commands.getstatusoutput('ps -ef > .tmp; grep -q ds9 .tmp' )[0] > 0) \
+                        if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
                              and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
                             print "CANNOT DISPLAY: No ds9 running."
                         else:
@@ -397,7 +397,7 @@ for infile in infiles: #for dealing with multiple files.
                         # RecipeProcessor will deal with ImageQualityRequests.
                         
                         ##@@FIXME: This os.system way, is very kluged and should be changed.
-                        if   (commands.getstatusoutput('ps -e > .tmp; grep -q ds9 .tmp' )[0] > 0) \
+                        if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
                              and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
                             print "CANNOT DISPLAY: No ds9 running."
                         else:

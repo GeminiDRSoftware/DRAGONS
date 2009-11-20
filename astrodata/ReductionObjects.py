@@ -15,8 +15,12 @@ class ReductionObject(object):
         # print "substeps(%s,%s)" % (primname, str(cfgobj))
         prim = eval("self.%s" % primname)
         context.begin(primname)
-        for co in prim(context):
-            yield co
+        try:
+            for co in prim(context):
+                yield co
+        except:
+            print "%(name)s failed due to an exception." %{'name':primname}
+            raise
         context.curPrimName = None
         yield context.end(primname)
         

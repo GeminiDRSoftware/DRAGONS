@@ -1,10 +1,10 @@
 
 from pyraf import iraf
-#from iraf import gemini
-#from iraf import gemlocal
+from iraf import gemini
+from iraf import gemlocal
 
 import mefutil
-reload(mefutil)
+#reload(mefutil)
 import strutil
 import time
 
