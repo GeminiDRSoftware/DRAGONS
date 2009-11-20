@@ -1,8 +1,8 @@
 
-class GMOS_CAL(DataClassification):
+class GMOS_CAL(ORClassification):
     name="GMOS_CAL"
     usage = ""
-    typeReqs= [ 'GMOS',
+    typeOrs= [ 'GMOS',
                 'GMOS_FLAT',
                 'GMOS_TWILIGHT',
                 'GMOS_DARK',
