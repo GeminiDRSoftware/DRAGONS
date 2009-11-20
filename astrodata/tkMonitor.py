@@ -195,8 +195,10 @@ class TkRecipeControl( threading.Thread):
                                 
                 cw.title("Recipe: %s" % recipe)
                 controlFrame = Frame(cw)
-                RecipeControl(controlFrame, controlWindow).co = context
+                rc = RecipeControl(controlFrame, controlWindow)
                 
+                rc.co = context
+                co.storeEvent("pause", rc.pause())
                 monitorFrame = Frame(cw)
                 MonitorRecipe(monitorFrame).co = context
                 
@@ -313,8 +315,8 @@ class MonitorRecipe:
                     self.alreadyWaitingForPause = True
             else:
                 self.alreadyWaitingForPause = False
-                
             if self.co.paused:
+                
                 if not self.alreadyPaused:
                     self.alreadyPaused = True
                     self.textWdg.insert(END, "PAUSED\n", "warn")

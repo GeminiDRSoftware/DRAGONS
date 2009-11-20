@@ -62,6 +62,7 @@ class ReductionContext(dict):
     displayID = None
     irafstdout = None
     irafstderr = None
+    callbacks = None
     
     def getIrafStdout(self):
         if self.irafstdout != None:
@@ -201,6 +202,7 @@ class ReductionContext(dict):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to
         None in the class."""
         self.inputs = []
+        self.callbacks = {}
         self.inputsHistory = []
         self.calibrations = {}
         self.rorqs = []
@@ -284,7 +286,30 @@ class ReductionContext(dict):
         
         return self.isPaused()
 
+    def removeCallback(self, name, function):
+        if name in self.callbacks:
+            if function in self.callbackp[name]:
+                self.callbacks[name].remove(function)
+        else:
+            return
+            
+    def addCallback(self, name, function):
+        callbacks = self.callbacks
+        if name in callbacks:
+            l = callbacks[name]
+        else:
+            l = callbacks.update({name:[]})
+        
+        l.append(function)
+        
+    def callCallbacks(self, name, **params):
+        callbacks = self.callbacks
+        if name in callbacks:
+            for f in callbacks[name]:
+                f(**params)
+                
     def pause(self):
+        callCallbacks("pause")
         self.isPaused(True)
     def unpause (self):
         self.isPaused(False)
