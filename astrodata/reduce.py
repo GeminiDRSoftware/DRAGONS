@@ -252,9 +252,12 @@ for infile in infiles: #for dealing with multiple files.
     cs = CalibrationService()
     
     infilenames = []
-    for infs in infiles:
-        for inf in infs:
-            infilenames.append( inf.filename )
+    for infs in infile:
+        if type(infs) == AstroData:
+            infilenames.append( infs.filename )
+        else:
+            for inf in infs:
+                infilenames.append( inf.filename )
         
     title = "  Processing dataset: %s  " % str(infilenames) #**
     tl = len(title)
