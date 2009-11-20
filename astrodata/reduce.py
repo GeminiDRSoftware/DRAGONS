@@ -318,7 +318,7 @@ for infile in infiles: #for dealing with multiple files.
             # @@TODO:evaluate use of init for each recipe vs. for all recipes
             ro.init(co)
             print term.render("running recipe: '%s'\n") % rec
-            rl.loadAndBindRecipe(ro,rec, file=infile[0])
+            rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
             if (useTK):
                 cw.running(rec)
             
@@ -330,121 +330,125 @@ for infile in infiles: #for dealing with multiple files.
             primstdout = terminal.PrimitiveStdout(sys.stdout)
             sys.stdout = primstdout 
             frameForDisplay = 1
-            for coi in ro.substeps(rec, co):
-                sys.stdout = primstdout.REALSTDOUT
-                print ("${NORMAL}")
-                coi.processCmdReq()
-                while (coi.paused):
-                    time.sleep(.100)
-                if co.finished:
-                    break
-                
-                #process calibration requests
-                for rq in coi.rorqs:
-                    rqTyp = type(rq)
-                    if rqTyp == CalibrationRequest:
-                        fn = rq.filename
-                        typ = rq.caltype
-                        calname = coi.getCal(fn, typ)
-                        
-                        if calname == None:
-                            # Do the calibration search
-                            calname = cs.search( rq )
+            try:
+                for coi in ro.substeps(rec, co):
+                    sys.stdout = primstdout.REALSTDOUT
+                    print ("${NORMAL}")
+                    coi.processCmdReq()
+                    while (coi.paused):
+                        time.sleep(.100)
+                    if co.finished:
+                        break
+
+                    #process calibration requests
+                    for rq in coi.rorqs:
+                        rqTyp = type(rq)
+                        if rqTyp == CalibrationRequest:
+                            fn = rq.filename
+                            typ = rq.caltype
+                            calname = coi.getCal(fn, typ)
+
                             if calname == None:
-                                raise "No suitable calibration for '" + str(fn) + "'."
-                            elif len( calname ) >= 1:
-                                # Not sure if this is where the one returned calibration is chosen, or if
-                                # that is done in the calibration service, etc.
-                                calname = calname[0]
-                            coi.addCal(fn, typ, calname)
-                            coi.persistCalIndex( calindfile )
-                    elif rqTyp == UpdateStackableRequest:
-                        coi.stackAppend(rq.stkID, rq.stkList)
-                        coi.persistStkIndex( stkindfile )
-                    elif rqTyp == GetStackableRequest:
-                        pass
-                        # Don't actually do anything, because this primitive allows the control system to
-                        #  retrieve the list from another resource, but reduce lets ReductionContext keep the
-                        # cache.
-                        #print "RD172: GET STACKABLE REQS:", rq
-                    elif rqTyp == DisplayRequest:
-                        
-                        from pyraf.iraf import gemini
-                        gemini()
-                        gemini.gmos()
-                        
-                        
-                        ##@@FIXME: This os.system way, is very kluged and should be changed.
-                        if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
-                             and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
-                            print "CANNOT DISPLAY: No ds9 running."
-                        else:
-                            iraf.set(stdimage='imtgmos')
-                            for tmpImage in rq.disList:
-                                if type(tmpImage) != str:
-                                    #print "RED329:", tmpImage.filename
-                                    tmpImage = tmpImage.filename
-                                    
-                                # tmpImage should be a string at this point.
-                                #print "RED332:", type(tmpImage), tmpImage
-                                try:
-                                    gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
-                                        Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
-                                    frameForDisplay += 1    
-                                except:
-                                    print "CANNOT DISPLAY"
-                    elif rqTyp == ImageQualityRequest:
-                        print 'RED394:'
-                        print rq
-                        #@@FIXME: All of this is kluge and will not remotely reflect how the 
-                        # RecipeProcessor will deal with ImageQualityRequests.
-                        
-                        ##@@FIXME: This os.system way, is very kluged and should be changed.
-                        if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
-                             and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
-                            print "CANNOT DISPLAY: No ds9 running."
-                        else:
-                            
-                            # The following is annoying IRAF file methodology.
-                            tmpFilename = 'tmpfile.tmp'
-                            tmpFile = open( tmpFilename, 'w' )
-                            coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
-                                                                                 'ell':str(rq.ellMean)}
-                            tmpFile.write( coords )
-                            tmpFile.close()
-                            
-                            #@@FIXME: Kluge to get this to work.
-                            dispFrame = 0
-                            if frameForDisplay > 0:
-                                dispFrame = frameForDisplay - 1
-                            
-                            st = time.time()
-                            iraf.tvmark( frame=dispFrame,coords=tmpFilename,
-                                pointsize=0, color=204, label=pyraf.iraf.yes )
-                            et = time.time()
-                            print 'RED422:', (et - st)
-                        
-                    
-                coi.clearRqs()      
-                
-                        
-                #dump the reduction context object 
-                if options.rtf:
-                    results = open( "test.result", "a" )
-                    #results.write( "\t\t\t<< CONTROL LOOP " + str(controlLoopCounter" >>\n")
-                    #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
-                    #print "#" * 80
-                    #controlLoopCounter += 1
-                    results.write( str( coi ) )
-                    results.close()
-                    #print "#" * 80
-                    #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
-                    # CLEAR THE REQUEST LEAGUE
-                sys.stdout = primstdout
-            
-            # return to prev stdout
-            sys.stdout = primstdout.REALSTDOUT
-            
+                                # Do the calibration search
+                                calname = cs.search( rq )
+                                if calname == None:
+                                    raise "No suitable calibration for '" + str(fn) + "'."
+                                elif len( calname ) >= 1:
+                                    # Not sure if this is where the one returned calibration is chosen, or if
+                                    # that is done in the calibration service, etc.
+                                    calname = calname[0]
+                                coi.addCal(fn, typ, calname)
+                                coi.persistCalIndex( calindfile )
+                        elif rqTyp == UpdateStackableRequest:
+                            coi.stackAppend(rq.stkID, rq.stkList)
+                            coi.persistStkIndex( stkindfile )
+                        elif rqTyp == GetStackableRequest:
+                            pass
+                            # Don't actually do anything, because this primitive allows the control system to
+                            #  retrieve the list from another resource, but reduce lets ReductionContext keep the
+                            # cache.
+                            #print "RD172: GET STACKABLE REQS:", rq
+                        elif rqTyp == DisplayRequest:
+
+                            from pyraf.iraf import gemini
+                            gemini()
+                            gemini.gmos()
+
+
+                            ##@@FIXME: This os.system way, is very kluged and should be changed.
+                            if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
+                                 and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
+                                print "CANNOT DISPLAY: No ds9 running."
+                            else:
+                                iraf.set(stdimage='imtgmos')
+                                for tmpImage in rq.disList:
+                                    if type(tmpImage) != str:
+                                        #print "RED329:", tmpImage.filename
+                                        tmpImage = tmpImage.filename
+
+                                    # tmpImage should be a string at this point.
+                                    #print "RED332:", type(tmpImage), tmpImage
+                                    try:
+                                        gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
+                                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+                                        frameForDisplay += 1    
+                                    except:
+                                        print "CANNOT DISPLAY"
+                        elif rqTyp == ImageQualityRequest:
+                            print 'RED394:'
+                            print rq
+                            #@@FIXME: All of this is kluge and will not remotely reflect how the 
+                            # RecipeProcessor will deal with ImageQualityRequests.
+
+                            ##@@FIXME: This os.system way, is very kluged and should be changed.
+                            if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
+                                 and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
+                                print "CANNOT DISPLAY: No ds9 running."
+                            else:
+
+                                # The following is annoying IRAF file methodology.
+                                tmpFilename = 'tmpfile.tmp'
+                                tmpFile = open( tmpFilename, 'w' )
+                                coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
+                                                                                     'ell':str(rq.ellMean)}
+                                tmpFile.write( coords )
+                                tmpFile.close()
+
+                                #@@FIXME: Kluge to get this to work.
+                                dispFrame = 0
+                                if frameForDisplay > 0:
+                                    dispFrame = frameForDisplay - 1
+
+                                st = time.time()
+                                iraf.tvmark( frame=dispFrame,coords=tmpFilename,
+                                    pointsize=0, color=204, label=pyraf.iraf.yes )
+                                et = time.time()
+                                print 'RED422:', (et - st)
+
+
+                    coi.clearRqs()      
+
+
+                    #dump the reduction context object 
+                    if options.rtf:
+                        results = open( "test.result", "a" )
+                        #results.write( "\t\t\t<< CONTROL LOOP " + str(controlLoopCounter" >>\n")
+                        #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
+                        #print "#" * 80
+                        #controlLoopCounter += 1
+                        results.write( str( coi ) )
+                        results.close()
+                        #print "#" * 80
+                        #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
+                        # CLEAR THE REQUEST LEAGUE
+                    sys.stdout = primstdout
+
+                # return to prev stdout
+                sys.stdout = primstdout.REALSTDOUT
+            except astrodata.ReductionObjects.ReductionExcept, e:
+                print "FATAL:", e.str
+                sys.exit()
+
             
         except KeyboardInterrupt:
             co.isFinished(True)

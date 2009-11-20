@@ -41,7 +41,7 @@ class RecipeExcept:
         return self.message
 
 class ReductionContext(dict):
-    """The ReductionContext is used by primitives and recipies, hidden in the later case,
+    """The ReductionContext is used by primitives and recipiesen, hidden in the later case,
     to get input and report output. This allows primitives to be controlled in many different
     running environments, from pipelines to command line interactive reduction.
     """
@@ -298,7 +298,8 @@ class ReductionContext(dict):
         if name in callbacks:
             l = callbacks[name]
         else:
-            l = callbacks.update({name:[]})
+            l = []
+            callbacks.update({name:l})
         
         l.append(function)
         
@@ -309,7 +310,7 @@ class ReductionContext(dict):
                 f(**params)
                 
     def pause(self):
-        callCallbacks("pause")
+        self.callCallbacks("pause")
         self.isPaused(True)
     def unpause (self):
         self.isPaused(False)
@@ -408,7 +409,7 @@ class ReductionContext(dict):
                 
                 if type(temp) == tuple:
                     if not os.path.exists( temp[0] ):
-                        raise "LAST PRIMITIVE FAILED."
+                        raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
                     orecord = AstroDataRecord( temp[0], self.displayID, parent=temp[1] )
                     #print 'RM370:', orecord
                 elif type(temp) == str:
@@ -881,7 +882,7 @@ class RecipeLibrary(object):
                         }
             print "Module '%(module)s took %(duration)s to load'" % pargs
 
-    def loadAndBindRecipe(self,ro, name, file=None, astrotype=None):
+    def loadAndBindRecipe(self,ro, name, dataset=None, astrotype=None):
         """
         Will load a single recipe, compile and bind it to the given reduction objects
         """
@@ -899,8 +900,9 @@ class RecipeLibrary(object):
                 rfunc = self.compileRecipe(name, prec)
                 # bind the recipe to the reduction object
                 ro = self.bindRecipe(ro, name, rfunc)
-        elif file != None:
-            gd, bnc = openIfName(file)
+        elif dataset != None:
+            print "RM904:", repr(dataset)
+            gd, bnc = openIfName(dataset)
             types = gd.getTypes()
             for typ in types:
                 rec   = self.retrieveRecipe(name, astrotype= typ)
@@ -1073,7 +1075,8 @@ def %(name)s(self,cfgObj):
         if self.checkMethod(redobj, name):
             return False
         else:
-            self.loadAndBindRecipe(redobj, name, file=context.inputs[0])
+            # print "RM1078:", str(dir(context.inputs[0]))
+            self.loadAndBindRecipe(redobj, name, dataset=context.inputs[0].filename)
             return True
 
     def getApplicableParameters(self, dataset):

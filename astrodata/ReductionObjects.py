@@ -1,4 +1,15 @@
-    
+class ReductionExcept:
+    """ This is the general exception the classes and functions in the
+    Structures.py module raise.
+    """
+    def __init__(self, msg="Exception Raised by ReductionObject"):
+        """This constructor takes a message to print to the user."""
+        self.message = msg
+    def __str__(self):
+        """This str conversion member returns the message given by the user (or the default message)
+        when the exception is not caught."""
+        return self.message
+        
 class ReductionObject(object):
 
     recipeLib = None
@@ -13,7 +24,12 @@ class ReductionObject(object):
     def substeps(self, primname, context):
         self.recipeLib.checkAndBind(self, primname, context=context) 
         # print "substeps(%s,%s)" % (primname, str(cfgobj))
-        prim = eval("self.%s" % primname)
+        if hasattr(self, primname):
+            prim = eval("self.%s" % primname)
+        else:
+            msg = "There is no recipe or primitive named \"%s\" in ReductionObject %s" % (primname, str(repr(self)))
+            raise ReductionExcept(msg)
+                
         context.begin(primname)
         try:
             for co in prim(context):

@@ -198,7 +198,7 @@ class TkRecipeControl( threading.Thread):
                 rc = RecipeControl(controlFrame, controlWindow)
                 
                 rc.co = context
-                co.storeEvent("pause", rc.pause())
+                rc.co.addCallback("pause", rc.sgPause)
                 monitorFrame = Frame(cw)
                 MonitorRecipe(monitorFrame).co = context
                 
@@ -255,6 +255,11 @@ class RecipeControl:
                 self.pauseBtn.configure(text="resume")
                 self.co.requestPause()
             
+    def sgPause(self):
+        """callback for system generated pause"""
+        if not self.bPaused:
+            self.bPaused = True
+            self.pauseBtn.configure(text="resume")
 
     def cancel(self):
         if self.co:
