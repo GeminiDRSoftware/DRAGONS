@@ -1,7 +1,7 @@
-import Lookups
-import Descriptors
+from astrodata import Lookups
+from astrodata import Descriptors
 
-from Calculator import Calculator
+from astrodata.Calculator import Calculator
 from datetime import datetime
 from time import strptime
 
