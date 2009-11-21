@@ -189,7 +189,10 @@ class GEMINIPrimitives(ReductionObject):
                 print 'MeasureIQ time:', (et - st)
                 # iqdata is list of tuples with image quality metrics
                 # (ellMean, ellSig, fwhmMean, fwhmSig)
-                co.rqIQ( inp.ad, *iqdata[0] )
+                if len(iqdata) == 0:
+                    print "WARNING: Problem Measuring IQ Statistics, none reported"
+                else:
+                    co.rqIQ( inp.ad, *iqdata[0] )
             
         except:
             print 'Problem measuring IQ'
