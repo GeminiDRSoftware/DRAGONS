@@ -27,7 +27,7 @@ class ReductionObject(object):
         if hasattr(self, primname):
             prim = eval("self.%s" % primname)
         else:
-            msg = "There is no recipe or primitive named \"%s\" in ReductionObject %s" % (primname, str(repr(self)))
+            msg = "There is no recipe or primitive named \"%s\" in  %s" % (primname, str(repr(self)))
             raise ReductionExcept(msg)
                 
         context.begin(primname)
