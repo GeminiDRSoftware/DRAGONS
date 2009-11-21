@@ -20,12 +20,29 @@ import astrodata
 from astrodata.AstroData import AstroData
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
+from optparse import OptionParser
+from astrodata.StackKeeper import StackKeeper
 from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
         GetStackableRequest, DisplayRequest, ImageQualityRequest
+start_time = time.time()
 from astrodata import gdpgutil
 from astrodata.LocalCalibrationService import CalibrationService
 from astrodata.StackKeeper import StackKeeper
 from utils import paramutil
+end_time = time.time()
+#print 'test IMPORT TIME:', (end_time - start_time)
+from astrodata import gdpgutil
+
+import sys, os, glob, subprocess
+
+oend_time = time.time()
+#print 'Overall IMPORT TIME:', (oend_time - ostart_time)
+#import pyfits as pf
+#import numdisplay
+#import numpy as np
+
+#sys.exit()
+
 #------------------------------------------------------------------------------ 
 b = datetime.now()
 ############################################################
@@ -303,7 +320,7 @@ for infile in infiles: #for dealing with multiple files.
             primstdout = terminal.PrimitiveStdout(sys.stdout)
             sys.stdout = primstdout 
             frameForDisplay = 1
-            try:
+            if (True): # try:
                 for coi in ro.substeps(rec, co):
                     sys.stdout = primstdout.REALSTDOUT
                     print ("${NORMAL}")
@@ -418,11 +435,8 @@ for infile in infiles: #for dealing with multiple files.
 
                 # return to prev stdout
                 sys.stdout = primstdout.REALSTDOUT
-            except astrodata.ReductionObjects.ReductionExcept, e:
-                print "FATAL:", e.str
-                sys.exit()
 
-            
+        
         except KeyboardInterrupt:
             co.isFinished(True)
             if (useTK):
@@ -430,6 +444,9 @@ for infile in infiles: #for dealing with multiple files.
             co.persistCalIndex(calindfile)
             print "Ctrl-C Exit"
             sys.exit(0)
+        except astrodata.ReductionObjects.ReductionExcept, e:
+            print "${RED}FATAL:" + str(e) + "${NORMAL}"
+            sys.exit()
         except:
             print "CONTEXT AFTER FATAL ERROR"
             print "--------------------------"
