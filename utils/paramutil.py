@@ -1,9 +1,8 @@
 import os
 import strutil
-#reload(strutil)
+#------------------------------------------------------------------------------ 
 import geminiLogger
-#reload(geminiLogger)
-
+#------------------------------------------------------------------------------ 
 """This file contains the following utilities:
 
     checkImageParam( image )

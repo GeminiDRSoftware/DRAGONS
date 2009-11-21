@@ -58,7 +58,7 @@ oldpypath = os.getenv( 'PYTHONPATH' )
 #print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
 print "Temporarily Changing PYTHONPATH"
-reduce = '../trunk/astrodata/reduce'
+reduce = '../trunk/utils/reduce'
 #sys.path.append(":../trunk:")
 os.environ.update({'PYTHONPATH':oldpypath+":../trunk:"})
 print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
