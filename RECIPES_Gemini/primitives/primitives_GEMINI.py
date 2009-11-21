@@ -1,8 +1,8 @@
 from time import sleep
 import time
-from ReductionObjects import ReductionObject
+from astrodata.ReductionObjects import ReductionObject
 from utils import filesystem
-import IDFactory
+from astrodata import IDFactory
 import os
 
 from pyraf.iraf import tables, stsdas, images

@@ -1,7 +1,9 @@
 import hashlib
 import pyfits as pf
+#------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
 import Descriptors
+#------------------------------------------------------------------------------ 
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
 
 

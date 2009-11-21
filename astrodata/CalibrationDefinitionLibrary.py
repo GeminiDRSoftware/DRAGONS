@@ -1,7 +1,7 @@
 import os
 import pyfits
 from xml.dom.minidom import parse
-
+#------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
 import ConfigSpace
 import Descriptors

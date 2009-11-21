@@ -1,12 +1,7 @@
 from datetime import datetime
+
 from astrodata import Descriptors
-'''
-    Current Requests:
-        CalibrationRequest
-        UpdateStackableRequest
-        GetStackableRequest
-        DisplayRequest
-'''
+#------------------------------------------------------------------------------ 
 class ReductionObjectRequest( object ):
     '''
     The parent of all Requests which contains members prevalent to all requests

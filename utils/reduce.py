@@ -1,50 +1,33 @@
 #!/usr/bin/env python
-import time
-ostart_time = time.time()
 
-
-import astrodata
+import commands
+from datetime import datetime
+import glob
+from optparse import OptionParser
+import os
+import pyraf
+from pyraf import iraf
+import subprocess
+import sys
 import terminal
 from terminal import TerminalController
-from astrodata.AstroData import AstroData
-from datetime import datetime
-import commands
-
+import time
+#------------------------------------------------------------------------------ 
 term = TerminalController()
 a = datetime.now()
 
-import pyraf
-from pyraf import iraf
-
-
+import astrodata
+from astrodata.AstroData import AstroData
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
-
-from optparse import OptionParser
-from StackKeeper import StackKeeper
 from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
         GetStackableRequest, DisplayRequest, ImageQualityRequest
-
-
-from LocalCalibrationService import CalibrationService
-start_time = time.time()
+from astrodata import gdpgutil
+from astrodata.LocalCalibrationService import CalibrationService
+from astrodata.StackKeeper import StackKeeper
 from utils import paramutil
-end_time = time.time()
-#print 'test IMPORT TIME:', (end_time - start_time)
-import gdpgutil
-
-import sys, os, glob, subprocess
-
-oend_time = time.time()
-#print 'Overall IMPORT TIME:', (oend_time - ostart_time)
-#import pyfits as pf
-#import numdisplay
-#import numpy as np
-
-#sys.exit()
-
+#------------------------------------------------------------------------------ 
 b = datetime.now()
-
 ############################################################
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as
@@ -77,8 +60,7 @@ parser.add_option("--addcal", dest="add_cal", default=None, type="string",
                   "reduce --addcal=N2009_bias.fits --caltype=bias N20091002S0219.fits" )
 parser.add_option("--remcal", dest="rem_cal", default=False, action="store_true",
                   help="'--caltype' Must be specified as well when using this! " + \
-                  "This will remove the calibration for that file from cache. By making --caltype " + \
-                  "'all', all the associated calibrations for that file will be removed. An " + \
+                  "This will remove the calibration for that file from cache. An " + \
                   "example of what this would look like: \n" + \
                   "reduce --remcal --caltype=bias N20091002S0219.fits" )
 parser.add_option("--clrcal", dest="clr_cal", default=False, action="store_true",
@@ -101,7 +83,7 @@ parser.add_option("-i", "--intelligence", dest='intelligence', default=False, ac
 useTK =  options.bMonitor
 # ------
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
-from tkMonitor import *
+from astrodata.tkMonitor import *
 
 # start color printing filter for xgtermc
 term = TerminalController()
@@ -186,24 +168,15 @@ def command_line():
         
         # @@TODO: Perhaps need a list of valid calibration types.
         # @@TODO: Need testing if passed in calibration type is valid.
-        
 
         co = ReductionContext()
         co.restoreCalIndex(calindfile)
-        if options.cal_type == 'all':
-            for key in co.calibrations.keys():
-                for arg in infile:
-                    if os.path.abspath(arg) in key:
-                        co.calibrations.pop( key )
-                        
-            print "All calibrations for " + str(infile) + "' were removed."
-        else:
-            for arg in infile:
-                try:
-                    co.calibrations.pop( (os.path.abspath(arg), options.cal_type) )
-                except:
-                    print arg + ' had no ' + options.cal_type
-            print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
+        for arg in infile:
+            try:
+                co.rmCal( arg, options.cal_type )
+            except:
+                print arg + ' had no ' + options.cal_type
+        print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
         co.persistCalIndex( calindfile )
         sys.exit(0)
     

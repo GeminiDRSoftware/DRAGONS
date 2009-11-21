@@ -1,33 +1,33 @@
+# This module operates like a singleton
+from copy import deepcopy, copy
+from datetime import datetime
+import new
+import pickle # for persisting the calibration index
+import socket # to get host name for local statistics
+#------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
 import AstroDataType
-
-import new
-import socket # to get host name for local statistics
+from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
+import ConfigSpace
+import Descriptors
+import gdpgutil
+from gdpgutil import pickConfig
+import IDFactory as idFac # id hashing functions
+from ParamObject import PrimitiveParameter
+from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord
 import ReductionObjects
 from ReductionObjects import ReductionObject
-import ConfigSpace
-from gdpgutil import pickConfig
-
-from datetime import datetime
-from copy import deepcopy, copy
-
-from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
-from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord
-import pickle # for persisting the calibration index
-
-import IDFactory as idFac # id hashing functions
 from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, \
     ImageQualityRequest
 from StackKeeper import StackKeeper
-from ParamObject import PrimitiveParameter
-# this module operates like a singleton
+#------------------------------------------------------------------------------ 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
 centralReductionMap = {}
 centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
-
+#------------------------------------------------------------------------------ 
 class RecipeExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -132,7 +132,7 @@ class ReductionContext(dict):
         @rtype: str
         '''
         char = "-"
-        rets = char*40+"\n"
+        rets = '\n'+char*40+"\n"
         rets += '''------Global Parameters------\n'''
         
         globval = "global"
@@ -604,6 +604,28 @@ class ReductionContext(dict):
         key = (adID, caltyp)
         #print "RM542:", key, calrec
         self.calibrations.update({key: calrec})
+    
+    def rmCal(self, data, caltype):
+        '''
+        Remove a calibration. This is used in command line argument (rmcal). This may end up being used
+        for some sort of TTL thing for cals in the future.
+        
+        @param data: Images who desire their cals to be removed.
+        @type data: str, list or AstroData instance.
+        
+        @param caltype: Calibration type (e.g. 'bias').
+        @type caltype: str
+        '''
+        datalist = gdpgutil.checkDataSet( data )
+        
+        for dat in datalist:
+            datid = idFac.generateAstroDataID( data )
+            key = (datid, caltype)
+            if key in self.calibrations.keys():
+                self.calibrations.pop( key )
+            else:
+                print "'%(tup)s', was not registered in the calibrations." 
+        
     
     def getCal(self, data, caltype):
         '''

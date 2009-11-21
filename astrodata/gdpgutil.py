@@ -1,7 +1,10 @@
-import AstroDataType
 import sys
+#------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
+import AstroDataType
+
 from ReductionContextRecords import AstroDataRecord
+
 from utils import geminiLogger
 #------------------------------------------------------------------------------ 
 class GDPGUtilExcept:

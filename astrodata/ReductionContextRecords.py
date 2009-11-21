@@ -1,6 +1,7 @@
 from datetime import datetime
-from astrodata.AstroData import AstroData
 
+from astrodata.AstroData import AstroData
+#------------------------------------------------------------------------------ 
 class ReductionContextRecord( object ):
     '''
     The parent record. Contains all members global to all records. (i.e. timestamp)
@@ -57,7 +58,28 @@ class StackableRecord( ReductionContextRecord ):
     filelist  = %s
     timestamp = %s \n""" % ( str(self.stkid), str(self.filelist), self.timestamp )
         return rets  
-    
+
+class FringeRecord( ReductionContextRecord ):
+    '''
+    Contains the cache information for a set of fringeable data.
+    '''
+    fringeid = None
+    listid = None
+    filelist = []
+    def __init__(self, fringeid, filelist, listid, timestamp=None):
+        super( FringeRecord, self ).__init__( timestamp )
+        self.fringeid = fringeid
+        self.listid = listid
+        self.filelist = filelist
+        
+    def __str__(self):
+        rets = '''
+fringeID   = %s
+listID     = %s
+filelist   = %s
+timestamp = %s
+''' % ( str(self.fringeid), str(self.listid), str(self.filelist), self.timestamp )
+
 ##@@FIXME: Because of the nature of how Output -> Input, the name of this record may need to change
 ## at some point.
 class AstroDataRecord( ReductionContextRecord ):
