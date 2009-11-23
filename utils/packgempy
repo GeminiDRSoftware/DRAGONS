@@ -76,7 +76,7 @@ files = [recdat+'N20090822S0207_bias.fits',
          #recdat+'N20091027S0142.fits',
          
          trunk+'astrodata/*.py',
-         trunk+'astrodata/reduce',
+         #trunk+'astrodata/reduce',
          trunk+'iqtool/*',
          trunk+'ADCONFIG_Gemini',
          trunk+'RECIPES_Gemini',
