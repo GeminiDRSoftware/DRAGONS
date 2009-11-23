@@ -923,7 +923,6 @@ class RecipeLibrary(object):
                 # bind the recipe to the reduction object
                 ro = self.bindRecipe(ro, name, rfunc)
         elif dataset != None:
-            print "RM904:", repr(dataset)
             gd, bnc = openIfName(dataset)
             types = gd.getTypes()
             for typ in types:
