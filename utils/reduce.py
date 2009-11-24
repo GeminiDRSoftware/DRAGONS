@@ -220,7 +220,10 @@ else:
     infiles = testla
 
 frameForDisplay = 1 
+i = 1
 for infile in infiles: #for dealing with multiple files.   
+    print "${BOLD} Starting File #%d, %s" %(i, str(infile))
+    i += 1
     # get RecipeLibrary
     rl = RecipeLibrary()
     
@@ -277,7 +280,7 @@ for infile in infiles: #for dealing with multiple files.
         cw = TkRecipeControl(recipes = reclist)
         cw.start()
         
-    
+
     for rec in reclist:
     
         try:
