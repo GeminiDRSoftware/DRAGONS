@@ -42,14 +42,24 @@ filelist = [
 ]
 
 try:
-    os.system( './clean' ) 
+    #os.system( './clean' ) 
     recdat = 'recipedata/'
     start_time = time.time()
-    for fits in filelist:
-        filename = recdat + fits
-        #command = reduce + ' -r ' + recipe + ' ' + filename
-        command = "reduce -m -r demo" + ' ' + filename
-        os.system( command )
+    fullflist = []
+    for f in filelist:
+        fullflist.append(recdat+f)
+        
+    if False:
+        for fits in filelist:
+            filename = recdat + fits
+            #command = reduce + ' -r ' + recipe + ' ' + filename
+            command = "reduce -m -r demo" + ' ' + filename
+            os.system( command )
+    else:
+        command = "reduce -m -r demo " + " ".join(fullflist)
+        print "command:", command
+        os.system(command)
+    
     end_time = time.time()
     print "Total Time:", (end_time - start_time)
 
