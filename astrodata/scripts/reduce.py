@@ -87,7 +87,8 @@ parser.add_option("--caltype", dest="cal_type", default=None, type="string",
                   "This should be the type of calibration in lowercase and one word. " + \
                   "For example: 'bias', 'twilight'.")
 parser.add_option("--showcolors", dest="show_colors", default=False, action = "store_true",
-                    help="""For debugging any color output problems, shows what colors
+                    help="""For debugging any color output problems, show
+s what colors
                     reduce thinks are available based on the terminal setting.""")
 ##@@FIXME: This next option should not be put into the package
 parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_true",
@@ -172,6 +173,7 @@ def command_line():
         co = ReductionContext()
         co.restoreCalIndex(calindfile)
         for arg in infile:
+
             co.addCal( AstroData(arg), options.cal_type, os.path.abspath(options.add_cal) )
         co.persistCalIndex( calindfile )
         print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
@@ -221,8 +223,10 @@ else:
 
 frameForDisplay = 1 
 i = 1
+numFiles = len(infiles)
 for infile in infiles: #for dealing with multiple files.   
     print "${BOLD} Starting File #%d, %s" %(i, str(infile))
+    currentImageNum = i
     i += 1
     # get RecipeLibrary
     rl = RecipeLibrary()
@@ -276,7 +280,7 @@ for infile in infiles: #for dealing with multiple files.
     
     bReportHistory = False
     cwlist = []
-    if (useTK):
+    if (useTK and currentImageNum == 1):
         cw = TkRecipeControl(recipes = reclist)
         cw.start()
         
@@ -475,7 +479,7 @@ for infile in infiles: #for dealing with multiple files.
             
         co.isFinished(True)
     
-    if useTK:
+    if useTK and currentImageNum == numFiles:
         try:
             cw.done()
             cw.mainWindow.after_cancel(cw.pcqid)
