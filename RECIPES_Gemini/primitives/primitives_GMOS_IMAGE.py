@@ -303,7 +303,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                     stackname = "avgcomb_" + os.path.basename(stacklist[0])
                     filesystem.deleteFile( stackname )
                     gemini.gemcombine( co.makeInlistFile(stackID),  output=stackname,
-                       combine="average", reject="none" )
+                       combine="average", reject="none" ,Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
                     co.reportOutput(stackname)
                 else:
                     print "'%s' was not combined because there is only one image." %( stacklist[0] )
