@@ -215,7 +215,7 @@ def replaceSuffix (filename, suffix):
     return newname
 
 #---------------------------------------------------------------------------
-def gemdate (zone="UT"):
+def gemdate (zone="UT", timestamp = None):
     
     """Get the current date and time.
 
@@ -229,12 +229,15 @@ def gemdate (zone="UT"):
     @rtype: string    
     """
 
-    if zone == "UT":        
-        t = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-    elif zone == "local":
-        t = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+    if timestamp == None:
+        if zone == "UT":        
+            t = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        elif zone == "local":
+            t = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+        else:
+            raise ValueError, "Invalid time zone = %s" % zone
     else:
-        raise ValueError, "Invalid time zone = %s" % zone
+        t = timestamp.strftime("%Y-%m-%dT%H:%M:%S")
     return t
 
 #---------------------------------------------------------------------------
