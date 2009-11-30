@@ -29,6 +29,7 @@ from astrodata import gdpgutil
 from astrodata.LocalCalibrationService import CalibrationService
 from astrodata.StackKeeper import StackKeeper
 from utils import paramutil
+from utils.gemutil import gemdate
 end_time = time.time()
 #print 'test IMPORT TIME:', (end_time - start_time)
 from astrodata import gdpgutil
@@ -396,29 +397,33 @@ for infile in infiles: #for dealing with multiple files.
                             print rq
                             #@@FIXME: All of this is kluge and will not remotely reflect how the 
                             # RecipeProcessor will deal with ImageQualityRequests.
-
-                            ##@@FIXME: This os.system way, is very kluged and should be changed.
-                            if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
-                                 and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
-                                print "CANNOT DISPLAY: No ds9 running."
-                            else:
-
-                                # The following is annoying IRAF file methodology.
-                                tmpFilename = 'tmpfile.tmp'
-                                tmpFile = open( tmpFilename, 'w' )
-                                coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
-                                                                                     'ell':str(rq.ellMean)}
-                                tmpFile.write( coords )
-                                tmpFile.close()
-
+                            if True:
                                 #@@FIXME: Kluge to get this to work.
                                 dispFrame = 0
                                 if frameForDisplay > 0:
                                     dispFrame = frameForDisplay - 1
 
                                 st = time.time()
-                                iraf.tvmark( frame=dispFrame,coords=tmpFilename,
-                                    pointsize=0, color=204, label=pyraf.iraf.yes )
+                                if (useTK):
+                                    iqlog = "%s: %s = %s\n"
+                                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ellMean)
+                                    seeing = iqlog % (gemdate(timestamp=rq.timestamp),"seeing", rq.fwhmMean)
+                                    print ell
+                                    print seeing
+                                    timestr = gemdate(timestamp = rq.timestamp)
+                                    cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
+                                    cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
+                                    
+                                # this was a kludge to mark the image with the metric 
+                                # The following is annoying IRAF file methodology.
+                                # tmpFilename = 'tmpfile.tmp'
+                                # tmpFile = open( tmpFilename, 'w' )
+                                #coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
+                                #                                                     'ell':str(rq.ellMean)}
+                                #tmpFile.write( coords )
+                                #tmpFile.close()
+                                #iraf.tvmark( frame=dispFrame,coords=tmpFilename,
+                                #    pointsize=0, color=204, label=pyraf.iraf.yes )
                                 et = time.time()
                                 print 'RED422:', (et - st)
 
@@ -488,9 +493,9 @@ for infile in infiles: #for dealing with multiple files.
             # After ID print cw.pcqid
             cw.mainWindow.quit()
         except:
+            cw.mainWindow.quit()    
             raise
-            cw.quit()    
-    
+            
     if (generate_pycallgraphs):
         pycallgraph.make_dot_graph("recipman-callgraph.png")
     

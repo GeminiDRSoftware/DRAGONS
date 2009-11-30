@@ -28,6 +28,7 @@ centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
 #------------------------------------------------------------------------------ 
+
 class RecipeExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -660,12 +661,18 @@ class ReductionContext(dict):
             self.rorqs = []
         self.rorqs.append(rq)
     
-    def clearRqs(self):
+    def clearRqs(self, rtype = None):
         '''
         Clear all requests.
         '''
-        self.rorqs = []
-        
+        if rtype == None:
+            self.rorqs = []
+        else:
+            rql = copy(self.rorqs)
+            for rq in rql:
+                if type(rq) == type(rtype):
+                    self.rorqs.remove(rq)
+                    
     def rqCal(self, caltype):
         '''
         Create calibration requests based on raw inputs.

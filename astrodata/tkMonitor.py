@@ -8,7 +8,6 @@ from copy import copy
 
 import re, string, time
 from time import sleep
-
  
 class GUIExcept:
     """ This is the general exception the classes and functions in the
@@ -106,6 +105,15 @@ class TkRecipeControl( threading.Thread):
             { "cmd": "quit",
             }
         )
+    
+    def iqLog(self, name, val, timestr):
+        self.cmdQueue.append(
+            {   "cmd":"iqlog",
+                "name":name,
+                "val":val,
+                "timestr" : timestr
+            }
+        )
             
     def setContext(self, co):
         self.co = co
@@ -126,11 +134,33 @@ class TkRecipeControl( threading.Thread):
         self.mainWindow.protocol("WM_DELETE_WINDOW", self.finish) 
 
         #self.statusBar = StatusBar(self.mainWindow)
+        self.recButFrame = Frame(self.mainWindow)
+        self.recButFrame.pack(side=TOP, expand = 1)
+        bw = self.recButFrame
         for rec in self.recipes:
-            recBtn = Button(self.mainWindow, text=rec)
+            recBtn = Button(bw, text=rec)
             recBtn.pack(side=LEFT, fill = BOTH, expand=1)
             self.recBtns.update({rec: recBtn})
+        #add iq log
+        self.iqLogFrame = Frame(self.mainWindow)
+        iqw = self.iqLogFrame
+        iqw.pack(side=BOTTOM, expand = 1)
+        self.iqscroll = Scrollbar(iqw)
+        self.iqscroll.pack(side=RIGHT, fill=Y)
+        self.iqLogText = Text(iqw, height=5, width=60, background="black")
+        self.iqLogText.pack(side=BOTTOM, expand=1, fill=BOTH)
+        self.iqLogText.config(yscrollcommand=self.iqscroll.set)
+        self.iqLogText.tag_config("iqtime", 
+                                foreground="green") 
+        self.iqLogText.tag_config("iqname", 
+                                foreground="yellow")
+        self.iqLogText.tag_config("iqval", 
+                                foreground="white")
+                                
+
+        self.iqscroll.config(command=self.iqLogText.yview)
         
+        #start command queue timer
         self.mainWindow.after(100, self.processCmdQueue)
                 
         self.mainWindow.geometry("+0+0")
@@ -160,10 +190,9 @@ class TkRecipeControl( threading.Thread):
         #schedule myself again
         myqueue = copy(self.cmdQueue)
         self.cmdQueue = []
-        # print "processCmdQueue"
         for cmdevent in myqueue:
             cmd = cmdevent["cmd"]
-            # print "tk148:", cmd
+            # self.iqLogText.insert(END, "tk148:"+cmd+"\n")
             #print "TK85: ",cmd
             if  cmd == "running":
                 recipe = cmdevent["recipe"]
@@ -172,6 +201,11 @@ class TkRecipeControl( threading.Thread):
                         self.recBtns[rec].configure(foreground = "#00c000")
                     else:
                         self.recBtns[rec].configure(foreground = "black")
+            elif cmd == "iqlog":
+                self.iqLogText.insert(END, cmdevent["timestr"], "iqtime")
+                self.iqLogText.insert(END, string.center(cmdevent["name"],20,"-"), "iqname")
+                self.iqLogText.insert(END, string.ljust(cmdevent["val"], 20)+"\n", "iqval")
+                    
             elif cmd == "quit":
                 self.mainWindow.destroy()
                 self.mainWindow.quit()
@@ -255,6 +289,17 @@ class RecipeControl:
                 self.pauseBtn.configure(text="resume")
                 self.co.requestPause()
             
+
+    def cancel(self):
+        if self.co:
+            self.co.isFinished(True)
+        
+        
+    def poll(self):
+        self.window.after(100,self.poll)
+        # if self.co != None:
+        #    print "co",self.co
+        
     def sgPause(self):
         """callback for system generated pause"""
         if not self.bPaused:
@@ -381,7 +426,7 @@ class MonitorRecipe:
                     
                     
                     
-                    #self.textWdg.insert(END, str(mark)+ "\n", "text")
+                    #selef.textWdg.insert(END, str(mark)+ "\n", "text")
                     self.lastTS = mark
                 prevmark = mark
                 
