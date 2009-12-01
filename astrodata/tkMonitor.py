@@ -202,10 +202,12 @@ class TkRecipeControl( threading.Thread):
                     else:
                         self.recBtns[rec].configure(foreground = "black")
             elif cmd == "iqlog":
+                # this is funky, to get a reversed order log, with the best at top.
+
                 self.iqLogText.insert(END, cmdevent["timestr"], "iqtime")
                 self.iqLogText.insert(END, string.center(cmdevent["name"],20,"-"), "iqname")
                 self.iqLogText.insert(END, string.ljust(cmdevent["val"], 20)+"\n", "iqval")
-                    
+                self.iqLogText.see(END + "- 2 chars")
             elif cmd == "quit":
                 self.mainWindow.destroy()
                 self.mainWindow.quit()
