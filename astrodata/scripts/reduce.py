@@ -5,8 +5,11 @@ from datetime import datetime
 import glob
 from optparse import OptionParser
 import os
-import pyraf
-from pyraf import iraf
+try:
+    import pyraf
+    from pyraf import iraf
+except:
+    print "didn't get pyraf"
 import subprocess
 import sys
 from utils import terminal
