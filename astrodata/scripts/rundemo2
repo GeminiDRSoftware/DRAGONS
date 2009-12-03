@@ -56,7 +56,7 @@ try:
             command = "reduce -m -r demo" + ' ' + filename
             os.system( command )
     else:
-        command = "reduce -m -r demo " + " ".join(fullflist)
+        command = "reduce -r demo " + " ".join(fullflist)
         print "command:", command
         os.system(command)
     
