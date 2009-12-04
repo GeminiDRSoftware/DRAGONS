@@ -8,6 +8,14 @@ import sys
 #
 #===============================================================================
 
+'''
+CONFIG VALUES
+'''
+execfile( 'tempConfig.py' )
+pkg_path = os.path.abspath( 'PACKAGE_PATH' )
+script_path = os.path.abspath( SCRIPTS_PATH )
+reduce = os.path.join( script_path, 'reduce' )
+
 #!!!
 # Change the files in here to change which files will be run.
 #!!!
@@ -44,35 +52,27 @@ filelist = [
 # Change the recipe in here to change which recipe will be run.
 #!!!
 #recipe = 'demo'#'raTest2'
-fullpath = os.path.abspath( "/home/callen")
-index = fullpath.rfind( 'SVN-DPSG' )
 
-if index == -1:
-    betterpath = "./"
-else:
-    betterpath = fullpath[:index]
 
-os.chdir( betterpath )
+os.chdir( PACKAGE_PATH )
 
 oldpypath = os.getenv( 'PYTHONPATH' )
-#print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
 print "Temporarily Changing PYTHONPATH"
-reduce = '../trunk/utils/reduce'
-#sys.path.append(":../trunk:")
-os.environ.update({'PYTHONPATH':oldpypath+":../trunk:"})
+os.environ.update({'PYTHONPATH':oldpypath+":"+os.path.abspath(TRUNK_PATH)+":"})
 print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
 try:
-    os.chdir( 'gemini_python/test_data' )
-    os.system( './clean' ) 
-    recdat = 'recipedata/'
-    start_time = time.time()
+    os.chdir( TEST_DATA_PATH )
+    os.system( os.path.join(CLEAN_PATH, 'clean') ) 
+    filename = []
     for fits in filelist:
-        filename = recdat + fits
-        #command = reduce + ' -r ' + recipe + ' ' + filename
-        command = reduce + ' ' + filename
-        os.system( command )
+        filename.append( os.path.join( RECIPEDATA, fits ) )
+    command = reduce + ' ' + ' '.join( filename )
+    #command = reduce + ' -r ' + recipe + ' ' + filename
+    print 'Command:\n', command
+    start_time = time.time()
+    os.system( command )
     end_time = time.time()
     print "Total Time:", (end_time - start_time)
 
