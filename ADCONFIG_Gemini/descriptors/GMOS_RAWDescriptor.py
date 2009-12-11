@@ -173,4 +173,8 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return temp
             
-    
+    def display(self, dataset):
+        from pyraf import iraf
+        gemini()
+        gmos()
+        return gemini.gmos.gdisplay

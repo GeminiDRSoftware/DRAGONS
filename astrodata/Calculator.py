@@ -177,5 +177,8 @@ class Calculator(object):
             return dataset.phuHeader('MASKNAME')
         else:
             return 'None'
+        
+    def display(self, dataset):
+        return None
 
 #@@DOCPROJECT@@ done with pass 1
