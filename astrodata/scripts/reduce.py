@@ -400,7 +400,7 @@ for infile in infiles: #for dealing with multiple files.
                                     except:
                                         print "CANNOT DISPLAY"
                         elif rqTyp == ImageQualityRequest:
-                            print 'RED394:'
+                            #print 'RED394:'
                             print rq
                             #@@FIXME: All of this is kluge and will not remotely reflect how the 
                             # RecipeProcessor will deal with ImageQualityRequests.
@@ -418,8 +418,11 @@ for infile in infiles: #for dealing with multiple files.
                                     print ell
                                     print seeing
                                     timestr = gemdate(timestamp = rq.timestamp)
+                                    
+                                    cw.iqLog(co.inputs[0].filename, '', timestr)
                                     cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
                                     cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
+                                    cw.iqLog('', '-'*14, timestr)
                                 else:    
                                 # this was a kludge to mark the image with the metric 
                                 # The following is annoying IRAF file methodology.
