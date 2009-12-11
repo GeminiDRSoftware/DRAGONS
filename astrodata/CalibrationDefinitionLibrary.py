@@ -136,8 +136,13 @@ class CalibrationDefinitionLibrary( object ):
         else:
             raise "Improperly formed. XML calibration has no criteria" 
         
+        print 'Locating a %s for %s.' %(str(caltype), str(ad.filename))
+        print 'Using the following criteria:'
+        
         for child in criteria.getElementsByTagName( "property" ):
-            calReqEvent.criteria.update( self.parseProperty(child, desc, ad) )
+            crit = self.parseProperty( child, desc, ad )
+            calReqEvent.criteria.update( crit )      
+            print self.strProperty( crit )
         
         #===============================================================
         # PRIORITIES
@@ -223,6 +228,25 @@ class CalibrationDefinitionLibrary( object ):
                 calIndex.update( {adType:calFile} )
         #print "CDL213:", calIndex
         return calIndex
+
+    
+    def strProperty(self, prop):
+        '''
+        A cleaner way to print properties out.
+        
+        @param prop: A property as defined by the xml schema.
+        @type prop: dict
+        
+        @return: A clean, one line property.
+        @rtype: str 
+        '''
+        retStr = ''
+        for key in prop.keys():
+            vals = prop[key]
+            retStr += '${GREEN}%s:${NORMAL}\t%s${NORMAL}' %(str(key),str(vals[2])) 
+        
+        return retStr
+        
 
 
     def __str__(self):

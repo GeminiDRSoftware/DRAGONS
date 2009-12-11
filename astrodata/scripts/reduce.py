@@ -332,6 +332,8 @@ for infile in infiles: #for dealing with multiple files.
                     #process calibration requests
                     for rq in coi.rorqs:
                         rqTyp = type(rq)
+                        msg = '${BOLD}REDUCE:${NORMAL}\n'
+                        msg += '-'*30+'\n'
                         if rqTyp == CalibrationRequest:
                             fn = rq.filename
                             typ = rq.caltype
@@ -346,8 +348,22 @@ for infile in infiles: #for dealing with multiple files.
                                     # Not sure if this is where the one returned calibration is chosen, or if
                                     # that is done in the calibration service, etc.
                                     calname = calname[0]
+                                
+                                
+                                msg += 'A suitable %s found:\n' %(str(typ))
                                 coi.addCal(fn, typ, calname)
                                 coi.persistCalIndex( calindfile )
+                            else:
+                                msg += '%s already stored.\n' %(str(typ))
+                                msg += 'Using:\n'
+                            
+                            #msg += '${RED}%s${NORMAL} at ${BLUE}%s${NORMAL}' %( str(os.path.basename(calname)), 
+                            #                                                   str(os.path.dirname(calname)) )
+                            msg += '${BLUE}%s%s${RED}%s${NORMAL}' %( os.path.dirname(calname), os.path.sep, os.path.basename(calname))
+                                                            
+                            print msg
+                            print '-'*30
+                                                 
                         elif rqTyp == UpdateStackableRequest:
                             coi.stackAppend(rq.stkID, rq.stkList)
                             coi.persistStkIndex( stkindfile )
