@@ -113,7 +113,7 @@ class GEMINIPrimitives(ReductionObject):
             print "problem displaying output"
             raise
         yield co
-    
+#------------------------------------------------------------------------------ 
     def mosaicChips(self, co):
        try:
           print "producing image mosaic"
@@ -125,7 +125,7 @@ class GEMINIPrimitives(ReductionObject):
           print "Problem producing image mosaic"         
           raise
        yield co
-       
+#------------------------------------------------------------------------------ 
     def averageCombine(self, co):
         try:
             # @@TODO: need to include parameter options here
@@ -162,6 +162,7 @@ class GEMINIPrimitives(ReductionObject):
             print "Problem combining and averaging"
             raise 
         yield co
+#------------------------------------------------------------------------------ 
     def measureIQ(self, co):
         try:
             #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
@@ -184,7 +185,7 @@ class GEMINIPrimitives(ReductionObject):
                 else:
                     observ = 'gemini-north'
                 st = time.time()
-                iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True)
+                iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True, qa=True)
                 et = time.time()
                 print 'MeasureIQ time:', (et - st)
                 # iqdata is list of tuples with image quality metrics

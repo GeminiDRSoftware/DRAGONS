@@ -66,11 +66,13 @@ class FringeRecord( ReductionContextRecord ):
     fringeid = None
     listid = None
     filelist = []
-    def __init__(self, fringeid, filelist, listid, timestamp=None):
+    
+    def __init__(self, fringeid, listid, filelist, timestamp=None):
         super( FringeRecord, self ).__init__( timestamp )
         self.fringeid = fringeid
         self.listid = listid
         self.filelist = filelist
+        
         
     def __str__(self):
         rets = '''
@@ -79,6 +81,12 @@ listID     = %s
 filelist   = %s
 timestamp = %s
 ''' % ( str(self.fringeid), str(self.listid), str(self.filelist), self.timestamp )
+
+    def add(self, image):
+        if type(image) == list:
+            self.filelist.extend( image )
+        else:
+            self.filelist.append( image )
 
 ##@@FIXME: Because of the nature of how Output -> Input, the name of this record may need to change
 ## at some point.

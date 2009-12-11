@@ -63,7 +63,7 @@ files = [recdat+'N20090822S0207_bias.fits',
          os.path.join(CLEAN_PATH,'clean'),
          'rundemo',
          'packgempy',
-         'tempConfig',
+         'tempConfig.py',
          ]
 
 print "taring files, this will take some time..."

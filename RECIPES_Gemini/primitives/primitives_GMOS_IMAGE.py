@@ -171,9 +171,19 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "Problem in GIREDUCE"
             raise
         yield co
+    
+    #------------------------------------------------------------------------------ 
+    def setForFringe(self, co):
+        print 'adding to fringe list'
+        for inp in co.inputs:
+            fringeID = IDFactory.generateAstroDataID( inp )
+            listID = IDFactory.generateFringeListID( inp )
+            co.fringes.add( listID, fringeID, inp )
+        
+        yield co
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def fringeCreate(self, co):
+    def makeFringeFrame(self, co):
         try:
             print "creating fringe frame"
             gemini.gifringe(co.inputsAsStr(), "fringe",
@@ -185,7 +195,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         yield co
         
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def fringeSubtract(self, co):
+    def fringeCorrect(self, co):
         try:
             print "subtracting fringe frame"
             gemini.girmfringe(co.inputsAsStr(), co["fringe"],

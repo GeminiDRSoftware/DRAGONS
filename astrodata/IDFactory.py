@@ -84,8 +84,33 @@ def generateDisplayID( dataset, version ):
 
 def generateAstroDataID( dataset, version="1_0" ):
     '''
+    An ID to be used to identify AstroData types. This is used for:
     
+    1) Calibrations:
     
+    Let's say a recipe performs
+    
+    getProcessedBias
+    prepare
+    biasCorrect
+    
+    Because of the prepare step, the calibration key determined at getProcessedBias will not 
+    match biasCorrect because (N2009..., bias) will not match (gN2009..., bias). By using an astroID,
+    you can avoid this issue as you will have (DATALAB, bias). So, any steps inbetween getProcessedBias and
+    biasCorrect will have no impact.
+    
+    2) Fringe:
+    
+    Fringe uses this as a FringeID, which is based off the first input of the list.
+    
+    @param dataset: Input AstroData instance or fits filename.
+    @type dataset: AstroData instances or str
+    
+    @param version: The version from which to run.
+    @type version: string
+    
+    @return: An astrodata id.
+    @rtype: string  
     '''
     if type(dataset) == str:
         ad = AstroData( dataset )
@@ -97,4 +122,18 @@ def generateAstroDataID( dataset, version="1_0" ):
     else:
         raise "BAD ARGUMENT TYPE"
     
+def generateFringeListID( dataset, version='1_0' ):
+    '''
+    Generate an ID from which all similar stackable data will have in common.
     
+    @param dataset: Input AstroData instance or fits filename.
+    @type dataset: AstroData instances or str
+    
+    @param version: The version from which to run.
+    @type version: string
+    
+    @return: A stackable id.
+    @rtype: string
+    '''
+    return generateStackableID( dataset, version )
+

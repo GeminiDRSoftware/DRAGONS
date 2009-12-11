@@ -1,53 +1,42 @@
 #!/usr/bin/env python
-
+#import time
+#ost = time.time()
+#------------------------------------------------------------------------------ 
 import commands
 from datetime import datetime
 import glob
 from optparse import OptionParser
 import os
+#st = time.time()
 try:
     import pyraf
     from pyraf import iraf
 except:
     print "didn't get pyraf"
+#et = time.time()
+#print 'IRAF TIME', (et-st)
 import subprocess
 import sys
-from utils import terminal
-from utils.terminal import TerminalController
 import time
 #------------------------------------------------------------------------------ 
-term = TerminalController()
 a = datetime.now()
 
 import astrodata
 from astrodata.AstroData import AstroData
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
-from optparse import OptionParser
 from astrodata.StackKeeper import StackKeeper
 from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
         GetStackableRequest, DisplayRequest, ImageQualityRequest
-start_time = time.time()
 from astrodata import gdpgutil
 from astrodata.LocalCalibrationService import CalibrationService
-from astrodata.StackKeeper import StackKeeper
 from utils import paramutil
 from utils.gemutil import gemdate
-end_time = time.time()
-#print 'test IMPORT TIME:', (end_time - start_time)
-from astrodata import gdpgutil
-
-import sys, os, glob, subprocess
-
-oend_time = time.time()
-#print 'Overall IMPORT TIME:', (oend_time - ostart_time)
-#import pyfits as pf
-#import numdisplay
-#import numpy as np
-
-#sys.exit()
-
+from utils import terminal
+from utils.terminal import TerminalController, ProgressBar 
 #------------------------------------------------------------------------------ 
+#oet = time.time()
+#print 'TIME:', (oet -ost)
 b = datetime.now()
 ############################################################
 # this script was developed to exercise the GeminiDataType class
@@ -100,7 +89,6 @@ parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_t
 parser.add_option("-i", "--intelligence", dest='intelligence', default=False, action="store_true",
                   help="Give the system some intelligence to perform operations faster and smoother.")
 (options,  args) = parser.parse_args()
-
 
 useTK =  options.bMonitor
 # ------
@@ -416,19 +404,19 @@ for infile in infiles: #for dealing with multiple files.
                                     timestr = gemdate(timestamp = rq.timestamp)
                                     cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
                                     cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
-                                    
+                                else:    
                                 # this was a kludge to mark the image with the metric 
                                 # The following is annoying IRAF file methodology.
-                                # tmpFilename = 'tmpfile.tmp'
-                                # tmpFile = open( tmpFilename, 'w' )
-                                #coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
-                                #                                                     'ell':str(rq.ellMean)}
-                                #tmpFile.write( coords )
-                                #tmpFile.close()
-                                #iraf.tvmark( frame=dispFrame,coords=tmpFilename,
-                                #    pointsize=0, color=204, label=pyraf.iraf.yes )
+                                    tmpFilename = 'tmpfile.tmp'
+                                    tmpFile = open( tmpFilename, 'w' )
+                                    coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
+                                                                                     'ell':str(rq.ellMean)}
+                                    tmpFile.write( coords )
+                                    tmpFile.close()
+                                    iraf.tvmark( frame=dispFrame,coords=tmpFilename,
+                                    pointsize=0, color=204, label=pyraf.iraf.yes )
                                 et = time.time()
-                                print 'RED422:', (et - st)
+                                #print 'RED422:', (et - st)
 
 
                     coi.clearRqs()      

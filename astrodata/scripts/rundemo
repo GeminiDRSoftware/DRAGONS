@@ -64,7 +64,7 @@ print 'PYTHONPATH', os.getenv( 'PYTHONPATH' )
 
 try:
     os.chdir( TEST_DATA_PATH )
-    os.system( os.path.join(CLEAN_PATH, 'clean') ) 
+    os.system( './clean' ) 
     filename = []
     for fits in filelist:
         filename.append( os.path.join( RECIPEDATA, fits ) )

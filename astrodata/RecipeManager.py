@@ -14,12 +14,12 @@ import gdpgutil
 from gdpgutil import pickConfig
 import IDFactory as idFac # id hashing functions
 from ParamObject import PrimitiveParameter
-from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord
+from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
 import ReductionObjects
 from ReductionObjects import ReductionObject
 from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, \
     ImageQualityRequest
-from StackKeeper import StackKeeper
+from StackKeeper import StackKeeper, FringeKeeper
 #------------------------------------------------------------------------------ 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
@@ -116,6 +116,23 @@ class ReductionContext(dict):
             self.stackeep.stackLists = pickle.load( open(filename, 'r') )
         else:
             pickle.dump( {}, open( filename, 'w' ) )
+    
+    def persistFringeIndex( self, filename ):
+        try:
+            pickle.dump( self.fringes.stackLists, open(filename, "w") )
+        except:
+            print 'Could not persist the fringe cache.'
+            raise 
+    
+    def restoreFringeIndex( self, filename ):
+        '''
+        
+        '''
+        if os.path.exists( filename ):
+            self.fringes.stackLists = pickle.load( open(filename, 'r') )
+        else:
+            pickle.dump( {}, open( filename, 'w' ) )
+    
             
     def calsummary(self, mode = "text"):
         rets = ""
@@ -196,7 +213,7 @@ class ReductionContext(dict):
           
             
  
-#################################################################################
+#------------------------------------------------------------------------------ 
  
      
     def __init__(self):
@@ -219,6 +236,8 @@ class ReductionContext(dict):
         # Stack Keep is a resource for all RecipeManager functions... one shared StackKeeper to simulate the shared ObservationServie
         # used in PRS mode.
         self.stackeep = StackKeeper()
+        self.fringes = FringeKeeper()
+        
         
     def __str__(self):
         """Used to dump Reduction Context(co) into file for test system
@@ -309,7 +328,7 @@ class ReductionContext(dict):
         if name in callbacks:
             for f in callbacks[name]:
                 f(**params)
-                
+    
     def pause(self):
         self.callCallbacks("pause")
         self.isPaused(True)
@@ -673,17 +692,20 @@ class ReductionContext(dict):
                 if type(rq) == type(rtype):
                     self.rorqs.remove(rq)
                     
-    def rqCal(self, caltype):
+    def rqCal(self, caltype, inputs=None):
         '''
         Create calibration requests based on raw inputs.
         
         @param caltype: The type of calibration. For example, 'bias' and 'flat'.
         @type caltype: str
         '''
-        addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
+        if inputs is None:
+            addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
+        else:
+            addToCmdQueue = self.cdl.getCalReq( inputs, 'fringe' )
         for re in addToCmdQueue:
-            self.addRq(re)
-        
+            self.addRq(re)        
+          
     def rqStackUpdate(self):
         '''
         Create requests to update a stack list.
