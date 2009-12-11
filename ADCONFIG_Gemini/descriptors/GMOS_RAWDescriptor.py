@@ -177,4 +177,5 @@ class GMOS_RAWDescriptorCalc(Calculator):
         from pyraf import iraf
         gemini()
         gmos()
+        iraf.set( stdimage='imtgmos' )
         return gemini.gmos.gdisplay
