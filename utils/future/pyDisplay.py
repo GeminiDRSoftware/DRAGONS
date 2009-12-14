@@ -1,3 +1,5 @@
+#import os
+
 
 _displayObj = None
 
@@ -5,15 +7,28 @@ class DisplayException:
     pass
 
 def getDisplay():
+    '''
+    @organization: Gemini Observatory
+    @contact: callen@gemini.edu
+    @author: Craig Allen
+    @author: River Allen
+    @requires: PYRAF and/or pyds9.
+    '''
     global _displayObj
     
     if _displayObj is None:
-        _displayObj = display()
+        _displayObj = pyDisplay()
     
     return _displayObj
 
 def supported():
     '''
+    @organization: Gemini Observatory
+    @contact: callen@gemini.edu
+    @author: Craig Allen
+    @author: River Allen (original)
+    @requires: PYRAF and/or pyds9.
+    
     Get list of tool/package system can support.
     
     @return: List of all packages that can be imported.
@@ -35,9 +50,14 @@ def supported():
     
     return support_list
 
-class display(object):
+
+class pyDisplay(object):
     '''
-    
+    @organization: Gemini Observatory
+    @contact: callen@gemini.edu
+    @author: Craig Allen
+    @author: River Allen
+    @requires: PYRAF and/or pyds9.
     
     '''
 #------------------------------------------------------------------------------ 
@@ -73,7 +93,7 @@ class display(object):
             
             newtool = toolCreator( **toolargs )
             self.__addtool__( newtool, id )
-            
+            return newtool
         else:
             raise DisplayException( 'Invalid Argument type: "%s", must be str' %( str(type(tool)) ) )
 #------------------------------------------------------------------------------ 
@@ -86,20 +106,45 @@ class display(object):
                                 'your PYTHONPATH.' )
         
 
-'''
-This ds9 stuff should probably be moved to another file to keep things more organized as more
-tools are added/supported. In here out of convenience and laziness.
-
-'''
+#===============================================================================
+#@@TODO:
+# This ds9 stuff should probably be moved to another file to keep things more organized as more
+# tools are added/supported. In here out of convenience and laziness.
+#===============================================================================
 class DS9Exception:
     pass
 
+iraf_colors = { 
+            'black':202,
+            'white':203,
+            'red':204,
+            'green':205,
+            'blue':206,
+            'yellow':207,
+            'cyan':208,
+            'magenta':209,
+            'coral':210,
+            'maroon':211,
+            'orange':212,
+            'khaki':213,
+            'orchid':214,
+            'turquoise':215,
+            'violet':216,
+            'wheat':217,
+               }
+
+
 class DS9(object):
     '''
-    
+    @organization: Gemini Observatory
+    @contact: callen@gemini.edu
+    @author: Craig Allen
+    @author: River Allen
+    @requires: PYRAF and/or pyds9.
+    @warning: Only certain functions work if pyds9 is installed. These functions will have no
+    effect if it is not installed.
+    @bug: set( 'sleep' ) does not work. It seems not to be supported by xpa.
     '''
-    
-    
 #------------------------------------------------------------------------------ 
     def __init__(self, *args, **kargs):
         self.idlist = range(1,17)
@@ -130,7 +175,7 @@ class DS9(object):
                 self.__setattr__( key, self.ds9.__dict__[key] )
                 
         self.current_frame = 1
-        self.current_frame = self.frame()
+        #self.current_frame = self.frame()
         self.max_frame = self.current_frame
 #------------------------------------------------------------------------------ 
     def __getitem__(self, item):
@@ -152,7 +197,7 @@ class DS9(object):
         itemtype = type( item )
         if itemtype == str:
             self.iddict.update( {item:value} )
-            self.idlist[value] = item
+            self.idlist[value-1] = item
         elif itemtype == int:
             self.idlist[item-1] = value
             self.iddict.update( {str(item):value} )
@@ -178,7 +223,7 @@ class DS9(object):
 #------------------------------------------------------------------------------ 
     def findFile(self, filename):
         '''
-        Find a file currently being displayed, and return frame number.
+        Find a file currently being displayed, and return frame id.
         
         '''
         pass
@@ -207,32 +252,34 @@ class DS9(object):
                 self[frame] = frame
             
             self.current_frame = frame
-            self.set( 'frame %d' %(self.current_frame) )
-            
+            if self.pyds9_sup:
+                self.set( 'frame %d' %(self.current_frame) )
+            print self.frames()
 
         elif type(frame) == str:
-            print self[1], type(self[1])
             try:
                 self.current_frame = self[frame]
                 
             except:
                 if self.current_frame == 1 and self[1] == 1:
-                    pass
+                    self[frame] = 1
+                    #print self.frames()
+#                    self.set( 'frame %d' %(self.current_frame) )
                 else:
                     self.max_frame += 1
-                    self.current_frame = self.max_frame-1
+                    self.current_frame = self.max_frame
+                    self[frame] = self.current_frame
                     
-                self[frame] = self.current_frame-1
+            if self.pyds9_sup:
+                self.set( 'frame %d' %(self[frame]) )
             
-            self.set( 'frame %d' %(self.current_frame) )
-                
             
         elif frame is None:
             try:
                 frame = int(self.get( 'frame' ))
             except:
-                frame = 1
-            # This is in case whoever went outside using these methods, and thus
+                return self.current_frame
+            # This is in case whoever went+(line_space*current_line) outside using these methods, and thus
             # changed the frame through ds9.set, etc.
             if self.current_frame != frame:
                 self.current_frame = frame
@@ -244,7 +291,7 @@ class DS9(object):
 #------------------------------------------------------------------------------ 
     def set(self, *args, **kargs ):
         if self.pyds9_sup:
-            print args
+            #print args
             self.ds9.set( *args, **kargs )
         else:
             print 'Cannot use XPA set. Only IRAF is working on this machine.'
@@ -257,7 +304,7 @@ class DS9(object):
             place to put it, but this should create a new one...etc.
             '''
             try:
-                print args
+                #print args
                 return self.ds9.get( *args, **kargs )
             except:
                 raise
@@ -265,6 +312,8 @@ class DS9(object):
             print 'Cannot use XPA set. Only IRAF is working on this machine.'
 #------------------------------------------------------------------------------ 
     def zoomto(self, level):
+        if not self.pyds9_sup:
+            return 
         if type( level ) == str:
             level = float(level)
         
@@ -286,37 +335,92 @@ class DS9(object):
             prop_size = len( properties )
             for i in range(prop_size):
                 properties[i] = str( properties[i] )
-                
-            properties = ' '.join( properties )
+            
+            if self.pyds9_sup:
+                properties = ' '.join( properties )
+            else:
+                properties = ','.join( properties )
         else:
             properties = str( properties )
-        
-        if crossout:
-            crossout = '-'
-        else:
-            crossout = ''
+        if self.pyds9_sup:
             
-        if fixed:
-            fixed = '0'
+            
+            if crossout:
+                crossout = '-'
+            else:
+                crossout = ''
+                
+            if fixed:
+                fixed = '0'
+            else:
+                fixed = '1'
+            
+            additional_args = ''
+            for arg in kargs.keys():
+                tempval = kargs[arg]
+                if type( tempval ) == str:
+                    additional_args += '%s="%s" ' %(str(arg), tempval)
+                else:
+                    tempval = str( kargs[arg] )
+                    additional_args += '%s=%s ' %(str(arg), tempval)
+            
+            command = '%(crossout)s%(shape)s %(xcoord)s %(ycoord)s %(props)s # color="%(colour)s" text="%(text)s" fixed=%(fix)s %(params)s' %{'crossout':crossout, 
+                                                     'shape':shape, 'xcoord':xcoord,
+                                                     'ycoord':ycoord, 'props':properties, 'colour':color,
+                                                     'text':text, 'fix':fixed, 'params':additional_args
+                                                     }
+            
+            self.setRegion( command )
         else:
-            fixed = '1'
-        
-        additional_args = ''
-        for arg in kargs.keys():
-            tempval = str( kargs[arg] )
-            additional_args += '%s=%s ' %(str(arg), tempval)
-        
-        command = '%(crossout)s%(shape)s %(xcoord)s %(ycoord)s %(props)s # color="%(colour)s" text="%(text)s" fixed=%(fix)s %(params)s' %{'crossout':crossout, 
-                                                 'shape':shape, 'xcoord':xcoord,
-                                                 'ycoord':ycoord, 'props':properties, 'colour':color,
-                                                 'text':text, 'fix':fixed, 'params':additional_args
-                                                 }
-        
-        self.setRegion( command )
+            # The IRAF tvmark way
+            # write a stupid file
+            tmpfile = 'tmpfile.tmp'
+            tmpfd = open( tmpfile, 'w' )
+            tmpfd.write( '%s %s\n' %(xcoord, ycoord) )
+            tmpfd.close()
+            iraf.tvmark( self.current_frame, coordfile, mark=shape, label=True, pointsize=properties,
+                         radii=properties, lengths=properties, txsize=properties, 
+                         color=iraf_colors[color])
+            os.remove( tmpfile )
 #------------------------------------------------------------------------------ 
     def markPixel(self, xcoord, ycoord, badPixel=True, color='red'):
-        self.draw( 'box', xcoord, ycoord, [1,1], crossout=badPixel, color=color, fixed=True, edit='0',
-                    select='0', move='0' )
+        if self.pyds9_sup:
+            self.draw( 'box', xcoord, ycoord, [1,1], crossout=badPixel, color=color, fixed=True, edit=0,
+                    select=0, move=0 )
+        else:
+            # write a stupid file
+            tmpfile = 'tmpfile.tmp'
+            tmpfd = open( tmpfile, 'w' )
+            tmpfd.write( '%s %s\n' %(str(xcoord), str(ycoord)) )
+            tmpfd.close()
+            iraf.tvmark( self.current_frame, coordfile, mark='point', pointsize=1, color=iraf_colors[color])
+            os.remove( tmpfile )
+#------------------------------------------------------------------------------ 
+    def drawText(self, xcoord, ycoord, text='', font='times 10 bold', color='red'):
+        '''
+        
+        '''
+        line_space = 50
+        
+        if self.pyds9_sup:
+            current_line = 0
+            for line in text.split('\n'):
+                self.draw( 'text', xcoord+20, ycoord-(line_space*current_line), 
+                           color=color, text=line, font=font, delete=1)
+                current_line += 1
+        else:
+            font_size = font.split( ' ' )[1]
+            import os
+            tmpfile = 'tmpfile.tmp'
+            tmpfd = open( tmpfile, 'w' )
+            current_line = 0
+            for line in text.spit('\n'):
+                tmpfd.write( '%s %s %s\n' %(str(xcoord), str(ycoord+(line_space-current_line)), line) ) 
+                current_line += 1
+            tmpfd.close()
+            iraf.tvmark( self.current_frame, tmpfile, pointsize=1, label=True, txsize=font_size,
+                         color=iraf_colors[color])
+            os.remove( tmpfile )
 #------------------------------------------------------------------------------ 
     def setRegion(self, command):
         self.set( 'regions', command )
@@ -345,7 +449,7 @@ if __name__ == "__main__":
     tomogatchi.frame( fid )
     print tomogatchi.frames()
     tomogatchi.frame( frameid )
-    tomogatchi.set( 'file mo_flatdiv_biassub_trim_gN20091027S0133.fits' )
+    tomogatchi.set( 'file N20020214S060.fits' )
     '''
     print tomogatchi.frames()
     

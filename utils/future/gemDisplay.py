@@ -17,7 +17,7 @@ def getDisplayService():
     global _displayObj
     
     if _displayObj is None:
-        _displayObj = display()
+        _displayObj = DisplayService()
     
     return _displayObj
 
@@ -34,15 +34,36 @@ class DisplayService(object):
         self.ds9.__setitem__(item, value)
 #------------------------------------------------------------------------------ 
     def __init__(self):
-        self.display = pyDisplay.getDisplay()
-        self.ds9 = self.setupDS9()
+        self.pydisp = pyDisplay.getDisplay()
+        self.ds9 = None
 #------------------------------------------------------------------------------ 
     def setupDS9(self):
-        storeDs9 = self.display.getDisplayTool( 'ds9' )
-        storeDs9.set( 'tile yes' )
+        storeDs9 = self.pydisp.getDisplayTool( 'ds9' )
+        if storeDs9.pyds9_sup:
+            storeDs9.set( 'tile yes' )
+            storeDs9.zoomto( (1./4.) )
+        self.ds9 = storeDs9
         return storeDs9
 #------------------------------------------------------------------------------ 
-    def display(self, ad, id=None):
+    def getDisplayID(self, ad):
+        '''
+        
+        
+        '''
+        #@@TODO:
+        #=======================================================================
+        # Here or IDFactory is where I believe the majority of ADType / Stacking 
+        # intelligence will be done. Because ids can be passed in, the intelligence 
+        # can also be done externally (in reduce, for example).
+        #=======================================================================
+        if 'avgcomb_' in ad.filename:
+            fid = 'STACKED_' + IDFactory.generateStackableID( ad )
+        else:
+            fid = IDFactory.generateStackableID( ad )
+
+        return fid
+#------------------------------------------------------------------------------ 
+    def display(self, ad, fid=None):
         '''
         
         
@@ -51,17 +72,40 @@ class DisplayService(object):
         '''
         
         # do stack id and astrodata what nots.
+#        print 'GDS 66:'
+        if type(ad) is not astrodata.AstroData:
+            ad = AstroData( ad )
         desc = Descriptors.getCalculator( ad )
+        
         displayfunc = desc.fetchValue( 'display', ad )
         
         if displayfunc is None:
+            # This occurs when there is specific display function for the given tool.
+            # (i.e. it is using the default display descriptor).
             displayfunc = self.ds9.displayFile
-            
-        if id is None:
-            id = IDFactory.generateStackableID( ad )
         
-        self.ds9.frame( id )
-        framenumber = self.ds9[id]
+        if fid is None:
+            fid = self.getDisplayID( ad )
+        
+        self.ds9.frame( fid )
+        framenumber = self.ds9[fid]
+        
+        if self.ds9.pyds9_sup:
+            self.ds9.set( 'regions delete all' )
+        
         displayfunc( ad.filename, frame=framenumber, fl_imexam=False)
-
-
+#------------------------------------------------------------------------------ 
+    def markText(self, xcoord, ycoord, text='', ad=None, fid=None):
+        '''
+        
+        '''
+        line_size = 50
+        
+        # frame stuff
+        if fid is not None:
+            if ad is not None:
+                self.frame( self.getDisplayID( ad ) )
+            elif self.ds9.frame() != self.ds9[fid]:
+                self.frame( fid )
+        
+        self.ds9.drawText( xcoord, ycoord, text=text, color='red')
