@@ -1,19 +1,17 @@
-#import os
-
-
+'''
+@organization: Gemini Observatory
+@contact: callen@gemini.edu
+@author: Craig Allen
+@author: River Allen
+@requires: PYRAF and/or pyds9.
+'''
 _displayObj = None
 
 class DisplayException:
     pass
 
 def getDisplay():
-    '''
-    @organization: Gemini Observatory
-    @contact: callen@gemini.edu
-    @author: Craig Allen
-    @author: River Allen
-    @requires: PYRAF and/or pyds9.
-    '''
+
     global _displayObj
     
     if _displayObj is None:
@@ -22,13 +20,7 @@ def getDisplay():
     return _displayObj
 
 def supported():
-    '''
-    @organization: Gemini Observatory
-    @contact: callen@gemini.edu
-    @author: Craig Allen
-    @author: River Allen (original)
-    @requires: PYRAF and/or pyds9.
-    
+    '''    
     Get list of tool/package system can support.
     
     @return: List of all packages that can be imported.
