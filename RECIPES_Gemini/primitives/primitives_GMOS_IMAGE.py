@@ -28,33 +28,33 @@ gemini.gmos()
 sys.stdout = SAVEOUT
 
 class GMOS_IMAGEPrimitives(GEMINIPrimitives):
-    def init(self, co):
-        if "global" in co and "adata" in co["global"]:
-            pyraf.iraf.set (adata=co["global"]['adata'].value)  
+    def init(self, rc):
+        if "global" in rc and "adata" in rc["global"]:
+            pyraf.iraf.set (adata=rc["global"]['adata'].value)  
         else:
-            (root, name) = os.path.split(co.inputs[0])
+            (root, name) = os.path.split(rc.inputs[0])
             pyraf.iraf.set (adata=root)  
         
-        GEMINIPrimitives.init(self, co)
-        return co
+        GEMINIPrimitives.init(self, rc)
+        return rc
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def flatCreate(self, co):
+    def flatCreate(self, rc):
 
         # FLAT made with giflat
         try:
             print 'combining and normalizing best 20 twilight flats'
-            gemini.giflat(co.inputsAsStr(), outflat=co["outflat"],
-                bias=co.calName("REDUCED_BIAS"),rawpath=co["caldir"],
-                fl_over=co["fl_over"], fl_trim=co["fl_trim"], 
-                fl_vardq=co["fl_vardq"],Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
+            gemini.giflat(rc.inputsAsStr(), outflat=rc["outflat"],
+                bias=rc.calName("REDUCED_BIAS"),rawpath=rc["caldir"],
+                fl_over=rc["fl_over"], fl_trim=rc["fl_trim"], 
+                fl_vardq=rc["fl_vardq"],Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
         except:
             print "problem combining imaging flats with giflat"
             raise
-        yield co
+        yield rc
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def biasCreate(self, co):
+    def biasCreate(self, rc):
         # Things done to the bias image before we subtract it:
         # overscan subtract
         # overscan trim
@@ -64,156 +64,156 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         # consider a generic task. using gbias (IRAF generic task)
         try:
             print "combining biases to create master bias"
-            gemini.gbias(co.inputsAsStr(), outbias=co["outbias"],
-                rawpath=co["caldir"], fl_trim=co["fl_trim"], 
-                fl_over=co["fl_over"], fl_vardq=co["fl_vardq"],
-                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
+            gemini.gbias(rc.inputsAsStr(), outbias=rc["outbias"],
+                rawpath=rc["caldir"], fl_trim=rc["fl_trim"], 
+                fl_over=rc["fl_over"], fl_vardq=rc["fl_vardq"],
+                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
         except:
             print "problem combining biases with gbias"
             raise SystemExit
 
-        yield co 
+        yield rc 
 
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def prepare(self, co):
+    def prepare(self, rc):
         try:
             print 'preparing'
             print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
             print "Updating GAIN keyword by calling GGAIN"
-            gemini.gmos.gprepare(co.inputsAsStr(strippath = True), rawpath="adata$",Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
-            co.reportOutput(co.prependNames("g", currentDir = True))
+            gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath="adata$",Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+            rc.reportOutput(rc.prependNames("g", currentDir = True))
             
         except:
             print "Problem in GPREPARE"
             raise 
-        yield co 
+        yield rc 
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def overscanSub(self, co):
+    def overscanSub(self, rc):
         try:
             print "Determining overscan subtraction region using nbiascontam"
             print "parameter and BIASSEC header keyword"
             print "Subtracting overscan bias levels using colbias"
-            gemini.gmos.gireduce(co.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=no, fl_bias=no, \
-                fl_flat=no, outpref="oversub_",Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
-            co.reportOutput(co.prependNames("oversub_", currentDir = True))
+            gemini.gmos.gireduce(rc.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=no, fl_bias=no, \
+                fl_flat=no, outpref="oversub_",Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+            rc.reportOutput(rc.prependNames("oversub_", currentDir = True))
         except:
             print "Problem subtracting overscan bias"
             print "Problem in GIREDUCE"
             raise
-        yield co
+        yield rc
 
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def overscanTrim(self, co):
+    def overscanTrim(self, rc):
         try:
             print "Determining overscan region using BIASSEC header keyword"
             print "Trimming off overscan"
-            gemini.gmos.gireduce(co.inputsAsStr(), fl_over=no,fl_trim=yes, 
-                fl_bias=no, fl_flat=no, outpref="trim_",Stdout = co.getIrafStdout(),
-                Stderr = co.getIrafStderr())
-            co.reportOutput(co.prependNames("trim_"))
+            gemini.gmos.gireduce(rc.inputsAsStr(), fl_over=no,fl_trim=yes, 
+                fl_bias=no, fl_flat=no, outpref="trim_",Stdout = rc.getIrafStdout(),
+                Stderr = rc.getIrafStderr())
+            rc.reportOutput(rc.prependNames("trim_"))
         except:
             print "Problem trimming off overscan region"
             print "Problem in GIREDUCE"
             raise 
-        yield co
+        yield rc
 
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def overscanCorrect(self, co):
+    def overscanCorrect(self, rc):
         print "Performing Overscan Correct (overSub, overTrim)"
         try:
-            gemini.gmos.gireduce(co.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=pyraf.iraf.yes,
+            gemini.gmos.gireduce(rc.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=pyraf.iraf.yes,
                 fl_bias=no, fl_flat=no, outpref="trim_oversub_",
-                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
-            co.reportOutput(co.prependNames("trim_oversub_", currentDir = True))
+                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+            rc.reportOutput(rc.prependNames("trim_oversub_", currentDir = True))
         except:
             print "Problem correcting overscan region"
             raise
         
-        yield co
+        yield rc
     
     
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def biasCorrect(self, co):
+    def biasCorrect(self, rc):
         # not really sure we need to use gireduce here. I think we could easily make a
         # more generic bias sub task
         try:
             print "Subtracting off bias"
-            cals = co.calFilename( 'bias' )
+            cals = rc.calFilename( 'bias' )
             for cal in cals:
                 gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,
                     fl_trim=no, fl_bias=yes,bias=cal,
                     fl_flat=no, outpref="biassub_",
-                    Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr()
+                    Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr()
                     ) # this flag was removed?,fl_mult=no)
             
-            co.reportOutput(co.prependNames("biassub_"))
+            rc.reportOutput(rc.prependNames("biassub_"))
         except:
             print "Problem subtracting bias"
             print "Problem in GIREDUCE"
             raise
             
-        yield co
+        yield rc
     
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def flatfieldCorrect(self, co):
+    def flatfieldCorrect(self, rc):
         try:
             print "Flat field correcting"
             
-            cals = co.calFilename( 'twilight' )
+            cals = rc.calFilename( 'twilight' )
             for cal in cals:
                 gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,fl_trim=no,
                     fl_bias=no, flat1=cal, fl_flat=yes, outpref="flatdiv_",
-                    Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr()) 
-            co.reportOutput(co.prependNames("flatdiv_"))   
+                    Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr()) 
+            rc.reportOutput(rc.prependNames("flatdiv_"))   
         except:
             print "Problem dividing by normalized flat"
             print "Problem in GIREDUCE"
             raise
-        yield co
+        yield rc
     
     #------------------------------------------------------------------------------ 
-    def setForFringe(self, co):
+    def setForFringe(self, rc):
         print 'adding to fringe list'
-        for inp in co.inputs:
+        for inp in rc.inputs:
             fringeID = IDFactory.generateAstroDataID( inp )
             listID = IDFactory.generateFringeListID( inp )
-            co.fringes.add( listID, fringeID, inp )
+            rc.fringes.add( listID, fringeID, inp )
         
-        yield co
+        yield rc
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def makeFringeFrame(self, co):
+    def makeFringeFrame(self, rc):
         try:
             print "creating fringe frame"
-            gemini.gifringe(co.inputsAsStr(), "fringe",
-                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
+            gemini.gifringe(rc.inputsAsStr(), "fringe",
+                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
         except:
-            print "Problem creating fringe from "+co.inputsAsStr()
+            print "Problem creating fringe from "+rc.inputsAsStr()
             print "Problem in GIFRINGE"
             raise
-        yield co
+        yield rc
         
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def fringeCorrect(self, co):
+    def fringeCorrect(self, rc):
         try:
             print "subtracting fringe frame"
-            gemini.girmfringe(co.inputsAsStr(), co["fringe"],
-            Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
+            gemini.girmfringe(rc.inputsAsStr(), rc["fringe"],
+            Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
         except:
-            print "Problem subtracting fringe from "+co.inputsAsStr()
+            print "Problem subtracting fringe from "+rc.inputsAsStr()
             print "Problem in GIRMFRINGE"
             raise
-        yield co
+        yield rc
 
-    def shift(self, co):
+    def shift(self, rc):
         '''
         !!!NOTE!!!
         The code in this method was designed only for demo use. It should not be taken seriously.
         '''
         try:
             print 'shifting image'
-            compareval = co.inputs[0].filename
+            compareval = rc.inputs[0].filename
             
             if '0133' in compareval:
                 xshift = 0
@@ -235,8 +235,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 yshift = 0
             
             os.system( 'rm test.fits &> /dev/null' )
-            outfile = os.path.basename( co.prependNames( 'shift_' )[0][0] )
-            infile = co.inputsAsStr() 
+            outfile = os.path.basename( rc.prependNames( 'shift_' )[0][0] )
+            infile = rc.inputsAsStr() 
             '''
             print 'INPUT:'
             print infile
@@ -253,40 +253,39 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             temp1[1].data = temp2[0].data
             os.system( 'rm ' + outfile + '  &> /dev/null' )
             temp1.writeto( outfile )
-            co.reportOutput( co.prependNames("shift_") )
+            rc.reportOutput( rc.prependNames("shift_") )
         except:
             print 'problem shifting image'
             raise
-        yield co
+        yield rc
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def findshiftsAndCombine(self, co):
+    def findshiftsAndCombine(self, rc):
        try:
           print "shifting and combining images"
           #@@TODO: hardcoded parmeters and ***imcoadd.dat may need to move from 
           # imcoadd_data/test4 to test_data dir before running
-          gemini.imcoadd(co.stack_inputsAsStr(),fwhm=5, threshold=100,\
+          gemini.imcoadd(rc.stack_inputsAsStr(),fwhm=5, threshold=100,\
                 fl_over=yes, fl_avg=yes,
-                Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
+                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
        except:
           print "Problem shifting and combining images "
           print "Problem in IMCOADD"
           raise
-       yield co
+       yield rc
 
-    def mosaicChips(self, co):
+    def mosaicChips(self, rc):
        try:
           print "producing image mosaic"
-          #mstr = 'flatdiv_'+co.inputsAsStr()          
-          gemini.gmosaic( co.inputsAsStr(), outpref="mo_",
-            Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr() )
-          co.reportOutput(co.prependNames("mo_", currentDir = True))
+          gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
+            Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
+          rc.reportOutput(rc.prependNames("mo_", currentDir = True))
        except:
           print "Problem producing image mosaic"         
           raise
-       yield co
+       yield rc
        
-    def averageCombine(self, co):
+    def averageCombine(self, rc):
         try:
             # @@TODO: need to include parameter options here
             print "Combining and averaging" 
@@ -294,7 +293,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             
             templist = []
             
-            for inp in co.inputs:
+            for inp in rc.inputs:
                  templist.append( IDFactory.generateStackableID( inp.ad ) )
                  
             templist = list( set(templist) ) # Removes duplicates.
@@ -305,22 +304,22 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
                 # stackable images are in the same spot which may not be the case.
                 
-                stacklist = co.getStack( stackID ).filelist
+                stacklist = rc.getStack( stackID ).filelist
                 #print "pG147: STACKLIST:", stacklist
 
                 
                 if len( stacklist ) > 1:
                     stackname = "avgcomb_" + os.path.basename(stacklist[0])
                     filesystem.deleteFile( stackname )
-                    gemini.gemcombine( co.makeInlistFile(stackID),  output=stackname,
-                       combine="average", reject="none" ,Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
-                    co.reportOutput(stackname)
+                    gemini.gemcombine( rc.makeInlistFile(stackID),  output=stackname,
+                       combine="average", reject="none" ,Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+                    rc.reportOutput(stackname)
                 else:
                     print "'%s' was not combined because there is only one image." %( stacklist[0] )
         except:
             print "Problem combining and averaging"
             raise 
-        yield co    
+        yield rc    
     
 
             

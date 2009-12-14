@@ -15,11 +15,11 @@ class ReductionObject(object):
     recipeLib = None
     context = None
     
-    def init(self, co):
+    def init(self, rc):
         """ This member is purely for overwriting.  Controllers should call this
         before iterating over the steps of the recipe"""
-        self.context = co
-        return co
+        self.context = rc
+        return rc
     
     def substeps(self, primname, context):
         self.recipeLib.checkAndBind(self, primname, context=context) 
@@ -32,8 +32,8 @@ class ReductionObject(object):
                 
         context.begin(primname)
         try:
-            for co in prim(context):
-                yield co
+            for rc in prim(context):
+                yield rc
         except:
             print "%(name)s failed due to an exception." %{'name':primname}
             raise

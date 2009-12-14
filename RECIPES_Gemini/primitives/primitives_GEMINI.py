@@ -14,83 +14,83 @@ gemini()
 stepduration = 1.
 class GEMINIPrimitives(ReductionObject):
     
-    def init(self, co):
-        ReductionObject.init(self, co)
-        return co
+    def init(self, rc):
+        ReductionObject.init(self, rc)
+        return rc
         
-    def pause(self, co):
-        co.requestPause()
-        yield co
+    def pause(self, rc):
+        rc.requestPause()
+        yield rc
 #------------------------------------------------------------------------------ 
-    def logFilename (self, co):
+    def logFilename (self, rc):
         print "logFilename"
         for i in range(0,5):
             print "\tlogFilename",i
             sleep(stepduration)
-            yield co
+            yield rc
 #------------------------------------------------------------------------------ 
-    def displayStructure(self, co):
+    def displayStructure(self, rc):
         print "displayStructure"
         for i in range(0,5):
             print "\tds ",i
             sleep(stepduration)
-            yield co
+            yield rc
 #------------------------------------------------------------------------------ 
-    def summarize(self, co):
+    def summarize(self, rc):
         print "done with task"
         for i in range(0,5):
             sleep(stepduration)
-            yield co        
+            yield rc        
 #------------------------------------------------------------------------------ 
-    def gem_produce_im_flat(self, co):
+    def gem_produce_im_flat(self, rc):
         print "gem_produce_imflat step called"
-        # co.update({"flat" :co.calibrations[(co.inputs[0], "flat")]})
-        yield co
+        # rc.update({"flat" :rc.calibrations[(rc.inputs[0], "flat")]})
+        yield rc
 #------------------------------------------------------------------------------ 
-    def gem_produce_bias(self, co):
+    def gem_produce_bias(self, rc):
         print "gem_produce_bias step called"
-        # co.update({"bias" :co.calibrations[(co.inputs[0], "bias")]})
-        yield co    
+        # rc.update({"bias" :rc.calibrations[(rc.inputs[0], "bias")]})
+        yield rc    
 #------------------------------------------------------------------------------ 
-    def getProcessedBias(self, co):
+    def getProcessedBias(self, rc):
         try:
             print "getting bias"
-            co.rqCal( "bias" )
+            rc.rqCal( "bias" )
         except:
             print "problem getting bias"
             raise
-        yield co
+        yield rc
 #------------------------------------------------------------------------------ 
-    def getProcessedFlat(self, co):
+    def getProcessedFlat(self, rc):
         try:
             print "getting flat"
-            co.rqCal( "twilight" )
+            rc.rqCal( "twilight" )
         except:
             print "problem getting flat"
             raise
-        yield co    
+        yield rc    
 #------------------------------------------------------------------------------ 
-    def setStackable(self, co):
+    def setStackable(self, rc):
         try:
             print "updating stackable with input"
-            co.rqStackUpdate()
+            rc.rqStackUpdate()
         except:
             print "problem stacking input"
             raise
-        yield co
+        yield rc
 #------------------------------------------------------------------------------ 
-    def getStackable(self, co):
+    def getStackable(self, rc):
         try:
             print "getting stack"
-            co.rqStackGet()
+            rc.rqStackGet()
         except:
             print "problem getting stack"
             raise
-        yield co
+        yield rc
 #------------------------------------------------------------------------------ 
-    def printStackable(self, co):
-        ID = IDFactory.generateStackableID(co.inputs, "1_0")
-        ls = co.getStack(ID)
+    def printStackable(self, rc):
+        ID = IDFactory.generateStackableID(rc.inputs, "1_0")
+        ls = rc.getStack(ID)
         print "STACKABLE"
         print "ID:", ID
         if ls is None:
@@ -98,35 +98,35 @@ class GEMINIPrimitives(ReductionObject):
         else:
             for item in ls.filelist:
                 print "\t", item
-        yield co
+        yield rc
 #------------------------------------------------------------------------------ 
-    def printParameters(self, co):
+    def printParameters(self, rc):
         print "printing parameters"
-        print co.paramsummary()
-        yield co
+        print rc.paramsummary()
+        yield rc
 #------------------------------------------------------------------------------ 
-    def display(self, co):
+    def display(self, rc):
         try:
             print "displaying output"
-            co.rqDisplay()           
+            rc.rqDisplay()           
         except:
             print "problem displaying output"
             raise
-        yield co
+        yield rc
 #------------------------------------------------------------------------------ 
-    def mosaicChips(self, co):
+    def mosaicChips(self, rc):
        try:
           print "producing image mosaic"
-          #mstr = 'flatdiv_'+co.inputsAsStr()          
-          gemini.gmosaic( co.inputsAsStr(), outpref="mo_",
-            Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr() )
-          co.reportOutput(co.prependNames("mo_", currentDir = True))
+          #mstr = 'flatdiv_'+rc.inputsAsStr()          
+          gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
+            Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
+          rc.reportOutput(rc.prependNames("mo_", currentDir = True))
        except:
           print "Problem producing image mosaic"         
           raise
-       yield co
+       yield rc
 #------------------------------------------------------------------------------ 
-    def averageCombine(self, co):
+    def averageCombine(self, rc):
         try:
             # @@TODO: need to include parameter options here
             print "Combining and averaging" 
@@ -134,7 +134,7 @@ class GEMINIPrimitives(ReductionObject):
             
             templist = []
             
-            for inp in co.inputs:
+            for inp in rc.inputs:
                  templist.append( IDFactory.generateStackableID( inp.ad ) )
                  
             templist = list( set(templist) ) # Removes duplicates.
@@ -145,25 +145,25 @@ class GEMINIPrimitives(ReductionObject):
                 # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
                 # stackable images are in the same spot which may not be the case.
                 
-                stacklist = co.getStack( stackID ).filelist
+                stacklist = rc.getStack( stackID ).filelist
                 #print "pG147: STACKLIST:", stacklist
 
                 
                 if len( stacklist ) > 1:
                     stackname = "avgcomb_" + os.path.basename(stacklist[0])
                     filesystem.deleteFile( stackname )
-                    gemini.gemcombine( co.makeInlistFile(stackID),  output=stackname,
+                    gemini.gemcombine( rc.makeInlistFile(stackID),  output=stackname,
                         combine="average", reject="none", 
-                        Stdout = co.getIrafStdout(), Stderr = co.getIrafStderr())
-                    co.reportOutput(stackname)
+                        Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+                    rc.reportOutput(stackname)
                 else:
                     print "'%s' was not combined because there is only one image." %( stacklist[0] )
         except:
             print "Problem combining and averaging"
             raise 
-        yield co
+        yield rc
 #------------------------------------------------------------------------------ 
-    def measureIQ(self, co):
+    def measureIQ(self, rc):
         try:
             #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
             # separate primitives, i.e. detectSources and measureIQ.
@@ -177,7 +177,7 @@ class GEMINIPrimitives(ReductionObject):
             observatory='gemini-north', clip=True, \
             sigma=2.3, pymark=True, niters=4, boxSize=2., debug=False):
             '''
-            for inp in co.inputs:
+            for inp in rc.inputs:
                 if 'GEMINI_NORTH' in inp.ad.getTypes():
                     observ = 'gemini-north'
                 elif 'GEMINI_SOUTH' in inp.ad.getTypes():
@@ -193,14 +193,14 @@ class GEMINIPrimitives(ReductionObject):
                 if len(iqdata) == 0:
                     print "WARNING: Problem Measuring IQ Statistics, none reported"
                 else:
-                    co.rqIQ( inp.ad, *iqdata[0] )
+                    rc.rqIQ( inp.ad, *iqdata[0] )
             
         except:
             print 'Problem measuring IQ'
             raise 
         
-        yield co
+        yield rc
 #------------------------------------------------------------------------------ 
-    def crashReduce(self, co):
+    def crashReduce(self, rc):
         raise 'Crashing'
-        yield co
+        yield rc
