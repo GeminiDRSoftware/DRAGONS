@@ -5,6 +5,8 @@
 @author: River Allen
 @requires: PYRAF and/or pyds9.
 '''
+import commands
+
 _displayObj = None
 
 class DisplayException:
@@ -416,7 +418,7 @@ class DS9(object):
             iraf.tvmark( self.current_frame, coordfile, mark='point', pointsize=1, color=iraf_colors[color])
             os.remove( tmpfile )
 #------------------------------------------------------------------------------ 
-    def drawText(self, xcoord, ycoord, text='', font='times 10 bold', color='red'):
+    def drawText(self, xcoord, ycoord, text='', font='times 4', color='red'):
         '''
         
         '''
@@ -435,7 +437,7 @@ class DS9(object):
             tmpfd = open( tmpfile, 'w' )
             current_line = 0
             for line in text.split('\n'):
-                tmpfd.write( '%s %s %s\n' %(str(xcoord), str(ycoord+(line_space-current_line)), line) ) 
+                tmpfd.write( '%s %s %s\n' %(str(xcoord), str(ycoord-(line_space*current_line)), line) ) 
                 current_line += 1
             tmpfd.close()
             from pyraf import iraf
