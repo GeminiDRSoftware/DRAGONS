@@ -8,7 +8,16 @@
 _displayObj = None
 
 class DisplayException:
-    pass
+    """ This is the general exception the classes and functions in the
+    Structures.py module raise.
+    """
+    def __init__(self, msg="Exception Raised in pyDisplay"):
+        """This constructor takes a message to print to the user."""
+        self.message = msg
+    def __str__(self):
+        """This str conversion member returns the message given by the user (or the default message)
+        when the exception is not caught."""
+        return self.message
 
 def getDisplay():
 
@@ -104,8 +113,17 @@ class pyDisplay(object):
 # tools are added/supported. In here out of convenience and laziness.
 #===============================================================================
 class DS9Exception:
-    pass
-
+    """ This is the general exception the classes and functions in the
+    Structures.py module raise.
+    """
+    def __init__(self, msg="Exception Raised in ds9"):
+        """This constructor takes a message to print to the user."""
+        self.message = msg
+    def __str__(self):
+        """This str conversion member returns the message given by the user (or the default message)
+        when the exception is not caught."""
+        return self.message
+    
 iraf_colors = { 
             'black':202,
             'white':203,
@@ -151,9 +169,6 @@ class DS9(object):
         
         tmpSupport = supported()
         
-        if 'iraf' in tmpSupport:
-            self.iraf_sup = True
-            from pyraf import iraf
         if 'pyds9' in tmpSupport:
             import ds9
             self.pyds9_sup = True
@@ -165,6 +180,17 @@ class DS9(object):
             diffkeys = ds9keys - ourkeys
             for key in diffkeys:
                 self.__setattr__( key, self.ds9.__dict__[key] )
+                
+        if 'iraf' in tmpSupport:
+            self.iraf_sup = True
+            from pyraf import iraf
+            # All Kluge here
+            if not self.pyds9_sup:
+                if (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
+                    and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
+                    import os
+                    exec( 'os.system( "ds9&" )' )
+                    
                 
         self.current_frame = 1
         #self.current_frame = self.frame()
@@ -370,6 +396,7 @@ class DS9(object):
             tmpfd = open( tmpfile, 'w' )
             tmpfd.write( '%s %s\n' %(xcoord, ycoord) )
             tmpfd.close()
+            from pyraf import iraf
             iraf.tvmark( self.current_frame, coordfile, mark=shape, label=True, pointsize=properties,
                          radii=properties, lengths=properties, txsize=properties, 
                          color=iraf_colors[color])
@@ -385,6 +412,7 @@ class DS9(object):
             tmpfd = open( tmpfile, 'w' )
             tmpfd.write( '%s %s\n' %(str(xcoord), str(ycoord)) )
             tmpfd.close()
+            from pyraf import iraf
             iraf.tvmark( self.current_frame, coordfile, mark='point', pointsize=1, color=iraf_colors[color])
             os.remove( tmpfile )
 #------------------------------------------------------------------------------ 
@@ -406,10 +434,11 @@ class DS9(object):
             tmpfile = 'tmpfile.tmp'
             tmpfd = open( tmpfile, 'w' )
             current_line = 0
-            for line in text.spit('\n'):
+            for line in text.split('\n'):
                 tmpfd.write( '%s %s %s\n' %(str(xcoord), str(ycoord+(line_space-current_line)), line) ) 
                 current_line += 1
             tmpfd.close()
+            from pyraf import iraf
             iraf.tvmark( self.current_frame, tmpfile, pointsize=1, label=True, txsize=font_size,
                          color=iraf_colors[color])
             os.remove( tmpfile )

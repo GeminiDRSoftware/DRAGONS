@@ -9,7 +9,16 @@ def supported():
     return pyDisplay.supported()
 
 class DisplayServiceException:
-    pass
+    """ This is the general exception the classes and functions in the
+    Structures.py module raise.
+    """
+    def __init__(self, msg="Exception Raised in Display Service"):
+        """This constructor takes a message to print to the user."""
+        self.message = msg
+    def __str__(self):
+        """This str conversion member returns the message given by the user (or the default message)
+        when the exception is not caught."""
+        return self.message
 
 _displayObj = None
 
