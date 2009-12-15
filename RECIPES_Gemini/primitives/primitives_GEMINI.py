@@ -12,6 +12,20 @@ import pyraf
 gemini()
 
 stepduration = 1.
+
+class GEMINIException:
+    """ This is the general exception the classes and functions in the
+    Structures.py module raise.
+    """
+    def __init__(self, msg="Exception Raised in Recipe System"):
+        """This constructor takes a message to print to the user."""
+        self.message = msg
+    def __str__(self):
+        """This str conversion member returns the message given by the user (or the default message)
+        when the exception is not caught."""
+        return self.message
+
+
 class GEMINIPrimitives(ReductionObject):
     
     def init(self, rc):
@@ -57,8 +71,9 @@ class GEMINIPrimitives(ReductionObject):
             print "getting bias"
             rc.rqCal( "bias" )
         except:
-            print "problem getting bias"
-            raise
+            print "Problem getting bias"
+            raise 
+
         yield rc
 #------------------------------------------------------------------------------ 
     def getProcessedFlat(self, rc):
@@ -66,8 +81,9 @@ class GEMINIPrimitives(ReductionObject):
             print "getting flat"
             rc.rqCal( "twilight" )
         except:
-            print "problem getting flat"
-            raise
+            print "Problem getting flat"
+            raise 
+        
         yield rc    
 #------------------------------------------------------------------------------ 
     def setStackable(self, rc):
@@ -75,8 +91,9 @@ class GEMINIPrimitives(ReductionObject):
             print "updating stackable with input"
             rc.rqStackUpdate()
         except:
-            print "problem stacking input"
+            print "Problem stacking input"
             raise
+
         yield rc
 #------------------------------------------------------------------------------ 
     def getStackable(self, rc):
@@ -84,8 +101,9 @@ class GEMINIPrimitives(ReductionObject):
             print "getting stack"
             rc.rqStackGet()
         except:
-            print "problem getting stack"
-            raise
+            print "Problem getting stack"
+            raise 
+
         yield rc
 #------------------------------------------------------------------------------ 
     def printStackable(self, rc):
@@ -110,8 +128,9 @@ class GEMINIPrimitives(ReductionObject):
             print "displaying output"
             rc.rqDisplay()           
         except:
-            print "problem displaying output"
-            raise
+            print "Problem displaying output"
+            raise 
+
         yield rc
 #------------------------------------------------------------------------------ 
     def mosaicChips(self, rc):
@@ -120,10 +139,13 @@ class GEMINIPrimitives(ReductionObject):
           #mstr = 'flatdiv_'+rc.inputsAsStr()          
           gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
             Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
+          
+          
           rc.reportOutput(rc.prependNames("mo_", currentDir = True))
        except:
-          print "Problem producing image mosaic"         
-          raise
+          print "Problem producing image mosaic"
+          raise 
+
        yield rc
 #------------------------------------------------------------------------------ 
     def averageCombine(self, rc):
@@ -160,7 +182,8 @@ class GEMINIPrimitives(ReductionObject):
                     print "'%s' was not combined because there is only one image." %( stacklist[0] )
         except:
             print "Problem combining and averaging"
-            raise 
+            raise
+
         yield rc
 #------------------------------------------------------------------------------ 
     def measureIQ(self, rc):
