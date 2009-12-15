@@ -4,6 +4,7 @@ from primitives_GEMINI import GEMINIPrimitives
 import time
 from utils import filesystem
 from astrodata import IDFactory
+from astrodata import Descriptors
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
 import pyraf
@@ -266,47 +267,61 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         '''
         try:
             print 'shifting image'
-            compareval = rc.inputs[0].filename
-            
-            if '0133' in compareval:
-                xshift = 0
-                yshift = 0
-            elif '0134' in compareval:
-                xshift = 34.37
-                yshift = -34.23
-            elif '0135' in compareval:
-                xshift = -34.31
-                yshift = -33.78
-            elif '0136' in compareval:
-                xshift = 34.42
-                yshift = 34.66
-            elif '0137' in compareval:
-                xshift = -34.35
-                yshift = 34.33
-            else:
-                xshift = 0
-                yshift = 0
-            
-            os.system( 'rm test.fits &> /dev/null' )
-            outfile = os.path.basename( rc.prependNames( 'shift_' )[0][0] )
-            infile = rc.inputsAsStr() 
-            '''
-            print 'INPUT:'
-            print infile
-            print 'XSHIFT:', xshift, 'YSHIFT:', yshift
-            print 'OUTPUT:'
-            print outfile
-            '''
-            images.imshift( infile + '[1]', output='test.fits', xshift=xshift, yshift=yshift)
-            
-            # This pyfits code is for dealing with the fact that imshift does not copy over the PHU of
-            # the fits file.
-            temp1 = pyfits.open( infile, 'readonly' )
-            temp2 = pyfits.open( 'test.fits' )
-            temp1[1].data = temp2[0].data
-            os.system( 'rm ' + outfile + '  &> /dev/null' )
-            temp1.writeto( outfile )
-            rc.reportOutput( rc.prependNames("shift_") )
+            for inp in rc.inputs:
+                '''
+                compareval = inp.filename
+                
+                if '0133' in compareval:
+                    xshift = 0
+                    yshift = 0
+                elif '0134' in compareval:
+                    xshift = 34.37
+                    yshift = -34.23
+                elif '0135' in compareval:
+                    xshift = -34.31
+                    yshift = -33.78
+                elif '0136' in compareval:
+                    xshift = 34.42
+                    yshift = 34.66
+                elif '0137' in compareval:
+                    xshift = -34.35
+                    yshift = 34.33
+                else:
+                    xshift = 0
+                    yshift = 0
+                '''
+                
+                #===================================================================
+                # Simple code that uses instrument sensors values from header to determine
+                # x and y shift offsets. No rotation stuff put in. Use at own risk!
+                # -River
+                #===================================================================
+                desc = Descriptors.getCalculator( inp.ad )
+                xshift = desc.fetchValue( 'xoffset', inp.ad ) / desc.fetchValue( 'pixscale', inp.ad ) * -1
+                yshift = desc.fetchValue( 'yoffset', inp.ad ) / desc.fetchValue( 'pixscale', inp.ad ) * -1
+                
+                
+                
+                os.system( 'rm test.fits &> /dev/null' )
+                outfile = os.path.basename( rc.prependNames( 'shift_',  )[0][0] )
+                infile = inp.filename
+                
+#                print 'INPUT:'
+#                print infile
+                print 'XSHIFT:', xshift, 'YSHIFT:', yshift
+#                print 'OUTPUT:'
+#                print outfile
+                
+                images.imshift( infile + '[1]', output='test.fits', xshift=xshift, yshift=yshift)
+                
+                # This pyfits code is for dealing with the fact that imshift does not copy over the PHU of
+                # the fits file.
+                temp1 = pyfits.open( infile, 'readonly' )
+                temp2 = pyfits.open( 'test.fits' )
+                temp1[1].data = temp2[0].data
+                os.system( 'rm ' + outfile + '  &> /dev/null' )
+                temp1.writeto( outfile )
+                rc.reportOutput( rc.prependNames("shift_") )
         except:
             print 'Problem shifting image'
             raise 
