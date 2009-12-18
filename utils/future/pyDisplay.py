@@ -5,24 +5,34 @@
 @author: River Allen
 @requires: PYRAF and/or pyds9.
 '''
+
 import commands
 
 _displayObj = None
 
 class DisplayException:
-    """ This is the general exception the classes and functions in the
+    """ 
+    This is the general exception the classes and functions in the
     Structures.py module raise.
     """
     def __init__(self, msg="Exception Raised in pyDisplay"):
         """This constructor takes a message to print to the user."""
         self.message = msg
     def __str__(self):
-        """This str conversion member returns the message given by the user (or the default message)
-        when the exception is not caught."""
+        """
+        This str conversion member returns the message given by the user (or the default message)
+        when the exception is not caught.
+        """
         return self.message
 
 def getDisplay():
-
+    '''
+    Retrieve a pyDisplay. Through this method, there is a single static pyDisplay, and only
+    one init is performed.
+    
+    @return: The static pyDisplay tool.
+    @rtype: pyDisplay instance
+    '''
     global _displayObj
     
     if _displayObj is None:
@@ -60,8 +70,8 @@ class pyDisplay(object):
     @contact: callen@gemini.edu
     @author: Craig Allen
     @author: River Allen
-    @requires: PYRAF and/or pyds9.
-    
+
+    @status: Supports ds9
     '''
 #------------------------------------------------------------------------------ 
     def __init__(self):
@@ -101,6 +111,9 @@ class pyDisplay(object):
             raise DisplayException( 'Invalid Argument type: "%s", must be str' %( str(type(tool)) ) )
 #------------------------------------------------------------------------------ 
     def createDS9(self, **args):
+        '''
+        
+        '''
         if 'iraf' in self.support_list or 'pyds9' in self.support_list:
             return DS9( **args )
         else:
@@ -345,6 +358,15 @@ class DS9(object):
     def draw(self, shape, xcoord, ycoord, properties=None, color='red', text='', crossout=False, fixed=False, 
              **kargs):
         '''
+        A general marking method that will mark a given shape in ds9.
+        
+        @param shape: The shape to be drawn. Which shapes are capable of being drawn 
+        
+        @param xcoord: Pixel on the x-axis.
+        @type xcoord: float or int
+        
+        @param ycoord: Pixel on the y-axis.
+        @type ycoord: float or int
         
         '''
         xcoord = str( xcoord )
