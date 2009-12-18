@@ -1,23 +1,24 @@
 import Lookups
 import Descriptors
-import Errors
 import math
 
 from Calculator import Calculator
 
 import GemCalcUtil 
-from StandardNIRIKeyDict import stdkeyDictNIRI
+from StandardGNIRSKeyDict import stdkeyDictGNIRS
 
-class NIRI_RAWDescriptorCalc(Calculator):
-    
-    niriSpecDict = None
+class GNIRS_RAWDescriptorCalc(Calculator):
+
+    gnirsArrayDict = None
+    gnirsConfigDict = None
     
     def __init__(self):
-        self.niriSpecDict = Lookups.getLookupTable("Gemini/NIRI/NIRISpecDict", "niriSpecDict")
+        self.gnirsArrayDict = Lookups.getLookupTable("Gemini/GNIRS/GNIRSArrayDict", "gnirsArrayDict")
+        self.gnirsConfigDict = Lookups.getLookupTable("Gemini/GNIRS/GNIRSConfigDict", "gnirsConfigDict")
     
     def airmass(self, dataset):
         """
-        Return the airmass value for NIRI
+        Return the airmass value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -25,7 +26,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictNIRI["key_niri_airmass"]]
+            retairmassfloat = hdu[0].header[stdkeyDictGNIRS["key_gnirs_airmass"]]
         
         except KeyError:
             return None
@@ -34,7 +35,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def camera(self, dataset):
         """
-        Return the camera value for NIRI
+        Return the camera value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -42,7 +43,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictNIRI["key_niri_camera"]]
+            retcamerastring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_camera"]]
         
         except KeyError:
             return None
@@ -51,19 +52,24 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def cwave(self, dataset):
         """
-        Return the cwave value for NIRI
+        Return the cwave value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @return: the central wavelength (nanometers)
         """
-        retcwavefloat = None
+        try:
+            hdu = dataset.hdulist
+            retcwavefloat = hdu[0].header[stdkeyDictGNIRS["key_gnirs_cwave"]]
         
-        return retcwavefloat
+        except KeyError:
+            return None
+        
+        return float(retcwavefloat)
     
     def datasec(self, dataset):
         """
-        Return the datasec value for NIRI
+        Return the datasec value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -75,7 +81,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def detsec(self, dataset):
         """
-        Return the detsec value for NIRI
+        Return the detsec value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -87,19 +93,24 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def disperser(self, dataset):
         """
-        Return the disperser value for NIRI
+        Return the disperser value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
-        retdisperserstring = None
+        try:
+            hdu = dataset.hdulist
+            retdisperserstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_disperser"]]
+        
+        except KeyError:
+            return None
         
         return str(retdisperserstring)
-        
+    
     def exptime(self, dataset):
         """
-        Return the exptime value for NIRI
+        Return the exptime value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -107,10 +118,10 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            exptime = hdu[0].header[stdkeyDictNIRI["key_niri_exptime"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
+            exptime = hdu[0].header[stdkeyDictGNIRS["key_gnirs_exptime"]]
+            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
             
-            if dataset.isType("NIRI_RAW") == True:
+            if dataset.isType("GNIRS_RAW") == True:
                 if coadds != 1:
                     coaddexp = exptime
                     retexptimefloat = exptime * coadds
@@ -126,7 +137,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def filterid(self, dataset):
         """
-        Return the filterid value for NIRI
+        Return the filterid value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -138,7 +149,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def filtername(self, dataset):
         """
-        Return the filtername value for NIRI
+        Return the filtername value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -146,29 +157,25 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            filter1 = hdu[0].header[stdkeyDictNIRI["key_niri_filter1"]]
-            filter2 = hdu[0].header[stdkeyDictNIRI["key_niri_filter2"]]
-            filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
+            filter1 = hdu[0].header[stdkeyDictGNIRS["key_gnirs_filter1"]]
+            filter2 = hdu[0].header[stdkeyDictGNIRS["key_gnirs_filter2"]]
             filter1 = GemCalcUtil.removeComponentID(filter1)
             filter2 = GemCalcUtil.removeComponentID(filter2)
-            filter3 = GemCalcUtil.removeComponentID(filter3)
-            
-            # create list of filter values
-            filters = [filter1,filter2,filter3]
 
-            # reject "open" "grism" and "pupil"
+            # create list of filter values
+            filters = [filter1,filter2]
+
+            # reject "Open"
             filters2 = []
             for filt in filters:
-                if ("open" in filt) or ("grism" in filt) or ("pupil" in filt):
+                if ("Open" in filt):
                     pass
                 else:
                     filters2.append(filt)
             
             filters = filters2
             
-            # blank means an opaque mask was in place, which of course
-            # blocks any other in place filters
-            if "blank" in filters:
+            if "DARK" in filters:
                 retfilternamestring = "blank"
             
             if len(filters) == 0:
@@ -184,7 +191,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def fpmask(self, dataset):
         """
-        Return the fpmask value for NIRI
+        Return the fpmask value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -192,7 +199,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictNIRI["key_niri_fpmask"]]
+            retfpmaskstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_fpmask"]]
         
         except KeyError:
             return None
@@ -201,25 +208,38 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def gain(self, dataset):
         """
-        Return the gain value for NIRI
+        Return the gain value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @returns: the gain (electrons/ADU)
         """
         try:
-            retgainfloat = self.niriSpecDict["gain"]
+            hdu = dataset.hdulist
+            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
+            
+            biasvalues = self.gnirsArrayDict.keys()
+            for bias in biasvalues:
+                if abs(float(bias) - abs(headerbias)) < 0.1:
+                    array = self.gnirsArrayDict[bias]
+                else:
+                    array = None
+
+            if array != None:
+                retgainfloat = array[2]
+            else:
+                return None
         
         except KeyError:
             return None
         
         return float(retgainfloat)
-    
-    niriSpecDict = None
+
+    gnirsArrayDict = None
     
     def instrument(self, dataset):
         """
-        Return the instrument value for NIRI
+        Return the instrument value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -227,7 +247,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retinstrumentstring = hdu[0].header[stdkeyDictNIRI["key_niri_instrument"]]
+            retinstrumentstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_instrument"]]
         
         except KeyError:
             return None
@@ -236,7 +256,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def mdfrow(self, dataset):
         """
-        Return the mdfrow value for NIRI
+        Return the mdfrow value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
@@ -248,7 +268,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def nonlinear(self, dataset):
         """
-        Return the nonlinear value for NIRI
+        Return the nonlinear value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
@@ -256,47 +276,37 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            avdduc = hdu[0].header[stdkeyDictNIRI["key_niri_avdduc"]]
-            avdet = hdu[0].header[stdkeyDictNIRI["key_niri_avdet"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
-            
-            gain = self.niriSpecDict["gain"]
-            shallowwell = self.niriSpecDict["shallowwell"]
-            deepwell = self.niriSpecDict["deepwell"]
-            shallowbias = self.niriSpecDict["shallowbias"]
-            deepbias = self.niriSpecDict["deepbias"]
-            linearlimit = self.niriSpecDict["linearlimit"]
-            
-            biasvolt = avdduc - avdet
-            #biasvolt = 100
+            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
+            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
 
-            if abs(biasvolt - shallowbias) < 0.05:
-                saturation = int(shallowwell * coadds / gain)
-            
-            elif abs(biasvolt - deepbias) < 0.05:
-                saturation = int(deepwell * coadds / gain)
-            
+            biasvalues = self.gnirsArrayDict.keys()
+            for bias in biasvalues:
+                if abs(float(bias) - abs(headerbias)) < 0.1:
+                    array = self.gnirsArrayDict[bias]
+                else:
+                    array = None
+
+            if array != None:
+                well = float(array[3])
+                linearlimit = float(array[4])
+                nonlinearlimit = float(array[8])
             else:
-                raise Errors.CalcError()
+                return None
+            
+            saturation = int(well * coadds)
+            retnonlinearint = int(saturation * linearlimit)
+            #retnonlinearint = int(saturation * nonlinearlimit)
         
-        except Errors.CalcError, c:
-            return c.message
-            
-        except KeyError, k:
-            if k.message[0:3]=="Key":
-                return k.message
-            else:
-                return "%s not found." % k.message
-
-        else:
-            retnonlinearint = saturation * linearlimit
-            return int(retnonlinearint)
+        except KeyError:
+            return None
+        
+        return int(retnonlinearint)
     
-    niriSpecDict = None
+    gnirsArrayDict = None
     
     def nsciext(self, dataset):
         """
-        Return the nsciext value for NIRI
+        Return the nsciext value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
@@ -308,7 +318,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def object(self, dataset):
         """
-        Return the object value for NIRI
+        Return the object value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -316,7 +326,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retobjectstring = hdu[0].header[stdkeyDictNIRI["key_niri_object"]]
+            retobjectstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_object"]]
         
         except KeyError:
             return None
@@ -325,21 +335,35 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def obsmode(self, dataset):
         """
-        Return the obsmode value for NIRI
+        Return the obsmode value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @returns: the observing mode
         """
         try:
-            raise Errors.ExistError()
-
-        except Errors.ExistError, e:
-            return e.message
+            hdu = dataset.hdulist
+            prism = hdu[0].header[stdkeyDictGNIRS["key_gnirs_prism"]]
+            decker = hdu[0].header[stdkeyDictGNIRS["key_gnirs_decker"]]
+            grating = hdu[0].header[stdkeyDictGNIRS["key_gnirs_grating"]]
+            camera = hdu[0].header[stdkeyDictGNIRS["key_gnirs_camera"]]
+            
+            obsmodekey = (prism, decker, grating, camera)
+            
+            array = self.gnirsConfigDict[obsmodekey]
+            
+            retobsmodestring = array[3]
+        
+        except KeyError:
+            return None
+        
+        return str(retobsmodestring)
     
+    gnirsConfigDict = None
+
     def pixscale(self, dataset):
         """
-        Return the pixscale value for NIRI
+        Return the pixscale value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -347,49 +371,39 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            cd11 = hdu[0].header[stdkeyDictNIRI["key_niri_cd11"]]
-            cd12 = hdu[0].header[stdkeyDictNIRI["key_niri_cd12"]]
-            cd21 = hdu[0].header[stdkeyDictNIRI["key_niri_cd21"]]
-            cd22 = hdu[0].header[stdkeyDictNIRI["key_niri_cd22"]]
-            
-            retpixscalefloat = 3600 * (math.sqrt(math.pow(cd11,2) + math.pow(cd12,2)) + math.sqrt(math.pow(cd21,2) + math.pow(cd22,2))) / 2
-        
+            prism = hdu[0].header[stdkeyDictGNIRS["key_gnirs_prism"]]
+            decker = hdu[0].header[stdkeyDictGNIRS["key_gnirs_decker"]]
+            grating = hdu[0].header[stdkeyDictGNIRS["key_gnirs_grating"]]
+            camera = hdu[0].header[stdkeyDictGNIRS["key_gnirs_camera"]]
+
+            pixscalekey = (prism, decker, grating, camera)
+
+            array = self.gnirsConfigDict[pixscalekey]
+
+            retpixscalefloat = array[2]
+                            
         except KeyError:
             return None
         
         return float(retpixscalefloat)
     
+    gnirsConfigDict = None
+    
     def pupilmask(self, dataset):
         """
-        Return the pupilmask value for NIRI
+        Return the pupilmask value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @returns: the pupil mask used to acquire data
         """
-        try:
-            hdu = dataset.hdulist
-            filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
-            
-            if filter3[:3] == "pup":
-                pupilmask = filter3
-                
-                if pupilmask[-6:-4] == "_G":
-                    retpupilmaskstring = pupilmask[:-6]
-                else:
-                    retpupilmaskstring = pupilmask
-            
-            else:
-                return None
-        
-        except KeyError:
-            return None
+        retpupilmaskstring = None
         
         return str(retpupilmaskstring)
     
     def rdnoise(self, dataset):
         """
-        Return the rdnoise value for NIRI
+        Return the rdnoise value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -397,33 +411,35 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            lnrs = hdu[0].header[stdkeyDictNIRI["key_niri_lnrs"]]
-            ndavgs = hdu[0].header[stdkeyDictNIRI["key_niri_ndavgs"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
-            
-            readnoise = self.niriSpecDict["readnoise"]
-            medreadnoise = self.niriSpecDict["medreadnoise"]
-            lowreadnoise = self.niriSpecDict["lowreadnoise"]
-            
-            if lnrs == 1 and ndavgs == 1:
-                retrdnoisefloat = readnoise * math.sqrt(coadds)
-            elif lnrs == 1 and ndavgs == 16:
-                retrdnoisefloat = medreadnoise * math.sqrt(coadds)
-            elif lnrs == 16 and ndavgs == 16:
-                retrdnoisefloat = lowreadnoise * math.sqrt(coadds)
+            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
+            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
+            lnrs = hdu[0].header[stdkeyDictGNIRS["key_gnirs_lnrs"]]
+            ndavgs = hdu[0].header[stdkeyDictGNIRS["key_gnirs_ndavgs"]]
+
+            biasvalues = self.gnirsArrayDict.keys()
+            for bias in biasvalues:
+                if abs(float(bias) - abs(headerbias)) < 0.1:
+                    array = self.gnirsArrayDict[bias]
+                else:
+                    array = None
+
+            if array != None:
+                readnoise = float(array[1])
             else:
-                retrdnoisefloat = medreadnoise * math.sqrt(coadds)
-        
+                return None
+
+            retrdnoisefloat = (readnoise * math.sqrt(coadds)) / (math.sqrt(lnrs) * math.sqrt(ndavgs))
+
         except KeyError:
             return None
         
         return float(retrdnoisefloat)
     
-    niriSpecDict = None
+    gnirsArrayDict = None
     
     def satlevel(self, dataset):
         """
-        Return the satlevel value for NIRI
+        Return the satlevel value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
@@ -431,39 +447,33 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            
-            avdduc = hdu[0].header[stdkeyDictNIRI["key_niri_avdduc"]]
-            avdet = hdu[0].header[stdkeyDictNIRI["key_niri_avdet"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
-            
-            gain = self.niriSpecDict["gain"]
-            shallowwell = self.niriSpecDict["shallowwell"]
-            deepwell = self.niriSpecDict["deepwell"]
-            shallowbias = self.niriSpecDict["shallowbias"]
-            deepbias = self.niriSpecDict["deepbias"]
-            linearlimit = self.niriSpecDict["linearlimit"]
-            
-            biasvolt = avdduc - avdet
-            
-            if abs(biasvolt - shallowbias) < 0.05:
-                retsaturationint = int(shallowwell * coadds / gain)
-            
-            elif abs(biasvolt - deepbias) < 0.05:
-                retsaturationint = int(deepwell * coadds / gain)
-            
+            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
+            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
+
+            biasvalues = self.gnirsArrayDict.keys()
+            for bias in biasvalues:
+                if abs(float(bias) - abs(headerbias)) < 0.1:
+                    array = self.gnirsArrayDict[bias]
+                else:
+                    array = None
+
+            if array != None:
+                well = array[3]
             else:
                 return None
-            
+
+            retsaturationint = int(well * coadds)
+        
         except KeyError:
             return None
         
         return int(retsaturationint)
     
-    niriSpecDict = None
+    gnirsArrayDict = None
     
     def utdate(self, dataset):
         """
-        Return the utdate value for NIRI
+        Return the utdate value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -471,7 +481,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictNIRI["key_niri_utdate"]]
+            retutdatestring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_utdate"]]
         
         except KeyError:
             return None
@@ -480,7 +490,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def uttime(self, dataset):
         """
-        Return the uttime value for NIRI
+        Return the uttime value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -488,7 +498,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictNIRI["key_niri_uttime"]]
+            retuttimestring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_uttime"]]
         
         except KeyError:
             return None
@@ -497,7 +507,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def wdelta(self, dataset):
         """
-        Return the wdelta value for NIRI
+        Return the wdelta value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -509,7 +519,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def wrefpix(self, dataset):
         """
-        Return the wrefpix value for NIRI
+        Return the wrefpix value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -521,7 +531,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def xccdbin(self, dataset):
         """
-        Return the xccdbin value for NIRI
+        Return the xccdbin value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
@@ -533,7 +543,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def yccdbin(self, dataset):
         """
-        Return the yccdbin value for NIRI
+        Return the yccdbin value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer

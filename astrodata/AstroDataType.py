@@ -3,7 +3,7 @@ import os
 import re
 import AstroData
 import sys
-
+import sre_constants
 from ConfigSpace import configWalk
 
 verbose = False
@@ -198,7 +198,16 @@ class DataClassification(object):
                         #print "reqkey %s" % reqkey
     #                    print "re %s" % self.phuReqs[reqkey]
     #                    print "phuReqs %s" % self.phuReqs.keys()
-                        if (re.match(str(self.phuReqs[reqkey]), str(phuCards[cleanreqkey].value) )):
+                        match = None
+                        try:
+                            match = re.match(str(self.phuReqs[reqkey]), str(phuCards[cleanreqkey].value))
+                        except sre_constants.error:
+                            print """
+BAD PHU Requirement in Classification '%s'
+    phuKey: '%s'
+    regex : '%s' """ % (self.name, reqkey, str(self.phuReqs[reqkey]))
+                            
+                        if (match):
                             if (verbose) : 
                                 print "%s header matched %s with value of %s" % (fname, reqkey, phuCards[reqkey])
                             if (mods_prohibit == False): # in which case the requirement is that it NOT exist

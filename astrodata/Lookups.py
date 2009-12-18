@@ -32,7 +32,7 @@ def getLookupTable(modname, *lookup):
         modname = os.path.dirname(os.path.abspath(__file__))+"/lookups/"+modname
 
     modname = ConfigSpace.lookupPath(modname)
-    
+    print "L35",modname
     f = file(modname)
     exec(f)
     f.close()

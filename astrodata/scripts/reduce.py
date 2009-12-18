@@ -96,10 +96,13 @@ useTK =  options.bMonitor
 from astrodata.tkMonitor import *
 
 # start color printing filter for xgtermc
-term = TerminalController()
 REALSTDOUT = sys.stdout
-sys.stdout = terminal.ColorStdout(REALSTDOUT, term)
-sys.stderr = terminal.ColorStdout(sys.stderr, term)
+REALSTDERR = sys.stderr
+filteredstdout = terminal.FilteredStdout()
+filteredstdout.addFilter( terminal.ColorFilter())
+irafstdout = terminal.IrafStdout(fout = filteredstdout)
+sys.stdout = filteredstdout
+# sys.stderr = terminal.ColorStdout(REALSTDERR, term)
 adatadir = "./recipedata/"
 calindfile = "./.reducecache/calindex.pkl"
 stkindfile = "./.reducecache/stkindex.pkl"
@@ -126,7 +129,7 @@ def command_line():
         print "Entire calibration cache cleared."
         sys.exit(0)
     
-    print "${NORMAL}"
+    print "${NORMAL}",
     try:
         if len( args ) == 0:
             raise IndexError
@@ -253,7 +256,7 @@ for infile in infiles: #for dealing with multiple files.
     tb = " " * tl
     print "${REVERSE}" + tb
     print title
-    print tb + "${NORMAL}"
+    print tb + "${NORMAL}",
     
     if options.recipename == None:
         #print ("\n${UNDERLINE}Recipe(s) found by dataset type:${NORMAL}")
@@ -268,7 +271,6 @@ for infile in infiles: #for dealing with multiple files.
         for rec in recs:
             print "    %s" % rec
     
-    print 
     
     bReportHistory = False
     cwlist = []
@@ -292,8 +294,9 @@ for infile in infiles: #for dealing with multiple files.
             
             # add input files
             co.addInput(infile)
-            co.setIrafStdout(terminal.IrafStdout())
-            co.setIrafStderr(terminal.IrafStdout())
+            co.setIrafStdout(irafstdout)
+            co.setIrafStderr(irafstdout)
+            
             rl.retrieveParameters(infile[0], co, rec)
             if (useTK):
                 while cw.bReady == False:
@@ -306,7 +309,7 @@ for infile in infiles: #for dealing with multiple files.
     
             # @@TODO:evaluate use of init for each recipe vs. for all recipes
             ro.init(co)
-            print term.render("running recipe: '%s'\n") % rec
+            print "running recipe: '%s'\n" % rec
             rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
             if (useTK):
                 cw.running(rec)
@@ -316,13 +319,16 @@ for infile in infiles: #for dealing with multiple files.
             # CONTROL LOOP #
             ################
             #print str(dir(TerminalController))
-            primstdout = terminal.PrimitiveStdout(sys.stdout)
-            sys.stdout = primstdout 
+            primfilter = terminal.PrimitiveFilter()
+            filteredstdout.addFilter(primfilter)
             frameForDisplay = 1
+            print "Created Filtered Output"
+            # not this only works because we install a stdout filter right away with this
+            # member function
             if (True): # try:
                 for coi in ro.substeps(rec, co):
-                    sys.stdout = primstdout.REALSTDOUT
-                    print ("${NORMAL}")
+                    # filteredstdout.removeFilter(primfilter)
+                    print "${NORMAL}",
                     coi.processCmdReq()
                     while (coi.paused):
                         time.sleep(.100)
@@ -453,12 +459,10 @@ for infile in infiles: #for dealing with multiple files.
                         #print "#" * 80
                         #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
                         # CLEAR THE REQUEST LEAGUE
-                    sys.stdout = primstdout
-
-                # return to prev stdout
-                sys.stdout = primstdout.REALSTDOUT
-
-        
+                    if primfilter == None:
+                        raise "holy hell what's going on?"
+                    # filteredstdout.addFilter(primfilter)
+                # filteredstdout.removeFilter(primfilter)
         except KeyboardInterrupt:
             co.isFinished(True)
             if (useTK):

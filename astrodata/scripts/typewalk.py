@@ -3,8 +3,8 @@
 # import pdb
 
 import astrodata 
-from DataSpider import *
-from AstroData import *
+from astrodata.DataSpider import *
+from astrodata.AstroData import *
 from optparse import OptionParser
         
 ############################################################
