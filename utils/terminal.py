@@ -135,12 +135,18 @@ class TerminalController:
         cap = curses.tigetstr(cap_name) or ''
         return re.sub(r'\$<\d+>[/*]?', '', cap)
 
+    def renderLen(self, template):
+        a = re.sub(r'\$\$|\${\w+}', "", template)
+        return len (a)
+        
     def render(self, template):
         """
         Replace each $-substitutions in the given template string with
         the corresponding terminal control string (if it's defined) or
         '' (if it's not).
         """
+        if template == None:
+            raise "it's none"
         return re.sub(r'\$\$|\${\w+}', self._render_sub, template)
 
     def _render_sub(self, match):
@@ -194,45 +200,130 @@ class ProgressBar:
                              self.term.UP + self.term.CLEAR_EOL)
             self.cleared = 1
             
-class ColorStdout:
-    REALSTDOUT = None
+class FilteredStdout(object):
     term = None
-    on = True
-    def __init__(self,rso, term):
-        self.REALSTDOUT = rso
-        self.term = term
-    def flush(self):
-        return self.REALSTDOUT.flush()
+    realstdout = None
+    filters = None
+    
+    def __init__(self, rso = None):
+        # grab standard out
+        if rso:
+            self.realstdout = rso
+        else:
+            self.realstdout = sys.stdout
+        self.filters = []
+        self.term = TerminalController()
         
-    def write(self, arg):
-        if arg == "${OFF}":
-            self.REALSTDOUT.write( "OUTPUT OFF")
-            self.on = False
-            self.flush()
+    def addFilter(self, nf):
+        nf.term = self.term
+        self.filters.insert(0,nf)
+        self.realstdout.flush()
+        nf.fout = self
+        
+    def removeFilter(self, nf):
+        self.filters.remove(nf)
+        self.realstdout.flush()
+        
+    def directWrite(self, out):
+        self.realstdout.write(out)
+        
+    def write(self, out):
+        prefix = ""
+        if False: self.realstdout.write(repr(out)+"\n")
+        if out == None:
             return
-        if arg == "${ON}":
-            self.REALSTDOUT.write( "OUTPUT ON\n")
-            self.on = True
-            self.flush()
+        if len(self.filters)>0:
+            topf =self.filters[0]
+            if topf.prefix:
+                    prefix = topf.pretag+topf.prefix+topf.posttag
+                    prefix =  self.term.render(prefix)
+        for f in self.filters:
+            f.clear()
+            out = f.morph(out)
+        fout = re.sub("\n", "\n"+prefix, out)
+        endline = ""
+        self.realstdout.write(fout+endline)
+        self.realstdout.flush()
+        
+    def flush(self):
+        self.realstdout.flush()
+class Filter(object):
+    pretag  = "${BOLD}"
+    posttag = "${NORMAL}"
+    term    = None
+    on      = True
+    prefix  = None
+    fout    = None
+    def morph(self, arg):
+        return arg 
+    def clear(self):
+        self.prefix = None
+        
+if False:        
+    def write(self, out, prefix = None):
+        if out == None:
+            #@@TODO: why could this happen?
             return
-        if "usage" in arg:
-            raise arg
+        # if this is the last filter, then there is no prevfilter
+        if self.prevfilter == None:
+            if prefix == None:
+                if self.prefix:
+                    prefix = self.prefix
+
+                else:
+                    prefix = "-=-:"
+            lines = out.split("\n")
+            # arg = out
+            first =  True
+            shortlines = []
+            for line in lines:
+                wid, height = getTerminalSize()
+                wid -= len(prefix)
+                if len(line) > wid:
+                    for i in range(0,len(line), wid):
+                        end = i+wid
+                        if end > len(line):
+                            end = len(line)
+                        shortlines.append(line[i:i+wid])
+                else:
+                    shortlines.append(line)
+
+            for arg in shortlines:
+                if False: #len(arg)>0:
+                    if arg[-1] == "\n":
+                        arg = arg[:-1]
+                if len(arg)>0:
+                    if self.term == None:
+                        raise repr(self)
+                    if self.term.renderLen(arg) ==0:
+                        lineend = ""
+                    else:
+                        lineend = "\n"
+
+                    farg = prefix + arg + ""
+                    farg = self.morph(farg)
+                    self.realstdout.write(farg+lineend)
+        else:
+            out = self.morph(out)
+            if self.prefix:
+                prefix = self.prefix
+            self.prevfilter.write(self.morph(out), prefix = prefix)        
+                    
+class ColorFilter(Filter):
+    
+    def morph(self, arg):
         if self.on:
             out = self.term.render(arg)
-            self.REALSTDOUT.write(out)
+            return out
         else:
-            self.REALSTDOUT.write("")
+            return ""
+            
 import traceback as tb
-class PrimitiveStdout:
-    REALSTDOUT = None
-    
-    def __init__(self,rso):
-        self.REALSTDOUT = rso
-    def flush(self):
-        return self.REALSTDOUT.flush()
-    def write(self, arg):
+class PrimitiveFilter(Filter):
+    prefix = "primitive: "
+    def morph(self, arg):
         # add bottom of primitive stack
-        h = "${BOLD}"
+        h = ""
         st = tb.extract_stack()
         started = True # ignore deep part of stack
         for f in st:
@@ -241,69 +332,36 @@ class PrimitiveStdout:
                     nam = f[2]
                 else:
                     nam = "{}"
-                if "rimitives" in f[0]:
+                if ("rimitives" in f[0]) or ("string" in f[0]):
                     h += (nam+": ")
-        h += "${NORMAL}"
-        argstrip = arg.strip()
+        self.prefix = h
         if h == "":
             h = "rsys:"
-        if len(argstrip) > 0:
-            self.REALSTDOUT.write(h+arg+"\n")
-
-class IrafStdout:
-    REALSTDOUT = None
-    IRAFSTDOUT = True
-    def __init__(self):
-        self.REALSTDOUT = sys.stdout
-    def flush(self):
-        return self.REALSTDOUT.flush()
-    def write(self, out):
-        lines = out.split("\n")
-        # arg = out
-        first =  True
-        shortlines = []
-        for line in lines:
-            wid, height = getTerminalSize()
-            wid -= len("IRAF: ")
-            if len(line) > wid:
-                for i in range(0,len(line), wid):
-                    end = i+wid
-                    if end > len(line):
-                        end = len(line)
-                    shortlines.append(line[i:i+wid])
-            else:
-                shortlines.append(line)
+        return (arg)
             
-        for arg in shortlines:
-            arg = arg.strip()
-            origlen = len(arg.strip())
-            if origlen == 0:
-                return
-            if len(arg) > 0:
-                if arg[-1] == "\n":
-                    arg = arg[:-1]
-            if "PANIC" in arg or "ERROR" in arg:
-                arg = "${RED}" + arg + "${NORMAL}"
-            else:
-                arg = "${BLUE}"+arg+"${NORMAL}"
-            if first == True:
-                head = "IRAF: "
-                first = False
-            else:
-                head = "${WHITE}IRAF${NORMAL}: " # % repr(arg[1]) 
-            if len (arg.strip()) > 0 :
-                self.REALSTDOUT.write(head + arg + "\n")
-
-
-class IrafStderr:
-    REALSTDOUT = None
-    IRAFSTDOUT = True
-    def __init__(self):
-        self.REALSTDOUT = sys.stdout
+            
+class IrafStdout():
+    fout = None
+    ifilter = None
+    def __init__(self, fout = sys.stdout):
+        self.fout = fout
+        self.ifilter = IrafFilter()
+        
+    def write(self, out):
+        out = "IRAF: "+ self.ifilter.morph(out) + os.linesep
+        self.fout.write(out)
     def flush(self):
-        return self.REALSTDOUT.flush()
-    def write(self, arg):
-        self.REALSTDOUT.write("IRAF ERROR: " + "${RED}"+arg+"${NORMAL}\n")
+        self.fout.flush()
+        
+class IrafFilter(Filter):
+    prefix = "IRAF: "
+    def morph(self, arg, first = True):
+        if "PANIC" in arg or "ERROR" in arg:
+            arg = "${RED}" + arg + "${NORMAL}"
+        else:
+            arg = "${BLUE}"+arg+"${NORMAL}"
+        
+        return (arg)
 
 def getTerminalSize():
     def ioctl_GWINSZ(fd):
