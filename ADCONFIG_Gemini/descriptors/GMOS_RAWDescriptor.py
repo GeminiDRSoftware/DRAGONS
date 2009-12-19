@@ -594,12 +594,14 @@ class GMOS_RAWDescriptorCalc(Calculator):
         @returns: the binning of the detector x-axis
         """
         try:
+            ccdsum = None
             for ext in dataset:
                 # get the values - GMOS raw data can have up to 6 data extensions
                 ccdsum = ext.header[stdkeyDictGMOS["key_gmos_ccdsum"]]
-            
-            retxccdbinint, yccdbin = ccdsum.split()
-        
+            if ccdsum != None:
+                retxccdbinint, yccdbin = ccdsum.split()
+            else:
+                return None        
         except KeyError:
             return None
         
@@ -614,11 +616,15 @@ class GMOS_RAWDescriptorCalc(Calculator):
         @returns: the binning of the detector y-axis
         """
         try:
+            ccdsum = None
             for ext in dataset:
                 # get the values - GMOS raw data can have up to 6 data extensions
                 ccdsum = ext.header[stdkeyDictGMOS["key_gmos_ccdsum"]]
             
-            xccdbin, retyccdbinint = ccdsum.split()
+            if ccdsum != None:
+                xccdbin, retyccdbinint = ccdsum.split()
+            else:
+                return None
         
         except KeyError:
             return None

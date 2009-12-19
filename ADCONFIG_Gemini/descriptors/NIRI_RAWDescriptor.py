@@ -1,9 +1,10 @@
-import Lookups
-import Descriptors
-import Errors
+from astrodata import Lookups
+from astrodata import Descriptors
+from astrodata import Errors
 import math
 
-from Calculator import Calculator
+import astrodata
+from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
 from StandardNIRIKeyDict import stdkeyDictNIRI
@@ -74,7 +75,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         return str(retdatasecstring)
     
     def detsec(self, dataset):
-        """
+        """/home/rtfuser/demo/gemini_python/trunk/emma.descriptors/files
         Return the detsec value for NIRI
         @param dataset: the data set
         @type dataset: AstroData
@@ -109,7 +110,6 @@ class NIRI_RAWDescriptorCalc(Calculator):
             hdu = dataset.hdulist
             exptime = hdu[0].header[stdkeyDictNIRI["key_niri_exptime"]]
             coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
-            
             if dataset.isType("NIRI_RAW") == True:
                 if coadds != 1:
                     coaddexp = exptime
