@@ -20,6 +20,8 @@ parser.add_option("-o", "--only", dest="only", default="all",
         help= "Choose only certain types to find, list multiple types separated by commas with NO WHITESPACE.")
 parser.add_option("-v", "--showdescriptors", dest="showdescriptors", default=None,
         help = "Show descriptors listed, separate with commas and NO WHITESPACE" )
+parser.add_option("-l", "--listdescriptors", dest="listdescriptors", action="store_true",
+        help = "Lists available descriptors")
 parser.add_option("-p", "--printheader", metavar="PHEADLIST", dest="pheads", default=None,
         help= "Headers to print out for found files, list keywords separated by comma, no whitespace.")
 parser.add_option("-d", "--htmldoc", dest="htmldoc", action="store_true",
@@ -30,6 +32,9 @@ parser.add_option("-s", "--status", dest="onlyStatus", action="store_true",
         help="Compare only to the processing status dictionary of classifications")
 parser.add_option("-y", "--typology", dest="onlyTypology", action="store_true",
         help="Compare only to the processing status dictionary of classifications")
+
+
+# REVIEW THIS, -v option above is available
 # Now the descriptors, in alphabetical order
 parser.add_option("-A", "--airmass", dest="showairmass", action="store_true",
         help="Show airmass using appropriate descriptor")     
@@ -91,7 +96,17 @@ parser.add_option("-Y", "--ybin", dest="showybin", action="store_true",
 dt = DataSpider()
 cl = dt.getClassificationLibrary()
 
-if (options.htmldoc):
+if (options.listdescriptors):
+    from astrodata import Descriptors
+    import CalculatorInterface
+    funs = dir(CalculatorInterface.CalculatorInterface)
+    descs = []
+    for fun in funs:
+        if "_" not in fun:
+            descs.append(fun)
+    print ", ".join(descs)
+    
+elif (options.htmldoc):
     print cl.htmlDoc()
 else:
     try:

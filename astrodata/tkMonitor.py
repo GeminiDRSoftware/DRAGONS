@@ -251,8 +251,8 @@ class TkRecipeControl( threading.Thread):
                                            self.initY)
                 # print "TK149:", geomstr
                 controlWindow.geometry(geomstr)
-                self.initX += string.atoi(mong.group("w"))+5
-                
+                self.initX += 25 #string.atoi(mong.group("w"))+5
+                self.initY += 20
                 self.setContext(context)
                 
                 #self.monitor = MonitorWindow(root)

@@ -1,7 +1,9 @@
-import Lookups
-import Descriptors
+from astrodata import Lookups
+from astrodata import Descriptors
+
 import math
 
+from astrodata import Calculator
 from Calculator import Calculator
 
 import GemCalcUtil 
