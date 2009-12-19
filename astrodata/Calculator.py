@@ -113,8 +113,9 @@ class Calculator(object):
             keynm = self.stdkeyDict[keyname]
             retval = dataset.phuValue(keynm)
         except KeyError:
-            raise CalculatorExcept("          Standard Descriptor Key \"%s\" not in PHU (generic descriptor fails)" % keyname)
-            #!!!! DEVELOPMENT @: should return descriptor value, 0. is placeholder
+            # LOGMESSAGE OR raise CalculatorExcept("          Standard Descriptor Key \"%s\" not in PHU (generic descriptor fails)" % keyname)
+            # returning None indicates imcomplete descriptor calculators
+            retval = None
         return retval
     
     
