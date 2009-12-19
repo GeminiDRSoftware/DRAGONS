@@ -1,9 +1,10 @@
-import Lookups
-import Descriptors
+from astrodata import Lookups
+from astrodata import Descriptors
 import re
 import math
 
-from Calculator import Calculator
+import astrodata
+from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
 from StandardMICHELLEKeyDict import stdkeyDictMICHELLE
