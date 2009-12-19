@@ -85,7 +85,7 @@ class DataSpider(object):
             print "onlylist:",repr(onlylist)
         
         verbose = False
-        
+        ldebug = False
         for root,dirn,files in os.walk(directory):
             if (verbose) :
                 print "root:", root 
@@ -148,13 +148,15 @@ class DataSpider(object):
                                 # allowed in that argument, just "," as a separator
                                 ol = only.split(",")
                                 # print ol
+                                found = False
                                 for tpname in dtypes:
                                     if (verbose):
-                                        print "DS148", tpname,repr(dtypes), "||", repr(ol)
+                                        print "DS148", " in ", repr(ol),
                                     if (tpname in ol):
                                         found = True
-                                    else:
-                                        found = False
+                                        break
+                                    if (verbose):
+                                        print "yes, found = ", str(found)
 
                             if (found != True):
                                 continue
