@@ -313,3 +313,53 @@ def chomp(line):
     while len(line) >=1 and line[-1] == '\n':            
         line = line[:-1]                 
     return line
+
+
+#------------------------------------------------------------------------------ 
+
+def getDataFromInput( inputf, ext=None ):
+    '''
+    !!! NOT FINISHED !!!
+    
+    Retrieve the science data from a fits file, science data or AstroData.
+     
+    
+    '''
+    
+    try:
+        import astrodata
+        from astrodata.AstroData import AstroData
+        astroPossible = True
+    except:
+        astroPossible = False
+    
+    try:
+        import numpy as np
+    except:
+        raise
+    
+    
+    exttype = type( ext )
+    inputtype = type( inputf )
+
+    if ext is not None:
+        if exttype == int:
+            pass
+        else:
+            raise RuntimeError( 'Bad argument type. Received %s, expecting int.' %(str(exttype)) )
+    else:
+        ext = 1
+    
+    if inputtype == np.Array:
+        pass
+    elif astroPossible and inputtype == AstroData:
+        pass
+    elif inputtype == str:
+        pass
+    else:
+        raise RuntimeError( 'Bad argument type.' )
+    
+    
+        
+        
+    
