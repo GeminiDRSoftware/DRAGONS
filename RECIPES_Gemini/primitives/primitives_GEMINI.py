@@ -5,6 +5,9 @@ from utils import filesystem
 from astrodata import IDFactory
 import os
 
+import IQTool
+from IQTool.iq import getiq
+
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
 import pyraf
@@ -191,8 +194,6 @@ class GEMINIPrimitives(ReductionObject):
             #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
             # separate primitives, i.e. detectSources and measureIQ.
             print "measuring iq"
-            import iqtool
-            from iqtool.iq import getiq
             '''
             image, outFile='default', function='both', verbose=True,\
             residuals=False, display=True, \
