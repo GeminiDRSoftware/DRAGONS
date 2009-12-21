@@ -30,6 +30,7 @@ from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackabl
         GetStackableRequest, DisplayRequest, ImageQualityRequest
 from astrodata import gdpgutil
 from astrodata.LocalCalibrationService import CalibrationService
+from utils.future import gemDisplay
 from utils import paramutil
 from utils.gemutil import gemdate
 from utils import terminal
@@ -146,12 +147,6 @@ def command_line():
         if tmpInp == None:
             raise "The input had "+ str(inf)+" cannot be loaded."
         input_files.extend( tmpInp )
-        """
-        if not os.access( inf, os.R_OK ):
-            print "'" + inf + "' does not exist or cannot be accessed."
-            sys.exit(1)
-        #"""
-        #input_files.append(inf)
         
     if options.add_cal != None:
         if options.cal_type == None:
@@ -216,6 +211,17 @@ else:
         testla.append( [AstroData(infile)] )
     infiles = testla
 
+
+#===============================================================================
+# Local PRS Components
+#===============================================================================
+# Local Calibration Service Setup
+cs = CalibrationService()
+
+# Local Display Service Setup
+ds = gemDisplay.getDisplayService()
+
+
 frameForDisplay = 1 
 i = 1
 numFiles = len(infiles)
@@ -240,8 +246,7 @@ for infile in infiles: #for dealing with multiple files.
     
     types = infile[0].getTypes()
     
-    # Local Calibration Service Setup
-    cs = CalibrationService()
+    
     
     infilenames = []
     for infs in infile:
@@ -259,10 +264,8 @@ for infile in infiles: #for dealing with multiple files.
     print tb + "${NORMAL}",
     
     if options.recipename == None:
-        #print ("\n${UNDERLINE}Recipe(s) found by dataset type:${NORMAL}")
         print "\nRecipe(s) found by dataset type:"
     else:
-        #print ("\n${UNDERLINE}A recipe was specified:${NORMAL}")
         print "\nA recipe was specified:"
         
     for typ in recdict.keys():
@@ -380,12 +383,14 @@ for infile in infiles: #for dealing with multiple files.
                             # cache.
                             #print "RD172: GET STACKABLE REQS:", rq
                         elif rqTyp == DisplayRequest:
-
+                            '''
                             from pyraf.iraf import gemini
                             gemini()
                             gemini.gmos()
-
-
+                            '''
+                            if ds.ds9 is None:
+                                ds.setupDS9()
+                            
                             ##@@FIXME: This os.system way, is very kluged and should be changed.
                             if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
                                  and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
@@ -400,11 +405,14 @@ for infile in infiles: #for dealing with multiple files.
                                     # tmpImage should be a string at this point.
                                     #print "RED332:", type(tmpImage), tmpImage
                                     try:
-                                        gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
-                                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+#                                        gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
+#                                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+                                        ds.display( tmpImage )
+                                        print ds.ds9.frames()
                                         frameForDisplay += 1    
                                     except:
                                         print "CANNOT DISPLAY"
+                                        raise 
                         elif rqTyp == ImageQualityRequest:
                             #print 'RED394:'
                             print rq
@@ -429,6 +437,11 @@ for infile in infiles: #for dealing with multiple files.
                                     cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
                                     cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
                                     cw.iqLog('', '-'*14, timestr)
+                                elif ds.ds9 is not None:
+                                    dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
+                                    ds.markText( 0, 2200, dispText )
+                                
+                                
                                 else:    
                                 # this was a kludge to mark the image with the metric 
                                 # The following is annoying IRAF file methodology.
