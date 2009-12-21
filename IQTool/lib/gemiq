@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+import iq.iq
+import optparse, re
+matchnewline = re.compile('\s*\n$')
+matchfits = re.compile(r'(\.fits)$')
+VERSION='1.0'
+
+def parse_args():
+    # Parse input arguments
+    usage = 'usage: %prog [options] datasets'
+    p = optparse.OptionParser(usage=usage, version='v'+VERSION)
+    p.add_option('--debug', action='store_true', help='toggle debug messages')
+    p.add_option('--quiet', '-q', action='store_true',
+                 help='toggle off verbose mode')
+    p.add_option('--list', '-l', action='store', type='string', dest='inlist',
+                 help='list of input datasets')
+    p.add_option('--function', action='store', type='string', dest='function',
+                 default='both',
+                 help='function to fit [gauss|moffat|both](default: %default)')
+    p.add_option('--residuals', action='store_true', help='keep residual images')
+    p.add_option('--display', action='store_true', help='toggle on display')
+    p.add_option('--inter', action='store_true', help='toggle on interactive mode')
+    p.add_option('--rawpath', action='store', type='string', dest='rawpath',
+                 default='.', help='location of input images')
+    p.add_option('--prefix', action='store', type='string', default='auto',
+                 dest='prefix', help='prefixes to use for intermediate data')
+    p.add_option('--observatory', action='store', type='string',
+                 dest='observatory', default='gemini-north',
+                 help='observatory, [gemini-north|gemini-south] (default=%default)')
+    p.add_option('--noclip', action='store_true', default=False,
+                 help='toggle off sigma clipping of FWHM and ellipticity measurements')
+    p.add_option('--sigma', action='store', type='float',  dest='sigma',
+                 default=2.3, help='threshold for sigma clipping (default=%default)')
+    p.add_option('--pymark', action='store_true', help='mark daofind outputs')
+    p.add_option('--niters', action='store', type='int', dest='niters',
+                 default=4, help='iteration for sigma clipping (default=%default)')
+    p.add_option('--boxsize', action='store', type='int', dest='boxsize', default=8,
+                 help='size of thumbnail to fit in arc seconds (default=%default ")')
+    p.add_option('--outfile', action='store', type='string', dest='outfile',
+                 default='default',
+                 help='name of the output data file, if default the name will be input \
+                 image name with ".dat"')
+
+    (options, args) = p.parse_args()
+
+    if options.display!=True:
+        options.pymark = False
+
+    # Set default
+    options.doclip=True
+    if options.noclip: 
+        options.doclip=False 
+    
+    if options.debug:
+        options.quiet = False
+        print 'options: ', options
+        print 'args: ', args
+    
+    options.verbose=True
+    if options.quiet == True:
+        options.verbose=False
+
+    # Set list of input dataset
+    inimages = []
+    if options.inlist != None:
+        f = open(options.inlist, mode='r')
+        lines = f.readlines()
+        f.close()
+        inimages = map((lambda i: matchnewline.sub('',lines[i])),range(len(lines)))
+    else:
+        inimages = args
+       
+    print (inimages,options,args)
+    return (inimages, options,args)
+    
+
+if __name__ == '__main__':
+    (inimages, options, args)=parse_args()
+    print inimages
+
+    for image in inimages:
+        options.outfile=matchfits.sub('.dat', image)
+        
+        iq.iq.gemiq(image, outFile=options.outfile, function=options.function, 
+            verbose=options.verbose, residuals=options.residuals,
+            display=options.display, interactive=options.inter,
+            rawpath=options.rawpath, prefix=options.prefix,
+            observatory=options.observatory, clip=options.doclip,
+            sigma=options.sigma, pymark=options.pymark, niters=options.niters,
+            boxSize=options.boxsize, debug=options.debug)
