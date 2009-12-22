@@ -76,15 +76,18 @@ class Calculator(object):
         @returns: array of gain values, index 0 will be the gain of science
         extension #1, i.e. (EXTNAME,EXTVER)==("SCI",1) and so on.
         """
-        retval = []
-        i = 0
-        for gd in dataset["SCI"]:
-            i += 1
-            gain = gd.getHeader(gd.extensions[0], self.stdkeyDict["key_gain"])
-            
-            retval.append(gain)
-            
-        return retval
+        return None
+        # BELOW LIES AN ATTEMPT AT A GENERAL GAIN DESCRIPTOR
+        #retval = []
+        #
+        #i = 0
+        #for gd in dataset["SCI"]:
+        #    i += 1
+        #    gain = gd.getHeader(gd.extensions[0], self.stdkeyDict["key_gain"])
+        #    
+        #    retval.append(gain)
+        #    
+        #return retval
     
     
     def filtername(self, dataset):
