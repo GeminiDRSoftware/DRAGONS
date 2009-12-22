@@ -4,6 +4,8 @@ import re
 from AstroData import *
 ldebug = False
 verbose = False
+import terminal
+
 
 class DataSpider(object):
     """
@@ -74,7 +76,8 @@ class DataSpider(object):
                  showwdelta = False,
                  showwrefpix = False,
                  showxbin = False,
-                 showybin = False):
+                 showybin = False,
+                 incolog = True):
         """
         Recursively walk a given directory and put type information to stdout
         """
@@ -95,7 +98,10 @@ class DataSpider(object):
                 print "DS92:",root, repr(dirn), repr(file)
             if (".svn" not in root):
                 width = 10
-                rootln = "\ndirectory: "+root
+                ## !!!!!
+                ## !!!!! CREATE THE LINE WRITTEN FOR EACH DIRECTORY RECURSED !!!!!
+                ## !!!!!
+                rootln = "\n${BOLD}directory: ${NORMAL}"+root + "${NORMAL}"
                 firstfile = True
                 for tfile in files:
                     # we have considered removing this check in place of a
@@ -164,25 +170,52 @@ class DataSpider(object):
                             if (firstfile == True):
                                 print rootln
                             firstfile = False
+                            
+                            #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            # !!!!PRINTING OUT THE FILE AND TYPE INFO!!!!
+                            #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             prlin = "     %s" % tfile
+                            prlincolor = "     ${BG_WHITE}%s" % tfile
+                            empty = "%40s" % " "
+                            indent = 5
                             pwid = 40
+                            fwid = pwid+indent
                             lp = len(prlin)
                             nsp = pwid - ( lp % pwid )
 
+                            # print out indent, filename, and "..." to justify types area"
                             # there is a way to do with with a comprehension?   
                             sp ="........."
                             sp = sp + sp + sp
-                            print prlin,sp[:nsp],
+                            print prlincolor+sp[:nsp]+"${NORMAL}",
 
                             # print dtypes
+                            tstr = ""
+                            termsize = terminal.getTerminalSize()
+                            maxlen = termsize[0] - pwid -1
+                            printed = False
                             for dtype in dtypes:
                                 if (dtype != None):
-                                    print "(%s)" % dtype ,
+                                    newtype = "(%s) " % dtype
                                 else:
-                                    print "Unknown",
+                                    newtype = "(Unknown) "
+
+                                # print "(%s)" % dtype ,
+                                astr = tstr + newtype
+                                if len(astr) >= maxlen:
+                                    print "${BLUE}"+ tstr + "${NORMAL}"
+                                    tstr = newtype
+                                    print empty,
+                                else:
+                                    tstr = astr
+                            if tstr != "":
+                                print "${BLUE}"+ tstr + "${NORMAL}"
+                                tstr = ""
+                                astr = ""
+                                printed = True
 
                             # new line at the end of the output
-                            print ""
+                            # print ""
 
                             if (showinfo == True):
                                 hlist = pyfits.open(fname)

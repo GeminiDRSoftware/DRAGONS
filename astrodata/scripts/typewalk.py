@@ -6,11 +6,22 @@ import astrodata
 from astrodata.DataSpider import *
 from astrodata.AstroData import *
 from optparse import OptionParser
+
+from utils import terminal
+from utils.terminal import TerminalController
+
         
 ############################################################
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as
 # a demo for GeminiData... see options documentation.
+
+REASLSTDOUT = sys.stdout
+REALSTDERR = sys.stderr
+fstdout = terminal.FilteredStdout()
+fstdout.addFilter( terminal.ColorFilter())
+sys.stdout = fstdout   
+termsize = terminal.getTerminalSize()
 
 # parsing the command line
 parser = OptionParser()

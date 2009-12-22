@@ -152,7 +152,12 @@ class TerminalController:
     def _render_sub(self, match):
         s = match.group()
         if s == '$$': return s
-        else: return getattr(self, s[2:-1])
+        else: 
+            try:
+                return getattr(self, s[2:-1])
+            except:
+                print "t158: ", repr(dir(self))
+                raise 
 
 #######################################################################
 # Example use case: progress bar
