@@ -1,0 +1,11 @@
+
+This directory is used by 'sphinx' (http://sphinx.pocoo.org/) to
+create the html pages.
+
+To use your web browser please use:
+
+file://<installation_directory>doc/build/html/index.html
+
+For example:
+
+file:///tmp/lib/python/doc/build/html/index.html

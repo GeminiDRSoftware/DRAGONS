@@ -1,0 +1,27 @@
+! file gspline.pyf
+Python module gspline
+interface
+   subroutine spline(x,y,b,c,d,n)
+     intent(c) spline
+     intent(c)
+     integer intent(hide),depend(x) :: n=len(x)
+     real*8 intent(in) :: x(n)
+     real*8 intent(in) :: y(n)
+     real*8 intent(out) :: b(n)
+     real*8 intent(out) :: c(n)
+     real*8 intent(out) :: d(n)
+   end subroutine spline
+
+   real*8 function seval(x,y,b,c,d,n,u)
+     intent(c) seval
+     intent(c)
+     integer intent(hide),depend(x) :: n=len(x)
+     real*8 intent(in) :: x(n)
+     real*8 intent(in) :: y(n)
+     real*8 intent(in) :: b(n)
+     real*8 intent(in) :: c(n)
+     real*8 intent(in) :: d(n)
+     real*8 intent(in) :: u
+   end function seval
+end interface
+end python module gspline
