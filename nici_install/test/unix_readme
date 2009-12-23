@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+#-- Define the location of the NICI module.
+#   See 'installation` for details.
+
+    setenv nicipath /tmp/lib/python/nici
+    chmod +x $nicipath/nc*.py
+
+# Define some handy aliases
+    alias ncqlook    $nicipath/ncqlook.py
+    alias ncprepare  $nicipath/ncprepare.py
+    alias ncmkflats  $nicipath/ncmkflats.py
+    alias ncscience  $nicipath/ncscience.py
+
+#-- nc commands help
+#  Each of the command have a one liner help
+#  on the arguments.
+#
+#  MAKE SURE ds9 is running
+
+    ncqlook --help
+
+#-- Quick look
+#   Make a directory for output data
+
+   mkdir /tmp/results
+
+   ncqlook '@/tmp/lib/python/test/in.lis' --idir='/net/petrohue/dataflow' --odir='/tmp/results'
+
+#-- Prepare science files
+#  Make a directory to hold the prepared science data
+
+   mkdir /tmp/results/science
+
+   ncprepare @/tmp/lib/python/test/object.lis --idir=/net/petrohue/dataflow --odir=/tmp/results/science --clobber
+
+#-- Generate calibration files
+#  Make a directory to hold the calibration files
+
+   mkdir /tmp/results/flats
+
+   ncmkflats  @/tmp/lib/python/test/flats.lis --idir=/net/petrohue/dataflow --odir=/tmp/results/flats --clobber
+
+#-- Finally run the science
+# Use as input list the output files from ncprepare
+
+   ncscience '/tmp/results/science/*.fits' --odir=/tmp/results --fdir=/tmp/results/flats --rootnaname='S20090410'

@@ -1,0 +1,43 @@
+
+NICI Reduction software (Preliminary version).
+
+INSTALLATION
+------------
+
+1) This is the distribution tree with source file. You need to run the
+   following commands to build the nici software. Please do either
+   one of these 2 commands:
+
+   a) IF YOU HAVE ROOT PRIVILEGES, then you can install the
+      package in the default python directory. Please type:
+
+        cd <nici_installation_directory>   # The directory where you untar.
+        python setup.py install
+
+   b) If you do not have root privileges or want to use some other
+      installation directory: to install in '/home/fred/local' please type:
+
+        cd <nici_installation_directory>   # The directory where you untar.
+        python setup.py install --home=/home/fred/local
+
+
+END OF INSTALLATION
+
+
+This directory contains:
+
+setup.py     -- Python configuration file to install the nici package
+data         -- A dataset to run the nici scripts
+                If files are not present, please contact nzarate@gemini.edu
+doc          -- HTML documentation tree. Load file from your browser and
+                read: niciIndex.htm
+nici         -- The NICI python scripts
+README       -- This file 
+test         -- Examples to run example dataset under pyraf, unix or python
+
+For further assistance please contact: 
+
+Nelson Zarate
+Gemini South Observatory - La Serena,Chile
+nzarate@gemini.edu
+phone: 56-51-205620

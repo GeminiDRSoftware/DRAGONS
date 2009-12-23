@@ -1,0 +1,33 @@
+#- Getting data files
+mkdir /tmp/results       # Raw data directory
+
+#- python setup
+ipython             # start python
+import nici as nc   # Load the nici package
+
+#- nc commands help, example
+help nc.ncqlook
+
+#- Quick look
+
+nc.ncqlook('@/tmp/lib/python/test/in.lis',idir='/net/petrohue/dataflow',odir='/tmp/results')
+
+#- Prepare science files
+
+mkdir /tmp/results/science
+
+nc.ncprepare('@/tmp/lib/python/test/object.lis',
+idir='/net/petrohue/dataflow',odir='/tmp/results/science')
+
+#- Generate calibration files
+#- Create the file list
+
+mkdir /tmp/results/flats
+
+nc.ncmkflats('@/tmp/lib/python/test/flats.lis',idir='/net/petrohue/dataflow',odir='/tmp/results/flats')
+
+#- Finally run the science
+
+nc.ncscience('/tmp/results/science/*.fits',odir='/tmp/results',\
+               fdir='/tmp/results/flats',rootname='S20090410')
+
