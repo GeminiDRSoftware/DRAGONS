@@ -159,7 +159,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
             # reject "open" "grism" and "pupil"
             filters2 = []
             for filt in filters:
-                if ("open" in filt) or ("grism" in filt) or ("pupil" in filt):
+                if ("open" in filt) or ("grism" in filt) or ("pupil" in filt) or ("Pupil" in filt):
                     pass
                 else:
                     filters2.append(filt)
@@ -170,8 +170,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
             # blocks any other in place filters
             if "blank" in filters:
                 retfilternamestring = "blank"
-            
-            if len(filters) == 0:
+            elif len(filters) == 0:
                 retfilternamestring = "open"
             else:
                 filters.sort()
