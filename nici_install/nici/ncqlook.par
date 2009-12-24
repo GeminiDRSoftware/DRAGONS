@@ -1,9 +1,0 @@
-inputs,s,a,"",,,"wild card or date of nici observation (yyyymmdd)"
-idir,s,a,"",,,"input directory"
-odir,s,a,"",,,"output directory"
-log,b,h,yes,,,""
-lists,b,h,yes,,,""
-saturate,r,a,3500,,,"saturate level"
-display,b,a,yes,,,"Display red and blue frames?"
-crop,b,a,no,,,"Crop frames to 256x256 around the mask"
-mode,s,h,"ql",,,
