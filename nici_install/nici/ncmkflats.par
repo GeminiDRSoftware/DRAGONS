@@ -1,8 +1,0 @@
-inputs,s,a,"",,,"Input NICI flats files"
-idir,s,h,"",,,"Path for input directory"
-odir,s,h,"",,,"Path for output directory"
-sigma,r,h,6,,,"Set to Nan all pixel above this value from the median"
-clobber,b,h,no,,,"Clobber output file?"
-suffix,s,h,'default',,,"value appended to rootname"
-logfile,s,h,"",,,"Logfile"
-mode,s,h,"ql",,,

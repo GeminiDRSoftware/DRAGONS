@@ -1,8 +1,0 @@
-inputs,s,a,"",,,"Input NICI files"
-oprefix,s,h,"n",,,"Prefix for output image(s)"
-idir,s,h,"",,,"Path for input directory"
-odir,s,h,"",,,"Path for output directory"
-clobber,b,h,no,,,"Clobber output file?"
-fl_var,b,h,no,,,"Create variance frames?"
-fl_dq,b,h,no,,,"Create data quality frames?"
-mode,s,h,"ql",,,
