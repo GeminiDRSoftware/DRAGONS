@@ -64,7 +64,7 @@ def pyDaoFind(filename, scidata, pixelscale,
     else:
         xyArray = detectSources.detSources( filename, sigma=imageSigma, threshold=2.0, fwhm=daoFWHM, exts=exten )
     et = time.time()
-    #print 'IU44 - DAOFIND TIME:', (et-st)
+    print 'IU44 - DAOFIND TIME:', (et-st)
 
     if pymark:
         filesystem.deleteFile('newcoofile2.temp')
@@ -310,7 +310,7 @@ def convPars(fitPars, pixelscale,stampPars):
 
 #---------------------------------------------------------------------------
 
-def sigmaClip(Pars, outFile, sigma=2.3, verbose=True, nIters=4):
+def sigmaClip(Pars, outFile, sigma=2.3, verbose=True, nIters=4, garbageStat=False):
     """Median clip list of pars
 
     @param Pars: ObsPars from fit
@@ -332,13 +332,22 @@ def sigmaClip(Pars, outFile, sigma=2.3, verbose=True, nIters=4):
                 and std for each clippedlist
     @rtype: list
     """
-    if len(Pars) < 2:
-       print '\n# PYEXAM - Cannot provide statistics with only one object'
-       return Pars, None, None, None, None
+    if len(Pars) <= 0:
+        print '\n# PYEXAM - Cannot provide statistics with only no objects'
+        return Pars, None, None, None, None
 
-    if len(Pars) < 3:
-       print '\n# PYEXAM - Cannot perform reasonable sigma clipping with less than three objects'
-       return Pars, None, None, None, None
+    if garbageStat:
+        if len(Pars) < 3:
+           print '\n# PYEXAM - WARNING, only one or two objects detected.'
+           return Pars, None, None, None, None
+    else:
+        if len(Pars) < 2:
+           print '\n# PYEXAM - Cannot provide statistics with only one object'
+           return Pars, None, None, None, None
+    
+        if len(Pars) < 3:
+           print '\n# PYEXAM - Cannot perform reasonable sigma clipping with less than three objects'
+           return Pars, None, None, None, None
          
     ell = []   
     fwhm = []
@@ -347,45 +356,45 @@ def sigmaClip(Pars, outFile, sigma=2.3, verbose=True, nIters=4):
     k = 1
     nparams = 2
     while j <= nIters:
-     while k <= nparams:
-       ell = []
-       fwhm = []
-       for star in Pars:
-          fwhm.append(star.get('FWHMarcsec'))          
-          ell.append(star.get('Ellip'))
-       
-       allPars = [fwhm, ell]
-       key = ''
-    
-       i = 0
-
-       copyallPars = allPars[:]
-       
-       for parlist in copyallPars:
-          parlist.sort()
-          tempMedian = parlist[len(parlist)/2] 
-          tempSigma = np.array(parlist).std()
-          lower = tempMedian - sigma*tempSigma
-          upper = tempMedian + sigma*tempSigma
-
-          cparlist = parlist[:]
-          
-          for par in cparlist:
-             if par < lower or par > upper:
-                if i == 0 : key='FWHMarcsec'
-                elif i == 1: key='Ellip'
-                for star in Pars:
-                    if star[key]==par:
-                       Pars.remove(star)
-                       parlist.remove(par)
-                       #replace old parlist in allPars with this one
-                       allPars[i] = parlist
-                       if verbose:
-                           pstr = '# SIGMACLIP - removed object with '+str(key)+" = "+str(par)
-                           print pstr
-          i += 1
-       k += 1
-     j += 1
+        while k <= nparams:
+            ell = []
+            fwhm = []
+            for star in Pars:
+                fwhm.append(star.get('FWHMarcsec'))          
+                ell.append(star.get('Ellip'))
+            
+            allPars = [fwhm, ell]
+            key = ''
+            
+            i = 0
+            
+            copyallPars = allPars[:]
+            
+            for parlist in copyallPars:
+                parlist.sort()
+                tempMedian = parlist[len(parlist)/2] 
+                tempSigma = np.array(parlist).std()
+                lower = tempMedian - sigma*tempSigma
+                upper = tempMedian + sigma*tempSigma
+                
+                cparlist = parlist[:]
+                
+                for par in cparlist:
+                    if par < lower or par > upper:
+                        if i == 0 : key='FWHMarcsec'
+                        elif i == 1: key='Ellip'
+                        for star in Pars:
+                            if star[key]==par:
+                                Pars.remove(star)
+                                parlist.remove(par)
+                                #replace old parlist in allPars with this one
+                                allPars[i] = parlist
+                                if verbose:
+                                    pstr = '# SIGMACLIP - removed object with '+str(key)+" = "+str(par)
+                                    print pstr
+                i += 1
+            k += 1
+        j += 1
 
     FWHMMean = np.array(allPars[0]).mean()
     FWHMSigma = np.array(allPars[0]).std()
@@ -397,26 +406,24 @@ def sigmaClip(Pars, outFile, sigma=2.3, verbose=True, nIters=4):
 #---------------------------------------------------------------------------
 
 def removeNeighbors(xyArray, npixapart=5, crowded=True, debug=False):
-    """remove neighbors from a list of x,y positions within narcsec of
-each oth$
+    """
+    Remove neighbors from a list of x,y positions within narcsec of each other.
 
     @param xyArray: list of (x,y) positions of objects
     @type xyArray: array
 
-    @param npixapart: number of pix apart for neighbors to be removed
-from list
+    @param npixapart: number of pix apart for neighbors to be removed from list.
     @type npixapart: int or float
 
     @param pixelscale: instrument pixelscale in arcsec/pix
     @type pixelscale: float or int
 
-    @param crowded: if crowded=False then check remove up to triplets,
-if crowd$
-                pentuplets
+    @param crowded: (OBSOLETE) if crowded=False then check remove up to triplets,
+    if crowded.
     @type crowded: Boolean
 
     @return: xyArray list of neighbor removed list of (x,y) positions of
-objects
+    objects.
     @rtype: array
     """
 
@@ -431,8 +438,7 @@ objects
             if abs(diffx) < npixapart:
                 diffy = xyArray[j][1] - xyArray[i][1]
                 if abs(diffy) < npixapart:
-                    if debug: print '\n# REMOVENEIGHBORS - Removed\
-neighbors!', xyArray[j], xyArray[i]
+                    if debug: print '\n# REMOVENEIGHBORS - Removed neighbors!', xyArray[j], xyArray[i]
                     if not xyRemoveFlag:
                         xyRemoveFlag = True
                         xyArrayForRemoval.append(j)

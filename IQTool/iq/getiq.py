@@ -1,30 +1,26 @@
 
 
 # Import core Python modules
-
+import time
 
 
 # Import scientific modules
 import pyfits
 import numdisplay
-import pylab
 import numpy as np
 
 # Import IQ modules
 import iqUtil
 import fit
-reload (iqUtil)
-reload (fit)
 
 from utils import gemutil, mefutil, filesystem
-reload(gemutil)
-from iqtool.gemplotlib import overlay
+
+import IQTool
 # This is older imports to have it working with util stuff
 # in pygem.
 #from iq import fit
 #from iq import util
 #from pygem import gemutil, mefutil, irafutil, filesystem
-
 
 
 #---------------------------------------------------------------------------
@@ -33,7 +29,7 @@ def gemiq(image, outFile='default', function='both', verbose=True,\
           interactive=False, rawpath='.', prefix='auto', \
           observatory='gemini-north', clip=True, \
           sigma=2.3, pymark=True, niters=4, boxSize=2., mosaic=False,
-          debug=False, qa=False):
+          debug=False, garbageStat=False, qa=False):
     """get psf measurements of stars
 
     @param image: input filename or number if using today's date
@@ -261,7 +257,7 @@ def gemiq(image, outFile='default', function='both', verbose=True,\
                             
                     allgfit2, gEllMean, gEllSigma, gFWHMMean, gFWHMSigma = \
     	        	   iqUtil.sigmaClip(allgfit2, paroutfile,
-                                                    sigma, verbose, niters)
+                                                    sigma, verbose, niters, garbageStat=garbageStat)
                     for star in allgfit2: #only write the clipped objects 
                         iqUtil.writePars(star, paroutfile, 'gaussian')
                     
@@ -285,7 +281,7 @@ def gemiq(image, outFile='default', function='both', verbose=True,\
                     
                     allmfit2, mEllMean, mEllSigma, mFWHMMean, mFWHMSigma = \
                     iqUtil.sigmaClip(allmfit2, paroutfile, sigma,
-                                             debug, niters)
+                                             debug, niters, garbageStat=garbageStat)
                     for star in allmfit2: #only write the clipped objects
                          # to the catalogue
                          iqUtil.writePars(star, paroutfile, 'moffat')
@@ -343,7 +339,10 @@ def pyexam(scidata, function='both', pixelscale=1, frame=1, \
            outFile='testout.txt', verbose=True, pymark=True, \
            residuals=False, clip=True, sigma=3, boxSize=9., \
            debug=False, niters=4.):
+        import pylab
 
+        from IQTool.gemplotlib import overlay
+        
         # Get box size around each object
         apertureSize = fit.getApSize(pixelscale, boxSize)
  
@@ -385,7 +384,7 @@ def pyexam(scidata, function='both', pixelscale=1, frame=1, \
                                           apertureSize, outFile, debug=debug)
                 
                 if stampArray == None: return None, None
-                
+
                 gfitPars, gReturnModel, mfitPars, mReturnModel = \
                     fit.fitprofile(stampArray, function, positionCoords, \
                     outFile, pixelscale, stampPars, debug=debug, frame=frame)
@@ -498,7 +497,7 @@ def pyexam(scidata, function='both', pixelscale=1, frame=1, \
                 if verbose: print "# PYEXAM - performing Gaussian clipping"
 
                 gAllstars, gEllMean, gEllSigma, gFWHMMean, gFWHMSigma = \
-                   iqUtil.sigmaClip(gAllstars, outFile, sigma, verbose, niters)
+                   iqUtil.sigmaClip(gAllstars, outFile, sigma, verbose, niters, garbageStat=garbageStat)
             
                 if verbose:
                     print "PYEXAM - Mean Gaussian Ellipticity:", gEllMean
@@ -508,7 +507,7 @@ def pyexam(scidata, function='both', pixelscale=1, frame=1, \
                 if verbose: print "# PYEXAM - performing Moffat clipping"
 
                 mAllstars, mEllMean, mEllSigma, mFWHMMean, mFWHMSigma = \
-                   iqUtil.sigmaClip(mAllstars, outFile, sigma, verbose, niters)
+                   iqUtil.sigmaClip(mAllstars, outFile, sigma, verbose, niters, garbageStat=garbageStat)
 
                 if verbose:
                     print "PYEXAM - Mean Moffat Ellipticity:", mEllMean
@@ -627,11 +626,13 @@ def pyiq (filename, scidata, function, outFile, pixelscale, \
         positionCoords= [xCoo,yCoo]
         stampArray, stampPars = fit.makeStamp(scidata, positionCoords, \
                                           apertureSize, outFile, debug=debug)
-            
+        
+        st = time.time()
         gfitPars, gReturnModel, mfitPars, mReturnModel = \
             fit.fitprofile(stampArray, function, positionCoords, \
             outFile, pixelscale, stampPars, debug=debug, frame=frame)
-
+        et = time.time()
+       #print 'Fit Time', (et-st)
 
         ######## Gaussian Fits #########
         if gfitPars != None:
@@ -695,7 +696,7 @@ def pyiq (filename, scidata, function, outFile, pixelscale, \
         if gAllstars:
             if debug: print "# PYEXAM - performing Gaussian clipping"
             gAllstars, gEllMean, gEllSigma, gFWHMMean, gFWHMSigma = \
-               iqUtil.sigmaClip(gAllstars, outFile, sigma, pverbose, niters)
+               iqUtil.sigmaClip(gAllstars, outFile, sigma, pverbose, niters, garbageStat)
             for star in gAllstars:
                 writePars(star, outFile, 'gaussian')
                 clipobsPars = ('gauss', star['CooX'], star['CooY'],
@@ -712,7 +713,7 @@ def pyiq (filename, scidata, function, outFile, pixelscale, \
         if mAllstars:
             if debug: print "# PYEXAM - performing Moffat clipping"
             mAllstars, mEllMean, mEllSigma, mFWHMMean, mFWHMSigma = \
-                iqUtil.sigmaClip(mAllstars, outFile, sigma, pverbose, niters)
+                iqUtil.sigmaClip(mAllstars, outFile, sigma, pverbose, niters, garbageStat=garbageStat)
             for star in mAllstars:
                 writePars(star, outFile, 'moffat')
                 clipobsPars = ('moffat', star['CooX'], star['CooY'],
