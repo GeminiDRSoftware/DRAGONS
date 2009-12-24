@@ -64,6 +64,7 @@ class ReductionContext(dict):
     irafstdout = None
     irafstderr = None
     callbacks = None
+    arguments = None
     
     def getIrafStdout(self):
         if self.irafstdout != None:
@@ -228,6 +229,7 @@ class ReductionContext(dict):
         self.stephistory = {}
         self.hostname = socket.gethostname()
         self.displayName = None
+        self.arguments = []
         # TESTING
         self.cdl = CalibrationDefinitionLibrary()
         # undeclared
@@ -238,6 +240,8 @@ class ReductionContext(dict):
         self.stackeep = StackKeeper()
         self.fringes = FringeKeeper()
         
+    # def __getitem__(self, *args):
+    #    return dict.__getitem__(self, *args)
         
     def __str__(self):
         """Used to dump Reduction Context(co) into file for test system

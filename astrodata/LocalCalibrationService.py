@@ -75,7 +75,7 @@ class CalibrationService( object ):
         #print "LCS73:", self.calList
         
         for calfile in self.calList:
-            #print "CS90: Checking if '" + calfile + "' is viable."
+            print "CS90: Checking if '" + calfile + "' is viable."
             ad = AstroData( calfile )
             desc = Descriptors.getCalculator( ad )
             
@@ -86,7 +86,7 @@ class CalibrationService( object ):
                 #print "FAILED CRITERIA"
                 continue
 
-            #print "CS98: This '" + calfile + "' succeeded!"
+            print "CS98: This '" + calfile + "' succeeded!"
             urilist.append( (calfile, desc, ad) )
             
         urilist = self.sortPriority( urilist, calRq.priorities )
@@ -247,7 +247,7 @@ class CalibrationService( object ):
         This should convert a gemini time (in fits header) to a unix float time. 
         '''
         tempDate = date.split(".")[0]
-        #print 'DATE:', tempDate
+        print 'DATE:', tempDate
         t = datetime.strptime( tempDate, format )
         return mktime( t.timetuple() )
         

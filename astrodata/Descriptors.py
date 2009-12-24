@@ -160,7 +160,6 @@ def getCalculator(dataset):
         # if here we need to import and instantiate the basic calculator
         # note: module name is first part of calc string
         modname = calc.split(".")[0]
-        print "D163:", modname
         exec "import " + modname
         calcObj = eval (calc)
         # add this calculator to the loadedCalculatorIndex (aka "calculator cache")

@@ -50,33 +50,7 @@ class DataSpider(object):
                  onlyTypology = False,
                  # generic descriptors interface
                  showDescriptors = None, # string of comma separated descriptor names (function names!) 
-                 # Now the descriptors, in alphabetical order
-                 showairmass = False,
-                 showcamera = False,
-                 showcwave = False,
-                 showdatasec = False,
-                 showdetsec = False,
-                 showdisperser = False,
-                 showexptime = False,
-                 showfiltername = False,
-                 showfilterid = False,
-                 showfpmask = False,
-                 showgain = False,
-                 showinstrument = False,
-                 showmdfrow = False,
-                 shownonlinear = False,
-                 shownsciext = False,
-                 showobject = False,
-                 showobsmode = False,
-                 showpixscale = False,
-                 showrdnoise = False,
-                 showsatlevel = False,
-                 showutdate = False,
-                 showuttime = False,
-                 showwdelta = False,
-                 showwrefpix = False,
-                 showxbin = False,
-                 showybin = False,
+                 filemask = None,
                  incolog = True):
         """
         Recursively walk a given directory and put type information to stdout
@@ -110,7 +84,16 @@ class DataSpider(object):
                     # that are not named correctly to be FITS, so why check them?
                     # especially on a command recursing directories and potentially
                     # looking at a lot of files.
-                    if (re.match(r".*?\.(fits|FITS)", tfile)) :
+                    if filemask == None:
+                        mask = r".*?\.(fits|FITS)"
+                    else:
+                        mask = filemask
+                    try:
+                        matched = re.match(mask, tfile)
+                    except:
+                        print "BAD FILEMASK (must be a valid regular expression):", mask
+                        return 
+                    if (re.match(mask, tfile)) :
                         if (ldebug) : print "FITS:", tfile
 
                         fname = os.path.join(root, tfile)
@@ -224,62 +207,6 @@ class DataSpider(object):
 
                             # print descriptors
                             fl = AstroData(fname)
-                            try:
-                                if (showairmass == True):
-                                    print "          airmass = %s" % str(fl.airmass())  
-                                if (showcamera == True):
-                                    print "          camera = %s" % str(fl.camera())  
-                                if (showcwave == True):
-                                    print "          cwave = %s" % str(fl.cwave())  
-                                if (showdatasec == True):
-                                    print "          datasec = %s" % str(fl.datasec())  
-                                if (showdetsec == True):
-                                    print "          detsec = %s" % str(fl.detsec())  
-                                if (showdisperser == True):
-                                    print "          disperser = %s" % str(fl.disperser())  
-                                if (showexptime == True):
-                                    print "          exptime = %s" % str(fl.exptime())  
-                                if (showfiltername == True):
-                                    print "          filtername = %s" % str(fl.filtername())  
-                                if (showfilterid == True):
-                                    print "          filterid = %s" % str(fl.filterid())  
-                                if (showfpmask == True):
-                                    print "          fpmask = %s" % str(fl.fpmask())  
-                                if (showgain == True):
-                                    print "          gain = %s" % str(fl.gain())  
-                                if (showinstrument == True):
-                                    print "          instrument = %s" % str(fl.instrument())  
-                                if (showmdfrow == True):
-                                    print "          mdfrow = %s" % str(fl.mdfrow())  
-                                if (shownonlinear == True):
-                                    print "          nonlinear = %s" % str(fl.nonlinear())  
-                                if (shownsciext == True):
-                                    print "          nsciext = %s" % str(fl.nsciext())
-                                if (showobject == True):
-                                    print "          object = %s" % str(fl.object())
-                                if (showobsmode == True):
-                                    print "          obsmode = %s" % str(fl.obsmode())
-                                if (showpixscale == True):
-                                    print "          pixscale = %s" % str(fl.pixscale())
-                                if (showrdnoise == True):
-                                    print "          rdnoise = %s" % str(fl.rdnoise())
-                                if (showsatlevel == True):
-                                    print "          satlevel = %s" % str(fl.satlevel())
-                                if (showutdate == True):
-                                    print "          utdate = %s" % str(fl.utdate())
-                                if (showuttime == True):
-                                    print "          uttime = %s" % str(fl.uttime())
-                                if (showwdelta == True):
-                                    print "          wdelta = %s" % str(fl.wdelta())
-                                if (showwrefpix == True):
-                                    print "          wrefpix = %s" % str(fl.wrefpix())
-                                if (showxbin == True):
-                                    print "          xbin = %s" % str(fl.xbin())
-                                if (showybin == True):
-                                    print "          ybin = %s" % str(fl.ybin())
-                            except Descriptors.DescriptorExcept:
-                                print "!!!! Descriptor Calculator Raised an Exception, possibly corrupt data"
-                                raise
 
                             if (showDescriptors != None):
                                 sdl = showDescriptors.split(",")
