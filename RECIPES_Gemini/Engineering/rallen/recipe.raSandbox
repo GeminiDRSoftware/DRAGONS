@@ -1,10 +1,11 @@
 ##############################################
 # Whatever test I am currently playing with.
 ##############################################
-	#display
-	getProcessedBias
-	getProcessedFlat
-	#measureIQ
+	#prepare
+	display
+	#getProcessedBias
+	#getProcessedFlat
+	measureIQ
 	#crashReduce
-	printParameters
+	#printParameters
 	# mo_flatdiv_biassub_trim_gN20091027S0133.fits

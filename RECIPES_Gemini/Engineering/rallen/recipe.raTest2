@@ -1,4 +1,18 @@
 ##############################################
 # This is for testing parameter related stuff.
 ##############################################
-	printParameters
+#getProcessedBias
+#getProcessedFlat
+
+#prepare
+#overscanTrim
+#biasCorrect
+#flatfieldCorrect
+#mosaicChips
+display
+#shift
+measureIQ
+#setStackable
+averageCombine
+display
+measureIQ
