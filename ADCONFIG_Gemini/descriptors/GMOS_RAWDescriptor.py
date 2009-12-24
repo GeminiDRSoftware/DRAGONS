@@ -630,3 +630,11 @@ class GMOS_RAWDescriptorCalc(Calculator):
             return None
         
         return int(retyccdbinint)
+    
+    def display(self, dataset):
+        from pyraf import iraf
+        from pyraf.iraf import gemini
+        gemini()
+        gemini.gmos()
+        iraf.set( stdimage='imtgmos' )
+        return gemini.gmos.gdisplay

@@ -160,19 +160,20 @@ class ReductionContext(dict):
             # This temp function prints out the stuff inside an individual parameter.
             # I have a feeling this and paramsummary will be moved to a util function.
             tempStr = ""
-            list_of_keys = param.keys()
-            list_of_keys.sort()
+            list_of_params = param.keys()
+            list_of_params.sort()
             tempStr += char*40 + "\n"
-            for pars in list_of_keys:
+            for pars in list_of_params:
                 tempStr += str(param[pars]) + "\n"
                 tempStr += char*40 + "\n"
             return tempStr
             
         rets += printParam( globval, self[globval])
-        sortkeys = self.keys().sort()
-        for primname in self.keys():
+        list_of_prims = self.keys()
+        list_of_prims.sort()
+        for primname in list_of_prims:
             if primname != globval:
-                rets += '''------%(prim)s Parameters------\n''' %{'prim':primname}
+                rets += '''------%s Parameters------\n''' %(primname)
                 rets += printParam( primname, self[primname] )
         
         return rets

@@ -36,7 +36,6 @@ class CalibrationRequest( ReductionObjectRequest ):
     def __init__( self,  filename=None, identifiers={}, criteria={}, priorities={}, caltype=None ):
         super( CalibrationRequest, self ).__init__()
         self.filename = None#filename
-        #print "ASDSADSA:", identifiers
         self.identifiers = {}#identifiers
         self.criteria = {}#criteria
         self.priorities = {}#priorities
@@ -62,7 +61,7 @@ class UpdateStackableRequest( ReductionObjectRequest ):
         super( UpdateStackableRequest, self ).__init__()
         self.stkID = stkID
         self.stkList = stkList
-        
+    
         
     def __str__(self):
         tempStr = super( UpdateStackableRequest, self ).__str__()

@@ -4,7 +4,8 @@ import re
 from AstroData import *
 ldebug = False
 verbose = False
-import terminal
+print 'asgard'
+from utils import terminal
 
 
 class DataSpider(object):
