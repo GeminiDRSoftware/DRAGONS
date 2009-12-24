@@ -1,22 +1,14 @@
 #!/usr/bin/env python
-
-
+import time
+ost = time.time()
 import os
 import sys
 from optparse import OptionParser
 from iq import getiq
-from utils import gemutil
+
 '''
 @author: Jen Holt
-
-This module is the first sort of attempt at running the iqtool straight from command line. 
-
-Not a whole lot of error handling, but it should theoretically work if the inputs are right. 
-The rawpath option can be a little bit 'tricksy' and mess you up, that is why I put it as the 
-first option.
-
-If having this separate module just for command line is not seen as nice, this code can easily be put
-into iq.py or wherever else.
+@author: River Allen
 '''
 
 if __name__ == '__main__':
@@ -41,9 +33,9 @@ if __name__ == '__main__':
     p.add_option('--boxsize', action='store', type='int', dest='boxsize', default=8, help='size of thumbnail to fit in arc seconds (default=%default ")')
     p.add_option('--outfile', action='store', type='string', dest='outfile', default='default', help='name of the output data file, if default the name will be input image name with ".dat"')
     p.add_option('--garbageStat', action='store_true', dest='garbageStat', default=False, help='turn on garbage statistics for less than four objects')
-    p.add_option('--qa', action='store_true', dest='qa', default=False, help='QA mode. Faster, but potentially worse results.')
+    p.add_option('--qa', action='store_true', dest='qa', default=False, help='QA mode. Faster, but potentially worse.')
     (options, args) = p.parse_args()
-
+    
     if options.display!=True:
         options.pymark = False
 
@@ -69,8 +61,10 @@ if __name__ == '__main__':
     else:
         inimages = args
     
+    
     # Call iq routine
     for image in inimages:
+        st = time.time()
         #outfile=matchfits.sub(datasuffix, image)
         outfile= os.path.basename( image ).split( os.path.extsep )[0]
         getiq.gemiq(image, outFile=options.outfile, function=options.function, 
@@ -81,5 +75,11 @@ if __name__ == '__main__':
             sigma=options.sigma, pymark=options.pymark, niters=options.niters,
             boxSize=options.boxsize, debug=options.debug, garbageStat=options.garbageStat,
             qa=options.qa)
-
+        et = time.time()
+        print '%s time: %04d (seconds)' %( image, et-st)
     
+    
+    
+oet = time.time()
+print '-' * 40
+print 'Overall time: %04d (seconds)' %(oet-ost)

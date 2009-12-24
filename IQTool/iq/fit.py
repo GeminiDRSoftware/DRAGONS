@@ -1,8 +1,10 @@
+import time
+
 
 import iqUtil
 import numpy as np
 from scipy.optimize import minpack
-
+from scipy.optimize import fmin, fmin_ncg, fmin_bfgs
 
 """This file contains the following utilities:
     fitprofile(stampArray, function, positionCoords, outFile, pixelscale,
@@ -159,12 +161,15 @@ def moffat2d(stampArray,pixelscale,initialParams,stampPars,outFile, debug, frame
         wy = float(wy)
         return lambda x,y: bg + peak*(1+(((x-cx)*np.cos(theta)+(y-cy)*np.sin(theta))/wx)**2 + (((x-cx)*np.sin(theta)-(y-cy)*np.cos(theta))/wy)**2)**(-beta)
 
+    
     # The next three lines make the least squares fit
     returnModel = lambda params: moffat2dModel(*params)
     errorfunction = lambda inputParams:np.ravel(moffat2dModel(*inputParams)(*np.indices(stampArray.shape)) - stampArray)
+    st = time.time()
     (Bg, Peak, Cx, Cy, Wx, Wy, Theta, Beta),success = minpack.leastsq(errorfunction,initialParams,warning=False,
-                                                                      maxfev=100, col_deriv=1)
-
+                                                                      maxfev=100, col_deriv=1, factor=150)
+    et = time.time()
+    #print 'Least SQ function time', (et-st)
     # Create fit parameters dictionary
     if success < 4:
         #stamp array has (y,x) instead of (x,y), need to switch everything

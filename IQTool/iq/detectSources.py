@@ -1,12 +1,12 @@
-import time
-import math
-import os
-from numpy import *
 from convolve import convolve2d
+import math
+from numpy import *
+import os
 import pyfits as pf
+import time
+#------------------------------------------------------------------------------ 
 from utils import paramutil
-
-
+#------------------------------------------------------------------------------ 
 def detSources( image, outfile="", verbose=False, sigma=0.0, threshold=2.5, fwhm=5.5, 
                 sharplim=[0.2,1.0], roundlim=[-1.0,1.0], window=None, exts=None, 
                 timing=False, grid=False, rejection=None, ratio=None, drawWindows=False,
@@ -164,7 +164,7 @@ def detSources( image, outfile="", verbose=False, sigma=0.0, threshold=2.5, fwhm
     if outfile != "":
         writeOutFlag = True
     
-    #fwhm = paramutil.checkParam( fwhm, type(0.0), 5.5, 0.0 )
+#    fwhm = paramutil.checkParam( fwhm, type(0.0), 5.5, 0.0 )
 #    verbose = paramutil.checkParam( verbose, bool, False )    
         
     if len(sharplim) < 2:
@@ -297,25 +297,8 @@ def detSources( image, outfile="", verbose=False, sigma=0.0, threshold=2.5, fwhm
     if exts is None:
         # May want to include astrodata here to deal with
         # all 'SCI' extensions, etc.
-        #exts = [1,2,3]
-        #exts = hdu['SCI']
         exts = 1
-    '''
-        print 'Testing AD SCI', hdu['SCI'].hdulist
-        extlist = hdu['SCI'].hdulist
-        if len(extlist) <= 1:
-            print 'adsad', hdu.hdulist[1:]
-            exts = hdu.hdulist[1:]
-            print 'adsa', exts
-        else:
-            exts = extlist[1:]
-    else:
-        extensionNums = exts[:]
-        extensionNums.sort()
-        exts = []
-        for ext in extensionNums:
-            exts.append( hdu[ext] )
-    '''
+
     
     sciData = hdu[exts].data
     
@@ -467,6 +450,8 @@ def detSources( image, outfile="", verbose=False, sigma=0.0, threshold=2.5, fwhm
                 continue
             
             around = 2 * (dx - dy) / (dx + dy)    # Roundness statistic
+            
+            # Reject if not within specified roundness boundaries.
             
             if (around < roundlim[0]) or (around > roundlim[1]):   
                 # Reject
@@ -656,6 +641,7 @@ def baseHeuristic( scidata, sigma, threshold ):
         return True
     
     return False
+
 #---------------------------------------------------------------------------
 def starCandidates(scidata, mean=None):
     """
@@ -675,6 +661,7 @@ def starCandidates(scidata, mean=None):
     else:
        stars = where(scidata > mean)
     return stars[0]
+
 #------------------------------------------------------------------------------ 
 def background(scidata):
     """mask out all pixels greater than 2.5 sigma
@@ -697,29 +684,30 @@ def background(scidata):
     #nd.display(fim, frame=4)
     return fim.std()
 
-
+#------------------------------------------------------------------------------ 
 def draw_windows( window, dispFrame=1, label=True ):
     '''
     
     
     '''
-
-    drawst = time.time()
     import pyraf
     from pyraf import iraf
     
+    drawst = time.time()
+    
     tmpFilename = 'tmpfile.tmp'
-    tmpind = 0
+    index = 0
     for win in window:
-        tmpind += 1
+        index += 1
         # The following is annoying IRAF file nonsense.
         
         tmpFile = open( tmpFilename, 'w' )
-        toWrite = '%s %s W%s\n' %(str(win[0]+(win[2]/2)),str(win[1]+(win[3]/2)), str(tmpind))
+        toWrite = '%s %s W%s\n' %(str(win[0]+(win[2]/2)),str(win[1]+(win[3]/2)), str(index))
         tmpFile.write( toWrite )
         tmpFile.close()
         
         iraf.tvmark( frame=dispFrame,coords=tmpFilename, mark='rectangle',
             pointsize=8, color=204, label=label, lengths=str(win[2])+' '+str(float(win[3])/float(win[2])) )
+    
     drawet = time.time()
     return drawet - drawst
