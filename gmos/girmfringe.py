@@ -16,10 +16,10 @@
 import pyfits as pf
 import numpy as np
 import os 
+import time
 
-from utils import gemutil, mefutil, paramutil, geminiLogger
+from utils import mefutil, paramutil, geminiLogger
 
-reload(gemutil)
 reload(mefutil)
 reload(paramutil)
 reload(geminiLogger)
@@ -55,7 +55,7 @@ def girmfringe(inimages,fringe, outimages="", outpref="", fl_statscale=False,\
     @param verbose: Verbose to screen rather than critical only
     @type verbose: Boolean    
     '''    
-    ut = gemutil.gemdate(zone="UT") 
+    ut = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
     
     # mimics the cl log using built in python logger    
     gemLog = geminiLogger.getLogger( name="girmfringe", logfile=logfile, verbose=verbose)    
