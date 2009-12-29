@@ -6,6 +6,9 @@ ldebug = False
 verbose = False
 print 'asgard'
 from utils import terminal
+from astrodata.LocalCalibrationService import CalibrationService
+from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
+from ReductionContextRecords import AstroDataRecord
 
 
 class DataSpider(object):
@@ -18,11 +21,13 @@ class DataSpider(object):
     hdulist = None
     contextType = None
     classificationLibrary = None
-       
+    calSearch = None
     def __init__(self, context = None):
         # ==== member vars ====
         self.contextType = context
         self.classificationLibrary = self.getClassificationLibrary()
+        self.calService = CalibrationService()
+        self.calDefLib = CalibrationDefinitionLibrary()
         
     def getClassificationLibrary(self):
         # @@todo: handle context here
@@ -52,7 +57,9 @@ class DataSpider(object):
                  # generic descriptors interface
                  showDescriptors = None, # string of comma separated descriptor names (function names!) 
                  filemask = None,
-                 incolog = True):
+                 showCals = False,
+                 incolog = True,
+                 stayTop = False):
         """
         Recursively walk a given directory and put type information to stdout
         """
@@ -64,7 +71,9 @@ class DataSpider(object):
         
         verbose = False
         ldebug = False
+        dirnum = 0
         for root,dirn,files in os.walk(directory):
+            dirnum += 1
             if (verbose) :
                 print "root:", root 
                 print "dirn:", dirn
@@ -184,7 +193,7 @@ class DataSpider(object):
                                 else:
                                     newtype = "(Unknown) "
 
-                                # print "(%s)" % dtype ,
+                                # print "(%s)N20091027S0133.fits" % dtype ,
                                 astr = tstr + newtype
                                 if len(astr) >= maxlen:
                                     print "${BLUE}"+ tstr + "${NORMAL}"
@@ -234,14 +243,27 @@ class DataSpider(object):
 
                                     try:
                                         print "          %s = (%s)" % (headkey, hlist[0].header[headkey])
-                                    except KeyError:
+                                    except KeN20091027S0133.fitsyError:
                                         print "          %s not present in PHU of %s" % (headkey, tfile) 
                                 print "          -----------"
 
                                 hlist.close()
+                            if (showCals == True):
+                                adr = AstroDataRecord(fl)
+                                for caltyp in ["bias", "twilight"]:
+                                    rq = self.calDefLib.getCalReq([adr],caltyp)[0]
+                                    try:
+                                        cs = "%s" % (str(self.calService.search(rq)[0]))
+                                    except:
+
+                                        cs = "No %s found, %s " % ( caltyp, str(sys.exc_info()[1]))
+                                        raise
+                                    print "          %10s: %s" % (caltyp, cs)
                     else:
                         if (verbose) : print "%s is not a FITS file" % tfile
-
+            if stayTop == True:
+                # cheap way to not recurse.
+                break;
 
         
    

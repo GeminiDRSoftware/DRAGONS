@@ -21,7 +21,7 @@ class CalibrationService( object ):
     calDirectory = None
     calList = []
     
-    def __init__( self, calDirectoryURIs=["recipedata"], mode="local_disk" ):
+    def __init__( self, calDirectoryURIs=["."], mode="local_disk" ):
         
         # calList will contain absolute paths/filenames
         self.calList = []
@@ -72,21 +72,22 @@ class CalibrationService( object ):
         inputfile = calRq.filename
         urilist = []     
         
-        #print "LCS73:", self.calList
+        # print "LCS73:", self.calList
         
         for calfile in self.calList:
-            print "CS90: Checking if '" + calfile + "' is viable."
+                
+            # print "CS90: Checking if '" + calfile + "' is viable."
             ad = AstroData( calfile )
             desc = Descriptors.getCalculator( ad )
             
             if not self.searchIdentifiers( calRq.identifiers, desc, ad ):
-                #print "FAILED IDENTIFIERS"
+                # print "FAILED IDENTIFIERS"
                 continue
             if not self.searchCriteria( calRq.criteria, desc, ad ):
-                #print "FAILED CRITERIA"
+                # print "FAILED CRITERIA"
                 continue
 
-            print "CS98: This '" + calfile + "' succeeded!"
+            # print "CS98: This '" + calfile + "' succeeded!"
             urilist.append( (calfile, desc, ad) )
             
         urilist = self.sortPriority( urilist, calRq.priorities )
@@ -140,13 +141,14 @@ class CalibrationService( object ):
         
         for prop in criteria.keys():
             compareRet = self.compareProperty( {prop:criteria[prop]}, desc, ad )
+            # print "Property:", prop,criteria[prop]
             if type( compareRet ) == bool:
                 if not compareRet:
-                    #print "FAILED ON:", compareRet
+                    # print "FAILED ON:", compareRet
                     return False
             else:
                 if abs( compareRet ) > err:
-                    #print "FAILED ON:", compareRet
+                    # print "FAILED ON:", compareRet
 
                     return False
         return True
@@ -216,8 +218,11 @@ class CalibrationService( object ):
             return abs( conRetVal - conValue )
         
         if type(compValue) == list:
-            #print "LSC227 (list):", retVal, compValue 
-            return compValue == retVal
+            # print "LSC227 (list):", retVal, compValue 
+            if compareOn.upper() == "RONORIG":
+                return compValue[0] == retVal [0]
+            else:
+                return compValue == retVal
         
         if typ.upper() == 'STRING':
             #print "LSC236 (str):", retVal.upper(), compValue.upper()
@@ -247,7 +252,7 @@ class CalibrationService( object ):
         This should convert a gemini time (in fits header) to a unix float time. 
         '''
         tempDate = date.split(".")[0]
-        print 'DATE:', tempDate
+        # print 'DATE:', tempDate
         t = datetime.strptime( tempDate, format )
         return mktime( t.timetuple() )
         

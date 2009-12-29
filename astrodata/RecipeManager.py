@@ -581,7 +581,6 @@ class ReductionContext(dict):
             else:
                 return ",".join([os.path.basename(path) for path in inputlist])
                                       
-
     def outputsAsStr(self, strippath = True):
         if self.outputs == None:
             return ""

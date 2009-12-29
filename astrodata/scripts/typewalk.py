@@ -10,7 +10,8 @@ from optparse import OptionParser
 from utils import terminal
 from utils.terminal import TerminalController
 
-        
+from astrodata.LocalCalibrationService import CalibrationService
+
 ############################################################
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as
@@ -43,62 +44,12 @@ parser.add_option("-s", "--status", dest="onlyStatus", action="store_true",
         help="Compare only to the processing status dictionary of classifications")
 parser.add_option("-y", "--typology", dest="onlyTypology", action="store_true",
         help="Compare only to the processing status dictionary of classifications")
-parser.add_option("-f", "--filemask", dest="filemask", default = None)
-
-# REVIEW THIS, -v option above is available
-if (False):# Now the descriptors, in alphabetical order
-    parser.add_option("-A", "--airmass", dest="showairmass", action="store_true",
-            help="Show airmass using appropriate descriptor")     
-    parser.add_option("-C", "--camera", dest="showcamera", action="store_true",
-            help="Show camera using appropriate descriptor")     
-    parser.add_option("-V", "--cwave", dest="showcwave", action="store_true",
-            help="Show cwave using appropriate descriptor")     
-    parser.add_option("-B", "--datasec", dest="showdatasec", action="store_true",
-            help="Show datasec using appropriate descriptor")     
-    parser.add_option("-H", "--detsec", dest="showdetsec", action="store_true",
-            help="Show detsec using appropriate descriptor")     
-    parser.add_option("-U", "--disperser", dest="showdisperser", action="store_true",
-            help="Show disperser using appropriate descriptor")     
-    parser.add_option("-E", "--exptime", dest="showexptime", action="store_true",
-            help="Show exptime using appropriate descriptor")     
-    parser.add_option("-F", "--filtername", dest="showfiltername", action="store_true",
-            help="Show filtername using appropriate descriptor")     
-    parser.add_option("-Q", "--filterid", dest="showfilterid", action="store_true",
-            help="Show filterid using appropriate descriptor")     
-    parser.add_option("-K", "--fpmask", dest="showfpmask", action="store_true",
-            help="Show fpmask using appropriate descriptor")     
-    parser.add_option("-G", "--gain", dest="showgain", action="store_true",
-            help="Show gain using appropriate descriptor")     
-    parser.add_option("-I", "--instrument", dest="showinstrument", action="store_true",
-            help="Show instrument using appropriate descriptor")     
-    parser.add_option("-M", "--mdfrow", dest="showmdfrow", action="store_true",
-            help="Show mdfrow using appropriate descriptor")     
-    parser.add_option("-L", "--nonlinear", dest="shownonlinear", action="store_true",
-            help="Show nonlinear using appropriate descriptor")     
-    parser.add_option("-Z", "--nsciext", dest="shownsciext", action="store_true",
-            help="Show nsciext using appropriate descriptor")     
-    parser.add_option("-J", "--object", dest="showobject", action="store_true",
-            help="Show object using appropriate descriptor")     
-    parser.add_option("-O", "--obsmode", dest="showobsmode", action="store_true",
-            help="Show obsmode using appropriate descriptor")     
-    parser.add_option("-P", "--pixscale", dest="showpixscale", action="store_true",
-            help="Show pixscale using appropriate descriptor")     
-    parser.add_option("-N", "--rdnoise", dest="showrdnoise", action="store_true",
-            help="Show rdnoise using appropriate descriptor")     
-    parser.add_option("-S", "--satlevel", dest="showsatlevel", action="store_true",
-            help="Show satlevel using appropriate descriptor")     
-    parser.add_option("-D", "--utdate", dest="showutdate", action="store_true",
-            help="Show utdate using appropriate descriptor")     
-    parser.add_option("-T", "--uttime", dest="showuttime", action="store_true",
-            help="Show uttime using appropriate descriptor")     
-    parser.add_option("-W", "--wdelta", dest="showwdelta", action="store_true",
-            help="Show wdelta using appropriate descriptor")     
-    parser.add_option("-R", "--wrefpix", dest="showwrefpix", action="store_true",
-            help="Show wrefpix using appropriate descriptor")     
-    parser.add_option("-X", "--xbin", dest="showxbin", action="store_true",
-            help="Load descriptor for given data type and retrieve 'xbin'.")
-    parser.add_option("-Y", "--ybin", dest="showybin", action="store_true",
-            help="Show non-linear limit using appropriate descriptor")
+parser.add_option("-f", "--filemask", dest="filemask", default = None,
+        help="Only files matching the given regular expression will be displayed")
+parser.add_option("-c", "--showcalibrations", dest="showCals", action="store_true",
+        help="When set, show any locally available calibrations")
+parser.add_option("-x", "--dontrecurse", dest="stayTop", action="store_true",
+        help="When set, don't recurse subdirs.")
 
 (options, args) = parser.parse_args()
         
@@ -127,7 +78,9 @@ else:
                     onlyTypology = options.onlyTypology,
                     # generic descriptor interface,
                     showDescriptors = options.showdescriptors,
-                    filemask = options.filemask
+                    filemask = options.filemask,
+                    showCals = options.showCals,
+                    stayTop = options.stayTop
                     )
     except KeyboardInterrupt:
         print "Interrupted by Control-C"

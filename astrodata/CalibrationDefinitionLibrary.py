@@ -136,13 +136,13 @@ class CalibrationDefinitionLibrary( object ):
         else:
             raise "Improperly formed. XML calibration has no criteria" 
         
-        print 'Locating a %s for %s.' %(str(caltype), str(ad.filename))
-        print 'Using the following criteria:'
+        #print 'Locating a %s for %s.' %(str(caltype), str(ad.filename))
+        #print 'Using the following criteria:'
         
         for child in criteria.getElementsByTagName( "property" ):
             crit = self.parseProperty( child, desc, ad )
             calReqEvent.criteria.update( crit )      
-            print self.strProperty( crit )
+            # print self.strProperty( crit )
         
         #===============================================================
         # PRIORITIES

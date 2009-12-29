@@ -143,9 +143,11 @@ class Calculator(object):
         """
         retval = None
         if hasattr( self, str(keyname).lower() ):
+            # print "C146: calling ", str(keyname).lower()
             keyfunc = getattr( self, str(keyname).lower() )
             retval = keyfunc( dataset ) 
         else:
+            # print "C148: Gathering ", str(keyname)
             for ext in dataset.getHDUList():
                 #print "KAPLAH"
                 try:
