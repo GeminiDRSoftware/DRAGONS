@@ -630,7 +630,76 @@ class GMOS_RAWDescriptorCalc(Calculator):
             return None
         
         return int(retyccdbinint)
-    
+        
+    def gainorig( self, dataset ):
+        '''
+        
+        
+        '''
+        hdulist = dataset.hdulist
+        # data is raw, not yet named:::: numsci = dataset.countExts("SCI")
+
+        # initializations that should happen outside the loop
+        ampinteg = dataset.phuHeader("AMPINTEG")
+        datestr = dataset.phuHeader("DATE-OBS")
+        obsdate = datetime(*strptime(datestr, "%Y-%m-%d")[0:6])
+        oldampdate = datetime(2006,8,31,0,0)
+
+        retary = []  
+        for ext in dataset:
+            # get the values
+            #gain = ext.header["GAINORIG"]
+            if ext.header.has_key( 'GAINORIG' ):
+                gain = ext.header["GAINORIG"]
+            else:
+                gain = ext.header["GAIN"]
+            ampname = ext.header[stdkeyDictGMOS["key_gmos_ampname"]]
+            # gmode
+            if (gain > 3.0):
+                gmode = "high"
+            else:
+                gmode = "low"
+
+            # rmode
+            if (ampinteg == None):
+                rmode = "slow"
+            else:
+                if (ampinteg == 1000):
+                    rmode = "fast"
+                else:
+                    rmode = "slow"
+
+            gainkey = (rmode, gmode, ampname)
+            
+            try:
+                if (obsdate > oldampdate):
+                    gain = self.gmosampsGain[gainkey]
+                else:
+                    gain = self.gmosampsGainBefore20060831[gainkey]
+            except KeyError:
+                gain = None   
+            retary.append(gain)       
+ 
+        dataset.relhdul()
+
+        return retary
+        
+    def ronorig( self, dataset ):
+        '''
+        
+        '''
+        # Epic klugin' right here.
+        # print "GRD 692: called ronorig"
+        temp = []
+        try:
+            for ext in dataset:
+                temp.append(ext.header["RONORIG"])
+        except:
+            temp = self.fetchValue("RDNOISE", dataset)
+            
+        #print "GRD700:", repr(temp)
+        return temp
+            
     def display(self, dataset):
         from pyraf import iraf
         from pyraf.iraf import gemini
@@ -638,3 +707,4 @@ class GMOS_RAWDescriptorCalc(Calculator):
         gemini.gmos()
         iraf.set( stdimage='imtgmos' )
         return gemini.gmos.gdisplay
+
