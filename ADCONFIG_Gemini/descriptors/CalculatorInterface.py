@@ -122,6 +122,14 @@ class CalculatorInterface:
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
         return self.descriptorCalculator.obsmode(self)
+    
+    def obsepoch(self):
+        self._lazyloadCalculator()
+        descriptorname = sys._getframe().f_code.co_name
+        if not hasattr( self.descriptorCalculator, descriptorname):
+            return "Base Calculator Class does not have %s function" % descriptorname
+        return self.descriptorCalculator.obsepoch(self)
+    
 
     def pixscale(self):
         self._lazyloadCalculator()
