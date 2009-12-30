@@ -219,6 +219,9 @@ class FilteredStdout(object):
     term = None
     realstdout = None
     filters = None
+    lastFendline = os.linesep
+    writingForIraf = False
+    lastWriteForIraf = False
     
     def __init__(self, rso = None):
         # grab standard out
@@ -243,9 +246,14 @@ class FilteredStdout(object):
         self.realstdout.write(out)
         
     def write(self, out):
+        irafDone = False # will be set if this is firt NON-iraf line in while
+        propNewline = True # propagate newline
+        linestart = (self.lastFendline == os.linesep)
+    
         # termlog here because writing debug output to the screen when
         # debugging terminal output filters is psychotic (been there)
         # set to None to disable.
+
         termlog = open("termlog", "a")
         if termlog:
             termlog.write("\n"+"*"*40 + "\n")
@@ -254,6 +262,11 @@ class FilteredStdout(object):
                 termlog.write(repr(fr)+"\n")
             termlog.write("out: " +  repr(out) + "\n")
             
+            
+        # print newline after IRAF because of IRAFy reasons
+        if self.writingForIraf == False and self.lastWriteForIraf == True:
+            self.realstdout.write(self.term.render("${BLUE}${BOLD}(IRAF done)${NORMAL}\n"))
+            irafDone = True
         out0 = out
         cleanout0 = self.term.cleanstr(out0)
         lencleanout0 = len(cleanout0)
@@ -266,7 +279,7 @@ class FilteredStdout(object):
                     prefix = topf.pretag+topf.prefix+topf.posttag
                     prefix =  self.term.render(prefix)
                     
-        prefix = self.term.render("${REVERSE}HELLO: ${NORMAL}")
+        prefix = self.term.render("${NORMAL}${REVERSE}HELLO: ${NORMAL}")
         for f in self.filters:
             if termlog:
                 termlog.write("\nfilter:"+ str(type(f)))
@@ -283,6 +296,13 @@ class FilteredStdout(object):
         
         # :: special handling due to print ::
         
+
+        # note: this could be optimized away
+        # it's used to figure out the start of a line
+        # and mimik print's "," behavior
+            
+        lines0 = out0.split(os.linesep)
+
         # : print sends the string, then a newline :
         if out == endline:
             # don't split lone newlines (don't want to anyway)
@@ -290,6 +310,7 @@ class FilteredStdout(object):
             # leads to two newlines... setting the output to one line of ""
             # with fendline above being os.linesep leads to one \n as needed
             lines = [""]
+            lines0 = [os.linesep]
         elif out == " ":            
             # : print sends a space when you end with a comma, sometimes :
             # print sends a space when you finish with a comma unless it thinks
@@ -301,33 +322,62 @@ class FilteredStdout(object):
             # the comma... and in our case, we would like these to rather always be nil
             # than sometimes nil.  So for now I'm marking them so they are obvious...
             # before nilling them
-            lines = [self.term.render("${REVERSE}X${NORMAL}")]
+            if self.lastFendline == os.linesep:
+                # debug, make red X: lines = [self.term.render("${RED}${REVERSE}X${NORMAL}")]
+                lines = [""]
+            else:
+                # debug, make capital X lines = [self.term.render("${REVERSE}X${NORMAL}")]
+                lines = [' ']
+                # this setting of line0 propagates the linestart logic, so a second or
+                # further comma still is "at the start of the line" and doesn't print
+                # space
+                propNewline = True
         else:
             
             lines = out.split("\n")
-            
+
+                            
             
         if (termlog):
             termlog.write("""
 --------------------
     out0: %s
    lines: %s 
+  lines0: %s
  endline: %s
 fendline: %s
+ last.fl: %s
     tail: %s
  clntail: %s
+  ll.len: %s
+   4Iraf: %s
+  l4Iraf: %s
+linestrt: %s
 --------------------""" % ( repr(out0),
                             repr(lines), 
+                            repr(lines0),
                             repr(endline), 
                             repr(fendline), 
+                            repr(self.lastFendline),
                             repr(out),
-                            repr(cleanout0)
+                            repr(cleanout0),
+                            repr(self.term.lenstr(lines0[-1])),
+                            repr(self.writingForIraf),
+                            repr(self.lastWriteForIraf),
+                            repr(linestart)
                             ))
+                            
+        # print the line, add the prefix after newlines
         i = 0
         lastline = len(lines)-1
         for line in lines:
             # fout = re.sub("\n", "\n"+prefix, out)
             fout = re.sub("\n", "\n"+prefix, line)
+            if linestart:
+                if termlog:
+                    termlog.write("\nwrote prefix: "+repr(prefix))
+                self.realstdout.write(prefix)
+                
             self.realstdout.write(fout)
             if termlog:
                 termlog.write("\nwrote: " + repr(fout))
@@ -337,12 +387,30 @@ fendline: %s
                     termlog.write("\nwrote endline: "+ repr(endline))
             i += 1
         self.realstdout.write(fendline)
+        
+        # change self.lastFendling, but...
+        # don't change self.lastFendline if only output whitespace
+        # or terminal strings. This is to know when there is a newline
+        # and supress spaces due to ","s from prints which are at the
+        # start of a line, while printing the " " otherwise
+        # that is... to accomodate print behavior when print doesn't know
+        # anymore where the begining of the line is, because we are printing
+        # terminfo characters that are not whitespace.
+        
+        if self.term.lenstr(lines0[-1]) != 0:
+            self.lastFendline = fendline
+            
+        if irafDone or propNewline:
+            self.lastFendline = os.linesep
+    
         if termlog:
             termlog.write("\nwrote fendline: " + repr(fendline) )
         
         self.realstdout.flush()
         if termlog:
             termlog.write("\n"+"*"*40 + "\n")
+        
+        self.lastWriteForIraf = self.writingForIraf
         
     def flush(self):
         self.realstdout.flush()
@@ -400,8 +468,12 @@ class IrafStdout():
     def write(self, out):
         out = self.ifilter.morph(out) 
         pout = re.sub("\n", "\n${REVERSE}IRAF${NORMAL}: ", out)
-        
+        if hasattr(self.fout, "writingForIraf"):
+            self.fout.writingForIraf = True
         self.fout.write(pout)
+        if hasattr(self.fout, "writingForIraf"):
+            self.fout.writingForIraf = False
+    
     def flush(self):
         self.fout.flush()
         
