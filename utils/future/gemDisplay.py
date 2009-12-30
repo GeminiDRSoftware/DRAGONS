@@ -102,7 +102,8 @@ class DisplayService(object):
         if self.ds9.pyds9_sup:
             self.ds9.set( 'regions delete all' )
         
-        displayfunc( ad.filename, frame=framenumber, fl_imexam=False)
+        displayfunc( ad.filename, frame=framenumber, fl_imexam=False,
+                     Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr())
 #------------------------------------------------------------------------------ 
     def markText(self, xcoord, ycoord, text='', ad=None, fid=None):
         '''
