@@ -2,6 +2,8 @@ import os
 import sys, re
 import textwrap
 
+import unicodedata, re
+
 os.environ["TERM"] = "xtermc"
 
 class TerminalController:
@@ -89,6 +91,7 @@ class TerminalController:
         output; if this stream is not a tty, then the terminal is
         assumed to be a dumb terminal (i.e., have no capabilities).
         """
+        self.setupStripping()
         # Curses isn't available on all platforms
         try: import curses
         except: return
@@ -128,6 +131,14 @@ class TerminalController:
             for i,color in zip(range(len(self._ANSICOLORS)), self._ANSICOLORS):
                 setattr(self, 'BG_'+color, curses.tparm(set_bg_ansi, i) or '')
 
+    def setupStripping(self):
+        all_chars = (unichr(i) for i in xrange(0x10000))
+        control_chars = ''.join(c for c in all_chars if unicodedata.category(c) == 'Cc')
+        # or equivalently and much more efficiently
+        control_chars = ''.join(map(unichr, range(0,32) + range(127,160)))
+
+        self.control_char_re = re.compile('[%s]' % re.escape(control_chars))
+
     def _tigetstr(self, cap_name):
         # String capabilities can include "delays" of the form "$<2>".
         # For any modern terminal, we should be able to just ignore
@@ -139,6 +150,11 @@ class TerminalController:
     def renderLen(self, template):
         a = re.sub(r'\$\$|\${\w+}', "", template)
         return len (a)
+        
+
+    def printablestr(self, s):
+        return self.control_char_re.sub('', s)
+
         
     def render(self, template):
         """
@@ -177,7 +193,8 @@ class ProgressBar:
     """
     A 3-line progress bar, which looks like::
     
-                                Header
+                         
+       Header
         20% [===========----------------------------------]
                            progress message
 
@@ -222,6 +239,9 @@ class FilteredStdout(object):
     lastFendline = os.linesep
     writingForIraf = False
     lastWriteForIraf = False
+    _linestart = True # generally true we start on a new line
+    _curline = 0
+    lastPrefixLine = None
     
     def __init__(self, rso = None):
         # grab standard out
@@ -231,6 +251,18 @@ class FilteredStdout(object):
             self.realstdout = sys.stdout
         self.filters = []
         self.term = TerminalController()
+        
+    def getLinestart(self):
+        return self._linestart
+        
+    def setLinestart(self, to):
+        if to == True:
+            if self._linestart == False:
+                self._curline += 1
+        
+        self._linestart = to
+        
+    linestart = property(getLinestart, setLinestart)
         
     def addFilter(self, nf):
         nf.term = self.term
@@ -248,7 +280,7 @@ class FilteredStdout(object):
     def write(self, out):
         irafDone = False # will be set if this is firt NON-iraf line in while
         propNewline = True # propagate newline
-        linestart = (self.lastFendline == os.linesep)
+        propLinestart = False
     
         # termlog here because writing debug output to the screen when
         # debugging terminal output filters is psychotic (been there)
@@ -258,10 +290,11 @@ class FilteredStdout(object):
         if termlog:
             termlog.write("\n"+"*"*40 + "\n")
             st = tb.extract_stack()
+            termlog.write("STACK\n")
             for fr in st:
-                termlog.write(repr(fr)+"\n")
-            termlog.write("out: " +  repr(out) + "\n")
-            
+                if fr != st[-1]:
+                    termlog.write("\t"+repr(fr)+"\n")
+                        
             
         # print newline after IRAF because of IRAFy reasons
         if self.writingForIraf == False and self.lastWriteForIraf == True:
@@ -280,17 +313,26 @@ class FilteredStdout(object):
                     prefix =  self.term.render(prefix)
                     
         prefix = self.term.render("${NORMAL}${REVERSE}HELLO: ${NORMAL}")
+        
+        # !!!!!!!!!!!!!!!!!!!!!!!!
+        #
+        # APPLY FILTERS
+        #
+        # !!!!!!!!!!!!!!!!!!!!!!!!
+        
         for f in self.filters:
             if termlog:
                 termlog.write("\nfilter:"+ str(type(f)))
             f.clear()
             out = f.morph(out)
+            
         prefixlen = self.term.lenstr(prefix)
         bodylen = getTerminalSize()[0] - prefixlen
         
         if lencleanout0 > 0 and cleanout0[-1] == "\n":
             fendline = os.linesep
         else:
+
             fendline = ""
         endline = os.linesep
         
@@ -311,6 +353,7 @@ class FilteredStdout(object):
             # with fendline above being os.linesep leads to one \n as needed
             lines = [""]
             lines0 = [os.linesep]
+            propLinestart = True
         elif out == " ":            
             # : print sends a space when you end with a comma, sometimes :
             # print sends a space when you finish with a comma unless it thinks
@@ -322,16 +365,18 @@ class FilteredStdout(object):
             # the comma... and in our case, we would like these to rather always be nil
             # than sometimes nil.  So for now I'm marking them so they are obvious...
             # before nilling them
-            if self.lastFendline == os.linesep:
-                # debug, make red X: lines = [self.term.render("${RED}${REVERSE}X${NORMAL}")]
-                lines = [""]
+            if self.linestart:
+                lines = [self.term.render("${RED}${REVERSE}X${NORMAL}")]
+                #lines = [""]
+                propLinestart = True
             else:
-                # debug, make capital X lines = [self.term.render("${REVERSE}X${NORMAL}")]
-                lines = [' ']
+                lines = [self.term.render("${REVERSE}X${NORMAL}")]
+                #lines = [' ']
                 # this setting of line0 propagates the linestart logic, so a second or
                 # further comma still is "at the start of the line" and doesn't print
                 # space
                 propNewline = True
+                
         else:
             
             lines = out.split("\n")
@@ -340,31 +385,32 @@ class FilteredStdout(object):
             
         if (termlog):
             termlog.write("""
---------------------
-    out0: %s
-   lines: %s 
-  lines0: %s
- endline: %s
-fendline: %s
- last.fl: %s
-    tail: %s
- clntail: %s
-  ll.len: %s
-   4Iraf: %s
-  l4Iraf: %s
-linestrt: %s
---------------------""" % ( repr(out0),
+------------------------------------------
+                 out0: %s
+                  out: %s
+                lines: %s
+               lines0: %s
+              endline: %s
+             fendline: %s
+    self.lastFendline: %s
+            cleanout0: %s
+        last line len: %s
+  self.writingForIraf: %s
+self.lastWriteForIraf: %s
+       self.linestart: %s
+------------------------------------------""" % (
+                            repr(out0),
+                            repr(out),
                             repr(lines), 
                             repr(lines0),
                             repr(endline), 
                             repr(fendline), 
                             repr(self.lastFendline),
-                            repr(out),
                             repr(cleanout0),
                             repr(self.term.lenstr(lines0[-1])),
                             repr(self.writingForIraf),
                             repr(self.lastWriteForIraf),
-                            repr(linestart)
+                            repr(self.linestart)
                             ))
                             
         # print the line, add the prefix after newlines
@@ -373,16 +419,23 @@ linestrt: %s
         for line in lines:
             # fout = re.sub("\n", "\n"+prefix, out)
             fout = re.sub("\n", "\n"+prefix, line)
-            if linestart:
+            if self.linestart:
                 if termlog:
                     termlog.write("\nwrote prefix: "+repr(prefix))
                 self.realstdout.write(prefix)
+            else:
+                if termlog:
+                    termlog.write("\ndidn't write prefix, linestart False")
                 
             self.realstdout.write(fout)
+            # newline logic (review lastFendline stuff)
+
+            
             if termlog:
                 termlog.write("\nwrote: " + repr(fout))
             if i < lastline:
                 self.realstdout.write(endline)
+                self.linestart = True
                 if termlog:
                     termlog.write("\nwrote endline: "+ repr(endline))
             i += 1
@@ -397,9 +450,22 @@ linestrt: %s
         # anymore where the begining of the line is, because we are printing
         # terminfo characters that are not whitespace.
         
-        if self.term.lenstr(lines0[-1]) != 0:
+        cl = self.term.lenstr(lines0[-1])
+        if cl != 0:
             self.lastFendline = fendline
             
+        # newline logic (review lastFendline stuff)
+        if cl != 0 : #and not propLinestart:
+            if self.term.cleanstr(lines0[-1]) == os.linesep:
+                self.linestart = True
+            else:
+                self.linestart = False
+        if False:
+            if cl == 0 or propLinestart == True:
+                self.linestart = True 
+            else:
+                self.linestart = False
+        ######################################
         if irafDone or propNewline:
             self.lastFendline = os.linesep
     
@@ -426,6 +492,12 @@ class Filter(object):
         return arg 
     def clear(self):
         self.prefix = None
+        
+    def addPrefix(self, out):
+        if self.prefix:
+            return self.pretag+self.prefix+self.posttag + out
+        else:
+            return out    
 
 class ColorFilter(Filter):
     

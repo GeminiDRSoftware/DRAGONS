@@ -260,8 +260,8 @@ for infile in infiles: #for dealing with multiple files.
     tl = len(title)
     tb = " " * tl
     print "${REVERSE}" + tb
-    print title
-    print tb + "${NORMAL}",
+    print "${REVERSE}" + title
+    print "${REVERSE}" + tb + "${NORMAL}",
     
     if options.recipename == None:
         print "\nRecipe(s) found by dataset type:"
