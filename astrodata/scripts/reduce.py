@@ -370,8 +370,8 @@ for infile in infiles: #for dealing with multiple files.
                             #                                                   str(os.path.dirname(calname)) )
                             msg += '${BLUE}%s%s${RED}%s${NORMAL}' %( os.path.dirname(calname), os.path.sep, os.path.basename(calname))
                                                             
-                            print msg
-                            print '-'*30
+                            #print msg
+                            #print '-'*30
                                                  
                         elif rqTyp == UpdateStackableRequest:
                             coi.stackAppend(rq.stkID, rq.stkList)
@@ -383,11 +383,9 @@ for infile in infiles: #for dealing with multiple files.
                             # cache.
                             #print "RD172: GET STACKABLE REQS:", rq
                         elif rqTyp == DisplayRequest:
-                            '''
                             from pyraf.iraf import gemini
                             gemini()
                             gemini.gmos()
-                            '''
                             if ds.ds9 is None:
                                 ds.setupDS9()
                             
@@ -405,10 +403,10 @@ for infile in infiles: #for dealing with multiple files.
                                     # tmpImage should be a string at this point.
                                     #print "RED332:", type(tmpImage), tmpImage
                                     try:
-#                                        gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
-#                                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
-                                        ds.display( tmpImage )
-                                        print ds.ds9.frames()
+                                        gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
+                                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+#                                        ds.display( tmpImage )
+#                                        print ds.ds9.frames()
                                         frameForDisplay += 1    
                                     except:
                                         print "CANNOT DISPLAY"

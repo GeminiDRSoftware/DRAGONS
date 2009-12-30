@@ -4,7 +4,6 @@ import re
 from AstroData import *
 ldebug = False
 verbose = False
-print 'asgard'
 from utils import terminal
 from astrodata.LocalCalibrationService import CalibrationService
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests

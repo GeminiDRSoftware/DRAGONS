@@ -1,5 +1,6 @@
 import os
 import sys, re
+import textwrap
 
 os.environ["TERM"] = "xtermc"
 
@@ -148,6 +149,15 @@ class TerminalController:
         if template == None:
             raise "it's none"
         return re.sub(r'\$\$|\${\w+}', self._render_sub, template)
+        
+    def lenstr(self, coloredstr):
+        clean = self.cleanstr(coloredstr)
+        l = len (clean)
+        return l
+        
+    def cleanstr(self, coloredstr):
+        clean = re.sub(r'\$\$|\${\w+}', "", coloredstr)
+        return clean
 
     def _render_sub(self, match):
         s = match.group()
@@ -233,8 +243,21 @@ class FilteredStdout(object):
         self.realstdout.write(out)
         
     def write(self, out):
+        # termlog here because writing debug output to the screen when
+        # debugging terminal output filters is psychotic (been there)
+        # set to None to disable.
+        termlog = open("termlog", "a")
+        if termlog:
+            termlog.write("\n"+"*"*40 + "\n")
+            st = tb.extract_stack()
+            for fr in st:
+                termlog.write(repr(fr)+"\n")
+            termlog.write("out: " +  repr(out) + "\n")
+            
+        out0 = out
+        cleanout0 = self.term.cleanstr(out0)
+        lencleanout0 = len(cleanout0)
         prefix = ""
-        if False: self.realstdout.write(repr(out)+"\n")
         if out == None:
             return
         if len(self.filters)>0:
@@ -242,16 +265,88 @@ class FilteredStdout(object):
             if topf.prefix:
                     prefix = topf.pretag+topf.prefix+topf.posttag
                     prefix =  self.term.render(prefix)
+                    
+        prefix = self.term.render("${REVERSE}HELLO: ${NORMAL}")
         for f in self.filters:
+            if termlog:
+                termlog.write("\nfilter:"+ str(type(f)))
             f.clear()
             out = f.morph(out)
-        fout = re.sub("\n", "\n"+prefix, out)
-        endline = ""
-        self.realstdout.write(fout+endline)
+        prefixlen = self.term.lenstr(prefix)
+        bodylen = getTerminalSize()[0] - prefixlen
+        
+        if lencleanout0 > 0 and cleanout0[-1] == "\n":
+            fendline = os.linesep
+        else:
+            fendline = ""
+        endline = os.linesep
+        
+        # :: special handling due to print ::
+        
+        # : print sends the string, then a newline :
+        if out == endline:
+            # don't split lone newlines (don't want to anyway)
+            # because the calculation of the final endline seperator
+            # leads to two newlines... setting the output to one line of ""
+            # with fendline above being os.linesep leads to one \n as needed
+            lines = [""]
+        elif out == " ":            
+            # : print sends a space when you end with a comma, sometimes :
+            # print sends a space when you finish with a comma unless it thinks
+            # it's the begining of a line.  We print with comma's at the beginning of
+            # the line frequently, but only for color information... but sending the
+            # terminfo strings means, to print, it's not the beginning of the line any
+            # more. We face the same problem determining that ourselves... however
+            # it is not often one prints just a single space... so it is generally from 
+            # the comma... and in our case, we would like these to rather always be nil
+            # than sometimes nil.  So for now I'm marking them so they are obvious...
+            # before nilling them
+            lines = [self.term.render("${REVERSE}X${NORMAL}")]
+        else:
+            
+            lines = out.split("\n")
+            
+            
+        if (termlog):
+            termlog.write("""
+--------------------
+    out0: %s
+   lines: %s 
+ endline: %s
+fendline: %s
+    tail: %s
+ clntail: %s
+--------------------""" % ( repr(out0),
+                            repr(lines), 
+                            repr(endline), 
+                            repr(fendline), 
+                            repr(out),
+                            repr(cleanout0)
+                            ))
+        i = 0
+        lastline = len(lines)-1
+        for line in lines:
+            # fout = re.sub("\n", "\n"+prefix, out)
+            fout = re.sub("\n", "\n"+prefix, line)
+            self.realstdout.write(fout)
+            if termlog:
+                termlog.write("\nwrote: " + repr(fout))
+            if i < lastline:
+                self.realstdout.write(endline)
+                if termlog:
+                    termlog.write("\nwrote endline: "+ repr(endline))
+            i += 1
+        self.realstdout.write(fendline)
+        if termlog:
+            termlog.write("\nwrote fendline: " + repr(fendline) )
+        
         self.realstdout.flush()
+        if termlog:
+            termlog.write("\n"+"*"*40 + "\n")
         
     def flush(self):
         self.realstdout.flush()
+
 class Filter(object):
     pretag  = "${BOLD}"
     posttag = "${NORMAL}"
@@ -263,57 +358,7 @@ class Filter(object):
         return arg 
     def clear(self):
         self.prefix = None
-        
-if False:        
-    def write(self, out, prefix = None):
-        if out == None:
-            #@@TODO: why could this happen?
-            return
-        # if this is the last filter, then there is no prevfilter
-        if self.prevfilter == None:
-            if prefix == None:
-                if self.prefix:
-                    prefix = self.prefix
 
-                else:
-                    prefix = "-=-:"
-            lines = out.split("\n")
-            # arg = out
-            first =  True
-            shortlines = []
-            for line in lines:
-                wid, height = getTerminalSize()
-                wid -= len(prefix)
-                if len(line) > wid:
-                    for i in range(0,len(line), wid):
-                        end = i+wid
-                        if end > len(line):
-                            end = len(line)
-                        shortlines.append(line[i:i+wid])
-                else:
-                    shortlines.append(line)
-
-            for arg in shortlines:
-                if False: #len(arg)>0:
-                    if arg[-1] == "\n":
-                        arg = arg[:-1]
-                if len(arg)>0:
-                    if self.term == None:
-                        raise repr(self)
-                    if self.term.renderLen(arg) ==0:
-                        lineend = ""
-                    else:
-                        lineend = "\n"
-
-                    farg = prefix + arg + ""
-                    farg = self.morph(farg)
-                    self.realstdout.write(farg+lineend)
-        else:
-            out = self.morph(out)
-            if self.prefix:
-                prefix = self.prefix
-            self.prevfilter.write(self.morph(out), prefix = prefix)        
-                    
 class ColorFilter(Filter):
     
     def morph(self, arg):
@@ -353,8 +398,10 @@ class IrafStdout():
         self.ifilter = IrafFilter()
         
     def write(self, out):
-        out = "IRAF: "+ self.ifilter.morph(out) + os.linesep
-        self.fout.write(out)
+        out = self.ifilter.morph(out) 
+        pout = re.sub("\n", "\n${REVERSE}IRAF${NORMAL}: ", out)
+        
+        self.fout.write(pout)
     def flush(self):
         self.fout.flush()
         
