@@ -240,7 +240,7 @@ class FilteredStdout(object):
     writingForIraf = False
     lastWriteForIraf = False
     _linestart = True # generally true we start on a new line
-    _curline = 0
+    curline = 0
     lastPrefixLine = None
     
     def __init__(self, rso = None):
@@ -258,7 +258,7 @@ class FilteredStdout(object):
     def setLinestart(self, to):
         if to == True:
             if self._linestart == False:
-                self._curline += 1
+                self.curline += 1
         
         self._linestart = to
         
@@ -312,7 +312,8 @@ class FilteredStdout(object):
                     prefix = topf.pretag+topf.prefix+topf.posttag
                     prefix =  self.term.render(prefix)
                     
-        prefix = self.term.render("${NORMAL}${REVERSE}HELLO: ${NORMAL}")
+        # PREFIX OVERRIDE prefix = self.term.render("${NORMAL}${REVERSE}HELLO: ${NORMAL}")
+        prefix = ""
         
         # !!!!!!!!!!!!!!!!!!!!!!!!
         #
@@ -331,6 +332,7 @@ class FilteredStdout(object):
         
         if lencleanout0 > 0 and cleanout0[-1] == "\n":
             fendline = os.linesep
+            
         else:
 
             fendline = ""
@@ -353,6 +355,7 @@ class FilteredStdout(object):
             # with fendline above being os.linesep leads to one \n as needed
             lines = [""]
             lines0 = [os.linesep]
+            self.curline += 1
             propLinestart = True
         elif out == " ":            
             # : print sends a space when you end with a comma, sometimes :
@@ -366,12 +369,12 @@ class FilteredStdout(object):
             # than sometimes nil.  So for now I'm marking them so they are obvious...
             # before nilling them
             if self.linestart:
-                lines = [self.term.render("${RED}${REVERSE}X${NORMAL}")]
-                #lines = [""]
+                #lines = [self.term.render("${RED}${REVERSE}X${NORMAL}")]
+                lines = [""]
                 propLinestart = True
             else:
-                lines = [self.term.render("${REVERSE}X${NORMAL}")]
-                #lines = [' ']
+                #lines = [self.term.render("${REVERSE}X${NORMAL}")]
+                lines = [' ']
                 # this setting of line0 propagates the linestart logic, so a second or
                 # further comma still is "at the start of the line" and doesn't print
                 # space
@@ -381,11 +384,14 @@ class FilteredStdout(object):
             
             lines = out.split("\n")
 
-                            
-            
+        if lines0[-1] == "":
+            del(lines[-1])
+            del(lines0[-1])
+        
         if (termlog):
             termlog.write("""
 ------------------------------------------
+         self.curline: %s
                  out0: %s
                   out: %s
                 lines: %s
@@ -399,6 +405,7 @@ class FilteredStdout(object):
 self.lastWriteForIraf: %s
        self.linestart: %s
 ------------------------------------------""" % (
+                            repr(self.curline),
                             repr(out0),
                             repr(out),
                             repr(lines), 
@@ -420,26 +427,37 @@ self.lastWriteForIraf: %s
             # fout = re.sub("\n", "\n"+prefix, out)
             fout = re.sub("\n", "\n"+prefix, line)
             if self.linestart:
+                
                 if termlog:
                     termlog.write("\nwrote prefix: "+repr(prefix))
-                self.realstdout.write(prefix)
+                if self.curline != self.lastPrefixLine:
+                    self.realstdout.write(prefix)
+                    self.lastPrefixLine = self.curline
             else:
                 if termlog:
                     termlog.write("\ndidn't write prefix, linestart False")
                 
             self.realstdout.write(fout)
-            # newline logic (review lastFendline stuff)
-
-            
             if termlog:
                 termlog.write("\nwrote: " + repr(fout))
+            
+            
             if i < lastline:
                 self.realstdout.write(endline)
+                self.curline += 1
                 self.linestart = True
                 if termlog:
                     termlog.write("\nwrote endline: "+ repr(endline))
             i += 1
-        self.realstdout.write(fendline)
+        
+        cl = self.term.lenstr(lines0[-1])
+        
+        if True:
+            self.realstdout.write(fendline)
+        
+        if termlog:
+            termlog.write("\nwrote fendline: " + repr(fendline) )
+        
         
         # change self.lastFendling, but...
         # don't change self.lastFendline if only output whitespace
@@ -453,6 +471,7 @@ self.lastWriteForIraf: %s
         cl = self.term.lenstr(lines0[-1])
         if cl != 0:
             self.lastFendline = fendline
+        
             
         # newline logic (review lastFendline stuff)
         if cl != 0 : #and not propLinestart:
@@ -469,8 +488,6 @@ self.lastWriteForIraf: %s
         if irafDone or propNewline:
             self.lastFendline = os.linesep
     
-        if termlog:
-            termlog.write("\nwrote fendline: " + repr(fendline) )
         
         self.realstdout.flush()
         if termlog:
