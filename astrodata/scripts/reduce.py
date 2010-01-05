@@ -225,8 +225,8 @@ ds = gemDisplay.getDisplayService()
 frameForDisplay = 1 
 i = 1
 numFiles = len(infiles)
-for infile in infiles: #for dealing with multiple files.   
-    print "${BOLD} Starting File #%d, %s" %(i, str(infile))
+for infile in infiles: #for dealing with multiple files.
+    print "${BOLD}Starting File #%d, %s" % (i, infile[0].filename)
     currentImageNum = i
     i += 1
     # get RecipeLibrary

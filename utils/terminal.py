@@ -240,6 +240,7 @@ class FilteredStdout(object):
     writingForIraf = False
     lastWriteForIraf = False
     _linestart = True # generally true we start on a new line
+    _needprefix = True
     curline = 0
     lastPrefixLine = None
     
@@ -263,6 +264,14 @@ class FilteredStdout(object):
         self._linestart = to
         
     linestart = property(getLinestart, setLinestart)
+
+    def getNeedprefix(self):
+        return self._needprefix
+        
+    def setNeedprefix(self, to):
+        self._needprefix = to
+        
+    needprefix = property(getNeedprefix, setNeedprefix)
         
     def addFilter(self, nf):
         nf.term = self.term
@@ -278,14 +287,8 @@ class FilteredStdout(object):
         self.realstdout.write(out)
         
     def write(self, out):
-        irafDone = False # will be set if this is firt NON-iraf line in while
-        propNewline = True # propagate newline
-        propLinestart = False
-    
-        # termlog here because writing debug output to the screen when
-        # debugging terminal output filters is psychotic (been there)
-        # set to None to disable.
-
+        # make termlog none to turn off debugging log
+        
         termlog = open("termlog", "a")
         if termlog:
             termlog.write("\n"+"*"*40 + "\n")
@@ -294,213 +297,146 @@ class FilteredStdout(object):
             for fr in st:
                 if fr != st[-1]:
                     termlog.write("\t"+repr(fr)+"\n")
-                        
             
-        # print newline after IRAF because of IRAFy reasons
-        if self.writingForIraf == False and self.lastWriteForIraf == True:
-            self.realstdout.write(self.term.render("${BLUE}${BOLD}(IRAF done)${NORMAL}\n"))
-            irafDone = True
+        #IRAF handling
+        if self.lastWriteForIraf == True and self.writingForIraf == False:
+            # nasty recursive call if you don't change the lastWriteForIraf flag
+            self.lastWriteForIraf = False
+            self.write("\n")
+        elif self.lastWriteForIraf == False and self.writingForIraf == True:
+            # starting to write
+            self.lastWriteForIraf = True
+            self.needprefix = True
+            self.write("\n")
+        
+        # create data structures
         out0 = out
-        cleanout0 = self.term.cleanstr(out0)
-        lencleanout0 = len(cleanout0)
-        prefix = ""
-        if out == None:
-            return
-        if len(self.filters)>0:
-            topf =self.filters[0]
-            if topf.prefix:
-                    prefix = topf.pretag+topf.prefix+topf.posttag
-                    prefix =  self.term.render(prefix)
-                    
-        # PREFIX OVERRIDE prefix = self.term.render("${NORMAL}${REVERSE}HELLO: ${NORMAL}")
-        prefix = ""
-        
-        # !!!!!!!!!!!!!!!!!!!!!!!!
-        #
-        # APPLY FILTERS
-        #
-        # !!!!!!!!!!!!!!!!!!!!!!!!
-        
-        for f in self.filters:
-            if termlog:
-                termlog.write("\nfilter:"+ str(type(f)))
-            f.clear()
-            out = f.morph(out)
-            
-        prefixlen = self.term.lenstr(prefix)
-        bodylen = getTerminalSize()[0] - prefixlen
-        
-        if lencleanout0 > 0 and cleanout0[-1] == "\n":
-            fendline = os.linesep
-            
-        else:
-
-            fendline = ""
-        endline = os.linesep
-        
-        # :: special handling due to print ::
-        
-
-        # note: this could be optimized away
-        # it's used to figure out the start of a line
-        # and mimik print's "," behavior
-            
+        cleanout = self.term.cleanstr(out)
+        lines = out.split(os.linesep)
+        cleanlines = cleanout.split(os.linesep)
         lines0 = out0.split(os.linesep)
-
-        # : print sends the string, then a newline :
-        if out == endline:
-            # don't split lone newlines (don't want to anyway)
-            # because the calculation of the final endline seperator
-            # leads to two newlines... setting the output to one line of ""
-            # with fendline above being os.linesep leads to one \n as needed
-            lines = [""]
-            lines0 = [os.linesep]
-            self.curline += 1
-            propLinestart = True
-        elif out == " ":            
-            # : print sends a space when you end with a comma, sometimes :
-            # print sends a space when you finish with a comma unless it thinks
-            # it's the begining of a line.  We print with comma's at the beginning of
-            # the line frequently, but only for color information... but sending the
-            # terminfo strings means, to print, it's not the beginning of the line any
-            # more. We face the same problem determining that ourselves... however
-            # it is not often one prints just a single space... so it is generally from 
-            # the comma... and in our case, we would like these to rather always be nil
-            # than sometimes nil.  So for now I'm marking them so they are obvious...
-            # before nilling them
-            if self.linestart:
-                #lines = [self.term.render("${RED}${REVERSE}X${NORMAL}")]
-                lines = [""]
-                propLinestart = True
-            else:
-                #lines = [self.term.render("${REVERSE}X${NORMAL}")]
-                lines = [' ']
-                # this setting of line0 propagates the linestart logic, so a second or
-                # further comma still is "at the start of the line" and doesn't print
-                # space
-                propNewline = True
-                
+        
+        lineslen = len(lines)
+        # filter lines
+        for i in range(0,lineslen):
+            line = lines[i]
+            for f in self.filters:
+                if termlog:
+                    termlog.write("\n"+repr(f))
+                line = f.morph(line)
+            lines[i] = line
+            
+            
+        # ()()PREFIX()()()()()()()()()
+        # Create Correct Prefix For these Line
+        #
+        # to debug write vs filter behavior override with uniform prefix --> 
+        #          prefix = self.term.render("${NORMAL}${BOLD}prefix: ${NORMAL}")
+        f0 = self.filters[0]
+        if termlog:
+            termlog.write("getting prefix from %s" % repr(f0))
+        if f0.prefix:
+            prefix = f0.preprefix + f0.prefix + f0.postprefix
+            prefix = self.term.render(prefix)
+            
         else:
-            
-            lines = out.split("\n")
-
-        if lines0[-1] == "":
-            del(lines[-1])
-            del(lines0[-1])
+            prefix = self.term.render("${NORMAL}[][]:")
+        #
+        # 
+        # ()()()()()()()()()()()()()()
         
-        if (termlog):
-            termlog.write("""
-------------------------------------------
-         self.curline: %s
-                 out0: %s
-                  out: %s
-                lines: %s
-               lines0: %s
-              endline: %s
-             fendline: %s
-    self.lastFendline: %s
-            cleanout0: %s
-        last line len: %s
-  self.writingForIraf: %s
-self.lastWriteForIraf: %s
-       self.linestart: %s
-------------------------------------------""" % (
-                            repr(self.curline),
-                            repr(out0),
-                            repr(out),
-                            repr(lines), 
-                            repr(lines0),
-                            repr(endline), 
-                            repr(fendline), 
-                            repr(self.lastFendline),
-                            repr(cleanout0),
-                            repr(self.term.lenstr(lines0[-1])),
-                            repr(self.writingForIraf),
-                            repr(self.lastWriteForIraf),
-                            repr(self.linestart)
-                            ))
-                            
-        # print the line, add the prefix after newlines
-        i = 0
-        lastline = len(lines)-1
-        for line in lines:
-            # fout = re.sub("\n", "\n"+prefix, out)
-            fout = re.sub("\n", "\n"+prefix, line)
-            if self.linestart:
-                
-                if termlog:
-                    termlog.write("\nwrote prefix: "+repr(prefix))
-                if self.curline != self.lastPrefixLine:
-                    self.realstdout.write(prefix)
-                    self.lastPrefixLine = self.curline
-            else:
-                if termlog:
-                    termlog.write("\ndidn't write prefix, linestart False")
-                
-            self.realstdout.write(fout)
-            if termlog:
-                termlog.write("\nwrote: " + repr(fout))
-            
-            
-            if i < lastline:
-                self.realstdout.write(endline)
-                self.curline += 1
-                self.linestart = True
-                if termlog:
-                    termlog.write("\nwrote endline: "+ repr(endline))
-            i += 1
         
-        cl = self.term.lenstr(lines0[-1])
         
-        if True:
-            self.realstdout.write(fendline)
+        #log all the elements
         
         if termlog:
-            termlog.write("\nwrote fendline: " + repr(fendline) )
-        
-        
-        # change self.lastFendling, but...
-        # don't change self.lastFendline if only output whitespace
-        # or terminal strings. This is to know when there is a newline
-        # and supress spaces due to ","s from prints which are at the
-        # start of a line, while printing the " " otherwise
-        # that is... to accomodate print behavior when print doesn't know
-        # anymore where the begining of the line is, because we are printing
-        # terminfo characters that are not whitespace.
-        
-        cl = self.term.lenstr(lines0[-1])
-        if cl != 0:
-            self.lastFendline = fendline
-        
+            ps = """\n---------------------------------
+             out0: %(out0)s
+      out == out0: %(outcompare)s
+           lines0: %(lines0)s
+         cleanout: %(cleanout)s
+       cleanlines: %(cleanlines)s
+         lineslen: %(lineslen)s
+           prefix: %(prefix)s
+        linestart: %(linestart)s
+       needprefix: %(needprefix)s
+ lastWriteForIraf: %(lwfi)s
+   writingForIraf: %(w4i)s
+---------------------------------
+""" % {     "out0": repr(out0),
+            "outcompare": repr(out == out0),
+            "lines0": repr(lines0),
+            "cleanout": repr(cleanout),
+            "cleanlines": repr(cleanlines),
+            "lineslen": repr(lineslen),
+            "prefix": repr(prefix),
+            "linestart": repr(self.linestart),
+            "needprefix": repr(self.needprefix),
+            "lwfi":repr(self.lastWriteForIraf),
+            "w4i":repr(self.writingForIraf)
+            }
+            termlog.write(ps)
             
-        # newline logic (review lastFendline stuff)
-        if cl != 0 : #and not propLinestart:
-            if self.term.cleanstr(lines0[-1]) == os.linesep:
+        lastline = lineslen - 1
+        for i in range(0,lineslen):
+            propagateLinestart = False
+            line = lines[i]
+            if self.linestart:
+                if self.needprefix:
+                    self.realstdout.write(prefix)
+                    self.needprefix = False
+                    if termlog:
+                        termlog.write("\nwrote prefix: %s\nset needprefix to False" % repr(prefix))
+            # check for special " " the print statement sends... don't print
+            #  if start of line.
+            if (out == " "):
+                if self.linestart:
+                    # line = self.term.render("${RED}${REVERSE}X${NORMAL}")
+                    line = ""
+                    propagateLinestart = True
+                else:
+                    # line = self.term.render("${REVERSE}X${NORMAL}")
+                    line = " "
+            # ()()()()()()()()()()()()()()
+            # WRITING MAIN LINE OUT
+            
+            self.realstdout.write(line)
+            
+            # ()()()()()()()()()()()()()()
+            
+            if termlog:
+                termlog.write("\nwrote line: %s" % repr(line))
+                
+            if termlog:
+                termlog.write("\nlen(cleanlines[%d] = %d" % (i, len(cleanlines[i])))
+            if len(cleanlines[i]) > 0 and not propagateLinestart:
+                self.linestart = False
+                if termlog:
+                    termlog.write("\nlinestart = False")
+            else:
+                if termlog:
+                    termlog.write("\nlinestart unchanged (== %s)" % repr(self.linestart))
+                    
+            if i < lastline:
+                self.realstdout.write(os.linesep)
                 self.linestart = True
-            else:
-                self.linestart = False
-        if False:
-            if cl == 0 or propLinestart == True:
-                self.linestart = True 
-            else:
-                self.linestart = False
-        ######################################
-        if irafDone or propNewline:
-            self.lastFendline = os.linesep
-    
-        
-        self.realstdout.flush()
+                self.needprefix = True
+                if termlog:
+                    termlog.write("\nwrote os.linesep, set linestart and needprefix to True")
+
+        # IRAF HANDLING
+        self.lastWriteForIraf = self.writingForIraf
+            
         if termlog:
             termlog.write("\n"+"*"*40 + "\n")
-        
-        self.lastWriteForIraf = self.writingForIraf
+                
         
     def flush(self):
         self.realstdout.flush()
 
 class Filter(object):
-    pretag  = "${BOLD}"
-    posttag = "${NORMAL}"
+    preprefix  = "${BOLD}"
+    postprefix = "${NORMAL}"
     term    = None
     on      = True
     prefix  = None
@@ -527,9 +463,9 @@ class ColorFilter(Filter):
             
 import traceback as tb
 class PrimitiveFilter(Filter):
-    prefix = "primitive: "
-    def morph(self, arg):
-        # add bottom of primitive stack
+    _prefix = "primitive: "
+    
+    def getPrefix(self):
         h = ""
         st = tb.extract_stack()
         started = True # ignore deep part of stack
@@ -541,9 +477,13 @@ class PrimitiveFilter(Filter):
                     nam = "{}"
                 if ("rimitives" in f[0]) or ("string" in f[0]):
                     h += (nam+": ")
-        self.prefix = h
-        if h == "":
-            h = "rsys:"
+        return h
+    def setPrefix(self, val):
+        self._prefix = val
+        return
+    prefix = property(getPrefix, setPrefix)
+    
+    def morph(self, arg):
         return (arg)
             
             
@@ -556,7 +496,8 @@ class IrafStdout():
         
     def write(self, out):
         out = self.ifilter.morph(out) 
-        pout = re.sub("\n", "\n${REVERSE}IRAF${NORMAL}: ", out)
+        pout = out
+        #pout = re.sub("\n", "\n${REVERSE}IRAF${NORMAL}: ", out)
         if hasattr(self.fout, "writingForIraf"):
             self.fout.writingForIraf = True
         self.fout.write(pout)
