@@ -242,6 +242,7 @@ class FilteredStdout(object):
     _linestart = True # generally true we start on a new line
     _needprefix = True
     curline = 0
+    lastPrefix = ""
     lastPrefixLine = None
     
     def __init__(self, rso = None):
@@ -286,7 +287,7 @@ class FilteredStdout(object):
     def directWrite(self, out):
         self.realstdout.write(out)
         
-    def write(self, out):
+    def write(self, out, forceprefix = None):
         # make termlog none to turn off debugging log
         
         termlog = open("termlog", "a")
@@ -302,7 +303,7 @@ class FilteredStdout(object):
         if self.lastWriteForIraf == True and self.writingForIraf == False:
             # nasty recursive call if you don't change the lastWriteForIraf flag
             self.lastWriteForIraf = False
-            self.write("\n")
+            #self.write("\n")
         elif self.lastWriteForIraf == False and self.writingForIraf == True:
             # starting to write
             self.lastWriteForIraf = True
@@ -332,15 +333,32 @@ class FilteredStdout(object):
         #
         # to debug write vs filter behavior override with uniform prefix --> 
         #          prefix = self.term.render("${NORMAL}${BOLD}prefix: ${NORMAL}")
-        f0 = self.filters[0]
-        if termlog:
-            termlog.write("getting prefix from %s" % repr(f0))
-        if f0.prefix:
-            prefix = f0.preprefix + f0.prefix + f0.postprefix
+        preprefix = None
+        postprefix = None
+        if forceprefix:
+            prefix = forceprefix [0] + self.term.render(forceprefix[1]) + forceprefix[2]
             prefix = self.term.render(prefix)
-            
         else:
-            prefix = self.term.render("${NORMAL}[][]:")
+            # get prefix from top filter
+            f0 = self.filters[0]
+            if termlog:
+                termlog.write("getting prefix from %s" % repr(f0))
+            if f0.prefix:
+                prefix = f0.preprefix + f0.prefix + f0.postprefix
+                prefix = self.term.render(prefix)
+
+            else:
+                prefix = self.term.render("")
+        
+        if self.lastPrefix != prefix:
+            self.needprefix = True
+            self.linestart = True
+            self.lastPrefix = prefix
+            self.realstdout.write("\n")
+            self.needprefix = True
+            self.linestart = True
+        
+        self.lastPrefix = prefix
         #
         # 
         # ()()()()()()()()()()()()()()
@@ -441,6 +459,11 @@ class Filter(object):
     on      = True
     prefix  = None
     fout    = None
+    def __init__(self, prefix=None, preprefix = "${BOLD}", postprefix= "${NORMAL}"):
+        self.prefix = prefix
+        self.preprefix = preprefix
+        self.postprefix = postprefix
+        
     def morph(self, arg):
         return arg 
     def clear(self):
