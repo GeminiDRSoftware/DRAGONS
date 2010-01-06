@@ -129,6 +129,9 @@ class GEMINIPrimitives(ReductionObject):
     def display(self, rc):
         try:
             print "displaying output"
+            print "rc.localparms:", repr(rc.localparms)
+            print 'rc["fnarp"]', repr(rc["fnarp"])
+            print 'rc["thing"]', repr(rc["thing"])
             rc.rqDisplay()           
         except:
             print "Problem displaying output"
