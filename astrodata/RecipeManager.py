@@ -65,6 +65,8 @@ class ReductionContext(dict):
     irafstderr = None
     callbacks = None
     arguments = None
+    localparms = None # dictionary with local args (given in recipe as args, generally)
+    
     
     def getIrafStdout(self):
         if self.irafstdout != None:
@@ -241,8 +243,17 @@ class ReductionContext(dict):
         self.stackeep = StackKeeper()
         self.fringes = FringeKeeper()
         
-    # def __getitem__(self, *args):
-    #    return dict.__getitem__(self, *args)
+    def __getitem__(self, arg):
+        """Note, the ReductionContext version of __getitem__ returns None instead of throwing a KeyError.
+        """
+        if self.localparms and arg in self.localparms:
+            return self.localparms[arg]
+        else:
+            try:
+                return dict.__getitem__(self, arg)
+            except KeyError:
+                return None
+        
         
     def __str__(self):
         """Used to dump Reduction Context(co) into file for test system
@@ -1090,17 +1101,34 @@ def %(name)s(self,cfgObj):
         
         for line in recipelines:
             line = line.strip()
+            # PARSE PRIMITIVE ARGUMENT LIST
+            # take parenthesis off, make arg dict with it
+            m = re.match("(?P<prim>.*?)\((?P<args>.*?)\)$", line)
+            d = {}
+            if m:
+                prim = m.group("prim")
+                args = m.group("args")
+                elems = args.split(",")
+                for elem in elems:
+                    parmname, parmval = elem.split("=")
+                    parmname = parmname.strip()
+                    parmval = parmval.strip()
+                    d.update({parmname:parmval})
+                line = prim
+            # need to add dictionary to context
+            
             #print "RM778:", line
             if line == "" or line[0]=="#":
                 continue
             newl =  """
+\tcfgObj.localparms = eval("%s")
 \tfor co in self.substeps('%s', cfgObj):
-\t\tyield co""" % line
+\t\tyield co""" % (repr(d),line)
             lines += newl
             
         rets = templ % {    "name" : name,
-                            "lines" : lines }
-        
+                            "lines" : lines,
+                            }
         return rets
         
     def compileRecipe(self, name, recipeinpython):
