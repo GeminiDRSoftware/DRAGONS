@@ -1,8 +1,6 @@
-	#
-	#
-	#
-	
-	setStackable
-	getStackable
-    display
+#
+#
+#
+
+newdisplay(this=that, other=other)
 

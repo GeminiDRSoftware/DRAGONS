@@ -5,14 +5,15 @@ from utils import filesystem
 from astrodata import IDFactory
 import os
 
-import IQTool
-from IQTool.iq import getiq
+if False:
+    import iqtool
+    from iqtool.iq import getiq
 
-from pyraf.iraf import tables, stsdas, images
-from pyraf.iraf import gemini
-import pyraf
+    from pyraf.iraf import tables, stsdas, images
+    from pyraf.iraf import gemini
+    import pyraf
 
-gemini()
+    gemini()
 
 stepduration = 1.
 
@@ -125,6 +126,13 @@ class GEMINIPrimitives(ReductionObject):
         print "printing parameters"
         print rc.paramsummary()
         yield rc
+#------------------------------------------------------------------------------ 
+    def newdisplay(self, rc):
+        print "rc.localparms:", repr(rc.localparms)
+        print 'rc["this"]', repr(rc["fnarp"])
+        print 'rc["global"]', repr(rc["thing"])
+        yield rc
+                
 #------------------------------------------------------------------------------ 
     def display(self, rc):
         try:
