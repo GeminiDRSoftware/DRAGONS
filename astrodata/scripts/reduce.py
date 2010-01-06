@@ -8,11 +8,11 @@ import glob
 from optparse import OptionParser
 import os
 #st = time.time()
-try:
-    import pyraf
-    from pyraf import iraf
-except:
-    print "didn't get pyraf"
+#try:
+#    import pyraf
+#    from pyraf import iraf
+#except:
+#    print "didn't get pyraf"
 #et = time.time()
 #print 'IRAF TIME', (et-st)
 import subprocess
@@ -383,6 +383,7 @@ for infile in infiles: #for dealing with multiple files.
                             # cache.
                             #print "RD172: GET STACKABLE REQS:", rq
                         elif rqTyp == DisplayRequest:
+                            from pyraf import iraf
                             from pyraf.iraf import gemini
                             gemini()
                             gemini.gmos()

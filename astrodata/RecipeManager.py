@@ -1121,7 +1121,7 @@ def %(name)s(self,cfgObj):
             if line == "" or line[0]=="#":
                 continue
             newl =  """
-\tcfgObj.localparms = eval("%s")
+\tcfgObj.localparms = eval('''%s''')
 \tfor co in self.substeps('%s', cfgObj):
 \t\tyield co""" % (repr(d),line)
             lines += newl
