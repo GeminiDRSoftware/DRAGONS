@@ -326,6 +326,8 @@ class FilteredStdout(object):
                     termlog.write("\n"+repr(f))
                 line = f.morph(line)
             lines[i] = line
+        
+        
             
             
         # ()()PREFIX()()()()()()()()()
@@ -337,6 +339,7 @@ class FilteredStdout(object):
         postprefix = None
         if forceprefix:
             prefix = forceprefix [0] + self.term.render(forceprefix[1]) + forceprefix[2]
+            prefixclen = self.term.lenstr(prefix)
             prefix = self.term.render(prefix)
         else:
             # get prefix from top filter
@@ -345,9 +348,11 @@ class FilteredStdout(object):
                 termlog.write("getting prefix from %s" % repr(f0))
             if f0.prefix:
                 prefix = f0.preprefix + f0.prefix + f0.postprefix
+                prefixclen = self.term.lenstr(prefix)
                 prefix = self.term.render(prefix)
 
             else:
+                prefixclen = 0
                 prefix = self.term.render("")
         
         if self.lastPrefix != prefix:
@@ -360,10 +365,8 @@ class FilteredStdout(object):
         
         self.lastPrefix = prefix
         #
-        # 
+        # end MAKING PREFIX block
         # ()()()()()()()()()()()()()()
-        
-        
         
         #log all the elements
         
@@ -415,11 +418,27 @@ class FilteredStdout(object):
                 else:
                     # line = self.term.render("${REVERSE}X${NORMAL}")
                     line = " "
+                    
+                    
             # ()()()()()()()()()()()()()()
             # WRITING MAIN LINE OUT
-            
-            self.realstdout.write(line)
-            
+            (x,y) = getTerminalSize()
+            if termlog:
+                termlog.write("(wid,height)+prefixclen+linelen: "+str((x,y))+"+"+str(prefixclen)+"+"+str(len(cleanlines[i])))
+            # note, this should us the length prefix clean!
+            wid = x-prefixclen
+            if len(cleanlines[i]) < wid:
+                self.realstdout.write(line)
+            else:        
+                # loop and write continuations
+                sublines = textwrap.wrap(line, wid)
+                self.realstdout.write(sublines[0])
+                for subline in sublines[1:]:
+                    self.realstdout.write("\n")
+                    self.realstdout.write("."*(prefixclen-1)+" ")
+                    self.realstdout.write(subline)
+                    
+                
             # ()()()()()()()()()()()()()()
             
             if termlog:

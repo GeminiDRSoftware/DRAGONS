@@ -413,7 +413,7 @@ for infile in infiles: #for dealing with multiple files.
                                         raise 
                         elif rqTyp == ImageQualityRequest:
                             #print 'RED394:'
-                            filteredstdout.write(str(rq)+"\n", forceprefix = ("${NORMAL}${RED}","IQ reported to reduce: ", "${NORMAL}"))
+                            filteredstdout.write(str(rq)+"\n", forceprefix = ("${NORMAL}${RED}","IQ reported: ", "${NORMAL}"))
                             #@@FIXME: All of this is kluge and will not remotely reflect how the 
                             # RecipeProcessor will deal with ImageQualityRequests.
                             if True:
