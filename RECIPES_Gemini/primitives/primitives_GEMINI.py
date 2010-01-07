@@ -128,9 +128,9 @@ class GEMINIPrimitives(ReductionObject):
         yield rc
 #------------------------------------------------------------------------------ 
     def newdisplay(self, rc):
-        print "rc.localparms:", repr(rc.localparms)
-        print 'rc["this"]', repr(rc["fnarp"])
-        print 'rc["global"]', repr(rc["thing"])
+        print "rc.localparms: " + repr(rc.localparms)
+        print 'rc["this"] ' + repr(rc["fnarp"])
+        print 'rc["global"] ' + repr(rc["thing"])
         yield rc
                 
 #------------------------------------------------------------------------------ 

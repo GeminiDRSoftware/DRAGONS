@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 #import time
 #ost = time.time()
+# ---PROFILER START to profile imports
+#import hotshot
+#importprof = hotshot.Profile("hotshot_edi_stats")
+
 #------------------------------------------------------------------------------ 
 import commands
 from datetime import datetime
@@ -8,11 +12,12 @@ import glob
 from optparse import OptionParser
 import os
 #st = time.time()
-#try:
-#    import pyraf
-#    from pyraf import iraf
-#except:
-#    print "didn't get pyraf"
+if False:
+    try:
+        import pyraf
+        from pyraf import iraf
+    except:
+        print "didn't get pyraf"
 #et = time.time()
 #print 'IRAF TIME', (et-st)
 import subprocess
@@ -89,6 +94,11 @@ parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_t
                   help="Only used for rtf.")
 parser.add_option("-i", "--intelligence", dest='intelligence', default=False, action="store_true",
                   help="Give the system some intelligence to perform operations faster and smoother.")
+parser.add_option("--force-width", dest = "forceWidth", default=None,
+                  help="Use to force width of terminal for output purposes instead of using actual temrinal width.")
+parser.add_option("--force-height", dest = "forceHeight", default=None,
+                  help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
+                  
 (options,  args) = parser.parse_args()
 
 useTK =  options.bMonitor
@@ -108,7 +118,8 @@ adatadir = "./recipedata/"
 calindfile = "./.reducecache/calindex.pkl"
 stkindfile = "./.reducecache/stkindex.pkl"
 
-
+terminal.forceWidth = options.forceWidth
+terminal.forceHeight = options.forceHeight
 
 def command_line():
     '''
@@ -226,6 +237,11 @@ frameForDisplay = 1
 i = 1
 numFiles = len(infiles)
 for infile in infiles: #for dealing with multiple files.
+    
+    #print "r232: profiling end"
+    #prof.close()
+    #raise "over"
+    
     print "${BOLD}Starting File #%d, %s" % (i, infile[0].filename)
     currentImageNum = i
     i += 1
