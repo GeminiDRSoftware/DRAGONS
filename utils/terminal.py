@@ -4,7 +4,10 @@ import textwrap
 
 import unicodedata, re
 
-os.environ["TERM"] = "xtermc"
+# os.environ["TERM"] = "vt50"
+
+forceWidth = None
+forceHeight = None
 
 class TerminalController:
     """
@@ -432,11 +435,14 @@ class FilteredStdout(object):
             else:        
                 # loop and write continuations
                 sublines = textwrap.wrap(line, wid)
-                self.realstdout.write(sublines[0])
-                for subline in sublines[1:]:
-                    self.realstdout.write("\n")
-                    self.realstdout.write("."*(prefixclen-1)+" ")
-                    self.realstdout.write(subline)
+                if sublines:
+                    self.realstdout.write(sublines[0])
+                    for subline in sublines[1:]:
+                        self.realstdout.write("\n")
+                        self.realstdout.write("."*(prefixclen-1)+" ")
+                        self.realstdout.write(subline)
+                else:
+                    self.realstdout.write(line)
                     
                 
             # ()()()()()()()()()()()()()()
@@ -581,4 +587,8 @@ def getTerminalSize():
             cr = (env['LINES'], env['COLUMNS'])
         except:
             cr = (25, 80)
+    if forceWidth:
+        cr = ( cr[0], forceWidth)
+    if forceHeight:
+        cr = ( forceHeight, cr[1])
     return int(cr[1]), int(cr[0])
