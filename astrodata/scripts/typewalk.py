@@ -50,9 +50,18 @@ parser.add_option("-c", "--showcalibrations", dest="showCals", action="store_tru
         help="When set, show any locally available calibrations")
 parser.add_option("-x", "--dontrecurse", dest="stayTop", action="store_true",
         help="When set, don't recurse subdirs.")
+parser.add_option("--force-width", dest = "forceWidth", default=None,
+                  help="Use to force width of terminal for output purposes instead of using actual temrinal width.")
+parser.add_option("--force-height", dest = "forceHeight", default=None,
+                  help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
 
 (options, args) = parser.parse_args()
-        
+
+#set up terminal
+terminal.forceWidth = options.forceWidth
+terminal.forceHeight = options.forceHeight
+
+
 # start the Gemini Specific class code
 
 dt = DataSpider()
