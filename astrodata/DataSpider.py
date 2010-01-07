@@ -166,20 +166,31 @@ class DataSpider(object):
                             #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             # !!!!PRINTING OUT THE FILE AND TYPE INFO!!!!
                             #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            prlin = "     %s" % tfile
-                            prlincolor = "     ${BG_WHITE}%s" % tfile
-                            empty = "%40s" % " "
                             indent = 5
                             pwid = 40
+                            fwid = pwid - indent 
+                            # print start of string
+                            
+                            while len(tfile)> fwid:
+                                if False:
+                                    part = tfile[:fwid]
+                                    print "     ${BG_WHITE}%s${NORMAL}" % part
+                                    tfile = tfile[fwid-1:]
+                                else:
+                                    print "     ${BG_WHITE}%s${NORMAL}" % tfile
+                                    tfile = ""
+                            
+                            prlin = "     %s" % tfile
+                            prlincolor = "     ${BG_WHITE}%s" % tfile
+                            empty = " "*indent + "."*fwid
                             fwid = pwid+indent
                             lp = len(prlin)
                             nsp = pwid - ( lp % pwid )
 
                             # print out indent, filename, and "..." to justify types area"
                             # there is a way to do with with a comprehension?   
-                            sp ="........."
-                            sp = sp + sp + sp
-                            print prlincolor+sp[:nsp]+"${NORMAL}",
+
+                            print prlincolor+("."*nsp)+"${NORMAL}",
 
                             # print dtypes
                             tstr = ""
