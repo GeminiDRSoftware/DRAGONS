@@ -12,7 +12,7 @@ import glob
 from optparse import OptionParser
 import os
 #st = time.time()
-if False:
+if True:
     try:
         import pyraf
         from pyraf import iraf
@@ -128,7 +128,7 @@ def command_line():
     '''
     
     if  options.show_colors:
-        print dir(term)
+        print dir(filteredstdout.term)
         sys.exit(0)
     infile = None
     if options.clr_cal:

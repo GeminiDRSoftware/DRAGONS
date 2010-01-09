@@ -3,7 +3,6 @@ import sys, re
 import textwrap
 
 import unicodedata, re
-
 # os.environ["TERM"] = "vt50"
 
 forceWidth = None
