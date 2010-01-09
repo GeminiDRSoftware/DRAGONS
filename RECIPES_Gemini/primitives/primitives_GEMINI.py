@@ -5,7 +5,7 @@ from utils import filesystem
 from astrodata import IDFactory
 import os
 
-if False:
+if True:
     import iqtool
     from iqtool.iq import getiq
 
