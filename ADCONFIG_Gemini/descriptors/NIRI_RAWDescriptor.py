@@ -10,12 +10,49 @@ import GemCalcUtil
 from StandardNIRIKeyDict import stdkeyDictNIRI
 
 class NIRI_RAWDescriptorCalc(Calculator):
-    
+    niriFilternameMapConfig = [
+        ["Y",                "PK50_G0201",        "Y_G0241",             "Pupil38_G5207"   ],
+        ["J",                "J_G0202",           "open",                "Pupil38_G5207"   ],
+        ["H",                "H_G0203",           "open",                "Pupil38_G5207"   ],
+        ["K(prime)",         "Kprime_G0206",      "open",                "Pupil38_G5207"   ],
+        ["K",                "K_G0204",           "open",                "Pupil38_G5207"   ],
+        ["L(prime)",         "Lprime_G0207",      "open",                "Pupil38_G5207"   ],
+        ["M(prime)",         "Mprime_G0208",      "open",                "Pupil38_G5207"   ],
+
+        ["Jcon(121)",        "PK50_G0201",        "open",                "Jcon(121)_G0232" ],
+        ["H-con(157)",       "PK50_G0201",        "Hcon(157)_G0214",     "Pupil38_G5207"   ],
+        ["CH4(short)",       "PK50_G0201",        "CH4short_G0228",      "Pupil38_G5207"   ],
+        ["CH4(long)",        "PK50_G0201",        "CH4long_G0229",       "Pupil38_G5207"   ],
+        ["FeII",             "PK50_G0201",        "open",                "FeII_G0215"      ],
+        ["HeI(2p2s)",        "Kprime_G0206",      "HeI(2p2s)_G0233",     "Pupil38_G5207"   ],
+        ["H2Oice(2045)",     "open",              "H2Oice204_G0242",     "Pupil38_G5207"   ],
+        ["Kcon(209)",        "open",              "Kcon(209)_G0217",     "Pupil38_G5207"   ],
+        ["H2 1-0 S1",        "K_G0204",           "H2v=1-0S1_G0216",     "Pupil38_G5207"   ],
+        ["Br(gamma)",        "open",              "Brgamma_G0218",       "Pupil38_G5207"   ],
+        ["CH4ice(2275)",     "open",              "CH4ice227_G0243",     "Pupil38_G5207"   ],
+
+        ["J order sort",     "Jsort_G0209",       "open",                "Pupil38_G5207"   ],
+        ["H order sort",     "PK50_G0201",        "Hsort_G0210",         "Pupil38_G5207"   ],
+        ["K order sort",     "Ksort_G0211",       "open",                "Pupil38_G5207"   ],
+        ["L order sort",     "Lsort_G0212",       "open",                "Pupil38_G5207"   ],
+        ["M order sort",     "Msort_G0213",       "open",                "Pupil38_G5207"   ],
+        ["Jcon(1065)",       "PK50_G0201",        "Jcon(106)_G0239",     "Pupil38_G5207"   ],
+        ["Jcon(112)",        "PK50_G0201",        "Jcon(112)_G0235",     "Pupil38_G5207"   ],
+        ["K(short)",         "Kshort_G0205",      "open",                "Pupil38_G5207"   ],
+        ["H2 2-1 S1",        "open",              "H2v=2-1S1_G0220",     "Pupil38_G5207"   ],
+        ["Pa(beta)",         "PK50_G0201",        "open",                "Pabeta_G0221"    ],
+        ["HeI",             "open",              "HeI_G0234",           "Pupil38_G5207"   ],
+        ["Br(alpha)",        "open",              "Bra_G0238",           "Pupil38_G5207"   ],
+        ["H2Oice",           "open",              "H2Oice_G0230",        "Pupil38_G5207"   ],
+        ["hydrocarb",        "open",              "hydrocarb_G0231",     "Pupil38_G5207"   ],
+        ["Br(alpha)Con",     "open",              "Bracont_G0237",       "Pupil38_G5207"   ],
+    ]
+    niriFilternameMap = {}
     niriSpecDict = None
     
     def __init__(self):
         self.niriSpecDict = Lookups.getLookupTable("Gemini/NIRI/NIRISpecDict", "niriSpecDict")
-    
+        self.makeFilternameMap()
     def airmass(self, dataset):
         """
         Return the airmass value for NIRI
@@ -155,30 +192,15 @@ class NIRI_RAWDescriptorCalc(Calculator):
             
             # create list of filter values
             filters = [filter1,filter2,filter3]
-
-            # reject "open" "grism" and "pupil"
-            filters2 = []
-            for filt in filters:
-                if ("open" in filt) or ("grism" in filt) or ("pupil" in filt) or ("Pupil" in filt):
-                    pass
-                else:
-                    filters2.append(filt)
-            
-            filters = filters2
-            
-            # blank means an opaque mask was in place, which of course
-            # blocks any other in place filters
-            if "blank" in filters:
-                retfilternamestring = "blank"
-            elif len(filters) == 0:
-                retfilternamestring = "open"
-            else:
-                filters.sort()
-                retfilternamestring = "&".join(filters)
-            
+            retfilternamestring = self.filternameFrom(filters)
+           
         except KeyError:
             return None
         
+        #map to science name if filtername in table
+        if retfilternamestring in self.niriFilternameMap:
+            retfilternamestring = self.niriFilternameMap[retfilternamestring]
+            
         return str(retfilternamestring)
     
     def fpmask(self, dataset):
@@ -541,3 +563,39 @@ class NIRI_RAWDescriptorCalc(Calculator):
         retyccdbinint = None
         
         return retyccdbinint
+
+    ## UTILITY MEMBER FUNCTIONS (NOT DESCRIPTORS)
+    
+    def filternameFrom(self, filters):
+        
+        # reject "open" "grism" and "pupil"
+        filters2 = []
+        for filt in filters:
+            filtlow = filt.lower()
+            if ("open" in filtlow) or ("grism" in filtlow) or ("pupil" in filtlow) or ("pk50" in filtlow):
+                pass
+            else:
+                filters2.append(filt)
+
+        filters = filters2
+
+        # blank means an opaque mask was in place, which of course
+        # blocks any other in place filters
+        if "blank" in filters:
+            retfilternamestring = "blank"
+        elif len(filters) == 0:
+            retfilternamestring = "open"
+        else:
+            filters.sort()
+            retfilternamestring = "&".join(filters)
+        return retfilternamestring
+            
+    def makeFilternameMap(self):
+        filternamemap = {}
+        for line in self.niriFilternameMapConfig:
+            linefiltername = self.filternameFrom( [
+                    GemCalcUtil.removeComponentID(line[1]),
+                    GemCalcUtil.removeComponentID(line[2]),
+                    GemCalcUtil.removeComponentID(line[3])])
+            filternamemap.update({linefiltername:line[0] })
+        self.niriFilternameMap = filternamemap
