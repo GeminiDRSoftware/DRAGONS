@@ -167,8 +167,9 @@ class ConfigSpace(object):
         '''
         filelist = []
         for (path, directories, files) in os.walk(dir):
-            goodpath = (".svn" not in path) and ("CVS" not in path)
+            goodpath = ("svn" not in path) and ("CVS" not in path)
             if goodpath:
+                sys.stdout.write(".")
                 path = os.path.abspath(path)
                 for fname in files:
                     if exts != []:
@@ -177,9 +178,11 @@ class ConfigSpace(object):
                                 filelist.append( os.path.join(path, fname) )
                                 break
                     else:
-                        filelist.append( os.path.join(path, fname) )
+                        yield os.path.join(path, fname)
+                        #filelist.append( os.path.join(path, fname) )
                     
-        return filelist
+        print
+        
         
 def configWalk( spacename = None):
     global cs
@@ -219,7 +222,7 @@ def lookupPath(name):
         raise ConfigSpaceExcept("No Configuration Package Associated with %s" % domain)
     fpath = os.path.join(tpath, LOOKUPDIRNAME, *a[1:])
     
-    if (fpath[-3:] != ".py"):
+    if (fpath[-3:] != ".py") and (fpath[-5:]) != ".fits":
         fpath += ".py"
 
         

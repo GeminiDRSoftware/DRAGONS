@@ -23,11 +23,13 @@ class CalibrationService( object ):
     
     def __init__( self, calDirectoryURIs=["."], mode="local_disk" ):
         
+        print ("Loading Calibration Service Available Directories")
         # calList will contain absolute paths/filenames
         self.calList = []
         for path in calDirectoryURIs:
-            self.calList.extend( ConfigSpace.generalWalk(path, [".fits"]) )
-            
+            for cpath in ConfigSpace.generalWalk(path, [".fits"]):
+                self.calList.append(cpath)
+                
     
     def run(self):
         '''

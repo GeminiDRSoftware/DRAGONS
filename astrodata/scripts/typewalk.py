@@ -10,7 +10,8 @@ from optparse import OptionParser
 from utils import terminal
 from utils.terminal import TerminalController
 
-from astrodata.LocalCalibrationService import CalibrationService
+if False:
+    from astrodata.LocalCalibrationService import CalibrationService
 
 ############################################################
 # this script was developed to exercise the GeminiDataType class
@@ -54,6 +55,8 @@ parser.add_option("--force-width", dest = "forceWidth", default=None,
                   help="Use to force width of terminal for output purposes instead of using actual temrinal width.")
 parser.add_option("--force-height", dest = "forceHeight", default=None,
                   help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
+parser.add_option("-r", "--raiseexception", dest="raiseExcept", action="store_true",
+        help="Throw exceptions on some failures, e.g. failed descriptor calls to allow debugging of the problem.")
 
 (options, args) = parser.parse_args()
 
@@ -89,7 +92,8 @@ else:
                     showDescriptors = options.showdescriptors,
                     filemask = options.filemask,
                     showCals = options.showCals,
-                    stayTop = options.stayTop
+                    stayTop = options.stayTop,
+                    raiseExcept = options.raiseExcept
                     )
     except KeyboardInterrupt:
         print "Interrupted by Control-C"

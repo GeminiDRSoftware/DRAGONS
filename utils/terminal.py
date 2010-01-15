@@ -184,8 +184,7 @@ class TerminalController:
             try:
                 return getattr(self, s[2:-1])
             except:
-                print "t158: ", repr(dir(self))
-                raise 
+                return ""
 
 #######################################################################
 # Example use case: progress bar

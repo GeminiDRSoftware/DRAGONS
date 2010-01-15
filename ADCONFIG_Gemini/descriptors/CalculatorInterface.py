@@ -4,207 +4,207 @@ from astrodata import Descriptors
 class CalculatorInterface:
        
     # Descriptor Interfaces, add alphabetically
-    def airmass(self):
+    def airmass(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.airmass(self)
+        return self.descriptorCalculator.airmass(self, **args)
             
-    def camera(self):
+    def camera(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.camera(self)
+        return self.descriptorCalculator.camera(self, **args)
         
-    def cwave(self):
+    def cwave(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.cwave(self)
+        return self.descriptorCalculator.cwave(self, **args)
         
-    def datasec(self):
+    def datasec(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.datasec(self)
+        return self.descriptorCalculator.datasec(self, **args)
         
-    def detsec(self):
+    def detsec(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.detsec(self)
+        return self.descriptorCalculator.detsec(self, **args)
         
-    def disperser(self):
+    def disperser(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.disperser(self)
+        return self.descriptorCalculator.disperser(self, **args)
         
-    def exptime(self):
+    def exptime(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.exptime(self)
+        return self.descriptorCalculator.exptime(self, **args)
         
-    def filterid(self):
+    def filterid(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.filterid(self)
+        return self.descriptorCalculator.filterid(self, **args)
         
-    def filtername(self):
+    def filtername(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.filtername(self)
+        return self.descriptorCalculator.filtername(self, **args)
         
-    def fpmask(self):
+    def fpmask(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.fpmask(self)
+        return self.descriptorCalculator.fpmask(self, **args)
 
-    def gain(self):
+    def gain(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.gain(self)
+        return self.descriptorCalculator.gain(self, **args)
 
-    def instrument(self):
+    def instrument(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.instrument(self)
+        return self.descriptorCalculator.instrument(self, **args)
 
-    def mdfrow(self):
+    def mdfrow(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.mdfrow(self)
+        return self.descriptorCalculator.mdfrow(self, **args)
 
-    def nonlinear(self):
+    def nonlinear(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.nonlinear(self)
+        return self.descriptorCalculator.nonlinear(self, **args)
 
-    def nsciext(self):
+    def nsciext(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.nsciext(self)
+        return self.descriptorCalculator.nsciext(self, **args)
 
-    def object(self):
+    def object(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.object(self)
+        return self.descriptorCalculator.object(self, **args)
 
-    def obsmode(self):
+    def obsmode(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.obsmode(self)
+        return self.descriptorCalculator.obsmode(self, **args)
     
-    def obsepoch(self):
+    def obsepoch(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.obsepoch(self)
+        return self.descriptorCalculator.obsepoch(self, **args)
     
 
-    def pixscale(self):
+    def pixscale(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.pixscale(self)
+        return self.descriptorCalculator.pixscale(self, **args)
 
-    def pupilmask(self):
+    def pupilmask(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.pupilmask(self)
+        return self.descriptorCalculator.pupilmask(self, **args)
 
-    def rdnoise(self):
+    def rdnoise(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.rdnoise(self)
+        return self.descriptorCalculator.rdnoise(self, **args)
 
-    def satlevel(self):
+    def satlevel(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.satlevel(self)
+        return self.descriptorCalculator.satlevel(self, **args)
 
-    def utdate(self):
+    def utdate(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.utdate(self)
+        return self.descriptorCalculator.utdate(self, **args)
 
-    def uttime(self):
+    def uttime(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.uttime(self)
+        return self.descriptorCalculator.uttime(self, **args)
 
-    def wdelta(self):
+    def wdelta(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.wdelta(self)
+        return self.descriptorCalculator.wdelta(self, **args)
 
-    def wrefpix(self):
+    def wrefpix(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.wrefpix(self)
+        return self.descriptorCalculator.wrefpix(self, **args)
 
-    def xccdbin(self):
+    def xccdbin(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.xccdbin(self)
+        return self.descriptorCalculator.xccdbin(self, **args)
 
-    def yccdbin(self):
+    def yccdbin(self, **args):
         self._lazyloadCalculator()
         descriptorname = sys._getframe().f_code.co_name
         if not hasattr( self.descriptorCalculator, descriptorname):
             return "Base Calculator Class does not have %s function" % descriptorname
-        return self.descriptorCalculator.yccdbin(self)
+        return self.descriptorCalculator.yccdbin(self, **args)
 
     # 
-    def _lazyloadCalculator(self):
+    def _lazyloadCalculator(self, **args):
         """Function to put at top of all descriptor members
         to ensure the descriptor is loaded.  This way we avoid
         loading it if it is not needed."""
         if self.descriptorCalculator == None:
-            self.descriptorCalculator = Descriptors.getCalculator(self)
+            self.descriptorCalculator = Descriptors.getCalculator(self, **args)

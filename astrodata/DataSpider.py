@@ -5,9 +5,13 @@ from AstroData import *
 ldebug = False
 verbose = False
 from utils import terminal
-from astrodata.LocalCalibrationService import CalibrationService
-from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
 from ReductionContextRecords import AstroDataRecord
+
+uselocalcalserv = False
+
+if uselocalcalserv: # takes WAY TOO LONG~!!!!!!
+    from astrodata.LocalCalibrationService import CalibrationService
+    from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
 
 
 class DataSpider(object):
@@ -25,8 +29,9 @@ class DataSpider(object):
         # ==== member vars ====
         self.contextType = context
         self.classificationLibrary = self.getClassificationLibrary()
-        self.calService = CalibrationService()
-        self.calDefLib = CalibrationDefinitionLibrary()
+        if uselocalcalserv:
+            self.calService = CalibrationService()
+            self.calDefLib = CalibrationDefinitionLibrary()
         
     def getClassificationLibrary(self):
         # @@todo: handle context here
@@ -58,7 +63,8 @@ class DataSpider(object):
                  filemask = None,
                  showCals = False,
                  incolog = True,
-                 stayTop = False):
+                 stayTop = False,
+                 raiseExcept = False):
         """
         Recursively walk a given directory and put type information to stdout
         """
@@ -171,7 +177,7 @@ class DataSpider(object):
                             fwid = pwid - indent 
                             # print start of string
                             
-                            while len(tfile)> fwid:
+                            while len(tfile)>= fwid:
                                 if False:
                                     part = tfile[:fwid]
                                     print "     ${BG_WHITE}%s${NORMAL}" % part
@@ -227,24 +233,36 @@ class DataSpider(object):
 
                             # print descriptors
                             fl = AstroData(fname)
-
+# show descriptors                            
                             if (showDescriptors != None):
                                 sdl = showDescriptors.split(",")
                                 # print ol
+                                # get maxlen
+                                maxlen = 0
                                 for sd in sdl:
-                                    # print "DS242:", sd
+                                    maxlen = max(len(sd),maxlen)
+                                    
+                                for sd in sdl:
+                                    #print "DS242:", sd
                                     try:
-                                        dval = eval("fl."+sd+"()")
-                                        print "          %s = %s" % (sd, str(dval))
+                                        if "(" not in sd:
+                                            dval = eval("fl."+sd+"()")
+                                        else:
+                                            dval = eval("fl."+sd)
+                                        pad = " " * (maxlen - len(sd))
+                                        sd = str(sd) + pad
+                                        print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
+                                        
                                     except:
-                                        print "Failed Descriptor Calculation for %s" % sd
+                                        print ("         ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}") % sd
                                         raise
+                                        
 
                             # if phead then there are headers to print per file
                             if (pheads != None):
-                                print "          -----------"
-                                print "          PHU Headers"
-                                print "          -----------"
+                                #print "          -----------"
+                                print "          ${UNDERLINE}PHU Headers${NORMAL}"
+                                #print "          -----------"
                                 #print "pheads", pheads  
                                 hlist = pyfits.open(fname)
                                 pheaders = pheads.split(",")
@@ -252,10 +270,9 @@ class DataSpider(object):
                                     #if in phu, this is the code
 
                                     try:
-                                        print "          %s = (%s)" % (headkey, hlist[0].header[headkey])
-                                    except KeN20091027S0133.fitsyError:
-                                        print "          %s not present in PHU of %s" % (headkey, tfile) 
-                                print "          -----------"
+                                        print "            %s = (%s)" % (headkey, hlist[0].header[headkey])
+                                    except KeyError:
+                                        print "            %s not present in PHU of %s" % (headkey, tfile) 
 
                                 hlist.close()
                             if (showCals == True):
@@ -271,6 +288,7 @@ class DataSpider(object):
                                     print "          %10s: %s" % (caltyp, cs)
                     else:
                         if (verbose) : print "%s is not a FITS file" % tfile
+                    
             if stayTop == True:
                 # cheap way to not recurse.
                 break;

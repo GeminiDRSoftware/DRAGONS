@@ -8,6 +8,8 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
 from StandardNIRIKeyDict import stdkeyDictNIRI
+import sys
+import re
 
 class NIRI_RAWDescriptorCalc(Calculator):
     niriFilternameMapConfig = [
@@ -52,7 +54,9 @@ class NIRI_RAWDescriptorCalc(Calculator):
     
     def __init__(self):
         self.niriSpecDict = Lookups.getLookupTable("Gemini/NIRI/NIRISpecDict", "niriSpecDict")
+        self.nsappwave = Lookups.getLookupTable("Gemini/IR/nsappwavepp.fits", 1)
         self.makeFilternameMap()
+        
     def airmass(self, dataset):
         """
         Return the airmass value for NIRI
@@ -96,6 +100,16 @@ class NIRI_RAWDescriptorCalc(Calculator):
         @return: the central wavelength (nanometers)
         """
         retcwavefloat = None
+        if False:
+            for col in self.nsappwave.columns:
+                sys.stdout.write(col.name+" ")
+
+        fpmask = self.fpmask(dataset)
+        dname  = self.disperser(dataset)
+        
+        for row in self.nsappwave.data:
+            if fpmask == row.field("MASK") and dname == row.field("GRATING"):
+                retcwavefloat = float(row.field("LAMBDA"))
         
         return retcwavefloat
     
@@ -132,7 +146,23 @@ class NIRI_RAWDescriptorCalc(Calculator):
         @return: the disperser / grating used to acquire the data
         """
         retdisperserstring = None
-        
+        try:
+            hdu = dataset.hdulist
+            filter1 = hdu[0].header[stdkeyDictNIRI["key_niri_filter1"]]
+            filter2 = hdu[0].header[stdkeyDictNIRI["key_niri_filter2"]]
+            filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
+            filter1 = GemCalcUtil.removeComponentID(filter1)
+            filter2 = GemCalcUtil.removeComponentID(filter2)
+            filter3 = GemCalcUtil.removeComponentID(filter3)
+        except KeyError:
+            return None
+        diskey = "grism"
+        if diskey in filter1:
+            retdisperserstring = filter1
+        if diskey in filter2:
+            retdisperserstring = filter2
+        if diskey in filter3:
+            retdisperserstring = filter3
         return str(retdisperserstring)
         
     def exptime(self, dataset):
@@ -173,7 +203,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset):
+    def filtername(self, dataset, pretty = False):
         """
         Return the filtername value for NIRI
         @param dataset: the data set
@@ -198,8 +228,9 @@ class NIRI_RAWDescriptorCalc(Calculator):
             return None
         
         #map to science name if filtername in table
-        if retfilternamestring in self.niriFilternameMap:
-            retfilternamestring = self.niriFilternameMap[retfilternamestring]
+        if pretty == True:
+            if retfilternamestring in self.niriFilternameMap:
+                retfilternamestring = self.niriFilternameMap[retfilternamestring]
             
         return str(retfilternamestring)
     
@@ -572,7 +603,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         filters2 = []
         for filt in filters:
             filtlow = filt.lower()
-            if ("open" in filtlow) or ("grism" in filtlow) or ("pupil" in filtlow) or ("pk50" in filtlow):
+            if ("open" in filtlow) or ("grism" in filtlow) or ("pupil" in filtlow):
                 pass
             else:
                 filters2.append(filt)

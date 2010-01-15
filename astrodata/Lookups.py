@@ -1,5 +1,6 @@
 import os
 import ConfigSpace
+import pyfits
 
 def getLookupTable(modname, *lookup):
     """
@@ -25,23 +26,30 @@ def getLookupTable(modname, *lookup):
     @param lookup: name of the lookup table to load
     @type lookup: string
     """
-    if False: # OLD WAY, here to compare while making change to lookups 
-        if (modname[-3:0] != ".py"):
-            modname += ".py"
-        print "L30:", modname
-        modname = os.path.dirname(os.path.abspath(__file__))+"/lookups/"+modname
 
     modname = ConfigSpace.lookupPath(modname)
-    f = file(modname)
-    exec(f)
-    f.close()
-    
-    if len(lookup) == 1:
-        retval = eval (lookup[0])
-    else:
-        retval = []
-        for item in lookup:
-            retval.append(eval(item))
+    if ".py" in modname:
+        f = file(modname)
+      
+        exec(f)
+        f.close()
 
+        if len(lookup) == 1:
+            retval = eval (lookup[0])
+        else:
+            retval = []
+            for item in lookup:
+                retval.append(eval(item))
+    elif ".fits" in modname:
+        # in this case lookup will have extension ids
+        table = pyfits.open(modname)
+        if len(lookup) == 1:
+            retval = table[lookup[0]]
+        else:
+            for item in lookup:
+                retval.append(table[item])
+            
+    else:
+        raise "this should never happen, tell someone"
     return retval
     
