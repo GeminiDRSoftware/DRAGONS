@@ -1,10 +1,14 @@
-class GMOS_SPECT(ORClassification):
+class GMOS_SPECT(DataClassification):
     name="GMOS_SPECT"
     # this a description of the intent of the classification
     # to what does the classification apply?
     usage = '''
         Applies to all data from either GMOS-North or GMOS-South instruments in any mode.
         '''
-    typeORs = ["GMOS_IFU", "GMOS_MOS", "GMOS_LS"]
+    typeReqs= ['GMOS']
+    phuReqs = {
+                # If the grating is not the mirror, then it must be spectroscopy
+                '{prohibit}GRATING': 'MIRROR'
+                }
 
 newtypes.append( GMOS_SPECT())
