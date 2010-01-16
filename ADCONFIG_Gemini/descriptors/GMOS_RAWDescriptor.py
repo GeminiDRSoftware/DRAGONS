@@ -27,7 +27,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         self.gmosampsGain,self.gmosampsGainBefore20060831 = Lookups.getLookupTable("Gemini/GMOS/GMOSAmpTables", "gmosampsGain", "gmosampsGainBefore20060831")
         self.gmosampsRdnoise,self.gmosampsRdnoiseBefore20060831 = Lookups.getLookupTable("Gemini/GMOS/GMOSAmpTables", "gmosampsRdnoise", "gmosampsRdnoiseBefore20060831")
         
-    def airmass(self, dataset):
+    def airmass(self, dataset, **args):
         """
         Return the airmass value for GMOS
         @param dataset: the data set
@@ -44,7 +44,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return float(retairmassfloat)
     
-    def camera(self, dataset):
+    def camera(self, dataset, **args):
         """
         Return the camera value for GMOS
         @param dataset: the data set
@@ -61,7 +61,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retcamerastring)
     
-    def cwave(self, dataset):
+    def cwave(self, dataset, **args):
         """
         Return the cwave value for GMOS
         @param dataset: the data set
@@ -71,14 +71,15 @@ class GMOS_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retcwavefloat = hdu[0].header[stdkeyDictGMOS["key_gmos_cwave"]]
-        
+            retcwavefloat = float(hdu[0].header[stdkeyDictGMOS["key_gmos_cwave"]])
+            retcwavefloat /= 1000 # it's in angstroms in the header, cwave returns microns
+            
         except KeyError:
             return None
 
         return float(retcwavefloat)
     
-    def datasec(self, dataset):
+    def datasec(self, dataset, **args):
         """
         Return the datasec value for GMOS
         @param dataset: the data set
@@ -102,7 +103,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retdataseclist
     
-    def detsec(self, dataset):
+    def detsec(self, dataset, **args):
         """
         Return the detsec value for GMOS
         @param dataset: the data set
@@ -126,7 +127,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retdetseclist
     
-    def disperser(self, dataset):
+    def disperser(self, dataset, **args):
         """
         Return the disperser value for GMOS
         @param dataset: the data set
@@ -143,7 +144,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retdisperserstring)
     
-    def exptime(self, dataset):
+    def exptime(self, dataset, **args):
         """
         Return the exptime value for GMOS
         @param dataset: the data set
@@ -160,7 +161,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return float(retexptimefloat)
     
-    def filterid(self, dataset):
+    def filterid(self, dataset, **args):
         """
         Return the filterid value for GMOS
         @param dataset: the data set
@@ -184,7 +185,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset):
+    def filtername(self, dataset, **args):
         """
         Return the filtername value for GMOS
         @param dataset: the data set
@@ -216,7 +217,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retfilternamestring)
     
-    def fpmask(self, dataset):
+    def fpmask(self, dataset, **args):
         """
         Return the fpmask value for GMOS
         @param dataset: the data set
@@ -238,7 +239,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retfpmaskstring)
     
-    def gain(self, dataset):
+    def gain(self, dataset, **args):
         """
         Return the gain value for GMOS
         @param dataset: the data set
@@ -298,7 +299,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
     gmosampsGain = None
     gmosampsGainBefore20060831 = None
     
-    def instrument(self, dataset):
+    def instrument(self, dataset, **args):
         """
         Return the instrument value for GMOS
         @param dataset: the data set
@@ -315,7 +316,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
                         
         return str(retinstrumentstring)
     
-    def mdfrow(self, dataset):
+    def mdfrow(self, dataset, **args):
         """
         Return the mdfrow value for GMOS
         @param dataset: the data set
@@ -327,7 +328,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retmdfrowint
     
-    def nonlinear(self, dataset):
+    def nonlinear(self, dataset, **args):
         """
         Return the nonlinear value for GMOS
         @param dataset: the data set
@@ -339,7 +340,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retnonlinearint
     
-    def nsciext(self, dataset):
+    def nsciext(self, dataset, **args):
         """
         Return the nsciext value for GMOS
         @param dataset: the data set
@@ -351,7 +352,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
 
         return int(retnsciextint)
     
-    def object(self, dataset):
+    def object(self, dataset, **args):
         """
         Return the object value for GMOS
         @param dataset: the data set
@@ -368,7 +369,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
                         
         return str(retobjectstring)
     
-    def obsmode(self, dataset):
+    def obsmode(self, dataset, **args):
         """
         Return the obsmode value for GMOS
         @param dataset: the data set
@@ -408,7 +409,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retobsmodestring)
     
-    def pixscale(self, dataset):
+    def pixscale(self, dataset, **args):
         """
         Return the pixscale value for GMOS
         @param dataset: the data set
@@ -440,7 +441,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return float(retpixscalefloat)
     
-    def pupilmask(self, dataset):
+    def pupilmask(self, dataset, **args):
         """
         Return the pupilmask value for GMOS
         @param dataset: the data set
@@ -452,7 +453,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retpupilmaskstring)
     
-    def rdnoise(self, dataset):
+    def rdnoise(self, dataset, **args):
         """
         Return the rdnoise value for GMOS
         @param dataset: the data set
@@ -512,7 +513,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
     gmosampsRdnoise = None
     gmosampsRdnoiseBefore20060831 = None
     
-    def satlevel(self, dataset):
+    def satlevel(self, dataset, **args):
         """
         Return the satlevel value for GMOS
         @param dataset: the data set
@@ -524,7 +525,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return int(retsaturationint)
     
-    def utdate(self, dataset):
+    def utdate(self, dataset, **args):
         """
         Return the utdate value for GMOS
         @param dataset: the data set
@@ -541,7 +542,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retutdatestring)
     
-    def uttime(self, dataset):
+    def uttime(self, dataset, **args):
         """
         Return the uttime value for GMOS
         @param dataset: the data set
@@ -558,7 +559,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retuttimestring)
     
-    def wdelta(self, dataset):
+    def wdelta(self, dataset, **args):
         """
         Return the wdelta value for GMOS
         @param dataset: the data set
@@ -573,7 +574,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retwdeltalist
     
-    def wrefpix(self, dataset):
+    def wrefpix(self, dataset, **args):
         """
         Return the wrefpix value for GMOS
         @param dataset: the data set
@@ -585,7 +586,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retwrefpixfloat
     
-    def xccdbin(self, dataset):
+    def xccdbin(self, dataset, **args):
         """
         Return the xccdbin value for GMOS
         @param dataset: the data set
@@ -607,7 +608,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return int(retxccdbinint)
     
-    def yccdbin(self, dataset):
+    def yccdbin(self, dataset, **args):
         """
         Return the yccdbin value for GMOS
         @param dataset: the data set
@@ -631,7 +632,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return int(retyccdbinint)
         
-    def gainorig( self, dataset ):
+    def gainorig( self, dataset , **args):
         '''
         
         
@@ -684,7 +685,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
 
         return retary
         
-    def ronorig( self, dataset ):
+    def ronorig( self, dataset , **args):
         '''
         
         '''
@@ -700,7 +701,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         #print "GRD700:", repr(temp)
         return temp
             
-    def display(self, dataset):
+    def display(self, dataset, **args):
         from pyraf import iraf
         from pyraf.iraf import gemini
         gemini()

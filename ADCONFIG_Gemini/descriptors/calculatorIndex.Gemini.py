@@ -19,7 +19,7 @@ calculatorIndex = {
     "GMOS":"GMOS_RAWDescriptor.GMOS_RAWDescriptorCalc()",
     "GNIRS":"GNIRS_RAWDescriptor.GNIRS_RAWDescriptorCalc()",
     "MICHELLE":"MICHELLE_RAWDescriptor.MICHELLE_RAWDescriptorCalc()",
-    "NICI":"NICI_RAWDescriptor.NICI_RAWDescriptorCalc()",
+    #"NICI":"NICI_RAWDescriptor.NICI_RAWDescriptorCalc()",
     "NIFS":"NIFS_RAWDescriptor.NIFS_RAWDescriptorCalc()",
     "NIRI":"NIRI_RAWDescriptor.NIRI_RAWDescriptorCalc()",
     "TRECS":"TRECS_RAWDescriptor.TRECS_RAWDescriptorCalc()",
