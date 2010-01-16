@@ -254,8 +254,10 @@ class DataSpider(object):
                                         print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
                                         
                                     except:
-                                        print ("         ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}") % sd
-                                        raise
+                                        print '         ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}:"%s"' % (sd,str(sys.exc_info()[1])) 
+                                        if raiseExcept:
+                                            raise
+                                        
                                         
 
                             # if phead then there are headers to print per file

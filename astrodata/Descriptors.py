@@ -37,7 +37,7 @@ class DescriptorExcept:
         @returns: string representation of this exception, the self.message member
         @rtype: string"""
         return self.message
-        
+dExcept = DescriptorExcept
 # NOTE: to address the issue of Descriptors module being a singleton, instead of the 
 # approach used for the ClassificationLibrary, we use the descriptors module
 # itself as the singleton and thus these module level "globals" which serve

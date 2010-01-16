@@ -56,50 +56,6 @@ class Calculator(object):
     usage = ""
         
     stdkeyDict = globalStdkeyDict
-                       
-    #bound instance methods
-    def gain(self, dataset):
-        """ 
-        Return the gain for generic AstroData instances, by reading the standard
-        'gain' header from each science extension (EXTNAM="SCI"), in the case
-        of the default Calculator. Subclasses of course will make data classification
-        (aka "dataset types" or "AstroData types") specific calculations to obtain
-        the values.
-        
-        Note: we never check for 'gain' in the PHU, it is supposed to accompany
-        the Science data directly in that extensions own header. Since AstroData is
-        assumed to be a set of data, this means the gain values are returned as a
-        list of floats.
-        @param dataset: the data set for which to calculate C{gain}
-        @type dataset: AstroData
-        @rtype: list
-        @returns: array of gain values, index 0 will be the gain of science
-        extension #1, i.e. (EXTNAME,EXTVER)==("SCI",1) and so on.
-        """
-        return None
-        # BELOW LIES AN ATTEMPT AT A GENERAL GAIN DESCRIPTOR
-        #retval = []
-        #
-        #i = 0
-        #for gd in dataset["SCI"]:
-        #    i += 1
-        #    gain = gd.getHeader(gd.extensions[0], self.stdkeyDict["key_gain"])
-        #    
-        #    retval.append(gain)
-        #    
-        #return retval
-    
-    
-    def filtername(self, dataset):
-        """This function returns the filter descriptor, which cannot be "filter"
-        in python since that is a reserved word. As with all the descriptors 
-        in the default, base class, Calculator class methods, the value is
-        read from the approapriate standard header. Calculators subclassed from
-        Calculator can override this behavior to calculate the filtername 
-        as appropriate to a particular data classification.
-        """
-        return self.fetchPHUValue("key_filter", dataset)
-        
     def fetchPHUValue(self, keyname, dataset):
         """This utility functioin fetches a header value from the PHU of the
         given dataset. The C{keyname} given is from the standardized key names

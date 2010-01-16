@@ -10,6 +10,8 @@ from optparse import OptionParser
 from utils import terminal
 from utils.terminal import TerminalController
 
+import traceback as tb
+
 if False:
     from astrodata.LocalCalibrationService import CalibrationService
 
@@ -70,6 +72,7 @@ terminal.forceHeight = options.forceHeight
 dt = DataSpider()
 cl = dt.getClassificationLibrary()
 
+showStack = True
 if (options.listdescriptors):
     from astrodata import Descriptors
     import CalculatorInterface
@@ -96,4 +99,8 @@ else:
                     raiseExcept = options.raiseExcept
                     )
     except KeyboardInterrupt:
+    
         print "Interrupted by Control-C"
+        if (showStack):
+            st = tb.extract_stack()
+            print repr(st)
