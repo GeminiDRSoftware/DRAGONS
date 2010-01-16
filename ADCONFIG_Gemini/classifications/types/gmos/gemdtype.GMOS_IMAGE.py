@@ -4,8 +4,8 @@ class GMOS_IMAGE(DataClassification):
     usage = ""
     typeReqs= ['GMOS']
     phuReqs= {  
-                # check --> current GMOS data does not have this 'OBSMODE': 'IMAGE',
-                'OBSTYPE': 'OBJECT'
+                # Imaging by definition uses the MIRROR as a grating.
+                'GRATING': 'MIRROR'
                 }
 
 newtypes.append(GMOS_IMAGE())
