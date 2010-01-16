@@ -13,7 +13,7 @@ class NICI_RAWDescriptorCalc(Calculator):
     #def __init__(self):
     #    return None
 
-    def airmass(self, dataset):
+    def airmass(self, dataset, **args):
         """
         Return the airmass value for NICI
         @param dataset: the data set
@@ -30,7 +30,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return float(retairmassfloat)
     
-    def camera(self, dataset):
+    def camera(self, dataset, **args):
         """
         Return the camera value for NICI
         @param dataset: the data set
@@ -47,7 +47,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retcamerastring)
     
-    def cwave(self, dataset):
+    def cwave(self, dataset, **args):
         """
         Return the cwave value for NICI
         @param dataset: the data set
@@ -59,7 +59,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retcwavefloat
     
-    def datasec(self, dataset):
+    def datasec(self, dataset, **args):
         """
         Return the datasec value for NICI
         @param dataset: the data set
@@ -71,7 +71,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retdatasecstring)
     
-    def detsec(self, dataset):
+    def detsec(self, dataset, **args):
         """
         Return the detsec value for NICI
         @param dataset: the data set
@@ -83,7 +83,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset):
+    def disperser(self, dataset, **args):
         """
         Return the disperser value for NICI
         @param dataset: the data set
@@ -95,7 +95,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retdisperserstring)
         
-    def exptime(self, dataset):
+    def exptime(self, dataset, **args):
         """
         Return the exptime value for NICI
         @param dataset: the data set
@@ -107,7 +107,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retexptimefloat
     
-    def filterid(self, dataset):
+    def filterid(self, dataset, **args):
         """
         Return the filterid value for NICI
         @param dataset: the data set
@@ -119,7 +119,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset):
+    def filtername(self, dataset, **args):
         """
         Return the filtername value for NICI
         @param dataset: the data set
@@ -132,10 +132,12 @@ class NICI_RAWDescriptorCalc(Calculator):
             retfilternamestring = hdu[1].header[stdkeyDictNICI["key_nici_filter_r"]]+' '+hdu[2].header[stdkeyDictNICI["key_nici_filter_b"]]
         except KeyError: 
             return None
+        except:
+            return None
         
         return str(retfilternamestring)
     
-    def fpmask(self, dataset):
+    def fpmask(self, dataset, **args):
         """
         Return the fpmask value for NICI
         @param dataset: the data set
@@ -152,7 +154,7 @@ class NICI_RAWDescriptorCalc(Calculator):
                         
         return str(retfpmaskstring)
     
-    def gain(self, dataset):
+    def gain(self, dataset, **args):
         """
         Return the gain value for NICI
         @param dataset: the data set
@@ -165,7 +167,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retgainfloat
     
-    def instrument(self, dataset):
+    def instrument(self, dataset, **args):
         """
         Return the instrument value for NICI
         @param dataset: the data set
@@ -182,7 +184,7 @@ class NICI_RAWDescriptorCalc(Calculator):
                         
         return str(retinstrumentstring)
     
-    def mdfrow(self, dataset):
+    def mdfrow(self, dataset, **args):
         """
         Return the mdfrow value for NICI
         @param dataset: the data set
@@ -194,7 +196,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retmdfrowint
     
-    def nonlinear(self, dataset):
+    def nonlinear(self, dataset, **args):
         """
         Return the nonlinear value for NICI
         @param dataset: the data set
@@ -206,7 +208,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retnonlinearint
 
-    def nsciext(self, dataset):
+    def nsciext(self, dataset, **args):
         """
         Return the nsciext value for NICI
         @param dataset: the data set
@@ -218,7 +220,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return int(retnsciextint)
 
-    def object(self, dataset):
+    def object(self, dataset, **args):
         """
         Return the object value for NICI
         @param dataset: the data set
@@ -235,7 +237,7 @@ class NICI_RAWDescriptorCalc(Calculator):
                         
         return str(retobjectstring)
     
-    def obsmode(self, dataset):
+    def obsmode(self, dataset, **args):
         """
         Return the obsmode value for NICI
         @param dataset: the data set
@@ -247,7 +249,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retobsmodestring)
     
-    def pixscale(self, dataset):
+    def pixscale(self, dataset, **args):
         """
         Return the pixscale value for NICI
         @param dataset: the data set
@@ -259,7 +261,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return float(retpixscalefloat)
     
-    def pupilmask(self, dataset):
+    def pupilmask(self, dataset, **args):
         """
         Return the pupilmask value for NICI
         @param dataset: the data set
@@ -276,7 +278,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retpupilmaskstring)
     
-    def rdnoise(self, dataset):
+    def rdnoise(self, dataset, **args):
         """
         Return the rdnoise value for NICI
         @param dataset: the data set
@@ -288,7 +290,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retrdnoisefloat
     
-    def satlevel(self, dataset):
+    def satlevel(self, dataset, **args):
         """
         Return the satlevel value for NICI
         @param dataset: the data set
@@ -300,7 +302,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retsaturationint
     
-    def utdate(self, dataset):
+    def utdate(self, dataset, **args):
         """
         Return the utdate value for NICI
         @param dataset: the data set
@@ -317,7 +319,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retutdatestring)
     
-    def uttime(self, dataset):
+    def uttime(self, dataset, **args):
         """
         Return the uttime value for NICI
         @param dataset: the data set
@@ -334,7 +336,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return str(retuttimestring)
     
-    def wdelta(self, dataset):
+    def wdelta(self, dataset, **args):
         """
         Return the wdelta value for NICI
         @param dataset: the data set
@@ -346,7 +348,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retwdeltafloat
     
-    def wrefpix(self, dataset):
+    def wrefpix(self, dataset, **args):
         """
         Return the wrefpix value for NICI
         @param dataset: the data set
@@ -358,7 +360,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retwrefpixfloat
     
-    def xccdbin(self, dataset):
+    def xccdbin(self, dataset, **args):
         """
         Return the xccdbin value for NICI
         @param dataset: the data set
@@ -370,7 +372,7 @@ class NICI_RAWDescriptorCalc(Calculator):
         
         return retxccdbinint
     
-    def yccdbin(self, dataset):
+    def yccdbin(self, dataset, **args):
         """
         Return the yccdbin value for NICI
         @param dataset: the data set

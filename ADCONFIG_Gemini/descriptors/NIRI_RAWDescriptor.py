@@ -100,9 +100,6 @@ class NIRI_RAWDescriptorCalc(Calculator):
         @return: the central wavelength (nanometers)
         """
         retcwavefloat = None
-        if False:
-            for col in self.nsappwave.columns:
-                sys.stdout.write(col.name+" ")
 
         fpmask = self.fpmask(dataset)
         dname  = self.disperser(dataset)
@@ -111,6 +108,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
             if fpmask == row.field("MASK") and dname == row.field("GRATING"):
                 retcwavefloat = float(row.field("LAMBDA"))
         
+        retcwavefloat /= 1000 # in header in ansgrtoms, convert to microns, cwaves unit
         return retcwavefloat
     
     def datasec(self, dataset):

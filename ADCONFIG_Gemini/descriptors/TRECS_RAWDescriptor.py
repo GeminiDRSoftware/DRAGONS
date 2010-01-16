@@ -9,7 +9,7 @@ from StandardTRECSKeyDict import stdkeyDictTRECS
 
 class TRECS_RAWDescriptorCalc(Calculator):
 
-    def airmass(self, dataset):
+    def airmass(self, dataset, **args):
         """
         Return the airmass value for TRECS
         @param dataset: the data set
@@ -26,7 +26,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return float(retairmassfloat)
     
-    def camera(self, dataset):
+    def camera(self, dataset, **args):
         """
         Return the camera value for TRECS
         @param dataset: the data set
@@ -43,7 +43,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retcamerastring)
     
-    def cwave(self, dataset):
+    def cwave(self, dataset, **args):
         """
         Return the cwave value for TRECS
         @param dataset: the data set
@@ -67,7 +67,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return float(retcwavefloat)
     
-    def datasec(self, dataset):
+    def datasec(self, dataset, **args):
         """
         Return the datasec value for TRECS
         @param dataset: the data set
@@ -79,7 +79,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retdatasecstring)
     
-    def detsec(self, dataset):
+    def detsec(self, dataset, **args):
         """
         Return the detsec value for TRECS
         @param dataset: the data set
@@ -91,7 +91,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset):
+    def disperser(self, dataset, **args):
         """
         Return the disperser value for TRECS
         @param dataset: the data set
@@ -108,7 +108,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retdisperserstring)
     
-    def exptime(self, dataset):
+    def exptime(self, dataset, **args):
         """
         Return the exptime value for TRECS
         @param dataset: the data set
@@ -125,7 +125,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return float(retexptimefloat)
     
-    def filterid(self, dataset):
+    def filterid(self, dataset, **args):
         """
         Return the filterid value for TRECS
         @param dataset: the data set
@@ -137,7 +137,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset):
+    def filtername(self, dataset, **args):
         """
         Return the filtername value for TRECS
         @param dataset: the data set
@@ -179,7 +179,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retfilternamestring)
     
-    def fpmask(self, dataset):
+    def fpmask(self, dataset, **args):
         """
         Return the fpmask value for TRECS
         @param dataset: the data set
@@ -196,7 +196,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
                         
         return str(retfpmaskstring)
     
-    def gain(self, dataset):
+    def gain(self, dataset, **args):
         """
         Return the gain value for TRECS
         @param dataset: the data set
@@ -220,7 +220,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
 
         return float(retgainfloat)
     
-    def instrument(self, dataset):
+    def instrument(self, dataset, **args):
         """
         Return the instrument value for TRECS
         @param dataset: the data set
@@ -237,7 +237,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
                         
         return str(retinstrumentstring)
     
-    def mdfrow(self, dataset):
+    def mdfrow(self, dataset, **args):
         """
         Return the mdfrow value for TRECS
         @param dataset: the data set
@@ -249,7 +249,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return retmdfrowint
     
-    def nonlinear(self, dataset):
+    def nonlinear(self, dataset, **args):
         """
         Return the nonlinear value for TRECS
         @param dataset: the data set
@@ -261,7 +261,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return retnonlinearint
     
-    def nsciext(self, dataset):
+    def nsciext(self, dataset, **args):
         """
         Return the nsciext value for TRECS
         @param dataset: the data set
@@ -273,7 +273,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return int(retnsciextint)
     
-    def object(self, dataset):
+    def object(self, dataset, **args):
         """
         Return the object value for TRECS
         @param dataset: the data set
@@ -290,7 +290,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
                         
         return str(retobjectstring)
     
-    def obsmode(self, dataset):
+    def obsmode(self, dataset, **args):
         """
         Return the obsmode value for TRECS
         @param dataset: the data set
@@ -307,7 +307,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retobsmodestring)
     
-    def pixscale(self, dataset):
+    def pixscale(self, dataset, **args):
         """
         Return the pixscale value for TRECS
         @param dataset: the data set
@@ -319,7 +319,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
 
         return float(retpixscalefloat)
     
-    def pupilmask(self, dataset):
+    def pupilmask(self, dataset, **args):
         """
         Return the pupilmask value for TRECS
         @param dataset: the data set
@@ -336,7 +336,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retpupilmaskstring)
     
-    def rdnoise(self, dataset):
+    def rdnoise(self, dataset, **args):
         """
         Return the rdnoise value for TRECS
         @param dataset: the data set
@@ -348,7 +348,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return retrdnoisefloat
     
-    def satlevel(self, dataset):
+    def satlevel(self, dataset, **args):
         """
         Return the satlevel value for TRECS
         @param dataset: the data set
@@ -360,7 +360,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return retsaturationint
     
-    def utdate(self, dataset):
+    def utdate(self, dataset, **args):
         """
         Return the utdate value for TRECS
         @param dataset: the data set
@@ -377,7 +377,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retutdatestring)
     
-    def uttime(self, dataset):
+    def uttime(self, dataset, **args):
         """
         Return the uttime value for TRECS
         @param dataset: the data set
@@ -394,7 +394,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return str(retuttimestring)
     
-    def wdelta(self, dataset):
+    def wdelta(self, dataset, **args):
         """
         Return the wdelta value for TRECS
         @param dataset: the data set
@@ -418,7 +418,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return float(retwdeltafloat)
     
-    def wrefpix(self, dataset):
+    def wrefpix(self, dataset, **args):
         """
         Return the wrefpix value for TRECS
         @param dataset: the data set
@@ -430,7 +430,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return retwrefpixfloat
     
-    def xccdbin(self, dataset):
+    def xccdbin(self, dataset, **args):
         """
         Return the xccdbin value for TRECS
         @param dataset: the data set
@@ -442,7 +442,7 @@ class TRECS_RAWDescriptorCalc(Calculator):
         
         return retxccdbinint
     
-    def yccdbin(self, dataset):
+    def yccdbin(self, dataset, **args):
         """
         Return the yccdbin value for TRECS
         @param dataset: the data set
