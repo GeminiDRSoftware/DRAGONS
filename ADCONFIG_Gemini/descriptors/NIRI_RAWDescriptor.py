@@ -108,7 +108,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
             if fpmask == row.field("MASK") and dname == row.field("GRATING"):
                 retcwavefloat = float(row.field("LAMBDA"))
         
-        retcwavefloat /= 1000 # in header in ansgrtoms, convert to microns, cwaves unit
+        retcwavefloat /= 10000 # in header in ansgrtoms, convert to microns, cwaves unit
         return retcwavefloat
     
     def datasec(self, dataset):
