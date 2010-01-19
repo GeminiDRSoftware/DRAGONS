@@ -67,7 +67,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
-        @return: the central wavelength (nanometers)
+        @return: the central wavelength (micrometers)
         """
         try:
             hdu = dataset.hdulist
