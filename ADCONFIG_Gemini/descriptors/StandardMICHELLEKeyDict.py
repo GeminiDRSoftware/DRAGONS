@@ -8,7 +8,7 @@ stdkeyDictMICHELLE = {
     "key_michelle_fpmask":"SLITNAME",
     "key_michelle_gain":"GAIN",
     "key_michelle_instrument":"INSTRUME",
-    "key_michelle_nsciext":"NUMEXT",
+    "key_michelle_numext":"NUMEXT",
     "key_michelle_numexpos":"NUMEXPOS",
     "key_michelle_object":"OBJECT",
     "key_michelle_obsmode":"MODE",
