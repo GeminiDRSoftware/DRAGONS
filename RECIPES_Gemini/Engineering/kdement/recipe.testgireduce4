@@ -3,7 +3,7 @@ getProcessedBias
 getProcessedFlat
 prepare
 overscanSub
-overscanTrim
-biasSub
-flatField
-mosaic
+#overscanTrim
+#biasSub
+#flatField
+#mosaic
