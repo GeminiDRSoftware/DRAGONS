@@ -175,7 +175,8 @@ class ConfigSpace(object):
                     if exts != []:
                         for ext in exts:
                             if ext == os.path.splitext(fname)[1]:
-                                filelist.append( os.path.join(path, fname) )
+                                yield os.path.join(path, fname)
+                                #filelist.append( os.path.join(path, fname) )
                                 break
                     else:
                         yield os.path.join(path, fname)
