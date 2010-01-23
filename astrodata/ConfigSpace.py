@@ -64,7 +64,7 @@ class ConfigSpace(object):
             dirs = self.getRecipeDirs()
         else:
             dirs = self.getConfigDirs(spacename)
-        # print "C46: dirs: ", dirs
+        # print "C67: dirs: ", dirs
         for directory in dirs:
             for elem in os.walk(directory):
                 path = elem[0]
@@ -84,6 +84,8 @@ class ConfigSpace(object):
         if (self.configdirs != None):
             if spacename in self.configdirs:
                 return self.configdirs[spacename]
+        else:
+            print "CS88:", "inefficency"
             
         # get the config space standard postfix for directories
         try:
@@ -97,21 +99,23 @@ class ConfigSpace(object):
         adconfdirs = []
         i = 1
         for path in sys.path:
-            if os.path.isdir(path):
-                        # print "ISADIR"
-                        subdirs = os.listdir(path)
-                        for subpath in subdirs:
-                            if CONFIGMARKER in subpath:
-                                packdir = os.path.join(path,subpath)
-                                if packdir not in self.configpacks:
-                                    self.configpacks.append(packdir)
-                                fullpath = os.path.join(path, subpath, postfix)
-                                # print "full", fullpath
-                                if os.path.isdir(fullpath):
-                                    # then this is one of the config space directories
-                                    adconfdirs.append(fullpath)
-                        else:
-                            pass # print ""
+            print "CS100:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
+            if  os.path.abspath(path) !=  os.path.abspath(os.getcwd()):
+                if os.path.isdir(path):
+                            # print "ISADIR"
+                            subdirs = os.listdir(path)
+                            for subpath in subdirs:
+                                if CONFIGMARKER in subpath:
+                                    packdir = os.path.join(path,subpath)
+                                    if packdir not in self.configpacks:
+                                        self.configpacks.append(packdir)
+                                    fullpath = os.path.join(path, subpath, postfix)
+                                    # print "full", fullpath
+                                    if os.path.isdir(fullpath):
+                                        # then this is one of the config space directories
+                                        adconfdirs.append(fullpath)
+                            else:
+                                pass # print ""
                             
         self.configdirs.update({spacename: adconfdirs})
         

@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
 # import pdb
+try:
+    import astrodata 
+    from astrodata.DataSpider import *
+    from astrodata.AstroData import *
+    from optparse import OptionParser
 
-import astrodata 
-from astrodata.DataSpider import *
-from astrodata.AstroData import *
-from optparse import OptionParser
+    from utils import terminal
+    from utils.terminal import TerminalController
 
-from utils import terminal
-from utils.terminal import TerminalController
-
-import traceback as tb
-
+    import traceback as tb
+except:
+    raise
 if False:
     from astrodata.LocalCalibrationService import CalibrationService
 
@@ -59,6 +60,10 @@ parser.add_option("--force-height", dest = "forceHeight", default=None,
                   help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
 parser.add_option("-r", "--raiseexception", dest="raiseExcept", action="store_true",
         help="Throw exceptions on some failures, e.g. failed descriptor calls to allow debugging of the problem.")
+parser.add_option("-k", "--showstack", dest="showStack", action="store_true",
+        help="When a high level KeyboardInterrupt is caught, show the stack.")
+parser.add_option("-w", "--where", dest="where", default = None,
+        help="Allows a condition to test, should use descriptors") 
 
 (options, args) = parser.parse_args()
 
@@ -96,7 +101,8 @@ else:
                     filemask = options.filemask,
                     showCals = options.showCals,
                     stayTop = options.stayTop,
-                    raiseExcept = options.raiseExcept
+                    raiseExcept = options.raiseExcept,
+                    where = options.where,
                     )
     except KeyboardInterrupt:
     

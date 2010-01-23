@@ -64,7 +64,8 @@ class DataSpider(object):
                  showCals = False,
                  incolog = True,
                  stayTop = False,
-                 raiseExcept = False):
+                 raiseExcept = False,
+                 where = None):
         """
         Recursively walk a given directory and put type information to stdout
         """
@@ -107,11 +108,12 @@ class DataSpider(object):
                         matched = re.match(mask, tfile)
                     except:
                         print "BAD FILEMASK (must be a valid regular expression):", mask
-                        return 
+                        return str(sys.exc_info()[1])
                     if (re.match(mask, tfile)) :
                         if (ldebug) : print "FITS:", tfile
 
                         fname = os.path.join(root, tfile)
+                        fl = AstroData(fname)
 
                         gain = 0
                         stringway = False
@@ -128,7 +130,6 @@ class DataSpider(object):
                             # this is the AstroData Class way
                             # to ask the file itself
 
-                            fl = AstroData(fname)
                             if (onlyTypology == onlyStatus):
                                 dtypes = fl.discoverTypes()
                             elif (onlyTypology):
@@ -137,7 +138,6 @@ class DataSpider(object):
                                 dtypes = fl.discoverStatus()
                             if verbose:
                                 print "DS130:", repr(dtypes)
-                            fl.close()
 
                         # print "after classification"
                         if (dtypes != None) and (len(dtypes)>0):
@@ -161,6 +161,20 @@ class DataSpider(object):
                                         break
                                     if (verbose):
                                         print "yes, found = ", str(found)
+                                        
+                            if (found == True):
+                                if where != None:
+                                    # let them use underscore as spaces, bash + getopts doesn't like space in params even in quotes
+                                    cleanwhere = re.sub("_"," ", where)
+                                    ad = fl
+                                    try:
+                                        found = eval(cleanwhere)
+                                    except:
+                                        print "can't execute where:\n\t" + where + "\n\t" +cleanwhere
+                                        
+                                        print "reason:\n\t"+str(sys.exc_info()[1])+"\n"+repr(sys.exc_info())
+                                        sys.exit(1)
+                                        
 
                             if (found != True):
                                 continue
@@ -232,8 +246,7 @@ class DataSpider(object):
                                 hlist.close()
 
                             # print descriptors
-                            fl = AstroData(fname)
-# show descriptors                            
+                            # show descriptors                            
                             if (showDescriptors != None):
                                 sdl = showDescriptors.split(",")
                                 # print ol
