@@ -341,6 +341,7 @@ class FilteredStdout(object):
         if forceprefix:
             prefix = forceprefix [0] + self.term.render(forceprefix[1]) + forceprefix[2]
             prefixclen = self.term.lenstr(prefix)
+            prefix0 = prefix
             prefix = self.term.render(prefix)
         else:
             # get prefix from top filter
@@ -350,10 +351,12 @@ class FilteredStdout(object):
             if f0.prefix:
                 prefix = f0.preprefix + f0.prefix + f0.postprefix
                 prefixclen = self.term.lenstr(prefix)
+                prefix0=prefix
                 prefix = self.term.render(prefix)
 
             else:
                 prefixclen = 0
+                prefix0 = ""
                 prefix = self.term.render("")
         
         if self.lastPrefix != prefix:
@@ -380,6 +383,7 @@ class FilteredStdout(object):
        cleanlines: %(cleanlines)s
          lineslen: %(lineslen)s
            prefix: %(prefix)s
+          prefix0: %(prefix0)s
         linestart: %(linestart)s
        needprefix: %(needprefix)s
  lastWriteForIraf: %(lwfi)s
@@ -392,6 +396,7 @@ class FilteredStdout(object):
             "cleanlines": repr(cleanlines),
             "lineslen": repr(lineslen),
             "prefix": repr(prefix),
+            "prefix0": repr(prefix0),
             "linestart": repr(self.linestart),
             "needprefix": repr(self.needprefix),
             "lwfi":repr(self.lastWriteForIraf),
@@ -476,13 +481,13 @@ class FilteredStdout(object):
         self.realstdout.flush()
 
 class Filter(object):
-    preprefix  = "${BOLD}"
-    postprefix = "${NORMAL}"
+    preprefix  = None # see default in __init__ arguments
+    postprefix = None 
     term    = None
     on      = True
     prefix  = None
     fout    = None
-    def __init__(self, prefix=None, preprefix = "${BOLD}", postprefix= "${NORMAL}"):
+    def __init__(self, prefix=None, preprefix = "${NORMAL}${BOLD}", postprefix= "${NORMAL}"):
         self.prefix = prefix
         self.preprefix = preprefix
         self.postprefix = postprefix
