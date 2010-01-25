@@ -99,7 +99,7 @@ class ConfigSpace(object):
         adconfdirs = []
         i = 1
         for path in sys.path:
-            print "CS100:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
+            # print "CS100:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
             if  os.path.abspath(path) !=  os.path.abspath(os.getcwd()):
                 if os.path.isdir(path):
                             # print "ISADIR"
