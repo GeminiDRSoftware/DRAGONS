@@ -39,129 +39,8 @@ class GEMINIPrimitives(ReductionObject):
     def pause(self, rc):
         rc.requestPause()
         yield rc
-#------------------------------------------------------------------------------ 
-    def logFilename (self, rc):
-        print "logFilename"
-        for i in range(0,5):
-            print "\tlogFilename",i
-            sleep(stepduration)
-            yield rc
-#------------------------------------------------------------------------------ 
-    def displayStructure(self, rc):
-        print "displayStructure"
-        for i in range(0,5):
-            print "\tds ",i
-            sleep(stepduration)
-            yield rc
-#------------------------------------------------------------------------------ 
-    def summarize(self, rc):
-        print "done with task"
-        for i in range(0,5):
-            sleep(stepduration)
-            yield rc        
-#------------------------------------------------------------------------------ 
-    def gem_produce_im_flat(self, rc):
-        print "gem_produce_imflat step called"
-        # rc.update({"flat" :rc.calibrations[(rc.inputs[0], "flat")]})
-        yield rc
-#------------------------------------------------------------------------------ 
-    def gem_produce_bias(self, rc):
-        print "gem_produce_bias step called"
-        # rc.update({"bias" :rc.calibrations[(rc.inputs[0], "bias")]})
-        yield rc    
-#------------------------------------------------------------------------------ 
-    def getProcessedBias(self, rc):
-        try:
-            print "getting bias"
-            rc.rqCal( "bias" )
-        except:
-            print "Problem getting bias"
-            raise 
-
-        yield rc
-#------------------------------------------------------------------------------ 
-    def getProcessedFlat(self, rc):
-        try:
-            print "getting flat"
-            rc.rqCal( "twilight" )
-        except:
-            print "Problem getting flat"
-            raise 
-        
-        yield rc    
-#------------------------------------------------------------------------------ 
-    def setStackable(self, rc):
-        try:
-            print "updating stackable with input"
-            rc.rqStackUpdate()
-        except:
-            print "Problem stacking input"
-            raise
-
-        yield rc
-#------------------------------------------------------------------------------ 
-    def getStackable(self, rc):
-        try:
-            print "getting stack"
-            rc.rqStackGet()
-        except:
-            print "Problem getting stack"
-            raise 
-
-        yield rc
-#------------------------------------------------------------------------------ 
-    def printStackable(self, rc):
-        ID = IDFactory.generateStackableID(rc.inputs, "1_0")
-        ls = rc.getStack(ID)
-        print "STACKABLE"
-        print "ID:", ID
-        if ls is None:
-            print "No Stackable list created for this input."
-        else:
-            for item in ls.filelist:
-                print "\t", item
-        yield rc
-#------------------------------------------------------------------------------ 
-    def printParameters(self, rc):
-        print "printing parameters"
-        print rc.paramsummary()
-        yield rc
-#------------------------------------------------------------------------------ 
-    def newdisplay(self, rc):
-        print "rc.localparms: " + repr(rc.localparms)
-        print 'rc["this"] ' + repr(rc["fnarp"])
-        print 'rc["global"] ' + repr(rc["thing"])
-        yield rc
-                
-#------------------------------------------------------------------------------ 
-    def display(self, rc):
-        try:
-            print "displaying output"
-            print "rc.localparms:", repr(rc.localparms)
-            print 'rc["fnarp"]', repr(rc["fnarp"])
-            print 'rc["thing"]', repr(rc["thing"])
-            rc.rqDisplay()           
-        except:
-            print "Problem displaying output"
-            raise 
-
-        yield rc
-#------------------------------------------------------------------------------ 
-    def mosaicChips(self, rc):
-       try:
-          print "producing image mosaic"
-          #mstr = 'flatdiv_'+rc.inputsAsStr()          
-          gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
-            Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
-          
-          
-          rc.reportOutput(rc.prependNames("mo_", currentDir = True))
-       except:
-          print "Problem producing image mosaic"
-          raise 
-
-       yield rc
-#------------------------------------------------------------------------------ 
+ 
+ #------------------------------------------------------------------------------ 
     def averageCombine(self, rc):
         try:
             # @@TODO: need to include parameter options here
@@ -199,6 +78,94 @@ class GEMINIPrimitives(ReductionObject):
             raise
 
         yield rc
+ 
+ #------------------------------------------------------------------------------ 
+    def crashReduce(self, rc):
+        raise 'Crashing'
+        yield rc
+       
+ #------------------------------------------------------------------------------ 
+    def display(self, rc):
+        try:
+            print "displaying output"
+            print "rc.localparms:", repr(rc.localparms)
+            print 'rc["fnarp"]', repr(rc["fnarp"])
+            print 'rc["thing"]', repr(rc["thing"])
+            rc.rqDisplay()           
+        except:
+            print "Problem displaying output"
+            raise 
+
+        yield rc
+        
+#testing purposes only*
+    def newdisplay(self, rc):
+        print "rc.localparms: " + repr(rc.localparms)
+        print 'rc["this"] ' + repr(rc["fnarp"])
+        print 'rc["global"] ' + repr(rc["thing"])
+        yield rc
+               
+#------------------------------------------------------------------------------ 
+    def displayStructure(self, rc):
+        print "displayStructure"
+        for i in range(0,5):
+            print "\tds ",i
+            sleep(stepduration)
+            yield rc
+            
+#------------------------------------------------------------------------------ 
+    def gem_produce_bias(self, rc):
+        print "gem_produce_bias step called"
+        # rc.update({"bias" :rc.calibrations[(rc.inputs[0], "bias")]})
+        yield rc   
+        
+#------------------------------------------------------------------------------ 
+    def gem_produce_im_flat(self, rc):
+        print "gem_produce_imflat step called"
+        # rc.update({"flat" :rc.calibrations[(rc.inputs[0], "flat")]})
+        yield rc
+
+#------------------------------------------------------------------------------ 
+    def getProcessedBias(self, rc):
+        try:
+            print "getting bias"
+            rc.rqCal( "bias" )
+        except:
+            print "Problem getting bias"
+            raise 
+
+        yield rc
+        
+#------------------------------------------------------------------------------ 
+    def getProcessedFlat(self, rc):
+        try:
+            print "getting flat"
+            rc.rqCal( "twilight" )
+        except:
+            print "Problem getting flat"
+            raise 
+        
+        yield rc 
+        
+#------------------------------------------------------------------------------ 
+    def getStackable(self, rc):
+        try:
+            print "getting stack"
+            rc.rqStackGet()
+        except:
+            print "Problem getting stack"
+            raise 
+
+        yield rc      
+                
+#------------------------------------------------------------------------------ 
+    def logFilename (self, rc):
+        print "logFilename"
+        for i in range(0,5):
+            print "\tlogFilename",i
+            sleep(stepduration)
+            yield rc
+
 #------------------------------------------------------------------------------ 
     def measureIQ(self, rc):
         try:
@@ -235,7 +202,58 @@ class GEMINIPrimitives(ReductionObject):
             raise 
         
         yield rc
+                    
 #------------------------------------------------------------------------------ 
-    def crashReduce(self, rc):
-        raise 'Crashing'
+    def mosaicChips(self, rc):
+       try:
+          print "producing image mosaic"
+          #mstr = 'flatdiv_'+rc.inputsAsStr()          
+          gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
+            Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
+          
+          
+          rc.reportOutput(rc.prependNames("mo_", currentDir = True))
+       except:
+          print "Problem producing image mosaic"
+          raise 
+
+       yield rc
+       
+ #------------------------------------------------------------------------------ 
+    def printParameters(self, rc):
+        print "printing parameters"
+        print rc.paramsummary()
+        yield rc        
+        
+#------------------------------------------------------------------------------ 
+    def printStackable(self, rc):
+        ID = IDFactory.generateStackableID(rc.inputs, "1_0")
+        ls = rc.getStack(ID)
+        print "STACKABLE"
+        print "ID:", ID
+        if ls is None:
+            print "No Stackable list created for this input."
+        else:
+            for item in ls.filelist:
+                print "\t", item
         yield rc
+          
+#------------------------------------------------------------------------------ 
+    def setStackable(self, rc):
+        try:
+            print "updating stackable with input"
+            rc.rqStackUpdate()
+        except:
+            print "Problem stacking input"
+            raise
+
+        yield rc
+        
+#------------------------------------------------------------------------------ 
+    def summarize(self, rc):
+        print "done with task"
+        for i in range(0,5):
+            sleep(stepduration)
+            yield rc  
+  
+#----------------------------------------------------------eof
