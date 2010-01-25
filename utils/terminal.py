@@ -328,7 +328,6 @@ class FilteredStdout(object):
                 line = f.morph(line)
             lines[i] = line
         
-        
             
             
         # ()()PREFIX()()()()()()()()()
@@ -339,7 +338,7 @@ class FilteredStdout(object):
         preprefix = None
         postprefix = None
         if forceprefix:
-            prefix = forceprefix [0] + self.term.render(forceprefix[1]) + forceprefix[2]
+            prefix = forceprefix [0] + forceprefix[1] + forceprefix[2]
             prefixclen = self.term.lenstr(prefix)
             prefix0 = prefix
             prefix = self.term.render(prefix)
@@ -488,20 +487,15 @@ class Filter(object):
     prefix  = None
     fout    = None
     def __init__(self, prefix=None, preprefix = "${NORMAL}${BOLD}", postprefix= "${NORMAL}"):
-        self.prefix = prefix
-        self.preprefix = preprefix
-        self.postprefix = postprefix
+        if self.prefix == None:
+            self.prefix = prefix
+        if self.preprefix == None:
+            self.preprefix = preprefix
+        if self.postprefix == None:
+            self.postprefix = postprefix
         
     def morph(self, arg):
         return arg 
-    def clear(self):
-        self.prefix = None
-        
-    def addPrefix(self, out):
-        if self.prefix:
-            return self.pretag+self.prefix+self.posttag + out
-        else:
-            return out    
 
 class ColorFilter(Filter):
     
@@ -551,7 +545,8 @@ class IrafStdout():
         #pout = re.sub("\n", "\n${REVERSE}IRAF${NORMAL}: ", out)
         if hasattr(self.fout, "writingForIraf"):
             self.fout.writingForIraf = True
-        self.fout.write(pout)
+        forceprefix = (self.ifilter.preprefix, self.ifilter.prefix,self.ifilter.postprefix)
+        self.fout.write(pout, forceprefix = forceprefix)
         if hasattr(self.fout, "writingForIraf"):
             self.fout.writingForIraf = False
     
@@ -559,7 +554,9 @@ class IrafStdout():
         self.fout.flush()
         
 class IrafFilter(Filter):
-    prefix = "IRAF: "
+    preprefix   = "${NORMAL}${REVERSE}"
+    postprefix  = "${NORMAL}"
+    prefix      = "IRAF: "
     def morph(self, arg, first = True):
         if "PANIC" in arg or "ERROR" in arg:
             arg = "${RED}" + arg + "${NORMAL}"
