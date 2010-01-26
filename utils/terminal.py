@@ -352,7 +352,6 @@ class FilteredStdout(object):
                 prefixclen = self.term.lenstr(prefix)
                 prefix0=prefix
                 prefix = self.term.render(prefix)
-
             else:
                 prefixclen = 0
                 prefix0 = ""
@@ -555,8 +554,8 @@ class IrafStdout():
         
 class IrafFilter(Filter):
     preprefix   = "${NORMAL}${REVERSE}"
-    postprefix  = "${NORMAL}"
-    prefix      = "IRAF: "
+    postprefix  = "${NORMAL} "
+    prefix      = "IRAF:"
     def morph(self, arg, first = True):
         if "PANIC" in arg or "ERROR" in arg:
             arg = "${RED}" + arg + "${NORMAL}"
