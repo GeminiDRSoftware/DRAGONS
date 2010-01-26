@@ -67,76 +67,215 @@ class ReductionContext(dict):
     arguments = None
     localparms = None # dictionary with local args (given in recipe as args, generally)
     
-    
-    def getIrafStdout(self):
-        if self.irafstdout != None:
-            return self.irafstdout
-        else:
-            return sys.stdout
-
-    def setIrafStdout(self, so):
-        self.irafstdout = so
-        return
-    
-    def getIrafStderr(self):
-        if self.irafstderr != None:
-            return self.irafstderr
-        else:
-            return sys.stderr
-
-    def setIrafStderr(self, so):
-        self.irafstderr = so
-        return
+    #------------------------------------------------------------------------------ 
+ 
+     
+    def __init__(self):
+        """The ReductionContext constructor creates empty dictionaries and lists, members set to
+        None in the class."""
+        self.inputs = []
+        self.callbacks = {}
+        self.inputsHistory = []
+        self.calibrations = {}
+        self.rorqs = []
+        self.outputs = {"standard":[]}
+        self.stephistory = {}
+        self.hostname = socket.gethostname()
+        self.displayName = None
+        self.arguments = []
+        # TESTING
+        self.cdl = CalibrationDefinitionLibrary()
+        # undeclared
+        self.indent=0 
         
-    def persistCalIndex(self, filename):
-        #print "Calibration List Before Persist:"
-        #print self.calsummary()
-        try:
-            pickle.dump(self.calibrations, open(filename, "w"))
-        except:
-            print "Could not persist the calibration cache."
-            raise 
-    
-    def restoreCalIndex(self, filename):
-        if os.path.exists( filename ):
-            self.calibrations = pickle.load( open(filename, 'r') )
-        else:
-            pickle.dump( {}, open( filename, 'w' ) )
-    
-    def persistStkIndex(self, filename ):
-        try:
-            #print "RM80:", self.stackeep
-            pickle.dump( self.stackeep.stackLists, open(filename, "w") )
-        except:
-            print "Could not persist the stackable cache."
-            raise
-    
-    def restoreStkIndex( self, filename ):
-        '''
+        # Stack Keep is a resource for all RecipeManager functions... one shared StackKeeper to simulate the shared ObservationServie
+        # used in PRS mode.
+        self.stackeep = StackKeeper()
+        self.fringes = FringeKeeper()
         
-        '''
-        if os.path.exists( filename ):
-            self.stackeep.stackLists = pickle.load( open(filename, 'r') )
+    def __getitem__(self, arg):
+        """Note, the ReductionContext version of __getitem__ returns None instead of throwing a KeyError.
+        """
+        if self.localparms and arg in self.localparms:
+            return self.localparms[arg]
         else:
-            pickle.dump( {}, open( filename, 'w' ) )
+            try:
+                return dict.__getitem__(self, arg)
+            except KeyError:
+                return None
     
-    def persistFringeIndex( self, filename ):
-        try:
-            pickle.dump( self.fringes.stackLists, open(filename, "w") )
-        except:
-            print 'Could not persist the fringe cache.'
-            raise 
-    
-    def restoreFringeIndex( self, filename ):
-        '''
+    def __str__(self):
+        """Used to dump Reduction Context(co) into file for test system
+        """
+        tempStr = ""
+        tempStr = tempStr + "REDUCTION CONTEXT OBJECT (CO)\n" + \
+            "inputs = " + str( self.inputs ) + \
+            "\ninputsHistory =  " + str( self.inputsHistory )+ \
+            "\ncalibrations = \n" + self.calsummary() + \
+            "\nrorqs = " 
+        if self.rorqs != []:
+            for rq_obj in self.rorqs:            
+                tempStr = tempStr + str( rq_obj )
+        else:
+            tempStr = tempStr + str( self.rorqs )
         
-        '''
-        if os.path.exists( filename ):
-            self.fringes.stackLists = pickle.load( open(filename, 'r') )
+        #no loop initiated for stkrqs object printouts yet
+        tempStr = tempStr + "\noutputs = " 
+        
+        if self.outputs["standard"] != []:
+            for out_obj in self.outputs["standard"]:
+                tempStr = tempStr + str( out_obj )
         else:
-            pickle.dump( {}, open( filename, 'w' ) )
+            tempStr = tempStr + str( self.outputs )
+        #"stephistory = " + str( self.stephistory ) + \
+        tempStr = tempStr +  "\nhostname = " + str( self.hostname ) + \
+            "\ndisplayName = " + str( self.displayName ) + \
+            "\ncdl = " + str( self.cdl ) + \
+            "\nindent = " + str( self.indent ) + \
+            "\nstackeep = " + str( self.stackeep )
+        for param in self.values():
+            tempStr += "\n" + self.paramsummary()
+        return tempStr   
     
+    def addCal(self, data, caltyp, calname, timestamp = None):
+        '''
+        Add a calibration to the calibration index with a key (DATALAB, caltype).
+        
+        @param data: The path or AstroData for which the calibration will be applied to.
+        @type data: str or AstroData instance
+        
+        @param caltyp: The type of calibration. For example, 'bias' and 'flat'.
+        @type caltyp: str
+        
+        @param calname: The URI for the MEF calibration file.
+        @type calname: str
+        
+        @param timestamp: Default= None. Timestamp for when calibration was added. The format of time is
+        taken from datetime.datetime.
+        @type timestamp: str
+        '''
+        adID = idFac.generateAstroDataID( data )
+        calname = os.path.abspath(calname)
+        
+        if timestamp == None:
+            timestamp = datetime.now()
+        else:
+            timestamp = timestamp
+        
+        if self.calibrations == None:
+            self.calibrations = {}
+        
+        calrec = CalibrationRecord(data.filename, calname, caltyp, timestamp)
+        key = (adID, caltyp)
+        #print "RM542:", key, calrec
+        self.calibrations.update({key: calrec})
+        
+    def addCallback(self, name, function):
+        callbacks = self.callbacks
+        if name in callbacks:
+            l=callbacks[name]
+        else:
+            l=[]
+            callbacks.update({name:l})
+        l.append(function)
+    
+    def addInput(self, filenames):
+        '''
+        Add input to be processed the next batch around. If this is the first input being added,
+        it is also added to originalInputs.
+        
+        @param filenames: Inputs you want added.
+        @type filenames: list, AstroData, str 
+        '''
+        if type(filenames) != list:
+            filenames = [filenames]
+        
+        ##@@TODO: Approve that this is acceptable. (i.e. should it be done here or after the first 
+        ## round is complete?)
+        origFlag = False
+        if self.originalInputs is None or self.originalInputs == []:
+            self.originalInputs = []
+            origFlag = True
+        
+        for filename in filenames:
+            if type( filename ) == str:
+                filename = AstroDataRecord( filename ) # filename converted from str -> AstroData 
+            elif type( filename ) == AstroData:
+                filename = AstroDataRecord( filename )
+            elif type( filename ) == AstroDataRecord:
+                pass
+            else:
+                raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str, AstroData, AstroDataRecord." 
+                      % {'name':str(filename), 'type':str(type(filename))})
             
+            self.inputs.append( filename )
+            if origFlag:
+                self.originalInputs.append( filename )        
+       
+    def addRq(self, rq):
+        '''
+        Add a request to be evaluated by the control loop.
+        
+        @param rq: The request.
+        @type rq: ReductionObjectRequests instance
+        '''
+        if self.rorqs == None:
+            self.rorqs = []
+        self.rorqs.append(rq)
+        
+    def begin(self, stepname):
+        key = datetime.now()
+        # value = dictionary
+        val = self.stepMoment(stepname, "begin")
+        self.indent += 1
+        self.stephistory.update({key: val}) 
+        self.lastBeginDt = key
+        return self
+        
+    def getBeginMark(self, stepname, indent=None):
+        for time in self.stephistory.keys():
+            if     self.stephistory[time]["stepname"] == stepname \
+               and self.stephistory[time]["mark"] == "begin":
+                    if indent != None:
+                        if self.stephistory[time]["indent"] == indent:
+                            return (time,self.stephistory[time])
+                    else:
+                        return (time,self.stephistory[time])    
+        return None
+    
+    def calFilename(self, caltype):
+        """returns a local filename for a retrieved calibration"""
+        if self.originalInputs == None:
+            self.originalInputs = deepcopy(self.inputs)
+        if len(self.originalInputs) == 0:
+            return None
+        elif len(self.originalInputs) == 1:
+            adID = idFac.generateAstroDataID( self.inputs[0].ad )
+            key = (adID, caltype)
+            infile = os.path.basename( self.inputs[0].filename )
+            #print 'RM611:\n', self.calsummary()
+            return {self.calibrations[key].filename:[infile]}
+        else:
+            # If you are in here, I assume that intelligence has been set.
+            # (i.e. There are improvements / assumptions made in here.)
+            retl = {}
+            for inp in self.originalInputs:
+                key = ( idFac.generateAstroDataID(inp.ad), caltype)
+                calfile = self.calibrations[key].filename
+                infile = os.path.basename( inp.filename )
+                if retl.has_key( calfile ):
+                    retl.update( {calfile:retl[calfile] + [infile]} )
+                else:
+                    retl.update( {calfile:[infile]} )
+            #print 'RM625:', retl
+            return retl
+                     
+    def callCallbacks(self, name, **params):
+        callbacks = self.callbacks
+        if name in callbacks:
+            for f in callbacks[name]:
+                f(**params)
+                    
     def calsummary(self, mode = "text"):
         rets = ""
         for key in self.calibrations.keys():
@@ -144,6 +283,194 @@ class ReductionContext(dict):
             rets += str(self.calibrations[key])
         return rets
     
+    def checkControl(self):
+        return self.cmdRequest
+    
+    def clearRqs(self, rtype = None):
+        '''
+        Clear all requests.
+        '''
+        if rtype == None:
+            self.rorqs = []
+        else:
+            rql = copy(self.rorqs)
+            for rq in rql:
+                if type(rq) == type(rtype):
+                    self.rorqs.remove(rq)
+    
+    def control(self, cmd = "NONE"):
+        self.cmdRequest = cmd
+    
+    def end(self,stepname):
+        key = datetime.now()
+        self.indent -= 1
+        val = self.stepMoment(stepname,"end")
+        # this step saves inputs
+        self.stephistory.update({key: val})
+        # this step moves outputs["standard"] to inputs
+        # and clears outputs
+        self.finalizeOutputs()
+        return self
+    
+    def finalizeOutputs(self):
+        """ This function means there are no more outputs, generally called
+        in a control loop when a generator function primitive ends.  Standard
+        outputs become the new inputs. Calibrations and non-standard output
+        is not affected.
+        """
+        # only push is outputs is filled
+        if len(self.outputs["standard"]) != 0:
+            # don't do this if the set is empty, it's a non-IO primitive
+            ##@@TODO: The below if statement could be redundant because this is done
+            # in addInputs
+            if self.originalInputs == None:
+                self.originalInputs = deepcopy(self.inputs)
+            
+            #print "OUTPUTS:", self.outputs["standard"]
+            newinputlist = []
+            for out in self.outputs['standard']:
+                if type( out ) == AstroDataRecord:
+                    newinputlist.append( out )
+                else:
+                    raise RuntimeError("Bad Argument: Wrong Type '%(val)s' '%(typ)s'." 
+                                       %{'val':str(out),'typ':str(type(out))})
+            
+            self.inputs = newinputlist
+            self.outputs.update({"standard":[]})
+            
+#------------------ FINISH ----------------------------------------------------   
+    def isFinished(self,arg = None):
+        if arg == None:
+            return self.status == "FINISHED"
+        else:
+            if arg == True:
+                self.status = "FINISHED"
+            elif self.status != "FINISHED":
+                raise RecipeExcept("Attempt to change status from %s to FINISHED" % self.status)
+        return self.isFinished()
+    def finish(self):
+        self.isFinished(True)
+    finished = property(isFinished, isFinished)
+#------------------------------------------------------------------------------
+    
+    def getCal(self, data, caltype):
+        '''
+        Retrieve calibration.
+        
+        @param data: File for which calibration will be applied.
+        @type data: str or AstroData instance
+        
+        @param caltype: The type of calibration. For example, 'bias' and 'flat'.
+        @type caltype: str
+        
+        @return: The URI of the currently stored calibration or None.
+        @rtype: str or None 
+        '''
+        #print "RM551:", data, type( data )
+        adID = idFac.generateAstroDataID(data)
+        #filename = os.path.abspath(filename)
+        key = (adID, caltype)
+        if key in self.calibrations.keys():
+            return self.calibrations[(adID,caltype)].filename
+        return None
+    
+    def getEndMark(self, stepname, indent= None):
+        for time in self.stephistory.keys():
+            if     self.stephistory[time]["stepname"] == stepname \
+               and self.stephistory[time]["mark"] == "end":
+                if indent != None:
+                    if self.stephistory[time]["indent"] == indent:
+                        return (time,self.stephistory[time])
+                else:
+                    return (time,self.stephistory[time])
+        return None    
+    
+    def getInputFromParent(self, parent):
+        '''
+        Very inefficient.
+        '''
+        for inp in self.inputs:
+            if inp.parent == parent:
+                return inp.filename
+           
+    def getIrafStderr(self):
+        if self.irafstderr != None:
+            return self.irafstderr
+        else:
+            return sys.stderr
+        
+    def getIrafStdout(self):
+        if self.irafstdout != None:
+            return self.irafstdout
+        else:
+            return sys.stdout
+    
+    def getStack(self, ID):
+        return self.stackeep.get(ID)
+ 
+    def inputsAsStr(self, strippath = True):
+        if self.inputs == None:
+            return ""
+        else:
+            inputlist = []
+            for inp in self.inputs:
+                inputlist.append( inp.filename )
+
+            if strippath == False:
+                return ",".join( inputlist )                
+            else:
+                return ",".join([os.path.basename(path) for path in inputlist])
+
+    def makeInlistFile(self, ID):
+        try:
+            fh = open( 'inlist', 'w' )
+            stack = self.stackeep.get(ID)
+            for item in stack.filelist:
+                fh.writelines(item + '\n')
+        except:
+            raise "Could not write inlist file for stacking." 
+        finally:
+            fh.close()
+        return "@inlist"
+    
+    def outputsAsStr(self, strippath = True):
+        if self.outputs == None:
+            return ""
+        else:
+            outputlist = []
+            for inp in self.outputs:
+                outputlist.append( inp.filename )
+            #print "RM289:", outputlist
+            #"""
+            if strippath == False:
+                # print self.inputs
+                return ", ".join(outputlist)
+            else:
+                return ", ".join([os.path.basename(path) for path in outputlist])
+            
+    #------------------ PAUSE ---------------------------------------------------- 
+    def isPaused(self, bpaused = None):
+        if bpaused == None:
+            return self.status == "PAUSED"
+        else:
+            if bpaused:
+                self.status = "PAUSED"
+            else:
+                self.status = "RUNNING"
+        
+        return self.isPaused()
+    def pause(self):
+        self.callCallbacks("pause")
+        self.isPaused(True)
+    def unpause (self):
+        self.isPaused(False)
+    paused = property(isPaused, isPaused)
+    def requestPause(self):
+        self.control("pause") 
+    def pauseRequested(self):
+        return self.cmdRequest == "pause"
+    #--------------------------------------------------------------------------- 
+    #------------------ PAUSE ----------------------------------------------------
     def paramsummary(self):
         '''
         A util function for printing out all the parameters for this reduction 
@@ -180,310 +507,29 @@ class ReductionContext(dict):
         
         return rets
     
-    def stack_inputsAsStr(self, ID):        
-        #pass back the stack files as strings
-        stack = self.stackeep.get(ID)
-        return ",".join(stack.filelist)
-    
-    def makeInlistFile(self, ID):
+    def persistCalIndex(self, filename):
+        #print "Calibration List Before Persist:"
+        #print self.calsummary()
         try:
-            fh = open( 'inlist', 'w' )
-            stack = self.stackeep.get(ID)
-            for item in stack.filelist:
-                fh.writelines(item + '\n')
+            pickle.dump(self.calibrations, open(filename, "w"))
         except:
-            raise "Could not write inlist file for stacking." 
-        finally:
-            fh.close()
-        return "@inlist"
- 
-
-    def printHeaders(self):
-        for inp in self.inputs:
-            if type(inp) == str:
-                ad = AstroData(inp)
-            elif type(inp) == AstroData:
-                ad = inp
-            try:
-                outfile = open(os.path.basename(ad.filename)+".headers", 'w')
-                for ext in ad.hdulist:
-                    outfile.write( "\n"+"*"*80+"\n")
-                    outfile.write( str(ext.header) )
-                
-            except:
-                raise "Error writing headers for '%{name}s'." %{'name':ad.filename}
-            finally:
-                outfile.close()
-          
-            
- 
-#------------------------------------------------------------------------------ 
- 
-     
-    def __init__(self):
-        """The ReductionContext constructor creates empty dictionaries and lists, members set to
-        None in the class."""
-        self.inputs = []
-        self.callbacks = {}
-        self.inputsHistory = []
-        self.calibrations = {}
-        self.rorqs = []
-        self.outputs = {"standard":[]}
-        self.stephistory = {}
-        self.hostname = socket.gethostname()
-        self.displayName = None
-        self.arguments = []
-        # TESTING
-        self.cdl = CalibrationDefinitionLibrary()
-        # undeclared
-        self.indent=0 
-        
-        # Stack Keep is a resource for all RecipeManager functions... one shared StackKeeper to simulate the shared ObservationServie
-        # used in PRS mode.
-        self.stackeep = StackKeeper()
-        self.fringes = FringeKeeper()
-        
-    def __getitem__(self, arg):
-        """Note, the ReductionContext version of __getitem__ returns None instead of throwing a KeyError.
-        """
-        if self.localparms and arg in self.localparms:
-            return self.localparms[arg]
-        else:
-            try:
-                return dict.__getitem__(self, arg)
-            except KeyError:
-                return None
-        
-        
-    def __str__(self):
-        """Used to dump Reduction Context(co) into file for test system
-        """
-        tempStr = ""
-        tempStr = tempStr + "REDUCTION CONTEXT OBJECT (CO)\n" + \
-            "inputs = " + str( self.inputs ) + \
-            "\ninputsHistory =  " + str( self.inputsHistory )+ \
-            "\ncalibrations = \n" + self.calsummary() + \
-            "\nrorqs = " 
-        if self.rorqs != []:
-            for rq_obj in self.rorqs:            
-                tempStr = tempStr + str( rq_obj )
-        else:
-            tempStr = tempStr + str( self.rorqs )
-        
-        #no loop initiated for stkrqs object printouts yet
-        tempStr = tempStr + "\noutputs = " 
-        
-        if self.outputs["standard"] != []:
-            for out_obj in self.outputs["standard"]:
-                tempStr = tempStr + str( out_obj )
-        else:
-            tempStr = tempStr + str( self.outputs )
-        #"stephistory = " + str( self.stephistory ) + \
-        tempStr = tempStr +  "\nhostname = " + str( self.hostname ) + \
-            "\ndisplayName = " + str( self.displayName ) + \
-            "\ncdl = " + str( self.cdl ) + \
-            "\nindent = " + str( self.indent ) + \
-            "\nstackeep = " + str( self.stackeep )
-        for param in self.values():
-            tempStr += "\n" + self.paramsummary()
-             
-        return tempStr
-               
+            print "Could not persist the calibration cache."
+            raise 
     
-    def stackAppend(self, ID, files):
-        self.stackeep.add( ID, files )
-    
-    def getStack(self, ID):
-        return self.stackeep.get(ID)
-        
-    def isFinished(self,arg = None):
-        if arg == None:
-            return self.status == "FINISHED"
-        else:
-            if arg == True:
-                self.status = "FINISHED"
-            elif self.status != "FINISHED":
-                raise RecipeExcept("Attempt to change status from %s to FINISHED" % self.status)
-        return self.isFinished()
-    
-    def finish(self):
-        self.isFinished(True)
-        
-    finished = property(isFinished, isFinished)
-
-    def isPaused(self, bpaused = None):
-        if bpaused == None:
-            return self.status == "PAUSED"
-        else:
-            if bpaused:
-                self.status = "PAUSED"
-            else:
-                self.status = "RUNNING"
-        
-        return self.isPaused()
-
-    def removeCallback(self, name, function):
-        if name in self.callbacks:
-            if function in self.callbackp[name]:
-                self.callbacks[name].remove(function)
-        else:
-            return
+    def persistFringeIndex( self, filename ):
+        try:
+            pickle.dump( self.fringes.stackLists, open(filename, "w") )
+        except:
+            print 'Could not persist the fringe cache.'
+            raise
             
-    def addCallback(self, name, function):
-        callbacks = self.callbacks
-        if name in callbacks:
-            l = callbacks[name]
-        else:
-            l = []
-            callbacks.update({name:l})
-        
-        l.append(function)
-        
-    def callCallbacks(self, name, **params):
-        callbacks = self.callbacks
-        if name in callbacks:
-            for f in callbacks[name]:
-                f(**params)
-    
-    def pause(self):
-        self.callCallbacks("pause")
-        self.isPaused(True)
-    def unpause (self):
-        self.isPaused(False)
-
-    paused = property(isPaused, isPaused)
-
-    def processCmdReq(self):
-        if self.cmdRequest == "pause":
-            self.cmdRequest = "NONE"
-            self.pause()
-
-
-    def getEndMark(self, stepname, indent= None):
-        for time in self.stephistory.keys():
-            if     self.stephistory[time]["stepname"] == stepname \
-               and self.stephistory[time]["mark"] == "end":
-                if indent != None:
-                    if self.stephistory[time]["indent"] == indent:
-                        return (time,self.stephistory[time])
-                else:
-                    return (time,self.stephistory[time])
-                
-    
-        return None
-        
-    def getBeginMark(self, stepname, indent=None):
-        for time in self.stephistory.keys():
-            if     self.stephistory[time]["stepname"] == stepname \
-               and self.stephistory[time]["mark"] == "begin":
-                    if indent != None:
-                        if self.stephistory[time]["indent"] == indent:
-                            return (time,self.stephistory[time])
-                    else:
-                        return (time,self.stephistory[time])    
-        return None
-
-        
-    def control(self, cmd = "NONE"):
-        self.cmdRequest = cmd
-
-    def requestPause(self):
-        self.control("pause")
-
-    def pauseRequested(self):
-        return self.cmdRequest == "pause"
-        
-    def checkControl(self):
-        return self.cmdRequest        
-        
-    def addInput(self, filenames):
-        '''
-        Add input to be processed the next batch around. If this is the first input being added,
-        it is also added to originalInputs.
-        
-        @param filenames: Inputs you want added.
-        @type filenames: list, AstroData, str 
-        '''
-        if type(filenames) != list:
-            filenames = [filenames]
-        
-        ##@@TODO: Approve that this is acceptable. (i.e. should it be done here or after the first 
-        ## round is complete?)
-        origFlag = False
-        if self.originalInputs is None or self.originalInputs == []:
-            self.originalInputs = []
-            origFlag = True
-        
-        for filename in filenames:
-            if type( filename ) == str:
-                filename = AstroDataRecord( filename ) # filename converted from str -> AstroData 
-            elif type( filename ) == AstroData:
-                filename = AstroDataRecord( filename )
-            elif type( filename ) == AstroDataRecord:
-                pass
-            else:
-                raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str, AstroData, AstroDataRecord." 
-                      % {'name':str(filename), 'type':str(type(filename))})
-            
-            self.inputs.append( filename )
-            if origFlag:
-                self.originalInputs.append( filename )
-        
-        #print 'RM357:', self.inputs
-        #print 'RM358:', self.originalInputs
-    
-    def reportOutput(self, inp, category="standard"):
-        ##@@TODO: Read the new way code is done.
-        if category != "standard":
-            raise RecipeExcept("You may only use " +
-                "'standard' category output at this time.")
-        if type(inp) == str:
-            self.outputs["standard"].append( AstroDataRecord(inp,self.displayID) )
-        elif type(inp) == list:
-            for temp in inp:
-                # This is a good way to check if IRAF failed.
-                
-                if type(temp) == tuple:
-                    if not os.path.exists( temp[0] ):
-                        raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
-                    orecord = AstroDataRecord( temp[0], self.displayID, parent=temp[1] )
-                    #print 'RM370:', orecord
-                elif type(temp) == str:
-                    if not os.path.exists( temp ):
-                        raise "LAST PRIMITIVE FAILED."
-                    orecord = AstroDataRecord( temp, self.displayID )
-                else:
-                    raise "RM292 type: " + str(type(temp))
-                #print "RM344:", orecord
-                self.outputs["standard"].append( orecord )
-            
-    
-    def finalizeOutputs(self):
-        """ This function means there are no more outputs, generally called
-        in a control loop when a generator function primitive ends.  Standard
-        outputs become the new inputs. Calibrations and non-standard output
-        is not affected.
-        """
-        # only push is outputs is filled
-        if len(self.outputs["standard"]) != 0:
-            # don't do this if the set is empty, it's a non-IO primitive
-            ##@@TODO: The below if statement could be redundant because this is done
-            # in addInputs
-            if self.originalInputs == None:
-                self.originalInputs = deepcopy(self.inputs)
-            
-            #print "OUTPUTS:", self.outputs["standard"]
-            newinputlist = []
-            for out in self.outputs['standard']:
-                if type( out ) == AstroDataRecord:
-                    newinputlist.append( out )
-                else:
-                    raise RuntimeError("Bad Argument: Wrong Type '%(val)s' '%(typ)s'." 
-                                       %{'val':str(out),'typ':str(type(out))})
-            
-            self.inputs = newinputlist
-            self.outputs.update({"standard":[]})
-            
+    def persistStkIndex(self, filename ):
+        try:
+            #print "RM80:", self.stackeep
+            pickle.dump( self.stackeep.stackLists, open(filename, "w") )
+        except:
+            print "Could not persist the stackable cache."
+            raise
     
     def prependNames(self, prepend, currentDir = True, filepaths=None):
         '''
@@ -531,268 +577,34 @@ class ReductionContext(dict):
         
         return retlist
     
-    def suffixNames(self, suffix, currentDir=True):
-        '''
-        
-        '''
-        newlist = []
-        for nam in self.inputs:
-            if currentDir == True:
-                path = os.getcwd()
-            else:
-                path = os.path.dirname(nam.filename)
+    def printHeaders(self):
+        for inp in self.inputs:
+            if type(inp) == str:
+                ad = AstroData(inp)
+            elif type(inp) == AstroData:
+                ad = inp
+            try:
+                outfile = open(os.path.basename(ad.filename)+".headers", 'w')
+                for ext in ad.hdulist:
+                    outfile.write( "\n"+"*"*80+"\n")
+                    outfile.write( str(ext.header) )
+                
+            except:
+                raise "Error writing headers for '%{name}s'." %{'name':ad.filename}
+            finally:
+                outfile.close()
+    
+    def processCmdReq(self):
+        if self.cmdRequest == "pause":
+            self.cmdRequest = "NONE"
+            self.pause()
             
-            fn   = os.path.basename(nam.filename)
-            finame, ext = os.path.splitext(fn)
-            fn = finame + "_" + suffix + ext
-            newpath = os.path.join( path, fn ) 
-            newlist.append(newpath)
-        return newlist
-    
-    def stepMoment(self, stepname, mark):
-        val = { "stepname"  : stepname,
-                "indent"    : self.indent,
-                "mark"      : mark,
-                "inputs"    : copy(self.inputs),
-                "outputs"   : copy(self.outputs),
-                "processed" : False
-                }
-        return val       
-        
-    def begin(self, stepname):
-        key = datetime.now()
-        # value = dictionary
-        val = self.stepMoment(stepname, "begin")
-        self.indent += 1
-        self.stephistory.update({key: val}) 
-        self.lastBeginDt = key
-        return self
-                
-    def end(self,stepname):
-        key = datetime.now()
-        self.indent -= 1
-        val = self.stepMoment(stepname,"end")
-        # this step saves inputs
-        self.stephistory.update({key: val})
-        # this step moves outputs["standard"] to inputs
-        # and clears outputs
-        self.finalizeOutputs()
-        return self
-                
-    def inputsAsStr(self, strippath = True):
-        if self.inputs == None:
-            return ""
+    def removeCallback(self, name, function):
+        if name in self.callbacks:
+            if function in self.callbackp[name]:
+                self.callbacks[name].remove(function)
         else:
-            inputlist = []
-            for inp in self.inputs:
-                inputlist.append( inp.filename )
-
-            if strippath == False:
-                return ",".join( inputlist )                
-            else:
-                return ",".join([os.path.basename(path) for path in inputlist])
-                                      
-    def outputsAsStr(self, strippath = True):
-        if self.outputs == None:
-            return ""
-        else:
-            outputlist = []
-            for inp in self.outputs:
-                outputlist.append( inp.filename )
-            #print "RM289:", outputlist
-            #"""
-            if strippath == False:
-                # print self.inputs
-                return ", ".join(outputlist)
-            else:
-                return ", ".join([os.path.basename(path) for path in outputlist])
-        
-    def addCal(self, data, caltyp, calname, timestamp = None):
-        '''
-        Add a calibration to the calibration index with a key (DATALAB, caltype).
-        
-        @param data: The path or AstroData for which the calibration will be applied to.
-        @type data: str or AstroData instance
-        
-        @param caltyp: The type of calibration. For example, 'bias' and 'flat'.
-        @type caltyp: str
-        
-        @param calname: The URI for the MEF calibration file.
-        @type calname: str
-        
-        @param timestamp: Default= None. Timestamp for when calibration was added. The format of time is
-        taken from datetime.datetime.
-        @type timestamp: str
-        '''
-        adID = idFac.generateAstroDataID( data )
-        calname = os.path.abspath(calname)
-        
-        if timestamp == None:
-            timestamp = datetime.now()
-        else:
-            timestamp = timestamp
-        
-        if self.calibrations == None:
-            self.calibrations = {}
-        
-        calrec = CalibrationRecord(data.filename, calname, caltyp, timestamp)
-        key = (adID, caltyp)
-        #print "RM542:", key, calrec
-        self.calibrations.update({key: calrec})
-    
-    def rmCal(self, data, caltype):
-        '''
-        Remove a calibration. This is used in command line argument (rmcal). This may end up being used
-        for some sort of TTL thing for cals in the future.
-        
-        @param data: Images who desire their cals to be removed.
-        @type data: str, list or AstroData instance.
-        
-        @param caltype: Calibration type (e.g. 'bias').
-        @type caltype: str
-        '''
-        datalist = gdpgutil.checkDataSet( data )
-        
-        for dat in datalist:
-            datid = idFac.generateAstroDataID( data )
-            key = (datid, caltype)
-            if key in self.calibrations.keys():
-                self.calibrations.pop( key )
-            else:
-                print "'%(tup)s', was not registered in the calibrations." 
-        
-    
-    def getCal(self, data, caltype):
-        '''
-        Retrieve calibration.
-        
-        @param data: File for which calibration will be applied.
-        @type data: str or AstroData instance
-        
-        @param caltype: The type of calibration. For example, 'bias' and 'flat'.
-        @type caltype: str
-        
-        @return: The URI of the currently stored calibration or None.
-        @rtype: str or None 
-        '''
-        #print "RM551:", data, type( data )
-        adID = idFac.generateAstroDataID(data)
-        #filename = os.path.abspath(filename)
-        key = (adID, caltype)
-        if key in self.calibrations.keys():
-            return self.calibrations[(adID,caltype)].filename
-        return None
-        
-        
-    def addRq(self, rq):
-        '''
-        Add a request to be evaluated by the control loop.
-        
-        @param rq: The request.
-        @type rq: ReductionObjectRequests instance
-        '''
-        if self.rorqs == None:
-            self.rorqs = []
-        self.rorqs.append(rq)
-    
-    def clearRqs(self, rtype = None):
-        '''
-        Clear all requests.
-        '''
-        if rtype == None:
-            self.rorqs = []
-        else:
-            rql = copy(self.rorqs)
-            for rq in rql:
-                if type(rq) == type(rtype):
-                    self.rorqs.remove(rq)
-                    
-    def rqCal(self, caltype, inputs=None):
-        '''
-        Create calibration requests based on raw inputs.
-        
-        @param caltype: The type of calibration. For example, 'bias' and 'flat'.
-        @type caltype: str
-        '''
-        if inputs is None:
-            addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
-        else:
-            addToCmdQueue = self.cdl.getCalReq( inputs, 'fringe' )
-        for re in addToCmdQueue:
-            self.addRq(re)        
-          
-    def rqStackUpdate(self):
-        '''
-        Create requests to update a stack list.
-        '''
-        ver = "1_0"
-        # Not sure how version stuff is going to be done. This version stuff is temporary.
-        for inp in self.inputs:
-            stackUEv = UpdateStackableRequest()
-            Sid = idFac.generateStackableID( inp.ad, ver )
-            stackUEv.stkID = Sid
-            stackUEv.stkList = inp.filename
-            self.addRq( stackUEv )
-        
-    def rqDisplay(self):
-        '''
-        Create requests to display inputs.
-        '''
-        ver = "1_0"
-        displayObject = DisplayRequest()
-        Did = idFac.generateDisplayID( self.inputs[0].filename, ver )
-        displayObject.disID = Did
-        displayObject.disList = self.inputs
-        self.addRq( displayObject )
-        
-        
-    def rqStackGet(self):
-        ver = "1_0"
-        # Not sure how version stuff is going to be done. This version stuff is temporary.
-        for orig in self.originalInputs:
-            Sid = idFac.generateStackableID( orig.ad, ver )
-            stackUEv = GetStackableRequest()
-            stackUEv.stkID = Sid
-            self.addRq( stackUEv )
-    
-    def rqIQ( self, ad, eM, eS, fM, fS ):
-        iqReq = ImageQualityRequest( ad, eM, eS, fM, fS )
-        self.addRq( iqReq )
-    
-    def calFilename(self, caltype):
-        """returns a local filename for a retrieved calibration"""
-        if self.originalInputs == None:
-            self.originalInputs = deepcopy(self.inputs)
-        if len(self.originalInputs) == 0:
-            return None
-        elif len(self.originalInputs) == 1:
-            adID = idFac.generateAstroDataID( self.inputs[0].ad )
-            key = (adID, caltype)
-            infile = os.path.basename( self.inputs[0].filename )
-            #print 'RM611:\n', self.calsummary()
-            return {self.calibrations[key].filename:[infile]}
-        else:
-            # If you are in here, I assume that intelligence has been set.
-            # (i.e. There are improvements / assumptions made in here.)
-            retl = {}
-            for inp in self.originalInputs:
-                key = ( idFac.generateAstroDataID(inp.ad), caltype)
-                calfile = self.calibrations[key].filename
-                infile = os.path.basename( inp.filename )
-                if retl.has_key( calfile ):
-                    retl.update( {calfile:retl[calfile] + [infile]} )
-                else:
-                    retl.update( {calfile:[infile]} )
-            #print 'RM625:', retl
-            return retl
-    
-    def getInputFromParent(self, parent):
-        '''
-        Very inefficient.
-        '''
-        for inp in self.inputs:
-            if inp.parent == parent:
-                return inp.filename
+            return
     
     def reportHistory(self):
         
@@ -890,14 +702,180 @@ class ReductionContext(dict):
                 startdt = dt
         
         return retstr
-
+        
+    def reportOutput(self, inp, category="standard"):
+        ##@@TODO: Read the new way code is done.
+        if category != "standard":
+            raise RecipeExcept("You may only use " +
+                "'standard' category output at this time.")
+        if type(inp) == str:
+            self.outputs["standard"].append( AstroDataRecord(inp,self.displayID) )
+        elif type(inp) == list:
+            for temp in inp:
+                # This is a good way to check if IRAF failed.
+                
+                if type(temp) == tuple:
+                    if not os.path.exists( temp[0] ):
+                        raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
+                    orecord = AstroDataRecord( temp[0], self.displayID, parent=temp[1] )
+                    #print 'RM370:', orecord
+                elif type(temp) == str:
+                    if not os.path.exists( temp ):
+                        raise "LAST PRIMITIVE FAILED."
+                    orecord = AstroDataRecord( temp, self.displayID )
+                else:
+                    raise "RM292 type: " + str(type(temp))
+                #print "RM344:", orecord
+                self.outputs["standard"].append( orecord )
+    
+    def restoreCalIndex(self, filename):
+        if os.path.exists( filename ):
+            self.calibrations = pickle.load( open(filename, 'r') )
+        else:
+            pickle.dump( {}, open( filename, 'w' ) )
+    
+    def restoreFringeIndex( self, filename ):
+        '''
+        
+        '''
+        if os.path.exists( filename ):
+            self.fringes.stackLists = pickle.load( open(filename, 'r') )
+        else:
+            pickle.dump( {}, open( filename, 'w' ) )
+                            
+    def restoreStkIndex( self, filename ):
+        '''
+        
+        '''
+        if os.path.exists( filename ):
+            self.stackeep.stackLists = pickle.load( open(filename, 'r') )
+        else:
+            pickle.dump( {}, open( filename, 'w' ) )
+    
+    def rmCal(self, data, caltype):
+        '''
+        Remove a calibration. This is used in command line argument (rmcal). This may end up being used
+        for some sort of TTL thing for cals in the future.
+        
+        @param data: Images who desire their cals to be removed.
+        @type data: str, list or AstroData instance.
+        
+        @param caltype: Calibration type (e.g. 'bias').
+        @type caltype: str
+        '''
+        datalist = gdpgutil.checkDataSet( data )
+        
+        for dat in datalist:
+            datid = idFac.generateAstroDataID( data )
+            key = (datid, caltype)
+            if key in self.calibrations.keys():
+                self.calibrations.pop( key )
+            else:
+                print "'%(tup)s', was not registered in the calibrations."
+    
+    def rqCal(self, caltype, inputs=None):
+        '''
+        Create calibration requests based on raw inputs.
+        
+        @param caltype: The type of calibration. For example, 'bias' and 'flat'.
+        @type caltype: str
+        '''
+        if inputs is None:
+            addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
+        else:
+            addToCmdQueue = self.cdl.getCalReq( inputs, 'fringe' )
+        for re in addToCmdQueue:
+            self.addRq(re)
+    
+    def rqDisplay(self):
+        '''
+        self, filename = None
+        if None use self.inputs
+        
+        Create requests to display inputs.
+        '''
+        ver = "1_0"
+        displayObject = DisplayRequest()
+        Did = idFac.generateDisplayID( self.inputs[0].filename, ver )
+        displayObject.disID = Did
+        displayObject.disList = self.inputs
+        self.addRq( displayObject )
+    
+    def rqIQ( self, ad, eM, eS, fM, fS ):
+        iqReq = ImageQualityRequest( ad, eM, eS, fM, fS )
+        self.addRq( iqReq )
+        
+    def rqStackGet(self):
+        ver = "1_0"
+        # Not sure how version stuff is going to be done. This version stuff is temporary.
+        for orig in self.originalInputs:
+            Sid = idFac.generateStackableID( orig.ad, ver )
+            stackUEv = GetStackableRequest()
+            stackUEv.stkID = Sid
+            self.addRq( stackUEv )
+                
+    def rqStackUpdate(self):
+        '''
+        Create requests to update a stack list.
+        '''
+        ver = "1_0"
+        # Not sure how version stuff is going to be done. This version stuff is temporary.
+        for inp in self.inputs:
+            stackUEv = UpdateStackableRequest()
+            Sid = idFac.generateStackableID( inp.ad, ver )
+            stackUEv.stkID = Sid
+            stackUEv.stkList = inp.filename
+            self.addRq( stackUEv )
+                       
+    def setIrafStderr(self, so):
+        self.irafstderr = so
+        return
+    
+    def setIrafStdout(self, so):
+        self.irafstdout = so
+        return
+    
+    def stackAppend(self, ID, files):
+        self.stackeep.add( ID, files )
+        
+    def stack_inputsAsStr(self, ID):        
+        #pass back the stack files as strings
+        stack = self.stackeep.get(ID)
+        return ",".join(stack.filelist)
+    
+    def stepMoment(self, stepname, mark):
+        val = { "stepname"  : stepname,
+                "indent"    : self.indent,
+                "mark"      : mark,
+                "inputs"    : copy(self.inputs),
+                "outputs"   : copy(self.outputs),
+                "processed" : False
+                }
+        return val
+    
+    def suffixNames(self, suffix, currentDir=True):
+        '''
+        
+        '''
+        newlist = []
+        for nam in self.inputs:
+            if currentDir == True:
+                path = os.getcwd()
+            else:
+                path = os.path.dirname(nam.filename)
+            
+            fn   = os.path.basename(nam.filename)
+            finame, ext = os.path.splitext(fn)
+            fn = finame + "_" + suffix + ext
+            newpath = os.path.join( path, fn ) 
+            newlist.append(newpath)
+        return newlist
+    
 def openIfName(dataset):
     """Utility function to handle accepting datasets as AstroData
     instances or string filenames. Works in conjunction with closeIfName.
-    The way it works, openIfName opens returns an GeminiData isntance"""
-    
-    bNeedsClosing = False
-    
+    The way it works, openIfName opens returns an GeminiData isntance"""    
+    bNeedsClosing = False    
     if type(dataset) == str:
         bNeedsClosing = True
         gd = AstroData(dataset)
@@ -906,9 +884,7 @@ def openIfName(dataset):
         gd = dataset
     else:
         raise RecipeExcept("BadArgument in recipe utility function: openIfName(..)\n MUST be filename (string) or GeminiData instrument")
-    
     return (gd, bNeedsClosing)
-    
     
 def closeIfName(dataset, bNeedsClosing):
     """Utility function to handle accepting datasets as AstroData
@@ -918,7 +894,6 @@ def closeIfName(dataset, bNeedsClosing):
         dataset.close()
     
     return
-
 
 class RecipeLibrary(object):
 
@@ -1216,9 +1191,7 @@ def %(name)s(self,cfgObj):
                     updateParam = PrimitiveParameter( userParam.name, userParam.value, overwrite=True, help="User Defined.")
                     contextobj.update( {recKey:updateParam} )
         """
-        
-        
-
+      
 
 # CODE THAT RUNS ON IMPORT
 # THIS MODULE ACTS AS A SINGLETON FOR RECIPE FEATURES

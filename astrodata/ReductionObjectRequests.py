@@ -52,24 +52,23 @@ Priorities: %(pri)s
               'crit':str(self.criteria),'pri':str(self.priorities)}
         return tempStr
 
-
-class UpdateStackableRequest( ReductionObjectRequest ):
+class DisplayRequest( ReductionObjectRequest ):
     '''
-    Contains all relevant information to request updating the stackable index.
+    The request to display a list of fits files.
     '''
-    def __init__( self, stkID=None, stkList=[] ):
-        super( UpdateStackableRequest, self ).__init__()
-        self.stkID = stkID
-        self.stkList = stkList
-    
+    #disID - displayID - displayList
+    def __init__( self, disID=None, disList=[] ):
+        super( DisplayRequest, self ).__init__()
+        self.disID = disID
+        self.disList = disList
+        
         
     def __str__(self):
-        tempStr = super( UpdateStackableRequest, self ).__str__()
-        tempStr = tempStr + "ID: " + str( self.stkID ) + "\n" + \
-                    "STACKABLE LIST: " + str( self.stkList )
+        tempStr = super( DisplayRequest, self ).__str__()
+        tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
+                    "DISPLAY LIST: " + str( self.disList )
         
         return tempStr
-
 
 class GetStackableRequest( ReductionObjectRequest ):
     '''
@@ -86,24 +85,6 @@ class GetStackableRequest( ReductionObjectRequest ):
         
         return tempStr
 
-
-class DisplayRequest( ReductionObjectRequest ):
-    '''
-    The request to display a list of fits files.
-    '''
-    def __init__( self, disID=None, disList=[] ):
-        super( DisplayRequest, self ).__init__()
-        self.disID = disID
-        self.disList = disList
-        
-        
-    def __str__(self):
-        tempStr = super( DisplayRequest, self ).__str__()
-        tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
-                    "DISPLAY LIST: " + str( self.disList )
-        
-        return tempStr
-    
 class ImageQualityRequest( ReductionObjectRequest ):
     '''
     A request to publish image quality metrics to the message bus or in the case
@@ -138,3 +119,22 @@ PixelScale:         %(pixs)s""" %{'name':self.filename, 'emea':self.ellMean, 'es
         tempStr = tempStr + super( ImageQualityRequest, self ).__str__()
         
         return tempStr
+
+class UpdateStackableRequest( ReductionObjectRequest ):
+    '''
+    Contains all relevant information to request updating the stackable index.
+    '''
+    def __init__( self, stkID=None, stkList=[] ):
+        super( UpdateStackableRequest, self ).__init__()
+        self.stkID = stkID
+        self.stkList = stkList
+    
+        
+    def __str__(self):
+        tempStr = super( UpdateStackableRequest, self ).__str__()
+        tempStr = tempStr + "ID: " + str( self.stkID ) + "\n" + \
+                    "STACKABLE LIST: " + str( self.stkList )
+        
+        return tempStr
+
+    
