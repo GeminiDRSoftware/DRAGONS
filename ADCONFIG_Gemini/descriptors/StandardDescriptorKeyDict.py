@@ -45,5 +45,7 @@ globalStdkeyDict = {
     "key_wdelta":"WDELTA",
     "key_wrefpix":"WREFPIX",
     "key_xccdbin":"XCCDBIN",
+    "key_xoffset":"XOFFSET",
     "key_yccdbin":"YCCDBIN",
+    "key_yoffset":"YOFFSET",
     }

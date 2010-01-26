@@ -296,11 +296,17 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 # x and y shift offsets. No rotation stuff put in. Use at own risk!
                 # -River
                 #===================================================================
-                desc = Descriptors.getCalculator( inp.ad )
-                xshift = desc.fetchValue( 'xoffset', inp.ad ) / desc.fetchValue( 'pixscale', inp.ad ) * -1
-                yshift = desc.fetchValue( 'yoffset', inp.ad ) / desc.fetchValue( 'pixscale', inp.ad ) * -1
                 
+                xoffset = inp.ad.xoffset()
+                pixscale = inp.ad.pixscale()
+                yoffset = inp.ad.yoffset()
                 
+                if xoffset and pixscale and yoffset:
+                    xshift = xoffset / pixscale * -1
+                    yshift = yoffset / pixscale * -1
+                else:
+                    print "${RED}ERROR: insufficient information to shift (set PIXSCALE, XOFFSET, and YOFFSET in PHU)"
+                    return
                 
                 os.system( 'rm test.fits &> /dev/null' )
                 outfile = os.path.basename( rc.prependNames( 'shift_',  )[0][0] )

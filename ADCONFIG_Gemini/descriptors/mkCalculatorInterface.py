@@ -77,6 +77,8 @@ descriptors =   [   DD("airmass"),
                     DD("wdelta"),
                     DD("wrefpix"),
                     DD("xccdbin"),
+                    DD("xoffset"),
+                    DD("yoffset"),
                     DD("yccdbin"),
                 ]
 
