@@ -74,11 +74,13 @@ parser.add_option("--force-width", dest = "forceWidth", default=None,
                   help="Use to force width of terminal for output purposes instead of using actual temrinal width.")
 parser.add_option("--force-height", dest = "forceHeight", default=None,
                   help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
-parser.add_option("-r", "--raiseexception", dest="raiseExcept", action="store_true",
+parser.add_option("--raiseexception", dest="raiseExcept", action="store_true",
         help="Throw exceptions on some failures, e.g. failed descriptor calls to allow debugging of the problem.")
 parser.add_option("-k", "--showstack", dest="showStack", action="store_true",
         help="When a high level KeyboardInterrupt is caught, show the stack.")
 parser.add_option("-w", "--where", dest="where", default = None,
+        help="Allows a condition to test, should use descriptors") 
+parser.add_option("-r", "--recipe", "--reduce", dest="recipe", default = None,
         help="Allows a condition to test, should use descriptors") 
 
 (options, args) = parser.parse_args()
@@ -123,6 +125,7 @@ else:
                     where = options.where,
                     batchnum = int(options.batchnum)-1,
                     opti = opti,
+                    recipe = options.recipe
                     )
         if opti:
             print "Done DataSpider.typewalk(..)"

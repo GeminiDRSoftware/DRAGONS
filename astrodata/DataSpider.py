@@ -6,7 +6,7 @@ ldebug = False
 verbose = False
 from utils import terminal
 from ReductionContextRecords import AstroDataRecord
-
+import subprocess
 uselocalcalserv = False
 batchno = 100
 
@@ -100,6 +100,7 @@ class DataSpider(object):
                  showCals = False,
                  incolog = True,
                  stayTop = False,
+                 recipe = None,
                  raiseExcept = False,
                  where = None,
                  batchnum = None,
@@ -331,7 +332,7 @@ class DataSpider(object):
 
                             # if phead then there are headers to print per file
                             if (pheads != None):
-                                #print "          -----------"
+                                #print "          -----------"sys.exec
                                 print "          ${UNDERLINE}PHU Headers${NORMAL}"
                                 #print "          -----------"
                                 #print "pheads", pheads  
@@ -357,6 +358,17 @@ class DataSpider(object):
                                         cs = "No %s found, %s " % ( caltyp, str(sys.exc_info()[1]))
                                         raise
                                     print "          %10s: %s" % (caltyp, cs)
+                            if (recipe):
+                                banner = ' Running Recipe "%s" on %s ' % (recipe, fname)
+                                print "${REVERSE}${RED}" + " "*len(banner)
+                                print banner
+                                print " "*len(banner)+"${NORMAL}"
+                                
+                                if recipe == "default":
+                                    rs = ""
+                                else:
+                                    rs = "-r %s" % recipe
+                                subprocess.call("reduce %s %s" % (rs, fname), shell=True)
                     else:
                         if (verbose) : print "%s is not a FITS file" % tfile
                     
