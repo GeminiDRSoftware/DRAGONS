@@ -8,10 +8,46 @@ from utils import terminal
 from ReductionContextRecords import AstroDataRecord
 
 uselocalcalserv = False
+batchno = 100
 
 if uselocalcalserv: # takes WAY TOO LONG~!!!!!!
     from astrodata.LocalCalibrationService import CalibrationService
     from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
+
+def shallowWalk(directory):
+    global batchno
+    opti = False
+    if opti:
+        print "sw: going to call os.listdir"
+    ld = os.listdir(directory)
+    if opti:
+        print "sw: called os.listdir"
+    root = directory
+    dirn = []
+    files = []
+    if opti:
+       print "sw: sorting directories from files in directory"
+
+    if batchno != None:
+        batchsize = batchno
+    else:
+        batchsize = 100
+
+    for li in ld:
+        if os.path.isdir(li):
+            dirn.append(li)
+        else:
+            files.append(li)
+        if len(files)> batchsize:
+            if opti:
+                print "yielding batch of " + str(batchsize)
+                print repr(files)
+            yield (root, [], files)
+            files = []
+    if opti:
+        print "sw: yielding"
+    yield (root, [], files)
+    
 
 
 class DataSpider(object):
@@ -65,12 +101,18 @@ class DataSpider(object):
                  incolog = True,
                  stayTop = False,
                  raiseExcept = False,
-                 where = None):
+                 where = None,
+                 batchnum = None,
+                 opti = None):
         """
         Recursively walk a given directory and put type information to stdout
         """
         global verbose
         global debug
+        global batchno
+        if batchnum != None:
+            batchno = batchnum
+            
         onlylist = only.split(",")
         if (verbose):
             print "onlylist:",repr(onlylist)
@@ -78,7 +120,17 @@ class DataSpider(object):
         verbose = False
         ldebug = False
         dirnum = 0
-        for root,dirn,files in os.walk(directory):
+        if stayTop == True:
+            walkfunc  = shallowWalk
+            if opti:
+                print "Doing a shallow walk"
+        else:
+            walkfunc = os.walk
+            if opti:
+                print "Doing an os.walk"
+        for root,dirn,files in walkfunc(directory):
+            if opti:
+                print "Analyzing:", root
             dirnum += 1
             if (verbose) :
                 print "root:", root 
@@ -91,7 +143,11 @@ class DataSpider(object):
                 ## !!!!!
                 ## !!!!! CREATE THE LINE WRITTEN FOR EACH DIRECTORY RECURSED !!!!!
                 ## !!!!!
-                rootln = "\n${BOLD}directory: ${NORMAL}"+root + "${NORMAL}"
+                fullroot = os.path.abspath(root)
+                if root == ".":
+                    rootln = "\n${NORMAL}${BOLD}directory: ${NORMAL}. ("+fullroot + ")${NORMAL}"
+                else:
+                    rootln = "\n${NORMAL}${BOLD}directory: ${NORMAL}"+root + "${NORMAL}"
                 firstfile = True
                 for tfile in files:
                     # we have considered removing this check in place of a
@@ -304,7 +360,7 @@ class DataSpider(object):
                     else:
                         if (verbose) : print "%s is not a FITS file" % tfile
                     
-            if stayTop == True:
+            if False: # done with walk function switching if stayTop == True:
                 # cheap way to not recurse.
                 break;
 

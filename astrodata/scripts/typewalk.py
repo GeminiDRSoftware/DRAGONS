@@ -1,5 +1,16 @@
 #!/usr/bin/env python
+import sys,os
+# remove current working directory from PYTHONPATH to speed up import in
+# gigantic data directories
+# print repr(sys.path)
+curpath = os.getcwd()
+# print curpath
+sys.path.remove(curpath)
+# print repr(sys.path)
 
+opti = False
+if opti:
+    print "Starting Main Imports"
 # import pdb
 try:
     import astrodata 
@@ -13,9 +24,12 @@ try:
     import traceback as tb
 except:
     raise
+    
 if False:
     from astrodata.LocalCalibrationService import CalibrationService
 
+if opti:
+    print "Finished Top Imports"
 ############################################################
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as
@@ -54,6 +68,8 @@ parser.add_option("-c", "--showcalibrations", dest="showCals", action="store_tru
         help="When set, show any locally available calibrations")
 parser.add_option("-x", "--dontrecurse", dest="stayTop", action="store_true",
         help="When set, don't recurse subdirs.")
+parser.add_option("-b", "--batch", dest="batchnum", default = 100,
+        help="In -x shallow walk mode... how many files to process at a time in the current directory. This helps control behavior in large data directories. Default = 100.")
 parser.add_option("--force-width", dest = "forceWidth", default=None,
                   help="Use to force width of terminal for output purposes instead of using actual temrinal width.")
 parser.add_option("--force-height", dest = "forceHeight", default=None,
@@ -92,6 +108,8 @@ elif (options.htmldoc):
     print cl.htmlDoc()
 else:
     try:
+        if opti:
+            print "Calling DataSpider.typewalk(..)"
         dt.typewalk(options.twdir, only=options.only,
                     pheads = options.pheads, showinfo = options.showinfo,
                     onlyStatus = options.onlyStatus,
@@ -103,7 +121,11 @@ else:
                     stayTop = options.stayTop,
                     raiseExcept = options.raiseExcept,
                     where = options.where,
+                    batchnum = int(options.batchnum)-1,
+                    opti = opti,
                     )
+        if opti:
+            print "Done DataSpider.typewalk(..)"
     except KeyboardInterrupt:
     
         print "Interrupted by Control-C"
