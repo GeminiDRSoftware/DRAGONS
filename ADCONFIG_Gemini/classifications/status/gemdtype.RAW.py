@@ -1,6 +1,6 @@
 class RAW(DataClassification):
     editprotect=True
-    name="UNPREPARED"
+    name="RAW"
     usage = 'Un-"prepared" data.'
     phuReqs= {'{prohibit}GEM-TLM': ".*?" }
     
