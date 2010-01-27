@@ -120,7 +120,7 @@ class AstroData(object, CalculatorInterface):
         same mef, but which will behave as if the SCI extensions are the only
         extensions in the file.  Note, datasetA and datasetB share the PHU and
         also the datastructures of the HDUs they have in common, but different 
-        HDUList instances.
+        HDUList instances.n
         
         @param ext: EXTNAME name for this subdata instance.
         @type ext: string
@@ -484,9 +484,10 @@ class AstroData(object, CalculatorInterface):
             except IOError:
                 print "can't open %s, mode=%s" % (self.filename, mode)
                 raise
-        
-        self.discoverTypes()
-            
+        try:
+            self.discoverTypes()
+        except:
+            raise ADExcept("discover types failed")
     def close(self):
         """
         This function closes the pyfits.HDUList object if this instance
