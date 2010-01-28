@@ -8,10 +8,10 @@ overscanTrim
 biasCorrect
 flatfieldCorrect
 mosaicChips
-display
+display(displayID = single)
 shift
 measureIQ
 setStackable
 averageCombine
-display
+display(displayID = combined)
 measureIQ

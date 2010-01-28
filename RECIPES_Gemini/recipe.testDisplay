@@ -1,3 +1,6 @@
 # Recipe for the prototype presentation
 
-display(thing = farpy, love=plub)
+display(displayID = raw)
+display(displayID = combined)
+display(displayID = raw)
+

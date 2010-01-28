@@ -87,24 +87,12 @@ class GEMINIPrimitives(ReductionObject):
  #------------------------------------------------------------------------------ 
     def display(self, rc):
         try:
-            print "displaying output"
-            print "rc.localparms:", repr(rc.localparms)
-            print 'rc["fnarp"]', repr(rc["fnarp"])
-            print 'rc["thing"]', repr(rc["thing"])
-            rc.rqDisplay()           
+            rc.rqDisplay(displayID=rc["displayID"])           
         except:
             print "Problem displaying output"
             raise 
-
         yield rc
         
-#testing purposes only*
-    def newdisplay(self, rc):
-        print "rc.localparms: " + repr(rc.localparms)
-        print 'rc["this"] ' + repr(rc["fnarp"])
-        print 'rc["global"] ' + repr(rc["thing"])
-        yield rc
-               
 #------------------------------------------------------------------------------ 
     def displayStructure(self, rc):
         print "displayStructure"

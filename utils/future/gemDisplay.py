@@ -45,6 +45,24 @@ class DisplayService(object):
     def __init__(self):
         self.pydisp = pyDisplay.getDisplay()
         self.ds9 = None
+        self.displayIDMap = {}
+    def displayID2frame(self, displayID):
+        if displayID in self.displayIDMap:
+            return self.displayIDMap[displayID]
+        else:
+            
+            for i in range(1,100):
+                if not self.frameAssigned(i):
+                    self.displayIDMap.update({displayID:i})
+                    return i 
+                
+    def frameAssigned(self,i):
+        dim = self.displayIDMap
+        for key in dim.keys():
+            if dim[key] == i:
+                return True
+        return False
+                 
 #------------------------------------------------------------------------------ 
     def setupDS9(self):
         storeDs9 = self.pydisp.getDisplayTool( 'ds9' )
