@@ -231,9 +231,7 @@ cs = CalibrationService()
 
 # Local Display Service Setup
 ds = gemDisplay.getDisplayService()
-
-
-frameForDisplay = 1 
+ 
 i = 1
 numFiles = len(infiles)
 for infile in infiles: #for dealing with multiple files.
@@ -418,13 +416,14 @@ for infile in infiles: #for dealing with multiple files.
                                         tmpImage = tmpImage.filename
 
                                     # tmpImage should be a string at this point.
-                                    #print "RED332:", type(tmpImage), tmpImage
+                                    #print "RED
                                     try:
-                                        gemini.gmos.gdisplay( tmpImage, frameForDisplay, fl_imexam=iraf.no,
+                                        # print "r420:", rq.disID, ds.displayID2frame(rq.disID)
+                                    
+                                        gemini.gmos.gdisplay( tmpImage, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
                                             Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
 #                                        ds.display( tmpImage )
-#                                        print ds.ds9.frames()
-                                        frameForDisplay += 1    
+#                                        print ds.ds9.frames()  
                                     except:
                                         print "CANNOT DISPLAY"
                                         raise 

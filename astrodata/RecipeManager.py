@@ -787,7 +787,7 @@ class ReductionContext(dict):
         for re in addToCmdQueue:
             self.addRq(re)
     
-    def rqDisplay(self):
+    def rqDisplay(self,displayID=None):
         '''
         self, filename = None
         if None use self.inputs
@@ -796,7 +796,10 @@ class ReductionContext(dict):
         '''
         ver = "1_0"
         displayObject = DisplayRequest()
-        Did = idFac.generateDisplayID( self.inputs[0].filename, ver )
+        if displayID:
+            Did = displayID
+        else:
+            Did = idFac.generateDisplayID( self.inputs[0].filename, ver )
         displayObject.disID = Did
         displayObject.disList = self.inputs
         self.addRq( displayObject )
