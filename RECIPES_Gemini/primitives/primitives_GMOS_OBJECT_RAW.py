@@ -16,7 +16,7 @@ no = pyraf.iraf.no
 gemini()
 gemini.gmos()
 
-class GMOS_IMAGEPrimitives(GEMINIPrimitives):
+class GMOS_OBJECT_RAWPrimitives(GEMINIPrimitives):
     def init(self, co):
         pyraf.iraf.set (adata=co["adata"])  
         GEMINIPrimitives.init(self, co)
