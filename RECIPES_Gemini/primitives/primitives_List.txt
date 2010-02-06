@@ -1,0 +1,63 @@
+____________________________________________________________
+GEMINIPrimitives
+------------------------------------------------------------
+1. averageCombine
+2. crashReduce
+3. display
+4. displayStructure
+5. gem_produce_bias
+6. gem_produce_im_flat
+7. getProcessedBias
+8. getProcessedFlat
+9. getStackable
+10. logFilename
+11. measureIQ
+12. mosaicChips
+13. printParameters
+14. printStackable
+15. setStackable
+16. summarize
+
+
+____________________________________________________________
+GMOS_IMAGEPrimitives
+------------------------------------------------------------
+1. averageCombine
+2. biasCorrect
+3. biasCreate
+4. findshiftsAndCombine
+5. flatCreate
+6. flatfieldCorrect
+7. fringeCorrect
+8. makeFringeFrame
+9. mosaicChips
+10. overscanCorrect
+11. overscanSub
+12. overscanTrim
+13. prepare
+14. setForFringe
+15. shift
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Primitives that override those in GEMINI (same name)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+averageCombine
+mosaicChips
+
+
+____________________________________________________________
+GMOS_OBJECT_RAWPrimitives
+------------------------------------------------------------
+1. biasCreate
+2. biasSub
+3. findshiftsAndCombine
+4. flatCreate
+5. flatField
+6. fringeCreate
+7. fringeSubtract
+8. overscanSub
+9. overscanTrim
+10. prepare
+
+
+____________________________________________________________
+
