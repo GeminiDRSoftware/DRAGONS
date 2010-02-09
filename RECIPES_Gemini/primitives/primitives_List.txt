@@ -38,7 +38,7 @@ GMOS_IMAGEPrimitives
 14. setForFringe
 15. shift
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-Primitives that override those in GEMINI (same name)
+Primitives listed here that override GEMINIPrimitives
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 averageCombine
 mosaicChips
