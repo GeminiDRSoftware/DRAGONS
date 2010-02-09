@@ -81,7 +81,7 @@ for m in module_list:
                 print '- '*30
                 fhandler.write ( '- '*30 )
                 fhandler.write( '\n' )
-                fhandler.write ( 'Primitives that override those in GEMINI (same name)' )
+                fhandler.write ( 'Primitives listed here that override GEMINIPrimitives' )
                 fhandler.write( '\n' )
                 fhandler.write ( '- '*30 )
                 fhandler.write( '\n' )
