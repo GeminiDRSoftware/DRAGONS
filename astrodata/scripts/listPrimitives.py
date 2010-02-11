@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os
+import os, sys
 from RECIPES_Gemini.primitives import primitives_GEMINI, primitives_GMOS_IMAGE, primitives_GMOS_OBJECT_RAW
 from primitives_GEMINI import GEMINIPrimitives
 from primitives_GMOS_IMAGE import GMOS_IMAGEPrimitives
@@ -22,11 +22,18 @@ from sets import Set
 
 
 module_list = [GEMINIPrimitives, GMOS_IMAGEPrimitives, GMOS_OBJECT_RAWPrimitives]
+if os.path.isdir( '../../RECIPES_Gemini/primitives/' ):
+    path =  '../../RECIPES_Gemini/primitives/primitives_List.txt'
+elif os.path.isdir( '../trunk/RECIPES_Gemini' ):
+    path = '../trunk/RECIPES_Gemini/primitives/primitives_List.txt'
+else:
+    print 'Writing out primitives_List.txt to current Directory'
+    path = 'primitives_List.txt'
 try:
-    os.system('rm ../../RECIPES_Gemini/primitives/primitives_List.txt')
+    os.system( 'rm ' + path )
 except:
     pass
-fhandler = open('../../RECIPES_Gemini/primitives/primitives_List.txt', 'w')
+fhandler = open( path , 'w' )
 geminiList=[]
 childList=[]
 intersectionList=[]
