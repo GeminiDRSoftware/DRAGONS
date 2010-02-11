@@ -120,28 +120,6 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
-    def biasCreate(self, rc):
-        # Things done to the bias image before we subtract it:
-        # overscan subtract
-        # overscan trim
-        # average combine images
-
-        # BIAS made for all GMOS modes (imaging, spectroscopy, IFU) we need to
-        # consider a generic task. using gbias (IRAF generic task)
-        try:
-            print "combining biases to create master bias"
-            gemini.gbias(rc.inputsAsStr(), outbias=rc["outbias"],
-                rawpath=rc["caldir"], fl_trim=rc["fl_trim"], 
-                fl_over=rc["fl_over"], fl_vardq=rc["fl_vardq"],
-                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-        except:
-            print "Problem combining biases with gbias"
-            raise
-
-        yield rc 
-    
-    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
     def findshiftsAndCombine(self, rc):
        try:
           print "shifting and combining images"
@@ -233,7 +211,47 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         yield rc  
          
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-     
+    
+    def makeProcessedBias(self, rc):
+        # Things done to the bias image before we subtract it:
+        # overscan subtract
+        # overscan trim
+        # average combine images
+    
+        # BIAS made for all GMOS modes (imaging, spectroscopy, IFU) we need to
+        # consider a generic task. using gbias (IRAF generic task)
+        try:
+            print "combining biases to create master bias"
+            gemini.gbias(rc.inputsAsStr(), outbias=rc["outbias"],
+                rawpath=rc["caldir"], fl_trim=rc["fl_trim"], 
+                fl_over=rc["fl_over"], fl_vardq=rc["fl_vardq"],
+                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+        except:
+            print "Problem combining biases with gbias"
+            raise
+    
+        yield rc 
+
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
+    def makeProcessedFlat(self, rc):
+        # FLAT made for all GMOS modes (imaging, spectroscopy, IFU) we need to
+       
+        try:
+            print "combining images and bias to create master flat"
+            gemini.giflat(rc.inputsAsStr(), outflat=rc["outflat"],
+                rawpath=rc["caldir"], fl_trim=rc["fl_trim"], 
+                fl_over=rc["fl_over"], fl_vardq=rc["fl_vardq"],
+                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+        
+        except:
+            
+            print "Problem combining flats with giflat"
+            raise
+    
+        yield rc 
+    
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def mosaicChips(self, rc):
        try:
           print "producing image mosaic"
