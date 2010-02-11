@@ -5,7 +5,8 @@ import sys,os
 # print repr(sys.path)
 curpath = os.getcwd()
 # print curpath
-sys.path.remove(curpath)
+if (curpath in sys.path):
+    sys.path.remove(curpath)
 # print repr(sys.path)
 
 opti = False

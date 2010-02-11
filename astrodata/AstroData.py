@@ -17,6 +17,26 @@ verbose = False
 verboseLoadTypes = True
 verbt = False
 
+
+class ADExcept:
+    """This class is an exception class for the Calculator module"""
+    
+    def __init__(self, msg="Exception Raised in AstroData system"):
+        """This constructor accepts a string C{msg} argument
+        which will be printed out by the default exception 
+        handling system, or which is otherwise available to whatever code
+        does catch the exception raised.
+        @param msg: a string description about why this exception was thrown
+        @type msg: string
+        """
+        self.message = msg
+    def __str__(self):
+        """This string operator allows the default exception handling to
+        print the message associated with this exception.
+        @returns: string representation of this exception, the self.message member
+        @rtype: string"""
+        return self.message
+
 #FUNCTIONS
 def reHeaderKeys(rekey, header):
     """This utility function returns a list of keys from 
