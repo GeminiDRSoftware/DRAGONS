@@ -24,19 +24,20 @@ GMOS_IMAGEPrimitives
 ------------------------------------------------------------
 1. averageCombine
 2. biasCorrect
-3. biasCreate
-4. findshiftsAndCombine
-5. flatCreate
-6. flatfieldCorrect
-7. fringeCorrect
-8. makeFringeFrame
-9. mosaicChips
-10. overscanCorrect
-11. overscanSub
-12. overscanTrim
-13. prepare
-14. setForFringe
-15. shift
+3. findshiftsAndCombine
+4. flatCreate
+5. flatfieldCorrect
+6. fringeCorrect
+7. makeFringeFrame
+8. makeProcessedBias
+9. makeProcessedFlat
+10. mosaicChips
+11. overscanCorrect
+12. overscanSub
+13. overscanTrim
+14. prepare
+15. setForFringe
+16. shift
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 Primitives listed here that override GEMINIPrimitives
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
