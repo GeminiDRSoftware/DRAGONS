@@ -139,8 +139,14 @@ class AstroData(object, CalculatorInterface):
         In this case datasetB would be a AstroData object associated with the
         same mef, but which will behave as if the SCI extensions are the only
         extensions in the file.  Note, datasetA and datasetB share the PHU and
-        also the datastructures of the HDUs they have in common, but different 
-        HDUList instances.n
+        also the data structures of the HDUs they have in common. So a change
+        to datasetA[("SCI",1)].data will change datasetB[("SCI",1)].data member
+        because they are in fact the same numpy array in memory. The HDUList is
+        a different list, however, that references common HDUs.
+
+        NOTE: Integer extensions start at 0 for the data-containing extensions.
+        ad[0] is the first extension AFTER the PHU, it is not the PHU!  In
+        AstroData instances, the PHU is purely a header.
         
         @param ext: EXTNAME name for this subdata instance.
         @type ext: string
@@ -311,21 +317,6 @@ class AstroData(object, CalculatorInterface):
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.append(hdu)
-    
-    def close(self):
-        """This function will close the attachment to the file on disk
-        if this instance opened that file.  If this is subdata, e.g.
-        sd = gd[SCI] where gd is another AstroData instance, sd.close()
-        will not close the hdulist because gd will actually own the
-        hold on that file."""
-        
-        if self.borrowedHDUList:
-            self.container.relhdul()
-            self.hdulist = None
-        else:
-            if self.hdulist != None:
-                self.hdulist.close()
-                self.hdulist = None
 
     def getData(self):
         """Function returns data member(s), specifically for the case in which
@@ -502,7 +493,7 @@ class AstroData(object, CalculatorInterface):
             try:
                 self.hdulist = pyfits.open(self.filename, mode = mode)
             except IOError:
-                print "can't open %s, mode=%s" % (self.filename, mode)
+                print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
                 raise
         try:
             self.discoverTypes()
@@ -731,6 +722,7 @@ lse, the return value is a list which is in fact
             self.relhdul()
             return None
     phuHeader = phuValue
+    phuGetKeyValue = phuValue
             
     def translateIntExt(self, integer):
         """This function is used internally to support AstroData
@@ -776,6 +768,7 @@ lse, the return value is a list which is in fact
             
         self.relhdul()
         return retval
+    getKeyValue = getHeaderValue
    
     def info(self):
         """This function calls the pyfits.HDUList C{info(..)} function
