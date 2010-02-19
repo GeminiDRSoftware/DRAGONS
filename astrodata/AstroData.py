@@ -587,7 +587,7 @@ class AstroData(object, CalculatorInterface):
         
         return retary
         
-    def discoverTypes(self, all = False):
+    def discoverTypes(self, all  = False):
         """
         This function provides a list of classifications of both processing status
         and typology which apply to the data encapsulated by this instance, 
@@ -729,6 +729,15 @@ lse, the return value is a list which is in fact
         hdus = self.hdulist
         hdus[0].header.update(key, value, comment)
         return
+        
+    def getPHU(self):
+        return self.hdulist[0].header
+    
+    def setPHU(self, header):
+        self.hdulist[0].header = header
+        return
+        
+    phu = property(getPHU, setPHU)
 
             
     def translateIntExt(self, integer):
