@@ -499,6 +499,7 @@ class AstroData(object, CalculatorInterface):
             self.discoverTypes()
         except:
             raise ADExcept("discover types failed")
+            b
     def close(self):
         """
         This function closes the pyfits.HDUList object if this instance
@@ -661,8 +662,8 @@ lse, the return value is a list which is in fact
         @return: DataClassification objects in a list
         @rtype: list
         """
-        if (self.typesStatus == None):
-            self.typesStatus = cl.discoverStatus(self)
+        if (self.typesTypology == None):
+            self.typesTypology = cl.discoverTypology(self)
             
         return self.typesTypology
 
@@ -723,6 +724,12 @@ lse, the return value is a list which is in fact
             return None
     phuHeader = phuValue
     phuGetKeyValue = phuValue
+    
+    def phuSetKeyValue(self, key, value, comment = None):
+        hdus = self.hdulist
+        hdus[0].header.update(key, value, comment)
+        return
+
             
     def translateIntExt(self, integer):
         """This function is used internally to support AstroData
@@ -769,6 +776,25 @@ lse, the return value is a list which is in fact
         self.relhdul()
         return retval
     getKeyValue = getHeaderValue
+    
+    def setKeyValue(self, extension, key, value, comment = None):
+
+        origextension = extension
+        if type(extension) == int:
+            # this translates ints from our 0-relative base of AstroData to the 
+            #  1-relative base of the hdulist, but leaves tuple extensions
+            #  as is.
+            extension = self.translateIntExt(extension)
+            
+        #make sure extension is in the extensions list
+        if (self.extensions != None) and (not extension in self.extensions):
+            raise ADExcept("Extention %s not present in AstroData instance" % str(origextension))
+            
+        hdul = self.gethdul()
+        hdul[extension].header.update(key, value, comment)
+            
+        self.relhdul()
+        return 
    
     def info(self):
         """This function calls the pyfits.HDUList C{info(..)} function
