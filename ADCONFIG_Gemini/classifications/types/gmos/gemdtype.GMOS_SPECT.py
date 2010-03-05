@@ -8,7 +8,8 @@ class GMOS_SPECT(DataClassification):
     typeReqs= ['GMOS']
     phuReqs = {
                 # If the grating is not the mirror, then it must be spectroscopy
-                '{prohibit}GRATING': 'MIRROR'
+                '{prohibit}GRATING': 'MIRROR',
+                '{prohibit}OBSTYPE': 'BIAS'
                 }
 
 newtypes.append( GMOS_SPECT())
