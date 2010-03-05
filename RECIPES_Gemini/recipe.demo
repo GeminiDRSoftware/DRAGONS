@@ -1,17 +1,36 @@
 # Recipe for the prototype presentation
 
+showInputs
+
 getProcessedBias
 getProcessedFlat
 
+showCals
+
 prepare
+
+showInputs 
+
 overscanTrim
+showInputs
+
 biasCorrect
 flatfieldCorrect
 mosaicChips
+
+showInputs
+
 display(displayID = single)
 shift
+
+showInputs
+
 measureIQ
+
 setStackable
+
+showStackable
+
 averageCombine
 display(displayID = combined)
 measureIQ

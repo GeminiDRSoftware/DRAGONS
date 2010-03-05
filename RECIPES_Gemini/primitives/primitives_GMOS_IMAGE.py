@@ -8,6 +8,8 @@ from astrodata import Descriptors
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
 import pyraf
+import iqtool
+from iqtool.iq import getiq
 
 
 import pyfits
@@ -60,27 +62,30 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "Combining and averaging" 
             filesystem.deleteFile('inlist')
             
-            templist = []
+            tempset = set()
             
             for inp in rc.inputs:
-                 templist.append( IDFactory.generateStackableID( inp.ad ) )
+                 tempset.add( IDFactory.generateStackableID( inp.ad ) )
                  
-            templist = list( set(templist) ) # Removes duplicates.
-            
-            for stackID in templist:
+            for stackID in tempset:
                 #@@FIXME: There are a lot of big issues in here. First, we need to backup the
                 # previous average combined file, not delete. Backup is needed if something goes wrong.
                 # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
                 # stackable images are in the same spot which may not be the case.
                 
-                stacklist = rc.getStack( stackID ).filelist
+                stacklist = [ os.path.basename(f) 
+                                for f in rc.getStack(stackID).filelist ]
+                
                 #print "pG147: STACKLIST:", stacklist
 
                 
                 if len( stacklist ) > 1:
+                    # @@REFERENCEIMAGE: first image used as reference image to
+                    # creat the output filename
                     stackname = "avgcomb_" + os.path.basename(stacklist[0])
-                    filesystem.deleteFile( stackname )
-                    gemini.gemcombine( rc.makeInlistFile(stackID),  output=stackname,
+                    inlistname = "inlist."+stackID
+                    
+                    gemini.gemcombine( rc.makeInlistFile(inlistname, stacklist),  output=stackname,
                        combine="average", reject="none" ,Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
                     
                     if gemini.gemcombine.status:
@@ -102,7 +107,10 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "Subtracting off bias"
             cals = rc.calFilename( 'bias' )
             for cal in cals:
-                gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,
+                # print "pGI:", ",".join(cals[cal])
+                # gireduce was taking the join above as it's inputs... not sure why
+                # so leaving this note
+                gemini.gmos.gireduce(rc.inputsAsStr(), fl_over=no,
                     fl_trim=no, fl_bias=yes,bias=cal,
                     fl_flat=no, outpref="biassub_",
                     Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr()
@@ -159,7 +167,9 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             
             cals = rc.calFilename( 'twilight' )
             for cal in cals:
-                gemini.gmos.gireduce(",".join(cals[cal]), fl_over=no,fl_trim=no,
+                # see Bias correct, used to have strange join from cal structures
+                # instead of rc.inputsAsStr() below.
+                gemini.gmos.gireduce(rc.inputsAsStr(), fl_over=no,fl_trim=no,
                     fl_bias=no, flat1=cal, fl_flat=yes, outpref="flatdiv_",
                     Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
             
@@ -250,7 +260,44 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise
     
         yield rc 
-    
+
+    #------------------------------------------------------------------------------ 
+    def measureIQ(self, rc):
+        try:
+            #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
+            # separate primitives, i.e. detectSources and measureIQ.
+            print "measuring iq"
+            '''
+            image, outFile='default', function='both', verbose=True,\
+            residuals=False, display=True, \
+            interactive=False, rawpath='.', prefix='auto', \
+            observatory='gemini-north', clip=True, \
+            sigma=2.3, pymark=True, niters=4, boxSize=2., debug=False):
+            '''
+            for inp in rc.inputs:
+                if 'GEMINI_NORTH' in inp.ad.getTypes():
+                    observ = 'gemini-north'
+                elif 'GEMINI_SOUTH' in inp.ad.getTypes():
+                    observ = 'gemini-south'
+                else:
+                    observ = 'gemini-north'
+                st = time.time()
+                iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True, qa=True)
+                et = time.time()
+                print 'MeasureIQ time:', (et - st)
+                # iqdata is list of tuples with image quality metrics
+                # (ellMean, ellSig, fwhmMean, fwhmSig)
+                if len(iqdata) == 0:
+                    print "WARNING: Problem Measuring IQ Statistics, none reported"
+                else:
+                    rc.rqIQ( inp.ad, *iqdata[0] )
+            
+        except:
+            print 'Problem measuring IQ'
+            raise 
+        
+        yield rc
+                    
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def mosaicChips(self, rc):
        try:
@@ -334,6 +381,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
             print "Updating GAIN keyword by calling GGAIN"
             
+            
             gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath=rc['global']['adata'].value,
                                  Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
             
@@ -410,11 +458,12 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                     yshift = yoffset / pixscale * -1
                 else:
                     print "${RED}ERROR: insufficient information to shift (set PIXSCALE, XOFFSET, and YOFFSET in PHU)"
-                    return
+                    xshift = 0
+                    yshift = 0                   
                 
-                os.system( 'rm test.fits &> /dev/null' )
-                outfile = os.path.basename( rc.prependNames( 'shift_',  )[0][0] )
+                #os.system( 'rm test.fits &> /dev/null' )
                 infile = inp.filename
+                outfile =  "shift_"+ os.path.basename(infile)
                 
                 #print 'INPUT:'
                 #print infile
@@ -422,16 +471,20 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 #print 'OUTPUT:'
                 #print outfile
                 
-                images.imshift( infile + '[1]', output='test.fits', xshift=xshift, yshift=yshift)
+                tmpname = "tmpshift_"+ os.path.basename(infile) + ".fits"
+                images.imshift( infile + '[1]', output= tmpname, xshift=xshift, yshift=yshift)
                 
                 # This pyfits code is for dealing with the fact that imshift does not copy over the PHU of
                 # the fits file.
                 temp1 = pyfits.open( infile, 'readonly' )
-                temp2 = pyfits.open( 'test.fits' )
+                temp2 = pyfits.open( tmpname )
                 temp1[1].data = temp2[0].data
-                os.system( 'rm ' + outfile + '  &> /dev/null' )
+                #os.system( 'rm ' + outfile + '  &> /dev/null' )
                 temp1.writeto( outfile )
-                rc.reportOutput( rc.prependNames("shift_") )
+                temp1.close()
+                temp2.close()
+                os.remove(tmpname)
+            rc.reportOutput( rc.prependNames("shift_") )
         except:
             print 'Problem shifting image'
             raise 
