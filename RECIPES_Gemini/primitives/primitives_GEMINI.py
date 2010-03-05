@@ -3,11 +3,11 @@ import time
 from astrodata.ReductionObjects import ReductionObject
 from utils import filesystem
 from astrodata import IDFactory
-import os
+import os,sys
+from astrodata import IDFactory
+from sets import Set
 
 if True:
-    import iqtool
-    from iqtool.iq import getiq
 
     from pyraf.iraf import tables, stsdas, images
     from pyraf.iraf import gemini
@@ -40,45 +40,10 @@ class GEMINIPrimitives(ReductionObject):
         rc.requestPause()
         yield rc
  
- #------------------------------------------------------------------------------ 
-    def averageCombine(self, rc):
-        try:
-            # @@TODO: need to include parameter options here
-            print "Combining and averaging" 
-            filesystem.deleteFile('inlist')
-            
-            templist = []
-            
-            for inp in rc.inputs:
-                 templist.append( IDFactory.generateStackableID( inp.ad ) )
-                 
-            templist = list( set(templist) ) # Removes duplicates.
-            
-            for stackID in templist:
-                #@@FIXME: There are a lot of big issues in here. First, we need to backup the
-                # previous average combined file, not delete. Backup is needed if something goes wrong.
-                # Second, the pathnames in here have too many assumptions. (i.e.) It is assumed all the
-                # stackable images are in the same spot which may not be the case.
-                
-                stacklist = rc.getStack( stackID ).filelist
-                #print "pG147: STACKLIST:", stacklist
-
-                
-                if len( stacklist ) > 1:
-                    stackname = "avgcomb_" + os.path.basename(stacklist[0])
-                    filesystem.deleteFile( stackname )
-                    gemini.gemcombine( rc.makeInlistFile(stackID),  output=stackname,
-                        combine="average", reject="none", 
-                        Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-                    rc.reportOutput(stackname)
-                else:
-                    print "'%s' was not combined because there is only one image." %( stacklist[0] )
-        except:
-            print "Problem combining and averaging"
-            raise
-
-        yield rc
- 
+    def exit(self, rc):
+        print "calling sys.exit()"
+        sys.exit()
+        
  #------------------------------------------------------------------------------ 
     def crashReduce(self, rc):
         raise 'Crashing'
@@ -154,64 +119,13 @@ class GEMINIPrimitives(ReductionObject):
             sleep(stepduration)
             yield rc
 
-#------------------------------------------------------------------------------ 
-    def measureIQ(self, rc):
-        try:
-            #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
-            # separate primitives, i.e. detectSources and measureIQ.
-            print "measuring iq"
-            '''
-            image, outFile='default', function='both', verbose=True,\
-            residuals=False, display=True, \
-            interactive=False, rawpath='.', prefix='auto', \
-            observatory='gemini-north', clip=True, \
-            sigma=2.3, pymark=True, niters=4, boxSize=2., debug=False):
-            '''
-            for inp in rc.inputs:
-                if 'GEMINI_NORTH' in inp.ad.getTypes():
-                    observ = 'gemini-north'
-                elif 'GEMINI_SOUTH' in inp.ad.getTypes():
-                    observ = 'gemini-south'
-                else:
-                    observ = 'gemini-north'
-                st = time.time()
-                iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True, qa=True)
-                et = time.time()
-                print 'MeasureIQ time:', (et - st)
-                # iqdata is list of tuples with image quality metrics
-                # (ellMean, ellSig, fwhmMean, fwhmSig)
-                if len(iqdata) == 0:
-                    print "WARNING: Problem Measuring IQ Statistics, none reported"
-                else:
-                    rc.rqIQ( inp.ad, *iqdata[0] )
-            
-        except:
-            print 'Problem measuring IQ'
-            raise 
-        
-        yield rc
-                    
-#------------------------------------------------------------------------------ 
-    def mosaicChips(self, rc):
-       try:
-          print "producing image mosaic"
-          #mstr = 'flatdiv_'+rc.inputsAsStr()          
-          gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
-            Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
-          
-          
-          rc.reportOutput(rc.prependNames("mo_", currentDir = True))
-       except:
-          print "Problem producing image mosaic"
-          raise 
 
-       yield rc
-       
- #------------------------------------------------------------------------------ 
+
+#------------------------------------------------------------------------------ 
     def printParameters(self, rc):
         print "printing parameters"
         print rc.paramsummary()
-        yield rc        
+        yield rc              
         
 #------------------------------------------------------------------------------ 
     def printStackable(self, rc):
@@ -236,7 +150,38 @@ class GEMINIPrimitives(ReductionObject):
             raise
 
         yield rc
+
+    def showInputs(self, rc):
+        print "Inputs:"
+        for inf in rc.inputs:
+            print "  ", inf.filename   
+        yield rc   
+    
+    def showCals(self, rc):
+        for adr in rc.inputs:
+            sid = IDFactory.generateAstroDataID(adr.ad)
+            for calkey in rc.calibrations:
+                if sid in calkey:
+                    print rc.calibrations[calkey]
+        yield rc
+
+#------------------------------------------------------------------------------ 
+    def showStackable(self, rc):
+        sidset = set()
+        for inp in rc.inputs:
+            sidset.add( IDFactory.generateStackableID( inp.ad ))
         
+        for sid in sidset:
+            stacklist = rc.getStack(sid).filelist
+            
+            print "Stack for stack id=%s" % sid
+            for f in stacklist:
+                print "   "+os.path.basename(f)
+        
+        yield rc
+                 
+        
+            
 #------------------------------------------------------------------------------ 
     def summarize(self, rc):
         print "done with task"

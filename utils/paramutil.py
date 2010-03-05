@@ -13,21 +13,26 @@ import geminiLogger
 """
 def checkImageParam( image ):
     """
-    Tries to accomplish the same thing as most IRAF tasks in regards to how they handle the input file parameter.
+    Tries to accomplish the same thing as most IRAF tasks in regards to how they
+    handle the input file parameter.
     
     @param image: 
     What is supported:
     
     Strings:
-    1) If the string starts with '@' then it is expected that after the '@' is a filename with the input image filenames
-    in it.
-    2) Input image filename.checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
+    1) If the string starts with '@' then it is expected that after the '@' is 
+       a filename with the input image filenames in it.
+    2) Input image filename.checkParam( parameter, paramType, 
+       defaultValue, compareValue=0.0 ):
     
     List:
-    1) Must be a list of strings. It is assumed the each string refers an input image filename.
+    1) Must be a list of strings. It is assumed the each string refers an 
+    input image filename.
+    
     @type image: String or List of Strings
     
-    @return: The list of filenames of images to be run. If an error occurs, None is returned.
+    @return: The list of filenames of images to be run. If an error occurs, 
+             None is returned.
     @rtype: list, None
     checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
     """

@@ -31,8 +31,9 @@ from astrodata.AstroData import AstroData
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
 from astrodata.StackKeeper import StackKeeper
-from astrodata.ReductionObjectRequests import CalibrationRequest, UpdateStackableRequest, \
-        GetStackableRequest, DisplayRequest, ImageQualityRequest
+from astrodata.ReductionObjectRequests import CalibrationRequest,\
+        UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
+        ImageQualityRequest
 from astrodata import gdpgutil
 from astrodata.LocalCalibrationService import CalibrationService
 from utils.future import gemDisplay
@@ -154,10 +155,15 @@ def command_line():
     input_files = []
     for inf in infile:
         #"""
+        # checkImageParam allows the argument to be an @list, turns it
+        # into a list of filenames as otherwise expected from the command line
         tmpInp = paramutil.checkImageParam( inf )
         if tmpInp == None:
             raise "The input had "+ str(inf)+" cannot be loaded."
+        # extend the list of input files with contents of @ list
         input_files.extend( tmpInp )
+
+    # print "r161:", input_files
         
     if options.add_cal != None:
         if options.cal_type == None:
@@ -203,7 +209,7 @@ def command_line():
     return input_files
     
 
-infiles = command_line()
+allinputs = command_line()
 
 generate_pycallgraphs = False
 if (generate_pycallgraphs):
@@ -211,17 +217,18 @@ if (generate_pycallgraphs):
     pycallgraph.start_trace()
 
 if options.intelligence:
-    typeIndex = gdpgutil.clusterTypes( infiles )
+    typeIndex = gdpgutil.clusterTypes( allinputs )
     # If there was super intelligence, it would determine ordering. For now, it will 
     # run recipes in simple ordering, (i.e. the order values() is returned in).
-    infiles = typeIndex.values()
+    allinputs = typeIndex.values()
 else:
-    ##@FIXME: This is pretty stupid
-    testla = []
-    for infile in infiles:
-        testla.append( [AstroData(infile)] )
-    infiles = testla
-
+    nl = []
+    for inp in allinputs:
+        nl.append(AstroData(inp))
+        
+    allinputs = [nl]
+    
+print "r231:", allinputs
 
 #===============================================================================
 # Local PRS Components
@@ -231,52 +238,62 @@ cs = CalibrationService()
 
 # Local Display Service Setup
 ds = gemDisplay.getDisplayService()
- 
+
+numReductions = len(allinputs)
 i = 1
-numFiles = len(infiles)
-for infile in infiles: #for dealing with multiple files.
-    
+for infiles in allinputs: #for dealing with multiple files.
     #print "r232: profiling end"
     #prof.close()
     #raise "over"
     
-    print "${BOLD}Starting File #%d, %s" % (i, infile[0].filename)
-    currentImageNum = i
+    print "${BOLD}Starting Reduction #%d of %d${NORMAL}" % (i, numReductions)
+    for infile in infiles:
+        print "    %s" % (infile.filename)
+    currentReductionNum = i
     i += 1
     # get RecipeLibrary
     rl = RecipeLibrary()
     
     # get ReductionObject for this dataset
-    #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
+    #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") 
+    # can be done by filename
     ro = rl.retrieveReductionObject(infile[0]) # can be done by filename #**
     
     if options.recipename == None:
-        reclist = rl.getApplicableRecipes(infile[0]) #**
-        recdict = rl.getApplicableRecipes(infile[0], collate=True) #**
+        reclist = rl.getApplicableRecipes(infiles[0]) #**
+        recdict = rl.getApplicableRecipes(infiles[0], collate=True) #**
     else:
         #force recipe
         reclist = [options.recipename]
         recdict = {"all": [options.recipename]}
     
-    types = infile[0].getTypes()
-    
-    
+    # @@REFERENCEIMAGE
+    # first file in group is used as reference
+    # for the types that are used to load the recipe and primitives
+    types = infiles[0].getTypes()
     
     infilenames = []
-    for infs in infile:
+    for infs in infiles:
         if type(infs) == AstroData:
             infilenames.append( infs.filename )
         else:
-            for inf in infs:
-                infilenames.append( inf.filename )
-        
-    title = "  Processing dataset: %s  " % str(infilenames) #**
+            # I don't think this can happen now
+            # where the input files are still strings at this point
+            infilenames.append( infs )
+       
+    numi = len(infilenames) 
+
+    if numi <= 1:        
+        title = "  Processing dataset: %s  " % (str(infilenames[0])) #**
+    else:
+        title = "  Processing datasets:"
+        for infiln in infilenames:
+            title += "\n    %s" % infiln
     tl = len(title)
     tb = " " * tl
     print "${REVERSE}" + tb
     print "${REVERSE}" + title
     print "${REVERSE}" + tb + "${NORMAL}",
-    
     if options.recipename == None:
         print "\nRecipe(s) found by dataset type:"
     else:
@@ -291,7 +308,7 @@ for infile in infiles: #for dealing with multiple files.
     
     bReportHistory = False
     cwlist = []
-    if (useTK and currentImageNum == 1):
+    if (useTK and currentReductionNum == 1):
         cw = TkRecipeControl(recipes = reclist)
         cw.start()
         
@@ -310,7 +327,7 @@ for infile in infiles: #for dealing with multiple files.
             co.restoreStkIndex( stkindfile )
             
             # add input files
-            co.addInput(infile)
+            co.addInput(infiles)
             co.setIrafStdout(irafstdout)
             co.setIrafStderr(irafstdout)
             
@@ -339,7 +356,6 @@ for infile in infiles: #for dealing with multiple files.
             primfilter = terminal.PrimitiveFilter()
             filteredstdout.addFilter(primfilter)
             frameForDisplay = 1
-            print "Created Filtered Output"
             # not this only works because we install a stdout filter right away with this
             # member function
             if (True): # try:
@@ -525,7 +541,7 @@ for infile in infiles: #for dealing with multiple files.
             
         co.isFinished(True)
     
-    if useTK and currentImageNum == numFiles:
+    if useTK and currentReductionNum == numReductions:
         try:
             cw.done()
             cw.mainWindow.after_cancel(cw.pcqid)

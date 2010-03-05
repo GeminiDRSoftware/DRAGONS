@@ -1,6 +1,8 @@
 from datetime import datetime
 
 from astrodata.AstroData import AstroData
+import os
+
 #------------------------------------------------------------------------------ 
 class ReductionContextRecord( object ):
     '''
@@ -35,7 +37,10 @@ class CalibrationRecord( ReductionContextRecord ):
     sciFilename = %s
     caltype     = %s
     filename    = %s
-    timestamp   = %s \n""" % (self.sciFilename, self.caltype, self.filename, self.timestamp)
+    timestamp   = %s""" % (  os.path.basename(self.sciFilename), 
+                                self.caltype, 
+                                os.path.basename(self.filename), 
+                                self.timestamp)
         return rets
     
     

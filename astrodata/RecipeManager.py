@@ -276,7 +276,7 @@ class ReductionContext(dict):
             for f in callbacks[name]:
                 f(**params)
                     
-    def calsummary(self, mode = "text"):
+    def calSummary(self, mode = "text"):
         rets = ""
         for key in self.calibrations.keys():
             rets += str(key)
@@ -421,17 +421,16 @@ class ReductionContext(dict):
             else:
                 return ",".join([os.path.basename(path) for path in inputlist])
 
-    def makeInlistFile(self, ID):
+    def makeInlistFile(self, filename, filelist):
         try:
-            fh = open( 'inlist', 'w' )
-            stack = self.stackeep.get(ID)
-            for item in stack.filelist:
+            fh = open( filename, 'w' )
+            for item in filelist:
                 fh.writelines(item + '\n')
         except:
             raise "Could not write inlist file for stacking." 
         finally:
             fh.close()
-        return "@inlist"
+        return "@"+filename
     
     def outputsAsStr(self, strippath = True):
         if self.outputs == None:
@@ -783,7 +782,7 @@ class ReductionContext(dict):
         if inputs is None:
             addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
         else:
-            addToCmdQueue = self.cdl.getCalReq( inputs, 'fringe' )
+            addToCmdQueue = self.cdl.getCalReq( inputs, caltype )
         for re in addToCmdQueue:
             self.addRq(re)
     

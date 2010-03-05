@@ -1,5 +1,6 @@
 import hashlib
 import pyfits as pf
+import re
 #------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
 import Descriptors
@@ -41,6 +42,8 @@ def generateStackableID( dataset, version = "1_0" ):
         ID = version + "_" + phu['OBSID'] + "_" + phu['OBJECT'] 
     elif type(dataset) == AstroData:
         ID = version + "_" + dataset.phuValue('OBSID') + "_" + dataset.phuValue('OBJECT')
+        
+    ID = makeIdSafeForFilename(ID)
     return ID
     # return shaObj.hexdigest()
   
@@ -136,4 +139,7 @@ def generateFringeListID( dataset, version='1_0' ):
     @rtype: string
     '''
     return generateStackableID( dataset, version )
+    
+def makeIdSafeForFilename(ID):
+    return re.sub(" ", "_", ID)
 
