@@ -135,7 +135,7 @@ class TkRecipeControl( threading.Thread):
 
         #self.statusBar = StatusBar(self.mainWindow)
         self.recButFrame = Frame(self.mainWindow)
-        self.recButFrame.pack(side=TOP, expand = 1)
+        self.recButFrame.pack(side=TOP)
         bw = self.recButFrame
         for rec in self.recipes:
             recBtn = Button(bw, text=rec)
@@ -144,7 +144,7 @@ class TkRecipeControl( threading.Thread):
         #add iq log
         self.iqLogFrame = Frame(self.mainWindow)
         iqw = self.iqLogFrame
-        iqw.pack(side=BOTTOM, expand = 1)
+        iqw.pack(side=BOTTOM, expand = 1, fill=BOTH)
         self.iqscroll = Scrollbar(iqw)
         self.iqscroll.pack(side=RIGHT, fill=Y)
         self.iqLogText = Text(iqw, height=5, width=60, background="black")
