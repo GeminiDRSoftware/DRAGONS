@@ -851,7 +851,7 @@ lse, the return value is a list which is in fact
         hdul = self.gethdul()
         maxl = len(hdul)
         count = 0
-        for i in range(0,maxl):
+        for i in range(1,maxl):
             try:
                 # note, only count extension in our subdata extension list
                 if (self.extensions == None) or ((extname,i) in self.extensions):

@@ -336,11 +336,10 @@ class MonitorRecipe:
         self.textWdg.config(yscrollcommand=self.scrollbar.set)
         self.scrollbar.config(command=self.textWdg.yview)
         
-        
         self.textWdg.tag_config("text", justify=CENTER)
-        self.textWdg.tag_config("bold", font = ("times", 16,"bold"),justify=CENTER)
-        self.textWdg.tag_config("data", foreground="blue", font=("courier", 13, "bold"), justify=CENTER)
-        self.textWdg.tag_config("arrow", font = ("symbol", 24),justify=CENTER)
+        self.textWdg.tag_config("bold", font = ("times", 13,"bold"),justify=CENTER)
+        self.textWdg.tag_config("data", foreground="blue", font=("courier", 12, "bold"), justify=CENTER)
+        self.textWdg.tag_config("arrow", font = ("OpenSymbol", 24),justify=CENTER)
         self.textWdg.tag_config("urgent", 
                                 foreground="red", 
                                 font=("arial", 18, "bold"), 
