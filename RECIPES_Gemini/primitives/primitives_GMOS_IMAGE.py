@@ -85,6 +85,11 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                     stackname = "avgcomb_" + os.path.basename(stacklist[0])
                     inlistname = "inlist."+stackID
                     
+                    # slight kludge, remove output if it already exists from another run
+                    # since it always uses the zeroetsh image.s
+                    if (os.path.exists(stackname)):
+                        os.remove(stackname)
+                        
                     gemini.gemcombine( rc.makeInlistFile(inlistname, stacklist),  output=stackname,
                        combine="average", reject="none" ,Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
                     
