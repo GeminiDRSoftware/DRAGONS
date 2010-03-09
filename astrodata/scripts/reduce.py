@@ -228,7 +228,6 @@ else:
         
     allinputs = [nl]
     
-print "r231:", allinputs
 
 #===============================================================================
 # Local PRS Components
