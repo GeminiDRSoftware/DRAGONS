@@ -6,6 +6,8 @@ from astrodata import IDFactory
 import os,sys
 from astrodata import IDFactory
 from sets import Set
+from iqtool.iq import getiq
+
 
 if True:
 
@@ -119,7 +121,42 @@ class GEMINIPrimitives(ReductionObject):
             sleep(stepduration)
             yield rc
 
-
+#------------------------------------------------------------------------------ 
+    def measureIQ(self, rc):
+        try:
+            #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
+            # separate primitives, i.e. detectSources and measureIQ.
+            print "measuring iq"
+            '''
+            image, outFile='default', function='both', verbose=True,\
+            residuals=False, display=True, \
+            interactive=False, rawpath='.', prefix='auto', \
+            observatory='gemini-north', clip=True, \
+            sigma=2.3, pymark=True, niters=4, boxSize=2., debug=False):
+            '''
+            for inp in rc.inputs:
+                if 'GEMINI_NORTH' in inp.ad.getTypes():
+                    observ = 'gemini-north'
+                elif 'GEMINI_SOUTH' in inp.ad.getTypes():
+                    observ = 'gemini-south'
+                else:
+                    observ = 'gemini-north'
+                st = time.time()
+                iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True, qa=True)
+                et = time.time()
+                print 'MeasureIQ time:', (et - st)
+                # iqdata is list of tuples with image quality metrics
+                # (ellMean, ellSig, fwhmMean, fwhmSig)
+                if len(iqdata) == 0:
+                    print "WARNING: Problem Measuring IQ Statistics, none reported"
+                else:
+                    rc.rqIQ( inp.ad, *iqdata[0] )
+            
+        except:
+            print 'Problem measuring IQ'
+            raise 
+        
+        yield rc
 
 #------------------------------------------------------------------------------ 
     def printParameters(self, rc):
