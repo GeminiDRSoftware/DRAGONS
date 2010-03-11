@@ -105,7 +105,7 @@ class AstroDataRecord( ReductionContextRecord ):
     ad = None
     parent = None
     
-    def __init__(self, filename, displayID=None, timestamp=None, ad=None, parent=None):
+    def __init__(self, filename, displayID=None, timestamp=None, ad=None, parent=None, load = True):
         super( AstroDataRecord, self ).__init__( timestamp )
         if type( filename ) == AstroData:
             self.filename = filename.filename
@@ -113,7 +113,10 @@ class AstroDataRecord( ReductionContextRecord ):
             self.parent = filename.filename
         elif type( filename ) == str:
             self.filename = filename
-            self.ad = AstroData( filename )
+            if load == True:
+                self.ad = AstroData( filename )
+            else:
+                self.ad = None
             self.parent = parent
         elif type( filename ) == AstroDataRecord:
             self = filename

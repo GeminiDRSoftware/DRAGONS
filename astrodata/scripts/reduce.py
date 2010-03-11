@@ -99,7 +99,8 @@ parser.add_option("--force-width", dest = "forceWidth", default=None,
                   help="Use to force width of terminal for output purposes instead of using actual temrinal width.")
 parser.add_option("--force-height", dest = "forceHeight", default=None,
                   help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
-                  
+parser.add_option("--addprimset", dest = "primsetname", default = None,
+                  help="Use to add user supplied primitives to the reduction object.")                  
 (options,  args) = parser.parse_args()
 
 useTK =  options.bMonitor
@@ -342,6 +343,24 @@ for infiles in allinputs: #for dealing with multiple files.
     
             # @@TODO:evaluate use of init for each recipe vs. for all recipes
             ro.init(co)
+            if options.primsetname != None:
+                dr = os.path.abspath(os.path.dirname(options.primsetname))
+                # print "r349:", dr
+                sys.path.append(dr)
+                # print "r351:", sys.path
+                
+                exec ("import "+ os.path.basename(options.primsetname)[:-3] + " as newmodule")
+                userPrimSet = newmodule.userPrimSet
+                
+                #f = open(options.primsetname)
+                #content = f.read()
+                #exec(content)
+                #f.close()
+                # mix in the primset
+                # @@NOTE: will change when prim dispatch proj is done soon
+               
+                ro.__class__.__bases__ += (userPrimSet,) #userPrimSet defined in module
+                
             print "running recipe: '%s'\n" % rec
             rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
             if (useTK):

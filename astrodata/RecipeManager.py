@@ -702,13 +702,13 @@ class ReductionContext(dict):
         
         return retstr
         
-    def reportOutput(self, inp, category="standard"):
+    def reportOutput(self, inp, category="standard", load = True):
         ##@@TODO: Read the new way code is done.
         if category != "standard":
             raise RecipeExcept("You may only use " +
                 "'standard' category output at this time.")
         if type(inp) == str:
-            self.outputs["standard"].append( AstroDataRecord(inp,self.displayID) )
+            self.outputs["standard"].append( AstroDataRecord(inp,self.displayID), load = load )
         elif type(inp) == list:
             for temp in inp:
                 # This is a good way to check if IRAF failed.
@@ -716,12 +716,12 @@ class ReductionContext(dict):
                 if type(temp) == tuple:
                     if not os.path.exists( temp[0] ):
                         raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
-                    orecord = AstroDataRecord( temp[0], self.displayID, parent=temp[1] )
+                    orecord = AstroDataRecord( temp[0], self.displayID, parent=temp[1], load = load)
                     #print 'RM370:', orecord
                 elif type(temp) == str:
                     if not os.path.exists( temp ):
                         raise "LAST PRIMITIVE FAILED."
-                    orecord = AstroDataRecord( temp, self.displayID )
+                    orecord = AstroDataRecord( temp, self.displayID , load = load)
                 else:
                     raise "RM292 type: " + str(type(temp))
                 #print "RM344:", orecord

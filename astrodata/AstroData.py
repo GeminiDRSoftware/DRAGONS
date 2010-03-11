@@ -635,7 +635,9 @@ lse, the return value is a list which is in fact
         @returns: a list of classification name strings
         @rtype: list
         """
+
         if (self.typesStatus == None):
+            cl = self.getClassificationLibrary()
             self.typesStatus = cl.discoverStatus(self)
             
         return self.typesStatus
@@ -663,6 +665,7 @@ lse, the return value is a list which is in fact
         @rtype: list
         """
         if (self.typesTypology == None):
+            cl = self.getClassificationLibary()
             self.typesTypology = cl.discoverTypology(self)
             
         return self.typesTypology
