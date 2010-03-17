@@ -381,7 +381,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
             hdu = dataset.hdulist
             masktype = hdu[0].header[stdkeyDictGMOS["key_gmos_masktype"]]
             maskname = hdu[0].header[stdkeyDictGMOS["key_gmos_maskname"]]
-            grating = hdu[0].header[stdkeyDictGMOS["key_gmos_grating"]]
+            grating = hdu[0].header[stdkeyDictGMOS["key_gmos_disperser"]]
             
             if masktype == 0:
                 retobsmodestring = "IMAGE"
