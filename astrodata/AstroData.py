@@ -309,14 +309,30 @@ class AstroData(object, CalculatorInterface):
         @type header: pyfits.Header
         """
         if (moredata == None):
-            self.hdulist.append(pyfits.ImageHDU(data = data, header=header))
+            if len(self.hdulist) == 0:
+                self.hdulist.append(pyfits.PrimaryHDU(data = data, header=header))
+            else:
+                self.hdulist.append(pyfits.ImageHDU(data = data, header=header))
         elif isinstance(moredata, AstroData):
             self.hdulist.append(moredata.hdulist[1:])
-        elif isinstance(moredata, pyfits.HDU):
-            self.hdulist.append(moredata)
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.append(hdu)
+    
+    def close(self):
+        """This function will close the attachment to the file on disk
+        if this instance opened that file.  If this is subdata, e.g.
+        sd = gd[SCI] where gd is another AstroData instance, sd.close()
+        will not close the hdulist because gd will actually own the
+        hold on that file."""
+        
+        if self.borrowedHDUList:
+            self.container.relhdul()
+            self.hdulist = None
+        else:
+            if self.hdulist != None:
+                self.hdulist.close()
+                self.hdulist = None
 
     def getData(self):
         """Function returns data member(s), specifically for the case in which
@@ -491,15 +507,22 @@ class AstroData(object, CalculatorInterface):
         else:
             self.filename = source
             try:
+                if mode == 'new':
+                    if os.access(self.filename, os.F_OK):
+                        os.remove(self.filename)
+                    mode = 'append'
                 self.hdulist = pyfits.open(self.filename, mode = mode)
             except IOError:
                 print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
                 raise
-        try:
-            self.discoverTypes()
-        except:
-            raise ADExcept("discover types failed")
-            b
+       
+        #if mode != 'append':
+        if len(self.hdulist):
+            try:
+                self.discoverTypes()
+            except:
+                raise ADExcept("discover types failed")
+
     def close(self):
         """
         This function closes the pyfits.HDUList object if this instance
@@ -665,7 +688,7 @@ lse, the return value is a list which is in fact
         @rtype: list
         """
         if (self.typesTypology == None):
-            cl = self.getClassificationLibary()
+            cl = self.getClassificationLibrary()
             self.typesTypology = cl.discoverTypology(self)
             
         return self.typesTypology
@@ -974,6 +997,9 @@ def prepOutput(inputAry = None, name = None):
     newhdulist = pyfits.HDUList(outlist)
     
     retgd = AstroData(newhdulist)
+
+    if name != None:
+        retgd.filename = name
     
     return retgd
 
