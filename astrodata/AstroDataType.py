@@ -18,121 +18,124 @@ class LibraryNotLoaded:
 class BadArgument:
     """Class for raising a particular exception"""
     pass
-    
-class DataClassification(object):
-    """
-    The DataClassification Class encapsulates a single classification type, and
-    knows how to recognize that type when given a pyfits.HDUList instance.
-    Matching is currently done against PHU header keys, though the object
-    is designed to be able to look elsewhere for classifying information.
-    Classification configurations are classes subclassed from DataClassification
-    with the class variables set appropriately to indicate the PHU requirements.
 
-    The DataClassification class also allows specifying one type as dependant on
-    another type, in which case the other type will try to match the PHU headers
-    defined for it. When used through GeminiData applicable classification names are
-    cached so the PHU is not checked repeatedly.
+verbt = False
     
-    This object is not intended for general us, and is a worker class for
-    the L{ClassificationLibrary}, from the users point of view data classifications
-    are handled as strings, i.e. classification names.  L{ClassificationLibrary}
-    is therefore the proper interface to use
-    for retrieving type information. However, most users will use the L{AstroData}
-    classification interface which in turn rely on L{ClassificationLibrary}.
-    
-    NOTE: The configuration system and public interface makes a distinction between
-    "typology" classifications and "processing status" classifications. Technically
-    there is no real difference between these two types of classification, the 
-    difference occurs in the purpose of the two, and the interfaces allow getting
-    one or the other type, or both. In principle however, typology classifications
-    relate to instrument-modes or other classifications that more or less still apply
-    to the data after it has been transformed by processing (e.g. GMOS_IMAGE data
-    is still GMOS_IMAGE data after flat fielding), and processing status 
-    classifications will fail to apply after processing (e.g. GMOS_UNPREPARED data
-    is no longer GMOS_UNPREPARED after running prepare, but changes instead 
-    to GMOS_PREPARED).
-    """
-    # MEMBER VARIABLES
-    # to protect from editing -via the web editing interface
-    #   - this should be True, by default, it is false
-    editprotect = False
-    
-    # Parameter Requirement Dictionary
-    phuReqs = {}
-    
-    # Classifications have names
-    #type name
-    name = "Unclassified"
-    
-    # So the type knows its source file... if we don't store them on disk
-    # then this would become some other locator.  Valuable if there is a
-    # reason to update type definitions dynamically (i.e. to support a 
-    # type definition editor)
-    fullpath = ""
-    
-    # list of types this type depends on (e.g. to be GMOS-IFU you also must be GMOS type)
-    typeReqs = []
+class Requirement(object):
+    def __or__(self, orwith):
+        return OrReq([self, orwith])
+    def __and__(self, andwith):
+        return AndReq([self, andwith])
 
-    # classification library
-    library = None
-    
-    usage = ""    
-    
-    # RAW TYPE: this is the raw type of the data, None, means search parent types and use their setting
-    # if need be. This support calling descriptors in raw mode.
-    rawType = None
-    
-    phuReqDocs = {
-        "FILTER3" : "Specifies Instrument Mode for NIRI, Imaging vs. Spectroscopy",
-        "INSTRUME": "Gemini-wide header specifying observing intrument",
-        "MASKNAME": "Name of the Mask for GMOS MOS Spectroscopy",
-        "OBSMODE" : "GMOS header specifying which mode of IMAGE, IFU, MOS, or LONGSLIT.",
-        "OBSERVAT": "Name of the Observatory, Gemini-South or Gemini-North",
-        "TELESCOP": "Name of the Observatory, Gemini-South or Gemini-North"
-        }
-   
-    def assertType(self, hdulist):
+    def satisfiedBy(self, hdulist):
+        return False
+
+class OrReq(Requirement):
+    orList = None
+    def __init__(self, *args):
+        """Arguments are put in list of requirements to OR, 
+            @param args: Variable length argument list, all arguments are
+            put into the list of requirments to or. Iterable
+            arguments are added to the list with list.extend()
+            and non-iterable arguments are added with list.append().
+            @type args: Instances of classes descending from
+            AstroDataType.Requirement.
         """
-        This function will check to see if the given HDUList instance is
-        of its classification. Currently this function checks PHU keys
-        in the C{hdulist} argument as well as check to see if any classifications
-        upon which this classification is dependent apply.  To extend
-        what is checked to other details, such as headers in data extensions,
-        this function must change or be overridden by a child class.
-        @param hdulist: an HDUList as returned by pyfits.open()
-        @type hdulist: pyfits.HDUList
-        @return: C{True} if this class applies to C{hdulist}, C{False} otherwise.
-        @rtype: bool
-        """
-        # print dir(fitsFile)
-        if (ldebug):
-            print "asserting %s on <||%s||>" % (self.name, hdulist)
-            
-        if (self.library == None):
-            raise LibraryNotLoaded()
+        self.orList = []
+        for arg in args:
+            if hasattr(arg,'__iter__'):
+                self.orList.extend(arg)
+            else:
+                self.orList.append(arg)
+        
+    def satisfiedBy(self, hdulist):
+        for req in self.orList:
+            if req.satisfiedBy(hdulist) == True:
+                return True
+        return False    
+OR=OrReq
 
-        try:
-            phuCards = hdulist[0].header.ascard
-            phuCardsKeys = phuCards.keys()
-        except KeyError:
-            return False
-            
-        numreqs = len(self.phuReqs) + len (self.typeReqs)
+class NotReq(Requirement):
+    req = None
+    def __init__(self, req):
+        self.req = req
+    def satisfiedBy(self, hdulist):
+        return not self.req.satisfiedBy(hdulist)
+NOT=NotReq
+        
+class AndReq(Requirement):
+    """Arguments are put in list of requirements to AND, 
+        @param args: Variable length argument list, all arguments are
+        put into the list of requirments to and. Iterable
+        arguments are added to the list with list.extend()
+        and non-iterable arguments are added with list.append().
+        @type args: Instances of classes descending from
+        AstroDataType.Requirement.
+    """
+    andList = None
+    def __init__(self, *args):
+        self.andList = []
+        for arg in args:
+            if hasattr(arg,'__iter__'):
+                self.andList.extend(arg)
+            else:
+                self.andList.append(arg)
+    def satisfiedBy(self, hdulist):
+        for req in self.andList:
+            if not req.satisfiedBy(hdulist):
+                return False
+        
+        return True
+AND= AndReq            
+
+class ClassReq(Requirement):
+    typeReqs = None
+    def __init__(self, *args):
+        lst = []
+        for arg in args:
+            if hasattr(arg, "__iter__"):
+                lst.extend(arg)
+            else:
+                lst.append(arg)
+                
+        self.typeReqs = lst
+    
+    def satisfiedBy(self, hdulist):
+        numreqs = len (self.typeReqs)
         numsatisfied = 0
         numviolated  = 0
-        
-        # CHECK THE typeReqs
+        library = getClassificationLibrary()
         for typ in self.typeReqs:
             #print "type(%s)" % typ
             if (verbt) : print "ADT127 TYPES:", self.typeReqs
-            if (self.library.checkType(typ, hdulist)):   #'hdulist' should be called 'hdulist'
+            if (library.checkType(typ, hdulist)):   #'hdulist' should be called 'hdulist'
                 if(verbt) : print "satisfied"
                 numsatisfied = numsatisfied + 1
             else:
                 if (verbt) : print "unsatisfied"
                 return False
+        return True
+ISCLASS = ClassReq
 
-        # CHECK THE phuReqs
+class PHUReq(Requirement):
+    phuReqs = None
+    def __init__(self, phureqs=None, **argd):
+        if phureqs == None:
+            phureqs = {}
+        phureqs.update(argd)
+        
+        self.phuReqs = phureqs
+        
+    def satisfiedBy(self, hdulist):
+        try:
+            phuCards = hdulist[0].header.ascard
+            phuCardsKeys = phuCards.keys()
+        except KeyError:
+            return False
+        
+        numreqs = len(self.phuReqs) 
+        numsatisfied = 0
+        numviolated  = 0
         for reqkey in self.phuReqs.keys():
             # Note: the key can have special modifiers, so far, to indicate the
             # key is a regular expression (otherwise it's a string literal)
@@ -253,7 +256,120 @@ BAD PHU Requirement in Classification '%s'
         
         # if you made it here
         return True
+PHU=PHUReq
+
+class DataClassification(object):
+    """
+    The DataClassification Class encapsulates a single classification type, and
+    knows how to recognize that type when given a pyfits.HDUList instance.
+    Matching is currently done against PHU header keys, though the object
+    is designed to be able to look elsewhere for classifying information.
+    Classification configurations are classes subclassed from DataClassification
+    with the class variables set appropriately to indicate the PHU requirements.
+
+    The DataClassification class also allows specifying one type as dependant on
+    another type, in which case the other type will try to match the PHU headers
+    defined for it. When used through GeminiData applicable classification names are
+    cached so the PHU is not checked repeatedly.
     
+    This object is not intended for general us, and is a worker class for
+    the L{ClassificationLibrary}, from the users point of view data classifications
+    are handled as strings, i.e. classification names.  L{ClassificationLibrary}
+    is therefore the proper interface to use
+    for retrieving type information. However, most users will use the L{AstroData}
+    classification interface which in turn rely on L{ClassificationLibrary}.
+    
+    NOTE: The configuration system and public interface makes a distinction between
+    "typology" classifications and "processing status" classifications. Technically
+    there is no real difference between these two types of classification, the 
+    difference occurs in the purpose of the two, and the interfaces allow getting
+    one or the other type, or both. In principle however, typology classifications
+    relate to instrument-modes or other classifications that more or less still apply
+    to the data after it has been transformed by processing (e.g. GMOS_IMAGE data
+    is still GMOS_IMAGE data after flat fielding), and processing status 
+    classifications will fail to apply after processing (e.g. GMOS_UNPREPARED data
+    is no longer GMOS_UNPREPARED after running prepare, but changes instead 
+    to GMOS_PREPARED).
+    """
+    # MEMBER VARIABLES
+    # to protect from editing -via the web editing interface
+    # ..this should be True, by default, it is false
+    editprotect = False
+    
+    # Parameter Requirement Dictionary
+    phuReqs = {}
+    
+    # Classifications have names
+    #type name
+    name = "Unclassified"
+    
+    # new type requirements
+    requirement = None
+    
+    # new parent setting
+    parent = None
+    parentDCO = None # for the parent DataClassification Object instance
+    children = None
+    childDCOs = None # for the list of child DataClassification Object
+    
+    # So the type knows its source file... if we don't store them on disk
+    # then this would become some other locator.  Valuable if there is a
+    # reason to update type definitions dynamically (i.e. to support a 
+    # type definition editor)
+    fullpath = ""
+    
+    # classification library
+    library = None
+    
+    usage = ""    
+    
+    # RAW TYPE: this is the raw type of the data, None, means search parent types and use their setting
+    # if need be. This support calling descriptors in raw mode.
+    rawType = None
+    
+    phuReqDocs = {
+        "FILTER3" : "Specifies Instrument Mode for NIRI, Imaging vs. Spectroscopy",
+        "INSTRUME": "Gemini-wide header specifying observing intrument",
+        "MASKNAME": "Name of the Mask for GMOS MOS Spectroscopy",
+        "OBSMODE" : "GMOS header specifying which mode of IMAGE, IFU, MOS, or LONGSLIT.",
+        "OBSERVAT": "Name of the Observatory, Gemini-South or Gemini-North",
+        "TELESCOP": "Name of the Observatory, Gemini-South or Gemini-North"
+        }
+   
+    def addChild(self, child):
+        if self.children == None:
+            self.children = []
+        if self.childDCOs == None:
+            self.childDCOs = []
+        
+        self.children.append(child.name)
+        self.childDCOs.append(child)
+        
+    def assertType(self, hdulist):
+        """
+        This function will check to see if the given HDUList instance is
+        of its classification. Currently this function checks PHU keys
+        in the C{hdulist} argument as well as check to see if any classifications
+        upon which this classification is dependent apply.  To extend
+        what is checked to other details, such as headers in data extensions,
+        this function must change or be overridden by a child class.
+        @param hdulist: an HDUList as returned by pyfits.open()
+        @type hdulist: pyfits.HDUList
+        @return: C{True} if this class applies to C{hdulist}, C{False} otherwise.
+        @rtype: bool
+        """
+        # print dir(fitsFile)
+        if (ldebug):
+            print "asserting %s"  % self.name
+            
+        if (self.library == None):
+            raise LibraryNotLoaded()
+            
+        # New Requirement style
+        if (self.requirement):
+            return self.requirement.satisfiedBy(hdulist)
+        else:
+            return False
             
     def isSubtypeOf(self,supertype):
         """This function is used to check type relationships. For this type to be
@@ -276,21 +392,17 @@ BAD PHU Requirement in Classification '%s'
             is subtype of the named C{supertype}.
         """
         # the task is to seek supertype in my parent (typeReqs).
-        if supertype in self.typeReqs:
+        if supertype == self.parent:
             #easy to check by string if in typeReqs (aka parent types)
             return True
+        else:
+            if self.parentDCO and self.parentDCO.isSubtypeOf(supertype):
+                return True
             
-        # otherwise check each supertype (recursively)
-        for typ in self.typeReqs:
-            to = self.library.getTypeObj(typ)
-            if to != None:
-                if to.isSubtypeOf(supertype):
-                    return True
-        
         # didn't make it... no one is the super
         return False
         
-    def getSuperTypes( self ):
+    def getSuperTypes( self, appendTo=None ):
         '''
         Returns a list of all immediate parents.
         
@@ -298,14 +410,18 @@ BAD PHU Requirement in Classification '%s'
         get the name of the type, simply take an element from the list use the '.name'.
         @rtype: list
         '''
-        superTypes = []
-        for superType in self.typeReqs:
-            # Convert from string to DataClassification Type
-            superType = self.library.getTypeObj( superType )           
-            superTypes.append( superType )
-        return list( set(superTypes) ) # Removes duplicates in the offchance there are some
+        if appendTo == None:
+            superTypes = []
+        else:
+            superTypes = appendTo
         
-    
+        
+        if self.parentDCO:
+            superTypes.append(self.parentDCO)
+            superTypes = self.parentDCO.getSuperTypes(appendTo=superTypes)
+        # print "ADT421:", self.name, repr(self.parentDCO), repr(superTypes)
+        return superTypes # Removes duplicates in the offchance there are some
+        
     def getAllSuperTypes( self, height=0 ):
         '''
         Returns a list of all parents and grandparents of self in level order of self. Within each
@@ -317,7 +433,7 @@ BAD PHU Requirement in Classification '%s'
         all parents/grandparents.
         @type height: int
         
-        @return: A List of parents and grandparents of DataClassificationType. To
+        @return: A List of parents and grandparents of DataClassification type. To
         get the name of the type, simply take an element from the list use the '.name'.
         @rtype: list
         '''
@@ -620,215 +736,6 @@ newtypes.append(%(typename)s())
                   % {"name":self.name,"tip":self.usage.replace("\n", "")}
         return nodestr
         
-class ORClassification(DataClassification): 
-    """This class is a special type of DataClassification. When a classification
-    refers to other types it is dependent on, the data in question must be all
-    the specified types. In contrast to that, this class allows
-    specification of set of DataClassification
-    names on which this DataClassification depends, but instead of all of them
-    having to apply, it is sufficient if any one of them apply. 
-    
-    B{NOTE}: This class does not check the PHU or standard dependencies and is 
-    used ONLY to check the "OR" requirement."""
-
-    typeORs = []
-
-    def assertType(self, hdulist):
-        """This function works just as regular assertType except
-        that it calls all the members of a list of possible satisfiers...
-        e.g. GMOS type can use this to check if the image is either
-        GMOS_N or GMOS_S. NOTE: this function in this class ONLY checks
-        the typeORs list, and will not at this time do header checking.
-        
-        @param hdulist: an HDUList as returned by pyfits.open()
-        @type hdulist: HDUList
-        @return: C{True} if this class applies to C{hdulist}, C{False} otherwise.
-        """
-        satisfies = False
-        
-        for typ in self.typeORs:
-            if (self.library.checkType(typ, hdulist ) == True):
-                satisfies = True
-                break
-            
-        # NOTE: 
-        return satisfies
-    
-    def isSubtypeOf(self,supertype):
-        """This function is used to check type relationships. For this type to be
-            a "subtype" of the given type both must occur in a linked tree.
-            A
-            node which is a relative leaf is a considered a subtype of its relative root.
-            This is used to resolve conflicts that can occur when objects, features
-            or subsystems are associated with a given classification. Since AstroData
-            instances generally have more than one classification which applies to them
-            and some associated objects, features, or subsystems require that
-            they are the only one ultimately associated with a particular AstroData
-            instance, such as is the case with Descriptors, this function is used
-            to correct the most common case of this, in which one of the types is
-            a subtype of the other, and therefore can be taken to override the
-            parent level association.
-            @param supertype: string name for "supertype"
-            @type supertype: string
-            @rtype: Bool
-            @returns: True if the classification detected by this DataClassification 
-            is subtype of the named C{supertype}.
-        """
-        # the task is to seek supertype in my parent (typeReqs).
-        if supertype in self.typeORs:
-            #easy to check by string if in typeReqs (aka parent types)
-            return True
-            
-        # otherwise check each supertype (recursively)
-        for typ in self.typeORs:
-            to = self.library.getTypeObj(typ)
-            if to != None:
-                if to.isSubtypeOf(supertype):
-                    return True
-        
-        # didn't make it... no one is the super
-        return False
-        
-    def getSuperTypes( self , oneGeneration  = False):
-        '''
-        Returns a list of all parents and grandparents of self.
-        
-        @return: A List of parents and grandparents of DataClassificationType. To
-        get the name of the type, simply take an element from the list use the '.name'.
-        @rtype: list
-        '''
-        superTypes = []
-        for superType in self.typeORs:
-            # Convert from string to DataClassification Type
-            superType = self.library.getTypeObj( superType )           
-            superTypes.append( superType )
-        #orders immediate parents first             
-        if oneGeneration != True:
-            for superType in superTypes:
-                superTypes = superTypes + superType.getSuperTypes()            
-        return list( set(superTypes) ) # Removes duplicates
-    
-    # graphviz section, uses DOT language to make directed graphs
-    # of the type dictionary
-    def gvizLinks(self):
-        """
-        This function supports the automatic generation of a class graph
-        driven by the Classification Library. This system builds a script
-        for "dot".  The ClassifcationLibrary class handles the script template
-        and calls DataClassification functions to get the component strings.
-        Links are directed from parent type to sub type.
-        @return: String containing node links for dot script
-        @rtype: String
-        """
-        linkstr = ""
-        for req in self.typeORs:
-            linkstr = linkstr + "\t %(from)s -> %(to)s [style=dotted]; \n" \
-                % { "from":self.name, 
-                    "to":req, 
-                    "url": ("typedict.py#%s" % self.name )
-                }
-        return linkstr
-        
-    def gvizNodes(self):
-        """This function support the automatic generation of a class graph
-        which is driven by the Classification Library. This function returns
-        a "dot language" representation of the node, which can contain things
-        such as an URL to click (we use SVG output), or any other information
-        about the node.
-        @return: A representation of the node  in "dot" language for graphing purposes
-        @rtype: String
-        """
-        nodestr = "%(name)s [shape=ellipse,URL=\"typedict.py#%(name)s\",tooltip=\"%(tip)s\"];\n" \
-                  % {"name":self.name,"tip":self.usage.replace("\n", "")}
-        return nodestr  
-	            
-    def htmlDoc(self):
-        '''
-        This function returns a string representation for an HTML table which documents this
-        particular classification using the definition itself. Note that the C{usage} member
-        of DataClassification is used to describe the use of this classification and will
-        be used to provide context and purpose of the classification
-        when generating the documentation.
-        @return: HTML table
-        @rtype: string
-        '''
-
-        div_templ = '''
-            <div class="dataclassspec" style="padding:3px;border:1px solid #404040">
-            <a name="%(typename)s">
-            <b style="font-size:1.15em">%(typename)s</b>&nbsp;&nbsp;(<i>%(fullpath)s</i>)</a>
-                 <div style="margin:2px;padding:1px;font-size:.8em">
-                    %(typeapplic)s
-                </div>
-                <div style="margin:2px;padding:1px;">
-                <i>Must Be One Or More Of:</i>:
-                <b>%(typereqs)s</b>
-                </div>
-        %(phutable)s
-        </div>
-            '''
-            
-        phutable_templ = '''
-                <table width="100%%" border=1>
-                    <colgroup span="3">
-                        <col width="15em"/>
-                        <col />
-                        <col />
-                    </colgroup>
-                    <thead>
-                        <tr style="background-color:#a0a0a0;">
-                            <td >PHU Header Keyword</td>
-                            <td>Regular Expression Requirement</td>
-                            <td>Requirement Comment</td>
-                        </tr>
-                    </thead>
-                    %(clrows)s
-                </table>'''
-
-        # make the rows
-        therows = ""
-        if (self.phuReqs == None) or  (len(self.phuReqs) == 0):
-            phutable = ""
-        else:
-            for reqkey, reqre in self.phuReqs.items():
-                try:
-                    comment = self.phuReqDocs[reqkey]
-                except KeyError:
-                    comment = "&nbsp;"
-
-
-                thisrow = '''
-                    <tr>
-                        <td>%(parmkey)s</td>
-                        <td>%(re)s</td>
-                        <td>%(comment)s</td>
-                    </tr>
-                    ''' % { "parmkey":reqkey, "re":reqre , "comment":comment }
-                therows = therows + thisrow
-            phutable = phutable_templ % {"clrows":therows}
-
-            # make the typereqs string
-            if (self.typeORs == None) or (len(self.typeORs) == 0):
-                trstr = "none"
-            else:
-                trstr = ""
-            first = True
-            sep = ""
-            if (first == True):
-                first = False
-                sep = ""
-            else:
-                sep = ", "
-                trstr = trstr + sep + " <a href=\"#%(typ)s\">%(typ)s</a>" % {"typ":trs} 
-
-            retstr = div_templ % {  "phutable":phutable,
-                    "typename":self.name, 
-                                    "fullpath":self.fullpath,
-                                    "typeapplic":self.usage,
-                                    "typereqs":trstr
-                                    }
-
-        return retstr   
 
               
 class CLAlreadyExists:
@@ -912,7 +819,7 @@ class ClassificationLibrary (object):
     __single = None
 
     # type dictionaries
-    typeDict = None
+    typesDict = None
     statusDict = None
     typologyDict = None
     
@@ -963,6 +870,7 @@ class ClassificationLibrary (object):
  
         self.load_types("types", self.typesDict, self.typologyDict)
         self.load_types("status", self.typesDict, self.statusDict)
+        self.traceParents()
         
     def load_types(self, spacename,globaldict, tdict):
         """
@@ -1017,8 +925,11 @@ class ClassificationLibrary (object):
             freeHDUList = False
             hdulist = dataset
         
-        retval = self.typesDict[typename].assertType(hdulist)
-        
+        if typename in self.typesDict:
+            retval = self.typesDict[typename].assertType(hdulist)
+        else:
+            # if type not in library, it's NOT that
+            return False         
         if freeHDUList == True:
             hdulist = dataset.releaseHDUList()
         
@@ -1123,6 +1034,8 @@ class ClassificationLibrary (object):
         elif isinstance(dataset, AstroData.AstroData):
             hdulist = dataset.getHDUList()
             closeHdulist = False
+        else:
+            hdulist = dataset
             
         for tkey,tobj in classificationDict.items():
             if (tobj.assertType(hdulist)):
@@ -1132,6 +1045,30 @@ class ClassificationLibrary (object):
                 hdulist.close()
                 
         return typeList
+
+
+    def traceParents(self):
+        """DataClassifications are generally specified by name for the user
+        and only the AstroDataType module cares about the actual dataclassification
+        object.  However, it's needed in order to trace precedence when assigning
+        features, like descriptor calculator or primitive sets.  In this function
+        we trace through the string names of parents, and create members which
+        will make it easy to walk the tree.
+        
+        The short explanation of what this function does is set the DCO members,
+        parentDCO and childDCOs, as well as the children member which contains the
+        string names of the child types."""
+        
+        for typ in self.typesDict.keys():
+            dco = self.typesDict[typ]
+            if dco.parent:
+                dco.parentDCO = self.getTypeObj(dco.parent)
+                dco.parentDCO.addChild(dco)
+                
+        a = self.getTypeObj("GMOS")
+        print "ATD1065:", a.parent, a.children
+                
+
         
     def htmlDoc(self):
         '''
@@ -1222,10 +1159,19 @@ class ClassificationLibrary (object):
             os.system("dot -Tpng -o/var/www/html/gdwf/gemdtype.viz.png -Tsvg -o/var/www/html/gdwf/gemdtype.viz.svg /var/www/html/gdwf/gemdtype.viz.dot")
             
         return retstr
-
+        
 # @@DOCPROJECT@@: done pass 1
 
 def getClassificationLibrary():
+    try:
+        classificationLibrary = ClassificationLibrary()
+        return classificationLibrary
+    except CLAlreadyExists, s:
+        return s.clInstance
+    return None
+
+    return self.classificationLibrary
+    print dir(ClassificationLibrary)
     if ClassificationLibrary.__single != None:
         return ClassificationLibrary.__single
     else:

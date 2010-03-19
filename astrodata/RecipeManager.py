@@ -20,6 +20,7 @@ from ReductionObjects import ReductionObject
 from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, \
     ImageQualityRequest
 from StackKeeper import StackKeeper, FringeKeeper
+
 #------------------------------------------------------------------------------ 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
@@ -33,14 +34,57 @@ class RecipeExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
     """
-    def __init__(self, msg="Exception Raised in Recipe System"):
+    def __init__(self, msg="Exception Raised in Recipe System", **argv):
         """This constructor takes a message to print to the user."""
         self.message = msg
+        for arg in argv.keys():
+            exec("self."+arg+"="+repr(argv[arg]))
+            
+            
     def __str__(self):
         """This str conversion member returns the message given by the user (or the default message)
         when the exception is not caught."""
         return self.message
-
+        
+class SettingFixedParam(RecipeExcept):
+    pass
+    
+class UserParam(object):
+    astrotype = None
+    primname = None
+    param = None
+    value = None
+    def __init__(self, astrotype, primname, param, value):
+        self.astrotype = astrotype
+        self.primname = primname
+        self.param = param
+        self.value = value
+        
+class UserParams(object):
+    userParamDict = None
+    def getUserParam(self, astrotype, primname):
+        if astrotype not in self.userParamDict:
+            return None
+        if primname not in self.userParamDict[astrotype]:
+            return None
+        return self.userParamDict[astrotype][primname]
+        
+    def addUserParam(self, userparam):
+        up = userparam
+        if self.userParamDict == None:
+            self.userParamDict = {}
+            
+        if up.astrotype not in self.userParamDict:
+            self.userParamDict.update({up.astrotype: {}})
+        
+        if up.primname not in self.userParamDict[up.astrotype]:
+            self.userParamDict[up.astrotype].update({up.primname: {}})
+            
+        if up.param in self.userParamDict[up.astrotype][up.primname]:
+            raise RecipeExcept("Parameter (%s.%s%s) already set by user" % (up.astrotype, up.primname, up.param))
+        else:
+            self.userParamDict[up.astrotype][up.primname].update({up.param:up.value})
+            
 class ReductionContext(dict):
     """The ReductionContext is used by primitives and recipiesen, hidden in the later case,
     to get input and report output. This allows primitives to be controlled in many different
@@ -65,7 +109,8 @@ class ReductionContext(dict):
     irafstderr = None
     callbacks = None
     arguments = None
-    localparms = None # dictionary with local args (given in recipe as args, generally)
+    _localparms = None # dictionary with local args (given in recipe as args, generally)
+    userParams = None # meant to be UserParams instance
     
     #------------------------------------------------------------------------------ 
  
@@ -86,7 +131,7 @@ class ReductionContext(dict):
         # TESTING
         self.cdl = CalibrationDefinitionLibrary()
         # undeclared
-        self.indent=0 
+        self.indent = 0 
         
         # Stack Keep is a resource for all RecipeManager functions... one shared StackKeeper to simulate the shared ObservationServie
         # used in PRS mode.
@@ -109,35 +154,35 @@ class ReductionContext(dict):
         """
         tempStr = ""
         tempStr = tempStr + "REDUCTION CONTEXT OBJECT (CO)\n" + \
-            "inputs = " + str( self.inputs ) + \
-            "\ninputsHistory =  " + str( self.inputsHistory )+ \
+            "inputs = " + str(self.inputs) + \
+            "\ninputsHistory =  " + str(self.inputsHistory) + \
             "\ncalibrations = \n" + self.calsummary() + \
             "\nrorqs = " 
         if self.rorqs != []:
             for rq_obj in self.rorqs:            
-                tempStr = tempStr + str( rq_obj )
+                tempStr = tempStr + str(rq_obj)
         else:
-            tempStr = tempStr + str( self.rorqs )
+            tempStr = tempStr + str(self.rorqs)
         
         #no loop initiated for stkrqs object printouts yet
         tempStr = tempStr + "\noutputs = " 
         
         if self.outputs["standard"] != []:
             for out_obj in self.outputs["standard"]:
-                tempStr = tempStr + str( out_obj )
+                tempStr = tempStr + str(out_obj)
         else:
-            tempStr = tempStr + str( self.outputs )
+            tempStr = tempStr + str(self.outputs)
         #"stephistory = " + str( self.stephistory ) + \
-        tempStr = tempStr +  "\nhostname = " + str( self.hostname ) + \
-            "\ndisplayName = " + str( self.displayName ) + \
-            "\ncdl = " + str( self.cdl ) + \
-            "\nindent = " + str( self.indent ) + \
-            "\nstackeep = " + str( self.stackeep )
+        tempStr = tempStr + "\nhostname = " + str(self.hostname) + \
+            "\ndisplayName = " + str(self.displayName) + \
+            "\ncdl = " + str(self.cdl) + \
+            "\nindent = " + str(self.indent) + \
+            "\nstackeep = " + str(self.stackeep)
         for param in self.values():
             tempStr += "\n" + self.paramsummary()
         return tempStr   
     
-    def addCal(self, data, caltyp, calname, timestamp = None):
+    def addCal(self, data, caltyp, calname, timestamp=None):
         '''
         Add a calibration to the calibration index with a key (DATALAB, caltype).
         
@@ -154,7 +199,7 @@ class ReductionContext(dict):
         taken from datetime.datetime.
         @type timestamp: str
         '''
-        adID = idFac.generateAstroDataID( data )
+        adID = idFac.generateAstroDataID(data)
         calname = os.path.abspath(calname)
         
         if timestamp == None:
@@ -173,9 +218,9 @@ class ReductionContext(dict):
     def addCallback(self, name, function):
         callbacks = self.callbacks
         if name in callbacks:
-            l=callbacks[name]
+            l = callbacks[name]
         else:
-            l=[]
+            l = []
             callbacks.update({name:l})
         l.append(function)
     
@@ -198,19 +243,19 @@ class ReductionContext(dict):
             origFlag = True
         
         for filename in filenames:
-            if type( filename ) == str:
-                filename = AstroDataRecord( filename ) # filename converted from str -> AstroData 
-            elif type( filename ) == AstroData:
-                filename = AstroDataRecord( filename )
-            elif type( filename ) == AstroDataRecord:
+            if type(filename) == str:
+                filename = AstroDataRecord(filename) # filename converted from str -> AstroData 
+            elif type(filename) == AstroData:
+                filename = AstroDataRecord(filename)
+            elif type(filename) == AstroDataRecord:
                 pass
             else:
                 raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str, AstroData, AstroDataRecord." 
                       % {'name':str(filename), 'type':str(type(filename))})
             
-            self.inputs.append( filename )
+            self.inputs.append(filename)
             if origFlag:
-                self.originalInputs.append( filename )        
+                self.originalInputs.append(filename)        
        
     def addRq(self, rq):
         '''
@@ -238,9 +283,9 @@ class ReductionContext(dict):
                and self.stephistory[time]["mark"] == "begin":
                     if indent != None:
                         if self.stephistory[time]["indent"] == indent:
-                            return (time,self.stephistory[time])
+                            return (time, self.stephistory[time])
                     else:
-                        return (time,self.stephistory[time])    
+                        return (time, self.stephistory[time])    
         return None
     
     def calFilename(self, caltype):
@@ -250,9 +295,9 @@ class ReductionContext(dict):
         if len(self.originalInputs) == 0:
             return None
         elif len(self.originalInputs) == 1:
-            adID = idFac.generateAstroDataID( self.inputs[0].ad )
+            adID = idFac.generateAstroDataID(self.inputs[0].ad)
             key = (adID, caltype)
-            infile = os.path.basename( self.inputs[0].filename )
+            infile = os.path.basename(self.inputs[0].filename)
             #print 'RM611:\n', self.calsummary()
             return {self.calibrations[key].filename:[infile]}
         else:
@@ -260,13 +305,13 @@ class ReductionContext(dict):
             # (i.e. There are improvements / assumptions made in here.)
             retl = {}
             for inp in self.originalInputs:
-                key = ( idFac.generateAstroDataID(inp.ad), caltype)
+                key = (idFac.generateAstroDataID(inp.ad), caltype)
                 calfile = self.calibrations[key].filename
-                infile = os.path.basename( inp.filename )
-                if retl.has_key( calfile ):
-                    retl.update( {calfile:retl[calfile] + [infile]} )
+                infile = os.path.basename(inp.filename)
+                if retl.has_key(calfile):
+                    retl.update({calfile:retl[calfile] + [infile]})
                 else:
-                    retl.update( {calfile:[infile]} )
+                    retl.update({calfile:[infile]})
             #print 'RM625:', retl
             return retl
                      
@@ -276,7 +321,7 @@ class ReductionContext(dict):
             for f in callbacks[name]:
                 f(**params)
                     
-    def calSummary(self, mode = "text"):
+    def calSummary(self, mode="text"):
         rets = ""
         for key in self.calibrations.keys():
             rets += str(key)
@@ -286,7 +331,7 @@ class ReductionContext(dict):
     def checkControl(self):
         return self.cmdRequest
     
-    def clearRqs(self, rtype = None):
+    def clearRqs(self, rtype=None):
         '''
         Clear all requests.
         '''
@@ -298,18 +343,19 @@ class ReductionContext(dict):
                 if type(rq) == type(rtype):
                     self.rorqs.remove(rq)
     
-    def control(self, cmd = "NONE"):
+    def control(self, cmd="NONE"):
         self.cmdRequest = cmd
     
-    def end(self,stepname):
+    def end(self, stepname):
         key = datetime.now()
         self.indent -= 1
-        val = self.stepMoment(stepname,"end")
+        val = self.stepMoment(stepname, "end")
         # this step saves inputs
         self.stephistory.update({key: val})
         # this step moves outputs["standard"] to inputs
         # and clears outputs
         self.finalizeOutputs()
+        self.localparms = None
         return self
     
     def finalizeOutputs(self):
@@ -329,17 +375,17 @@ class ReductionContext(dict):
             #print "OUTPUTS:", self.outputs["standard"]
             newinputlist = []
             for out in self.outputs['standard']:
-                if type( out ) == AstroDataRecord:
-                    newinputlist.append( out )
+                if type(out) == AstroDataRecord:
+                    newinputlist.append(out)
                 else:
                     raise RuntimeError("Bad Argument: Wrong Type '%(val)s' '%(typ)s'." 
-                                       %{'val':str(out),'typ':str(type(out))})
+                                       % {'val':str(out), 'typ':str(type(out))})
             
             self.inputs = newinputlist
             self.outputs.update({"standard":[]})
             
 #------------------ FINISH ----------------------------------------------------   
-    def isFinished(self,arg = None):
+    def isFinished(self, arg=None):
         if arg == None:
             return self.status == "FINISHED"
         else:
@@ -371,18 +417,18 @@ class ReductionContext(dict):
         #filename = os.path.abspath(filename)
         key = (adID, caltype)
         if key in self.calibrations.keys():
-            return self.calibrations[(adID,caltype)].filename
+            return self.calibrations[(adID, caltype)].filename
         return None
     
-    def getEndMark(self, stepname, indent= None):
+    def getEndMark(self, stepname, indent=None):
         for time in self.stephistory.keys():
             if     self.stephistory[time]["stepname"] == stepname \
                and self.stephistory[time]["mark"] == "end":
                 if indent != None:
                     if self.stephistory[time]["indent"] == indent:
-                        return (time,self.stephistory[time])
+                        return (time, self.stephistory[time])
                 else:
-                    return (time,self.stephistory[time])
+                    return (time, self.stephistory[time])
         return None    
     
     def getInputFromParent(self, parent):
@@ -404,41 +450,130 @@ class ReductionContext(dict):
             return self.irafstdout
         else:
             return sys.stdout
+        
+    def getReferenceImage(self):
+        if len(self.inputs) < 0:
+            return None
+        if self.inputs[0].ad == None:
+            raise RecipeExcept("AstroData instance not loaded for input %s" % self.inputs[0].filename)
+        return self.inputs[0].ad
     
     def getStack(self, ID):
         return self.stackeep.get(ID)
  
-    def inputsAsStr(self, strippath = True):
+    def inputsAsStr(self, strippath=True):
         if self.inputs == None:
             return ""
         else:
             inputlist = []
             for inp in self.inputs:
-                inputlist.append( inp.filename )
+                inputlist.append(inp.filename)
 
             if strippath == False:
-                return ",".join( inputlist )                
+                return ",".join(inputlist)                
             else:
                 return ",".join([os.path.basename(path) for path in inputlist])
-
+    def localparmsSet(self, lpd):
+        self._localparms = lpd
+        
+    def localparmsGet(self):
+        if self._localparms == None:
+            self._localparms = {}
+        return self._localparms 
+    localparms = property(localparmsGet, localparmsSet)
+    
     def makeInlistFile(self, filename, filelist):
         try:
-            fh = open( filename, 'w' )
+            fh = open(filename, 'w')
             for item in filelist:
                 fh.writelines(item + '\n')
         except:
             raise "Could not write inlist file for stacking." 
         finally:
             fh.close()
-        return "@"+filename
+        return "@" + filename
+        
+    def parameterCollate(self, astrotype, primset, primname):
+        """This function looks at the default primset paramaters for primname
+        and sets the localparms member."""
+        
+        # @@HERE: is where parameter metadata is respected, or not
+        if primname in primset.paramDict:
+            # localparms should always be defined by here
+            
+            # users can never override argument in recipes (too confusing)
+            correctUPD = None
+            if self.userParams != None:
+                correctUPD = self.userParams.getUserParam(astrotype, primname)
+                if correctUPD != None:
+                    for param in correctUPD.keys():
+                        if param in self.localparms:
+                            exs  = "User attempting to override parameter set in recipe\n"
+                            exs += "\tastrotype = %s\n" % astrotype
+                            exs += "\tprimitive = %s\n" % primname
+                            exs += "\tparameter = %s\n" % str(param)
+                            exs += "\t\tattempt to set to = %s\n" % correctUPD[param]
+                            exs += "\t\trecipe setting = %s\n" % self.localparms[param]
+                            raise SettingFixedParam(exs)
+                            
+            # use primset.paramDict to update self.localparms
+            for param in primset.paramDict[primname].keys():
+                # @@NAMING: naming of default value in parameter dictionary hardcoded
+                if param in self.localparms:
+                    repOvrd = ("recipeOverride" not in primset.paramDict[primname][param])\
+                                 or primset.paramDict[primname][param]["recipeOverride"]
+                    # then it's already in there, check metadata
+                    # @@NAMING: "recipeOverride" used in RecipeManager code
+                    if not repOvrd:
+                        exs =  "Recipe attempts to set fixed parameter\n"
+                        exs += "\tastrotype = %s\n" % astrotype
+                        exs += "\tprimitive = %s\n" % primname
+                        exs += "\tparameter = %s\n" % str(param)
+                        exs += "\t\tattempt to set to = %s\n" % self.localparms[param]
+                        exs += "\t\tfixed setting = %s\n" % primset.paramDict[primname][param]["default"]
+                        raise SettingFixedParam(exs)
+                    else:
+                        # don't update this one, because the recipe is allowed to override
+                        continue
+                self.localparms.update({param:primset.paramDict[primname][param]["default"]})
+                
+            # users override everything else if  it gets here... and is allowed
+            if correctUPD:
+                for param in correctUPD:
+                    if param in self.localparms:
+                        userOvrd = ("userOverride" not in primset.paramDict[primname][param])\
+                                      or primset.paramDict[primname][param]["userOverride"]
+                        if not userOvrd:
+                            exs =  "User attempted to set fixed parameter\n"
+                            exs += "\tastrotype = %s\n" % astrotype
+                            exs += "\tprimitive = %s\n" % primname
+                            exs += "\tparameter = %s\n" % str(param)
+                            exs += "\t\tattempt to set to = %s\n" % correctUPD[param]
+                            exs += "\t\tfixed setting = %s\n" % primset.paramDict[primname][param]["default"]
+                            
+                            raise SettingFixedParam(exs, astrotype = astrotype)
+                        else:
+                            self.localparms.update({param:correctUPD[param]})
+                    else:
+                        self.localparms.update({param:correctUPD[param]})
+              
+    def paramNames(self, subset = None):
+        if subset == "local":
+            return self.localparms.keys()
+        else:
+            lpkeys = set(self.localparms.keys())
+            rckeys = set(self.keys())
+            retl = list(lpkeys | rckeys)
+            return retl
+                                                                
     
-    def outputsAsStr(self, strippath = True):
+    def outputsAsStr(self, strippath=True):
         if self.outputs == None:
             return ""
         else:
             outputlist = []
             for inp in self.outputs:
-                outputlist.append( inp.filename )
+                outputlist.append(inp.filename)
             #print "RM289:", outputlist
             #"""
             if strippath == False:
@@ -448,7 +583,7 @@ class ReductionContext(dict):
                 return ", ".join([os.path.basename(path) for path in outputlist])
             
     #------------------ PAUSE ---------------------------------------------------- 
-    def isPaused(self, bpaused = None):
+    def isPaused(self, bpaused=None):
         if bpaused == None:
             return self.status == "PAUSED"
         else:
@@ -479,30 +614,30 @@ class ReductionContext(dict):
         @rtype: str
         '''
         char = "-"
-        rets = '\n'+char*40+"\n"
+        rets = '\n' + char * 40 + "\n"
         rets += '''------Global Parameters------\n'''
         
         globval = "global"
         
-        def printParam( val, param ):
+        def printParam(val, param):
             # This temp function prints out the stuff inside an individual parameter.
             # I have a feeling this and paramsummary will be moved to a util function.
             tempStr = ""
             list_of_params = param.keys()
             list_of_params.sort()
-            tempStr += char*40 + "\n"
+            tempStr += char * 40 + "\n"
             for pars in list_of_params:
                 tempStr += str(param[pars]) + "\n"
-                tempStr += char*40 + "\n"
+                tempStr += char * 40 + "\n"
             return tempStr
             
-        rets += printParam( globval, self[globval])
+        rets += printParam(globval, self[globval])
         list_of_prims = self.keys()
         list_of_prims.sort()
         for primname in list_of_prims:
             if primname != globval:
-                rets += '''------%s Parameters------\n''' %(primname)
-                rets += printParam( primname, self[primname] )
+                rets += '''------%s Parameters------\n''' % (primname)
+                rets += printParam(primname, self[primname])
         
         return rets
     
@@ -515,22 +650,22 @@ class ReductionContext(dict):
             print "Could not persist the calibration cache."
             raise 
     
-    def persistFringeIndex( self, filename ):
+    def persistFringeIndex(self, filename):
         try:
-            pickle.dump( self.fringes.stackLists, open(filename, "w") )
+            pickle.dump(self.fringes.stackLists, open(filename, "w"))
         except:
             print 'Could not persist the fringe cache.'
             raise
             
-    def persistStkIndex(self, filename ):
+    def persistStkIndex(self, filename):
         try:
             #print "RM80:", self.stackeep
-            pickle.dump( self.stackeep.stackLists, open(filename, "w") )
+            pickle.dump(self.stackeep.stackLists, open(filename, "w"))
         except:
             print "Could not persist the stackable cache."
             raise
     
-    def prependNames(self, prepend, currentDir = True, filepaths=None):
+    def prependNames(self, prepend, currentDir=True, filepaths=None):
         '''
         Prepend a string to a filename.
         
@@ -552,27 +687,27 @@ class ReductionContext(dict):
             
         for data in dataset:
             parent = None
-            if type( data ) == AstroData:
+            if type(data) == AstroData:
                 filename = data.filename
-            elif type( data ) == str:
+            elif type(data) == str:
                 filename = data
-            elif type( data ) == AstroDataRecord:
+            elif type(data) == AstroDataRecord:
                 filename = data.filename
                 parent = data.parent
             else:
-                raise RecipeExcept( "BAD ARGUMENT: '%(data)s'->'%(type)s'" %{'data':str(data),'type':str(type(data))} )
+                raise RecipeExcept("BAD ARGUMENT: '%(data)s'->'%(type)s'" % {'data':str(data), 'type':str(type(data))})
                
             if currentDir == True:
                 root = os.getcwd()
             else:
                 root = os.path.dirname(filename)
 
-            bname = os.path.basename( filename )
-            prependfile = os.path.join( root, prepend + bname )
+            bname = os.path.basename(filename)
+            prependfile = os.path.join(root, prepend + bname)
             if parent is None:
-                retlist.append( prependfile )
+                retlist.append(prependfile)
             else:
-                retlist.append( (prependfile, parent) )
+                retlist.append((prependfile, parent))
         
         return retlist
     
@@ -583,13 +718,13 @@ class ReductionContext(dict):
             elif type(inp) == AstroData:
                 ad = inp
             try:
-                outfile = open(os.path.basename(ad.filename)+".headers", 'w')
+                outfile = open(os.path.basename(ad.filename) + ".headers", 'w')
                 for ext in ad.hdulist:
-                    outfile.write( "\n"+"*"*80+"\n")
-                    outfile.write( str(ext.header) )
+                    outfile.write("\n" + "*" * 80 + "\n")
+                    outfile.write(str(ext.header))
                 
             except:
-                raise "Error writing headers for '%{name}s'." %{'name':ad.filename}
+                raise "Error writing headers for '%{name}s'." % {'name':ad.filename}
             finally:
                 outfile.close()
     
@@ -622,55 +757,55 @@ class ReductionContext(dict):
         retstr += "-------------\n"
         for dt in ks: # self.stephistory.keys():
             indent = sh[dt]["indent"]
-            indentstr = "".join(["  " for i in range(0,indent)])
+            indentstr = "".join(["  " for i in range(0, indent)])
             
             mark = sh[dt]["mark"]
             if mark == "begin":
                 elapsed = ""
                 format = "%(indent)s%(stepname)s begin at %(time)s"
             elif mark == "end":
-                elapsed = "("+str(dt-lastdt)+") "
-                format="\x1b[1m%(indent)s%(stepname)s %(elapsed)s \x1b[22mends at %(time)s"
+                elapsed = "(" + str(dt - lastdt) + ") "
+                format = "\x1b[1m%(indent)s%(stepname)s %(elapsed)s \x1b[22mends at %(time)s"
             else:
                 elapsed = ""
                 format = "%(indent)s%(stepname)s %(elapsed)s%(mark)s at %(time)s"
                 
             lastdt = dt
-            if startdt== None:
+            if startdt == None:
                 startdt = dt
 
-            pargs =  {  "indent":indentstr,
-                        "stepname":str(sh[dt]['stepname']), 
+            pargs = {  "indent":indentstr,
+                        "stepname":str(sh[dt]['stepname']),
                         "mark":str(sh[dt]['mark']),
                         "inputs":str(",".join(sh[dt]['inputs'])),
                         "outputs":str(sh[dt]['outputs']),
                         "time":str(dt),
                         "elapsed":elapsed,
-                        "runtime":str(dt-startdt),
+                        "runtime":str(dt - startdt),
                     }
             retstr += format % pargs + "\n"
-            retstr += "%(indent)sTOTAL RUNNING TIME: %(runtime)s (MM:SS:ms)" % pargs  + "\n"
+            retstr += "%(indent)sTOTAL RUNNING TIME: %(runtime)s (MM:SS:ms)" % pargs + "\n"
        
         startdt = None
         lastdt = None
         enddt = None
         wide = 75
-        retstr +=  "\n\n"
-        retstr +=  "SHOW IO".center(wide)  + "\n"
-        retstr +=  "-------".center(wide) + "\n"
-        retstr +=  "\n"
+        retstr += "\n\n"
+        retstr += "SHOW IO".center(wide) + "\n"
+        retstr += "-------".center(wide) + "\n"
+        retstr += "\n"
         for dt in ks: # self.stephistory.keys():
             indent = sh[dt]["indent"]
-            indentstr = "".join(["  " for i in range(0,indent)])
+            indentstr = "".join(["  " for i in range(0, indent)])
             
             mark = sh[dt]["mark"]
             if mark == "begin":
                 elapsed = ""
             elif mark == "end":
-                elapsed = "("+str(dt-lastdt)+") "
+                elapsed = "(" + str(dt - lastdt) + ") "
                 
-            pargs =  {  "indent":indentstr,
-                        "stepname":str(sh[dt]['stepname']), 
+            pargs = {  "indent":indentstr,
+                        "stepname":str(sh[dt]['stepname']),
                         "mark":str(sh[dt]['mark']),
                         "inputs":str(",".join(sh[dt]['inputs'])),
                         "outputs":str(",".join(sh[dt]['outputs']['standard'])),
@@ -678,78 +813,78 @@ class ReductionContext(dict):
                         "elapsed":elapsed,
                     }
             if startdt == None:
-                retstr +=  ("%(inputs)s" % pargs).center(wide) + "\n"
+                retstr += ("%(inputs)s" % pargs).center(wide) + "\n"
 
             if (pargs["mark"] == "end"):
-                retstr +=  " | ".center(wide) + "\n"
-                retstr +=  "\|/".center(wide) + "\n"
-                retstr +=  " ' ".center(wide) + "\n"
+                retstr += " | ".center(wide) + "\n"
+                retstr += "\|/".center(wide) + "\n"
+                retstr += " ' ".center(wide) + "\n"
                 
                 line = ("%(stepname)s" % pargs).center(wide)
-                line = "\x1b[1m" + line + "\x1b[22m"  + "\n"
-                retstr +=  line
+                line = "\x1b[1m" + line + "\x1b[22m" + "\n"
+                retstr += line
                 
             if len(sh[dt]["outputs"]["standard"]) != 0:
-                retstr +=  " | ".center(wide) + "\n"
-                retstr +=  "\|/".center(wide) + "\n"
-                retstr +=  " ' ".center(wide) + "\n"
-                retstr +=  ("%(outputs)s" % pargs).center(wide) + "\n"
+                retstr += " | ".center(wide) + "\n"
+                retstr += "\|/".center(wide) + "\n"
+                retstr += " ' ".center(wide) + "\n"
+                retstr += ("%(outputs)s" % pargs).center(wide) + "\n"
                 
                 
             lastdt = dt
-            if startdt== None:
+            if startdt == None:
                 startdt = dt
         
         return retstr
         
-    def reportOutput(self, inp, category="standard", load = True):
+    def reportOutput(self, inp, category="standard", load=True):
         ##@@TODO: Read the new way code is done.
         if category != "standard":
-            raise RecipeExcept("You may only use " +
+            raise RecipeExcept("You may only use " + 
                 "'standard' category output at this time.")
         if type(inp) == str:
-            self.outputs["standard"].append( AstroDataRecord(inp,self.displayID), load = load )
+            self.outputs["standard"].append(AstroDataRecord(inp, self.displayID, load=load))
         elif type(inp) == list:
             for temp in inp:
                 # This is a good way to check if IRAF failed.
                 
                 if type(temp) == tuple:
-                    if not os.path.exists( temp[0] ):
+                    if not os.path.exists(temp[0]):
                         raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
-                    orecord = AstroDataRecord( temp[0], self.displayID, parent=temp[1], load = load)
+                    orecord = AstroDataRecord(temp[0], self.displayID, parent=temp[1], load=load)
                     #print 'RM370:', orecord
                 elif type(temp) == str:
-                    if not os.path.exists( temp ):
+                    if not os.path.exists(temp):
                         raise "LAST PRIMITIVE FAILED."
-                    orecord = AstroDataRecord( temp, self.displayID , load = load)
+                    orecord = AstroDataRecord(temp, self.displayID , load=load)
                 else:
                     raise "RM292 type: " + str(type(temp))
                 #print "RM344:", orecord
-                self.outputs["standard"].append( orecord )
+                self.outputs["standard"].append(orecord)
     
     def restoreCalIndex(self, filename):
-        if os.path.exists( filename ):
-            self.calibrations = pickle.load( open(filename, 'r') )
+        if os.path.exists(filename):
+            self.calibrations = pickle.load(open(filename, 'r'))
         else:
-            pickle.dump( {}, open( filename, 'w' ) )
+            pickle.dump({}, open(filename, 'w'))
     
-    def restoreFringeIndex( self, filename ):
+    def restoreFringeIndex(self, filename):
         '''
         
         '''
-        if os.path.exists( filename ):
-            self.fringes.stackLists = pickle.load( open(filename, 'r') )
+        if os.path.exists(filename):
+            self.fringes.stackLists = pickle.load(open(filename, 'r'))
         else:
-            pickle.dump( {}, open( filename, 'w' ) )
+            pickle.dump({}, open(filename, 'w'))
                             
-    def restoreStkIndex( self, filename ):
+    def restoreStkIndex(self, filename):
         '''
         
         '''
-        if os.path.exists( filename ):
-            self.stackeep.stackLists = pickle.load( open(filename, 'r') )
+        if os.path.exists(filename):
+            self.stackeep.stackLists = pickle.load(open(filename, 'r'))
         else:
-            pickle.dump( {}, open( filename, 'w' ) )
+            pickle.dump({}, open(filename, 'w'))
     
     def rmCal(self, data, caltype):
         '''
@@ -762,13 +897,13 @@ class ReductionContext(dict):
         @param caltype: Calibration type (e.g. 'bias').
         @type caltype: str
         '''
-        datalist = gdpgutil.checkDataSet( data )
+        datalist = gdpgutil.checkDataSet(data)
         
         for dat in datalist:
-            datid = idFac.generateAstroDataID( data )
+            datid = idFac.generateAstroDataID(data)
             key = (datid, caltype)
             if key in self.calibrations.keys():
-                self.calibrations.pop( key )
+                self.calibrations.pop(key)
             else:
                 print "'%(tup)s', was not registered in the calibrations."
     
@@ -780,13 +915,13 @@ class ReductionContext(dict):
         @type caltype: str
         '''
         if inputs is None:
-            addToCmdQueue = self.cdl.getCalReq( self.originalInputs, caltype )
+            addToCmdQueue = self.cdl.getCalReq(self.originalInputs, caltype)
         else:
-            addToCmdQueue = self.cdl.getCalReq( inputs, caltype )
+            addToCmdQueue = self.cdl.getCalReq(inputs, caltype)
         for re in addToCmdQueue:
             self.addRq(re)
     
-    def rqDisplay(self,displayID=None):
+    def rqDisplay(self, displayID=None):
         '''
         self, filename = None
         if None use self.inputs
@@ -798,23 +933,23 @@ class ReductionContext(dict):
         if displayID:
             Did = displayID
         else:
-            Did = idFac.generateDisplayID( self.inputs[0].filename, ver )
+            Did = idFac.generateDisplayID(self.inputs[0].filename, ver)
         displayObject.disID = Did
         displayObject.disList = self.inputs
-        self.addRq( displayObject )
+        self.addRq(displayObject)
     
-    def rqIQ( self, ad, eM, eS, fM, fS ):
-        iqReq = ImageQualityRequest( ad, eM, eS, fM, fS )
-        self.addRq( iqReq )
+    def rqIQ(self, ad, eM, eS, fM, fS):
+        iqReq = ImageQualityRequest(ad, eM, eS, fM, fS)
+        self.addRq(iqReq)
         
     def rqStackGet(self):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for orig in self.originalInputs:
-            Sid = idFac.generateStackableID( orig.ad, ver )
+            Sid = idFac.generateStackableID(orig.ad, ver)
             stackUEv = GetStackableRequest()
             stackUEv.stkID = Sid
-            self.addRq( stackUEv )
+            self.addRq(stackUEv)
                 
     def rqStackUpdate(self):
         '''
@@ -824,10 +959,10 @@ class ReductionContext(dict):
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for inp in self.inputs:
             stackUEv = UpdateStackableRequest()
-            Sid = idFac.generateStackableID( inp.ad, ver )
+            Sid = idFac.generateStackableID(inp.ad, ver)
             stackUEv.stkID = Sid
             stackUEv.stkList = inp.filename
-            self.addRq( stackUEv )
+            self.addRq(stackUEv)
                        
     def setIrafStderr(self, so):
         self.irafstderr = so
@@ -838,7 +973,7 @@ class ReductionContext(dict):
         return
     
     def stackAppend(self, ID, files):
-        self.stackeep.add( ID, files )
+        self.stackeep.add(ID, files)
         
     def stack_inputsAsStr(self, ID):        
         #pass back the stack files as strings
@@ -866,10 +1001,10 @@ class ReductionContext(dict):
             else:
                 path = os.path.dirname(nam.filename)
             
-            fn   = os.path.basename(nam.filename)
+            fn = os.path.basename(nam.filename)
             finame, ext = os.path.splitext(fn)
             fn = finame + "_" + suffix + ext
-            newpath = os.path.join( path, fn ) 
+            newpath = os.path.join(path, fn) 
             newlist.append(newpath)
         return newlist
     
@@ -903,8 +1038,16 @@ class RecipeLibrary(object):
     
     def addLoadTime(self, source, start, end):
         key = datetime.now()
-        pair = {key: {"source":source,"start":start, "end":end}}
+        pair = {key: {"source":source, "start":start, "end":end}}
         self.primLoadTimes.update(pair)
+
+    def discoverCorrectPrimType(self, context):
+        ref = context.getReferenceImage()
+        val = pickConfig(ref, centralPrimitivesIndex)
+        k = val.keys()
+        if len(k) != 1:
+                raise RecipeExcept("Can't discover correct primtype for %s, more than one (%s)" % (ref.filename, repr(k)))
+        return k[0]
         
     def reportHistory(self):
         self.reportLoadTimes()
@@ -920,21 +1063,19 @@ class RecipeLibrary(object):
             end = primrecord["end"]
             duration = end - start
             
-            pargs = {   "module":source, 
+            pargs = {   "module":source,
                         "duration":duration,
                         }
             print "Module '%(module)s took %(duration)s to load'" % pargs
 
-    def loadAndBindRecipe(self,ro, name, dataset=None, astrotype=None):
+    def loadAndBindRecipe(self, ro, name, dataset=None, astrotype=None):
         """
         Will load a single recipe, compile and bind it to the given reduction objects
         """
-        # NOTE: sort out precedence of one type over another
-        # in all cases.
-        #print "RM636: KAPLAH"
+
         if astrotype != None:
             # get recipe source
-            rec = self.retrieveRecipe(name, astrotype= astrotype)
+            rec = self.retrieveRecipe(name, astrotype=astrotype)
     
             if rec:
                 # compose to python source
@@ -946,17 +1087,24 @@ class RecipeLibrary(object):
         elif dataset != None:
             gd, bnc = openIfName(dataset)
             types = gd.getTypes()
+            rec = None
             for typ in types:
-                rec   = self.retrieveRecipe(name, astrotype= typ)
+                rec = self.retrieveRecipe(name, astrotype=typ)
                 if rec:
                     prec  = self.composeRecipe(name, rec)
                     rfunc = self.compileRecipe(name, prec)
                     ro = self.bindRecipe(ro, name, rfunc)
-        
+            # no recipe, see if there is a generic one
+            if rec == None:
+                rec = self.retrieveRecipe(name)
+                if rec:
+                    prec = self.composeRecipe(name, rec)
+                    rfunc = self.compileRecipe(name, prec)
+                    ro = self.bindRecipe(ro, name, rfunc)
             closeIfName(gd, bnc)
             
 
-    def getApplicableRecipes(self, dataset, collate = False):
+    def getApplicableRecipes(self, dataset, collate=False):
         """
         Get list of recipes associated with all the types that apply to this dataset.
         """
@@ -967,7 +1115,7 @@ class RecipeLibrary(object):
             byfname = False
             astrod = dataset
         else:
-            raise BadArgument()
+           raise BadArgument()
 
         # get the types
         types = astrod.getTypes()
@@ -995,11 +1143,11 @@ class RecipeLibrary(object):
     def retrieveRecipe(self, name, astrotype=None):
         cri = centralRecipeIndex
         if astrotype:
-            akey = name+"."+astrotype
+            akey = name + "." + astrotype
             key = name 
         else:
             key = name
-            akey = name+".None"
+            akey = name + ".None"
 
         bdefRecipe = key in cri
         bastroRecipe = akey in cri
@@ -1008,7 +1156,11 @@ class RecipeLibrary(object):
         if bastroRecipe:
             fname = cri[akey]
         elif bdefRecipe:
-            fname = cri[key]
+            if astrotype == None:
+                fname = cri[key]
+            else:
+                #User must SPECIFY none to get the generic recipe
+                return None
         else:
             return None
 
@@ -1017,7 +1169,7 @@ class RecipeLibrary(object):
         #print "RM718:", rtext
         return rtext
             
-    def retrieveReductionObject(self, dataset = None, astrotype=None):
+    def retrieveReductionObject(self, dataset=None, astrotype=None):
         a = datetime.now()
         
         # if astrotpye is None, but dataset is set, then we need to get the astrotype from the 
@@ -1028,13 +1180,34 @@ class RecipeLibrary(object):
         # If they cannot be resolved, because there are unrelated types or through multiple
         # inheritance multiple ROs may apply, then we raise an exceptions, this is a configuration
         # problem.
+        
+        primset = self.retrievePrimitiveSet(dataset=dataset, astrotype=astrotype)
+        ro = ReductionObjects.ReductionObject()
+        ro.recipeLib = self
+        ro.curPrimType = primset.astrotype
+
+        ro.addPrimSet(primset)
+        
+        b = datetime.now()
+        if astrotype != None:
+            source = "TYPE: " + astrotype
+        elif dataset != None:
+            source = "FILE: " + str(dataset)
+        else:
+            source = "UNKNOWN"
+            
+        #@@perform: monitory real performance loading primitives
+        self.addLoadTime(source, a, b)
+        return ro
+        
+    def retrievePrimitiveSet(self, dataset=None, astrotype=None):
         if (astrotype == None) and (dataset != None):
             val = pickConfig(dataset, centralPrimitivesIndex)
             k = val.keys()
-            if len(k) > 1:
+            if len(k) != 1:
                 raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
             astrotype = k[0]
-            
+        primset = None
         if (astrotype != None) and (astrotype in centralPrimitivesIndex):
             rfilename = centralPrimitivesIndex[astrotype][0]
             rpathname = centralReductionMap[rfilename]
@@ -1043,27 +1216,18 @@ class RecipeLibrary(object):
             a = datetime.now()
             exec ("import " + importname)
             b = datetime.now()
-            ro = eval (importname+"."+centralPrimitivesIndex[astrotype][1]+"()")
+            primset = eval (importname + "." + centralPrimitivesIndex[astrotype][1] + "()")
+            # set filename and directory name
+            # used by other parts of the system for naming convention based retrieval
+            # i.e. of parameters
+            
             c = datetime.now()
         else:
-            ro = ReductionObjects.ReductionObject()
-            raise ("Tried to retrieve base Reduction Object,\n" + \
-                   "not allowed at this time." )
-            
-        ro.recipeLib = self
+            return None
         
-        b = datetime.now()
-        if astrotype != None:
-            source = "TYPE: " + astrotype
-        elif dataset != None:
-            source = "FILE: " + dataset
-        else:
-            source = "UNKNOWN"
-            
-        #@@perform: monitory real performance loading primitives
-        self.addLoadTime(source, a, b)
-        return ro
-        
+        primset.astrotype = astrotype
+        primset.acquireParamDict()
+        return primset
         
     def composeRecipe(self, name, recipebuffer):
         templ = """
@@ -1087,20 +1251,25 @@ def %(name)s(self,cfgObj):
                 args = m.group("args")
                 elems = args.split(",")
                 for elem in elems:
-                    parmname, parmval = elem.split("=")
-                    parmname = parmname.strip()
-                    parmval = parmval.strip()
-                    d.update({parmname:parmval})
+                    selem = elem.strip()
+                    if "=" in selem:
+                        parmname, parmval = elem.split("=")
+                        parmname = parmname.strip()
+                        parmval = parmval.strip()
+                        d.update({parmname:parmval})
+                    else:
+                        if len(selem)>0:
+                            d.update({selem:True})
                 line = prim
             # need to add dictionary to context
             
             #print "RM778:", line
-            if line == "" or line[0]=="#":
+            if line == "" or line[0] == "#":
                 continue
-            newl =  """
+            newl = """
 \tcfgObj.localparms = eval('''%s''')
 \tfor co in self.substeps('%s', cfgObj):
-\t\tyield co""" % (repr(d),line)
+\t\tyield co""" % (repr(d), line)
             lines += newl
             
         rets = templ % {    "name" : name,
@@ -1114,22 +1283,21 @@ def %(name)s(self,cfgObj):
         return func
         
     def bindRecipe(self, redobj, name, recipefunc):
-        bindstr = "redobj.%s = new.instancemethod(recipefunc, redobj, None)" % name
+        rprimset = redobj.newPrimitiveSet(redobj.curPrimType, btype="RECIPE")
+        bindstr = "rprimset.%s = new.instancemethod(recipefunc, redobj, None)" % name
         exec(bindstr)
+        redobj.addPrimSet(rprimset)
         return redobj
     
     def checkMethod(self, redobj, primitivename):
-        methstr = "redobj.%s" % primitivename
-        try:
-            # print "RM647:",methstr ,"EORM647"
-            func = eval(methstr)
-        except AttributeError:
-            # then it does not exist
+        ps = redobj.getPrimSet(primitivename)
+        if ps == None:
+            # then this name doesn't exist
             return False
+        else:
+            return True
         
-        return True
-        
-    def checkAndBind(self, redobj, name, context = None):
+    def checkAndBind(self, redobj, name, context=None):
         dir (redobj)
         if self.checkMethod(redobj, name):
             return False
@@ -1173,7 +1341,7 @@ def %(name)s(self,cfgObj):
         defaultParamFiles = self.getApplicableParameters(dataset)
         #print "RM836:", defaultParamFiles
         for defaultParams in defaultParamFiles:
-            contextobj.update( centralParametersIndex[defaultParams] )
+            contextobj.update(centralParametersIndex[defaultParams])
         
         """
         #print "RM841:", redobj.values()
@@ -1222,7 +1390,7 @@ parameterREMask = r"parameters\.(?P<recipename>.*?)\.py$"
 
 
 
-import os,sys,re
+import os, sys, re
 
 if True: # was firstrun logic... python interpreter makes sure this module only runs once already
 
@@ -1238,7 +1406,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
             m = re.match(recipeREMask, sfilename)
             mpI = re.match(primitivesIndexREMask, sfilename)
             mri = re.match(recipeIndexREMask, sfilename)
-            mro = re.match(reductionObjREMask,sfilename) 
+            mro = re.match(reductionObjREMask, sfilename) 
             mpa = re.match(parameterREMask, sfilename)
             mpaI = re.match(parameterIndexREMask, sfilename)
             fullpath = os.path.join(root, sfilename)
@@ -1249,15 +1417,15 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                     print sfilename
                     print "complete recipe name(%s)" % m.group("recipename")
                 # For duplicate recipe names, until another solution is decided upon.
-                if centralRecipeIndex.has_key( recname ):
-                    print "-"*35+" WARNING "+"-"*35
+                if centralRecipeIndex.has_key(recname):
+                    print "-" * 35 + " WARNING " + "-" * 35
                     print "There are two recipes with the same name."
                     print "The duplicate:"
                     print fullpath
                     print "The Original:"
                     print centralRecipeIndex[recname]
                     print
-                    raise RecipeExcept( "Two Recipes with the same name." )
+                    raise RecipeExcept("Two Recipes with the same name.")
                 
                 centralRecipeIndex.update({recname: fullpath})
                 
@@ -1266,7 +1434,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 if False: # am:
                     print "recipe:(%s) for type:(%s)" % (am.group("recipename"), am.group("astrotype"))
             elif mpI: # this is an primitives index
-                efile = open(fullpath,"r")
+                efile = open(fullpath, "r")
                 exec (efile)
                 efile.close()
                 centralPrimitivesIndex.update(localPrimitiveIndex)
@@ -1338,7 +1506,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         msg += "... structure for type %s\n" % key
                         msg += "redefined in\n" 
                         msg += "... %s\n" % fullpath
-                        msg += "... was already set to %s\n" %centralStructureIndex[key]
+                        msg += "... was already set to %s\n" % centralStructureIndex[key]
                         msg += "... this is a fatal error"
                         raise StructureExcept(msg)
                         

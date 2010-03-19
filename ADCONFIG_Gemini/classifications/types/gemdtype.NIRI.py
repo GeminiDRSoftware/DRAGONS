@@ -2,7 +2,6 @@
 class NIRI(DataClassification):
     name="NIRI"
     usage = ""
-    typeReqs= []
-    phuReqs= {'INSTRUME': 'NIRI'}
+    requirement = PHU(INSTRUME='NIRI')
 
 newtypes.append(NIRI())

@@ -1,6 +1,6 @@
 class FRINGE(DataClassification):
     name="FRINGE"
     usage = "A processed fringe."
-    phuReqs= {'GIFRINGE': '(.*?)'}
+    requirement = PHU(GIFRINGE='(.*?)')
 
 newtypes.append(FRINGE())

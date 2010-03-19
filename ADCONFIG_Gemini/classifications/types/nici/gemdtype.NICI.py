@@ -1,8 +1,6 @@
-
 class NICI(DataClassification):
     name="NICI"
     usage = ""
-    typeReqs= []
-    phuReqs= {'INSTRUME': 'NICI'}
+    requirement = PHU(INSTRUME='NICI')
 
 newtypes.append(NICI())

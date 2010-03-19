@@ -53,7 +53,9 @@ class CalibrationDefinitionLibrary( object ):
         reqEvents = []
         for input in inputs:
             calIndex = self.generateCalIndex( caltype)
-            retDict = gdpgutil.pickConfig( input, self.generateCalIndex(caltype) )
+            print "CDL56:", calIndex, input.ad.getTypes(prune=True)
+          
+            retDict = gdpgutil.pickConfig( input.ad,  calIndex )
             key = retDict.keys()[0]
             filename = calIndex[key]            
             

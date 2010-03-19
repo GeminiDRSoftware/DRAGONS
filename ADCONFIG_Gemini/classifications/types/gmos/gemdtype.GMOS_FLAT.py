@@ -2,9 +2,6 @@
 class GMOS_FLAT(DataClassification):
     name="GMOS_FLAT"
     usage = ""
-    typeReqs= ['GMOS']
-    phuReqs= {
-                'OBSTYPE': 'FLAT'
-            }
+    requirement = ISCLASS('GMOS') & PHU(OBSTYPE='FLAT')
 
 newtypes.append(GMOS_FLAT())

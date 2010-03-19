@@ -2,7 +2,6 @@
 class TRECS(DataClassification):
     name="TRECS"
     usage = ""
-    typeReqs= []
-    phuReqs= {'INSTRUME': 'TReCS'}
+    requirement = PHU(INSTRUME='TReCS')
 
 newtypes.append(TRECS())

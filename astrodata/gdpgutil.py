@@ -127,7 +127,8 @@ def closeIfName(dataset, bNeedsClosing):
     
     return
 
-def inheritConfig(typ, index, cl = None):
+
+def DEADFUNCTIONinheritConfig(typ, index, cl = None):
     # print "GU34:", typ, str(index)
     if cl == None:
         cl = AstroDataType.getClassificationLibrary()
@@ -158,21 +159,22 @@ def pickConfig(dataset, index, style = "unique"):
     candidates = {}
     if style == "unique":
         types = ad.getTypes(prune=True)
-        # print "\nGU58:", types, "\nindex:",index, "\n"
-        for typ in types:
-            if typ in index:
-                candidates.update({typ:index[typ]})
-            else:
-                cfgd = inheritConfig(typ, index, cl = cl)
-                if cfgd != None:
-                    candidates.update(cfgd)
-        #    print "\nGU61: candidates:", candidates, "\n"
-            # sys.exit(1)
-        # style unique this can only be one thing
-        k = candidates.keys()
-        if len(k)!=1:
-            print "CONFIG CONFLICT", repr(k)
-            raise GDPGUtilExcept("CONFIG CONFLICT:" + repr(k))
+    else:
+        types = ad.getTypes()
         
+    print "gd161", types
+    # print "\nGU58:", types, "\nindex:",index, "\n"
+    for typ in types:
+        if typ in index:
+            candidates.update({typ:index[typ]})
+
+    #    print "\nGU61: candidates:", candidates, "\n"
+        # sys.exit(1)
+    # style unique this can only be one thing
+    k = candidates.keys()
+    if len(k)!=1:
+        print "CONFIG CONFLICT", repr(k)
+        raise GDPGUtilExcept("CONFIG CONFLICT:" + repr(k))
+
     closeIfName(ad, obn)
     return candidates

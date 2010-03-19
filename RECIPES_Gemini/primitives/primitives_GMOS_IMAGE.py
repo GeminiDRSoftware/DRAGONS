@@ -44,12 +44,20 @@ class GMOS_IMAGEException:
 
 
 class GMOS_IMAGEPrimitives(GEMINIPrimitives):
+    astrotype = "GMOS_IMAGE"
+    
     def init(self, rc):
-        if "global" in rc and "adata" in rc["global"]:
-            pyraf.iraf.set (adata=rc["global"]['adata'].value)  
+        
+        if "iraf" in rc and "adata" in rc["iraf"]:
+            pyraf.iraf.set (adata=rc["iraf"]['adata'])  
         else:
-            (root, name) = os.path.split(rc.inputs[0])
-            pyraf.iraf.set (adata=root)  
+            # @@REFERENCEIMAGE: used to set adata path for primitives
+            (root, name) = os.path.split(rc.inputs[0].filename)
+            pyraf.iraf.set (adata=root)
+            if "iraf" not in rc:
+                rc.update({"iraf":{}})
+            if "adata" not in rc["iraf"]:
+                rc["iraf"].update({"adata":root}) 
         
         GEMINIPrimitives.init(self, rc)
         return rc
@@ -100,6 +108,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 else:
                     print "'%s' was not combined because there is only one image." %( stacklist[0] )
         except:
+            raise
             raise GMOS_IMAGEException("Problem combining and averaging")
 
         yield rc
@@ -386,8 +395,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
             print "Updating GAIN keyword by calling GGAIN"
             
-            
-            gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath=rc['global']['adata'].value,
+            print "pGI391:",repr(rc)
+            gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath=rc['iraf']['adata'],
                                  Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
             
             if gemini.gmos.gprepare.status:

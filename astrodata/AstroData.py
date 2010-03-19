@@ -597,15 +597,17 @@ class AstroData(object, CalculatorInterface):
             #  remove the supertype
             
             cl = self.getClassificationLibrary()
-            pary = list(retary)
+            pary = []
             for typ in retary:
-                to = cl.getTypeObj(typ) 
-                for supertyp in retary:
-                    if typ != supertyp:
-                        if to.isSubtypeOf(supertyp):
-                            # then remove supertype, only subtypes allowed in pruned list
-                            if supertyp in pary:
-                                pary.remove(supertyp)
+                notSuper = True
+                for supertype in retary:
+                    sto = cl.getTypeObj(supertype)
+                    if sto.isSubtypeOf(typ):
+                        notSuper = False
+                if notSuper:
+                    pary.append(typ)
+                    
+                        
             retary = pary
         
         return retary

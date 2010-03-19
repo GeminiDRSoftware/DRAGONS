@@ -27,6 +27,7 @@ import time
 a = datetime.now()
 
 import astrodata
+from astrodata import RecipeManager
 from astrodata.AstroData import AstroData
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
@@ -62,7 +63,8 @@ parser.set_usage( parser.get_usage()[:-1] + " file.fits\n" )
 # Testing
 parser.add_option("-r", "--recipe", dest="recipename", default=None,
                   help="Specify which recipe to run by name.")
-
+parser.add_option("-p", "--param", dest="userparam", default = None,
+                    help="Set a parameter from the command line.")
 parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
                   default = False,
                   help= "Open TkInter Window to Monitor Progress of" + \
@@ -207,6 +209,20 @@ def command_line():
         co.persistCalIndex( calindfile )
         sys.exit(0)
     
+    if options.userparam:
+        ups = RecipeManager.UserParams()
+        allupstr = options.userparam
+        allparams = allupstr.split(",")
+        for upstr in allparams:
+            tmp = upstr.split("=")
+            spec = tmp[0].strip()
+            # @@TODO: check and convert to correct type
+            val = tmp[1].strip()
+            typ,prim,param = spec.split(":")
+            up = RecipeManager.UserParam(typ, prim, param, val)
+            ups.addUserParam(up)
+        options.userParams = ups
+    
     return input_files
     
 
@@ -257,7 +273,8 @@ for infiles in allinputs: #for dealing with multiple files.
     # get ReductionObject for this dataset
     #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") 
     # can be done by filename
-    ro = rl.retrieveReductionObject(infile[0]) # can be done by filename #**
+    #@@REFERENCEIMAGE: used to retrieve/build correct reduction object
+    ro = rl.retrieveReductionObject(infile[0]) 
     
     if options.recipename == None:
         reclist = rl.getApplicableRecipes(infiles[0]) #**
@@ -331,7 +348,10 @@ for infiles in allinputs: #for dealing with multiple files.
             co.setIrafStdout(irafstdout)
             co.setIrafStderr(irafstdout)
             
-            rl.retrieveParameters(infile[0], co, rec)
+            # odl way rl.retrieveParameters(infile[0], co, rec)
+            if hasattr(options, "userParams"):
+                co.userParams = options.userParams
+            # print "r352:", repr(co.userParams.userParamDict)
             if (useTK):
                 while cw.bReady == False:
                     # this is hopefully not really needed

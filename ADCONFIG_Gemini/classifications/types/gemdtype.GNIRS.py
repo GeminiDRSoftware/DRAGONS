@@ -2,7 +2,6 @@
 class GNIRS(DataClassification):
     name="GNIRS"
     usage = ""
-    typeReqs= []
-    phuReqs= {'INSTRUME': 'GNIRS'}
+    requirement = PHU(INSTRUME='GNIRS')
 
 newtypes.append(GNIRS())
