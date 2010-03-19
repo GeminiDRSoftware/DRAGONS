@@ -1,11 +1,10 @@
 
-class GMOS_CAL(ORClassification):
+class GMOS_CAL(DataClassification):
     name="GMOS_CAL"
     usage = ""
-    typeOrs= [ 'GMOS',
-                'GMOS_FLAT',
-                'GMOS_TWILIGHT',
-                'GMOS_DARK',
-                'GMOS_BIAS']
+    requirement = ISCLASS('GMOS') & OR( ISCLASS('GMOS_FLAT'),
+                                        ISCLASS('GMOS_TWILIGHT'),
+                                        ISCLASS('GMOS_DARK'),
+                                        ISCLASS('GMOS_BIAS'))
 
 newtypes.append(GMOS_CAL())

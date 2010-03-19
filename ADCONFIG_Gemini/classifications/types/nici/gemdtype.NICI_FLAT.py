@@ -5,7 +5,6 @@ class NICI_FLAT(DataClassification):
     usage = '''
         Applies to all NICI data 
         '''
-    typeReqs= ['NICI']
-    phuReqs= {'OBSTYPE': 'FLAT'}
+    requirement = ISCLASS('NICI') & PHU(OBSTYPE='FLAT')
 
 newtypes.append( NICI_FLAT())

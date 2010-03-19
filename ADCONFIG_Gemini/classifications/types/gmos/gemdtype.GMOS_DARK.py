@@ -2,9 +2,6 @@
 class GMOS_DARK(DataClassification):
     name="GMOS_DARK"
     usage = ""
-    typeReqs= ['GMOS']
-    phuReqs= {
-                'OBSTYPE': 'DARK'
-            }
+    requirement = ISCLASS('GMOS') & PHU( OBSTYPE = 'DARK')
 
 newtypes.append(GMOS_DARK())

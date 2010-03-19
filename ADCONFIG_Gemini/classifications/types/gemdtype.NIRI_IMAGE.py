@@ -2,7 +2,6 @@
 class NIRI_IMAGE(DataClassification):
     name="NIRI_IMAGE"
     usage = ""
-    typeReqs= ['NIRI']
-    phuReqs= {'FILTER3': '(.*?)Pupil(.*?)'}
+    requirement = ISCLASS('NIRI') & PHU(FILTER3='(.*?)[Pp]upil(.*?)')
 
 newtypes.append(NIRI_IMAGE())

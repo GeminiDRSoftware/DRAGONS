@@ -5,6 +5,6 @@ class NODCHOP(DataClassification):
     usage = '''
         Applies to data marked with NOD and CHOP keywords
         '''
-    phuReqs = { "DATATYPE" : "marked-nodandchop"}
+    requirement = PHU(DATATYPE="marked-nodandchop")
 
 newtypes.append( NODCHOP())

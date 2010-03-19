@@ -2,10 +2,7 @@
 class GMOS_IMAGE(DataClassification):
     name="GMOS_IMAGE"
     usage = ""
-    typeReqs= ['GEMINI','GMOS']
-    phuReqs= {  
-                # Imaging by definition uses the MIRROR as a grating.
-                'GRATING': 'MIRROR'
-                }
+    parent = "GMOS"
+    requirement = ISCLASS("GMOS") & PHU(GRATING="MIRROR")
 
 newtypes.append(GMOS_IMAGE())

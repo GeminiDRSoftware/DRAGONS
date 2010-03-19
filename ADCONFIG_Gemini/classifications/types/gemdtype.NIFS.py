@@ -2,7 +2,6 @@
 class NIFS(DataClassification):
     name="NIFS"
     usage = ""
-    typeReqs= []
-    phuReqs= {'INSTRUME': 'NIFS'}
+    requirement = PHU(INSTRUME='NIFS')
 
 newtypes.append(NIFS())

@@ -1,6 +1,6 @@
 from time import sleep
 import time
-from astrodata.ReductionObjects import ReductionObject
+from astrodata.ReductionObjects import PrimitiveSet
 from utils import filesystem
 from astrodata import IDFactory
 import os,sys
@@ -32,12 +32,11 @@ class GEMINIException:
         return self.message
 
 
-class GEMINIPrimitives(ReductionObject):
+class GEMINIPrimitives(PrimitiveSet):
+    astrotype = "GEMINI"
     
     def init(self, rc):
-        ReductionObject.init(self, rc)
-        return rc
-        
+        return 
     def pause(self, rc):
         rc.requestPause()
         yield rc
@@ -176,7 +175,25 @@ class GEMINIPrimitives(ReductionObject):
             for item in ls.filelist:
                 print "\t", item
         yield rc
-          
+
+#------------------------------------------------------------------------------ 
+    def showParams(self, rc):
+        rcparams = rc.paramNames()
+        if (rc["show"]):
+            toshows = rc["show"].split(":")
+            for toshow in toshows:
+                if toshow in rcparams:
+                    print toshow+" = "+repr(rc[toshow])
+                else:
+                    print toshow+" is not set"
+        else:
+            for param in rcparams:
+                print param+" = "+repr(rc[param])
+        yield rc
+            
+            
+            
+                      
 #------------------------------------------------------------------------------ 
     def setStackable(self, rc):
         try:

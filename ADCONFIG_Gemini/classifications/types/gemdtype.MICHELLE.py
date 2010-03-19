@@ -2,7 +2,6 @@
 class MICHELLE(DataClassification):
     name="MICHELLE"
     usage = ""
-    typeReqs= []
-    phuReqs= {'INSTRUME': 'michelle'}
+    requirement = PHU(INSTRUME= 'michelle')
 
 newtypes.append(MICHELLE())
