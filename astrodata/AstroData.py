@@ -372,7 +372,7 @@ class AstroData(object, CalculatorInterface):
             retv = hdl[1].data
         else:
             # print "gd207: %d" % len(hdl)
-            raise gdExcept()
+            raise ADExcept("getData must be called on single extension instances")
             
         self.relhdul()
         return retv
@@ -806,7 +806,13 @@ lse, the return value is a list which is in fact
         else:
             return self.extensions[integer-1]
     
-    def getHeaderValue(self, extension, key):
+    def getHeaderValue(self, key):
+        if len(self.hdulist) == 2:
+            self.extGetHeaderValue(0,key)
+        else:
+            raise ADExcept("getHeaderValue must be called on single extension instance")
+           
+    def extGetHeaderValue(self, extension, key):
         """This function returns the value from the given extension's
         header.
         @param extension: identifies which extension
@@ -834,7 +840,13 @@ lse, the return value is a list which is in fact
         return retval
     getKeyValue = getHeaderValue
     
-    def setKeyValue(self, extension, key, value, comment = None):
+    def setKeyValue(self, key):
+        if len(self.hdulist) == 2:
+            self.extSetKeyValue(0,key)
+        else:
+            raise ADExcept("setKeyValue must be called on single extension instance")
+    
+    def extSetKeyValue(self, extension, key, value, comment = None):
 
         origextension = extension
         if type(extension) == int:
