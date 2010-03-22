@@ -36,6 +36,14 @@ class ADExcept:
         @returns: string representation of this exception, the self.message member
         @rtype: string"""
         return self.message
+        
+class OutputExists(ADExcept):
+    def __init__(self, msg=None):
+        if msg == None:
+            self.message = "Output Exists"
+        else:
+            self.message = "Output Exists: "+ msg
+            
 
 #FUNCTIONS
 def reHeaderKeys(rekey, header):
@@ -542,6 +550,28 @@ class AstroData(object, CalculatorInterface):
                 self.discoverTypes()
             except:
                 raise ADExcept("discover types failed")
+        # do inferences
+        if self.isType("IMPOSSIBLE"):
+            # for raw, if no extensions are named
+            # infer the name as "SCI"
+            hdul = self.hdulist
+            namedext = False
+            for hdu in hdul[1:]:
+                if "EXTNAME" in hdu.header: 
+                    namedext = True
+                    print "AD562: True"
+                
+            if namedext == False:
+                print "AD562: False"
+                l = len(hdul)-1
+                print "AD567: ",l
+                for i in range(1, l):
+                    hdu = hdul[i]
+                    hdu.header.update("EXTNAME", "SCI", "added by AstroData")
+                    hdu.header.update("EXTVER", i, "added by AstroData")
+                    print "AD570:", repr(hdu.header)
+        
+                
 
     def close(self):
         """
@@ -808,11 +838,12 @@ lse, the return value is a list which is in fact
     
     def getHeaderValue(self, key):
         if len(self.hdulist) == 2:
-            self.extGetHeaderValue(0,key)
+            self.extGetKeyValue(0,key)
         else:
             raise ADExcept("getHeaderValue must be called on single extension instance")
+    getKeyValue = getHeaderValue
            
-    def extGetHeaderValue(self, extension, key):
+    def extGetKeyValue(self, extension, key):
         """This function returns the value from the given extension's
         header.
         @param extension: identifies which extension
@@ -838,7 +869,6 @@ lse, the return value is a list which is in fact
             
         self.relhdul()
         return retval
-    getKeyValue = getHeaderValue
     
     def setKeyValue(self, key):
         if len(self.hdulist) == 2:
@@ -872,7 +902,7 @@ lse, the return value is a list which is in fact
         self.hdulist.info()
         
  
-    def write(self, fname = None):
+    def write(self, fname = None, clobber = False):
         """
         This function acts similarly to C{HDUList.writeto} if name is given, 
         or C{HDUList.update} if none is given,
@@ -890,7 +920,12 @@ lse, the return value is a list which is in fact
             # @@FUTURE:
             # perhaps create tempfile name and use it?
             raise gdExcept()
-            
+           
+        if os.path.exists(self.filename):
+            if clobber:
+                os.remove(self.filename)
+            else:
+                raise OutputExists(self.filename)
         hdul.writeto(self.filename)
         
         
@@ -994,7 +1029,7 @@ def correlate( *iary):
             outlist.append(outrow)
     return outlist    
 
-def prepOutput(inputAry = None, name = None):
+def prepOutput(inputAry = None, name = None, clobber = False):
     """
     This function creates an output AstroData with it's own PHU,
     with associated data propagated, but not written to disk.
@@ -1033,6 +1068,11 @@ def prepOutput(inputAry = None, name = None):
     retgd = AstroData(newhdulist)
 
     if name != None:
+        if os.path.exists(name):
+            if clobber == False:
+                raise OutputExists(name)
+            else:
+                os.remove(name)
         retgd.filename = name
     
     return retgd

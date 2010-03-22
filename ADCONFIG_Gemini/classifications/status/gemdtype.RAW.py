@@ -2,6 +2,6 @@ class RAW(DataClassification):
     editprotect=True
     name="RAW"
     usage = 'Un-"prepared" data.'
-    phuReqs= {'{prohibit}GEM-TLM': ".*?" }
+    requirement = PHU({'{prohibit}GEM-TLM': ".*?" })
     
 newtypes.append(RAW())
