@@ -3,6 +3,6 @@ class GMOS_RAW(DataClassification):
     name="GMOS_RAW"
     usage = 'Un-"prepared" GMOS data.'
     typeReqs= ['GMOS']
-    phuReqs= {'{prohibit}GPREPARE': ".*?" }
+    requirement = PHU({'{prohibit}GPREPARE': ".*?" })
     
 newtypes.append(GMOS_RAW())
