@@ -1,6 +1,6 @@
 #!/bin/env pyth
 import sys
-from copy import copy
+from copy import copy, deepcopy
 import pyfits
 
 
@@ -210,7 +210,7 @@ class AstroData(object, CalculatorInterface):
         @rtype: int"""
         return len(self.hdulist)-1
     
-    def __init__(self, fname, mode="readonly", exts = None, extInsts = None):
+    def __init__(self, fname=None, mode="readonly", exts = None, extInsts = None):
         """
         Constructor for AstroData. Note, the file will be opened.
         @param fname: filename of MEF to load
@@ -292,6 +292,22 @@ class AstroData(object, CalculatorInterface):
             raise StopIteration
         
         return retobj
+        
+    def __deepcopy__(self, memo):
+        # pyfits throws exception on deepcopy
+        #self.hdulist = deepcopy(self.hdulist, memo)
+        lohdus = []
+        for hdu in self.hdulist:
+            nhdu = copy(hdu)
+            nhdu.header = nhdu.header.copy()
+            lohdus.append(nhdu)
+        
+        hdulist = pyfits.HDUList(lohdus)
+        
+        return AstroData(hdulist)
+            
+        
+        print "AD298: copy?"
     
     def append(self, moredata=None, data=None, header=None):
         """This function appends more HDUs to this AstroData
@@ -505,17 +521,21 @@ class AstroData(object, CalculatorInterface):
         elif type(source) == pyfits.HDUList:
             self.hdulist = source
         else:
-            self.filename = source
-            try:
-                if mode == 'new':
-                    if os.access(self.filename, os.F_OK):
-                        os.remove(self.filename)
-                    mode = 'append'
-                self.hdulist = pyfits.open(self.filename, mode = mode)
-            except IOError:
-                print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
-                raise
-       
+            if source == None or not os.path.exists(source):
+                phu = pyfits.PrimaryHDU()
+                self.hdulist = pyfits.HDUList([phu])
+            else:
+                self.filename = source
+                try:
+                    if mode == 'new':
+                        if os.access(self.filename, os.F_OK):
+                            os.remove(self.filename)
+                        mode = 'append'
+                    self.hdulist = pyfits.open(self.filename, mode = mode)
+                except IOError:
+                    print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
+                    raise
+
         #if mode != 'append':
         if len(self.hdulist):
             try:

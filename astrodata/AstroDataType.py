@@ -1065,10 +1065,6 @@ class ClassificationLibrary (object):
                 dco.parentDCO = self.getTypeObj(dco.parent)
                 dco.parentDCO.addChild(dco)
                 
-        a = self.getTypeObj("GMOS")
-        print "ATD1065:", a.parent, a.children
-                
-
         
     def htmlDoc(self):
         '''

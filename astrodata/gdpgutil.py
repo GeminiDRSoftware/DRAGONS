@@ -162,7 +162,6 @@ def pickConfig(dataset, index, style = "unique"):
     else:
         types = ad.getTypes()
         
-    print "gd161", types
     # print "\nGU58:", types, "\nindex:",index, "\n"
     for typ in types:
         if typ in index:
