@@ -63,6 +63,8 @@ class UserParam(object):
 class UserParams(object):
     userParamDict = None
     def getUserParam(self, astrotype, primname):
+        if self.userParamDict == None:
+            return None
         if astrotype not in self.userParamDict:
             return None
         if primname not in self.userParamDict[astrotype]:

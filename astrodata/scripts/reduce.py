@@ -98,7 +98,7 @@ parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_t
 parser.add_option("-i", "--intelligence", dest='intelligence', default=False, action="store_true",
                   help="Give the system some intelligence to perform operations faster and smoother.")
 parser.add_option("--force-width", dest = "forceWidth", default=None,
-                  help="Use to force width of terminal for output purposes instead of using actual temrinal width.")
+                  help="Use to force width of terminal for output purposes instead of using actual terminal width.")
 parser.add_option("--force-height", dest = "forceHeight", default=None,
                   help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
 parser.add_option("--addprimset", dest = "primsetname", default = None,
@@ -211,6 +211,7 @@ def command_line():
     
     if options.userparam:
         ups = RecipeManager.UserParams()
+        gparms = {}
         allupstr = options.userparam
         allparams = allupstr.split(",")
         for upstr in allparams:
@@ -218,10 +219,15 @@ def command_line():
             spec = tmp[0].strip()
             # @@TODO: check and convert to correct type
             val = tmp[1].strip()
-            typ,prim,param = spec.split(":")
-            up = RecipeManager.UserParam(typ, prim, param, val)
-            ups.addUserParam(up)
+            if ":" in spec:
+                typ,prim,param = spec.split(":")
+                up = RecipeManager.UserParam(typ, prim, param, val)
+                ups.addUserParam(up)
+            else:
+                gparms.update({spec:val})
+                
         options.userParams = ups
+        options.globalParams = gparms
     
     return input_files
     
@@ -351,6 +357,9 @@ for infiles in allinputs: #for dealing with multiple files.
             # odl way rl.retrieveParameters(infile[0], co, rec)
             if hasattr(options, "userParams"):
                 co.userParams = options.userParams
+            if hasattr(options, "globalParams"):
+                for pkey in options.globalParams.keys():
+                    co.update({pkey:options.globalParams[pkey]})
             # print "r352:", repr(co.userParams.userParamDict)
             if (useTK):
                 while cw.bReady == False:

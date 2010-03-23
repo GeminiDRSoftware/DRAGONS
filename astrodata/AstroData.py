@@ -540,6 +540,7 @@ class AstroData(object, CalculatorInterface):
                             os.remove(self.filename)
                         mode = 'append'
                     self.hdulist = pyfits.open(self.filename, mode = mode)
+                    #print "AD543: opened with pyfits", len(self.hdulist)
                 except IOError:
                     print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
                     raise
@@ -551,7 +552,8 @@ class AstroData(object, CalculatorInterface):
             except:
                 raise ADExcept("discover types failed")
         # do inferences
-        if self.isType("IMPOSSIBLE"):
+        if self.isType("RAW"):
+            
             # for raw, if no extensions are named
             # infer the name as "SCI"
             hdul = self.hdulist
@@ -559,20 +561,27 @@ class AstroData(object, CalculatorInterface):
             for hdu in hdul[1:]:
                 if "EXTNAME" in hdu.header: 
                     namedext = True
-                    print "AD562: True"
-                
+                    #print "AD562: Named"
+                else:
+                    #print "AD562: Not Named"
+                    pass
+                    
             if namedext == False:
-                print "AD562: False"
-                l = len(hdul)-1
-                print "AD567: ",l
-                for i in range(1, l):
-                    hdu = hdul[i]
-                    hdu.header.update("EXTNAME", "SCI", "added by AstroData")
-                    hdu.header.update("EXTVER", i, "added by AstroData")
-                    print "AD570:", repr(hdu.header)
-        
-                
+                # print "AD567: No named extension"
+                l = len(hdul)-1 # len minus PHU
+                # print "AD567: len of hdulist ",l
 
+                for i in range(0, l):
+                    self.extSetKeyValue(i, "EXTNAME", "SCI", "added by AstroData")
+                    self.extSetKeyValue(i, "EXTVER", str(i), "added by AstroData")
+                    #print "AD570:", repr(self.extGetKeyValue(i,"EXTNAME"))
+                
+                nhdul = []
+                for hdu in hdul:
+                    nhdul.append(hdu)
+                self.hdulist = pyfits.HDUList(nhdul)
+                # @@NOTE: should we do something make sure the
+                # dropped hdulist goes away?
     def close(self):
         """
         This function closes the pyfits.HDUList object if this instance
@@ -832,9 +841,9 @@ lse, the return value is a list which is in fact
         @returns: the actual extension relative to the containing MEF
         """
         if (self.extensions == None):
-            return integer
+            return integer+1
         else:
-            return self.extensions[integer-1]
+            return self.extensions[integer]
     
     def getHeaderValue(self, key):
         if len(self.hdulist) == 2:
@@ -883,9 +892,11 @@ lse, the return value is a list which is in fact
             # this translates ints from our 0-relative base of AstroData to the 
             #  1-relative base of the hdulist, but leaves tuple extensions
             #  as is.
+            #print "AD892: pre-ext", extension
             extension = self.translateIntExt(extension)
+            #print "AD892: ext", extension
             
-        #make sure extension is in the extensions list
+        #make sure extension is in the extensions list if present
         if (self.extensions != None) and (not extension in self.extensions):
             raise ADExcept("Extention %s not present in AstroData instance" % str(origextension))
             
