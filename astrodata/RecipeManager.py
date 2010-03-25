@@ -1391,7 +1391,6 @@ recipeAstroTypeREMask = r"(?P<recipename>.*?)\.(?P<astrotype>.*?)$"
 parameterREMask = r"parameters\.(?P<recipename>.*?)\.py$"
 
 
-
 import os, sys, re
 
 if True: # was firstrun logic... python interpreter makes sure this module only runs once already

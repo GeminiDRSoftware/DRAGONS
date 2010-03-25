@@ -31,12 +31,13 @@ class GEMINIException:
         when the exception is not caught."""
         return self.message
 
-
 class GEMINIPrimitives(PrimitiveSet):
     astrotype = "GEMINI"
     
     def init(self, rc):
         return 
+    init.pt_hide = True
+    
     def pause(self, rc):
         rc.requestPause()
         yield rc

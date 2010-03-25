@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 import os, sys
-from RECIPES_Gemini.primitives import primitives_GEMINI, primitives_GMOS_IMAGE, primitives_GMOS_OBJECT_RAW
-from primitives_GEMINI import GEMINIPrimitives
-from primitives_GMOS_IMAGE import GMOS_IMAGEPrimitives
-from primitives_GMOS_OBJECT_RAW import GMOS_OBJECT_RAWPrimitives
+# from RECIPES_Gemini.primitives import primitives_GEMINI, primitives_GMOS_IMAGE, primitives_GMOS_OBJECT_RAW
+# from primitives_GEMINI import GEMINIPrimitives
+# from primitives_GMOS_IMAGE import GMOS_IMAGEPrimitives
+# from primitives_GMOS_OBJECT_RAW import GMOS_OBJECT_RAWPrimitives
 from sets import Set 
+from copy import copy
+from astrodata import RecipeManager 
+from astrodata.RecipeManager import RecipeLibrary
+rl = RecipeLibrary()
+SW = 60
 
 # Description: 'listPrimitives' is a simple script to list available primitives both to screen and to a file
 #      ( located in RECIPES_Gemini/primitives folder, primitives_List.txt ). In addition, when there are primitives  
@@ -20,87 +25,155 @@ from sets import Set
 #
 # Last Modified 9 Feb 2010 by kdement
 
+primtypes = RecipeManager.centralPrimitivesIndex.keys()
+module_list = []
 
-module_list = [GEMINIPrimitives, GMOS_IMAGEPrimitives, GMOS_OBJECT_RAWPrimitives]
-if os.path.isdir( '../../RECIPES_Gemini/primitives/' ):
-    path =  '../../RECIPES_Gemini/primitives/primitives_List.txt'
-elif os.path.isdir( '../trunk/RECIPES_Gemini' ):
-    path = '../trunk/RECIPES_Gemini/primitives/primitives_List.txt'
-else:
-    print 'Writing out primitives_List.txt to current Directory'
-    path = 'primitives_List.txt'
-try:
-    os.system( 'rm ' + path )
-except:
-    pass
+path = './primitives_List.txt'
+    
 fhandler = open( path , 'w' )
+
+def show(arg):
+    global fhandler
+    print arg
+    fhandler.write(arg+"\n")
+
+for key in primtypes:
+    module_list.append(rl.retrievePrimitiveSet(astrotype = key))   
+
 geminiList=[]
 childList=[]
 intersectionList=[]
 outerloop = 0
-print '_'*60
-fhandler.write( '_'*60 )
-for m in module_list:
-    print '\n',m.__name__,'\n','-'*60,'\n'
-    fhandler.write( '\n')
-    fhandler.write( m.__name__ )
-    fhandler.write( '\n' )
-    fhandler.write( '-'*60 )
-    fhandler.write( '\n' )
-    if outerloop > 1:
-        childList=[]
-    if outerloop is 0:
-        for key in m.__dict__:   
-            if not key.startswith('_') and key!='init' and key!='pause':
-                geminiList.append( key )
-        one = Set( geminiList )        
-        geminiList.sort()
-        count = 1
-        for mf in geminiList:
-            print count, '. ', mf
-            fhandler.write( str( count)  )
-            fhandler.write( '. ' )
-            fhandler.write( mf )
-            fhandler.write( '\n' )
-            count = count + 1        
+primsdict = {}
+name2class = {}
+primsdictKBN = {}
+
+def getPrimList(cl):
+    plist = []
+    for key in cl.__dict__:
+        doappend = True
+        fob = eval("cl."+key)
+        if not hasattr(fob, "__call__"):
+            doappend = False
+        
+        if hasattr(fob, "pt_hide"):
+            doappend = eval ("not fob.pt_hide")
+            
+        if key.startswith("_"):
+            doappend = False   
+        if doappend:
+            plist.append( key )
+    plist.sort()
+    return plist
+    
+def constructPrimsDict(primset, primsdict=None):
+    primsdict.update({primset:getPrimList(primset.__class__)})
+    
+def constructPrimsclassDict(startclass):
+    if startclass.__name__== "PrimitiveSet":
+        return
+    global primsdict, primsdictKBN, name2class
+    name2class.update({startclass.__name__:startclass})
+    primsdictKBN.update({startclass.__name__:getPrimList(startclass)})
+    for base in startclass.__bases__:
+        constructPrimsclassDict(base)
+
+primsdict = {}
+for primset in module_list:
+    constructPrimsDict(primset, primsdict)
+    constructPrimsclassDict(primset.__class__)
+
+# get a sorted list of primitive sets, sorted with parents first
+def primsetcmp(a,b):
+    if isinstance(a,type(b)):
+        return 1
+    elif isinstance(b,type(a)):
+        return -1
     else:
-        for key in m.__dict__:   
-            if not key.startswith('_') and key!='init':
-                childList.append( key )
-        two = Set( childList )        
-        childList.sort()
-        count = 1
-        for mf in childList:
-            print count, '. ', mf
-            fhandler.write( str( count)  )
-            fhandler.write( '. ' )
-            fhandler.write( mf )
-            fhandler.write( '\n' )
-            count = count + 1
-        two = Set( childList )
-        newSet = one & two
-        if len(newSet) > 1:
-            intersectionList = list( newSet )
-            intersectionList.sort()
-            if len( intersectionList ) != len( geminiList ):
-                print '- '*30
-                print 'Primitives listed here that override GEMINIPrimitives'
-                print '- '*30
-                fhandler.write ( '- '*30 )
-                fhandler.write( '\n' )
-                fhandler.write ( 'Primitives listed here that override GEMINIPrimitives' )
-                fhandler.write( '\n' )
-                fhandler.write ( '- '*30 )
-                fhandler.write( '\n' )
-                for i in intersectionList:
-                    print i
-                    fhandler.write( i )
-                    fhandler.write( '\n' )    
-    print '\n\n'   
-    fhandler.write( '\n\n' )
-    print '_'*60
-    fhandler.write( '_'*60 )
-    outerloop = outerloop + 1
-print '\n\n'
-fhandler.write( '\n\n' )
+        an = a.__class__.__name__
+        bn = b.__class__.__name__
+        print an, bn, an>bn
+        if an > bn:
+            return 1
+        elif an < bn:
+            return -1
+        else:
+            return 0
+                    
+primsets = primsdict.keys()
+primsets.sort(primsetcmp)
+
+def firstprim(primsetname, prim):
+    global name2class, primsdictKBN
+    if primsetname in primsdictKBN:
+        if prim in primsdictKBN[primsetname]:
+            return primsetname
+        else:
+            cl = name2class[primsetname]
+            for base in cl.__bases__:
+                fp = firstprim(base.__name__, prim)
+                if fp:
+                    return fp
+            return None
+    else:
+        return None
+ 
+def overrides(primsetname, prim):
+    global name2class, primsdictKBN
+    
+    cl = name2class[primsetname]
+    for base in cl.__bases__:
+        fp = firstprim(base.__name__, prim)
+        return fp
+            
+    return None
+    
+def showPrims(primsetname, primset=None, i = 0, indent = 0):
+    
+    if primset == None:
+        firstset = True
+    else:
+        firstset = False
+        
+    if primset == None:
+        primlist = primsdictKBN[primsetname]
+        primset = copy(primlist)
+    else:
+        myprimset = Set(primsdictKBN[primsetname])
+        givenprimset = Set(primset)
+        
+        prims = myprimset - givenprimset
+        
+        primlist = list(prims)
+        primlist.sort()
+        primset.extend(primlist)
+        
+    
+    if firstset:
+        show('_'*SW)
+        show("\n"+primsetname)
+        show("-"*SW)
+    else:
+        if len(primlist)>0:
+            show("%s(Inherited from %s)" % (" "*indent, primsetname))
+        
+    for prim in primlist:
+        i+=1
+        over = overrides(primsetname, prim)
+        primline = "%s%2d. %s" % (" "*indent, i, prim)
+        if over:
+            primline += " (overrides %s)" % over
+        show(primline)
+     
+    cl = name2class[primsetname]
+    for base in cl.__bases__:
+        if base.__name__ in primsdictKBN:
+            showPrims(base.__name__, primset = primset, i = i, indent = indent+2)        
+
+
+for primset in primsdict:
+    showPrims(primset.__class__.__name__)
+    show("\n")
+        
+show( '\n\n' )
 fhandler.close()
