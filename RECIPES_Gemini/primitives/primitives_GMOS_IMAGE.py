@@ -61,9 +61,9 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         
         GEMINIPrimitives.init(self, rc)
         return rc
-    
+       
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   
+    
     def averageCombine(self, rc):
         try:
             # @@TODO: need to include parameter options here
