@@ -121,6 +121,7 @@ class PrimitiveSet(object):
     btype = "PRIMSET"
     filename = None
     directory = None
+    paramDict = None
     def __init__(self):
         pass
         

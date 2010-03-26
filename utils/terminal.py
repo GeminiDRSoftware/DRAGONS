@@ -8,6 +8,9 @@ import unicodedata, re
 forceWidth = None
 forceHeight = None
 
+NORMAL = "${NORMAL}"
+BOLD = "${BOLD}"
+GREEN = "${GREEN}"
 class TerminalController:
     """
     A class that can be used to portably generate formatted output to
@@ -158,7 +161,7 @@ class TerminalController:
         return self.control_char_re.sub('', s)
 
         
-    def render(self, template):
+    def render(self, template, color = True):
         """
         Replace each $-substitutions in the given template string with
         the corresponding terminal control string (if it's defined) or
@@ -166,7 +169,10 @@ class TerminalController:
         """
         if template == None:
             raise "it's none"
-        return re.sub(r'\$\$|\${\w+}', self._render_sub, template)
+        if color == True:
+            return re.sub(r'\$\$|\${\w+}', self._render_sub, template)
+        else:
+            return re.sub(r'\$\$|\${\w+}', "", template)
         
     def lenstr(self, coloredstr):
         clean = self.cleanstr(coloredstr)
@@ -497,13 +503,17 @@ class Filter(object):
         return arg 
 
 class ColorFilter(Filter):
-    
+    on = True 
+    def __init__(self, on = True):
+        Filter.__init__(self)
+        self.on = on
+            
     def morph(self, arg):
         if self.on:
             out = self.term.render(arg)
             return out
         else:
-            return ""
+            return self.term.render(arg, color=False)
             
 import traceback as tb
 class PrimitiveFilter(Filter):

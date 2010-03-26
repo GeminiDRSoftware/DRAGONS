@@ -1312,9 +1312,14 @@ def %(name)s(self,cfgObj):
         '''
         
         '''
+        explicitType = None
         if  type(dataset) == str:
-            astrod = AstroData(dataset)
-            byfname = True
+            if os.path.exists(datset):
+                # then it's a file
+                astrod = AstroData(dataset)
+                byfname = True
+            else:
+                explicitType = dataset
         elif type(dataset) == AstroData:
             byfname = False
             astrod = dataset
@@ -1322,7 +1327,11 @@ def %(name)s(self,cfgObj):
             raise BadArgument()
         
         # get the types
-        types = astrod.getTypes()
+        if explicitType:
+            types = [explicitType]
+        else:
+            types = astrod.getTypes()
+            
         # look up recipes, fill list
         reclist = []
         recdict = {}
@@ -1332,7 +1341,7 @@ def %(name)s(self,cfgObj):
                 recnames = centralAstroTypeParametersIndex[typ]
                 reclist.extend(recnames)
                 recdict.update({typ: recnames})
-    
+        print reclist
         return reclist
 
     def retrieveParameters(self, dataset, contextobj, name):

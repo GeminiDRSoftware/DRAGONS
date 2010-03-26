@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+#
+# Author: K.dement ( kdement@gemini.edu )
+# Date: 5 Feb 2010
+#
+# Last Modified 9 Feb 2010 by kdement
+
+from optparse import OptionParser
 import os, sys
 # from RECIPES_Gemini.primitives import primitives_GEMINI, primitives_GMOS_IMAGE, primitives_GMOS_OBJECT_RAW
 # from primitives_GEMINI import GEMINIPrimitives
@@ -6,25 +13,48 @@ import os, sys
 # from primitives_GMOS_OBJECT_RAW import GMOS_OBJECT_RAWPrimitives
 from sets import Set 
 from copy import copy
+from astrodata.AstroData import AstroData
+print "about to import RecipeManager"
 from astrodata import RecipeManager 
+print "imported RecipeManager"
 from astrodata.RecipeManager import RecipeLibrary
-rl = RecipeLibrary()
+
+from utils import terminal
+term = terminal
+from utils.terminal import TerminalController
+REASLSTDOUT = sys.stdout
+REALSTDERR = sys.stderr
+fstdout = terminal.FilteredStdout()
+colorFilter = terminal.ColorFilter(False)
+fstdout.addFilter(colorFilter)
+sys.stdout = fstdout   
 SW = 60
 
-# Description: 'listPrimitives' is a simple script to list available primitives both to screen and to a file
-#      ( located in RECIPES_Gemini/primitives folder, primitives_List.txt ). In addition, when there are primitives  
-#      with the exact same names as those in  'GEMINIPrimitives', then a list of these will be provided with a proper
-#      heading at the bottom of the associated primitive list.  This allows users to quickly find out what primitives
-#      override GEMINI. 
-#
-#      * To keep script up-to-date, one must update imports above and module_list below when adding, removing or 
-#        renaming new primitive classes.
-#
-# Author: K.dement ( kdement@gemini.edu )
-# Date: 5 Feb 2010
-#
-# Last Modified 9 Feb 2010 by kdement
+print "about to create RecipeLibrary"
+rl = RecipeLibrary()
+print "created RecipeLibrary"
 
+#FROM COMMANDLINE WHEN READY
+parser = OptionParser()
+(options, args) = parser.parse_args()
+options.args = args
+options.useColor = True
+options.showParams = True
+
+options.datasets = []
+options.astrotypes = []
+for arg in options.args:
+    if os.path.exists(arg):
+        options.datasets.append(arg)
+    else:
+        options.astrotypes.append(arg)
+    
+# COLOR ON OR OFF, on by default
+if options.useColor == True:
+    colorFilter.on = True
+
+
+#
 primtypes = RecipeManager.centralPrimitivesIndex.keys()
 module_list = []
 
@@ -37,8 +67,32 @@ def show(arg):
     print arg
     fhandler.write(arg+"\n")
 
-for key in primtypes:
-    module_list.append(rl.retrievePrimitiveSet(astrotype = key))   
+
+#### ADDING MODULES TO THE MODULE_LIST
+if True:
+    # print "lP62:",repr(options.astrotypes), repr(options.datasets)
+    if len(options.astrotypes) or len(options.datasets):
+        for typ in options.astrotypes:
+            ps = rl.retrievePrimitiveSet(astrotype = typ)        
+            if ps != None:
+                module_list.append(ps)
+        for dataset in options.datasets:
+            ad = AstroData(dataset)
+            ps = rl.retrievePrimitiveSet(dataset = ad)
+            s = "%(ds)s-->%(typ)s" % {"ds": dataset,
+                                                        "typ": ps.astrotype}
+            p = " "*(SW - len(s))
+            show("${REVERSE}"+s+p+"${NORMAL}")
+            if ps:
+                module_list.append(ps)
+    else:
+        for key in primtypes:
+            module_list.append(rl.retrievePrimitiveSet(astrotype = key))   
+
+if len(module_list) == 0:
+    print "Found no primitive sets associated with:"
+    for arg in options.args:
+        print "   ",arg
 
 geminiList=[]
 childList=[]
@@ -47,6 +101,7 @@ outerloop = 0
 primsdict = {}
 name2class = {}
 primsdictKBN = {}
+class2instance = {}
 
 def getPrimList(cl):
     plist = []
@@ -82,6 +137,7 @@ primsdict = {}
 for primset in module_list:
     constructPrimsDict(primset, primsdict)
     constructPrimsclassDict(primset.__class__)
+    class2instance.update({primset.__class__.__name__:primset})
 
 # get a sorted list of primitive sets, sorted with parents first
 def primsetcmp(a,b):
@@ -128,8 +184,9 @@ def overrides(primsetname, prim):
             
     return None
     
-def showPrims(primsetname, primset=None, i = 0, indent = 0):
-    
+def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
+    INDENT = " "
+    indentstr = INDENT*indent
     if primset == None:
         firstset = True
     else:
@@ -148,32 +205,74 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0):
         primlist.sort()
         primset.extend(primlist)
         
-    
+    cl = name2class[primsetname]
     if firstset:
-        show('_'*SW)
-        show("\n"+primsetname)
+        show("${BOLD}"+'_'*SW+"${NORMAL}")
+        show("\n${BOLD}%s${NORMAL} Primitive Set (class: %s)" % (cl.astrotype,primsetname))
         show("-"*SW)
     else:
         if len(primlist)>0:
-            show("%s(Inherited from %s)" % (" "*indent, primsetname))
+            show("${BLUE}%s(Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
         
+    
     for prim in primlist:
         i+=1
         over = overrides(primsetname, prim)
         primline = "%s%2d. %s" % (" "*indent, i, prim)
         if over:
-            primline += " (overrides %s)" % over
+            primline += "  ${BLUE}(overrides %s)${NORMAL}" % over
         show(primline)
-     
-    cl = name2class[primsetname]
+        if options.showParams:
+                indent0 = indentstr+INDENT*5
+                indent1 = indentstr+INDENT*6
+                
+                indentp = indent1+"parameter: "
+                indentm = indent1+INDENT*2
+                primsetinst = class2instance[primsetname]
+                if pdat == None:
+                    paramdicttype = primsetinst.astrotype
+                    paramdict = primsetinst.paramDict
+                    
+                    pdat = (paramdicttype,paramdict)
+                else:
+                    paramdicttype = pdat[0]
+                    paramdict = pdat[1]
+
+                for primname in paramdict.keys():
+                    if primname == prim:
+                        if not firstset:
+                            show( term.GREEN
+                                + term.BOLD
+                                + indent0
+                                + "(these parameter settings for an inherited primitive still originate in"
+                                + "\n"
+                                + indent0
+                                + " the ${BLUE}%s${GREEN} Primitive Set Parameters)${NORMAL}"% paramdicttype
+                                + term.NORMAL)
+
+                        paramnames = paramdict[primname].keys()
+                        paramnames.sort()
+                        for paramname in paramnames:
+                            show(term.GREEN+indentp+term.NORMAL+paramname+term.NORMAL)
+                            metadata = paramdict[primname][paramname].keys()
+                            maxlen = len(max(metadata, key=len)) + 3
+                            metadata.sort()
+                            if "default" in metadata:
+                                metadata.remove("default")
+                                metadata.insert(0,"default")
+                            for metadatum in metadata:
+                                padding = " "*(maxlen - len(metadatum))
+                                val = paramdict[primname][paramname][metadatum]
+                                show(term.GREEN+indentm+metadatum+padding+"= "+repr(val)+term.NORMAL)
+        
+                
     for base in cl.__bases__:
         if base.__name__ in primsdictKBN:
-            showPrims(base.__name__, primset = primset, i = i, indent = indent+2)        
+            showPrims(base.__name__, primset = primset, i = i, indent = indent+2, pdat = pdat)        
 
 
 for primset in primsdict:
     showPrims(primset.__class__.__name__)
     show("\n")
-        
-show( '\n\n' )
+
 fhandler.close()

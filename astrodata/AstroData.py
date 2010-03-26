@@ -529,10 +529,12 @@ class AstroData(object, CalculatorInterface):
         elif type(source) == pyfits.HDUList:
             self.hdulist = source
         else:
-            if source == None or not os.path.exists(source):
+            if source == None:
                 phu = pyfits.PrimaryHDU()
                 self.hdulist = pyfits.HDUList([phu])
             else:
+                if not os.path.exists(source):
+                    raise ADExcept("Cannot open "+source)
                 self.filename = source
                 try:
                     if mode == 'new':

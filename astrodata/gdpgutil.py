@@ -171,9 +171,13 @@ def pickConfig(dataset, index, style = "unique"):
         # sys.exit(1)
     # style unique this can only be one thing
     k = candidates.keys()
-    if len(k)!=1:
-        print "CONFIG CONFLICT", repr(k)
-        raise GDPGUtilExcept("CONFIG CONFLICT:" + repr(k))
-
+    if style=="unique":
+        if len(k)>1:
+            #print "CONFIG CONFLICT for %s, configs = %s" % (ad.filename,repr(k))
+            raise GDPGUtilExcept("CONFIG CONFLICT:" + repr(k))
+        if len(k) == 0:
+            s = "NO CONFIG for %s" % (ad.filename)
+            raise GDPGUtilExcept(s)
+            
     closeIfName(ad, obn)
     return candidates
