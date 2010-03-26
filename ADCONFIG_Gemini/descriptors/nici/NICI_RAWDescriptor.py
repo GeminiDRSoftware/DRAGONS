@@ -103,9 +103,19 @@ class NICI_RAWDescriptorCalc(Calculator):
         @rtype: float
         @return: the total exposure time of the observation (seconds)
         """
-        retexptimefloat = 'ddddxxx'
+
+        try:
+          hdu = dataset.hdulist
+          coadds = hdu[0].header[stdkeyDictNICI["key_nici_coadds_r"]]
+          exptime = hdu[0].header[stdkeyDictNICI["key_nici_exptime_r"]]
+
+          retexptimefloat = float(exptime) * float(coadds)
         
-        return retexptimefloat
+          return retexptimefloat
+
+        except KeyError:
+          return None
+
     
     def filterid(self, dataset, **args):
         """
