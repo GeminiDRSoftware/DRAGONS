@@ -232,8 +232,8 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
                 
                 indentp = indent1+"parameter: "
                 indentm = indent1+INDENT*2
-                primsetinst = class2instance[primsetname]
                 if pdat == None:
+                    primsetinst = class2instance[primsetname]
                     paramdicttype = primsetinst.astrotype
                     paramdict = primsetinst.paramDict
                     
