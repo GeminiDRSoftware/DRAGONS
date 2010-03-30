@@ -274,9 +274,15 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
         if base.__name__ in primsdictKBN:
             showPrims(base.__name__, primset = primset, i = i, indent = indent+2, pdat = pdat)        
 
-
-for primset in primsdict:
-    showPrims(primset.__class__.__name__)
+pset = Set(primsdict.keys())
+names = []
+for primset in pset:
+    nam = primset.__class__.__name__
+    if nam in names:
+        continue
+    else:
+        names.append(nam)
+    showPrims(nam)
     show("\n")
 
 fhandler.close()
