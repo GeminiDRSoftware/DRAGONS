@@ -67,7 +67,7 @@ def show(arg):
     print arg
     fhandler.write(arg+"\n")
 
-
+print "Create Module List"
 #### ADDING MODULES TO THE MODULE_LIST
 if True:
     # print "lP62:",repr(options.astrotypes), repr(options.datasets)
@@ -88,6 +88,7 @@ if True:
     else:
         for key in primtypes:
             module_list.append(rl.retrievePrimitiveSet(astrotype = key))   
+print "Done Creating Module List"
 
 if len(module_list) == 0:
     print "Found no primitive sets associated with:"
@@ -135,9 +136,12 @@ def constructPrimsclassDict(startclass):
 
 primsdict = {}
 for primset in module_list:
+    pname = primset.__class__.__name__
+    print "constructing Primitive Dictionary for "+pname
     constructPrimsDict(primset, primsdict)
+    print "construction Primitive Class Dictionary for "+pname
     constructPrimsclassDict(primset.__class__)
-    class2instance.update({primset.__class__.__name__:primset})
+    class2instance.update({pname:primset})
 
 # get a sorted list of primitive sets, sorted with parents first
 def primsetcmp(a,b):
@@ -212,7 +216,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
         show("-"*SW)
     else:
         if len(primlist)>0:
-            show("${BLUE}%s(Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
+            show("${BLUE}%s(Following Are Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
         
     
     for prim in primlist:

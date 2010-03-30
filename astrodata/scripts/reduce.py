@@ -391,7 +391,19 @@ for infiles in allinputs: #for dealing with multiple files.
                 ro.__class__.__bases__ += (userPrimSet,) #userPrimSet defined in module
                 
             print "running recipe: '%s'\n" % rec
-            rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
+            if (os.path.exists(rec)):
+                if "recipe." not in rec:
+                    raise "Recipe files must be named 'recipe.RECIPENAME'"
+                else:
+                    rname = re.sub("recipe.", "", rec)
+                rf = open(rec)
+                rsrc = rf.read()
+                prec = rl.composeRecipe(rname, rsrc)
+                rfunc = rl.compileRecipe(rname, prec)
+                ro = rl.bindRecipe(ro, rname, rfunc)
+                rec = rname
+            else:
+                rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
             if (useTK):
                 cw.running(rec)
             

@@ -93,7 +93,8 @@ class ReductionObject(object):
         if primset.astrotype == None:
             raise ReductionExcept("Primitive Set astrotype is None, fatal error, corrupt configuration")
         if primset.btype == "RECIPE":
-            if hasattr(primset,"paramDict"):
+            if hasattr(primset,"paramDict") and primset.paramDict != None:
+                print repr(primset.paramDict)
                 raise ReductionExcept("Primitive btype=RECIPE should not have a paramDict")
             primset.paramDict = {}
         if not self.primDict.has_key(primset.astrotype):
@@ -102,10 +103,7 @@ class ReductionObject(object):
         primsetary = self.primDict[primset.astrotype]
         self.joinParamDicts(primset, primsetary)
         primsetary.append (primset)
-
-        if len(primsetary)>2:
-            raise "stop and see"
-        
+    
     def getPrimSet(self, primname):
         primsetary = self.primDict[self.curPrimType]
 
