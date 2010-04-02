@@ -208,9 +208,9 @@ def hides(primsetname, prim, astrotype = None):
                 continue
             if hasattr(ops, prim):
                 if before:
-                    rets = "${RED}Hidden by "+ops.__class__.__name__+"${NORMAL}"
+                    rets = "${RED}(Hidden by "+ops.__class__.__name__+"${NORMAL})"
                 else:
-                    rets = 'Hides "%s" from %s' %(prim, ops.__class__.__name__)
+                    rets = '(Hides "%s" from %s)' %(prim, ops.__class__.__name__)
             else:
                 return None        
         return rets
