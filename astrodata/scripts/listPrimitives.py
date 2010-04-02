@@ -181,17 +181,17 @@ def firstprim(primsetname, prim):
     else:
         return None
         
-def hides(primsetname, prim, astrotype = None):
+def hides(primsetname, prim, instance=None):
     """checks to see if prim hides or is hidden-by another"""
     
-    if primsetname in class2instance:
+    if instance:
+        cl = name2class[primsetname]
+        ps = instance
+        psl = rl.retrievePrimitiveSet(astrotype= instance.astrotype)
+    elif primsetname in class2instance:
         ps = class2instance[primsetname]
         cl = ps.__class__
         psl = rl.retrievePrimitiveSet(astrotype= ps.astrotype)
-    elif astrotype:
-        cl = name2class[primsetname]
-        ps = primsdictKBN[primsetname]
-        psl = rl.retrievePrimitiveSet(astrotype= astrotype)
     else:
         return None
 
@@ -208,7 +208,7 @@ def hides(primsetname, prim, astrotype = None):
                 continue
             if hasattr(ops, prim):
                 if before:
-                    rets = "${RED}(Hidden by "+ops.__class__.__name__+"${NORMAL})"
+                    rets = "${RED}(Hidden by "+ops.__class__.__name__+")${NORMAL}"
                 else:
                     rets = '(Hides "%s" from %s)' %(prim, ops.__class__.__name__)
             else:
@@ -229,7 +229,12 @@ def overrides(primsetname, prim):
             
     return None
     
-def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None, astrotype = None):
+def showPrims(  primsetname, 
+                primset=None, 
+                i = 0, 
+                indent = 0, 
+                pdat = None,
+                instance = None):
     INDENT = " "
     indentstr = INDENT*indent
     if primset == None:
@@ -237,7 +242,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None, astroty
     else:
         firstset = False
         
-    if primset == None:
+    if firstset == True:
         primlist = primsdictKBN[primsetname]
         primset = copy(primlist)
     else:
@@ -256,6 +261,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None, astroty
         show("\n${BOLD}%s${NORMAL} Primitive Set (class: %s)" % (cl.astrotype,primsetname))
         show("-"*SW)
         astrotype = cl.astrotype
+        instance = class2instance[primsetname]
     else:
         if len(primlist)>0:
             show("${BLUE}%s(Following Are Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
@@ -263,7 +269,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None, astroty
     
     for prim in primlist:
         i+=1
-        hide = hides(primsetname, prim, astrotype = astrotype)
+        hide = hides(primsetname, prim, instance = instance)
         over = overrides(primsetname, prim)
         primline = "%s%2d. %s" % (" "*indent, i, prim)
         if over:
@@ -320,7 +326,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None, astroty
             showPrims(  base.__name__,
                         primset = primset, 
                         i = i, indent = indent+2, 
-                        pdat = pdat, astrotype = astrotype)        
+                        pdat = pdat, instance = instance)        
 
 pset = Set(primsdict.keys())
 names = []
