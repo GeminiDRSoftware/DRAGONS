@@ -71,9 +71,7 @@ class ConfigSpace(object):
                 goodpath = (".svn" not in path) and ("CVS" not in path)
                 if goodpath:
                     yield elem
-
-	# @@@WARN if there are NO good paths, this will have a problem, there is no yeild
-                
+            
     def getConfigDirs(self, spacename):
         """This function returns a list of directories to walk for a given 
         configuration space.
@@ -137,7 +135,13 @@ class ConfigSpace(object):
         # get the ADCONFIG package dirs
         adconfdirs = []
         i = 1
-        for path in sys.path:
+        pathlist = sys.path
+        if "RECIPEPATH" in os.environ:
+            rpath = os.environ["RECIPEPATH"].split(":")
+            # we want this path in front...
+            rpath.extend(pathlist)
+            pathlist = rpath
+        for path in pathlist:
             # print "@@@@@@@@:",".svn" in path,":::",  path
             if os.path.isdir(path):
                         # print "ISADIR"

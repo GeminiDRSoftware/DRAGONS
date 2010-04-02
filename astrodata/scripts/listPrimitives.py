@@ -4,9 +4,22 @@
 # Date: 5 Feb 2010
 #
 # Last Modified 9 Feb 2010 by kdement
+import os, sys
+
+#get color printing started
+from utils import terminal
+term = terminal
+from utils.terminal import TerminalController
+REASLSTDOUT = sys.stdout
+REALSTDERR = sys.stderr
+fstdout = terminal.FilteredStdout()
+colorFilter = terminal.ColorFilter(True)
+fstdout.addFilter(colorFilter)
+sys.stdout = fstdout   
+SW = 60
+
 
 from optparse import OptionParser
-import os, sys
 # from RECIPES_Gemini.primitives import primitives_GEMINI, primitives_GMOS_IMAGE, primitives_GMOS_OBJECT_RAW
 # from primitives_GEMINI import GEMINIPrimitives
 # from primitives_GMOS_IMAGE import GMOS_IMAGEPrimitives
@@ -18,17 +31,6 @@ print "about to import RecipeManager"
 from astrodata import RecipeManager 
 print "imported RecipeManager"
 from astrodata.RecipeManager import RecipeLibrary
-
-from utils import terminal
-term = terminal
-from utils.terminal import TerminalController
-REASLSTDOUT = sys.stdout
-REALSTDERR = sys.stderr
-fstdout = terminal.FilteredStdout()
-colorFilter = terminal.ColorFilter(False)
-fstdout.addFilter(colorFilter)
-sys.stdout = fstdout   
-SW = 60
 
 print "about to create RecipeLibrary"
 rl = RecipeLibrary()
@@ -75,7 +77,7 @@ if True:
         for typ in options.astrotypes:
             ps = rl.retrievePrimitiveSet(astrotype = typ)        
             if ps != None:
-                module_list.append(ps)
+                module_list.extend(ps)
         for dataset in options.datasets:
             ad = AstroData(dataset)
             ps = rl.retrievePrimitiveSet(dataset = ad)
@@ -84,17 +86,17 @@ if True:
             p = " "*(SW - len(s))
             show("${REVERSE}"+s+p+"${NORMAL}")
             if ps:
-                module_list.append(ps)
+                module_list.extend(ps)
     else:
         for key in primtypes:
-            module_list.append(rl.retrievePrimitiveSet(astrotype = key))   
+            module_list.extend(rl.retrievePrimitiveSet(astrotype = key))   
 print "Done Creating Module List"
 
 if len(module_list) == 0:
     print "Found no primitive sets associated with:"
     for arg in options.args:
         print "   ",arg
-
+    
 geminiList=[]
 childList=[]
 intersectionList=[]
@@ -111,9 +113,10 @@ def getPrimList(cl):
         fob = eval("cl."+key)
         if not hasattr(fob, "__call__"):
             doappend = False
-        
         if hasattr(fob, "pt_hide"):
             doappend = eval ("not fob.pt_hide")
+        elif hasattr(cl, "pthide_"+key):
+            doappend = eval ("not cl.pthide_"+key)
             
         if key.startswith("_"):
             doappend = False   
@@ -139,7 +142,7 @@ for primset in module_list:
     pname = primset.__class__.__name__
     print "constructing Primitive Dictionary for "+pname
     constructPrimsDict(primset, primsdict)
-    print "construction Primitive Class Dictionary for "+pname
+    print "constructing Primitive Class Dictionary for "+pname
     constructPrimsclassDict(primset.__class__)
     class2instance.update({pname:primset})
 
@@ -177,6 +180,33 @@ def firstprim(primsetname, prim):
             return None
     else:
         return None
+        
+def hides(primsetname, prim):
+    """checks to see if prim hides or is hidden-by another"""
+    
+    if primsetname in class2instance:
+        ps = class2instance[primsetname]
+        psl = rl.retrievePrimitiveSet(astrotype = ps.astrotype)
+        if len(psl)>1:
+            before = True
+            for ops in psl:
+                # reason for this comparison: make this work even
+                # if retrievePrimitiveSet returns new instances...
+                if ps.__class__.__name__ == ops.__class__.__name__:
+                    before = False
+                    continue
+                
+                if hasattr(ops, prim):
+                    if before:
+                        rets = "${RED}Hidden by "+ops.__class__.__name__+"${NORMAL}"
+                    else:
+                        rets = 'Hides "%s" from %s' %(prim, ops.__class__.__name__)
+                else:
+                    return None        
+            return rets
+                    
+                    
+    return None    
  
 def overrides(primsetname, prim):
     global name2class, primsdictKBN
@@ -221,10 +251,13 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
     
     for prim in primlist:
         i+=1
+        hide = hides(primsetname, prim)
         over = overrides(primsetname, prim)
         primline = "%s%2d. %s" % (" "*indent, i, prim)
         if over:
             primline += "  ${BLUE}(overrides %s)${NORMAL}" % over
+        if hide:
+            primline += "  ${GREEN}%s${NORMAL}" % hide
         show(primline)
         if options.showParams:
                 indent0 = indentstr+INDENT*5
@@ -241,7 +274,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
                 else:
                     paramdicttype = pdat[0]
                     paramdict = pdat[1]
-
+                # print "lP246:", repr(paramdict), repr(pdat)
                 for primname in paramdict.keys():
                     if primname == prim:
                         if not firstset:

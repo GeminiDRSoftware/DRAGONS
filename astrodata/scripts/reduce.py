@@ -65,6 +65,8 @@ parser.add_option("-r", "--recipe", dest="recipename", default=None,
                   help="Specify which recipe to run by name.")
 parser.add_option("-p", "--param", dest="userparam", default = None,
                     help="Set a parameter from the command line.")
+parser.add_option("-t", "--astrotype", dest = "astrotype", default = None,
+                    help="To run a recipe based on astrotype, either to override the default type of the file, or to start a recipe without initial input (i.e. which begin with primitives that acquire dta).")
 parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
                   default = False,
                   help= "Open TkInter Window to Monitor Progress of" + \
@@ -147,7 +149,7 @@ def command_line():
     
     print "${NORMAL}",
     try:
-        if len( args ) == 0:
+        if len( args ) == 0 and options.astrotype == None:
             raise IndexError
         infile   = args
     except IndexError:
@@ -280,11 +282,18 @@ for infiles in allinputs: #for dealing with multiple files.
     #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") 
     # can be done by filename
     #@@REFERENCEIMAGE: used to retrieve/build correct reduction object
-    ro = rl.retrieveReductionObject(infile[0]) 
+    if (options.astrotype == None):
+        ro = rl.retrieveReductionObject(infile[0]) 
+    else:
+        ro = rl.retrieveReductionObject(astrotype = options.astrotype)
     
     if options.recipename == None:
-        reclist = rl.getApplicableRecipes(infiles[0]) #**
-        recdict = rl.getApplicableRecipes(infiles[0], collate=True) #**
+        if options.astrotype == None:
+            reclist = rl.getApplicableRecipes(infiles[0]) #**
+            recdict = rl.getApplicableRecipes(infiles[0], collate=True) #**
+        else:
+            reclist = rl.getApplicableRecipes(astrotype = options.astrotype)
+            recdict = rl.getApplicableRecipes(astrotype = options.astrotype, collate = True)
     else:
         #force recipe
         reclist = [options.recipename]
@@ -293,8 +302,12 @@ for infiles in allinputs: #for dealing with multiple files.
     # @@REFERENCEIMAGE
     # first file in group is used as reference
     # for the types that are used to load the recipe and primitives
-    types = infiles[0].getTypes()
     
+    if (options.astrotype == None):
+        types = infiles[0].getTypes()
+    else:
+        types = [options.astrotype]
+            
     infilenames = []
     for infs in infiles:
         if type(infs) == AstroData:
@@ -303,10 +316,13 @@ for infiles in allinputs: #for dealing with multiple files.
             # I don't think this can happen now
             # where the input files are still strings at this point
             infilenames.append( infs )
+            raise "not expected to happen"
        
     numi = len(infilenames) 
 
-    if numi <= 1:        
+    if numi < 1:
+        title = "  No Datasets  "
+    elif numi == 1:        
         title = "  Processing dataset: %s  " % (str(infilenames[0])) #**
     else:
         title = "  Processing datasets:"
@@ -381,14 +397,9 @@ for infiles in allinputs: #for dealing with multiple files.
                 exec ("import "+ os.path.basename(options.primsetname)[:-3] + " as newmodule")
                 userPrimSet = newmodule.userPrimSet
                 
-                #f = open(options.primsetname)
-                #content = f.read()
-                #exec(content)
-                #f.close()
-                # mix in the primset
-                # @@NOTE: will change when prim dispatch proj is done soon
-               
-                ro.__class__.__bases__ += (userPrimSet,) #userPrimSet defined in module
+                userPrimSet.astrotype = ro.curPrimType
+                ro.addPrimSet(userPrimSet)
+                
                 
             print "running recipe: '%s'\n" % rec
             if (os.path.exists(rec)):

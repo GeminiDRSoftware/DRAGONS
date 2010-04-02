@@ -38,7 +38,9 @@ class ReductionObject(object):
     def substeps(self, primname, context):
         # check to see current primitive set type is correct
         correctPrimType = self.recipeLib.discoverCorrectPrimType(context)
-        if correctPrimType != self.curPrimType:
+        # will be NONE if there are no current inputs, maintain current
+        # curPrimType
+        if correctPrimType and correctPrimType != self.curPrimType:
             newprimset  = self.reci
             self.addPrimSet(newprimset)
             self.curPrimType = newprimset.astrotype
@@ -125,20 +127,23 @@ class PrimitiveSet(object):
         
     def init(self, context):
         return
+    pthide_init = True
         
     def acquireParamDict(self):
         # run through class hierarchy
         wpdict = {} # whole pdict, to return
+        # print "RO134:"
         parlist = self.getParentModules(type(self),[])
         for parmod in parlist:
             # module names of this module and parents, in order
             # load the paramDict
             exec("import " + parmod)
             filename = eval(parmod +".__file__")
-            # @@ NAMING CONVENTION RELIANCE
+            # @@NAMING CONVENTION RELIANCE
             # make sure it's .py, not .pyc
             filename = re.sub(".pyc", ".py", filename)
             paramfile = re.sub("primitives_", "parameters_", filename)
+            # print "RO144:", paramfile
             if os.path.exists(paramfile):
                 # load and integrate
                 f = file(paramfile)

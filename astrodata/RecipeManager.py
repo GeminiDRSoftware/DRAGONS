@@ -454,7 +454,7 @@ class ReductionContext(dict):
             return sys.stdout
         
     def getReferenceImage(self):
-        if len(self.inputs) < 0:
+        if len(self.inputs) == 0:
             return None
         if self.inputs[0].ad == None:
             raise RecipeExcept("AstroData instance not loaded for input %s" % self.inputs[0].filename)
@@ -1045,6 +1045,8 @@ class RecipeLibrary(object):
 
     def discoverCorrectPrimType(self, context):
         ref = context.getReferenceImage()
+        if ref == None:
+            return None
         val = pickConfig(ref, centralPrimitivesIndex)
         k = val.keys()
         if len(k) != 1:
@@ -1106,21 +1108,28 @@ class RecipeLibrary(object):
             closeIfName(gd, bnc)
             
 
-    def getApplicableRecipes(self, dataset, collate=False):
+    def getApplicableRecipes(self, dataset= None, astrotype = None, collate=False):
         """
         Get list of recipes associated with all the types that apply to this dataset.
         """
-        if  type(dataset) == str:
-            astrod = AstroData(dataset)
-            byfname = True
-        elif type(dataset) == AstroData:
-            byfname = False
-            astrod = dataset
+        if dataset != None and astrotype != None:
+            raise RecipeExcept("getApplicableRecipes cannot have dataset and astrotype set")
+        if dataset == None and astrotype == None:
+            raise RecipeExcept("getApplicableRecipes must have either a dataset or explicit astrotype set")
+        byfname = False
+        if dataset:
+            if  type(dataset) == str:
+                astrod = AstroData(dataset)
+                byfname = True
+            elif type(dataset) == AstroData:
+                byfname = False
+                astrod = dataset
+            else:
+                raise BadArgument()
+            # get the types
+            types = astrod.getTypes()
         else:
-           raise BadArgument()
-
-        # get the types
-        types = astrod.getTypes()
+            types = [astrotype]
         # look up recipes, fill list
         reclist = []
         recdict = {}
@@ -1211,25 +1220,26 @@ class RecipeLibrary(object):
             astrotype = k[0]
         primset = None
         if (astrotype != None) and (astrotype in centralPrimitivesIndex):
-            rfilename = centralPrimitivesIndex[astrotype][0]
-            rpathname = centralReductionMap[rfilename]
-            rootpath = os.path.dirname(rpathname)
-            importname = os.path.splitext(rfilename)[0]
-            a = datetime.now()
-            exec ("import " + importname)
-            b = datetime.now()
-            primset = eval (importname + "." + centralPrimitivesIndex[astrotype][1] + "()")
-            # set filename and directory name
-            # used by other parts of the system for naming convention based retrieval
-            # i.e. of parameters
-            
-            c = datetime.now()
+            primdeflist = centralPrimitivesIndex[astrotype]
+            primlist = []
+            for primdef in primdeflist:
+                rfilename = primdef[0] # the first in the tuple is the primset file
+                rpathname = centralReductionMap[rfilename]
+                rootpath = os.path.dirname(rpathname)
+                importname = os.path.splitext(rfilename)[0]
+                a = datetime.now()
+                exec ("import " + importname)
+                b = datetime.now()
+                primset = eval (importname + "." + primdef[1] + "()")
+                # set filename and directory name
+                # used by other parts of the system for naming convention based retrieval
+                # i.e. of parameters
+                primset.astrotype = astrotype
+                primset.acquireParamDict()
+                primlist.append(primset)
+            return primlist
         else:
             return None
-        
-        primset.astrotype = astrotype
-        primset.acquireParamDict()
-        return primset
         
     def composeRecipe(self, name, recipebuffer):
         templ = """
@@ -1348,8 +1358,11 @@ def %(name)s(self,cfgObj):
         '''
         
         '''
+        raise "this is old code which needs removing"
         # Load defaults
+        print "RM1364: here"
         defaultParamFiles = self.getApplicableParameters(dataset)
+        print "RM1365", defaultParamFiles
         #print "RM836:", defaultParamFiles
         for defaultParams in defaultParamFiles:
             contextobj.update(centralParametersIndex[defaultParams])
@@ -1428,15 +1441,18 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                     print "complete recipe name(%s)" % m.group("recipename")
                 # For duplicate recipe names, until another solution is decided upon.
                 if centralRecipeIndex.has_key(recname):
-                    print "-" * 35 + " WARNING " + "-" * 35
-                    print "There are two recipes with the same name."
-                    print "The duplicate:"
-                    print fullpath
-                    print "The Original:"
-                    print centralRecipeIndex[recname]
-                    print
-                    raise RecipeExcept("Two Recipes with the same name.")
-                
+                    # check if the paths are really the same file
+                    if os.path.abspath(fullpath) != os.path.abspath(centralRecipeIndex[recname]):
+
+                        print "-" * 35 + " WARNING " + "-" * 35
+                        print "There are two recipes with the same name."
+                        print "The duplicate:"
+                        print fullpath
+                        print "The Original:"
+                        print centralRecipeIndex[recname]
+                        print
+                        raise RecipeExcept("Two Recipes with the same name.")
+
                 centralRecipeIndex.update({recname: fullpath})
                 
                 am = re.match(recipeAstroTypeREMask, m.group("recipename"))
@@ -1447,7 +1463,34 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 efile = open(fullpath, "r")
                 exec (efile)
                 efile.close()
-                centralPrimitivesIndex.update(localPrimitiveIndex)
+                cpis = set(centralPrimitivesIndex.keys())
+                cpi = centralPrimitivesIndex
+                lpis = set(localPrimitiveIndex.keys())
+                lpi = localPrimitiveIndex
+                intersect = cpis & lpis
+                if  intersect:
+                    for typ in intersect:
+                        # we'll allow this
+                        # @@NOTE: there may be a conflict, in which case order is used to give preference
+                        # @@..    we should have a tool to check this, because really it's only OK
+                        # @@..    if none of the members of the primitive set have the same name
+                        # @@..    which we don't know until later, if we actually load and use the primtiveset
+                        if True:
+                            rs = "Multiple Primitive Sets Found for Type %s" % typ
+                            rs += "\n  Primitive Index Entry from %s" % fullpath
+                            rs += "\n  adds ... %s" % repr(localPrimitiveIndex[typ])
+                            rs += "\n  conflicts with already present setting ... %s" % repr(centralPrimitivesIndex[typ])
+                            print "${RED}WARNING:${NORMAL}\n" + rs
+                for key in lpis:
+                    if key not in cpis:
+                        centralPrimitivesIndex.update({key:[]})
+                    plist = centralPrimitivesIndex[key]
+                    val = lpi[key]
+                    if type(val) == tuple:
+                        plist.append(localPrimitiveIndex[key])
+                    else:
+                        plist.extend(val)
+                           
             elif mro: # reduction object file... contains  primitives as members
                 centralReductionMap.update({sfilename: fullpath})
             elif mri: # this is a recipe index
