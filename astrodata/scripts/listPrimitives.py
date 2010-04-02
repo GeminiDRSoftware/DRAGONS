@@ -66,6 +66,7 @@ fhandler = open( path , 'w' )
 
 def show(arg):
     global fhandler
+    
     print arg
     fhandler.write(arg+"\n")
 
@@ -155,7 +156,6 @@ def primsetcmp(a,b):
     else:
         an = a.__class__.__name__
         bn = b.__class__.__name__
-        print an, bn, an>bn
         if an > bn:
             return 1
         elif an < bn:
@@ -181,29 +181,40 @@ def firstprim(primsetname, prim):
     else:
         return None
         
-def hides(primsetname, prim):
+def hides(primsetname, prim, astrotype = None):
     """checks to see if prim hides or is hidden-by another"""
     
     if primsetname in class2instance:
         ps = class2instance[primsetname]
-        psl = rl.retrievePrimitiveSet(astrotype = ps.astrotype)
-        if len(psl)>1:
-            before = True
-            for ops in psl:
-                # reason for this comparison: make this work even
-                # if retrievePrimitiveSet returns new instances...
-                if ps.__class__.__name__ == ops.__class__.__name__:
-                    before = False
-                    continue
-                
-                if hasattr(ops, prim):
-                    if before:
-                        rets = "${RED}Hidden by "+ops.__class__.__name__+"${NORMAL}"
-                    else:
-                        rets = 'Hides "%s" from %s' %(prim, ops.__class__.__name__)
+        cl = ps.__class__
+        psl = rl.retrievePrimitiveSet(astrotype= ps.astrotype)
+    elif astrotype:
+        cl = name2class[primsetname]
+        ps = primsdictKBN[primsetname]
+        psl = rl.retrievePrimitiveSet(astrotype= astrotype)
+    else:
+        return None
+
+    if len(psl)>1:
+        before = True
+        for ops in psl:
+            # reason for this comparison: make this work even
+            # if retrievePrimitiveSet returns new instances...
+            if ps.__class__.__name__ == ops.__class__.__name__:
+                before = False
+                continue
+            if isinstance(ops, cl):
+                before = False
+                continue
+            if hasattr(ops, prim):
+                if before:
+                    rets = "${RED}Hidden by "+ops.__class__.__name__+"${NORMAL}"
                 else:
-                    return None        
-            return rets
+                    rets = 'Hides "%s" from %s' %(prim, ops.__class__.__name__)
+            else:
+                return None        
+        return rets
+            
                     
                     
     return None    
@@ -218,7 +229,7 @@ def overrides(primsetname, prim):
             
     return None
     
-def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
+def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None, astrotype = None):
     INDENT = " "
     indentstr = INDENT*indent
     if primset == None:
@@ -244,6 +255,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
         show("${BOLD}"+'_'*SW+"${NORMAL}")
         show("\n${BOLD}%s${NORMAL} Primitive Set (class: %s)" % (cl.astrotype,primsetname))
         show("-"*SW)
+        astrotype = cl.astrotype
     else:
         if len(primlist)>0:
             show("${BLUE}%s(Following Are Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
@@ -251,7 +263,7 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
     
     for prim in primlist:
         i+=1
-        hide = hides(primsetname, prim)
+        hide = hides(primsetname, prim, astrotype = astrotype)
         over = overrides(primsetname, prim)
         primline = "%s%2d. %s" % (" "*indent, i, prim)
         if over:
@@ -305,7 +317,10 @@ def showPrims(primsetname, primset=None, i = 0, indent = 0, pdat = None):
                 
     for base in cl.__bases__:
         if base.__name__ in primsdictKBN:
-            showPrims(base.__name__, primset = primset, i = i, indent = indent+2, pdat = pdat)        
+            showPrims(  base.__name__,
+                        primset = primset, 
+                        i = i, indent = indent+2, 
+                        pdat = pdat, astrotype = astrotype)        
 
 pset = Set(primsdict.keys())
 names = []

@@ -1192,12 +1192,12 @@ class RecipeLibrary(object):
         # inheritance multiple ROs may apply, then we raise an exceptions, this is a configuration
         # problem.
         
-        primset = self.retrievePrimitiveSet(dataset=dataset, astrotype=astrotype)
         ro = ReductionObjects.ReductionObject()
+        primsetlist = self.retrievePrimitiveSet(dataset=dataset, astrotype=astrotype)
         ro.recipeLib = self
-        ro.curPrimType = primset.astrotype
-
-        ro.addPrimSet(primset)
+        ro.curPrimType = primsetlist[0].astrotype
+        for primset in primsetlist:
+            ro.addPrimSet(primset)
         
         b = datetime.now()
         if astrotype != None:
@@ -1475,7 +1475,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         # @@..    we should have a tool to check this, because really it's only OK
                         # @@..    if none of the members of the primitive set have the same name
                         # @@..    which we don't know until later, if we actually load and use the primtiveset
-                        if True:
+                        if False:
                             rs = "Multiple Primitive Sets Found for Type %s" % typ
                             rs += "\n  Primitive Index Entry from %s" % fullpath
                             rs += "\n  adds ... %s" % repr(localPrimitiveIndex[typ])
