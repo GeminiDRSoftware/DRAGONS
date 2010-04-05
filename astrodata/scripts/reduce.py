@@ -406,7 +406,7 @@ for infiles in allinputs: #for dealing with multiple files.
                 if "recipe." not in rec:
                     raise "Recipe files must be named 'recipe.RECIPENAME'"
                 else:
-                    rname = re.sub("recipe.", "", rec)
+                    rname = re.sub("recipe.", "", os.path.basename(rec))
                 rf = open(rec)
                 rsrc = rf.read()
                 prec = rl.composeRecipe(rname, rsrc)
@@ -414,7 +414,10 @@ for infiles in allinputs: #for dealing with multiple files.
                 ro = rl.bindRecipe(ro, rname, rfunc)
                 rec = rname
             else:
-                rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
+                if options.astrotype:
+                    rl.loadAndBindRecipe(ro, rec, astrotype=options.astrotype)
+                else:
+                    rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
             if (useTK):
                 cw.running(rec)
             

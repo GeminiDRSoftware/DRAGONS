@@ -103,14 +103,22 @@ if (options.listdescriptors):
     funs = dir(CalculatorInterface.CalculatorInterface)
     descs = []
     for fun in funs:
-        if "_" not in fun:
+        if "_" not in fun and (fun.lower() == fun):
             descs.append(fun)
     print ", ".join(descs)
-    
 elif (options.htmldoc):
     print cl.htmlDoc()
 else:
     try:
+        if (options.showdescriptors == "all"):
+            import CalculatorInterface
+            funs = dir(CalculatorInterface.CalculatorInterface)
+            descs = []
+            for fun in funs:
+                if "_" not in fun and (fun.lower() == fun):
+                    descs.append(fun)
+            options.showdescriptors = ",".join(descs) 
+
         if opti:
             print "Calling DataSpider.typewalk(..)"
         dt.typewalk(options.twdir, only=options.only,
