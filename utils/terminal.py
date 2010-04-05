@@ -297,7 +297,7 @@ class FilteredStdout(object):
     def write(self, out, forceprefix = None):
         # make termlog none to turn off debugging log
         
-        termlog = None # open("termlog", "a")
+        termlog = None #open("termlog", "a")
         if termlog:
             termlog.write("\n"+"*"*40 + "\n")
             st = tb.extract_stack()

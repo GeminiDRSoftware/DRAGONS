@@ -16,7 +16,7 @@ fstdout = terminal.FilteredStdout()
 colorFilter = terminal.ColorFilter(True)
 fstdout.addFilter(colorFilter)
 sys.stdout = fstdout   
-SW = 60
+SW = 80
 
 
 from optparse import OptionParser
@@ -228,6 +228,8 @@ def overrides(primsetname, prim):
         return fp
             
     return None
+
+from inspect import getfile, getsourcefile
     
 def showPrims(  primsetname, 
                 primset=None, 
@@ -259,6 +261,12 @@ def showPrims(  primsetname,
     if firstset:
         show("${BOLD}"+'_'*SW+"${NORMAL}")
         show("\n${BOLD}%s${NORMAL} Primitive Set (class: %s)" % (cl.astrotype,primsetname))
+        sfull = getsourcefile(cl)
+        sdir = os.path.dirname(sfull)
+        sfil = os.path.basename(sfull)
+        show("  source: ${BG_WHITE}"+sfil+"${NORMAL}")
+        show("      in: ${BG_WHITE}"+sdir+"${NORMAL}")
+
         show("-"*SW)
         astrotype = cl.astrotype
         instance = class2instance[primsetname]
