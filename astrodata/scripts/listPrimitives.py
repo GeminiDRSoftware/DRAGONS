@@ -42,6 +42,7 @@ parser = OptionParser()
 options.args = args
 options.useColor = True
 options.showParams = True
+options.showUsage = True
 
 options.datasets = []
 options.astrotypes = []
@@ -285,6 +286,12 @@ def showPrims(  primsetname,
         if hide:
             primline += "  ${GREEN}%s${NORMAL}" % hide
         show(primline)
+        if options.showUsage:
+            func = eval("instance."+prim)
+            if hasattr(func, "pt_usage"):
+                print " "*indent+"    ${BG_WHITE}"+eval("func.pt_usage")+"${NORMAL}"
+            if hasattr(instance, "ptusage_"+prim):
+                print " "*indent+"    ${BG_WHITE}"+eval("instance.ptusage_"+prim)+"${NORMAL}"
         if options.showParams:
                 indent0 = indentstr+INDENT*5
                 indent1 = indentstr+INDENT*6
