@@ -8,6 +8,7 @@ from astrodata import IDFactory
 from sets import Set
 from iqtool.iq import getiq
 
+from datetime import datetime
 
 if True:
 
@@ -45,7 +46,8 @@ class GEMINIPrimitives(PrimitiveSet):
     def exit(self, rc):
         print "calling sys.exit()"
         sys.exit()
-        
+    exit.pt_usage = "Used to exit the recipe."
+    ptusage_exit = "Must exit recipe."    
  #------------------------------------------------------------------------------ 
     def crashReduce(self, rc):
         raise 'Crashing'
@@ -210,7 +212,8 @@ class GEMINIPrimitives(PrimitiveSet):
         print "Inputs:"
         for inf in rc.inputs:
             print "  ", inf.filename   
-        yield rc   
+        yield rc  
+     
     
     def showCals(self, rc):
         for adr in rc.inputs:
@@ -219,7 +222,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 if sid in calkey:
                     print rc.calibrations[calkey]
         yield rc
-
+    ptusage_showCals = "Used to show calibrations currently in cache for inputs."
 #------------------------------------------------------------------------------ 
     def showStackable(self, rc):
         sidset = set()
@@ -243,5 +246,19 @@ class GEMINIPrimitives(PrimitiveSet):
         for i in range(0,5):
             sleep(stepduration)
             yield rc  
+#------------------------------------------------------------------------------ 
+    def time(self, rc):
+        cur = datetime.now()
+        
+        elap = ""
+        if rc["lastTime"] and not rc["start"]:
+            td = cur - rc["lastTime"]
+            elap = " (%s)" %str(td)
+        print "Time:", str(datetime.now()), elap
+        
+        rc.update({"lastTime":cur})
+        yield rc
+        
   
 #----------------------------------------------------------eof
+
