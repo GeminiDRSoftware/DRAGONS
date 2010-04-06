@@ -289,9 +289,9 @@ def showPrims(  primsetname,
         if options.showUsage:
             func = eval("instance."+prim)
             if hasattr(func, "pt_usage"):
-                print " "*indent+"    ${BG_WHITE}"+eval("func.pt_usage")+"${NORMAL}"
+                print " "*indent+'    ${BG_WHITE}"""'+eval("func.pt_usage")+'"""${NORMAL}'
             if hasattr(instance, "ptusage_"+prim):
-                print " "*indent+"    ${BG_WHITE}"+eval("instance.ptusage_"+prim)+"${NORMAL}"
+                print " "*indent+'    ${BG_WHITE}"""'+eval("instance.ptusage_"+prim)+'"""${NORMAL}'
         if options.showParams:
                 indent0 = indentstr+INDENT*5
                 indent1 = indentstr+INDENT*6
