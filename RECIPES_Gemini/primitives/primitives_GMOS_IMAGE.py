@@ -52,12 +52,13 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             pyraf.iraf.set (adata=rc["iraf"]['adata'])  
         else:
             # @@REFERENCEIMAGE: used to set adata path for primitives
-            (root, name) = os.path.split(rc.inputs[0].filename)
-            pyraf.iraf.set (adata=root)
-            if "iraf" not in rc:
-                rc.update({"iraf":{}})
-            if "adata" not in rc["iraf"]:
-                rc["iraf"].update({"adata":root}) 
+            if len(rc.inputs) > 0:
+                (root, name) = os.path.split(rc.inputs[0].filename)
+                pyraf.iraf.set (adata=root)
+                if "iraf" not in rc:
+                    rc.update({"iraf":{}})
+                if "adata" not in rc["iraf"]:
+                    rc["iraf"].update({"adata":root}) 
         
         GEMINIPrimitives.init(self, rc)
         return rc
