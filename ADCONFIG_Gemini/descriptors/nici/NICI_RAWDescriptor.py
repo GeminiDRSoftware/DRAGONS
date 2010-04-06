@@ -139,7 +139,12 @@ class NICI_RAWDescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retfilternamestring = hdu[1].header[stdkeyDictNICI["key_nici_filter_r"]]+' '+hdu[2].header[stdkeyDictNICI["key_nici_filter_b"]]
+            filter1 = hdu[1].header[stdkeyDictNICI["key_nici_filter_r"]]
+            filter2 = hdu[2].header[stdkeyDictNICI["key_nici_filter_b"]]
+            filter1 = GemCalcUtil.removeComponentID(filter1)
+            filter2 = GemCalcUtil.removeComponentID(filter2)
+
+            retfilternamestring = filter1+'|'+filter2
         except KeyError: 
             return None
         except:
