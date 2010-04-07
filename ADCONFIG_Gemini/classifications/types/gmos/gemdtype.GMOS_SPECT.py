@@ -5,6 +5,7 @@ class GMOS_SPECT(DataClassification):
     usage = '''
         Applies to all data from either GMOS-North or GMOS-South instruments in any mode.
         '''
+    parent = "GMOS"
     requirement = AND(ISCLASS('GMOS'),
                       PHU({'{prohibit}GRATING': 'MIRROR'}),
                       NOT(ISCLASS("GMOS_BIAS")))
