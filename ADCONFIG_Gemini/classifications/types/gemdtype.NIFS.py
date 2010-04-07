@@ -1,7 +1,8 @@
 
 class NIFS(DataClassification):
     name="NIFS"
-    usage = ""
+    usage = "Applies to datasets from NIFS instrument"
+    parent = "GEMINI"
     requirement = PHU(INSTRUME='NIFS')
 
 newtypes.append(NIFS())
