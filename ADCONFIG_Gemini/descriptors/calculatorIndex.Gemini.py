@@ -23,4 +23,5 @@ calculatorIndex = {
     "NIFS":"NIFS_RAWDescriptor.NIFS_RAWDescriptorCalc()",
     "NIRI":"NIRI_RAWDescriptor.NIRI_RAWDescriptorCalc()",
     "TRECS":"TRECS_RAWDescriptor.TRECS_RAWDescriptorCalc()",
+    "PHOENIX":"PHOENIX_RAWDescriptor.PHOENIX_RAWDescriptorCalc()",
     }
