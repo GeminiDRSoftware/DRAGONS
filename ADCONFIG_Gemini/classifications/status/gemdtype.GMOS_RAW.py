@@ -1,8 +1,8 @@
 class GMOS_RAW(DataClassification):
     editprotect=True
     name="GMOS_RAW"
-    usage = 'Un-"prepared" GMOS data.'
+    usage = 'Applies to RAW GMOS data.'
     typeReqs= ['GMOS']
-    requirement = PHU({'{prohibit}GPREPARE': ".*?" })
+    requirement = ISCLASS("RAW") & ISCLASS("GMOS")
     
 newtypes.append(GMOS_RAW())

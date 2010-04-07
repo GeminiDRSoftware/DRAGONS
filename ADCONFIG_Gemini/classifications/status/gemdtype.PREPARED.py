@@ -1,7 +1,8 @@
 class PREPARED(DataClassification):
     editprotect=True
     name="PREPARED"
-    usage = '"prepared" data.'
+    usage = 'Applies to all "prepared" data.'
+    parent = "UNPREPARED"
     requiement = PHU( {'{re}.*?PREPARE': ".*?" })
     
 newtypes.append(PREPARED())
