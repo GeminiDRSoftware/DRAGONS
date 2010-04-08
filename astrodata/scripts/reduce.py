@@ -6,6 +6,17 @@
 #importprof = hotshot.Profile("hotshot_edi_stats")
 
 #------------------------------------------------------------------------------ 
+from utils import terminal
+from utils.terminal import TerminalController, ProgressBar 
+import sys
+# start color printing filter for xgtermc
+REALSTDOUT = sys.stdout
+REALSTDERR = sys.stderr
+filteredstdout = terminal.FilteredStdout()
+filteredstdout.addFilter( terminal.ColorFilter())
+irafstdout = terminal.IrafStdout(fout = filteredstdout)
+sys.stdout = filteredstdout
+# sys.stderr = terminal.ColorStdout(REALSTDERR, term)
 import commands
 from datetime import datetime
 import glob
@@ -23,12 +34,14 @@ if True:
 import subprocess
 import sys
 import time
+import re
 #------------------------------------------------------------------------------ 
 a = datetime.now()
 
 import astrodata
 from astrodata import RecipeManager
 from astrodata.AstroData import AstroData
+from astrodata.AstroDataType import getClassificationLibrary
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
 from astrodata.StackKeeper import StackKeeper
@@ -40,8 +53,6 @@ from astrodata.LocalCalibrationService import CalibrationService
 from utils.future import gemDisplay
 from utils import paramutil
 from utils.gemutil import gemdate
-from utils import terminal
-from utils.terminal import TerminalController, ProgressBar 
 #------------------------------------------------------------------------------ 
 #oet = time.time()
 #print 'TIME:', (oet -ost)
@@ -64,7 +75,18 @@ parser.set_usage( parser.get_usage()[:-1] + " file.fits\n" )
 parser.add_option("-r", "--recipe", dest="recipename", default=None,
                   help="Specify which recipe to run by name.")
 parser.add_option("-p", "--param", dest="userparam", default = None,
-                    help="Set a parameter from the command line.")
+                    help="""Set a parameter from the command line.\
+The form '-p paramname=val' sets the param in the reduction
+context such that all primitives will 'see' it.  The 
+form '-p ASTROTYPE:primitivename:paramname=val' sets the
+parameter such that it applies only when
+the current reduction type (type of current reference image)
+is 'ASTROTYPE' and the primitive is 'primitivename'.
+Multiple settings can appear separated by commas, but
+no whitespace in the setting, i.e. 'param=val,param2=val2',
+not 'param=val, param2=val2'.""")
+parser.add_option("-f", "--paramfile", dest = "paramfile", default = None,
+                    help="Specify a parameter file.")
 parser.add_option("-t", "--astrotype", dest = "astrotype", default = None,
                     help="To run a recipe based on astrotype, either to override the default type of the file, or to start a recipe without initial input (i.e. which begin with primitives that acquire dta).")
 parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
@@ -112,20 +134,18 @@ useTK =  options.bMonitor
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
 from astrodata.tkMonitor import *
 
-# start color printing filter for xgtermc
-REALSTDOUT = sys.stdout
-REALSTDERR = sys.stderr
-filteredstdout = terminal.FilteredStdout()
-filteredstdout.addFilter( terminal.ColorFilter())
-irafstdout = terminal.IrafStdout(fout = filteredstdout)
-sys.stdout = filteredstdout
-# sys.stderr = terminal.ColorStdout(REALSTDERR, term)
 adatadir = "./recipedata/"
 calindfile = "./.reducecache/calindex.pkl"
 stkindfile = "./.reducecache/stkindex.pkl"
 
 terminal.forceWidth = options.forceWidth
 terminal.forceHeight = options.forceHeight
+
+def abortBadParamfile(lines):
+    for i in range(0,len(lines)):
+        print "  %03d:%s" % (i, lines[i]),
+    print "  %03d:<<stopped parsing due to error>>" % (i+1)
+    sys.exit(1)
 
 def command_line():
     '''
@@ -210,9 +230,15 @@ def command_line():
         print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
         co.persistCalIndex( calindfile )
         sys.exit(0)
+        
+    # parameters from command line and/or parameter file
+    clups = []
+    clgparms = {}
+    pfups = []
+    pfgparms = {}
     
     if options.userparam:
-        ups = RecipeManager.UserParams()
+        ups = []
         gparms = {}
         allupstr = options.userparam
         allparams = allupstr.split(",")
@@ -224,15 +250,88 @@ def command_line():
             if ":" in spec:
                 typ,prim,param = spec.split(":")
                 up = RecipeManager.UserParam(typ, prim, param, val)
-                ups.addUserParam(up)
+                ups.append(up)
             else:
                 gparms.update({spec:val})
-                
-        options.userParams = ups
-        options.globalParams = gparms
-    
+        # command line ups and gparms
+        clups = ups
+        clgparms = gparms
+        
+    if options.paramfile:
+        ups = []
+        gparms = {}
+        pfile = file(options.paramfile)
+        astrotype = None
+        primname = None
+        cl = getClassificationLibrary()
+        
+        i = 0
+        lines = []
+        for line in pfile:
+            i += 1
+            oline = line
+            lines.append(oline)
+            # strip comments
+            line = re.sub("#.*?$", "", line)
+            line = line.strip()
+            
+            if len(line)>0:
+                if "]" in line:
+                    # then line is a header
+                    name = re.sub("[\[\]]", "", line)
+                    name = name.strip()
+                    if len(name)== 0:
+                        astrotype = None
+                        primname = None
+                    elif cl.isNameOfType(name):
+                        astrotype = name
+                    else:
+                        primname = name
+                else:
+                    # not a section
+                    keyval = line.split("=")
+                    if len(keyval)<2:
+                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                              "\n  Line #%d: %s""" % (options.paramfile, i, oline)
+                        abortBadParamfile(lines)
+                        sys.exit(1)
+                    key = keyval[0].strip()
+                    val = keyval[1].strip()
+                    if primname and not astrotype:
+                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                              '\n  The primitive name is set to "%s", but the astrotype is not set' \
+                              "\n  Line #%d: %s" % (options.paramfile, primname, i, oline[:-1])
+                        
+                        abortBadParamfile(lines)
+                    if not primname and astrotype:
+                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                              '\n  The astrotype is set to "%s", but the primitive name is not set' \
+                              "\n  Line #%d: %s" % (options.paramfile, astrotype, i, oline)
+                        abortBadParamfile(lines)
+                    if not primname and not astrotype:
+                        gparms.update({key:val})
+                    else:
+                        up = RecipeManager.UserParam(astrotype, primname, key, val)
+                        ups.append(up)
+                        
+        # parameter file ups and gparms                                
+        pfups = ups
+        pfgparms = gparms
+    fups = RecipeManager.UserParams()
+    for up in clups:
+        fups.addUserParam(up)
+    for up in pfups:
+        fups.addUserParam(up)
+    options.userParams = fups
+    options.globalParams = {}
+    options.globalParams.update(clgparms)
+    options.globalParams.update(pfgparms)
+       
+            
     return input_files
     
+# get RecipeLibrary
+rl = RecipeLibrary()
 
 allinputs = command_line()
 
@@ -275,8 +374,6 @@ for infiles in allinputs: #for dealing with multiple files.
         print "    %s" % (infile.filename)
     currentReductionNum = i
     i += 1
-    # get RecipeLibrary
-    rl = RecipeLibrary()
     
     # get ReductionObject for this dataset
     #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") 

@@ -2,6 +2,7 @@
 
 from astrodata.AstroDataType import *
 from optparse import OptionParser
+import os
 
 cl = getClassificationLibrary()
 # print repr(cl.typesDict)
@@ -13,4 +14,12 @@ if len(args)>0:
     astrotype = args[0]
 else:
     astrotype = None
-a = cl.gvizDoc(astrotype= astrotype, writeout = True)
+    
+import astrodata
+import astrodata.RecipeManager as rm
+
+assdict = rm.centralPrimitivesIndex
+a = cl.gvizDoc(astrotype= astrotype, writeout = True, assDict = assdict)
+import webbrowser
+url = "file://"+os.path.join(os.path.abspath("."), "gemdtype.viz.svg")
+webbrowser.open(url);

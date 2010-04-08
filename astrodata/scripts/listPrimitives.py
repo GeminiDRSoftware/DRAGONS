@@ -84,7 +84,7 @@ if True:
             ad = AstroData(dataset)
             ps = rl.retrievePrimitiveSet(dataset = ad)
             s = "%(ds)s-->%(typ)s" % {"ds": dataset,
-                                                        "typ": ps.astrotype}
+                                                        "typ": ps[0].astrotype}
             p = " "*(SW - len(s))
             show("${REVERSE}"+s+p+"${NORMAL}")
             if ps:
