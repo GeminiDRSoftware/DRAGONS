@@ -5,6 +5,7 @@ class GEMINI(DataClassification):
     usage = '''
         Applies to all data from either GMOS-North or GMOS-South instruments in any mode.
         '''
-    requirement = ISCLASS("GEMINI_NORTH", "GEMINI_SOUTH")
+    requirement = OR(ISCLASS("GEMINI_NORTH"),
+                     ISCLASS("GEMINI_SOUTH"))
 
 newtypes.append( GEMINI())
