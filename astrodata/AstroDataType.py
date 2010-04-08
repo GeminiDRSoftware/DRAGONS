@@ -1,6 +1,6 @@
 import pyfits
-import os
 import re
+import os
 import AstroData
 import sys
 import sre_constants
@@ -341,9 +341,10 @@ class DataClassification(object):
             self.children = []
         if self.childDCOs == None:
             self.childDCOs = []
-        
-        self.children.append(child.name)
-        self.childDCOs.append(child)
+        if child.name not in self.children:
+            self.children.append(child.name)
+        if child not in self.childDCOs:
+            self.childDCOs.append(child)
         
     def assertType(self, hdulist):
         """
@@ -703,7 +704,7 @@ newtypes.append(%(typename)s())
 
     # graphviz section, uses DOT language to make directed graphs
     # of the type dictionary
-    def gvizLinks(self):
+    def gvizLinks(self, direct = None, assDict = None):
         """
         This function supports the automatic generation of a class graph
         driven by the Classification Library. This system builds a script
@@ -715,13 +716,56 @@ newtypes.append(%(typename)s())
         @rtype: string
         """
         linkstr = ""
-        for req in self.typeReqs:
-            linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
-                % { "from":self.name, 
-                    "to":req, 
-                    "url": ("typedict.py#%s" % self.name )
-                }
-        return linkstr
+        nodestr = ""
+        nodestr += self.gvizNodes()
+        if assDict and (self.name in assDict.keys()):
+            fromlist = []
+            obs = assDict[self.name]
+            for ob in obs:
+                linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
+                        % { "from":ob[1], 
+                            "to":self.name, 
+                        }
+                nodestr += '%(name)s [shape=box, style=filled, color = ".8 .8 .8",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
+                  % {"name":ob[1],"tip":"Primitive Set"}
+                print "ADT729", linkstr
+        if direct == None:
+            if self.parent:
+                linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
+                    % { "from":self.parent, 
+                        "to":self.name, 
+                        "url": ("typedict.py#%s" % self.name )
+                    }
+        elif direct == "parent":
+            if self.parentDCO:
+                linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
+                    % { "from":self.parent, 
+                        "to":self.name, 
+                        "url": ("typedict.py#%s" % self.name )
+                    }
+                links, nodes = self.parentDCO.gvizLinks(direct=direct, assDict = assDict)
+                linkstr += links
+                nodestr += nodes
+        elif direct == "child":
+            if self.childDCOs and len(self.childDCOs)>0:
+                # print "ATD727:", repr(self.children), repr(self.childDCOs)
+                self.children.sort()
+                # print "AdT743:", repr (self.children), repr(self.childDCOs)
+                for childname in self.children:
+                    child = self.library.getTypeObj(childname)
+                    if not child:
+                        raise "not a child!"
+                    linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
+                        % { "from":self.name, 
+                            "to":child.name, 
+                            "url": ("typedict.py#%s" % child.name )
+                        }
+                    links, nodes = child.gvizLinks(direct=direct, assDict = assDict)
+                    linkstr += links
+                    nodestr += nodes
+            
+        # print "ATD735: %s linkstr=%s" %( self.name, linkstr)
+        return (linkstr,nodestr)
         
     def gvizNodes(self):
         """This function supports the automatic generation of a class graph
@@ -732,7 +776,7 @@ newtypes.append(%(typename)s())
         @return: A representation of the node  in "dot" language for graphing purposes
         @rtype: String
         """
-        nodestr = "%(name)s [URL=\"typedict.py#%(name)s\",tooltip=\"%(tip)s\"];\n" \
+        nodestr = "%(name)s [shape=house, URL=\"typedict.py#%(name)s\",tooltip=\"%(tip)s\"];\n" \
                   % {"name":self.name,"tip":self.usage.replace("\n", "")}
         return nodestr
         
@@ -902,6 +946,14 @@ class ClassificationLibrary (object):
                         tdict[newtype.name] = newtype
                 else :
                     if (verbose) : print "ignoring %s" % dfile
+            
+        # establish children
+        for typ in tdict.keys():
+            typo = tdict[typ]
+            # print "ADT910:" , typ
+            if typo.parent:
+                tdict[typo.parent].addChild(typo)
+
 
     def checkType(self, typename, dataset):
         """
@@ -935,6 +987,11 @@ class ClassificationLibrary (object):
         
         return retval
     
+    def isNameOfType(self, typename):
+        if typename in self.typesDict:
+            return True
+        else:
+            return False
     def getTypeObj(self,typename):
         """Generally users do not need DataClassification instances, however
         if you really do need that object, say to write an editor... this function
@@ -1100,7 +1157,7 @@ class ClassificationLibrary (object):
         retstr = page_templ % { "cldiv": divs } 
         return retstr
 
-    def gvizDoc(self, writeout = False):
+    def gvizDoc(self, writeout = False, astrotype = None, assDict = None):
         """This function generates output in the "dot" language, which
             is used as input for the graphviz "dot" program which creates
             directed graphs in many different outputs.  We are interested
@@ -1116,22 +1173,20 @@ class ClassificationLibrary (object):
         """
         # @@REFACTOR@@ get the string to write out to from a lookup
         
-        skeys = self.typesDict.keys()
-        skeys.sort()
         gviztempl = """
             digraph classes {
-            size = "10,20"
+            // size = "10,20"
             pagedir="LT"
             labelloc=top
             label="AstroDataType: Data Classifications Graph"
             edge [
-                color="#306040"
+                color="#d04040"
                 arrowhead=odot
                 arrowsize=.8
             ];
             node [
                 color="#304060"
-                fontsize = 8
+                //fontsize = 8
                 shape = house
             ];
             %(nodes)s
@@ -1140,19 +1195,32 @@ class ClassificationLibrary (object):
         """
         gvizlinks = ""
         gviznodes = ""
-        for tkey in skeys:
-            tobj = self.typesDict[tkey]
-            gvizlinks = gvizlinks + tobj.gvizLinks()
-            gviznodes = gviznodes + tobj.gvizNodes()
-        
+        if astrotype:
+            # parents
+            tobj = self.typesDict[astrotype]
+            gvlink, gvnodes = tobj.gvizLinks(direct="parent", assDict = assDict)
+            gvizlinks = gvlink
+            gviznodes = gvnodes
+            gvlink, gvnodes = tobj.gvizLinks(direct="child", assDict = assDict)
+            gvizlinks += gvlink
+            gviznodes += gvnodes
+        else:
+            skeys = self.typesDict.keys()
+            skeys.sort()
+            for tkey in skeys:
+                tobj = self.typesDict[tkey]
+                links, nodes = tobj.gvizLinks(assDict=assDict)
+                gvizlinks = gvizlinks + links
+                gviznodes = gviznodes + nodes
+
         retstr = gviztempl % { "links": gvizlinks, "nodes":gviznodes } 
         
         if (writeout):
-            fl = open ("/var/www/html/gdwf/gemdtype.viz.dot", mode="w+")
+            fl = open ("gemdtype.viz.dot", mode="w")
             fl.write(retstr)
             fl.close()
             
-            os.system("dot -Tpng -o/var/www/html/gdwf/gemdtype.viz.png -Tsvg -o/var/www/html/gdwf/gemdtype.viz.svg /var/www/html/gdwf/gemdtype.viz.dot")
+            os.system("dot -Tpng -ogemdtype.viz.png -Tsvg -ogemdtype.viz.svg gemdtype.viz.dot")
             
         return retstr
         

@@ -7,6 +7,7 @@ import socket # to get host name for local statistics
 #------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
 import AstroDataType
+from AstroDataType import getClassificationLibrary
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
 import ConfigSpace
 import Descriptors
@@ -73,6 +74,8 @@ class UserParams(object):
         
     def addUserParam(self, userparam):
         up = userparam
+        if userparam == None:
+            return
         if self.userParamDict == None:
             self.userParamDict = {}
             

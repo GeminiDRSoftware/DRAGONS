@@ -163,9 +163,29 @@ def pickConfig(dataset, index, style = "unique"):
         types = ad.getTypes()
         
     # print "\nGU58:", types, "\nindex:",index, "\n"
+    # only one type can imply a package
+    # this goes through the types, making candidates of the
+    # first value in the index in order from child 
+    # to grandparent.
+    # for style="unique" the end result must be just one
+    # configuration object returned.
+    def inheritConfig(typ, index):
+        # print "gd168:", typ
+        if typ in index.keys():
+            return (typ,index[typ])
+        else:
+            typo = cl.getTypeObj(typ)
+            if typo.parent:
+                return inheritConfig(typo.parent, index)
+            else:
+                return None
+                
     for typ in types:
-        if typ in index:
-            candidates.update({typ:index[typ]})
+        cand = inheritConfig(typ, index)
+        # print "gd180:", repr(cand)
+        if cand:
+            candidates.update({cand[0]:cand[1]})
+    
 
     #    print "\nGU61: candidates:", candidates, "\n"
         # sys.exit(1)
@@ -176,6 +196,8 @@ def pickConfig(dataset, index, style = "unique"):
             #print "CONFIG CONFLICT for %s, configs = %s" % (ad.filename,repr(k))
             raise GDPGUtilExcept("CONFIG CONFLICT:" + repr(k))
         if len(k) == 0:
+            print "${RED}types: %s" % types
+            print "config index:", repr(index), "${NORMAL}"
             s = "NO CONFIG for %s" % (ad.filename)
             raise GDPGUtilExcept(s)
             

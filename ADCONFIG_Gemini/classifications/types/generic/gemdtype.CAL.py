@@ -6,6 +6,7 @@ class CAL(DataClassification):
         Special parent to group generic types (e.g. IMAGE, SPECT, MOS, IFU)
         '''
     parent = "GENERIC"
-    requirement = ISCLASS("GMOS_CAL")
+    requirement = OR(   ISCLASS("GMOS_CAL"),
+                        ISCLASS("NICI_CAL"))
 
 newtypes.append( CAL())

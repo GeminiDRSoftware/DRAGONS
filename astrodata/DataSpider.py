@@ -257,8 +257,8 @@ class DataSpider(object):
                                     print "     ${BG_WHITE}%s${NORMAL}" % tfile
                                     tfile = ""
                             
-                            prlin = "     %s" % tfile
-                            prlincolor = "     ${BG_WHITE}%s" % tfile
+                            prlin = "     %s " % tfile
+                            prlincolor = "     ${BG_WHITE}%s " % tfile
                             empty = " "*indent + "."*fwid
                             fwid = pwid+indent
                             lp = len(prlin)
@@ -274,6 +274,7 @@ class DataSpider(object):
                             termsize = terminal.getTerminalSize()
                             maxlen = termsize[0] - pwid -1
                             printed = False
+                            dtypes.sort()
                             for dtype in dtypes:
                                 if (dtype != None):
                                     newtype = "(%s) " % dtype
