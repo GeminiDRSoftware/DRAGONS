@@ -158,7 +158,8 @@ class DataSpider(object):
                     # especially on a command recursing directories and potentially
                     # looking at a lot of files.
                     if filemask == None:
-                        mask = r".*?\.(fits|FITS)"
+                        # @@NAMING: fits file mask for typewalk
+                        mask = r".*?\.(fits|FITS)$"
                     else:
                         mask = filemask
                     try:
@@ -170,7 +171,12 @@ class DataSpider(object):
                         if (ldebug) : print "FITS:", tfile
 
                         fname = os.path.join(root, tfile)
-                        fl = AstroData(fname)
+                       
+                        try:
+                            fl = AstroData(fname)
+                        except:
+                            print "${RED}Could not open %s as AstroData${NORMAL}" %fname
+                            continue
 
                         gain = 0
                         stringway = False

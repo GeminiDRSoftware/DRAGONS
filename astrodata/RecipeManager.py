@@ -502,6 +502,7 @@ class ReductionContext(dict):
                 return ",".join(inputlist)                
             else:
                 return ",".join([os.path.basename(path) for path in inputlist])
+
     def localparmsSet(self, lpd):
         self._localparms = lpd
         

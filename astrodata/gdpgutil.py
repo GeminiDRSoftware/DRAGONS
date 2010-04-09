@@ -157,9 +157,6 @@ def pickConfig(dataset, index, style = "unique"):
     ad,obn = openIfName(dataset)
     cl = ad.getClassificationLibrary()
     
-    print "gd158:", ad.getTypes(prune=True)
-    print "gd159:", ad.getTypes()
-
     candidates = {}
     if style == "unique":
         types = ad.getTypes(prune=True)

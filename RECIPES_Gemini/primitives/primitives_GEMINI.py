@@ -217,7 +217,7 @@ class GEMINIPrimitives(PrimitiveSet):
         for inf in rc.inputs:
             print "  ", inf.filename   
         yield rc  
-     
+    showFiles = showInputs
     
     def showCals(self, rc):
         for adr in rc.inputs:

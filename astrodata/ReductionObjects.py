@@ -41,7 +41,7 @@ class ReductionObject(object):
         # will be NONE if there are no current inputs, maintain current
         # curPrimType
         if correctPrimType and correctPrimType != self.curPrimType:
-            newprimset  = self.reci
+            newprimset  = self.recipeLib.retrievePrimitiveSet(astrotype=correctPrimType)
             self.addPrimSet(newprimset)
             self.curPrimType = newprimset.astrotype
         self.recipeLib.checkAndBind(self, primname, context=context) 
