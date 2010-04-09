@@ -436,10 +436,33 @@ class ReductionContext(dict):
                     return (time, self.stephistory[time])
         return None    
     
+    def getInputs(self, style=None):
+        if style==None:
+            return inputs
+        elif style == "AD": #@@HARDCODED: means "as AstroData instances"
+            retl = []
+            for inp in self.inputs:
+                if inp.ad == None:
+                    inp.load()
+                retl.append(inp.ad)
+            return retl
+        elif style == "FN": #@@HARDCODED: means "as Filenames"
+            retl = [inp.filename for inp in self.inputs]
+            return retl
+        else:
+            return None # this should not happen, but given a mispelled style arg
+
+    def getInputsAsAstroData(self):
+        return self.getInputs(style="AD")
+        
+    def getInputsAsFilenames(self):
+        return self.getInputs(style="FN")
+
     def getInputFromParent(self, parent):
         '''
         Very inefficient.
         '''
+        # @@CLEAN: I don't know what this is
         for inp in self.inputs:
             if inp.parent == parent:
                 return inp.filename
@@ -460,7 +483,8 @@ class ReductionContext(dict):
         if len(self.inputs) == 0:
             return None
         if self.inputs[0].ad == None:
-            raise RecipeExcept("AstroData instance not loaded for input %s" % self.inputs[0].filename)
+            return None # @@NOTE: return none if reference image not loaded, reconsider
+            # raise RecipeExcept("AstroData instance not loaded for input %s" % self.inputs[0].filename)
         return self.inputs[0].ad
     
     def getStack(self, ID):
@@ -854,6 +878,8 @@ class ReductionContext(dict):
                 # This is a good way to check if IRAF failed.
                 
                 if type(temp) == tuple:
+                    #@@CHECK: seems bad to assume a tuple means it is from 
+                    #@@.....: a primitive that needs it's output checked!
                     if not os.path.exists(temp[0]):
                         raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
                     orecord = AstroDataRecord(temp[0], self.displayID, parent=temp[1], load=load)
@@ -1083,6 +1109,7 @@ class RecipeLibrary(object):
         if astrotype != None:
             # get recipe source
             rec = self.retrieveRecipe(name, astrotype=astrotype)
+            
     
             if rec:
                 # compose to python source
@@ -1091,6 +1118,8 @@ class RecipeLibrary(object):
                 rfunc = self.compileRecipe(name, prec)
                 # bind the recipe to the reduction object
                 ro = self.bindRecipe(ro, name, rfunc)
+            else:
+                raise "can't find recipe!"
         elif dataset != None:
             gd, bnc = openIfName(dataset)
             types = gd.getTypes()
@@ -1155,7 +1184,9 @@ class RecipeLibrary(object):
     
     
     def retrieveRecipe(self, name, astrotype=None):
+        # @@NAMING: uses "recipe.TYPE" and recipe for recipe.ALL
         cri = centralRecipeIndex
+        
         if astrotype:
             akey = name + "." + astrotype
             key = name 
@@ -1173,8 +1204,10 @@ class RecipeLibrary(object):
             if astrotype == None:
                 fname = cri[key]
             else:
-                #User must SPECIFY none to get the generic recipe
-                return None
+                # @@NOTE: OLD WAY: User must SPECIFY none to get the generic recipe
+                # return None
+                # @@....: new way: inherit generic recipe!
+                fname = cri[key]        
         else:
             return None
 
@@ -1256,7 +1289,11 @@ def %(name)s(self,cfgObj):
         lines = ""
         
         for line in recipelines:
+            # remove comments
+            line = re.sub("#.*?$", "",line)
+            # strip whitespace
             line = line.strip()
+            
             # PARSE PRIMITIVE ARGUMENT LIST
             # take parenthesis off, make arg dict with it
             m = re.match("(?P<prim>.*?)\((?P<args>.*?)\)$", line)
@@ -1426,6 +1463,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
     # These indexes are meant to append it to the centralDescriptorIndex
             
     for root, dirn, files in ConfigSpace.configWalk("recipes"):
+        root = os.path.abspath(root)
         #print "RM840:", root
         sys.path.append(root)
         for sfilename in files:
@@ -1438,11 +1476,12 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
             fullpath = os.path.join(root, sfilename)
             #print "RM1026 FULLPATH", fullpath 
             if m:
+                # this is a recipe file
                 recname = m.group("recipename")
                 if False:
                     print sfilename
                     print "complete recipe name(%s)" % m.group("recipename")
-                # For duplicate recipe names, until another solution is decided upon.
+                # For duplicate recipe names, add extras.
                 if centralRecipeIndex.has_key(recname):
                     # check if the paths are really the same file
                     if os.path.abspath(fullpath) != os.path.abspath(centralRecipeIndex[recname]):
@@ -1455,7 +1494,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         print centralRecipeIndex[recname]
                         print
                         raise RecipeExcept("Two Recipes with the same name.")
-
+                
                 centralRecipeIndex.update({recname: fullpath})
                 
                 am = re.match(recipeAstroTypeREMask, m.group("recipename"))

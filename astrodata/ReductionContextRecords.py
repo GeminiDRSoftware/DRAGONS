@@ -125,7 +125,8 @@ class AstroDataRecord( ReductionContextRecord ):
             raise "BAD ARGUMENT"
         ##@@TODO: displayID may be obsolete
         self.displayID = displayID
-        
+    def load(self):
+        self.ad = AstroData(self.filename)
         
     def __str__(self):
         rets = """

@@ -180,6 +180,10 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
 
 #------------------------------------------------------------------------------ 
+    def setContext(self, rc):
+        rc.update(rc.localparms)
+        yield rc
+#------------------------------------------------------------------------------ 
     def showParams(self, rc):
         rcparams = rc.paramNames()
         if (rc["show"]):
