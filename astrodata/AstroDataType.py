@@ -718,17 +718,7 @@ newtypes.append(%(typename)s())
         linkstr = ""
         nodestr = ""
         nodestr += self.gvizNodes()
-        if assDict and (self.name in assDict.keys()):
-            fromlist = []
-            obs = assDict[self.name]
-            for ob in obs:
-                linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
-                        % { "from":ob[1], 
-                            "to":self.name, 
-                        }
-                nodestr += '%(name)s [shape=box, style=filled, color = ".8 .8 .8",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
-                  % {"name":ob[1],"tip":"Primitive Set"}
-                print "ADT729", linkstr
+        
         if direct == None:
             if self.parent:
                 linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
@@ -736,6 +726,17 @@ newtypes.append(%(typename)s())
                         "to":self.name, 
                         "url": ("typedict.py#%s" % self.name )
                     }
+            if assDict and (self.name in assDict.keys()):
+                fromlist = []
+                obs = assDict[self.name]
+                for ob in obs:
+                    linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
+                            % { "from":ob[1], 
+                                "to":self.name, 
+                            }
+                    nodestr += '%(name)s [shape=box, style=filled, color = ".8 .8 .8",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
+                      % {"name":ob[1],"tip":"Primitive Set"}
+                    print "ADT729", linkstr
         elif direct == "parent":
             if self.parentDCO:
                 linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
@@ -767,7 +768,7 @@ newtypes.append(%(typename)s())
         # print "ATD735: %s linkstr=%s" %( self.name, linkstr)
         return (linkstr,nodestr)
         
-    def gvizNodes(self):
+    def gvizNode(self):
         """This function supports the automatic generation of a class graph
         which is driven by the Classification Library. This function returns
         a "dot language" representation of the node, which can contain things
@@ -779,7 +780,7 @@ newtypes.append(%(typename)s())
         nodestr = "%(name)s [shape=house, URL=\"typedict.py#%(name)s\",tooltip=\"%(tip)s\"];\n" \
                   % {"name":self.name,"tip":self.usage.replace("\n", "")}
         return nodestr
-        
+    gvizNodes = gvizNode
 
               
 class CLAlreadyExists:
@@ -1204,6 +1205,8 @@ class ClassificationLibrary (object):
             gvlink, gvnodes = tobj.gvizLinks(direct="child", assDict = assDict)
             gvizlinks += gvlink
             gviznodes += gvnodes
+            anode = tobj.gvizNode()
+            gviznodes += anode
         else:
             skeys = self.typesDict.keys()
             skeys.sort()

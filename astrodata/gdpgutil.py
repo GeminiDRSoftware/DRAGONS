@@ -156,6 +156,10 @@ def pickConfig(dataset, index, style = "unique"):
     """
     ad,obn = openIfName(dataset)
     cl = ad.getClassificationLibrary()
+    
+    print "gd158:", ad.getTypes(prune=True)
+    print "gd159:", ad.getTypes()
+
     candidates = {}
     if style == "unique":
         types = ad.getTypes(prune=True)
@@ -181,20 +185,39 @@ def pickConfig(dataset, index, style = "unique"):
                 return None
                 
     for typ in types:
-        cand = inheritConfig(typ, index)
-        # print "gd180:", repr(cand)
+        cand = None
+        if typ in index:
+            cand = index[typ]
         if cand:
-            candidates.update({cand[0]:cand[1]})
-    
+            candidates.update({typ:cand})
+    k = candidates.keys()
+    if len(k) == 0:
+        for typ in types:
+            candtuple = inheritConfig(typ, index)
+            if candtuple:
+                candidates.update({candtuple[0]:candtuple[1]})
 
+    k = candidates.keys()
+    
     #    print "\nGU61: candidates:", candidates, "\n"
         # sys.exit(1)
     # style unique this can only be one thing
-    k = candidates.keys()
     if style=="unique":
         if len(k)>1:
             #print "CONFIG CONFLICT for %s, configs = %s" % (ad.filename,repr(k))
-            raise GDPGUtilExcept("CONFIG CONFLICT:" + repr(k))
+            
+            msg="${RED}Config Conflict:\n" \
+                "   %(num)d possible configurations found, maximum 1\n" \
+                "   found: %(typs)s \n" \
+                '   for file "%(file)s" configuration space is\n' \
+                "%(cs)s${NORMAL}\n" % { 
+                            "num":len(k),
+                            "file":dataset.filename,
+                            "cs":repr(index),
+                            "typs": ", ".join(k)
+                            }     
+            print msg                           
+            raise GDPGUtilExcept('Multiple Configs Found for style = "unique"')
         if len(k) == 0:
             print "${RED}types: %s" % types
             print "config index:", repr(index), "${NORMAL}"
