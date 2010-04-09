@@ -195,25 +195,33 @@ def hides(primsetname, prim, instance=None):
         psl = rl.retrievePrimitiveSet(astrotype= ps.astrotype)
     else:
         return None
-
+        
+    verb = False # prim == "exit"
+    if verb: print "lP200:", len(psl)
     if len(psl)>1:
         before = True
+        rets = None
         for ops in psl:
+            
             # reason for this comparison: make this work even
             # if retrievePrimitiveSet returns new instances...
             if ps.__class__.__name__ == ops.__class__.__name__:
                 before = False
+                if verb : print "lP209: found this by by class name", repr(ops)
                 continue
             if isinstance(ops, cl):
                 before = False
+                if verb : print "lp213: skipping due to isinstance"
                 continue
+            if verb: print "lP215:", repr(ops),repr(dir(ops))
             if hasattr(ops, prim):
+                if verb : print "lP216: hide happens"
                 if before:
-                    rets = "${RED}(Hidden by "+ops.__class__.__name__+")${NORMAL}"
+                    rets = "${RED}(hidden by "+ops.__class__.__name__+")${NORMAL}"
                 else:
-                    rets = '(Hides "%s" from %s)' %(prim, ops.__class__.__name__)
-            else:
-                return None        
+                    rets = '${GREEN}(hides "%s" from %s)${NORMAL}' %(prim, ops.__class__.__name__)
+                break
+        
         return rets
             
                     
@@ -275,16 +283,20 @@ def showPrims(  primsetname,
         if len(primlist)>0:
             show("${BLUE}%s(Following Are Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
         
-    
+    maxlenprim = min(16, len(max(primlist, key=len)))
+
     for prim in primlist:
         i+=1
         hide = hides(primsetname, prim, instance = instance)
         over = overrides(primsetname, prim)
         primline = "%s%2d. %s" % (" "*indent, i, prim)
+        pl = len(prim)
+        if pl < maxlenprim:
+            primline += " "*(maxlenprim-pl)
         if over:
             primline += "  ${BLUE}(overrides %s)${NORMAL}" % over
         if hide:
-            primline += "  ${GREEN}%s${NORMAL}" % hide
+            primline += "  %s" % hide
         show(primline)
         if options.showUsage:
             func = eval("instance."+prim)

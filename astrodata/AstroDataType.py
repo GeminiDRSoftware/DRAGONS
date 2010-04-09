@@ -718,25 +718,27 @@ newtypes.append(%(typename)s())
         linkstr = ""
         nodestr = ""
         nodestr += self.gvizNodes()
+
+        if assDict and (self.name in assDict.keys()):
+            fromlist = []
+            obs = assDict[self.name]
+            for ob in obs:
+                linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
+                        % { "from":ob[1], 
+                            "to":self.name, 
+                        }
+                nodestr += '%(name)s [shape=box, style=filled, color = "grey92",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
+                  % {"name":ob[1],"tip":"Primitive Set"}
         
-        if direct == None:
+        if direct == None: # efficient and backward compatible way to do the whole tree
             if self.parent:
                 linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
                     % { "from":self.parent, 
                         "to":self.name, 
                         "url": ("typedict.py#%s" % self.name )
                     }
-            if assDict and (self.name in assDict.keys()):
-                fromlist = []
-                obs = assDict[self.name]
-                for ob in obs:
-                    linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
-                            % { "from":ob[1], 
-                                "to":self.name, 
-                            }
-                    nodestr += '%(name)s [shape=box, style=filled, color = ".8 .8 .8",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
-                      % {"name":ob[1],"tip":"Primitive Set"}
-                    print "ADT729", linkstr
+        elif direct == "self": # don't follow parent or childrem
+            pass                    
         elif direct == "parent":
             if self.parentDCO:
                 linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
@@ -1205,8 +1207,10 @@ class ClassificationLibrary (object):
             gvlink, gvnodes = tobj.gvizLinks(direct="child", assDict = assDict)
             gvizlinks += gvlink
             gviznodes += gvnodes
-            anode = tobj.gvizNode()
-            gviznodes += anode
+            gvlink, gvnodes = tobj.gvizLinks(direct="self", assDict = assDict)
+            gvizlinks += gvlink
+            gviznodes += gvnodes
+            
         else:
             skeys = self.typesDict.keys()
             skeys.sort()
