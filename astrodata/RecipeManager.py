@@ -1110,8 +1110,21 @@ class RecipeLibrary(object):
         if astrotype != None:
             # get recipe source
             rec = self.retrieveRecipe(name, astrotype=astrotype)
-            
-    
+            print "RM1113:", rec, astrotype
+            try:
+                print "RM1115: before"
+                ps = ro.getPrimSet(name, astrotype=astrotype)
+                print "RM1117: after"
+                if ps:
+                    if rec == None:
+                        return #not a recipe, but exists as primitive
+                    else:
+                        msg = "NAME CONFLICT: ASSIGNING RECIPE %s BUT EXISTS AS PRIMITIVE:\n\t%s" % rec, repr(ps)
+                        raise RecipeExcept(msg)
+            except ReductionObjects.ReductionExcept:
+                 pass # just means there is no primset, that function throws
+                
+                
             if rec:
                 # compose to python source
                 prec = self.composeRecipe(name, rec)
@@ -1309,6 +1322,11 @@ def %(name)s(self,cfgObj):
                         parmname, parmval = elem.split("=")
                         parmname = parmname.strip()
                         parmval = parmval.strip()
+                        # remove quotes which are not needed but intuitive around strings
+                        if parmval[0] == '"' or parmval[0] == "'":
+                            parmval = parmval[1:]
+                        if parmval[-1] == '"' or parmval [-1] == "'":
+                            parmval = parmval[:-1]
                         d.update({parmname:parmval})
                     else:
                         if len(selem)>0:
@@ -1538,6 +1556,9 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 centralReductionMap.update({sfilename: fullpath})
             elif mri: # this is a recipe index
                 efile = open(fullpath, "r")
+                # print "RM1559:", fullpath
+                # print "RM1560:before: cri", centralRecipeIndex
+                # print "RM1561:before: catri,", centralAstroTypeRecipeIndex
                 # print fullpath
                 exec efile
                 efile.close()
@@ -1546,8 +1567,15 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         curl = centralRecipeIndex[key]
                         curl.append(localAstroTypeRecipeIndex[key])
                         localAstroTypeRecipeIndex.update({key: curl})
-                
-                centralAstroTypeRecipeIndex.update(localAstroTypeRecipeIndex)
+                    if key in centralAstroTypeRecipeIndex:
+                        ls = centralAstroTypeRecipeIndex[key]
+                    else:
+                        ls = []
+                        centralAstroTypeRecipeIndex.update({key:ls})
+                        
+                    ls.extend(localAstroTypeRecipeIndex[key])
+                # print "RM1570:after: cri", centralRecipeIndex
+                # print "RM1571:after: catri,", centralAstroTypeRecipeIndex
             elif mpa: # Parameter file
                 efile = open(fullpath, "r")
                 exec(efile)

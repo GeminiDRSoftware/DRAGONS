@@ -106,9 +106,10 @@ class ReductionObject(object):
         self.joinParamDicts(primset, primsetary)
         primsetary.append (primset)
     
-    def getPrimSet(self, primname):
+    def getPrimSet(self, primname, astrotype = None):
+        # print "RO110:", astrotype, self.curPrimType
         primsetary = self.primDict[self.curPrimType]
-
+        # print "RO112:" , primsetary
         for primset in primsetary:
             if hasattr(primset, primname):
                 return primset
