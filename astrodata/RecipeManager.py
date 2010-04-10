@@ -565,7 +565,8 @@ class ReductionContext(dict):
                     else:
                         # don't update this one, because the recipe is allowed to override
                         continue
-                self.localparms.update({param:primset.paramDict[primname][param]["default"]})
+                if "default" in primset.paramDict[primname][param]:
+                    self.localparms.update({param:primset.paramDict[primname][param]["default"]})
                 
             # users override everything else if  it gets here... and is allowed
             if correctUPD:
@@ -1110,11 +1111,11 @@ class RecipeLibrary(object):
         if astrotype != None:
             # get recipe source
             rec = self.retrieveRecipe(name, astrotype=astrotype)
-            print "RM1113:", rec, astrotype
+            # print "RM1113:", rec, astrotype
             try:
-                print "RM1115: before"
+                # print "RM1115: before"
                 ps = ro.getPrimSet(name, astrotype=astrotype)
-                print "RM1117: after"
+                # print "RM1117: after"
                 if ps:
                     if rec == None:
                         return #not a recipe, but exists as primitive
