@@ -92,10 +92,11 @@ class GNIRS_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset, **args):
+    def disperser(self, dataset, stripID=False, **args):
         """
         Return the disperser value for GNIRS
         @param dataset: the data set
+        @param stripID: set to True to strip the component ID from the returned string
         @type dataset: AstroData
         @rtype: string
         @return: the disperser / grating used to acquire the data
@@ -103,6 +104,9 @@ class GNIRS_RAWDescriptorCalc(Calculator):
         try:
             hdu = dataset.hdulist
             retdisperserstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_disperser"]]
+
+            if(stripID):
+              retdisperserstring=GemCalcUtil.removeComponentID(retdisperserstring)
         
         except KeyError:
             return None
