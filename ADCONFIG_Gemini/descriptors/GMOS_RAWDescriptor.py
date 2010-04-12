@@ -127,7 +127,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retdetseclist
     
-    def disperser(self, dataset, **args):
+    def disperser(self, dataset, stripID=False, **args):
         """
         Return the disperser value for GMOS
         @param dataset: the data set
@@ -138,6 +138,9 @@ class GMOS_RAWDescriptorCalc(Calculator):
         try:
             hdu = dataset.hdulist
             retdisperserstring = hdu[0].header[stdkeyDictGMOS["key_gmos_disperser"]]
+
+            if(stripID):
+              retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
         
         except KeyError:
             return None
