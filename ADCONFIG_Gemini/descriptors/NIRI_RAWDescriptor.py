@@ -101,10 +101,11 @@ class NIRI_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset):
+    def disperser(self, dataset, stripID=False):
         """
         Return the disperser value for NIRI
         @param dataset: the data set
+        @param stripID: set to True to remove the component ID from the returned disperser name
         @type dataset: AstroData
         @rtype: string
         @return: the disperser / grating used to acquire the data
@@ -115,9 +116,9 @@ class NIRI_RAWDescriptorCalc(Calculator):
             filter1 = hdu[0].header[stdkeyDictNIRI["key_niri_filter1"]]
             filter2 = hdu[0].header[stdkeyDictNIRI["key_niri_filter2"]]
             filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
-            filter1 = GemCalcUtil.removeComponentID(filter1)
-            filter2 = GemCalcUtil.removeComponentID(filter2)
-            filter3 = GemCalcUtil.removeComponentID(filter3)
+            #filter1 = GemCalcUtil.removeComponentID(filter1)
+            #filter2 = GemCalcUtil.removeComponentID(filter2)
+            #filter3 = GemCalcUtil.removeComponentID(filter3)
         except KeyError:
             return None
         diskey = "grism"
@@ -127,6 +128,10 @@ class NIRI_RAWDescriptorCalc(Calculator):
             retdisperserstring = filter2
         if diskey in filter3:
             retdisperserstring = filter3
+
+        if (stripID):
+          retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
+
         return str(retdisperserstring)
         
     def exptime(self, dataset):
