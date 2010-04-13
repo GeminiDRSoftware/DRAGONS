@@ -30,7 +30,7 @@ class PHOENIX_RAWDescriptorCalc(Calculator):
         
         return float(retcwavefloat)
     
-    def disperser(self, dataset, **args):
+    def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for PHOENIX
         @param dataset: the data set
@@ -66,7 +66,7 @@ class PHOENIX_RAWDescriptorCalc(Calculator):
         except KeyError:
             return None
         
-    def filtername(self, dataset, **args):
+    def filtername(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the filtername value for PHOENIX
         @param dataset: the data set
