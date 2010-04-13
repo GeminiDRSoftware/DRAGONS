@@ -86,7 +86,7 @@ class MICHELLE_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset, **args):
+    def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for MICHELLE
         @param dataset: the data set
@@ -94,6 +94,7 @@ class MICHELLE_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
+        # The Michelle components don't have component IDs so we just ignore the stripID and pretty options
         try:
             hdu = dataset.hdulist
             retdisperserstring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_disperser"]]
@@ -136,7 +137,7 @@ class MICHELLE_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset, **args):
+    def filtername(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the filtername value for MICHELLE
         @param dataset: the data set
@@ -144,6 +145,7 @@ class MICHELLE_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the unique filter identifier string
         """
+        # The Michelle filters don't have ID strings, so we just ignore the stripID and pretty options
         try:
             hdu = dataset.hdulist
             filter = hdu[0].header[stdkeyDictMICHELLE["key_michelle_filter"]]
