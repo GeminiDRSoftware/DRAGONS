@@ -79,6 +79,58 @@ class GMOS_RAWDescriptorCalc(Calculator):
 
         return float(retcwavefloat)
     
+    def detroa(self, dataset, **args):
+        """
+        Return the detroa (detector - readout area) value for GMOS
+        This is a composite string, formed as a list of key-value pairs, where
+        the key is the ccdname and the value is the detsec readout area on that ccd
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @return: the detector and readout area string
+        """
+        try:
+            array=[]
+            hdu = dataset.hdulist
+            for i in range(1, len(hdu)):
+              ccdname = hdu[i].header[stdkeyDictGMOS["key_gmos_ccdname"]]
+              detsec = hdu[i].header[stdkeyDictGMOS["key_gmos_detsec"]]
+              array.append("'%s':%s" % (ccdname, detsec))
+
+            string = ','.join(array)
+              
+        except KeyError:
+            return None
+
+        return string
+
+    def amproa(self, dataset, **args):
+        """
+        Return the amproa (detector amplifier - readout area) value for GMOS
+        This is a composite string, formed as a list of key-value pairs, where
+        the key is the ampname and the value is the detsec readout area on that ccd
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @return: the amplifier and readout area string
+        """
+        try:
+            array=[]
+            hdu = dataset.hdulist
+            for i in range(1, len(hdu)):
+              ccdname = hdu[i].header[stdkeyDictGMOS["key_gmos_ampname"]]
+              detsec = hdu[i].header[stdkeyDictGMOS["key_gmos_detsec"]]
+              array.append("'%s':%s" % (ccdname, detsec))
+
+            string = ','.join(array)
+
+        except KeyError:
+            return None
+
+        return string
+
+
+
     def datasec(self, dataset, **args):
         """
         Return the datasec value for GMOS
@@ -127,7 +179,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return retdetseclist
     
-    def disperser(self, dataset, stripID=False, **args):
+    def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for GMOS
         @param dataset: the data set
@@ -135,15 +187,20 @@ class GMOS_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
+
+        # In this case, pretty is simply stripID
+        if(pretty):
+          stripID=True
+
         try:
             hdu = dataset.hdulist
             retdisperserstring = hdu[0].header[stdkeyDictGMOS["key_gmos_disperser"]]
 
-            if(stripID):
-              retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
-        
         except KeyError:
             return None
+        
+        if(stripID):
+          retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
         
         return str(retdisperserstring)
     
@@ -188,7 +245,7 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset, **args):
+    def filtername(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the filtername value for GMOS
         @param dataset: the data set
@@ -196,12 +253,17 @@ class GMOS_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the unique filter identifier string
         """
+        if(pretty):
+            stripID=True
+
         try:
             hdu = dataset.hdulist
             filter1 = hdu[0].header[stdkeyDictGMOS["key_gmos_filter1"]]
             filter2 = hdu[0].header[stdkeyDictGMOS["key_gmos_filter2"]]
-            filter1 = GemCalcUtil.removeComponentID(filter1)
-            filter2 = GemCalcUtil.removeComponentID(filter2)
+
+            if(stripID):
+                filter1 = GemCalcUtil.removeComponentID(filter1)
+                filter2 = GemCalcUtil.removeComponentID(filter2)
             
             filters = []
             if not "open" in filter1:
@@ -212,7 +274,6 @@ class GMOS_RAWDescriptorCalc(Calculator):
             if len(filters) == 0:
                 retfilternamestring = "open"
             else:
-                filters.sort()
                 retfilternamestring = "&".join(filters)
         
         except KeyError:
