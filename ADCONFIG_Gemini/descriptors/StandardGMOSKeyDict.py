@@ -5,6 +5,8 @@ stdkeyDictGMOS = {
     "key_gmos_camera":"INSTRUME",
     "key_gmos_ccdsum":"CCDSUM",
     "key_gmos_cwave":"GRWLEN",
+    "key_gmos_ccdname":"CCDNAME",
+    "key_gmos_ampname":"AMPNAME",
     "key_gmos_datasec":"DATASEC",
     "key_gmos_detsec":"DETSEC",
     "key_gmos_disperser":"GRATING",
