@@ -101,7 +101,7 @@ class NIRI_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset, stripID=False):
+    def disperser(self, dataset, stripID=False, pretty=False):
         """
         Return the disperser value for NIRI
         @param dataset: the data set
@@ -110,6 +110,13 @@ class NIRI_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
+        # No specific pretty names, just stripID
+        if(pretty):
+          stripID = True
+
+        # This seems overkill to me - dispersers can only ever be in filter3
+        # becasue the other two wheels are in an uncollimated beam... - PH
+
         retdisperserstring = None
         try:
             hdu = dataset.hdulist
@@ -180,19 +187,19 @@ class NIRI_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the unique filter identifier string
         """
+        # To match against the LUT to get the pretty name, we need the component IDs attached
+        if(pretty):
+            stripID=False
+
         try:
             hdu = dataset.hdulist
-            ofilter1 = hdu[0].header[stdkeyDictNIRI["key_niri_filter1"]]
-            ofilter2 = hdu[0].header[stdkeyDictNIRI["key_niri_filter2"]]
-            ofilter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
+            filter1 = hdu[0].header[stdkeyDictNIRI["key_niri_filter1"]]
+            filter2 = hdu[0].header[stdkeyDictNIRI["key_niri_filter2"]]
+            filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
             if (stripID):
-                filter1 = GemCalcUtil.removeComponentID(ofilter1)
-                filter2 = GemCalcUtil.removeComponentID(ofilter2)
-                filter3 = GemCalcUtil.removeComponentID(ofilter3)
-            else:
-                filter1 = ofilter1
-                filter2 = ofilter2
-                filter3 = ofilter3
+                filter1 = GemCalcUtil.removeComponentID(filter1)
+                filter2 = GemCalcUtil.removeComponentID(filter2)
+                filter3 = GemCalcUtil.removeComponentID(filter3)
             
             # create list of filter values
             filters = [filter1,filter2,filter3]
@@ -201,12 +208,13 @@ class NIRI_RAWDescriptorCalc(Calculator):
         except KeyError:
             return None
         
-        #map to science name if filtername in table
-        if pretty == True:
+        # If pretty output, map to science name of filtername in table
+        # To match against the LUT, the filter list must be sorted
+        if (pretty):
+            filters.sort()
+            retfilternamestring = self.filternameFrom(filters)
             if retfilternamestring in self.niriFilternameMap:
-                # lookup table uses non-stripped IDs, so use originals no matter what
-                oretfilternamestring = self.filternameFrom([ofilter1, ofilter2, ofilter3])
-                retfilternamestring = self.niriFilternameMap[oretfilternamestring]
+                retfilternamestring = self.niriFilternameMap[retfilternamestring]
             
         return str(retfilternamestring)
     
