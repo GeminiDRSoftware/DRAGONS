@@ -924,6 +924,63 @@ class CalculatorInterface:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
+
+    def detid(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "detid")
+            if not hasattr( self.descriptorCalculator, "detid"):
+                key = "key_"+"detid"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.detid(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+
+    def detroa(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "detroa")
+            if not hasattr( self.descriptorCalculator, "detroa"):
+                key = "key_"+"detroa"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.detroa(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+
+    def amproa(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "amproa")
+            if not hasattr( self.descriptorCalculator, "amproa"):
+                key = "key_"+"amproa"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.amproa(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+
+
+
     
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
