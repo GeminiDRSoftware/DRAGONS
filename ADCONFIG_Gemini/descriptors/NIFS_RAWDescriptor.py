@@ -104,7 +104,7 @@ class NIFS_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset, stripID = False, **args):
+    def disperser(self, dataset, stripID = False, pretty=False, **args):
         """
         Return the disperser value for NIFS
         @param dataset: the data set
@@ -113,16 +113,21 @@ class NIFS_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
+
+        # No specific pretty names, so simply stripID instead
+        if(pretty):
+          stripID=True
+
         try:
             hdu = dataset.hdulist
             retdisperserstring = hdu[0].header[stdkeyDictNIFS["key_nifs_disperser"]]
         
-            if(stripID):
-              retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
-
         except KeyError:
             return None
         
+        if(stripID):
+          retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
+
         return str(retdisperserstring)
     
     def exptime(self, dataset, **args):
@@ -164,7 +169,7 @@ class NIFS_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset, **args):
+    def filtername(self, dataset, pretty=False, stripID=False, **args):
         """
         Return the filtername value for NIFS
         @param dataset: the data set
@@ -172,10 +177,15 @@ class NIFS_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the unique filter identifier string
         """
+        # Pretty is just stripID in this case
+        if(pretty):
+            stripID=True
+
         try:
             hdu = dataset.hdulist
             filter = hdu[0].header[stdkeyDictNIFS["key_nifs_filter"]]
-            filter = GemCalcUtil.removeComponentID(filter)
+            if(stripID):
+                filter = GemCalcUtil.removeComponentID(filter)
 
             if filter == "Blocked":
                 retfilternamestring = "blank"
