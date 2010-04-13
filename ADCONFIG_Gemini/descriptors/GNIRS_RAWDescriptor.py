@@ -92,7 +92,7 @@ class GNIRS_RAWDescriptorCalc(Calculator):
         
         return str(retdetsecstring)
     
-    def disperser(self, dataset, stripID=False, **args):
+    def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for GNIRS
         @param dataset: the data set
@@ -101,6 +101,11 @@ class GNIRS_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
+
+        # No specific pretty names, just use stripID
+        if(pretty):
+            stripID=True
+
         try:
             hdu = dataset.hdulist
             retdisperserstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_disperser"]]
@@ -152,7 +157,7 @@ class GNIRS_RAWDescriptorCalc(Calculator):
         
         return str(retfilteridstring)
     
-    def filtername(self, dataset, **args):
+    def filtername(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the filtername value for GNIRS
         @param dataset: the data set
@@ -160,12 +165,18 @@ class GNIRS_RAWDescriptorCalc(Calculator):
         @rtype: string
         @return: the unique filter identifier string
         """
+
+        # No specific pretty names, just use stripID
+        if(pretty):
+            stripID=True
+
         try:
             hdu = dataset.hdulist
             filter1 = hdu[0].header[stdkeyDictGNIRS["key_gnirs_filter1"]]
             filter2 = hdu[0].header[stdkeyDictGNIRS["key_gnirs_filter2"]]
-            filter1 = GemCalcUtil.removeComponentID(filter1)
-            filter2 = GemCalcUtil.removeComponentID(filter2)
+            if(stripID):
+                filter1 = GemCalcUtil.removeComponentID(filter1)
+                filter2 = GemCalcUtil.removeComponentID(filter2)
 
             # create list of filter values
             filters = [filter1,filter2]
@@ -186,7 +197,6 @@ class GNIRS_RAWDescriptorCalc(Calculator):
             if len(filters) == 0:
                 retfilternamestring = "open"
             else:
-                filters.sort()
                 retfilternamestring = "&".join(filters)
             
         except KeyError:
