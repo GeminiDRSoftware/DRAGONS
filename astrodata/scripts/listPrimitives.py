@@ -15,12 +15,14 @@ parser.set_description(
 
 parser.add_option('-c', '--useColor', action='store_true', dest='useColor', default=False,
                   help='Apply color output scheme')
-parser.add_option('-s', '--showSetsOnly', action='store_true', dest='showSetsOnly', default=False,
-                  help='Show only Primitives sets')
+parser.add_option('-f', '--makeOutputFile', action='store_true', dest='makeOutputFile', default=False,
+                  help='Make output textfile (primitives_List.txt).')
 parser.add_option('-i', '--showInfo', action='store_true', dest='showInfo', default=False,
                   help='Show information on Primitive class name and location')
 parser.add_option('-p', '--showParams', action='store_true', dest='showParams', default=False,
                   help='include parameter information in output')
+parser.add_option('-s', '--showSetsOnly', action='store_true', dest='showSetsOnly', default=False,
+                  help='Show only Primitives sets')
 parser.add_option('-u', '--showUsage', action='store_true', dest='showUsage', default=False,
                   help='Include usage information in output')
 parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False,
