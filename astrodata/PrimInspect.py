@@ -5,7 +5,6 @@ import os, sys
 
 #get color printing started
 from utils import terminal
-
 term = terminal
 from utils.terminal import TerminalController
 REASLSTDOUT = sys.stdout
@@ -16,22 +15,17 @@ fstdout.addFilter(colorFilter)
 sys.stdout = fstdout   
 SW = 80
 
-from optparse import OptionParser
+#from optparse import OptionParser
 from sets import Set 
 from copy import copy
 from astrodata.AstroData import AstroData
 from astrodata import RecipeManager 
 from astrodata.RecipeManager import RecipeLibrary
-from inspect import getfile, getsourcefile
-#not using getfile
-
+from inspect import getsourcefile
 
 rl = RecipeLibrary()
 colorFilter.on = False
-
-
 primtypes = RecipeManager.centralPrimitivesIndex.keys()
-
 
 class PrimInspect():
     '''
@@ -52,7 +46,6 @@ class PrimInspect():
         self.module_list = []
         if path:
             self.path = path
-        self.fhandler = open( self.path , 'w' )
         self.module_list = []
         self.datasets = []
         self.astrotypes = []
@@ -68,16 +61,26 @@ class PrimInspect():
             self.options.showInfo = True
         if self.options.useColor:
             colorFilter.on = True
-        
+        if self.options.makeOutputFile:
+            self.fhandler = open( self.path , 'w' )
+            
             
         #----------------------------------------------       
         
     def show(self, arg):
         print arg
-        self.fhandler.write(arg+"\n")
+        if self.options.makeOutputFile:
+            arg = arg.replace('${BOLD}','')
+            arg = arg.replace('${NORMAL}','')
+            arg = arg.replace('${YELLOW}','')
+            arg = arg.replace('${RED}','')
+            arg = arg.replace('${GREEN}','')
+            arg = arg.replace('${BLUE}','')
+            self.fhandler.write(arg+"\n")
         
     def close_fhandler(self):
-        self.fhandler.close()
+        if self.options.makeOutputFile:
+            self.fhandler.close()
         
     def createModule_list(self):
         if len(self.astrotypes) or len(self.datasets):
