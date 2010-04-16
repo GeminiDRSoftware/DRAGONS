@@ -11,7 +11,7 @@ from optparse import OptionParser
 #Instantiate OptionParser
 parser = OptionParser()
 parser.set_description( 
-"""The Gemini Primitive Inspection Tool. Created by C.Allen, K.Dement, Apr2010.""" )
+"""The Gemini Primitive Inspection Tool.\n Created by C.Allen, K.Dement, Apr2010.""" )
 
 parser.add_option('-c', '--useColor', action='store_true', dest='useColor', default=False,
                   help='Apply color output scheme')
@@ -31,9 +31,9 @@ options.astrotypes = []
 options.args = args
 for arg in args:
     if os.path.exists(arg):
-        options.datasets.append(arg)
+        options.datasets.append( arg )
     else:
-        options.astrotypes.append(arg)
+        options.astrotypes.append( arg )
 
 #Instantiate PrimInspectObject
 pin = PrimInspect( options )
@@ -46,7 +46,7 @@ primsets = pin.primsdict.keys()
 primsets.sort( pin.primsetcmp )
 names = []
 if options.showSetsOnly:
-    pin.show( "\n\n\t\t\t\t${BOLD}PRIMITIVE SETS${NORMAL}")
+    pin.show( "\n\n\t\t\t\t${BOLD}PRIMITIVE SETS${NORMAL}" )
     pin.show( "-"*80 ) 
     count = 1
 for primset in primsets:
@@ -56,15 +56,17 @@ for primset in primsets:
     else:
         names.append( nam )    
     if options.showSetsOnly:
-        cl = pin.name2class[nam]
+        cl = pin.name2class[ nam ]
         pin.show( "\n\n%2d. ${BOLD}%s${NORMAL}\n" %( count,cl.astrotype ) )
         pin.showSetInfo( nam,cl ) 
         count+=1
     else:
         pin.showPrims( nam )
 if options.showSetsOnly:
-    pin.show("\n\n")
-    pin.show("-"*80) 
+    pin.show( "\n\n" )
+    pin.show( "-"*80 )
+else:
+    pin.show( "_"*80 )
 pin.close_fhandler()
 
 
