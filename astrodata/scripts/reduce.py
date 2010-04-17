@@ -247,6 +247,7 @@ def command_line():
             spec = tmp[0].strip()
             # @@TODO: check and convert to correct type
             val = tmp[1].strip()
+            
             if ":" in spec:
                 typ,prim,param = spec.split(":")
                 up = RecipeManager.UserParam(typ, prim, param, val)
@@ -297,6 +298,10 @@ def command_line():
                         sys.exit(1)
                     key = keyval[0].strip()
                     val = keyval[1].strip()
+                    if val[0] == "'" or val[0] == '"':
+                        val = val[1:]
+                    if val[-1] == "'" or val[-1] == '"':
+                        val = val[0:-1]
                     if primname and not astrotype:
                         print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
                               '\n  The primitive name is set to "%s", but the astrotype is not set' \
