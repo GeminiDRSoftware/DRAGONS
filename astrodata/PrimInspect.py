@@ -84,6 +84,8 @@ class PrimInspect():
         
     def createModule_list(self):
         if len(self.astrotypes) or len(self.datasets):
+            if self.astrotypes:
+                self.astrotypes.sort()
             for typ in self.astrotypes:
                 ps = rl.retrievePrimitiveSet(astrotype = typ)        
                 if ps != None:
@@ -105,20 +107,7 @@ class PrimInspect():
                 print "   ",arg
     
     # get a sorted list of primitive sets, sorted with parents first
-    def primsetcmp(self,a,b):
-        if isinstance(a,type(b)):
-            return 1
-        elif isinstance(b,type(a)):
-            return -1
-        else:
-            an = a.__class__.__name__
-            bn = b.__class__.__name__
-            if an > bn:
-                return 1
-            elif an < bn:
-                return -1
-            else:
-                return 0
+
             
     def getPrimList( self, cl ):
         plist = []
@@ -213,6 +202,15 @@ class PrimInspect():
                     break
             return rets
         return None
+
+    def primsetcmp(self,a,b):
+        if isinstance(a,type(b)):
+            return 1
+        elif isinstance(b,type(a)):
+            return -1
+    
+        else:
+            return 0
     
     def overrides(self, primsetname, prim):
         cl = self.name2class[primsetname]
@@ -341,5 +339,4 @@ class PrimInspect():
                             primset = primset, 
                             i = i, indent = indent+2, 
                             pdat = pdat, instance = instance)        
-
 

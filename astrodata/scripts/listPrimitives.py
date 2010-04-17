@@ -5,7 +5,7 @@
 # Desciption: Tool to inspect Primitives
 
 import os, sys
-from astrodata.PrimInspect import PrimInspect, primsetcmp
+from astrodata.PrimInspect import PrimInspect
 from optparse import OptionParser
 
 #Instantiate OptionParser
@@ -45,10 +45,8 @@ pin.datasets = options.datasets
 pin.astrotypes = options.astrotypes
 pin.buildDictionaries()
 primsets = pin.primsdict.keys()
-print "lP48:", repr(primsets)
 
-primsets.sort( primsetcmp )
-print "lP51:", repr(primsets)
+primsets.sort( pin.primsetcmp )
 
 names = []
 if options.showSetsOnly:

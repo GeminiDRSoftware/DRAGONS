@@ -737,9 +737,7 @@ lse, the return value is a list which is in fact
         @returns: a list of classification name strings
         @rtype: list"""
         
-        self.discoverTypology()
-        
-        retary = [i.name for i in self.typesTypology]
+        retary = self.discoverTypology()
         return retary
 
     def discoverTypology(self):
