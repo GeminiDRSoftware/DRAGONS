@@ -219,15 +219,42 @@ class PrimInspect():
             return fp
         return None
     
-    def showSetInfo(self, primsetname, cl):        
+    def showSetInfo(self, primsetname, cl, primlist):        
         sfull = getsourcefile(cl)
         sdir = os.path.dirname(sfull)
         sfil = os.path.basename(sfull)
-        self.show("  description: ${BOLD}Primitive Set${NORMAL}")
-        self.show("        class: ${BOLD}"+primsetname+"${NORMAL}")
-        self.show("  source code: ${BOLD}"+sfil+"${NORMAL}")
-        self.show("     location: ${BOLD}"+sdir+"${NORMAL}")
-           
+        self.show("  Class            : ${BOLD}"+primsetname+"${NORMAL}")
+        self.show("  Description      : ${BOLD}"+cl.astrotype+" Primitive Set${NORMAL}")
+        inherit = 'None'
+        inherit_list=[]
+        for base in cl.__bases__:
+            if base.__name__ in self.primsdictKBN:
+                inherit_list.append( base.__name__ )
+                inherit = 'Yes'
+        self.show("  Inheritance      : ${BOLD}"+inherit+"${NORMAL}")
+        if inherit is 'Yes':
+            #right now only works with one level of inheritence
+            overrides_count=0
+            for prim in primlist:
+                over = self.overrides(primsetname, prim)
+                if over:
+                    overrides_count+=1
+            itot = 0
+            for inherited in inherit_list:
+                self.show("                   : (from ${BOLD}"+inherited+"${NORMAL}")
+                if len(inherit_list) < 2:
+                    iprimlist = self.primsdictKBN[inherited]
+                    itot = itot + (len(iprimlist) - overrides_count)
+                    len_iprimlist = str( len(iprimlist) - overrides_count )
+                    self.show("                   : inherited ${BOLD}"+len_iprimlist+"${NORMAL} primitives")
+                    self.show("                   : with ${BOLD}"+str(overrides_count)+" overridden)${NORMAL} ")
+        len_primlist = str( len(primlist) )
+        self.show("  Local primitives :${BOLD} "+len_primlist+"${NORMAL}")
+        if len( inherit_list ) is 1:
+            self.show("  Total primitives : ${BOLD}"+str(itot + len(primlist))+"${NORMAL}")
+        self.show("  Source File      : ${BOLD}"+sfil+"${NORMAL}")
+        self.show("  Location         : ${BOLD}"+sdir+"${NORMAL}")
+
     def showPrims(  self,primsetname, 
                     primset=None, 
                     i = 0, 
@@ -253,23 +280,20 @@ class PrimInspect():
             primlist = list(prims)
             primlist.sort()
             primset.extend(primlist)
-           
         cl = self.name2class[primsetname]
+       
         if firstset:           
             self.show("${BOLD}"+'_'*SW+"${NORMAL}")
             self.show("\n${BOLD}%s\n${NORMAL}" % (cl.astrotype))
             if self.options.showInfo:
-                self.showSetInfo(primsetname, cl) 
+                self.showSetInfo(primsetname, cl, primlist) 
             self.show("-"*SW)
             astrotype = cl.astrotype
             instance = self.class2instance[primsetname]
-            
         else:
             if len(primlist)>0:
                 self.show("${BLUE}%s(Following Are Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
-            
         maxlenprim = min(16, len(max(primlist, key=len)))
-        #primline = ''        
         for prim in primlist:
             i+=1
             hide = self.hides(primsetname, prim, instance = instance)
@@ -286,9 +310,9 @@ class PrimInspect():
             if self.options.showUsage:
                 func = eval("instance."+prim)
                 if hasattr(func, "pt_usage"):
-                    print " "*indent+'    ${YELLOW}"""'+eval("func.pt_usage")+'"""${NORMAL}'
+                    print " "*indent+'    ${YELLOW}DOC:'+eval("func.pt_usage")+'${NORMAL}'
                 if hasattr(instance, "ptusage_"+prim):
-                    print " "*indent+'    ${YELLOW}"""'+eval("instance.ptusage_"+prim)+'"""${NORMAL}'
+                    print " "*indent+'    ${YELLOW}DOC: '+eval("instance.ptusage_"+prim)+'${NORMAL}'
             if self.options.showParams:
                 indent0 = indentstr+INDENT*5
                 indent1 = indentstr+INDENT*6
@@ -304,7 +328,6 @@ class PrimInspect():
                 else:
                     paramdicttype = pdat[0]
                     paramdict = pdat[1]
-                # print "lP246:", repr(paramdict), repr(pdat)
                 for primname in paramdict.keys():
                     if primname == prim:
                         if not firstset:
