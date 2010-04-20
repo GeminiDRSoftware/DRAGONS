@@ -464,6 +464,25 @@ class DataClassification(object):
         
         return list( set(all_superTypes) ) # Removes duplicates
     
+    def walk(self, style = "both"):
+        yield self
+        if style=="children":
+            # print "ADT470:", repr(self.childDCOs)
+            if self.childDCOs:
+                for childDCO in self.childDCOs:
+                    # print "ADT473: ", childDCO.name, repr(childDCO)
+                    for typ in childDCO.walk(style = "children"):
+                        yield typ
+        elif style == "parent":
+            if self.parentDCO:
+                for typ in self.parentDCO.walk(style = "parent"):
+                    yield typ
+        else: #both!
+            for typ in self.walk(style="parent"):
+                yield typ
+            for typ in self.walk(style="children"):
+                yield typ
+    
     def pythonClass(self):
         ''' This function generates a DataClassification Class based on self.
         The purpose of this is to support classification editors.
@@ -722,14 +741,25 @@ newtypes.append(%(typename)s())
         if assDict and (self.name in assDict.keys()):
             fromlist = []
             obs = assDict[self.name]
+            primsetgroup = self.name+"PrimitiveSets"
+            oblist = []
             for ob in obs:
-                linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
-                        % { "from":ob[1], 
-                            "to":self.name, 
-                        }
+                oblist.append(ob[1])
                 nodestr += '%(name)s [shape=box, style=filled, color = "grey92",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
                   % {"name":ob[1],"tip":"Primitive Set"}
-        
+                
+            nodestr += "subgraph cluster_%(name)s { rank=same; \n" \
+                % {"name":primsetgroup,"tip":"Primitive Set"}
+            for obname in oblist:
+                nodestr += "%s;" % obname
+            nodestr += "%s}\n" % primsetgroup 
+            
+            nodestr += '%(name)s [shape=box, style=filled, color = "grey100",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
+                  % {"name":primsetgroup,"tip":"Primitive Set"}
+            linkstr += linkstr + "\t %(from)s -> %(to)s; \n" \
+                            % { "from":primsetgroup, 
+                                "to":self.name, 
+                            }
         if direct == None: # efficient and backward compatible way to do the whole tree
             if self.parent:
                 linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
@@ -1179,6 +1209,7 @@ class ClassificationLibrary (object):
         gviztempl = """
             digraph classes {
             // size = "10,20"
+            compound = true;
             pagedir="LT"
             labelloc=top
             label="AstroDataType: Data Classifications Graph"

@@ -2,7 +2,7 @@
 
 
 import os, sys
-
+import re
 #get color printing started
 from utils import terminal
 term = terminal
@@ -70,12 +70,14 @@ class PrimInspect():
     def show(self, arg):
         print arg
         if self.options.makeOutputFile:
-            arg = arg.replace('${BOLD}','')
-            arg = arg.replace('${NORMAL}','')
-            arg = arg.replace('${YELLOW}','')
-            arg = arg.replace('${RED}','')
-            arg = arg.replace('${GREEN}','')
-            arg = arg.replace('${BLUE}','')
+            arg = arg.sub(r'\$\$|\${\w+}','',arg)
+            # replaced by above
+            # arg = arg.replace('${BOLD}','')
+            # arg = arg.replace('${NORMAL}','')
+            # arg = arg.replace('${YELLOW}','')
+            # arg = arg.replace('${RED}','')
+            # arg = arg.replace('${GREEN}','')
+            # arg = arg.replace('${BLUE}','')
             self.fhandler.write(arg+"\n")
         
     def close_fhandler(self):
