@@ -2,7 +2,7 @@
 from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 import time
-from utils import filesystem
+from adutils import filesystem
 from astrodata import IDFactory
 from astrodata import Descriptors
 from pyraf.iraf import tables, stsdas, images
