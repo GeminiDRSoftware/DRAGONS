@@ -5,8 +5,8 @@
 '''
 
 
-from utils import terminal
-from utils.terminal import TerminalController, ProgressBar 
+from adutils import terminal
+from adutils.terminal import TerminalController, ProgressBar 
 import time 
 
 def importIt( imports=[], term=None, message='Loading...' ):

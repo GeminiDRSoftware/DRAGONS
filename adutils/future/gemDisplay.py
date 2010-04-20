@@ -1,4 +1,4 @@
-from utils.future import pyDisplay
+from adutils.future import pyDisplay
 import astrodata
 from astrodata.AstroData import AstroData
 from astrodata import Descriptors

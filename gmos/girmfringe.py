@@ -18,7 +18,7 @@ import numpy as np
 import os 
 import time
 
-from utils import mefutil, paramutil, geminiLogger
+from adutils import mefutil, paramutil, geminiLogger
 
 reload(mefutil)
 reload(paramutil)

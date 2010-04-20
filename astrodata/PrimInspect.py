@@ -4,9 +4,9 @@
 import os, sys
 import re
 #get color printing started
-from utils import terminal
+from adutils import terminal
 term = terminal
-from utils.terminal import TerminalController
+from adutils.terminal import TerminalController
 REASLSTDOUT = sys.stdout
 REALSTDERR = sys.stderr
 fstdout = terminal.FilteredStdout()
