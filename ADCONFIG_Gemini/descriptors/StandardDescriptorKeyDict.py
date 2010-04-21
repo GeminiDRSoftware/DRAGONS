@@ -1,6 +1,6 @@
 globalStdkeyDict = {
     "key_airmass":"AIRMASS",
-    "key_az":"AZIMUTH",
+    "key_azimuth":"AZIMUTH",
     "key_camera":"CAMERA",
     "key_crpa":"CRPA",
     "key_cwave":"CWAVE",
@@ -9,7 +9,7 @@ globalStdkeyDict = {
     "key_dec":"DEC",
     "key_detsec":"DETSEC",
     "key_disperser":"DISPERSR",
-    "key_el":"ELEVATIO",
+    "key_elevation":"ELEVATIO",
     "key_exptime":"EXPTIME",
     "key_filterid":"FILTID",
     "key_filtername":"FILTNAME",
