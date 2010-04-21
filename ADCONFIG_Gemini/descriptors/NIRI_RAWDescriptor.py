@@ -3,17 +3,16 @@ from astrodata import Descriptors
 from astrodata import Errors
 import math
 
-import astrodata
 from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
+
 from StandardNIRIKeyDict import stdkeyDictNIRI
-import sys
-import re
+from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
-class NIRI_RAWDescriptorCalc(Calculator):
+class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
+    
     niriFilternameMapConfig = None
-
     niriFilternameMap = {}
     niriSpecDict = None
     
@@ -23,23 +22,6 @@ class NIRI_RAWDescriptorCalc(Calculator):
         self.nsappwave = Lookups.getLookupTable("Gemini/IR/nsappwavepp.fits", 1)
         self.makeFilternameMap()
         
-    def airmass(self, dataset):
-        """
-        Return the airmass value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the mean airmass for the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictNIRI["key_niri_airmass"]]
-        
-        except KeyError:
-            return None
-        
-        return float(retairmassfloat)
-    
     def camera(self, dataset):
         """
         Return the camera value for NIRI
@@ -513,23 +495,6 @@ class NIRI_RAWDescriptorCalc(Calculator):
             return None
         
         return str(retutdatestring)
-    
-    def uttime(self, dataset):
-        """
-        Return the uttime value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT at the start of the observation (HH:MM:SS.S)
-        """
-        try:
-            hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictNIRI["key_niri_uttime"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retuttimestring)
     
     def wdelta(self, dataset):
         """
