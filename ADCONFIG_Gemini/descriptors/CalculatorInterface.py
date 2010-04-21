@@ -25,19 +25,19 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def az(self, **args):
+    def azimuth(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "az")
-            if not hasattr( self.descriptorCalculator, "az"):
-                key = "key_"+"az"
+            #print hasattr( self.descriptorCalculator, "azimuth")
+            if not hasattr( self.descriptorCalculator, "azimuth"):
+                key = "key_"+"azimuth"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.az(self, **args)
+            return self.descriptorCalculator.azimuth(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -133,24 +133,6 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def datalab(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "datalab")
-            if not hasattr( self.descriptorCalculator, "datalab"):
-                key = "key_"+"datalab"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.datalab(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
     def dec(self, **args):
         try:
             self._lazyloadCalculator()
@@ -205,19 +187,19 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def el(self, **args):
+    def elevation(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "el")
-            if not hasattr( self.descriptorCalculator, "el"):
-                key = "key_"+"el"
+            #print hasattr( self.descriptorCalculator, "elevation")
+            if not hasattr( self.descriptorCalculator, "elevation"):
+                key = "key_"+"elevation"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.el(self, **args)
+            return self.descriptorCalculator.elevation(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -313,24 +295,6 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def progid(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "progid")
-            if not hasattr( self.descriptorCalculator, "progid"):
-                key = "key_"+"progid"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.progid(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
     def instrument(self, **args):
         try:
             self._lazyloadCalculator()
@@ -421,24 +385,6 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def obsid(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "obsid")
-            if not hasattr( self.descriptorCalculator, "obsid"):
-                key = "key_"+"obsid"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.obsid(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
     def obsclass(self, **args):
         try:
             self._lazyloadCalculator()
@@ -457,6 +403,24 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
+    def obsepoch(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "obsepoch")
+            if not hasattr( self.descriptorCalculator, "obsepoch"):
+                key = "key_"+"obsepoch"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.obsepoch(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
     def observer(self, **args):
         try:
             self._lazyloadCalculator()
@@ -470,6 +434,24 @@ class CalculatorInterface:
                 else:
                     return None
             return self.descriptorCalculator.observer(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
+    def obsid(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "obsid")
+            if not hasattr( self.descriptorCalculator, "obsid"):
+                key = "key_"+"obsid"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.obsid(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -506,24 +488,6 @@ class CalculatorInterface:
                 else:
                     return None
             return self.descriptorCalculator.obstype(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
-    def obsepoch(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "obsepoch")
-            if not hasattr( self.descriptorCalculator, "obsepoch"):
-                key = "key_"+"obsepoch"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.obsepoch(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -889,24 +853,6 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def yoffset(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "yoffset")
-            if not hasattr( self.descriptorCalculator, "yoffset"):
-                key = "key_"+"yoffset"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.yoffset(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
     def yccdbin(self, **args):
         try:
             self._lazyloadCalculator()
@@ -924,56 +870,20 @@ class CalculatorInterface:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
-
-    def detid(self, **args):
+    
+    def yoffset(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "detid")
-            if not hasattr( self.descriptorCalculator, "detid"):
-                key = "key_"+"detid"
+            #print hasattr( self.descriptorCalculator, "yoffset")
+            if not hasattr( self.descriptorCalculator, "yoffset"):
+                key = "key_"+"yoffset"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.detid(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-
-    def detroa(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "detroa")
-            if not hasattr( self.descriptorCalculator, "detroa"):
-                key = "key_"+"detroa"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.detroa(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-
-    def amproa(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "amproa")
-            if not hasattr( self.descriptorCalculator, "amproa"):
-                key = "key_"+"amproa"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.amproa(self, **args)
+            return self.descriptorCalculator.yoffset(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -996,8 +906,6 @@ class CalculatorInterface:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
-
-
     
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
