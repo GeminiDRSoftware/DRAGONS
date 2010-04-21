@@ -2,16 +2,17 @@ from astrodata import Lookups
 from astrodata import Descriptors
 import re
 
-import astrodata
 from astrodata.Calculator import Calculator
 
 from datetime import datetime
 from time import strptime
 
 import GemCalcUtil
-from StandardGMOSKeyDict import stdkeyDictGMOS
 
-class GMOS_RAWDescriptorCalc(Calculator):
+from StandardGMOSKeyDict import stdkeyDictGMOS
+from GEMINI_Descriptor import GEMINI_DescriptorCalc
+
+class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
     gmosampsGain = None
     gmosampsGainBefore20060831 = None
@@ -27,23 +28,31 @@ class GMOS_RAWDescriptorCalc(Calculator):
         self.gmosampsGain,self.gmosampsGainBefore20060831 = Lookups.getLookupTable("Gemini/GMOS/GMOSAmpTables", "gmosampsGain", "gmosampsGainBefore20060831")
         self.gmosampsRdnoise,self.gmosampsRdnoiseBefore20060831 = Lookups.getLookupTable("Gemini/GMOS/GMOSAmpTables", "gmosampsRdnoise", "gmosampsRdnoiseBefore20060831")
         
-    def airmass(self, dataset, **args):
+    def amproa(self, dataset, **args):
         """
-        Return the airmass value for GMOS
+        Return the amproa (detector amplifier - readout area) value for GMOS
+        This is a composite string, formed as a list of key-value pairs, where
+        the key is the ampname and the value is the detsec readout area on that ccd
         @param dataset: the data set
         @type dataset: AstroData
-        @rtype: float
-        @return: the mean airmass for the observation
+        @rtype: string
+        @return: the amplifier and readout area string
         """
         try:
+            array=[]
             hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictGMOS["key_gmos_airmass"]]
-        
+            for i in range(1, len(hdu)):
+              ccdname = hdu[i].header[stdkeyDictGMOS["key_gmos_ampname"]]
+              detsec = hdu[i].header[stdkeyDictGMOS["key_gmos_detsec"]]
+              array.append("'%s':%s" % (ccdname, detsec))
+
+            string = ','.join(array)
+
         except KeyError:
             return None
-        
-        return float(retairmassfloat)
-    
+
+        return string
+
     def camera(self, dataset, **args):
         """
         Return the camera value for GMOS
@@ -79,6 +88,30 @@ class GMOS_RAWDescriptorCalc(Calculator):
 
         return float(retcwavefloat)
     
+    def datasec(self, dataset, **args):
+        """
+        Return the datasec value for GMOS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: list
+        @returns: an array of data section values, where the number of
+        array elements equals the number of extensions in the image.
+        Index 0 is the data section of the first extension containing pixels
+        (equivalent to EXTNAME = "SCI") and so on.
+        """
+        retdataseclist = []
+        for ext in dataset:
+            try:
+                # get the values - GMOS raw data can have up to 6 data extensions
+                datasec = ext.header[stdkeyDictGMOS["key_gmos_datasec"]]
+            
+            except KeyError:
+                datasec = None
+            
+            retdataseclist.append(datasec)
+        
+        return retdataseclist
+    
     def detroa(self, dataset, **args):
         """
         Return the detroa (detector - readout area) value for GMOS
@@ -104,57 +137,6 @@ class GMOS_RAWDescriptorCalc(Calculator):
 
         return string
 
-    def amproa(self, dataset, **args):
-        """
-        Return the amproa (detector amplifier - readout area) value for GMOS
-        This is a composite string, formed as a list of key-value pairs, where
-        the key is the ampname and the value is the detsec readout area on that ccd
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the amplifier and readout area string
-        """
-        try:
-            array=[]
-            hdu = dataset.hdulist
-            for i in range(1, len(hdu)):
-              ccdname = hdu[i].header[stdkeyDictGMOS["key_gmos_ampname"]]
-              detsec = hdu[i].header[stdkeyDictGMOS["key_gmos_detsec"]]
-              array.append("'%s':%s" % (ccdname, detsec))
-
-            string = ','.join(array)
-
-        except KeyError:
-            return None
-
-        return string
-
-
-
-    def datasec(self, dataset, **args):
-        """
-        Return the datasec value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: list
-        @returns: an array of data section values, where the number of
-        array elements equals the number of extensions in the image.
-        Index 0 is the data section of the first extension containing pixels
-        (equivalent to EXTNAME = "SCI") and so on.
-        """
-        retdataseclist = []
-        for ext in dataset:
-            try:
-                # get the values - GMOS raw data can have up to 6 data extensions
-                datasec = ext.header[stdkeyDictGMOS["key_gmos_datasec"]]
-            
-            except KeyError:
-                datasec = None
-            
-            retdataseclist.append(datasec)
-        
-        return retdataseclist
-    
     def detsec(self, dataset, **args):
         """
         Return the detsec value for GMOS
@@ -620,23 +602,6 @@ class GMOS_RAWDescriptorCalc(Calculator):
             return None
         
         return str(retutdatestring)
-    
-    def uttime(self, dataset, **args):
-        """
-        Return the uttime value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT at the start of the observation (HH:MM:SS.S)
-        """
-        try:
-            hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictGMOS["key_gmos_uttime"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retuttimestring)
     
     def wdelta(self, dataset, **args):
         """
