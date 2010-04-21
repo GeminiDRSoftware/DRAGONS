@@ -2,13 +2,14 @@ from astrodata import Lookups
 from astrodata import Descriptors
 import math
 
-import astrodata
 from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
-from StandardNIFSKeyDict import stdkeyDictNIFS
 
-class NIFS_RAWDescriptorCalc(Calculator):
+from StandardNIFSKeyDict import stdkeyDictNIFS
+from GEMINI_Descriptor import GEMINI_DescriptorCalc
+
+class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
 
     nifsArrayDict = None
     nifsConfigDict = None    
@@ -16,23 +17,6 @@ class NIFS_RAWDescriptorCalc(Calculator):
     def __init__(self):
         self.nifsArrayDict = Lookups.getLookupTable("Gemini/NIFS/NIFSArrayDict", "nifsArrayDict")
         self.nifsConfigDict = Lookups.getLookupTable("Gemini/NIFS/NIFSConfigDict", "nifsConfigDict")
-    
-    def airmass(self, dataset, **args):
-        """
-        Return the airmass value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the mean airmass for the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictNIFS["key_nifs_airmass"]]
-        
-        except KeyError:
-            return None
-        
-        return float(retairmassfloat)
     
     def camera(self, dataset, **args):
         """
@@ -491,23 +475,6 @@ class NIFS_RAWDescriptorCalc(Calculator):
             return None
         
         return str(retutdatestring)
-    
-    def uttime(self, dataset, **args):
-        """
-        Return the uttime value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT at the start of the observation (HH:MM:SS.S)
-        """
-        try:
-            hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictNIFS["key_nifs_uttime"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retuttimestring)
     
     def wdelta(self, dataset, **args):
         """
