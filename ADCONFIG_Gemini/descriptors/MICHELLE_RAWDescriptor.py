@@ -1,33 +1,16 @@
 from astrodata import Lookups
 from astrodata import Descriptors
 import re
-import math
 
-import astrodata
 from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
+
 from StandardMICHELLEKeyDict import stdkeyDictMICHELLE
+from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
-class MICHELLE_RAWDescriptorCalc(Calculator):
+class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
 
-    def airmass(self, dataset, **args):
-        """
-        Return the airmass value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the mean airmass for the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictMICHELLE["key_michelle_airmass"]]
-        
-        except KeyError:
-            return None
-        
-        return float(retairmassfloat)
-    
     def camera(self, dataset, **args):
         """
         Return the camera value for MICHELLE
@@ -355,23 +338,6 @@ class MICHELLE_RAWDescriptorCalc(Calculator):
             return None
         
         return str(retutdatestring)
-    
-    def uttime(self, dataset, **args):
-        """
-        Return the uttime value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT at the start of the observation (HH:MM:SS.S)
-        """
-        try:
-            hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_uttime"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retuttimestring)
     
     def wdelta(self, dataset, **args):
         """
