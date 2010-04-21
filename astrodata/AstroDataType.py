@@ -1025,6 +1025,10 @@ class ClassificationLibrary (object):
             return True
         else:
             return False
+            
+    def getAvailableTypes(self):
+        return self.typesDict.keys()
+        
     def getTypeObj(self,typename):
         """Generally users do not need DataClassification instances, however
         if you really do need that object, say to write an editor... this function

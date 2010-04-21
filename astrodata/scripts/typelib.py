@@ -4,6 +4,7 @@ from astrodata.AstroDataType import *
 from optparse import OptionParser
 from astrodata import Descriptors as ds
 import os
+import re
 try:
     import pydot
     from pydot import *
@@ -44,87 +45,119 @@ ndict = {}
 edict = {}
 adict = {} # contains node list keyed by type
 ddict = {} # contains node list keyed by type
-gmos = cl.getTypeObj(astrotype)
+if (astrotype):
+    typeobjs = [astrotype]
+    displaytype = astrotype
+else:
+    displaytype = "GEMINI"
+    typeobjs = cl.getAvailableTypes();
 
 lasttyp = None
 lastnode = None
 #nodes and annotations
-for typ in gmos.walk():
-    node = Node(typ.name, shape="house")
-    ndict.update({typ.name: node})
-    
-    if typ.name in psdict:
-        anodes = []
-        labels = []
-        i = 0
-        for cfg in psdict[typ.name]:
-            labels.append("<f%d>" % i + cfg[0])
-            
-            i += 1
-            #anode = Node(cfg[0], shape="box")
-            #anodes.append(anode)
-        label = "{"+"|".join(labels)+"}"
-        tnode = Node(typ.name+"_PrimSet", 
-                        
-                        shape="record", 
-                        label = label)
-        anodes.append(tnode)
-        adict.update({typ:anodes})
-        
-    if typ.name in descdict:
-        anodes = []
-        cfg = descdict[typ.name]
-        nam = typ.name+"Descriptor"
-        anode = Node(nam, shape="box", 
-                    label= nam)
-        anodes.append(anode)
-        ddict.update({typ:anodes})
+for typename in typeobjs:
+    typeobj = cl.getTypeObj(typename)
 
-# edges
-for typ in gmos.walk(style="children"):
-    es = createEdges(typ, children=True)
-    edict.update(es)
-for typ in gmos.walk(style="parent"):
-    es = createEdges(typ, parents = True)
-    print "tl59:",repr(es)
-    edict.update(es)
+    for typ in typeobj.walk():
+        node = Node(typ.name, shape="house",
+                    URL = typ.name+"-tree.svg")
+        ndict.update({typ.name: node})
 
-# create graph
-graph = Dot(graph_type="digraph")
-for n in ndict:
-    graph.add_node(ndict[n])
-for e in edict:
-    graph.add_edge(edict[e])
-# do primitive set dict
-for typ in adict:
-    subg = Cluster(typ.name,
-                     
-                    bgcolor = "#40a0ff",
-                    label=typ.name+" PrimSet")
-    
-    for an in adict[typ]:
-        subg.add_node(an)
-    graph.add_subgraph(subg)
-    print "tl98:", repr(adict)
-    anedge = Edge(adict[typ][0], ndict[typ.name], lhead=subg.get_name())
-    graph.add_edge(anedge)
-# do descriptor set dict
-for typ in ddict:
-    subg = Cluster(typ.name,bgcolor = "#a02070",label="",
-                fontsize="3")
-    
-    for an in ddict[typ]:
-        subg.add_node(an)
-    graph.add_subgraph(subg)
-    anedge = Edge(ddict[typ][0], ndict[typ.name], lhead=subg.get_name())
-    graph.add_edge(anedge)
-        
-graph.write_svg("output.svg")
-graph.write_png("output.png")
+        if typ.name in psdict:
+            anodes = []
+            labels = []
+            i = 0
+            for cfg in psdict[typ.name]:
+                labels.append("<f%d>" % i + cfg[0])
 
-graph.write_dot("output.dot")    
+                i += 1
+                #anode = Node(cfg[0], shape="box")
+                #anodes.append(anode)
+            label = "{"+"|".join(labels)+"}"
+            tnode = Node(typ.name+"_PrimSet", 
+
+                            shape="record", 
+                            label = label,
+                            fontsize = "10")
+            anodes.append(tnode)
+            adict.update({typ:anodes})
+
+        if typ.name in descdict:
+            anodes = []
+            cfg = descdict[typ.name]
+            nam = typ.name+"_Descriptor"
+            anode = Node(nam, shape="box", 
+                        label= nam,
+                        fontsize="10",
+                        fillcolor = "#ffd0d0",
+                        style="filled"
+                        )
+            anodes.append(anode)
+            ddict.update({typ:anodes})
+
+    # edges
+    for typ in typeobj.walk(style="children"):
+        es = createEdges(typ, children=True)
+        edict.update(es)
+    for typ in typeobj.walk(style="parent"):
+        es = createEdges(typ, parents = True)
+        print "tl59:",repr(es)
+        edict.update(es)
+
+    # create graph
+    graph = Dot(graph_type="digraph", )
+    for n in ndict:
+        graph.add_node(ndict[n])
+    for e in edict:
+        graph.add_edge(edict[e])
+    # do primitive set dict
+    for typ in adict:
+        subg = Cluster(typ.name,
+
+                        bgcolor = "#e0e0ff",
+                        label=typ.name+" PrimSet",
+                        fontsize="9")
+
+        for an in adict[typ]:
+            subg.add_node(an)
+        graph.add_subgraph(subg)
+        print "tl98:", repr(adict)
+        anedge = Edge(adict[typ][0], ndict[typ.name], 
+                        lhead=subg.get_name(),
+                        style="dotted")
+        graph.add_edge(anedge)
+    # do descriptor set dict
+    for typ in ddict:
+        # subg = Cluster(typ.name,bgcolor = "#a02070",label="")
+        print repr(ddict)
+        for an in ddict[typ]:
+            graph.add_node(an)
+        #    subg.add_node(an)
+        #graph.add_subgraph(subg)
+
+        anedge = Edge(ddict[typ][0], ndict[typ.name],
+             style="dashed",)
+        graph.add_edge(anedge)
+
+    outbase = typename+"-tree"
+    graph.write_svg(outbase+".broke.svg")
+    graph.write_png(outbase+".png")
+    graph.write_dot(outbase+".dot")   
+
+    # fix svg
+    svg = file(outbase+".broke.svg")
+    nsvg = file(outbase+".svg", mode="w")
+    for line in svg.readlines():
+        nline = re.sub(r'font-size:(.*?);', r'font-size:\1px;', line)
+        print "tl137:", line, "--->", line
+        nsvg.write(nline)
+
+    svg.close()
+    nsvg.close()
+
+
 # a = cl.gvizDoc(astrotype= astrotype, writeout = True, assDict = assdict)
 import webbrowser
 # url = "file://"+os.path.join(os.path.abspath("."), "gemdtype.viz.svg")
-url = "file://"+os.path.join(os.path.abspath("."), "output.svg")
+url = "file://"+os.path.join(os.path.abspath("."), displaytype +"-tree.svg")
 webbrowser.open(url);

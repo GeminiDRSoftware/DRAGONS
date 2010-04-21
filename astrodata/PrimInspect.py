@@ -70,7 +70,7 @@ class PrimInspect():
     def show(self, arg):
         print arg
         if self.options.makeOutputFile:
-            arg = arg.sub(r'\$\$|\${\w+}','',arg)
+            arg = re.sub(r'\$\$|\${\w+}','',arg)
             # replaced by above
             # arg = arg.replace('${BOLD}','')
             # arg = arg.replace('${NORMAL}','')
@@ -286,9 +286,11 @@ class PrimInspect():
        
         if firstset:           
             self.show("${BOLD}"+'_'*SW+"${NORMAL}")
-            self.show("\n${BOLD}%s\n${NORMAL}" % (cl.astrotype))
             if self.options.showInfo:
+                self.show("\n${BOLD}%s${NORMAL}\n" % (cl.astrotype))
                 self.showSetInfo(primsetname, cl, primlist) 
+            else:
+                self.show("\n${BOLD}%s ${NORMAL}(%s)\n" % (cl.astrotype, primsetname))
             self.show("-"*SW)
             astrotype = cl.astrotype
             instance = self.class2instance[primsetname]
