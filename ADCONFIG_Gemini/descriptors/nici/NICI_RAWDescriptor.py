@@ -2,34 +2,20 @@
 # FROM Emma Hogan
 #
 from astrodata import Lookups
+from astrodata import Descriptors
+
 from astrodata.Calculator import Calculator
-import math
 
 import GemCalcUtil 
-from StandardNICIKeyDict import stdkeyDictNICI
 
-class NICI_RAWDescriptorCalc(Calculator):
+from StandardNICIKeyDict import stdkeyDictNICI
+from GEMINI_Descriptor import GEMINI_DescriptorCalc
+
+class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     #def __init__(self):
     #    return None
 
-    def airmass(self, dataset, **args):
-        """
-        Return the airmass value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the mean airmass for the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictNICI["key_nici_airmass"]]
-        
-        except KeyError:
-            return None
-        
-        return float(retairmassfloat)
-    
     def camera(self, dataset, **args):
         """
         Return the camera value for NICI
@@ -333,23 +319,6 @@ class NICI_RAWDescriptorCalc(Calculator):
             return None
         
         return str(retutdatestring)
-    
-    def uttime(self, dataset, **args):
-        """
-        Return the uttime value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT at the start of the observation (HH:MM:SS.S)
-        """
-        try:
-            hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictNICI["key_nici_uttime"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retuttimestring)
     
     def wdelta(self, dataset, **args):
         """
