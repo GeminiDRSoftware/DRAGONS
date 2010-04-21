@@ -2,13 +2,14 @@ from astrodata import Lookups
 from astrodata import Descriptors
 import math
 
-import astrodata
 from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
-from StandardGNIRSKeyDict import stdkeyDictGNIRS
 
-class GNIRS_RAWDescriptorCalc(Calculator):
+from StandardGNIRSKeyDict import stdkeyDictGNIRS
+from GEMINI_Descriptor import GEMINI_DescriptorCalc
+
+class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
 
     gnirsArrayDict = None
     gnirsConfigDict = None
@@ -16,23 +17,6 @@ class GNIRS_RAWDescriptorCalc(Calculator):
     def __init__(self):
         self.gnirsArrayDict = Lookups.getLookupTable("Gemini/GNIRS/GNIRSArrayDict", "gnirsArrayDict")
         self.gnirsConfigDict = Lookups.getLookupTable("Gemini/GNIRS/GNIRSConfigDict", "gnirsConfigDict")
-    
-    def airmass(self, dataset, **args):
-        """
-        Return the airmass value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the mean airmass for the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictGNIRS["key_gnirs_airmass"]]
-        
-        except KeyError:
-            return None
-        
-        return float(retairmassfloat)
     
     def camera(self, dataset, **args):
         """
@@ -502,23 +486,6 @@ class GNIRS_RAWDescriptorCalc(Calculator):
             return None
         
         return str(retutdatestring)
-    
-    def uttime(self, dataset, **args):
-        """
-        Return the uttime value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT at the start of the observation (HH:MM:SS.S)
-        """
-        try:
-            hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_uttime"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retuttimestring)
     
     def wdelta(self, dataset, **args):
         """
