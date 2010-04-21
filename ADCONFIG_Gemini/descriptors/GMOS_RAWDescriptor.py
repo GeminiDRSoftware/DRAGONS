@@ -303,6 +303,21 @@ class GMOS_RAWDescriptorCalc(Calculator):
         
         return str(retfpmaskstring)
     
+    def readout_dwelltime(self, dataset, **args):
+        """
+        Return the readout dwell time value for GMOS, from the ampinteg header
+        This indicates the readout speed in use
+        @param dataset: the data set
+        @type dataset: AstroData
+        """
+        try:
+            hdu = dataset.hdulist
+            ampinteg = hdu[0].header[stdkeyDictGMOS["key_gmos_ampinteg"]]
+            return ampinteg
+
+        except KeyError:
+            return None
+
     def gain(self, dataset, **args):
         """
         Return the gain value for GMOS
