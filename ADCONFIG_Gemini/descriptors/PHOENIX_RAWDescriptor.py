@@ -1,14 +1,15 @@
 from astrodata import Lookups
 from astrodata import Descriptors
-import math
 
 import astrodata
 from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
-from StandardPHOENIXKeyDict import stdkeyDictPHOENIX
 
-class PHOENIX_RAWDescriptorCalc(Calculator):
+from StandardPHOENIXKeyDict import stdkeyDictPHOENIX
+from GEMINI_Descriptor import GEMINI_DescriptorCalc
+
+class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
 
     def __init__(self):
         pass
@@ -153,15 +154,6 @@ class PHOENIX_RAWDescriptorCalc(Calculator):
 
         except KeyError:
             return None
-
-    def uttime(self, dataset, **args):
-        try:
-           hdu = dataset.hdulist
-           uttimestring = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_uttime"]]
-           return uttimestring
-        except KeyError:
-            return None
-
 
     def disperser(self, dataset, **args):
         """
