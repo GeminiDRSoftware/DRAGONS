@@ -235,23 +235,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     niriSpecDict = None
     
-    def instrument(self, dataset):
-        """
-        Return the instrument value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the instrument used to acquire the data
-        """
-        try:
-            hdu = dataset.hdulist
-            retinstrumentstring = hdu[0].header[stdkeyDictNIRI["key_niri_instrument"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retinstrumentstring)
-    
     def mdfrow(self, dataset):
         """
         Return the mdfrow value for NIRI
@@ -323,23 +306,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         retnsciextint = dataset.countExts(None)
         
         return int(retnsciextint)
-    
-    def object(self, dataset):
-        """
-        Return the object value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the name of the object acquired
-        """
-        try:
-            hdu = dataset.hdulist
-            retobjectstring = hdu[0].header[stdkeyDictNIRI["key_niri_object"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retobjectstring)
     
     def obsmode(self, dataset):
         """
@@ -478,23 +444,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         return int(retsaturationint)
     
     niriSpecDict = None
-    
-    def utdate(self, dataset):
-        """
-        Return the utdate value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT date of the observation (YYYY-MM-DD)
-        """
-        try:
-            hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictNIRI["key_niri_utdate"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retutdatestring)
     
     def wdelta(self, dataset):
         """

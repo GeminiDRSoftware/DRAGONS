@@ -1,5 +1,4 @@
 stdkeyDictGMOS = {
-    "key_gmos_airmass":"AIRMASS",
     "key_gmos_ampinteg":"AMPINTEG",
     "key_gmos_ampname":"AMPNAME",
     "key_gmos_camera":"INSTRUME",
@@ -17,11 +16,7 @@ stdkeyDictGMOS = {
     "key_gmos_filtid2":"FILTID2",
     "key_gmos_fpmask":"MASKNAME",
     "key_gmos_gain":"GAIN",
-    "key_gmos_instrument":"INSTRUME",
     "key_gmos_maskname":"MASKNAME",
     "key_gmos_masktype":"MASKTYP",
-    "key_gmos_object":"OBJECT",
-    "key_gmos_utdate":"DATE-OBS",
-    "key_gmos_uttime":"UT",
     "key_gmos_wdelta":"CD1_1",
     }

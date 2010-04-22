@@ -1,3 +1,3 @@
-stdkeyDictFLAMINGOS2 = {
-    "key_flamingos2_airmass":"AIRMASS",
+stdkeyDictF2 = {
+    "key_f2_camera":"CAMERA",
     }

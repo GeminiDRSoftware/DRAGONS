@@ -1,5 +1,4 @@
 stdkeyDictGNIRS = {
-    "key_gnirs_airmass":"AIRMASS",
     "key_gnirs_bias":"DETBIAS",
     "key_gnirs_camera":"CAMERA",
     "key_gnirs_coadds":"COADDS",
@@ -10,11 +9,7 @@ stdkeyDictGNIRS = {
     "key_gnirs_filter1":"FILTER1",
     "key_gnirs_filter2":"FILTER2",
     "key_gnirs_fpmask":"SLIT",
-    "key_gnirs_instrument":"INSTRUME",
     "key_gnirs_lnrs":"LNRS",
     "key_gnirs_ndavgs":"NDAVGS",
-    "key_gnirs_object":"OBJECT",
     "key_gnirs_prism":"PRISM",
-    "key_gnirs_utdate":"DATE-OBS",
-    "key_gnirs_uttime":"UT",
     }
