@@ -54,6 +54,41 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
         return string
 
+    def readspeedmode(self, dataset, **args):
+        """
+        Return the readout speed mode for GMOS. this should be either "slow" or "fast"
+        Derived from the ampinteg keyword
+        """
+        try:
+            hdu = dataset.hdulist
+            ampinteg = hdu[0].header[stdkeyDictGMOS["key_gmos_ampinteg"]]
+            mode = "slow"
+            if (ampinteg == 1000):
+              mode= "fast"
+
+            return mode
+
+        except KeyError:
+            return None
+
+    def gainmode(self, dataset, **args):
+        """
+        Return the gain mode for GMOS. this should be either "low" or "high"
+        Derived from the gain keyword
+        """
+        try:
+            hdu = dataset.hdulist
+            headergain = hdu[1].header[stdkeyDictGMOS["key_gmos_gain"]]
+            mode = "low"
+            if (headergain > 3.0):
+              mode= "high"
+
+            return mode
+
+        except KeyError:
+            return None
+
+
     def camera(self, dataset, **args):
         """
         Return the camera value for GMOS
