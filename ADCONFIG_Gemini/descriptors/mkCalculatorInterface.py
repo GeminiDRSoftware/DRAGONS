@@ -77,7 +77,10 @@ descriptors =   [   DD("airmass"),
                     DD("xccdbin"),
                     DD("xoffset"),
                     DD("yccdbin"),
-                    DD("yoffset"),
+                    DD("amproa"),
+                    DD("ccdroa"),
+                    DD("readspeedmode"),
+                    DD("gainmode"),
                 ]
 
 wholeout = """
