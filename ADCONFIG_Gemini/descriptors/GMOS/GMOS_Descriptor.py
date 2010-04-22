@@ -10,6 +10,7 @@ from time import strptime
 import GemCalcUtil
 
 from StandardGMOSKeyDict import stdkeyDictGMOS
+from StandardGenericKeyDict import stdkeyDictGeneric
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
@@ -314,7 +315,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             hdu = dataset.hdulist
             ampinteg = hdu[0].header[stdkeyDictGMOS["key_gmos_ampinteg"]]
-            utdate = hdu[0].header[stdkeyDictGMOS["key_gmos_utdate"]]
+            utdate = hdu[0].header[stdkeyDictGeneric["key_generic_utdate"]]
             obsutdate = datetime(*strptime(utdate, "%Y-%m-%d")[0:6])
             oldutdate = datetime(2006,8,31,0,0)
             
@@ -360,23 +361,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     gmosampsGain = None
     gmosampsGainBefore20060831 = None
     
-    def instrument(self, dataset, **args):
-        """
-        Return the instrument value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the instrument used to acquire the data
-        """
-        try:
-            hdu = dataset.hdulist
-            retinstrumentstring = hdu[0].header[stdkeyDictGMOS["key_gmos_instrument"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retinstrumentstring)
-    
     def mdfrow(self, dataset, **args):
         """
         Return the mdfrow value for GMOS
@@ -412,23 +396,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         retnsciextint = dataset.countExts(None)
 
         return int(retnsciextint)
-    
-    def object(self, dataset, **args):
-        """
-        Return the object value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the name of the object acquired
-        """
-        try:
-            hdu = dataset.hdulist
-            retobjectstring = hdu[0].header[stdkeyDictGMOS["key_gmos_object"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retobjectstring)
     
     def obsmode(self, dataset, **args):
         """
@@ -480,7 +447,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            instrument = hdu[0].header[stdkeyDictGMOS["key_gmos_instrument"]]
+            instrument = hdu[0].header[stdkeyDictGeneric["key_generic_instrument"]]
             
             for ext in dataset:
                 # get the values - GMOS raw data can have up to 6 data extensions
@@ -528,7 +495,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             hdu = dataset.hdulist
             ampinteg = hdu[0].header[stdkeyDictGMOS["key_gmos_ampinteg"]]
-            utdate = hdu[0].header[stdkeyDictGMOS["key_gmos_utdate"]]
+            utdate = hdu[0].header[stdkeyDictGeneric["key_generic_utdate"]]
             obsutdate = datetime(*strptime(utdate, "%Y-%m-%d")[0:6])
             oldutdate = datetime(2006,8,31,0,0)
             
@@ -585,23 +552,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         retsaturationint = 65000
         
         return int(retsaturationint)
-    
-    def utdate(self, dataset, **args):
-        """
-        Return the utdate value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT date of the observation (YYYY-MM-DD)
-        """
-        try:
-            hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictGMOS["key_gmos_utdate"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retutdatestring)
     
     def wdelta(self, dataset, **args):
         """

@@ -1,4 +1,3 @@
-
 import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors

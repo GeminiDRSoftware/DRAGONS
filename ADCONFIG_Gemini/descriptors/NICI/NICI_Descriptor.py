@@ -1,6 +1,3 @@
-#
-# FROM Emma Hogan
-#
 from astrodata import Lookups
 from astrodata import Descriptors
 
@@ -168,23 +165,6 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return retgainfloat
     
-    def instrument(self, dataset, **args):
-        """
-        Return the instrument value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the instrument used to acquire the data
-        """
-        try:
-            hdu = dataset.hdulist
-            retinstrumentstring = hdu[0].header[stdkeyDictNICI["key_nici_instrument"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retinstrumentstring)
-    
     def mdfrow(self, dataset, **args):
         """
         Return the mdfrow value for NICI
@@ -221,23 +201,6 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return int(retnsciextint)
 
-    def object(self, dataset, **args):
-        """
-        Return the object value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the name of the object acquired
-        """
-        try:
-            hdu = dataset.hdulist
-            retobjectstring = hdu[0].header[stdkeyDictNICI["key_nici_object"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retobjectstring)
-    
     def obsmode(self, dataset, **args):
         """
         Return the obsmode value for NICI
@@ -302,23 +265,6 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         retsaturationint = None
         
         return retsaturationint
-    
-    def utdate(self, dataset, **args):
-        """
-        Return the utdate value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT date of the observation (YYYY-MM-DD)
-        """
-        try:
-            hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictNICI["key_nici_utdate"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retutdatestring)
     
     def wdelta(self, dataset, **args):
         """

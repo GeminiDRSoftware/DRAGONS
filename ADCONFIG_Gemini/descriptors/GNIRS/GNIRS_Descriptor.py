@@ -236,23 +236,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
 
     gnirsArrayDict = None
     
-    def instrument(self, dataset, **args):
-        """
-        Return the instrument value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the instrument used to acquire the data
-        """
-        try:
-            hdu = dataset.hdulist
-            retinstrumentstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_instrument"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retinstrumentstring)
-    
     def mdfrow(self, dataset, **args):
         """
         Return the mdfrow value for GNIRS
@@ -314,23 +297,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         retnsciextint = dataset.countExts(None)
         
         return int(retnsciextint)
-    
-    def object(self, dataset, **args):
-        """
-        Return the object value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the name of the object acquired
-        """
-        try:
-            hdu = dataset.hdulist
-            retobjectstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_object"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retobjectstring)
     
     def obsmode(self, dataset, **args):
         """
@@ -469,23 +435,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         return int(retsaturationint)
     
     gnirsArrayDict = None
-    
-    def utdate(self, dataset, **args):
-        """
-        Return the utdate value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT date of the observation (YYYY-MM-DD)
-        """
-        try:
-            hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_utdate"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retutdatestring)
     
     def wdelta(self, dataset, **args):
         """

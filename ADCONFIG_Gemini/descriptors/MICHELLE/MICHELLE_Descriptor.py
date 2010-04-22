@@ -177,23 +177,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return float(retgainfloat)
     
-    def instrument(self, dataset, **args):
-        """
-        Return the instrument value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the instrument used to acquire the data
-        """
-        try:
-            hdu = dataset.hdulist
-            retinstrumentstring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_instrument"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retinstrumentstring)
-    
     def mdfrow(self, dataset, **args):
         """
         Return the mdfrow value for MICHELLE
@@ -234,23 +217,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             return None
         
         return int(retnsciextint)
-    
-    def object(self, dataset, **args):
-        """
-        Return the object value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the name of the object acquired
-        """
-        try:
-            hdu = dataset.hdulist
-            retobjectstring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_object"]]
-        
-        except KeyError:
-            return None
-                        
-        return str(retobjectstring)
     
     def obsmode(self, dataset, **args):
         """
