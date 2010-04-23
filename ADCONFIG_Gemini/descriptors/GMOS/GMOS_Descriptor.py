@@ -237,6 +237,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
+        retexptimefloat = float(retexptimefloat)
+
+        # Sanity check for times when the GMOS DC is stoned
+        if((retexptimefloat > 10000.0) or (retexptimefloat < 0.0)):
+            retexptimefloat = None
+
         return float(retexptimefloat)
     
     def filterid(self, dataset, **args):
