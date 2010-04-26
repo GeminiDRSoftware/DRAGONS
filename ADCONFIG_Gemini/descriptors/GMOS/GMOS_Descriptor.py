@@ -206,7 +206,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         @return: the disperser / grating used to acquire the data
         """
 
-        # In this case, pretty is simply stripID
+        # In this case, pretty is stripID with additionally the '+'
+        # removed from the string
         if(pretty):
           stripID=True
 
@@ -220,6 +221,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if(stripID):
           retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
         
+        if(pretty):
+          retdisperserstring = retdisperserstring.strip('+')
+
         return str(retdisperserstring)
     
     def exptime(self, dataset, **args):
