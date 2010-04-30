@@ -343,6 +343,64 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return float(retpixscalefloat)
     
+    def welldepthmode(self, dataset):
+	"""
+        Returns the well depth mode for NIRI. This is either "Deep" or "Shallow" as in the OT
+        Returns 'Invalid' if the bias numbers aren't what we normally use
+        Uses parameters in the niriSpecDict dictionary
+	"""
+        try:
+            hdu = dataset.hdulist
+
+            vdduc = hdu[0].header[stdkeyDictNIRI["key_niri_avdduc"]]
+            vdet = hdu[0].header[stdkeyDictNIRI["key_niri_avdet"]]
+
+            biasvolt = vdduc - vdet
+
+            shallowbias = self.niriSpecDict["shallowbias"]
+            deepbias = self.niriSpecDict["deepbias"]
+
+            welldepthmode = 'Invalid'
+
+            if abs(biasvolt - shallowbias) < 0.05:
+		welldepthmode = 'Shallow'
+
+            if abs(biasvolt - deepbias) < 0.05:
+		welldepthmode = 'Deep'
+
+	    return welldepthmode
+
+        except KeyError:
+            return None
+
+	
+    def readmode(self, dataset):
+	"""
+        Returns the Read Mode for NIRI. This is either "Low Background", "Medium Background" or "High Background"
+        as in the OT. Returns 'Invalid' if the headers don't make sense wrt these defined modes.
+	"""
+	try:
+	    hdu = dataset.hdulist
+
+            lnrs = hdu[0].header[stdkeyDictNIRI["key_niri_lnrs"]]
+            ndavgs = hdu[0].header[stdkeyDictNIRI["key_niri_ndavgs"]]
+
+            readmode = "Invalid"
+
+            if((lnrs==16) and (ndavgs==16)):
+                readmode = "Low Background"
+
+            if((lnrs==1) and (ndavgs==16)):
+                readmode = "Medium Background"
+
+            if((lnrs==1) and (ndavgs==1)):
+                readmode = "High Background"
+
+            return readmode
+
+	except KeyError:
+	    return None
+
     def pupilmask(self, dataset):
         """
         Return the pupilmask value for NIRI
