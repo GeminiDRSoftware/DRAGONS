@@ -11,36 +11,3 @@ Introduction
     gen.AstroDataLexicon.rst
     gen.AstroDataPackageOverview.rst
 
-
-.. sourcecode:: python 
-    :linenos:
-
-
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-    for a in i:
-        print i
-        
-this is stuff too

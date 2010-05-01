@@ -1,4 +1,4 @@
-digraph G {
+digraph GEMINI_Type_Graph {
 	node [label="\N"];
 	graph [bb="0,0,1641,324"];
 	GMOS [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS.py", pos="890,234", width="1.14", height="0.50"];

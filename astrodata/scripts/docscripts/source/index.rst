@@ -15,4 +15,4 @@ The Astrodata Manual
     :maxdepth: 6
     
     chapter_intro.rst
-    
+    chapter_Gemini_Types.rst

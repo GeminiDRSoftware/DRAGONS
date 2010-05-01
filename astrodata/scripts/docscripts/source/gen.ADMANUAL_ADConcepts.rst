@@ -1,4 +1,18 @@
-</addhtml>
+
+
+
+Contents
+--------
+
+
++ 1 Concepts
+
+    + 1.1 Background
+    + 1.2 AstroDataType
+    + 1.3 AstroData Descriptors
+
+
+
 
 
 Concepts
@@ -75,4 +89,10 @@ The `isType(..)` function is on lines 5 and 8 above are examples, the
 one line check replaces a larger set of phu checks which determine the
 instrument and mode, and with astrodata are centralized in
 AstroDataType Library.
-<addhtml>
+
+
+AstroData Descriptors
+~~~~~~~~~~~~~~~~~~~~~
+
+The problem we face in metadata is...
+
