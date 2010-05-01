@@ -30,7 +30,9 @@ from StringIO import StringIO
 from textwrap import TextWrapper
 
 # CODEBLOCK = '.. sourcecode:: python '
-CODEBLOCK = '::'
+CODEBLOCK = '.. code-block:: python\n    :linenos:'
+#CODEBLOCK = "::"
+
 BLOCKTAGS = ['div', 'blockquote']
 IGNORETAGS = ['title', 'style', 'script']
 UNDERLINES = list('=-~`+;')

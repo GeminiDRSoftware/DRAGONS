@@ -19,7 +19,6 @@ for that name and type. The types of terms and their associated
 actions are below.
 
 
-
 astrodata Grammar
 ~~~~~~~~~~~~~~~~~
 
@@ -48,7 +47,6 @@ to the ad.mdf member for type SPECT. < li>
   Reduction Context states, requiring some bounding input state and
   producing an output state. The action associated is, of course, to
   perform the transformation. < li>
-
 
 
 

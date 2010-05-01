@@ -14,7 +14,6 @@ code and two which contain configurations astrodata uses to handle
 data intelligently.
 
 
-
 Intended Audience
 -----------------
 
@@ -23,7 +22,7 @@ as users of the Gemini Python Package which includes the Gemini-
 specific configurations for astrodata which define the types, high
 level metadata, dataset structure and primitive dataset
 transformations. Readers should in most cases begin with AstroData
-Tutorial, which can be found here
+User Tutorial, which can be found here
 `http://nihal.hi.gemini.edu/LINK_TO_AD_TUTORIAL
 <http://nihal.hi.gemini.edu/LINK_TO_AD_TUTORIAL>`__, for a quick
 introduction to the concepts with an emphasis on how the system works

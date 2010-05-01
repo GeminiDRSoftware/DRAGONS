@@ -7,10 +7,14 @@ from html2rest import html2rest
 import re
 from copy import copy,deepcopy
 
-def grab(name ):
+WIKIHOST = "ophiuchus.hi.gemini.edu"
+#WIKIHOST = 'nihal.hi.gemini.edu'
+WIKIROOT = "/gdpsgwiki/index.php/"
 
-    h1 = HTTPConnection('nihal.hi.gemini.edu')
-    fullname = "/GDFPwiki/index.php/" + name
+def grab(name ):
+    print "grabWiki: getting",name,"...",
+    h1 = HTTPConnection(WIKIHOST)
+    fullname = WIKIROOT + name
     h1.request("GET", fullname)
 
     r1 = h1.getresponse()
@@ -56,6 +60,7 @@ def grab(name ):
     outf = file(outfname, "w+")
     html2rest(html, outf)
     outf.close()
+    print "to", outfname
     
 grab("ADMANUAL_RevisionHistory")
 grab("ADMANUAL_Purpose")

@@ -4,6 +4,10 @@
 Revision History
 ----------------
 
-v0.1.(2010042901:59) - Initial Revision, Craig Allen, Sphinx
-Generated, testing Sphinx
+
++ v0.2.(20100501013324) - Moved to Ophiuchus Craig Allen, Sphinx
+  Generated
++ v0.1.(final) - Initial Revision, Craig Allen, Sphinx Generated,
+  testing Sphinx
+
 

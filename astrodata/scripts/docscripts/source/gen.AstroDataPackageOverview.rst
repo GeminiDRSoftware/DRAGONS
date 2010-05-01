@@ -22,7 +22,6 @@ includes various packages.
 
 
 
-
 astrodata
 ~~~~~~~~~
 
@@ -31,7 +30,6 @@ systems, but no Gemini specific code. It provides the ability to
 define a lexicon for your data, allowing the infrastructure enough
 information to help executing dataset-type correct behavior, and
 provide automation features.
-
 
 
 adutils
@@ -44,7 +42,6 @@ package, theoretically should not contain Gemini specific code, but
 currently does. Such modules are subject to removal from adutils and
 insertion into other packages (e.g. gdutils or into the astrodata
 package proper).
-
 
 
 ADCONFIG_Gemini
@@ -61,7 +58,6 @@ configurations for Gemini datasets, including:
 + AstroData Descriptors: The descriptor implementations and
   assignments to dataset type.
 + AstroData Structures: The structure definitions.
-
 
 
 

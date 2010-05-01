@@ -1,67 +1,47 @@
 digraph G {
 	node [label="\N"];
-	graph [bb="0,0,1598,439"];
-	subgraph cluster_GEMINI {
-		graph [bgcolor="#e0e0ff",
-			fontsize=9,
-			label="GEMINI PrimSet",
-			lp="755,422",
-			bb="689,360,821,431"];
-		GEMINI_PrimSet [label="{<f0>primitives_GEMINI.py}", shape=record, fontsize=10, pos="755,386", rects="697,368,813,404", width="1.61", height="0.50"];
-	}
-	subgraph cluster_GMOS_IMAGE {
-		graph [bgcolor="#e0e0ff",
-			fontsize=9,
-			label="GMOS_IMAGE PrimSet",
-			lp="512,278",
-			bb="430,216,594,287"];
-		GMOS_IMAGE_PrimSet [label="{<f0>primitives_GMOS_IMAGE.py}", shape=record, fontsize=10, pos="512,242", rects="438,224,586,260", width="2.06", height="0.50"];
-	}
-	GMOS [URL="GMOS-tree.svg", shape=house, pos="813,242", width="1.14", height="0.50"];
-	GMOS_BIAS [URL="GMOS_BIAS-tree.svg", shape=house, pos="362,98", width="1.92", height="0.50"];
-	GMOS_IFU_BLUE [URL="GMOS_IFU_BLUE-tree.svg", shape=house, pos="1106,26", width="2.61", height="0.50"];
-	GMOS_MOS [URL="GMOS_MOS-tree.svg", shape=house, pos="1013,98", width="1.92", height="0.50"];
-	GMOS_MOSFLAT [URL="GMOS_MOSFLAT-tree.svg", shape=house, pos="93,26", width="2.58", height="0.50"];
-	GMOS_IMAGEFLAT [URL="GMOS_IMAGEFLAT-tree.svg", shape=house, pos="307,26", width="2.86", height="0.50"];
-	GMOS_IFUFLAT [URL="GMOS_IFUFLAT-tree.svg", shape=house, pos="515,26", width="2.42", height="0.50"];
-	GMOS_CAL [URL="GMOS_CAL-tree.svg", shape=house, pos="675,170", width="1.83", height="0.50"];
-	GMOS_LS [URL="GMOS_LS-tree.svg", shape=house, pos="1158,98", width="1.61", height="0.50"];
-	GMOS_IFU_TWO [URL="GMOS_IFU_TWO-tree.svg", shape=house, pos="1310,26", width="2.56", height="0.50"];
-	GMOS_FLAT [URL="GMOS_FLAT-tree.svg", shape=house, pos="520,98", width="1.97", height="0.50"];
-	GMOS_TWILIGHT [URL="GMOS_TWILIGHT-tree.svg", shape=house, pos="716,26", width="2.67", height="0.50"];
-	GMOS_LSFLAT [URL="GMOS_LSFLAT-tree.svg", shape=house, pos="912,26", width="2.28", height="0.50"];
-	GMOS_ARC [URL="GMOS_ARC-tree.svg", shape=house, pos="675,98", width="1.83", height="0.50"];
-	GMOS_N [URL="GMOS_N-tree.svg", shape=house, pos="813,170", width="1.50", height="0.50"];
-	GMOS_S [URL="GMOS_S-tree.svg", shape=house, pos="938,170", width="1.47", height="0.50"];
-	GEMINI [URL="GEMINI-tree.svg", shape=house, pos="755,314", width="1.31", height="0.50"];
-	GMOS_IMAGE [URL="GMOS_IMAGE-tree.svg", shape=house, pos="512,170", width="2.19", height="0.50"];
-	GMOS_IFU [URL="GMOS_IFU-tree.svg", shape=house, pos="1305,98", width="1.72", height="0.50"];
-	GMOS_DARK [URL="GMOS_DARK-tree.svg", shape=house, pos="833,98", width="2.06", height="0.50"];
-	GMOS_IFU_RED [URL="GMOS_IFU_RED-tree.svg", shape=house, pos="1509,26", width="2.47", height="0.50"];
-	GMOS_SPECT [URL="GMOS_SPECT-tree.svg", shape=house, pos="1113,170", width="2.17", height="0.50"];
-	GMOS_Descriptor [label=GMOS_Descriptor, shape=box, fontsize=10, style=filled, fillcolor="#ffd0d0", pos="870,314", width="1.39", height="0.50"];
-	GMOS_FLAT -> GMOS_MOSFLAT [pos="e,151,36 458,83 452,82 446,81 440,80 332,59 304,61 195,44 184,42 173,40 161,38"];
-	GMOS -> GMOS_S [pos="e,915,183 838,227 858,216 885,200 906,188"];
-	GMOS_IFU -> GMOS_IFU_RED [pos="e,1472,39 1346,83 1380,71 1427,54 1462,42"];
-	GMOS_IFU -> GMOS_IFU_BLUE [pos="e,1143,39 1265,83 1232,71 1187,55 1153,43"];
-	GMOS_CAL -> GMOS_BIAS [pos="e,406,108 616,155 611,154 605,153 600,152 530,135 512,132 440,116 432,114 424,112 416,110"];
-	GMOS_FLAT -> GMOS_IFUFLAT [pos="e,516,44 519,83 518,75 518,64 517,54"];
-	GMOS_SPECT -> GMOS_MOS [pos="e,1033,112 1093,155 1079,145 1058,130 1041,118"];
-	GEMINI -> GMOS [pos="e,801,257 767,299 775,289 785,276 794,265"];
-	GMOS_CAL -> GMOS_DARK [pos="e,804,111 707,155 732,143 767,128 795,115"];
-	GMOS_FLAT -> GMOS_TWILIGHT [pos="e,679,39 560,83 592,71 636,55 669,43"];
-	GMOS_CAL -> GMOS_ARC [pos="e,675,116 675,155 675,147 675,136 675,126"];
-	GMOS_FLAT -> GMOS_IMAGEFLAT [pos="e,347,39 477,83 442,71 393,55 356,42"];
-	GMOS_IFU -> GMOS_IFU_TWO [pos="e,1309,44 1306,83 1307,75 1307,64 1308,54"];
-	GMOS_CAL -> GMOS_FLAT [pos="e,548,111 644,155 619,143 584,127 557,115"];
-	GMOS -> GMOS_SPECT [pos="e,1067,181 854,232 907,219 998,197 1057,183"];
-	GMOS_FLAT -> GMOS_LSFLAT [pos="e,860,36 582,83 588,82 594,81 600,80 698,61 724,61 821,44 831,43 841,41 850,38"];
-	GMOS_SPECT -> GMOS_IFU [pos="e,1274,110 1152,155 1185,143 1231,126 1264,113"];
-	GMOS -> GMOS_IMAGE [pos="e,558,181 772,232 719,219 627,197 568,183"];
-	GMOS -> GMOS_CAL [pos="e,701,183 785,227 763,216 733,200 710,188"];
-	GMOS_SPECT -> GMOS_LS [pos="e,1148,114 1122,155 1127,146 1135,133 1142,122"];
-	GMOS -> GMOS_N [pos="e,813,188 813,227 813,219 813,208 813,198"];
-	GEMINI_PrimSet -> GEMINI [style=dotted, lhead=cluster_GEMINI, pos="e,755,332 755,368 755,360 755,351 755,342"];
-	GMOS_IMAGE_PrimSet -> GMOS_IMAGE [style=dotted, lhead=cluster_GMOS_IMAGE, pos="e,512,188 512,224 512,216 512,207 512,198"];
-	GMOS_Descriptor -> GMOS [style=dashed, pos="e,825,257 856,296 848,287 839,275 831,265"];
+	graph [bb="0,0,1641,324"];
+	GMOS [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS.py", pos="890,234", width="1.14", height="0.50"];
+	GMOS_BIAS [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_BIAS.py", pos="357,90", width="1.92", height="0.50"];
+	GMOS_IFU_BLUE [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_IFU_BLUE.py", pos="1149,18", width="2.61", height="0.50"];
+	GMOS_MOS [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_MOS.py", pos="1070,90", width="1.92", height="0.50"];
+	GMOS_MOSFLAT [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_MOSFLAT.py", pos="93,18", width="2.58", height="0.50"];
+	GMOS_IMAGEFLAT [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_IMAGEFLAT.py", pos="307,18", width="2.86", height="0.50"];
+	GMOS_IFUFLAT [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_IFUFLAT.py", pos="515,18", width="2.42", height="0.50"];
+	GMOS_CAL [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_CAL.py", pos="627,162", width="1.83", height="0.50"];
+	GMOS_LS [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_LS.py", pos="1215,90", width="1.61", height="0.50"];
+	GMOS_IFU_TWO [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_IFU_TWO.py", pos="1353,18", width="2.56", height="0.50"];
+	GMOS_FLAT [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_FLAT.py", pos="515,90", width="1.97", height="0.50"];
+	GMOS_TWILIGHT [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_TWILIGHT.py", pos="716,18", width="2.67", height="0.50"];
+	GMOS_LSFLAT [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_LSFLAT.py", pos="912,18", width="2.28", height="0.50"];
+	GMOS_ARC [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_ARC.py", pos="670,90", width="1.83", height="0.50"];
+	GMOS_N [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_N.py", pos="765,162", width="1.50", height="0.50"];
+	GMOS_S [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_S.py", pos="890,162", width="1.47", height="0.50"];
+	GEMINI [URL="GEMINI-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gemdtype.GEMINI.py", pos="890,306", width="1.31", height="0.50"];
+	GMOS_IMAGE [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_IMAGE.py", pos="1040,162", width="2.19", height="0.50"];
+	GMOS_IFU [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_IFU.py", pos="1353,90", width="1.72", height="0.50"];
+	GMOS_DARK [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_DARK.py", pos="828,90", width="2.06", height="0.50"];
+	GMOS_IFU_RED [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_IFU_RED.py", pos="1552,18", width="2.47", height="0.50"];
+	GMOS_SPECT [URL="GMOS-tree-pd.svg", shape=house, tooltip="ADCONFIG_Gemini/classifications/types/gmos/gemdtype.GMOS_SPECT.py", pos="1215,162", width="2.17", height="0.50"];
+	GMOS_FLAT -> GMOS_MOSFLAT [pos="e,151,28 453,75 447,74 441,73 435,72 329,52 302,53 195,36 184,34 173,32 161,30"];
+	GMOS -> GMOS_S [pos="e,890,180 890,219 890,211 890,200 890,190"];
+	GMOS_IFU -> GMOS_IFU_RED [pos="e,1516,31 1393,75 1426,63 1472,46 1506,34"];
+	GMOS_IFU -> GMOS_IFU_BLUE [pos="e,1186,31 1312,75 1278,63 1231,46 1196,34"];
+	GMOS_CAL -> GMOS_BIAS [pos="e,398,101 572,147 524,134 454,116 408,104"];
+	GMOS_FLAT -> GMOS_IFUFLAT [pos="e,515,36 515,75 515,67 515,56 515,46"];
+	GMOS_SPECT -> GMOS_MOS [pos="e,1097,103 1186,147 1163,135 1130,120 1106,108"];
+	GEMINI -> GMOS [pos="e,890,252 890,291 890,283 890,272 890,262"];
+	GMOS_CAL -> GMOS_DARK [pos="e,793,102 668,147 701,135 749,118 784,105"];
+	GMOS_FLAT -> GMOS_TWILIGHT [pos="e,679,31 556,75 589,63 635,47 669,35"];
+	GMOS_CAL -> GMOS_ARC [pos="e,660,106 636,147 641,138 649,126 655,115"];
+	GMOS_FLAT -> GMOS_IMAGEFLAT [pos="e,346,31 473,75 439,63 391,47 356,34"];
+	GMOS_IFU -> GMOS_IFU_TWO [pos="e,1353,36 1353,75 1353,67 1353,56 1353,46"];
+	GMOS_CAL -> GMOS_FLAT [pos="e,537,104 604,147 588,136 564,122 546,110"];
+	GMOS -> GMOS_SPECT [pos="e,1168,173 931,225 989,213 1093,190 1158,175"];
+	GMOS_FLAT -> GMOS_LSFLAT [pos="e,860,28 577,75 583,74 589,73 595,72 695,52 721,53 821,36 831,34 840,32 850,30"];
+	GMOS_SPECT -> GMOS_IFU [pos="e,1328,103 1243,147 1265,136 1295,120 1319,108"];
+	GMOS -> GMOS_IMAGE [pos="e,1011,176 920,219 944,207 977,192 1002,180"];
+	GMOS -> GMOS_CAL [pos="e,666,173 849,223 802,210 726,189 676,176"];
+	GMOS_SPECT -> GMOS_LS [pos="e,1215,108 1215,147 1215,139 1215,128 1215,118"];
+	GMOS -> GMOS_N [pos="e,788,175 865,219 845,208 818,192 797,180"];
 }
