@@ -1,20 +1,6 @@
 
 
 
-Contents
---------
-
-
-+ 1 Concepts
-
-    + 1.1 Background
-    + 1.2 AstroDataType
-    + 1.3 AstroData Descriptors
-
-
-
-
-
 Concepts
 --------
 

@@ -17,6 +17,10 @@ parser.add_option("-t", "--type-graphs", dest = "buildTypeGraphs",
             action="store_true",
             default = False,
             help = "Build type graphs (requires graphviz, pydot)")
+parser.add_option("-g", "--get-type-src", dest = "getTypeSrc", 
+            action = "store_true",
+            default = False,
+            help="get AstroType source")
 parser.add_option("-w", "--grab-wiki", dest = "grabWiki",
             action="store_true",
             default = False,
@@ -31,6 +35,15 @@ parser.add_option("-b","--sphinx-build", dest = "doSphinx",
             help = "Do the Sphinx Build, defaults on if no other flags set")
 (options, args) = parser.parse_args()
 
+if not (
+            options.fullBuild 
+         or options.doSphinx 
+         or options.buildTypeGraphs 
+         or options.grabWiki 
+         or options.displayPDF
+         or options.getTypeSrc):
+    options.fullBuild = True
+
 if options.doAll:
     options.displayPDF = True
     options.fullBuild = True
@@ -39,12 +52,14 @@ if options.fullBuild:
     options.buildTypeGraphs = True
     options.grabWiki = True
     options.doSphinx = True
+    options.getTypeSrc = True
     
-if not (options.buildTypeGraphs or options.grabWiki or options.displayPDF):
-    options.doSphinx = True
 
 if options.buildTypeGraphs:
     sp.call(["./createTypeTrees.sh"])
+
+if options.getTypeSrc:
+    sp.call(['./getTypeDefs.py'])
 
 if options.grabWiki:
     sp.call(["./grabWiki.py"])

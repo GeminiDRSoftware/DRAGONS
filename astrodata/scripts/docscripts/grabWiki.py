@@ -38,6 +38,14 @@ def grab(name ):
         if divcand.getAttribute("class") == "WIKIDOC":
             div = divcand
             break
+            
+    tocdivs= div.getElementsByTagName("table")
+    for divcand in tocdivs:
+        if divcand.getAttribute("class") == "toc":
+            
+            div.removeChild(divcand)
+            break
+            
     if div == None:
         print 'Article %s has no div with class="WIKIDOC"' % name
         return 
@@ -52,7 +60,7 @@ def grab(name ):
                     node.removeChild(child)
             
             child = nextchild
-     
+            
     # print "before",html   
     # not needed now killLink(div)
     html = div.toxml()

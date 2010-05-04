@@ -12,7 +12,7 @@ The Astrodata Manual
 
 .. toctree::
     :numbered:
-    :maxdepth: 6
+    :maxdepth: 10
     
     chapter_intro.rst
     chapter_Gemini_Types.rst

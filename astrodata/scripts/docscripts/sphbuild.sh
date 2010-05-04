@@ -7,5 +7,6 @@ echo "building latex, see latex.build.log"
 
 /usr/bin/python /usr/bin/sphinx-build -b latex source build/_latex_build &>latex.build.log
 
-cd build/_latex_build
-make
+echo "making pdf in build/_latex_build, see makepdf.build.log"
+cd build/_latex_build 
+make &> makepdf.build.log

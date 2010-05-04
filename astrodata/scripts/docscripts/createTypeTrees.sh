@@ -5,9 +5,9 @@ pwd
 rm *.svg *.dot *.png
 
 echo "without assignments shown..."
-typelib GENERIC GEMINI RAW GMOS NIRI NICI GNIRS MICHELLE TRECS NIFS
+typelib GEMINI GENERIC GMOS GNIRS NICI NIFS NIRI MICHELLE RAW TRECS 
 echo "with assignments shown..."
-typelib -a GENERIC GEMINI RAW GMOS NIRI NICI GNIRS MICHELLE TRECS NIFS
+typelib -a GEMINI GENERIC GMOS GNIRS NICI NIFS NIRI MICHELLE RAW TRECS 
 
 # typelib GENERIC
 # typelib GEMINI
