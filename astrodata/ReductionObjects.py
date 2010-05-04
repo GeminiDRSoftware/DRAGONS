@@ -19,6 +19,7 @@ class ReductionObject(object):
     # primDict is a dictionary of primitive sets keyed by astrodata type (a string)
     primDict = None
     curPrimType = None
+    FUNCcommandClause = None
     
     def __init__(self):
         self.primDict= {}
@@ -29,6 +30,11 @@ class ReductionObject(object):
         self.context = rc
         return rc
     
+    def executeCommandClause(self, rc):
+        cmdclause = self.FUNCcommandClause
+        if cmdclause:
+            cmdclause(self, rc)
+            
     def newPrimitiveSet(self, primtype = None, btype = "EXTERNAL"):
         a = PrimitiveSet()
         a.btype = "RECIPE"
@@ -64,6 +70,11 @@ class ReductionObject(object):
         try:
             for rc in prim(context):
                 # @@note: call the command clause callback here
+                # @@note2: no, this yields and the command loop act that way
+                # @@.....: and it is in run, which caps the yields which must
+                # @@.....: call the command clause.
+                if rc.isFinished():
+                    break
                 yield rc
         except SettingFixedParam, e:
             print "${RED}"+str(e)+"${NORMAL}"
@@ -76,8 +87,19 @@ class ReductionObject(object):
     def runstep(self, primname, cfgobj):
         cfgobj.status = "RUNNING"
         for cfg in self.substeps(primname, cfgobj):
+            ## call command clause
+            if cfg.isFinished():
+                break
+            self.executeCommandClause(cfg)
+            if cfg.isFinished():
+                break
             pass
         return cfg
+    # run is alias for runstep
+    run = runstep
+    
+    def registerCommandClause(self, function):
+        self.FUNCcommandClause = function
         
     def joinParamDicts(self, newprimset, primsetary):
         # make sure all paramDicts are the same object

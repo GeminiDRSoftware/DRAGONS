@@ -5,7 +5,7 @@ Gemini Types Appendix
 
 .. toctree::
     :numbered:
-    :maxdepth: 1
+    :maxdepth: 0
 
     appendix_typegraphs.rst
     gen.typedefs/gen.TypeSourceAppendix.rst

@@ -335,6 +335,165 @@ def command_line():
             
     return input_files
     
+
+# called once per substep (every yeild in any primitive when struck)
+# registered with the reduction object
+def commandClause(ro, coi):
+    print "${NORMAL}",
+    coi.processCmdReq()
+    while (coi.paused):
+        time.sleep(.100)
+    if co.finished:
+        return
+
+    #process calibration requests
+    for rq in coi.rorqs:
+        rqTyp = type(rq)
+        msg = '${BOLD}REDUCE:${NORMAL}\n'
+        msg += '-'*30+'\n'
+        if rqTyp == CalibrationRequest:
+            fn = rq.filename
+            typ = rq.caltype
+            calname = coi.getCal(fn, typ)
+
+            if calname == None:
+                # Do the calibration search
+                calname = cs.search( rq )
+                if calname == None:
+                    break; # ignore
+                    raise "No suitable calibration for '" + str(fn) + "'."
+                elif len( calname ) >= 1:
+                    # Not sure if this is where the one returned calibration is chosen, or if
+                    # that is done in the calibration service, etc.
+                    calname = calname[0]
+
+
+                msg += 'A suitable %s found:\n' %(str(typ))
+                coi.addCal(fn, typ, calname)
+                coi.persistCalIndex( calindfile )
+            else:
+                msg += '%s already stored.\n' %(str(typ))
+                msg += 'Using:\n'
+
+            #msg += '${RED}%s${NORMAL} at ${BLUE}%s${NORMAL}' %( str(os.path.basename(calname)), 
+            #                                                   str(os.path.dirname(calname)) )
+            msg += '${BLUE}%s%s${RED}%s${NORMAL}' %( os.path.dirname(calname), os.path.sep, os.path.basename(calname))
+
+            #print msg
+            #print '-'*30
+
+        elif rqTyp == UpdateStackableRequest:
+            coi.stackAppend(rq.stkID, rq.stkList)
+            coi.persistStkIndex( stkindfile )
+        elif rqTyp == GetStackableRequest:
+            pass
+            # Don't actually do anything, because this primitive allows the control system to
+            #  retrieve the list from another resource, but reduce lets ReductionContext keep the
+            # cache.
+            #print "RD172: GET STACKABLE REQS:", rq
+        elif rqTyp == DisplayRequest:
+            from pyraf import iraf
+            from pyraf.iraf import gemini
+            gemini()
+            gemini.gmos()
+            if ds.ds9 is None:
+                ds.setupDS9()
+
+            ##@@FIXME: This os.system way, is very kluged and should be changed.
+            if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
+                 and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
+                print "CANNOT DISPLAY: No ds9 running."
+            else:
+                iraf.set(stdimage='imtgmos')
+                for tmpImage in rq.disList:
+                    if type(tmpImage) != str:
+                        #print "RED329:", tmpImage.filename
+                        tmpImage = tmpImage.filename
+
+                    # tmpImage should be a string at this point.
+                    #print "RED
+                    try:
+                        # print "r420:", rq.disID, ds.displayID2frame(rq.disID)
+
+                        gemini.gmos.gdisplay( tmpImage, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
+                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+#                                        ds.display( tmpImage )
+#                                        print ds.ds9.frames()  
+                    except:
+                        print "CANNOT DISPLAY"
+                        raise 
+        elif rqTyp == ImageQualityRequest:
+            #print 'RED394:'
+            filteredstdout.write(str(rq)+"\n", forceprefix = ("${NORMAL}${RED}","IQ reported: ", "${NORMAL}"))
+            #@@FIXME: All of this is kluge and will not remotely reflect how the 
+            # RecipeProcessor will deal with ImageQualityRequests.
+            if True:
+                #@@FIXME: Kluge to get this to work.
+                dispFrame = 0
+                if frameForDisplay > 0:
+                    dispFrame = frameForDisplay - 1
+
+                st = time.time()
+                if (useTK):
+                    iqlog = "%s: %s = %s\n"
+                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ellMean)
+                    seeing = iqlog % (gemdate(timestamp=rq.timestamp),"seeing", rq.fwhmMean)
+                    print ell
+                    print seeing
+                    timestr = gemdate(timestamp = rq.timestamp)
+
+                    cw.iqLog(co.inputs[0].filename, '', timestr)
+                    cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
+                    cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
+                    cw.iqLog('', '-'*14, timestr)
+                elif ds.ds9 is not None:
+                    dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
+                    ds.markText( 0, 2200, dispText )
+
+
+                else:    
+                # this was a kludge to mark the image with the metric 
+                # The following is annoying IRAF file methodology.
+                    tmpFilename = 'tmpfile.tmp'
+                    tmpFile = open( tmpFilename, 'w' )
+                    coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
+                                                                     'ell':str(rq.ellMean)}
+                    tmpFile.write( coords )
+                    tmpFile.close()
+                    iraf.tvmark( frame=dispFrame,coords=tmpFilename,
+                    pointsize=0, color=204, label=pyraf.iraf.yes )
+                et = time.time()
+                #print 'RED422:', (et - st)
+
+
+    coi.clearRqs()      
+
+
+    #dump the reduction context object 
+    if options.rtf:
+        results = open( "test.result", "a" )
+        #results.write( "\t\t\t<< CONTROL LOOP " + str(controlLoopCounter" >>\n")
+        #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
+        #print "#" * 80
+        #controlLoopCounter += 1
+        results.write( str( coi ) )
+        results.close()
+        #print "#" * 80
+        #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
+        # CLEAR THE REQUEST LEAGUE
+    if primfilter == None:
+        raise "holy hell what's going on?"
+
+
+######################
+######################
+######################
+# END MODULE FUNCTIONS
+# START SCRIPT
+######################
+######################
+######################
+
 # get RecipeLibrary
 rl = RecipeLibrary()
 
@@ -389,6 +548,9 @@ for infiles in allinputs: #for dealing with multiple files.
     else:
         ro = rl.retrieveReductionObject(astrotype = options.astrotype)
     
+    # add command clause
+    ro.registerCommandClause(commandClause)
+        
     if options.recipename == None:
         if options.astrotype == None:
             reclist = rl.getApplicableRecipes(infiles[0]) #**
@@ -531,156 +693,28 @@ for infiles in allinputs: #for dealing with multiple files.
             primfilter = terminal.PrimitiveFilter()
             filteredstdout.addFilter(primfilter)
             frameForDisplay = 1
+            #######
+            #######
+            #######
+            #######
+            ####### COMMAND LOOP
+            #######
+            #######
+            #######
             # not this only works because we install a stdout filter right away with this
             # member function
             if (True): # try:
-                for coi in ro.substeps(rec, co):
-                    # filteredstdout.removeFilter(primfilter)
-                    print "${NORMAL}",
-                    coi.processCmdReq()
-                    while (coi.paused):
-                        time.sleep(.100)
-                    if co.finished:
-                        break
-
-                    #process calibration requests
-                    for rq in coi.rorqs:
-                        rqTyp = type(rq)
-                        msg = '${BOLD}REDUCE:${NORMAL}\n'
-                        msg += '-'*30+'\n'
-                        if rqTyp == CalibrationRequest:
-                            fn = rq.filename
-                            typ = rq.caltype
-                            calname = coi.getCal(fn, typ)
-
-                            if calname == None:
-                                # Do the calibration search
-                                calname = cs.search( rq )
-                                if calname == None:
-                                    raise "No suitable calibration for '" + str(fn) + "'."
-                                elif len( calname ) >= 1:
-                                    # Not sure if this is where the one returned calibration is chosen, or if
-                                    # that is done in the calibration service, etc.
-                                    calname = calname[0]
-                                
-                                
-                                msg += 'A suitable %s found:\n' %(str(typ))
-                                coi.addCal(fn, typ, calname)
-                                coi.persistCalIndex( calindfile )
-                            else:
-                                msg += '%s already stored.\n' %(str(typ))
-                                msg += 'Using:\n'
-                            
-                            #msg += '${RED}%s${NORMAL} at ${BLUE}%s${NORMAL}' %( str(os.path.basename(calname)), 
-                            #                                                   str(os.path.dirname(calname)) )
-                            msg += '${BLUE}%s%s${RED}%s${NORMAL}' %( os.path.dirname(calname), os.path.sep, os.path.basename(calname))
-                                                            
-                            #print msg
-                            #print '-'*30
-                                                 
-                        elif rqTyp == UpdateStackableRequest:
-                            coi.stackAppend(rq.stkID, rq.stkList)
-                            coi.persistStkIndex( stkindfile )
-                        elif rqTyp == GetStackableRequest:
-                            pass
-                            # Don't actually do anything, because this primitive allows the control system to
-                            #  retrieve the list from another resource, but reduce lets ReductionContext keep the
-                            # cache.
-                            #print "RD172: GET STACKABLE REQS:", rq
-                        elif rqTyp == DisplayRequest:
-                            from pyraf import iraf
-                            from pyraf.iraf import gemini
-                            gemini()
-                            gemini.gmos()
-                            if ds.ds9 is None:
-                                ds.setupDS9()
-                            
-                            ##@@FIXME: This os.system way, is very kluged and should be changed.
-                            if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
-                                 and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
-                                print "CANNOT DISPLAY: No ds9 running."
-                            else:
-                                iraf.set(stdimage='imtgmos')
-                                for tmpImage in rq.disList:
-                                    if type(tmpImage) != str:
-                                        #print "RED329:", tmpImage.filename
-                                        tmpImage = tmpImage.filename
-
-                                    # tmpImage should be a string at this point.
-                                    #print "RED
-                                    try:
-                                        # print "r420:", rq.disID, ds.displayID2frame(rq.disID)
-                                    
-                                        gemini.gmos.gdisplay( tmpImage, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
-                                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
-#                                        ds.display( tmpImage )
-#                                        print ds.ds9.frames()  
-                                    except:
-                                        print "CANNOT DISPLAY"
-                                        raise 
-                        elif rqTyp == ImageQualityRequest:
-                            #print 'RED394:'
-                            filteredstdout.write(str(rq)+"\n", forceprefix = ("${NORMAL}${RED}","IQ reported: ", "${NORMAL}"))
-                            #@@FIXME: All of this is kluge and will not remotely reflect how the 
-                            # RecipeProcessor will deal with ImageQualityRequests.
-                            if True:
-                                #@@FIXME: Kluge to get this to work.
-                                dispFrame = 0
-                                if frameForDisplay > 0:
-                                    dispFrame = frameForDisplay - 1
-
-                                st = time.time()
-                                if (useTK):
-                                    iqlog = "%s: %s = %s\n"
-                                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ellMean)
-                                    seeing = iqlog % (gemdate(timestamp=rq.timestamp),"seeing", rq.fwhmMean)
-                                    print ell
-                                    print seeing
-                                    timestr = gemdate(timestamp = rq.timestamp)
-                                    
-                                    cw.iqLog(co.inputs[0].filename, '', timestr)
-                                    cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
-                                    cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
-                                    cw.iqLog('', '-'*14, timestr)
-                                elif ds.ds9 is not None:
-                                    dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
-                                    ds.markText( 0, 2200, dispText )
-                                
-                                
-                                else:    
-                                # this was a kludge to mark the image with the metric 
-                                # The following is annoying IRAF file methodology.
-                                    tmpFilename = 'tmpfile.tmp'
-                                    tmpFile = open( tmpFilename, 'w' )
-                                    coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
-                                                                                     'ell':str(rq.ellMean)}
-                                    tmpFile.write( coords )
-                                    tmpFile.close()
-                                    iraf.tvmark( frame=dispFrame,coords=tmpFilename,
-                                    pointsize=0, color=204, label=pyraf.iraf.yes )
-                                et = time.time()
-                                #print 'RED422:', (et - st)
-
-
-                    coi.clearRqs()      
-
-
-                    #dump the reduction context object 
-                    if options.rtf:
-                        results = open( "test.result", "a" )
-                        #results.write( "\t\t\t<< CONTROL LOOP " + str(controlLoopCounter" >>\n")
-                        #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
-                        #print "#" * 80
-                        #controlLoopCounter += 1
-                        results.write( str( coi ) )
-                        results.close()
-                        #print "#" * 80
-                        #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
-                        # CLEAR THE REQUEST LEAGUE
-                    if primfilter == None:
-                        raise "holy hell what's going on?"
+                ro.run(rec, co)
+                #for coi in ro.substeps(rec, co):
+                #    ro.executeCommandClause()
                     # filteredstdout.addFilter(primfilter)
                 # filteredstdout.removeFilter(primfilter)
+            #######
+            #######
+            #######
+            #######
+            #######
+            #######
         except KeyboardInterrupt:
             co.isFinished(True)
             if (useTK):

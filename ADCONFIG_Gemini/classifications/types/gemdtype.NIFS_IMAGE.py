@@ -4,6 +4,6 @@ class NIFS_IMAGE(DataClassification):
     usage = "Applies to any image dataset from the NIFS instrument."
     parent = "NIFS"
 
-    requirement = ISCLASS("NIFS") & PHU( FILTER3='(.*?)pupil(.*?)')
+    requirement = ISCLASS("NIFS") & PHU( FLIP='In')
 
 newtypes.append(NIFS_IMAGE())

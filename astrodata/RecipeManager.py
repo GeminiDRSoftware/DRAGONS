@@ -304,21 +304,25 @@ class ReductionContext(dict):
             key = (adID, caltype)
             infile = os.path.basename(self.inputs[0].filename)
             #print 'RM611:\n', self.calsummary()
-            return {self.calibrations[key].filename:[infile]}
+            if key in self.calibrations:
+                return {self.calibrations[key].filename:[infile]}
+            else:
+                return None
         else:
-            # If you are in here, I assume that intelligence has been set.
-            # (i.e. There are improvements / assumptions made in here.)
-            retl = {}
-            for inp in self.originalInputs:
-                key = (idFac.generateAstroDataID(inp.ad), caltype)
-                calfile = self.calibrations[key].filename
-                infile = os.path.basename(inp.filename)
-                if retl.has_key(calfile):
-                    retl.update({calfile:retl[calfile] + [infile]})
-                else:
-                    retl.update({calfile:[infile]})
-            #print 'RM625:', retl
-            return retl
+            if False:
+                # If you are in here, I assume that intelligence has been set.
+                # (i.e. There are improvements / assumptions made in here.)
+                retl = {}
+                for inp in self.originalInputs:
+                    key = (idFac.generateAstroDataID(inp.ad), caltype)
+                    calfile = self.calibrations[key].filename
+                    infile = os.path.basename(inp.filename)
+                    if retl.has_key(calfile):
+                        retl.update({calfile:retl[calfile] + [infile]})
+                    else:
+                        retl.update({calfile:[infile]})
+                #print 'RM625:', retl
+                return retl
                      
     def callCallbacks(self, name, **params):
         callbacks = self.callbacks
@@ -1295,10 +1299,10 @@ class RecipeLibrary(object):
     def composeRecipe(self, name, recipebuffer):
         templ = """
 def %(name)s(self,cfgObj):
-\tprint "${BOLD}RECIPE BEGINS: %(name)s${NORMAL}"
+    print "${BOLD}RECIPE BEGINS: %(name)s${NORMAL}"
 %(lines)s
-\tprint "${BOLD}RECIPE ENDS:   %(name)s${NORMAL}"
-\tyield cfgObj
+    print "${BOLD}RECIPE ENDS:   %(name)s${NORMAL}"
+    yield cfgObj
 """
         recipelines = recipebuffer.splitlines()
         lines = ""
@@ -1339,9 +1343,12 @@ def %(name)s(self,cfgObj):
             if line == "" or line[0] == "#":
                 continue
             newl = """
-\tcfgObj.localparms = eval('''%s''')
-\tfor co in self.substeps('%s', cfgObj):
-\t\tyield co""" % (repr(d), line)
+    cfgObj.localparms = eval('''%s''')
+    for co in self.substeps('%s', cfgObj):
+        if (co.isFinished()):
+            break
+        yield co
+    yield co""" % (repr(d), line)
             lines += newl
             
         rets = templ % {    "name" : name,

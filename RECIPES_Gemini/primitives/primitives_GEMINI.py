@@ -90,9 +90,12 @@ class GEMINIPrimitives(PrimitiveSet):
         except:
             print "Problem getting bias"
             raise 
-
         yield rc
-        
+        if rc.calFilename("bias") == None:
+            print "${RED}can't find bias for inputs\ngetProcessedBias fail is fatal${NORMAL}"
+            print "${RED}${REVERSE}STOPPING RECIPE${NORMAL}"
+            rc.finish()
+        yield rc
 #------------------------------------------------------------------------------ 
     def getProcessedFlat(self, rc):
         try:
@@ -103,6 +106,11 @@ class GEMINIPrimitives(PrimitiveSet):
             raise 
         
         yield rc 
+        
+        if rc.calFilename("bias") == None:
+            print "${RED}can't find bias for inputs${NORMAL}"
+            rc.finish()
+        yield rc
         
 #------------------------------------------------------------------------------ 
     def getStackable(self, rc):

@@ -23,7 +23,7 @@ sourcedict = {}
 sourceindex = [] # for ordering
 
 typkeys = typesdict.keys()
-print "gtd26", repr(typkeys)
+
 typkeys.sort()
 
 # prepare the info loop (handles fact that types can be in same file)
@@ -34,7 +34,6 @@ for typ in typkeys:
     else:
         sourcedict.update({typo.fullpath:[typ]})
         sourceindex.append(typo.fullpath)
-print "gtd36:", repr(sourcedict), repr(sourceindex)
 
 outchapname = os.path.join(outdir, "gen.TypeSourceAppendix.rst")
 print "name of appendix rst:",outchapname
@@ -68,25 +67,32 @@ for fil in sourceindex:
 
     
     types = ", ".join(sourcedict[fil])
-    typesunderline = "~"*(len(types)+3+len(" Type Source "))
+    if len(sourcedict[fil]) > 1:
+        typeslabel = "Classifications"
+    else:
+        typeslabel = "Classification"
+    typestitle = types+" Classification Source"
+    typesunderline = "~"*(len(typestitle)+3)
     relsrcpath = re.sub(".*?ADCONFIG_", "ADCONFIG_", fil)        
     outf.write("""
-%(types)s Type Source
+%(types)s Classification Source
 %(typesunderline)s
 
 .. toctree::
     :numbered:
+    :maxdepth: 0
      
-:Types:
+%(typeslabel)s
     %(types)s
 
-:Source: 
+Source Location 
     %(relsrcpath)s
 
 .. code-block:: python
 
 %(src)s
-""" % { "types": types,
+""" % { "typeslabel":typeslabel,
+        "types": types,
         "typesunderline": typesunderline,
         "relsrcpath":relsrcpath,
         "src":typsrc
