@@ -6,6 +6,12 @@ class SPECT(DataClassification):
         Applies to all Gemini spectroscopy datasets.
         '''
     parent = "GENERIC"
-    requirement = ISCLASS("GMOS_SPECT") | ISCLASS("NIRI_SPECT")
+    requirement = OR([  ISCLASS("GMOS_SPECT"),
+                        ISCLASS("NIRI_SPECT"),
+                        ISCLASS("MICHELLE_SPECT"),
+                        ISCLASS("TRECS_SPECT"),
+                        ISCLASS("NIFS_SPECT")
+                    ])
+                        
     
 newtypes.append( SPECT())
