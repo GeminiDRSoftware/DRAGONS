@@ -89,6 +89,7 @@ Source Location
     %(relsrcpath)s
 
 .. code-block:: python
+    :linenos:
 
 %(src)s
 """ % { "typeslabel":typeslabel,

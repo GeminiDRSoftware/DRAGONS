@@ -818,10 +818,10 @@ lse, the return value is a list which is in fact
         return
         
     def getPHU(self):
-        return self.hdulist[0].header
+        return self.hdulist[0]
     
-    def setPHU(self, header):
-        self.hdulist[0].header = header
+    def setPHU(self, phu):
+        self.hdulist[0] = phu
         return
         
     phu = property(getPHU, setPHU)

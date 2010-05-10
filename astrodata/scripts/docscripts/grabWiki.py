@@ -6,12 +6,13 @@ from xml.dom.minidom import parse, parseString
 from html2rest import html2rest
 import re
 from copy import copy,deepcopy
+import os
 
 WIKIHOST = "ophiuchus.hi.gemini.edu"
 #WIKIHOST = 'nihal.hi.gemini.edu'
 WIKIROOT = "/gdpsgwiki/index.php/"
 
-def grab(name ):
+def grab(name, subdir = "" ):
     print "grabWiki: getting",name,"...",
     h1 = HTTPConnection(WIKIHOST)
     fullname = WIKIROOT + name
@@ -64,7 +65,7 @@ def grab(name ):
     # print "before",html   
     # not needed now killLink(div)
     html = div.toxml()
-    outfname = "source/gen."+name+".rst"
+    outfname = os.path.join("source",subdir, "gen."+name+".rst")
     outf = file(outfname, "w+")
     html2rest(html, outf)
     outf.close()
@@ -75,3 +76,7 @@ grab("ADMANUAL_Purpose")
 grab("ADMANUAL_ADConcepts")
 grab("AstroDataPackageOverview")
 grab("AstroDataLexicon")
+
+grab("GATREF-RevisionHistory", subdir = "gatref")
+grab("GATREF-Purpose",subdir = "gatref")
+grab("GATREF-Audience",subdir = "gatref")

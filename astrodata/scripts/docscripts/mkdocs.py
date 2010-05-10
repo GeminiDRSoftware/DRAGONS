@@ -12,7 +12,7 @@ parser.add_option("-a", "--all", dest = "doAll",
 parser.add_option("-f", "--full-build", dest = "fullBuild",
             action="store_true",
             default = False,
-            help = "Do all build steps and retrievals from scratch.")
+            help = "Do all build steps and retrievals from scratch. Defaults to true if no other flags set.")
 parser.add_option("-t", "--type-graphs", dest = "buildTypeGraphs",
             action="store_true",
             default = False,
@@ -32,7 +32,7 @@ parser.add_option("-d", "--display-PDF", dest = "displayPDF",
 parser.add_option("-b","--sphinx-build", dest = "doSphinx",
             action = "store_true",
             default = False,
-            help = "Do the Sphinx Build, defaults on if no other flags set")
+            help = "Do the Sphinx Build for HTML, Latex, and call make in Latex output directory to build PDF")
 (options, args) = parser.parse_args()
 
 if not (
