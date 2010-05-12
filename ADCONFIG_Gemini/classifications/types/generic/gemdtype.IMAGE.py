@@ -11,6 +11,6 @@ class IMAGE(DataClassification):
                         ISCLASS("TRECS_IMAGE"),
                         ISCLASS("MICHELLE_IMAGE"),
                         ISCLASS("NICI_IMAGE"),
-                        ISCLASS("NIFS_IMAGE")
+                        ISCLASS("NIFS_IMAGE")])
     
 newtypes.append( IMAGE())
