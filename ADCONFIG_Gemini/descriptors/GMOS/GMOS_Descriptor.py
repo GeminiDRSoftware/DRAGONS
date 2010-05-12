@@ -618,7 +618,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     
                 ampname = hdu[1].header[stdkeyDictGMOS['key_gmos_ampname']]
                 gmode = dataset.gainmode()
-                rmode = dataset.readmode()
+                rmode = dataset.readspeedmode()
                 
                 rdnoisekey = (rmode, gmode, ampname)
                 
