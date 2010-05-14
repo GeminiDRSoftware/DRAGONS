@@ -216,3 +216,49 @@ the steps needed in principle, based on the scientific purpose and
 abilities of the given instrument in the given mode and telescope
 configuration.
 
+
+AstroData Lexicon
+~~~~~~~~~~~~~~~~~
+
+Taken together one has a system of types, off of which type-specific
+behaviors (high level metadata calculators called "descriptors" and
+dataset transformations called "primitives) are assigned. Other
+behaviors can and will also be assigned this way in the future. For
+complete documentation of the ADCONFIG_Gemini type and descriptor
+package see {{GATREFNAME}, available at
+`http://www.gemini.edu/INSERTFINALGATREFURLHERE
+<http://www.gemini.edu/INSERTFINALGATREFURLHERE>`__.
+
+The astrodata package itself has no built in type or descriptor
+definitions, only the infrastructure to load same from ADCONFIG_xxx
+packages, but here is an example tree for GMOS, from the Gemini
+configuration.
+
+
+.. figure:: images_types/GMOS-tree-pd.png
+    :width: 90%
+    :figwidth: 5.4in
+    :figclass: align-center
+    
+    GMOS AstroData Type Tree
+    
+
+
+This graph shows GMOS is a child type of GEMINI, all other instrument-
+modes are arranged as children of GMOS. A descriptor calculator, with
+member functions to calculate all GMOS instrument descriptors is
+assigned to GMOS. A set of primitives is assigned to GMOS_IMAGE for
+use with GMOS_IMAGE types, all others would load the GEMINI primitive
+set, which has primitives that will work on all GEMINI data (generally
+just bookkeeping functions as few transformations are generalizable
+across all Gemini datasets.
+
+Note: if a particular mode, say GMOS_IFU needed to override a
+particular desctriptor, one could assign a descriptor calculator to
+GMOS_IFU which inherited most descriptor functionsfrom the GMOS
+descriptor calculator, while overriding those that needed special
+handling. Similarly with primitives... if one needs to override how a
+transformation is performed on a specific types, one assigns a
+primitive set to the given type with the primitive implemented for
+that type under the primitive's standard name.
+

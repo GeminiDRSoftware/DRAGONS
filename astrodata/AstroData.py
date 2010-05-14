@@ -2,7 +2,7 @@
 import sys
 from copy import copy, deepcopy
 import pyfits
-
+__docformat__ = "restructuredtext" #for epydoc
 
 from AstroDataType import *
 
@@ -26,15 +26,17 @@ class ADExcept:
         which will be printed out by the default exception 
         handling system, or which is otherwise available to whatever code
         does catch the exception raised.
-        @param msg: a string description about why this exception was thrown
-        @type msg: string
+        
+        :param: msg: a string description about why this exception was thrown
+        
+        :type: msg: string
         """
         self.message = msg
     def __str__(self):
         """This string operator allows the default exception handling to
         print the message associated with this exception.
-        @returns: string representation of this exception, the self.message member
-        @rtype: string"""
+        :returns: string representation of this exception, the self.message member
+        :rtype: string"""
         return self.message
         
 class OutputExists(ADExcept):
@@ -49,10 +51,10 @@ class OutputExists(ADExcept):
 def reHeaderKeys(rekey, header):
     """This utility function returns a list of keys from 
     the header passed in which match the given regular expression.
-    @param rekey: a regular expresion to match to keys in header
-    @type rekey: string
-    @param header: a Header object as returned
-    @type header: pyfits.Header"""
+    :param rekey: a regular expresion to match to keys in header
+    :type rekey: string
+    :param header: a Header object as returned
+    :type header: pyfits.Header"""
     retset = []
     for k in header.ascardlist().keys():
         # print "gd278: key=%s" % k
@@ -69,38 +71,51 @@ class gdExcept:
 
 class AstroData(object, CalculatorInterface):
     """
-    The AstroData Class is a class designed to handle sets of astronomic data as 
-    a single unit. Currently the 
-    data must be stored in Multi-extension FITS files (aka "MEF files"). Other 
-    file types could be supported, but
-    at this time only MEF files are. AstroData adds some semantic knowledge
-    over what one has when accessing such files directly with pyfits (etc),
-    information about the relationships between the data and allows you to look at a
-    complete bundle of data which includes multiple sets of data and a variety
-    of meta information about the data. 
-    
-    The class allows ways to define, in 
-    configurations, how the separate extensions in a MEF file are related, e.g.
-    allowing the class to recognize the relationship between three extensions when
-    one is the science, one is a varience plane, and the other a data mask, or to
-    understand that the a mask definition is associated with a series of spectra,
-    so that the definition can be propagated even by scripts which do not know about,
-    or care about that particular association, at that particular point in processing.
-    All type and related definitions are loaded as configurations, so this semantic
-    knowledge is not encoded directly in this class, but sits in configuration files
-    used
-    by subordinate classes such as the L{AstroDataType Class<AstroDataType>}.
-    
-    In general one can consider the functionality to consist of
-    file handling, data handling, type checking, and managing
-    meta-information in the case of MEF file. However, the class proper really
-    just coordinates other classes to accomplish it's goals, e.g. for file handling 
-    and data handling the
-    class uses python standard Pyfits and NumPy. The type
-    services, projection of structures, normalization of standard meta data about
-    and observation, are handled by custom classes. See also L{AstroDataType},
-    L{Structure}, and L{Descriptors}.
-    """
+The AstroData Class is  designed to handle sets of astronomy data as 
+a single unit. I uses the MEF file format for data storage, and keeps
+pyfits related data structures in memory. In principle other data storage types
+could be supported and also datasets distributed across multiple files.
+However, currently, AstroData presumes that a MEF is a single dataset, and thus
+applies associations only internally to single MEFs. Thus a MEF is a dataset,
+and an AstroData instance encapsulates a dataset, and reads and writes itself to
+disk as a MEF. AstroData thus maintains the individual header-data units within
+the MEF as pyfits.HDUs. To the programmer is  itself as a collection of 
+AstroData instances, each containing one of the HDUs in the whole set found.
+
+The class loads configurations found on ADCONFIGPATH, RECIPEPATH, and the PYTHONPATH,
+in that order, with the naming convention "ADCONFIG_xyz" (the recipe system packages 
+are named "RECIPES_xyz"). The configurations allow defining
+how the separate extensions in a MEF file of a known dataset type are related. This
+allows subsystems to in turn recognize the relationship between three extensions.
+
+For example:
+
++ to recognize of three separate HDUs
+  one HDU is the science, one is a variance plane, and the other a data mask, and that
+  they relate to the same exposure so the variance and data quality mask can be
+  automatically transformed when the science
+  data is transformed.
++ to understand that the a mask definition HDU is associated with a series of spectra,
+  allowing the system to help ensure this HDU is propagated to output, even when 
+  transformed by generic transformations which do not "know" the transformation is
+  for spectroscopy (e.g. a simple image subtraction)
+
+All type and related definitions are loaded as configurations, so this semantic
+knowledge is not encoded directly in this class, but sits in configuration files
+used
+by subordinate classes such as the :class:`astrodata.datatype.AstroDataType` Class, via a 
+central configuration space reader.
+
+In general one can consider the functionality to consist of
+file handling, data handling, type checking, and managing
+meta-information in the case of MEF file. However, the class proper really
+just coordinates other classes to accomplish it's goals, e.g. for file handling 
+and data handling the
+class uses python standard Pyfits and NumPy. The type
+services, projection of structures, normalization of standard meta data about
+and observation, are handled by custom classes. See also L{AstroDataType},
+L{Structure}, and L{Descriptors}.
+"""
     
     types = None
     typesStatus = None
@@ -156,10 +171,10 @@ class AstroData(object, CalculatorInterface):
         ad[0] is the first extension AFTER the PHU, it is not the PHU!  In
         AstroData instances, the PHU is purely a header.
         
-        @param ext: EXTNAME name for this subdata instance.
-        @type ext: string
-        @returns: AstroData instance associated with the subset of data
-        @rtype: AstroData
+        :param ext: EXTNAME name for this subdata instance.
+        :type ext: string
+        :returns: AstroData instance associated with the subset of data
+        :rtype: AstroData
         """
         hdul = self.gethdul()
         # ext can be tuple, an int, or string ("EXTNAME")
@@ -214,28 +229,28 @@ class AstroData(object, CalculatorInterface):
             
     def __len__(self):
         """This is the length operator for AstroData.
-        @returns: number of extensions minus the PHU
-        @rtype: int"""
+        :returns: number of extensions minus the PHU
+        :rtype: int"""
         return len(self.hdulist)-1
     
     def __init__(self, fname=None, mode="readonly", exts = None, extInsts = None):
         """
         Constructor for AstroData. Note, the file will be opened.
-        @param fname: filename of MEF to load
-        @type fname: string
-        @param mode: an [optional] IO access mode, same as pyfits mode, see
+        :param fname: filename of MEF to load
+        :type fname: string
+        :param mode: an [optional] IO access mode, same as pyfits mode, see
         L{open()} for a list of supported modes.
-        @type mode: string
-        @param exts: a list of extensions this instance should refer to, given 
+        :type mode: string
+        :param exts: a list of extensions this instance should refer to, given 
         integer or tuples specifying each extention. I.e. (EXTNAME,EXTVER) tuples or 
         and integer index which specifies the ordinal position of the extension in the MEF 
         file, begining with index 0 for the PHU. NOTE: if present this option will
         override and obscure the extInsts argument which will be ignored.
-        @type exts: list
-        @param extInsts: a list of extensions this instance should refer to, given as
+        :type exts: list
+        :param extInsts: a list of extensions this instance should refer to, given as
         actual pyfits.HDU instances. NOTE: if the "exts" argument is also set,
         this argument is ignored.
-        @type extInsts: list
+        :type extInsts: list
         """
         
         # not actually sure we should open right away, but 
@@ -261,8 +276,8 @@ class AstroData(object, CalculatorInterface):
         """This function exists so that AstroData can be used as an iterator.
         It initializes the iteration process, resetting the index of the 
         current extension.
-        @returns: self
-        @rtype: AstroData"""
+        :returns: self
+        :rtype: AstroData"""
         self.index = 0
         return self
         
@@ -276,9 +291,9 @@ class AstroData(object, CalculatorInterface):
         the MEF to which it refers, then this iterator goes through that subset
         order (as given by the 
         
-        @returns: a single extension AstroData instance representing the current
+        :returns: a single extension AstroData instance representing the current
         extension in the data.
-        @rtype: AstroData
+        :rtype: AstroData
         """
         try:
             if self.extensions == None:
@@ -318,19 +333,27 @@ class AstroData(object, CalculatorInterface):
         print "AD298: copy?"
     
     def append(self, moredata=None, data=None, header=None):
-        """This function appends more HDUs to this AstroData
-        instance.
-        @param moredata: either an AstroData instance, an HDUList instance, 
-        or an HDU instance. When present, data and header will be ignored.
-        @type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
-        @param data: if moredata not specified, data and header are used to make 
-        and HDU which is then added to the HDUList associated with this
-        AstroData instance.
-        @type data: numarray.numaraycore.NumArray
-        @param header: if moredata not specified, data and header are used to make 
-        and HDU which is then added to the HDUList associated with this
-        AstroData instance.
-        @type header: pyfits.Header
+        """
+This function appends more data units (aka an "HDU") to the AstroData
+instance.
+
+:param moredata: Either an AstroData instance, an HDUList instance, 
+or an HDU instance. When present, data and header will be ignored.
+
+:type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
+
+:param data: if moredata *is not* specified, data and header should 
+both be set and areare used to instantiate
+a new HDU which is then added to the 
+AstroData instance.
+
+:type data: numarray.numaraycore.NumArray
+
+:param header: if moredata *is not* specified, data and header are used to make 
+an HDU which is then added to the HDUList associated with this
+AstroData instance.
+
+:type header: pyfits.Header
         """
         if (moredata == None):
             if len(self.hdulist) == 0:
@@ -370,10 +393,10 @@ class AstroData(object, CalculatorInterface):
             for gd in dataset[SCI]:
                 ...
                 
-        @raise: gdExcept if AstroData instance has more than one extension 
+        :raise: gdExcept if AstroData instance has more than one extension 
         (not including PHU).
-        @return: data array associated with the single extension
-        @rtype: NumArray
+        :return: data array associated with the single extension
+        :rtype: NumArray
         """
         hdl = self.gethdul()
         if len(hdl) == 2:
@@ -393,10 +416,10 @@ class AstroData(object, CalculatorInterface):
             for gd in dataset[SCI]:
                 ...
                 
-        @raise gdExcept: if AstroData instance has more than one extension 
+        :raise gdExcept: if AstroData instance has more than one extension 
         (not including PHU).
-        @param newdata: new data objects
-        @type newdata: numarray.numarraycore.NumArray
+        :param newdata: new data objects
+        :type newdata: numarray.numarraycore.NumArray
         """
         hdl = self.gethdul()
         if len(hdl) == 2:
@@ -417,10 +440,10 @@ class AstroData(object, CalculatorInterface):
         
         for gd in dataset[SCI]: ...
         
-        @raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
+        :raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
             (note: The PHU is not considered an extension in this case)
-        @return: header
-        @rtype: pyfits.Header
+        :return: header
+        :rtype: pyfits.Header
         """
         if extension == None:
             hdl = self.gethdul()
@@ -446,15 +469,15 @@ class AstroData(object, CalculatorInterface):
         
         for gd in dataset[SCI]: ...
         
-        @param header: header to set for given extension
-        @type header: pyfits.Header
+        :param header: header to set for given extension
+        :type header: pyfits.Header
         
-        @param extension: Extension index from which to retrieve header, if None or not present then this must be
+        :param extension: Extension index from which to retrieve header, if None or not present then this must be
         a single extension AstroData instance, which contains just the PHU and a single data extension, and the data
         extension's header is returned.
-        @type extension: int or tuple, pyfits compatible extension index
+        :type extension: int or tuple, pyfits compatible extension index
         
-        @raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
+        :raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
             (note: The PHU is not considered an extension in this case)
         """
         if extension == None:
@@ -473,8 +496,8 @@ class AstroData(object, CalculatorInterface):
     def getHeaders(self):
         """
         Function returns header member(s) for all extension (except PHU).
-        @return: list of pyfits.Header instances
-        @rtype: pyfits.Header
+        :return: list of pyfits.Header instances
+        :rtype: pyfits.Header
         """
         hdl = self.gethdul()
         
@@ -494,14 +517,14 @@ class AstroData(object, CalculatorInterface):
         MEF with AstroData, instead, pass the filename into the
         constructor. This function can still be of use if
         the AstroData object has been closed.
-        @param source: source for data to be associated with this instance, can be 
+        :param source: source for data to be associated with this instance, can be 
         an AstroData instance, a pyfits.HDUList instance, or a string filename.
-        @type source: string | AstroData | pyfits.HDUList
-        @param mode: IO access mode, same as the pyfits open mode, C{readonly},
+        :type source: string | AstroData | pyfits.HDUList
+        :param mode: IO access mode, same as the pyfits open mode, C{readonly},
         C{update}, or C{append}.  The mode is passed to pyfits so if it is an
         illegal mode name, pyfits will be the subsystem reporting the error. 
-        @type mode: string
-        @return: nothing
+        :type mode: string
+        :return: nothing
         '''
                 
         # might not be a filename, if AstroData instance is passed in
@@ -589,7 +612,7 @@ class AstroData(object, CalculatorInterface):
         This function closes the pyfits.HDUList object if this instance
         is the owner (the instance originally calling pyfits.open(..) on this
         MEF).
-        @return: nothing
+        :return: nothing
         """
         if (self.borrowedHDUList == False):
             self.hdulist.close()
@@ -605,8 +628,8 @@ class AstroData(object, CalculatorInterface):
         This function retrieves the HDUList. NOTE: The HDUList should also be "released"
         by calling L{releaseHDUList}, as access is reference-counted. This function is
         also aliased to L{gethdul(..)<gethdul>}.
-        @return: The AstroData's HDUList as returned by pyfits.open()
-        @rtype: pyfits.HDUList
+        :return: The AstroData's HDUList as returned by pyfits.open()
+        :rtype: pyfits.HDUList
         """
         self.hdurefcount = self.hdurefcount + 1
         return self.hdulist
@@ -627,8 +650,8 @@ class AstroData(object, CalculatorInterface):
         This function will return a handle to the ClassificationLibrary.  NOTE: the ClassificationLibrary
         is a singleton, this call will either return the currently extant instance or, if not extant,
         will create the classification library (using the default context).
-        @return: A reference to the system classification library
-        @rtype: L{ClassificationLibrary}
+        :return: A reference to the system classification library
+        :rtype: L{ClassificationLibrary}
         """
         if (self.classificationLibrary == None):
             try:
@@ -642,11 +665,11 @@ class AstroData(object, CalculatorInterface):
     def getTypes(self, prune = False, tmp=False):
         """This function returns an array of string type names, just as discoverTypes
         but also takes arguments to modify the list. 
-        @param prune: flag which controls 'pruning' the returned type list so that only the
+        :param prune: flag which controls 'pruning' the returned type list so that only the
         leaf node type for a given set of related types is returned.
-        @type prune: Bool
-        @returns: a list of classification names that apply to this data
-        @rtype: list
+        :type prune: Bool
+        :returns: a list of classification names that apply to this data
+        :rtype: list
         """
         
         retary = self.discoverTypes()
@@ -678,14 +701,14 @@ class AstroData(object, CalculatorInterface):
         This function provides a list of classifications of both processing status
         and typology which apply to the data encapsulated by this instance, 
         identified by their string names.
-        @param all: a flag which  controls how the classes are returned... if True,
+        :param all: a flag which  controls how the classes are returned... if True,
         then the function will return a dictionary of three lists, "all", "status",
         and "typology".  If Fa
 lse, the return value is a list which is in fact
         the "all" list, containing all the status and typology related types together.
-        @return: a list of DataClassification objects, or a dictionary of lists
+        :return: a list of DataClassification objects, or a dictionary of lists
         if the C{all} flag is set.
-        @rtype: list | dict
+        :rtype: list | dict
         """
         if (self.types == None):
             cl = self.getClassificationLibrary()
@@ -707,8 +730,8 @@ lse, the return value is a list which is in fact
     def getStatus(self):
         """ This function returns specifically "status" related classifications
         about the encapsulated data.
-        @returns: a list of string classification names
-        @rtype: list
+        :returns: a list of string classification names
+        :rtype: list
         """
         
         retary = self.discoverStatus()
@@ -718,8 +741,8 @@ lse, the return value is a list which is in fact
         """
         This function returns the set of processing types applicable to 
         this dataset.
-        @returns: a list of classification name strings
-        @rtype: list
+        :returns: a list of classification name strings
+        :rtype: list
         """
 
         if (self.typesStatus == None):
@@ -734,8 +757,8 @@ lse, the return value is a list which is in fact
         this dataset.  "Typology" classifications are those which tend
         to remain with the data for it's lifetime, e.g. those related
         to the instrument mode of the data.
-        @returns: a list of classification name strings
-        @rtype: list"""
+        :returns: a list of classification name strings
+        :rtype: list"""
         
         retary = self.discoverTypology()
         return retary
@@ -745,8 +768,8 @@ lse, the return value is a list which is in fact
         This function returns a list of classification names
         for typology related classifications, as apply to this
         dataset.
-        @return: DataClassification objects in a list
-        @rtype: list
+        :return: DataClassification objects in a list
+        :rtype: list
         """
         if (self.typesTypology == None):
             cl = self.getClassificationLibrary()
@@ -760,10 +783,10 @@ lse, the return value is a list which is in fact
         This function checks the type of this data to see if it can be characterized 
         as the type specified 
         by C{typename}.
-        @param typename: Specifies the type name to check.
-        @type typename: string
-        @returns: True if the given type applies to this dataset, False otherwise.
-        @rtype: Bool
+        :param typename: Specifies the type name to check.
+        :type typename: string
+        :returns: True if the given type applies to this dataset, False otherwise.
+        :rtype: Bool
         """
         if (self.types == None):
             cl = self.getClassificationLibrary()
@@ -781,10 +804,10 @@ lse, the return value is a list which is in fact
     def rePHUKeys(self, rekey):
         """ reKeys returns all keys in this dataset's PHU which match the given 
         regular expression.
-        @param rekey: A regular expression
-        @type rekey: string
-        @returns: a list of keys from the PHU that matched C{rekey}
-        @rtype: list"""
+        :param rekey: A regular expression
+        :type rekey: string
+        :returns: a list of keys from the PHU that matched C{rekey}
+        :rtype: list"""
         phuh = self.hdulist[0].header
         
         retset = reHeaderKeys(rekey, phuh)
@@ -796,10 +819,10 @@ lse, the return value is a list which is in fact
         """
         This function returns a header from the primary header unit 
         (extension 0 in a MEF).
-        @param key: name of header entry to retrieve
-        @type key: string
-        @rtype: depends on datatype of the key's value
-        @returns: the key's value or None if not present
+        :param key: name of header entry to retrieve
+        :type key: string
+        :rtype: depends on datatype of the key's value
+        :returns: the key's value or None if not present
         """
         try:
             hdus = self.getHDUList()
@@ -837,8 +860,8 @@ lse, the return value is a list which is in fact
         is returned if tuples were used to specify the subset of 
         extensions from the MEF which are associated with this instance.
         
-        @rtype: int | tuple
-        @returns: the actual extension relative to the containing MEF
+        :rtype: int | tuple
+        :returns: the actual extension relative to the containing MEF
         """
         if (self.extensions == None):
             return integer+1
@@ -855,12 +878,12 @@ lse, the return value is a list which is in fact
     def extGetKeyValue(self, extension, key):
         """This function returns the value from the given extension's
         header.
-        @param extension: identifies which extension
-        @type extension: int or (EXTNAME, EXTVER) tuple
-        @param key: name of header entry to retrieve
-        @type key: string
-        @rtype: depends on datatype of the key's value
-        @returns: the key's value or None if not present
+        :param extension: identifies which extension
+        :type extension: int or (EXTNAME, EXTVER) tuple
+        :param key: name of header entry to retrieve
+        :type key: string
+        :rtype: depends on datatype of the key's value
+        :returns: the key's value or None if not present
         """
         
         if type(extension) == int:
@@ -919,9 +942,9 @@ lse, the return value is a list which is in fact
         or C{HDUList.update} if none is given,
         that is it will write a new file if fname is given, otherwise it will
         overwrite the source file originally loaded.
-        @param fname: file name, optional if instance already has name, which
+        :param fname: file name, optional if instance already has name, which
         might not be the case for new AstroData instances created in memory.
-        @type fname: string
+        :type fname: string
         """
         hdul = self.gethdul()
         if fname != None:
@@ -947,12 +970,12 @@ lse, the return value is a list which is in fact
         which are associated with this AstroData instance. Note, if 
         this instance is associated with a subset of the extensions
         in the source MEF, only those in the subset will be counted.
-        @param extname: the name of the extension, equivalent to the
+        :param extname: the name of the extension, equivalent to the
         value associated with the "EXTNAM" key in the extension header.
-        @param extname: The name of EXTNAM, or "None" if there should be
+        :param extname: The name of EXTNAM, or "None" if there should be
         no extname key at all.
-        @type extname: string
-        @returns: number of extensions of that name
+        :type extname: string
+        :returns: number of extensions of that name
         """
         hdul = self.gethdul()
         maxl = len(hdul)
@@ -975,10 +998,10 @@ lse, the return value is a list which is in fact
     def getHDU(self, extid):
         """This function returns the HDU identified by the C{extid} argument. This
         argument can be an integer or (EXTNAME, EXTVER) tuple.
-        @param extid: specifies the extention (pyfits.HDU) to return.
-        @type extid: int | tuple
-        @returns:the extension specified
-        @rtype:pyfits.HDU
+        :param extid: specifies the extention (pyfits.HDU) to return.
+        :type extid: int | tuple
+        :returns:the extension specified
+        :rtype:pyfits.HDU
         """
         return self.hdulist[extid]
         
@@ -1000,12 +1023,12 @@ def correlate( *iary):
     MEFa[(SCI,2)] to MEFb[(SCI,2)] and so on. Similarly when handling variance or
     data quality planes, such correlations by (EXTNAME,EXTVER) are used to know
     what data in separate MEFs should be combined in the specified operation.
-    @parm iary: any number of AstroData instances
-    @type iary: arglist
-    @returns: a list of tuples containing correlated extensions from the arguments. 
+    :parm iary: any number of AstroData instances
+    :type iary: arglist
+    :returns: a list of tuples containing correlated extensions from the arguments. 
     Note: to appear in the list, all the given arguments must have an extension
     with the given (EXTNAME,EXTVER) for that tuple.
-    @returns: list of tuples
+    :returns: list of tuples
     """
     numinputs = len(iary)
     
@@ -1044,17 +1067,17 @@ def prepOutput(inputAry = None, name = None, clobber = False):
     """
     This function creates an output AstroData with it's own PHU,
     with associated data propagated, but not written to disk.
-    @param inputAry : (1) single argument or list, use propagation and other
+    :param inputAry : (1) single argument or list, use propagation and other
     standards to create output and (2) None means create empty AstroData.
     Note: the first element in the list is used as the I{reference} AstroData 
     from which the PHU is
     propagated to the prepared output file.
-    @param name: File name to use for return AstroData, optional.
-    @returns: an AstroData instance with associated data from the inputAry 
+    :param name: File name to use for return AstroData, optional.
+    :returns: an AstroData instance with associated data from the inputAry 
     properly forwarded to the returned instance, which is likely going to
     recieve output from further processing.
     File will not exist on disk yet.
-    @rtype: AstroData
+    :rtype: AstroData
     """
     if inputAry == None:
         raise gdExcept()
@@ -1087,5 +1110,3 @@ def prepOutput(inputAry = None, name = None, clobber = False):
         retgd.filename = name
     
     return retgd
-
-# @@DOCPROJECT@@ done pass 1

@@ -4,19 +4,7 @@
 AstroData Lexicon
 -----------------
 
-The astrodata package proper is insfrastructural code, and it does
-not, itself, perform numerical processing. Instead it loads
-configurations it can use to ensure that dataset-specific code is
-executed. To allow this astrodata requires these configurations to
-define a lexicon of terms in the astrodata grammar. Each of the types
-of term has an associated action or behavior associated, and the
-configuration must also implement these actions for each of the terms
-defined.
-
-Each term in the lexicon is given a name and is of a certain type,
-which implies a particular type of action which must be implemented
-for that name and type. The types of terms and their associated
-actions are below.
+Ideally, the creation of an ast
 
 
 astrodata Grammar

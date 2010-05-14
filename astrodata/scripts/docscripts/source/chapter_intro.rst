@@ -8,6 +8,7 @@ Introduction
     
     documentBrief.rst
     gen.ADMANUAL_ADConcepts.rst
-    gen.AstroDataLexicon.rst
-    gen.AstroDataPackageOverview.rst
+
+.. removed    gen.AstroDataLexicon.rst
+.. removed    gen.AstroDataPackageOverview.rst
 

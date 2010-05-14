@@ -15,6 +15,7 @@ The Astrodata Manual
     :maxdepth: 10
     
     chapter_intro.rst
-
+    chapter_AstroDataClass.rst
+    
 .. these are related books, can be chapters of The AstroData Book
     Gemini AstroData Type Reference: chapter_Gemini_Types.rst

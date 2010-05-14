@@ -392,6 +392,8 @@ def commandClause(ro, coi):
             # cache.
             #print "RD172: GET STACKABLE REQS:", rq
         elif rqTyp == DisplayRequest:
+            print "${RED}DISPLAY REQUESTS NOT SUPPORTED AT THIS TIME.\nCall instrument specific display function in display primitive.${NORMAL}"
+            raise "DISPLAY REQUESTS NOT SUPPORTED AT THIS TIME. Call instrument specific display function in display primitive."
             from pyraf import iraf
             from pyraf.iraf import gemini
             gemini()
@@ -414,9 +416,9 @@ def commandClause(ro, coi):
                     #print "RED
                     try:
                         # print "r420:", rq.disID, ds.displayID2frame(rq.disID)
-
-                        gemini.gmos.gdisplay( tmpImage, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
-                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+                        raise "CANNOT DO DISPLAY REQUESTS AT THIS TIME. Call instrument specific display function in display primitive."
+#                        gemini.gmos.gdisplay( tmpImage, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
+#                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
 #                                        ds.display( tmpImage )
 #                                        print ds.ds9.frames()  
                     except:
