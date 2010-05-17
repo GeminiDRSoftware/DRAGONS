@@ -143,6 +143,24 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
+    def display(self, rc):
+        from adutils.future import gemDisplay
+        import pyraf
+        from pyraf import iraf
+        iraf.set(stdimage='imtgmos')
+        ds = gemDisplay.getDisplayService()
+        for i in range(0, len(rc.inputs)):   
+            inputRecord = rc.inputs[i]
+            gemini.gmos.gdisplay( inputRecord.filename, i+1, fl_imexam=iraf.no,
+                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
+            # this version had the display id conversion code which we'll need to redo
+            # code above just uses the loop index as frame number
+            #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
+            #    Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+        yield rc
+    
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
     def findshiftsAndCombine(self, rc):
        try:
           print "shifting and combining images"

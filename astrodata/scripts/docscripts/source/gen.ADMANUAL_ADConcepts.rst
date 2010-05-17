@@ -13,20 +13,23 @@ The astrodata system is a product of a Gemini Astronomers request to
 sufficient for handling "MEFs" as such, and the real problem was the
 MEFs are presented by fits libraries (e.g. pyfits) as lists of Header-
 Data Units, aka "extensions", and relationships between the extensions
-are not recognised. AstroData on the other hand is intended to
-recognise those connections and present the data in a MEF as a related
+are not recognized. AstroData on the other hand is intended to
+recognize those connections and present the data in a MEF as a related
 whole, for example interpreting the set as some particular dataset
-type.
+type. The data in a MEF is not incidentally present, it's part of a
+bundle of data associated with this dataset type, which to first order
+map to instrument-modes for those supported.
 
 Ample header data exists in the datasets to perform this function
 given a definition of how the types are characterized, and what
-unified interface one wants to present. Given the configuration
-AstroData will look at data in a format-specific ways when needed, but
-maintain a consistent interface for the AstroData user.
+unified interface one wants to present. Given such definitions in an
+AstroData configuration (aka ADCONFIG), AstroData will look at data in
+a format-specific ways when needed, but maintain a consistent
+interface for the AstroData user.
 
 To use astrodata you will develop a lexicon of terms or use an
 existing set of definitions, e.g. Gemini's. In the current system
-there are three types of terms to be concerned wits:
+there are three types of terms to be concerned with:
 
 
 + dataset classification names, aka **AstroDataTypes**
@@ -38,13 +41,13 @@ there are three types of terms to be concerned wits:
 Each of these have associated actions:
 
 
-+ AstroDataType: check a dataset for adherence to a criteria of
++ AstroData Type: check a dataset for adherence to a criteria of
   classification, generally by checking PHU key-value pairs.
 + Descriptors: calculate of a type of high-level metadata in a
-  particular variable type, for a particular AstroDataType, generally
+  particular variable type, for a particular AstroData Type, generally
   from one or more low-level metadata in the dataset headers.
-+ Primitives: perform a dataset discrete, transformation for a
-  particular AstroDatatype.
++ Primitives: perform a standard dataset transformation for a
+  particular AstroData Type.
 
 
 
@@ -76,14 +79,19 @@ checked in a single line once the AstroData instance is created:
 
 
 The `isType(..)` function on lines 5 and 8 above are examples of one
-line type checking, the one line check replaces a larger set of phu
-checks which determine the instrument and mode, and with astrodata are
-centralized in AstroDataType Library. The advantage in addition to
-saving specific header checks, both the verbosity and the need to
-remain familiar with arbitrary specific data is the centralization of
-the checks. Thus if we need to enhance the check, handle special cases
-sch as Instrument Upgrades, or otherwise rework our classification
-heuristics, we can do this in a shared configuration.
+line type checking. The one line check replaces a larger set of PHU
+header checks which would have to be used to determine the instrument
+and mode. With astrodata these checks are centralized in an AstroData
+Type Library. The advantage, in addition to saving specific header
+checks, which helps clarity and writing generic code, is that the need
+to remain familiar with arbitrary specific headers for particular
+instrument-modes is centralized.
+
+Thus if we need to enhance the check to handle special cases such as
+Instrument Upgrades, or otherwise rework our classification
+heuristics, we can do this in a central shared configuration. Other
+types that are dependent on that check, such as GMOS_IFU depends on
+GMOS, do not have to be altered to gain from the change.
 
 
 AstroData Descriptors
@@ -230,8 +238,9 @@ package see {{GATREFNAME}, available at
 <http://www.gemini.edu/INSERTFINALGATREFURLHERE>`__.
 
 The astrodata package itself has no built in type or descriptor
-definitions, only the infrastructure to load same from ADCONFIG_xxx
-packages, but here is an example tree for GMOS, from the Gemini
+definitions, only the infrastructure to load such definitions from an
+ADCONFIG package (which follow a "ADCONFIG_xxx" naming convention).
+Here is an example type tree graph for GMOS, from the Gemini
 configuration.
 
 

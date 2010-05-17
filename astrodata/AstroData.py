@@ -103,18 +103,22 @@ For example:
 All type and related definitions are loaded as configurations, so this semantic
 knowledge is not encoded directly in this class, but sits in configuration files
 used
-by subordinate classes such as the :class:`astrodata.datatype.AstroDataType` Class, via a 
-central configuration space reader.
+by subordinate classes such as the :class:`Classification Library<astrodata.datatypes.ClassificationLibrary>`.
+All access to configurations goes through a :class:`ConfigSpace object<astrodata.ConfigSpace.ConfigSpace`.
 
 In general one can consider the functionality to consist of
 file handling, data handling, type checking, and managing
-meta-information in the case of MEF file. However, the class proper really
-just coordinates other classes to accomplish it's goals, e.g. for file handling 
+meta-information in the case of the MEF file. AstroData uses subsidiary classes to provide
+most functionality, e.g. for file handling 
 and data handling the
 class uses python standard Pyfits and NumPy. The type
-services, projection of structures, normalization of standard meta data about
-and observation, are handled by custom classes. See also L{AstroDataType},
-L{Structure}, and L{Descriptors}.
+services, projection of structures, normalization of standard high-level meta data about
+and observation, are handled by custom package classes. See also the 
+:class:`Classification Library<astrodata.datatypes.ClassificationLibrary>
+AstroDataType}, the
+:class:`Structure Class<astrodata.Structures.Structure>`, and the 
+:class:`Descriptor Class<astrodata.descriptors.Descriptor`
+.
 """
     
     types = None
@@ -137,7 +141,45 @@ L{Structure}, and L{Descriptors}.
     # ClassificationLibrary Singleton, must be retrieved through
     #   getClassificationLibrary()
     classificationLibrary = None
-    
+    def __init__(self, fname=None, mode="readonly", exts = None, extInsts = None):
+        """
+        Constructor for AstroData. Note, the file will be opened.
+        
+        :param fname: filename of MEF to load
+        :type fname: string
+        :param mode: IO access mode, same as pyfits mode, see
+                     :meth:`open(..)<open>` for a list of supported modes.
+        :type mode: string
+        :param exts: a list of extensions this instance should refer to, given 
+                     integer or tuples specifying each extention. I.e. (EXTNAME,EXTVER) tuples or 
+                     and integer index which specifies the ordinal position of the extension in the MEF 
+                     file, begining with index 0 for the PHU. NOTE: if present this option will
+                     override and obscure the extInsts argument which will be ignored.
+        :type exts: list
+        :param extInsts: a list of extensions this instance should refer to, given as
+                         actual pyfits.HDU instances. NOTE: if the "exts" argument is also set,
+                         this argument is ignored.
+        :type extInsts: list
+        """
+        
+        # not actually sure we should open right away, but 
+        #  I do suppose the user expects to give the file name
+        #  on construction.  To not open now requires opening
+        #  in a lazy manner, which means setting up a system for that.
+        #  Therefore, I'll adopt the assumption that the file is 
+        #  open on construction, and later, add lazy-open to all
+        #  functions that would require it, should we optimize that way.
+
+        # !!NOTE!! CODE FOLLOWING THIS COMMENT IS REQUIRED BY DESIGN
+        # "extensions" first so other
+        # initialization code knows this is subdata
+        # set the parts
+        # print exts
+        self.extensions = exts
+        self.extInsts = extInsts
+        
+        self.open(fname, mode)
+
     def __del__(self):
         """ This is the destructor for AstroData. It performs reference 
         counting and behaves differently when this instance is subdata, since
@@ -233,43 +275,6 @@ L{Structure}, and L{Descriptors}.
         :rtype: int"""
         return len(self.hdulist)-1
     
-    def __init__(self, fname=None, mode="readonly", exts = None, extInsts = None):
-        """
-        Constructor for AstroData. Note, the file will be opened.
-        :param fname: filename of MEF to load
-        :type fname: string
-        :param mode: an [optional] IO access mode, same as pyfits mode, see
-        L{open()} for a list of supported modes.
-        :type mode: string
-        :param exts: a list of extensions this instance should refer to, given 
-        integer or tuples specifying each extention. I.e. (EXTNAME,EXTVER) tuples or 
-        and integer index which specifies the ordinal position of the extension in the MEF 
-        file, begining with index 0 for the PHU. NOTE: if present this option will
-        override and obscure the extInsts argument which will be ignored.
-        :type exts: list
-        :param extInsts: a list of extensions this instance should refer to, given as
-        actual pyfits.HDU instances. NOTE: if the "exts" argument is also set,
-        this argument is ignored.
-        :type extInsts: list
-        """
-        
-        # not actually sure we should open right away, but 
-        #  I do suppose the user expects to give the file name
-        #  on construction.  To not open now requires opening
-        #  in a lazy manner, which means setting up a system for that.
-        #  Therefore, I'll adopt the assumption that the file is 
-        #  open on construction, and later, add lazy-open to all
-        #  functions that would require it, should we optimize that way.
-
-        # !!NOTE!! CODE FOLLOWING THIS COMMENT IS REQUIRED BY DESIGN
-        # "extensions" first so other
-        # initialization code knows this is subdata
-        # set the parts
-        # print exts
-        self.extensions = exts
-        self.extInsts = extInsts
-        
-        self.open(fname, mode)
         
     #ITERATOR FUNCTIONS
     def __iter__(self):

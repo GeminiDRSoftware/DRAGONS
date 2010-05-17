@@ -71,6 +71,7 @@ def grab(name, subdir = "" ):
     outf.close()
     print "to", outfname
     
+# for the introduction
 grab("ADMANUAL_RevisionHistory")
 grab("ADMANUAL_Purpose")
 grab("ADMANUAL_ADConcepts")
@@ -80,3 +81,6 @@ grab("AstroDataLexicon")
 grab("GATREF-RevisionHistory", subdir = "gatref")
 grab("GATREF-Purpose",subdir = "gatref")
 grab("GATREF-Audience",subdir = "gatref")
+
+# for the AstroData Class Reference
+grab("ADMANUAL_SingleHDUAD")
