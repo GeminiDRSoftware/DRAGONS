@@ -14,6 +14,24 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
     def __init__(self):
         pass
     
+    def utdate(self, dataset, **args):
+        """
+        Return the utdate value for PHOENIX
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: STRING
+        @return: UTDATE
+        """
+        try:
+            hdu = dataset.hdulist
+            ret = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_utdate"]]
+
+        except KeyError:
+            return None
+
+        return ret
+
+
     def cwave(self, dataset, **args):
         """
         Return the cwave value for PHOENIX
