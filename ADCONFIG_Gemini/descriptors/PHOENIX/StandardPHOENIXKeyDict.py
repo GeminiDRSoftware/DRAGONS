@@ -6,4 +6,5 @@ stdkeyDictPHOENIX = {
     "key_phoenix_cwave":"GRAT_POS",
     "key_phoenix_ra":"RA",
     "key_phoenix_dec":"DEC",
+    "key_phoenix_utdate":"UTDATE",
     }
