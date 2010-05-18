@@ -59,30 +59,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         retcwavefloat /= 10000 # in header in ansgrtoms, convert to microns, cwaves unit
         return retcwavefloat
     
-    def datasec(self, dataset):
-        """
-        Return the datasec value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the data section
-        """
-        retdatasecstring = None
-        
-        return str(retdatasecstring)
-    
-    def detsec(self, dataset):
-        """/home/rtfuser/demo/gemini_python/trunk/emma.descriptors/files
-        Return the detsec value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the detector section
-        """
-        retdetsecstring = None
-        
-        return str(retdetsecstring)
-    
     def disperser(self, dataset, stripID=False, pretty=False):
         """
         Return the disperser value for NIRI
@@ -148,18 +124,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             return None
         
         return float(retexptimefloat)
-    
-    def filterid(self, dataset):
-        """
-        Return the filterid value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the unique filter ID number string
-        """
-        retfilteridstring = None
-        
-        return str(retfilteridstring)
     
     def filtername(self, dataset, pretty = False, stripID = False):
         """
@@ -235,18 +199,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     niriSpecDict = None
     
-    def mdfrow(self, dataset):
-        """
-        Return the mdfrow value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the corresponding reference row in the MDF
-        """
-        retmdfrowint = None
-        
-        return retmdfrowint
-    
     def nonlinear(self, dataset):
         """
         Return the nonlinear value for NIRI
@@ -306,20 +258,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         retnsciextint = dataset.countExts(None)
         
         return int(retnsciextint)
-    
-    def obsmode(self, dataset):
-        """
-        Return the obsmode value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the observing mode
-        """
-        try:
-            raise Errors.ExistError()
-
-        except Errors.ExistError, e:
-            return e.message
     
     def pixscale(self, dataset):
         """
@@ -503,54 +441,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     niriSpecDict = None
     
-    def wdelta(self, dataset):
-        """
-        Return the wdelta value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the dispersion (angstroms/pixel)
-        """
-        retwdeltafloat = None
-        
-        return retwdeltafloat
-    
-    def wrefpix(self, dataset):
-        """
-        Return the wrefpix value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the reference pixel of the central wavelength
-        """
-        retwrefpixfloat = None
-        
-        return retwrefpixfloat
-    
-    def xccdbin(self, dataset):
-        """
-        Return the xccdbin value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector x-axis
-        """
-        retxccdbinint = None
-        
-        return retxccdbinint
-    
-    def yccdbin(self, dataset):
-        """
-        Return the yccdbin value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector y-axis
-        """
-        retyccdbinint = None
-        
-        return retyccdbinint
-
     ## UTILITY MEMBER FUNCTIONS (NOT DESCRIPTORS)
     
     def filternameFrom(self, filters):
