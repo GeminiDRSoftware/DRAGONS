@@ -259,6 +259,26 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return int(retnsciextint)
     
+    def detsec(self, dataset):
+        """
+        Return the NIRI datasec. This has to be derived from the
+        first extension, but pertains to the whole data file
+        """
+        try:
+            hdu = dataset.hdulist
+            x_start = hdu[1].header["LOWROW"]
+            x_end = hdu[1].header["HIROW"]
+            y_start = hdu[1].header["LOWCOL"]
+            y_end = hdu[1].header["HICOL"]
+
+            retdetsec = '[%d:%d,%d:%d]' % (x_start, x_end, y_start, y_end)
+
+        except KeyError:
+            return None
+
+        return retdetsec
+ 
+
     def pixscale(self, dataset):
         """
         Return the pixscale value for NIRI
