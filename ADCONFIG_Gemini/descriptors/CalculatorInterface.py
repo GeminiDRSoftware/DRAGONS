@@ -943,6 +943,42 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
+    def readmode(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "readmode")
+            if not hasattr( self.descriptorCalculator, "readmode"):
+                key = "key_"+"readmode"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.readmode(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
+    def welldepthmode(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "welldepthmode")
+            if not hasattr( self.descriptorCalculator, "welldepthmode"):
+                key = "key_"+"welldepthmode"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.welldepthmode(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
     def gainmode(self, **args):
         try:
             self._lazyloadCalculator()
@@ -956,6 +992,24 @@ class CalculatorInterface:
                 else:
                     return None
             return self.descriptorCalculator.gainmode(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
+    def coadds(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "coadds")
+            if not hasattr( self.descriptorCalculator, "coadds"):
+                key = "key_"+"coadds"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.coadds(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
