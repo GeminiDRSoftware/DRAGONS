@@ -125,6 +125,19 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return float(retexptimefloat)
     
+    def coadds(self, dataset):
+        """
+        Return the number of coadds
+        """
+        try:
+            hdu = dataset.hdulist
+            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
+        except KeyError:
+            return None
+
+        return coadds
+
+
     def filtername(self, dataset, pretty = False, stripID = False):
         """
         Return the filtername value for NIRI
