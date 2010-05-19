@@ -52,18 +52,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return float(retcwavefloat)
     
-    def datasec(self, dataset, **args):
-        """
-        Return the datasec value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the data section
-        """
-        retdatasecstring = None
-        
-        return str(retdatasecstring)
-    
     def detsec(self, dataset, **args):
         """
         Return the detsec value for GNIRS
@@ -128,18 +116,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             return None
         
         return float(retexptimefloat)
-    
-    def filterid(self, dataset, **args):
-        """
-        Return the filterid value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the unique filter ID number string
-        """
-        retfilteridstring = None
-        
-        return str(retfilteridstring)
     
     def filtername(self, dataset, stripID=False, pretty=False, **args):
         """
@@ -235,18 +211,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         return float(retgainfloat)
 
     gnirsArrayDict = None
-    
-    def mdfrow(self, dataset, **args):
-        """
-        Return the mdfrow value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the corresponding reference row in the MDF
-        """
-        retmdfrowint = None
-        
-        return retmdfrowint
     
     def nonlinear(self, dataset, **args):
         """
@@ -354,18 +318,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     gnirsConfigDict = None
     
-    def pupilmask(self, dataset, **args):
-        """
-        Return the pupilmask value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the pupil mask used to acquire data
-        """
-        retpupilmaskstring = None
-        
-        return str(retpupilmaskstring)
-    
     def rdnoise(self, dataset, **args):
         """
         Return the rdnoise value for GNIRS
@@ -436,50 +388,3 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     gnirsArrayDict = None
     
-    def wdelta(self, dataset, **args):
-        """
-        Return the wdelta value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the dispersion (angstroms/pixel)
-        """
-        retwdeltafloat = None
-        
-        return retwdeltafloat
-    
-    def wrefpix(self, dataset, **args):
-        """
-        Return the wrefpix value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the reference pixel of the central wavelength
-        """
-        retwrefpixfloat = None
-        
-        return retwrefpixfloat
-    
-    def xccdbin(self, dataset, **args):
-        """
-        Return the xccdbin value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector x-axis
-        """
-        retxccdbinint = None
-        
-        return retxccdbinint
-    
-    def yccdbin(self, dataset, **args):
-        """
-        Return the yccdbin value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector y-axis
-        """
-        retyccdbinint = None
-        
-        return retyccdbinint
