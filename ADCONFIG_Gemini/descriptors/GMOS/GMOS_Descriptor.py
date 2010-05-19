@@ -55,7 +55,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             if (asList):
                 retamproa = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     ampname = ext.header[stdkeyDictGMOS['key_gmos_ampname']]
                     detsec = ext.header[stdkeyDictGMOS['key_gmos_detsec']]
                     retamproa.append("'%s':%s" % (ampname, detsec))
@@ -128,7 +128,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             if (asList):
                 retdatasec = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     datasec = ext.header[stdkeyDictGMOS['key_gmos_datasec']]
                     retdatasec.append(datasec)
             
@@ -164,7 +164,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             if (asList):
                 retdetroa = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     ccdname = ext.header[stdkeyDictGMOS['key_gmos_ccdname']]
                     detsec = ext.header[stdkeyDictGMOS['key_gmos_detsec']]
                     retdetroa.append("'%s':%s" % (ccdname, detsec))
@@ -202,7 +202,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             if (asList):
                 retdetsec = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     detsec = ext.header[stdkeyDictGMOS['key_gmos_detsec']]
                     retdetsec.append(detsec)
             
@@ -379,7 +379,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
             if (asList):
                 retgain = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     # Descriptors must work for all AstroData Types so check
                     # if the original gain keyword exists to use for the
                     # look-up table
@@ -492,7 +492,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             if (asList):
                 retmdfrow = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     mdfrow = ext.header[stdkeyDictGMOS['key_gmos_mdfrow']]
                     retmdfrow.append(mdfrow)
             
@@ -617,7 +617,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             if (asList):
                 retrdnoise = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     # Descriptors must work for all AstroData Types so check
                     # if the original gain keyword exists to use for the
                     # look-up table
@@ -695,7 +695,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # print 'GRD 692: called ronorig'
         temp = []
         try:
-            for ext in dataset['SCI']:
+            for ext in dataset:
                 temp.append(ext.header['RONORIG'])
         except:
             temp = self.fetchValue('RDNOISE', dataset)
@@ -751,7 +751,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             if (asList):
                 retwdelta = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     wdelta = ext.header[stdkeyDictGMOS['key_gmos_wdelta']]
                     retwdelta.append(wdelta)
             
@@ -785,7 +785,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         try:
             if (asList):
                 retwrefpix = []
-                for ext in dataset['SCI']:
+                for ext in dataset:
                     wrefpix = ext.header[stdkeyDictGMOS['key_gmos_wrefpix']]
                     retwrefpix.append(wrefpix)
             
