@@ -18,5 +18,7 @@ stdkeyDictGMOS = {
     "key_gmos_gainorig":"GAINORIG",
     "key_gmos_maskname":"MASKNAME",
     "key_gmos_masktype":"MASKTYP",
+    "key_gmos_mdfrow":"MDFROW",
     "key_gmos_wdelta":"CD1_1",
+    "key_gmos_wrefpix":"CRPIX1",
     }
