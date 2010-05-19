@@ -4,6 +4,7 @@ from astrodata import Descriptors
 from astrodata.Calculator import Calculator
 
 import GemCalcUtil
+import re
 
 from StandardGenericKeyDict import stdkeyDictGeneric
 
@@ -19,12 +20,29 @@ class Generic_DescriptorCalc(Calculator):
         """
         try:
             hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictGeneric["key_generic_utdate"]]
+            utdatestring = hdu[0].header[stdkeyDictGeneric["key_generic_utdate"]]
 
         except KeyError:
             return None
         
-        return str(retutdatestring)
+        # Validate the result. The definition is taken from the FITS standard document v3.0
+        # Must be YYYY-MM-DD or YYYY-MM-DDThh:mm:ss[.sss]
+
+        # Here I also do some very basic checks like ensuring the first digit of the
+        # month is 0 or 1, but I don't do cleverer checks like 01<=M<=12
+
+        # nb. seconds ss > 59 is valid when leap seconds occur.
+
+        retval = None
+
+        if(re.match('\d\d\d\d-[01]\d-[0123]\d', utdatestring)):
+            retval = utdatestring
+
+        m=re.match('(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)', utdatestring)
+        if(m):
+            retval = m.group(1)
+
+        return retval
     
     def instrument(self, dataset, **args):
         """
