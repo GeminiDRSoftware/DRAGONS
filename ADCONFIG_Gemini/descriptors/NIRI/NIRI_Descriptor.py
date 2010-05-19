@@ -17,12 +17,19 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     niriSpecDict = None
     
     def __init__(self):
-        self.niriSpecDict = Lookups.getLookupTable("Gemini/NIRI/NIRISpecDict", "niriSpecDict")
-        self.niriFilternameMapConfig = Lookups.getLookupTable("Gemini/NIRI/NIRIFilterMap", "niriFilternameMapConfig")
-        self.nsappwave = Lookups.getLookupTable("Gemini/IR/nsappwavepp.fits", 1)
+        self.niriSpecDict = \
+            Lookups.getLookupTable('Gemini/NIRI/NIRISpecDict',
+                                   'niriSpecDict')
+        self.niriFilternameMapConfig = \
+            Lookups.getLookupTable('Gemini/NIRI/NIRIFilterMap',
+                                   'niriFilternameMapConfig')
+        
+        self.nsappwave =
+            Lookups.getLookupTable('Gemini/IR/nsappwavepp.fits', 1)
+
         self.makeFilternameMap()
         
-    def camera(self, dataset):
+    def camera(self, dataset, **args):
         """
         Return the camera value for NIRI
         @param dataset: the data set
@@ -32,14 +39,14 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictNIRI["key_niri_camera"]]
+            retcamerastring = hdu[0].header[stdkeyDictNIRI['key_niri_camera']]
         
         except KeyError:
             return None
         
         return str(retcamerastring)
     
-    def cwave(self, dataset):
+    def cwave(self, dataset, **args):
         """
         Return the cwave value for NIRI
         @param dataset: the data set
@@ -53,13 +60,14 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         dname  = self.disperser(dataset)
         
         for row in self.nsappwave.data:
-            if fpmask == row.field("MASK") and dname == row.field("GRATING"):
-                retcwavefloat = float(row.field("LAMBDA"))
+            if fpmask == row.field('MASK') and dname == row.field('GRATING'):
+                retcwavefloat = float(row.field('LAMBDA'))
         
-        retcwavefloat /= 10000 # in header in ansgrtoms, convert to microns, cwaves unit
+        retcwavefloat /= 10000
+        # in header in angstroms, convert to microns, cwaves unit
         return retcwavefloat
     
-    def disperser(self, dataset, stripID=False, pretty=False):
+    def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for NIRI
         @param dataset: the data set
@@ -78,15 +86,15 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         retdisperserstring = None
         try:
             hdu = dataset.hdulist
-            filter1 = hdu[0].header[stdkeyDictNIRI["key_niri_filter1"]]
-            filter2 = hdu[0].header[stdkeyDictNIRI["key_niri_filter2"]]
-            filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
+            filter1 = hdu[0].header[stdkeyDictNIRI['key_niri_filter1']]
+            filter2 = hdu[0].header[stdkeyDictNIRI['key_niri_filter2']]
+            filter3 = hdu[0].header[stdkeyDictNIRI['key_niri_filter3']]
             #filter1 = GemCalcUtil.removeComponentID(filter1)
             #filter2 = GemCalcUtil.removeComponentID(filter2)
             #filter3 = GemCalcUtil.removeComponentID(filter3)
         except KeyError:
             return None
-        diskey = "grism"
+        diskey = 'grism'
         if diskey in filter1:
             retdisperserstring = filter1
         if diskey in filter2:
@@ -99,7 +107,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
 
         return str(retdisperserstring)
         
-    def exptime(self, dataset):
+    def exptime(self, dataset, **args):
         """
         Return the exptime value for NIRI
         @param dataset: the data set
@@ -109,9 +117,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            exptime = hdu[0].header[stdkeyDictNIRI["key_niri_exptime"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
-            if dataset.isType("NIRI_RAW") == True:
+            exptime = hdu[0].header[stdkeyDictNIRI['key_niri_exptime']]
+            coadds = hdu[0].header[stdkeyDictNIRI['key_niri_coadds']]
+            if dataset.isType('NIRI_RAW') == True:
                 if coadds != 1:
                     coaddexp = exptime
                     retexptimefloat = exptime * coadds
@@ -125,20 +133,24 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return float(retexptimefloat)
     
-    def coadds(self, dataset):
+    def coadds(self, dataset, **args):
         """
-        Return the number of coadds
+        Return the number of coadds for NIRI
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: integer
+        @return: the number of coadds
         """
         try:
             hdu = dataset.hdulist
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
+            retcoaddsint = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
+        
         except KeyError:
             return None
 
-        return coadds
-
-
-    def filtername(self, dataset, pretty = False, stripID = False):
+        return int(retcoaddsint)
+    
+    def filtername(self, dataset, pretty = False, stripID = False, **args):
         """
         Return the filtername value for NIRI
         @param dataset: the data set
@@ -152,9 +164,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
 
         try:
             hdu = dataset.hdulist
-            filter1 = hdu[0].header[stdkeyDictNIRI["key_niri_filter1"]]
-            filter2 = hdu[0].header[stdkeyDictNIRI["key_niri_filter2"]]
-            filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
+            filter1 = hdu[0].header[stdkeyDictNIRI['key_niri_filter1']]
+            filter2 = hdu[0].header[stdkeyDictNIRI['key_niri_filter2']]
+            filter3 = hdu[0].header[stdkeyDictNIRI['key_niri_filter3']]
             if (stripID):
                 filter1 = GemCalcUtil.removeComponentID(filter1)
                 filter2 = GemCalcUtil.removeComponentID(filter2)
@@ -177,7 +189,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             
         return str(retfilternamestring)
     
-    def fpmask(self, dataset):
+    def fpmask(self, dataset, **args):
         """
         Return the fpmask value for NIRI
         @param dataset: the data set
@@ -187,14 +199,14 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictNIRI["key_niri_fpmask"]]
+            retfpmaskstring = hdu[0].header[stdkeyDictNIRI['key_niri_fpmask']]
         
         except KeyError:
             return None
                         
         return str(retfpmaskstring)
     
-    def gain(self, dataset):
+    def gain(self, dataset, **args):
         """
         Return the gain value for NIRI
         @param dataset: the data set
@@ -203,7 +215,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         @returns: the gain (electrons/ADU)
         """
         try:
-            retgainfloat = self.niriSpecDict["gain"]
+            retgainfloat = self.niriSpecDict['gain']
         
         except KeyError:
             return None
@@ -212,7 +224,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     niriSpecDict = None
     
-    def nonlinear(self, dataset):
+    def nonlinear(self, dataset, **args):
         """
         Return the nonlinear value for NIRI
         @param dataset: the data set
@@ -222,16 +234,16 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            avdduc = hdu[0].header[stdkeyDictNIRI["key_niri_avdduc"]]
-            avdet = hdu[0].header[stdkeyDictNIRI["key_niri_avdet"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
+            avdduc = hdu[0].header[stdkeyDictNIRI['key_niri_avdduc']]
+            avdet = hdu[0].header[stdkeyDictNIRI['key_niri_avdet']]
+            coadds = hdu[0].header[stdkeyDictNIRI['key_niri_coadds']]
             
-            gain = self.niriSpecDict["gain"]
-            shallowwell = self.niriSpecDict["shallowwell"]
-            deepwell = self.niriSpecDict["deepwell"]
-            shallowbias = self.niriSpecDict["shallowbias"]
-            deepbias = self.niriSpecDict["deepbias"]
-            linearlimit = self.niriSpecDict["linearlimit"]
+            gain = self.niriSpecDict['gain']
+            shallowwell = self.niriSpecDict['shallowwell']
+            deepwell = self.niriSpecDict['deepwell']
+            shallowbias = self.niriSpecDict['shallowbias']
+            deepbias = self.niriSpecDict['deepbias']
+            linearlimit = self.niriSpecDict['linearlimit']
             
             biasvolt = avdduc - avdet
             #biasvolt = 100
@@ -249,10 +261,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             return c.message
             
         except KeyError, k:
-            if k.message[0:3]=="Key":
+            if k.message[0:3]=='Key':
                 return k.message
             else:
-                return "%s not found." % k.message
+                return '%s not found.' % k.message
 
         else:
             retnonlinearint = saturation * linearlimit
@@ -260,7 +272,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     niriSpecDict = None
     
-    def nsciext(self, dataset):
+    def nsciext(self, dataset, **args):
         """
         Return the nsciext value for NIRI
         @param dataset: the data set
@@ -268,11 +280,11 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: integer
         @return: the number of science extensions
         """
-        retnsciextint = dataset.countExts(None)
+        retnsciextint = dataset.countExts('SCI')
         
         return int(retnsciextint)
     
-    def detsec(self, dataset):
+    def obsmode(self, dataset, **args):
         """
         Return the NIRI datasec. This has to be derived from the
         first extension, but pertains to the whole data file
@@ -292,7 +304,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         return retdetsec
  
 
-    def pixscale(self, dataset):
+    def pixscale(self, dataset, **args):
         """
         Return the pixscale value for NIRI
         @param dataset: the data set
@@ -302,10 +314,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            cd11 = hdu[0].header[stdkeyDictNIRI["key_niri_cd11"]]
-            cd12 = hdu[0].header[stdkeyDictNIRI["key_niri_cd12"]]
-            cd21 = hdu[0].header[stdkeyDictNIRI["key_niri_cd21"]]
-            cd22 = hdu[0].header[stdkeyDictNIRI["key_niri_cd22"]]
+            cd11 = hdu[0].header[stdkeyDictNIRI['key_niri_cd11']]
+            cd12 = hdu[0].header[stdkeyDictNIRI['key_niri_cd12']]
+            cd21 = hdu[0].header[stdkeyDictNIRI['key_niri_cd21']]
+            cd22 = hdu[0].header[stdkeyDictNIRI['key_niri_cd22']]
             
             retpixscalefloat = 3600 * (math.sqrt(math.pow(cd11,2) + math.pow(cd12,2)) + math.sqrt(math.pow(cd21,2) + math.pow(cd22,2))) / 2
         
@@ -314,9 +326,153 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return float(retpixscalefloat)
     
+    def pupilmask(self, dataset, **args):
+        """
+        Return the pupilmask value for NIRI
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the pupil mask used to acquire data
+        """
+        try:
+            hdu = dataset.hdulist
+            filter3 = hdu[0].header[stdkeyDictNIRI['key_niri_filter3']]
+            
+            if filter3[:3] == 'pup':
+                pupilmask = filter3
+                
+                if pupilmask[-6:-4] == '_G':
+                    retpupilmaskstring = pupilmask[:-6]
+                else:
+                    retpupilmaskstring = pupilmask
+            
+            else:
+                return None
+        
+        except KeyError:
+            return None
+        
+        return str(retpupilmaskstring)
+    
+    def rdnoise(self, dataset, **args):
+        """
+        Return the rdnoise value for NIRI
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: float
+        @returns: the estimated readout noise (electrons)
+        """
+        try:
+            hdu = dataset.hdulist
+            lnrs = hdu[0].header[stdkeyDictNIRI['key_niri_lnrs']]
+            ndavgs = hdu[0].header[stdkeyDictNIRI['key_niri_ndavgs']]
+            coadds = hdu[0].header[stdkeyDictNIRI['key_niri_coadds']]
+            
+            readnoise = self.niriSpecDict['readnoise']
+            medreadnoise = self.niriSpecDict['medreadnoise']
+            lowreadnoise = self.niriSpecDict['lowreadnoise']
+            
+            if lnrs == 1 and ndavgs == 1:
+                retrdnoisefloat = readnoise * math.sqrt(coadds)
+            elif lnrs == 1 and ndavgs == 16:
+                retrdnoisefloat = medreadnoise * math.sqrt(coadds)
+            elif lnrs == 16 and ndavgs == 16:
+                retrdnoisefloat = lowreadnoise * math.sqrt(coadds)
+            else:
+                retrdnoisefloat = medreadnoise * math.sqrt(coadds)
+        
+        except KeyError:
+            return None
+        
+        return float(retrdnoisefloat)
+    
+    niriSpecDict = None
+    
+    def readmode(self, dataset):
+	"""
+        Returns the Read Mode for NIRI. This is either "Low Background",
+        "Medium Background" or "High Background" as in the OT.
+        Returns 'Invalid' if the headers don't make sense wrt these
+        defined modes.
+	"""
+	try:
+	    hdu = dataset.hdulist
+
+            lnrs = hdu[0].header[stdkeyDictNIRI["key_niri_lnrs"]]
+            ndavgs = hdu[0].header[stdkeyDictNIRI["key_niri_ndavgs"]]
+
+            readmode = "Invalid"
+
+            if((lnrs==16) and (ndavgs==16)):
+                readmode = "Low Background"
+
+            if((lnrs==1) and (ndavgs==16)):
+                readmode = "Medium Background"
+
+            if((lnrs==1) and (ndavgs==1)):
+                readmode = "High Background"
+
+            return readmode
+
+	except KeyError:
+	    return None
+
+    def satlevel(self, dataset, **args):
+        """
+        Return the satlevel value for NIRI
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: integer
+        @returns: the saturation level in the raw images (ADU)
+        """
+        try:
+            hdu = dataset.hdulist
+            
+            avdduc = hdu[0].header[stdkeyDictNIRI['key_niri_avdduc']]
+            avdet = hdu[0].header[stdkeyDictNIRI['key_niri_avdet']]
+            coadds = hdu[0].header[stdkeyDictNIRI['key_niri_coadds']]
+            
+            gain = self.niriSpecDict['gain']
+            shallowwell = self.niriSpecDict['shallowwell']
+            deepwell = self.niriSpecDict['deepwell']
+            shallowbias = self.niriSpecDict['shallowbias']
+            deepbias = self.niriSpecDict['deepbias']
+            linearlimit = self.niriSpecDict['linearlimit']
+            
+            biasvolt = avdduc - avdet
+            
+            if abs(biasvolt - shallowbias) < 0.05:
+                retsaturationint = int(shallowwell * coadds / gain)
+            
+            elif abs(biasvolt - deepbias) < 0.05:
+                retsaturationint = int(deepwell * coadds / gain)
+            
+            else:
+                return None
+            
+        except KeyError:
+            return None
+        
+        return int(retsaturationint)
+    
+    niriSpecDict = None
+    
+    def wdelta(self, dataset, **args):
+        """
+        Return the wdelta value for NIRI
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: float
+        @returns: the dispersion (angstroms/pixel)
+        """
+        retwdeltafloat = None
+        
+        return retwdeltafloat
+    
     def welldepthmode(self, dataset):
 	"""
-        Returns the well depth mode for NIRI. This is either "Deep" or "Shallow" as in the OT
+        Returns the well depth mode for NIRI. This is either "Deep" or
+        "Shallow" as in the OT
         Returns 'Invalid' if the bias numbers aren't what we normally use
         Uses parameters in the niriSpecDict dictionary
 	"""
@@ -344,145 +500,27 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
 
-	
-    def readmode(self, dataset):
-	"""
-        Returns the Read Mode for NIRI. This is either "Low Background", "Medium Background" or "High Background"
-        as in the OT. Returns 'Invalid' if the headers don't make sense wrt these defined modes.
-	"""
-	try:
-	    hdu = dataset.hdulist
-
-            lnrs = hdu[0].header[stdkeyDictNIRI["key_niri_lnrs"]]
-            ndavgs = hdu[0].header[stdkeyDictNIRI["key_niri_ndavgs"]]
-
-            readmode = "Invalid"
-
-            if((lnrs==16) and (ndavgs==16)):
-                readmode = "Low Background"
-
-            if((lnrs==1) and (ndavgs==16)):
-                readmode = "Medium Background"
-
-            if((lnrs==1) and (ndavgs==1)):
-                readmode = "High Background"
-
-            return readmode
-
-	except KeyError:
-	    return None
-
-    def pupilmask(self, dataset):
+    def wrefpix(self, dataset, **args):
         """
-        Return the pupilmask value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the pupil mask used to acquire data
-        """
-        try:
-            hdu = dataset.hdulist
-            filter3 = hdu[0].header[stdkeyDictNIRI["key_niri_filter3"]]
-            
-            if filter3[:3] == "pup":
-                pupilmask = filter3
-                
-                if pupilmask[-6:-4] == "_G":
-                    retpupilmaskstring = pupilmask[:-6]
-                else:
-                    retpupilmaskstring = pupilmask
-            
-            else:
-                return None
-        
-        except KeyError:
-            return None
-        
-        return str(retpupilmaskstring)
-    
-    def rdnoise(self, dataset):
-        """
-        Return the rdnoise value for NIRI
+        Return the wrefpix value for NIRI
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
-        @returns: the estimated readout noise (electrons)
+        @returns: the reference pixel of the central wavelength
         """
-        try:
-            hdu = dataset.hdulist
-            lnrs = hdu[0].header[stdkeyDictNIRI["key_niri_lnrs"]]
-            ndavgs = hdu[0].header[stdkeyDictNIRI["key_niri_ndavgs"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
-            
-            readnoise = self.niriSpecDict["readnoise"]
-            medreadnoise = self.niriSpecDict["medreadnoise"]
-            lowreadnoise = self.niriSpecDict["lowreadnoise"]
-            
-            if lnrs == 1 and ndavgs == 1:
-                retrdnoisefloat = readnoise * math.sqrt(coadds)
-            elif lnrs == 1 and ndavgs == 16:
-                retrdnoisefloat = medreadnoise * math.sqrt(coadds)
-            elif lnrs == 16 and ndavgs == 16:
-                retrdnoisefloat = lowreadnoise * math.sqrt(coadds)
-            else:
-                retrdnoisefloat = medreadnoise * math.sqrt(coadds)
+        retwrefpixfloat = None
         
-        except KeyError:
-            return None
-        
-        return float(retrdnoisefloat)
-    
-    niriSpecDict = None
-    
-    def satlevel(self, dataset):
-        """
-        Return the satlevel value for NIRI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the saturation level in the raw images (ADU)
-        """
-        try:
-            hdu = dataset.hdulist
-            
-            avdduc = hdu[0].header[stdkeyDictNIRI["key_niri_avdduc"]]
-            avdet = hdu[0].header[stdkeyDictNIRI["key_niri_avdet"]]
-            coadds = hdu[0].header[stdkeyDictNIRI["key_niri_coadds"]]
-            
-            gain = self.niriSpecDict["gain"]
-            shallowwell = self.niriSpecDict["shallowwell"]
-            deepwell = self.niriSpecDict["deepwell"]
-            shallowbias = self.niriSpecDict["shallowbias"]
-            deepbias = self.niriSpecDict["deepbias"]
-            linearlimit = self.niriSpecDict["linearlimit"]
-            
-            biasvolt = avdduc - avdet
-            
-            if abs(biasvolt - shallowbias) < 0.05:
-                retsaturationint = int(shallowwell * coadds / gain)
-            
-            elif abs(biasvolt - deepbias) < 0.05:
-                retsaturationint = int(deepwell * coadds / gain)
-            
-            else:
-                return None
-            
-        except KeyError:
-            return None
-        
-        return int(retsaturationint)
-    
-    niriSpecDict = None
+        return retwrefpixfloat
     
     ## UTILITY MEMBER FUNCTIONS (NOT DESCRIPTORS)
     
-    def filternameFrom(self, filters):
+    def filternameFrom(self, filters, **args):
         
-        # reject "open" "grism" and "pupil"
+        # reject 'open' 'grism' and 'pupil'
         filters2 = []
         for filt in filters:
             filtlow = filt.lower()
-            if ("open" in filtlow) or ("grism" in filtlow) or ("pupil" in filtlow):
+            if ('open' in filtlow) or ('grism' in filtlow) or ('pupil' in filtlow):
                 pass
             else:
                 filters2.append(filt)
@@ -491,16 +529,16 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # blank means an opaque mask was in place, which of course
         # blocks any other in place filters
-        if "blank" in filters:
-            retfilternamestring = "blank"
+        if 'blank' in filters:
+            retfilternamestring = 'blank'
         elif len(filters) == 0:
-            retfilternamestring = "open"
+            retfilternamestring = 'open'
         else:
             filters.sort()
-            retfilternamestring = "&".join(filters)
+            retfilternamestring = '&'.join(filters)
         return retfilternamestring
             
-    def makeFilternameMap(self):
+    def makeFilternameMap(self, **args):
         filternamemap = {}
         for line in self.niriFilternameMapConfig:
             linefiltername = self.filternameFrom( [line[1], line[2], line[3]])
