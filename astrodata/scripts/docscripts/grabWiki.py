@@ -84,3 +84,4 @@ grab("GATREF-Audience",subdir = "gatref")
 
 # for the AstroData Class Reference
 grab("ADMANUAL_SingleHDUAD")
+grab("ADMANUAL-ADSubdata")

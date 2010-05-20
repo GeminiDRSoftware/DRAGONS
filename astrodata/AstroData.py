@@ -343,20 +343,20 @@ This function appends more data units (aka an "HDU") to the AstroData
 instance.
 
 :param moredata: Either an AstroData instance, an HDUList instance, 
-or an HDU instance. When present, data and header will be ignored.
+    or an HDU instance. When present, data and header will be ignored.
 
 :type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
 
 :param data: if moredata *is not* specified, data and header should 
-both be set and areare used to instantiate
-a new HDU which is then added to the 
-AstroData instance.
+    both be set and areare used to instantiate
+    a new HDU which is then added to the 
+    AstroData instance.
 
 :type data: numarray.numaraycore.NumArray
 
 :param header: if moredata *is not* specified, data and header are used to make 
-an HDU which is then added to the HDUList associated with this
-AstroData instance.
+    an HDU which is then added to the HDUList associated with this
+    AstroData instance.
 
 :type header: pyfits.Header
         """
