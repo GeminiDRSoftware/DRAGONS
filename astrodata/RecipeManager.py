@@ -299,30 +299,25 @@ class ReductionContext(dict):
             self.originalInputs = deepcopy(self.inputs)
         if len(self.originalInputs) == 0:
             return None
-        elif len(self.originalInputs) == 1:
-            adID = idFac.generateAstroDataID(self.inputs[0].ad)
-            key = (adID, caltype)
-            infile = os.path.basename(self.inputs[0].filename)
-            #print 'RM611:\n', self.calsummary()
-            if key in self.calibrations:
-                return {self.calibrations[key].filename:[infile]}
-            else:
-                return None
+        #elif len(self.originalInputs) == 1:
+        #    adID = idFac.generateAstroDataID(self.inputs[0].ad)
+        #    key = (adID, caltype)
+        #    infile = os.path.basename(self.inputs[0].filename)
+        #    if key in self.calibrations:
+        #        return {self.calibrations[key].filename:[infile]}
+        #    else:
+        #        return None
         else:
-            if False:
-                # If you are in here, I assume that intelligence has been set.
-                # (i.e. There are improvements / assumptions made in here.)
-                retl = {}
-                for inp in self.originalInputs:
-                    key = (idFac.generateAstroDataID(inp.ad), caltype)
-                    calfile = self.calibrations[key].filename
-                    infile = os.path.basename(inp.filename)
-                    if retl.has_key(calfile):
-                        retl.update({calfile:retl[calfile] + [infile]})
-                    else:
-                        retl.update({calfile:[infile]})
-                #print 'RM625:', retl
-                return retl
+            retl = {}
+            for inp in self.originalInputs:
+                key = (idFac.generateAstroDataID(inp.ad), caltype)
+                calfile = self.calibrations[key].filename
+                infile = os.path.basename(inp.filename)
+                if retl.has_key(calfile):
+                    retl.update({calfile:retl[calfile] + [infile]})
+                else:
+                    retl.update({calfile:[infile]})
+            return retl
                      
     def callCallbacks(self, name, **params):
         callbacks = self.callbacks
