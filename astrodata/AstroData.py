@@ -254,7 +254,7 @@ AstroDataType}, the
             try:
                 #make sure it exists
                 if type(ext) == int:
-                    ext = ext+1 # so 0 does not mean HDU, but 0'th content-extension
+                    ext = ext+1 # so 0 does not mean PHU, but 0'th content-extension
                 exttmp = hdul[ext]
             except KeyError:
                 # print "gd105: keyerror:[%s]" % ext
@@ -264,7 +264,7 @@ AstroDataType}, the
 
             gdpart = AstroData(self, exts=[ext])
             self.relhdul()
-            #print "gd132: %s" % str(gdpart)
+            # print "gd132: %s" % str(gdpart)
             return gdpart
         else:
             raise KeyError()
@@ -532,9 +532,11 @@ instance.
         :return: nothing
         '''
                 
+        inferRAW = True
         # might not be a filename, if AstroData instance is passed in
         #  then it has opened or gets to open the data...
         if isinstance(source, AstroData):
+            inferRAW = False
             self.filename = source.filename
             self.borrowedHDUList = True
             self.container = source
@@ -545,15 +547,18 @@ instance.
                 self.types = source.types
                         
             chdu = source.gethdul()
+            # include the phu no matter what
             sublist = [chdu[0]]
             if self.extensions != None:
                 # then some extensions have been identified to refer to
                 for extn in self.extensions:
+                    # print "AD553:", extn, chdu[extn].header["EXTVER"]
                     sublist.append(chdu[extn])
             elif (self.extInsts != None):
                 # then some extension (HDU objects) have been given in a list
                 sublist += self.extInsts
             self.hdulist = pyfits.HDUList(sublist)
+            # print "AD559:", self.hdulist[1].header["EXTVER"]
         elif type(source) == pyfits.HDUList:
             self.hdulist = source
         else:
@@ -582,7 +587,7 @@ instance.
             except:
                 raise ADExcept("discover types failed")
         # do inferences
-        if self.isType("RAW"):
+        if inferRAW and self.isType("RAW"):
             
             # for raw, if no extensions are named
             # infer the name as "SCI"
@@ -598,12 +603,12 @@ instance.
                     
             if namedext == False:
                 # print "AD567: No named extension"
-                l = len(hdul)-1 # len minus PHU
+                l = len(hdul) # len w/phu
                 # print "AD567: len of hdulist ",l
 
-                for i in range(0, l):
-                    self.extSetKeyValue(i, "EXTNAME", "SCI", "added by AstroData")
-                    self.extSetKeyValue(i, "EXTVER", str(i), "added by AstroData")
+                for i in range(1, l):
+                    hdul[i].header.update("EXTNAME", "SCI", "added by AstroData")
+                    hdul[i].header.update("EXTVER", str(i), "added by AstroData")
                     #print "AD570:", repr(self.extGetKeyValue(i,"EXTNAME"))
                 
                 nhdul = []
@@ -868,14 +873,20 @@ lse, the return value is a list which is in fact
         :rtype: int | tuple
         :returns: the actual extension relative to the containing MEF
         """
-        if (self.extensions == None):
-            return integer+1
-        else:
-            return self.extensions[integer]
+
+        return integer+1
+# for the life of me I can't remember why I'm using self.extensions...
+# @@TODO: remove self.extensions completely?  might be useful to know
+# the hdu's extension in the original file... ?
+#        if (self.extensions == None):
+#            return integer+1
+#        else:
+#            print "AD874:", repr(self.extensions)
+#            return self.extensions[integer]
     
     def getHeaderValue(self, key):
         if len(self.hdulist) == 2:
-            self.extGetKeyValue(0,key)
+            return self.extGetKeyValue(0,key)
         else:
             raise ADExcept("getHeaderValue must be called on single extension instance")
     getKeyValue = getHeaderValue
@@ -893,18 +904,19 @@ lse, the return value is a list which is in fact
         
         if type(extension) == int:
             extension = self.translateIntExt(extension)
-            
         #make sure extension is in the extensions list
-        if (self.extensions != None) and (not extension in self.extensions):
-            return None
+        #@@TODO: remove these self.extensions lists
+        
+        # if (self.extensions != None) and (not extension in self.extensions):
+        #    return None
             
         hdul = self.gethdul()
         try:
             retval = hdul[extension].header[key]
         except KeyError:
+            raise "AD912"
             return None
-            
-        self.relhdul()
+        # print "AD914:", key, "=",retval    
         return retval
     
     def setKeyValue(self, key):
