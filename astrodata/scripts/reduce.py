@@ -462,6 +462,8 @@ def commandClause(ro, coi):
                                                                      'ell':str(rq.ellMean)}
                     tmpFile.write( coords )
                     tmpFile.close()
+                    print 'r165: importing iraf again'
+                    from pyraf import iraf  
                     iraf.tvmark( frame=dispFrame,coords=tmpFilename,
                     pointsize=0, color=204, label=pyraf.iraf.yes )
                 et = time.time()
