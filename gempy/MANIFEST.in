@@ -1,0 +1,4 @@
+include MANIFEST
+include ReleaseNote
+include INSTALL
+include Copyright
