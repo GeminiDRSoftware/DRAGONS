@@ -48,15 +48,19 @@ try:
     fullflist = []
     for f in filelist:
         fullflist.append(recdat+f)
-        
+       
     if False:
         for fits in filelist:
             filename = recdat + fits
             #command = reduce + ' -r ' + recipe + ' ' + filename
-            command = "reduce -m -r demo" + ' ' + filename
+            command = "reduce -m -r demo" + ' ' + filename 
             os.system( command )
     else:
-        command = "reduce -m " + " ".join(fullflist)
+    	precommand1 = "reduce --addcal recipedata/N20090825S0114_flat.fits --caltype=twilight " + " ".join(fullflist)
+        precommand2 = "reduce --addcal recipedata/N20090415S1011_bias.fits --caltype=bias " + " ".join(fullflist)
+        os.system(precommand1)
+        os.system(precommand2)
+        command = "reduce -m " + " ".join(fullflist) 
         print "command:", command
         os.system(command)
     
