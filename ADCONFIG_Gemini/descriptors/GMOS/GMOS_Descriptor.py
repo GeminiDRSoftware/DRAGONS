@@ -189,7 +189,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return retdetroa
     
-    def detsec(self, dataset, asList=False, **args):
+    def detsec(self, dataset, asList=True, **args):
         """
         Return the detsec value for GMOS
         If asList = True, a list is returned, where the number of array
@@ -360,7 +360,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return str(retfpmaskstring)
     
-    def gain(self, dataset, asList=False, **args):
+    def gain(self, dataset, asList=True, **args):
         """
         Return the gain value for GMOS
         If asList = True, a list is returned, where the number of array
@@ -599,7 +599,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return float(retpixscalefloat)
     
-    def rdnoise(self, dataset, asList=False, **args):
+    def rdnoise(self, dataset, asList=True, **args):
         """
         Return the rdnoise value for GMOS
         If asList = True, a list is returned, where the number of array
