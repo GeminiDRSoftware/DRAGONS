@@ -3,10 +3,11 @@
 		<property key="OBSTYPE" extension="PHU" type="string" value="BIAS" />
 	</identifier>
 	<criteria>
-		<property key="CCDSUM" extension="SCI,1" type="string" />
-		<property key="DETSEC" extension="SCI,1" type="string" />
-		<property key="GAINORIG" extension="SCI,1" type="real" />
-		<property key="RONORIG" extension="SCI,1" type="real" />
+		<property key="yccdbin" extension="SCI,1" type="string" />
+		<property key="xccdbin" extension="SCI,1" type="string" />
+		<property key="detsec" extension="SCI,1" type="string" />
+		<property key="gain" extension="SCI,1" type="real" />
+		<property key="rdnoise" extension="SCI,1" type="real" />
 	</criteria>
 	<priorities>
 		<property key="OBSEPOCH" extension="PHU" type="real" value=""/>
