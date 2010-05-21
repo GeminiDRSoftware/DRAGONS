@@ -24,7 +24,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.getLookupTable('Gemini/NIRI/NIRIFilterMap',
                                    'niriFilternameMapConfig')
         
-        self.nsappwave =
+        self.nsappwave = \
             Lookups.getLookupTable('Gemini/IR/nsappwavepp.fits', 1)
 
         self.makeFilternameMap()
