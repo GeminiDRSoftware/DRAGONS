@@ -409,6 +409,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             else:
                 try:
+                    # print "GDC412", dataset.nsciext(), len(dataset["SCI"])
                     if (dataset.nsciext() < 1):
                         # Descriptors must work for all AstroData Types so
                         # check if the original gain keyword exists to use for
