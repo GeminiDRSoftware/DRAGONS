@@ -5,8 +5,8 @@
 '''
 
 
-from adutils import terminal
-from adutils.terminal import TerminalController, ProgressBar 
+from astrodata.adutils import terminal
+from astrodata.adutils.terminal import TerminalController, ProgressBar 
 import time 
 
 def importIt( imports=[], term=None, message='Loading...' ):

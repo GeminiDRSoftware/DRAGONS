@@ -4,9 +4,9 @@
 import os, sys
 import re
 #get color printing started
-from adutils import terminal
+from astrodata.adutils import terminal
 term = terminal
-from adutils.terminal import TerminalController
+from astrodata.adutils.terminal import TerminalController
 REASLSTDOUT = sys.stdout
 REALSTDERR = sys.stderr
 fstdout = terminal.FilteredStdout()

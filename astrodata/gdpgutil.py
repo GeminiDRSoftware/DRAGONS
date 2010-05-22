@@ -5,7 +5,7 @@ import AstroDataType
 
 from ReductionContextRecords import AstroDataRecord
 
-from adutils import geminiLogger
+from astrodata.adutils import geminiLogger
 #------------------------------------------------------------------------------ 
 class GDPGUtilExcept:
     """ This is the general exception the classes and functions in the

@@ -8,8 +8,8 @@ from pyraf.iraf import gemini
 gemini()
 gemini.gmos()
 
-from adutils.future import pyDisplay
-from adutils.future import starFilter
+from astrodata.adutils.future import pyDisplay
+from astrodata.adutils.future import starFilter
 
 '''
 !!!!!!!!!!!!!!!!!!!!!!! READ ME !!!!!!!!!!!!!!!!!!!!!!!!

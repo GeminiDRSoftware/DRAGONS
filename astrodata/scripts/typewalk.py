@@ -19,8 +19,8 @@ try:
     from astrodata.AstroData import *
     from optparse import OptionParser
 
-    from adutils import terminal
-    from adutils.terminal import TerminalController
+    from astrodata.adutils import terminal
+    from astrodata.adutils.terminal import TerminalController
 
     import traceback as tb
 except:

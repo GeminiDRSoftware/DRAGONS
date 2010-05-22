@@ -4,7 +4,7 @@ import re
 from AstroData import *
 ldebug = False
 verbose = False
-from adutils import terminal
+from astrodata.adutils import terminal
 from ReductionContextRecords import AstroDataRecord
 import subprocess
 uselocalcalserv = False

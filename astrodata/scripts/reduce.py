@@ -6,8 +6,8 @@
 #importprof = hotshot.Profile("hotshot_edi_stats")
 
 #------------------------------------------------------------------------------ 
-from adutils import terminal
-from adutils.terminal import TerminalController, ProgressBar 
+from astrodata.adutils import terminal
+from astrodata.adutils.terminal import TerminalController, ProgressBar 
 import sys
 # start color printing filter for xgtermc
 REALSTDOUT = sys.stdout
@@ -50,9 +50,9 @@ from astrodata.ReductionObjectRequests import CalibrationRequest,\
         ImageQualityRequest
 from astrodata import gdpgutil
 from astrodata.LocalCalibrationService import CalibrationService
-from adutils.future import gemDisplay
-from adutils import paramutil
-from adutils.gemutil import gemdate
+from astrodata.adutils.future import gemDisplay
+from astrodata.adutils import paramutil
+from astrodata.adutils.gemutil import gemdate
 #------------------------------------------------------------------------------ 
 #oet = time.time()
 #print 'TIME:', (oet -ost)
