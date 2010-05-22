@@ -1,7 +1,7 @@
 from time import sleep
 import time
 from astrodata.ReductionObjects import PrimitiveSet
-from adutils import filesystem
+from astrodata.adutils import filesystem
 from astrodata import IDFactory
 import os,sys
 from astrodata import IDFactory
