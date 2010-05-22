@@ -1,0 +1,8 @@
+include MANIFEST
+include ReleaseNote
+include INSTALL
+include Copyright
+global-include recipe.*
+include primitives/primitives_List.txt
+recursive-include doc *
+prune Engineering
