@@ -244,16 +244,27 @@ class Parser(SGMLParser):
         
         inscale = str(6.*fscale/100.)+"in"
         
+        # find where the imbase is in known image directories
+        imgdirs = ["images_types", "diagrams"]
+        imdir = "imagenotfound"
+        for imgdir in imgdirs:
+            fnam = os.path.join("./source/",imgdir, src)
+            if os.path.exists(fnam):
+                imdir = imgdir
+                break;
+            
+        
         self.writeline()
         self.write(
-""".. figure:: images_types/%(imbase)s
+""".. figure:: %(imdir)s/%(imbase)s
 %(alignstr)s    :width: %(scale)s
     :figwidth: %(inscale)s
     :figclass: align-center
     
     %(caption)s
     
-""" % { "imbase":src,
+""" % { "imdir":imdir,
+        "imbase":src,
         "scale":scale,
         "align":align,
         "caption":caption,

@@ -9,4 +9,12 @@ echo "building latex, see latex.build.log"
 
 echo "making pdf in build/_latex_build, see makepdf.build.log"
 cd build/_latex_build 
-make &> makepdf.build.log
+
+# make the astrodatadocumentation
+rm astrodatadocumentation.pdf
+make astrodatadocumentation.pdf &> makepdf.build.log
+
+# make AD type reference
+# slow... commented out
+#rm ADtypereference.pdf
+#make ADtypereference.pdf &> makepdf.build.log

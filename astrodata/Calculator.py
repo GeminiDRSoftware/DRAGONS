@@ -99,9 +99,11 @@ class Calculator(object):
         """
         retval = None
         if hasattr( self, str(keyname).lower() ):
+            keylow = str(keyname).lower()
             # print "C146: calling ", str(keyname).lower()
             keyfunc = getattr( self, str(keyname).lower() )
-            retval = keyfunc( dataset ) 
+            # retval = keyfunc( dataset ) 
+            retval = eval("dataset."+keylow+"(asList=True)")
         else:
             # print "C148: Gathering ", str(keyname)
             for ext in dataset.getHDUList():
