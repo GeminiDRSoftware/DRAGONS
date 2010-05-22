@@ -1,5 +1,9 @@
-from StandardDescriptorKeyDict import globalStdkeyDict
-
+try:
+    from StandardDescriptorKeyDict import globalStdkeyDict
+except ImportError:
+    globalStdkeyDict = {}
+    pass
+    
 class CalculatorExcept:
     """This class is an exception class for the Calculator module"""
     

@@ -8,9 +8,14 @@ from AstroDataType import *
 
 import Descriptors
 
-
-from CalculatorInterface import CalculatorInterface
 import Calculator
+
+try:
+    from CalculatorInterface import CalculatorInterface
+except ImportError:
+    class CalculatorInterface:
+        pass
+
 import re
 
 verbose = False

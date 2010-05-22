@@ -39,15 +39,17 @@ open()
 .. automethod:: astrodata.data.AstroData.open
 
 Iteration and Subdata
-############################
+@@@@@@@@@@@@@@@@@@@@@@@
 
 .. toctree::
     :numbered:
     
+About Subdata
+#############
 .. include:: gen.ADMANUAL-ADSubdata.rst
 
 The [] Operator
-$$$$$$$$$$$$$$$
+################
 
 .. toctree::
     :numbered:
