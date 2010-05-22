@@ -34,8 +34,6 @@ for p in PACKAGES:
                      'ReleaseNote',
                      'README',
                      'INSTALL',
-                     'MANIFEST',
-                     'MANIFEST.in',
                      ]
 
 DATA_FILES = None
