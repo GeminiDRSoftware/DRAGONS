@@ -39,15 +39,109 @@ Tutorial
 3. :ref:`Example 2: Python and Astrodata beginners example. <stats>`
 4. :ref:`Example 3: Getting information from list of GEMINI FITS file. <hdr>`
  
-.. _ggain:
+.. _stats:
 
-1. Example 1: ADUtoElectrons scripts under Astrodata.
+1. Example 1: Python and Astrodata beginners example.
+---------------------------------------------------------------
+     
+ ::  
+
+   # Starting PYTHON in unix and MacOS.
+   #
+   # Astrodata module needs to be visible to Python via the
+   # unix environment variable PYTHONPATH. Please append a 
+   # pathname to this variable where Astrodata is located in 
+   # your machine.
+   #
+   # Example: setenv PYTHONPATH ${PYTHONPATH}:/home/user/soft/astrodata
+   #
+   # Now start 'ipython', (a better python shell) and try these commands. 
+
+   ipython
+
+
+   from astrodata.AstroData import AstroData    # Load Astrodata module
+
+   import numpy as np             # Load the numpy module and define an alias 'np'
+
+   file = 'N20020214S060.fits'    # Define a variable 'file' with a string. 
+
+   ad = AstroData(file)           # Open the FITS file using Astrodata
+                                  # 'ad' is the Astrodata object. 'ad' is just
+                                  # a variable name.
+
+   ad.info()                      # Get FITS file information. This notation is python
+                                  # syntax stating that one of the function of the object
+                                  # 'ad' is info(). For a list of all 'ad' functions i
+                                  # please type 'dir ad'.
+
+   print ad.info()                # Same as above. 'print' is optional is most cases using
+                                  # the python interpreter.
+   
+   help ad.info                   # Get help on the 'info' function
+   help(ad.info)                  # (Same) Get help on the 'info' function
+                                  # The parenthesis are mostly optional using the
+                                  # python interpreter. If you are usign PYRAF,
+                                  # these are required.
+   # Astrodata descriptors
+
+   ad.getTypes()                  # Will list the different Astrodata types that this 
+                                  # Gemini FITS file has. As the data goes through different 
+                                  # processing stages, these values will change.
+
+   ad.isType('GMOS_IMAGE')        # Boolean function. True is the data file is of type
+                                  # 'GMOS_IMAGE'
+                            
+
+   # FITS pixel data with Astrodata
+   
+   data = ad[0].data              # Get the first extension pixel data and assign it to
+                                  # the variable 'data' containing the pixels array. 
+                                  # 'ad' is a Python list pointing to FITS extension
+                                  # header and data; hence 'ad[0]' points to the first
+                                  # extension, 'ad[1]' to the second, etc.
+
+   dim = np.shape(data)           # Get array dimensionality. Parenthesis are not needed.
+                                  # Store the values in 'dim'. Here parenthesis are necessary
+                                  # when you are assigning to a variable.
+
+   dim                            # show the values. You can also use 'print dim'
+
+   np.median(data)                # Calculates the median od the pixels in the 'data' array.
+                                  # 'np.median' means 'get the median function from the
+                                  # numpy (np) module and use it with the data array'
+
+   np.median(data[100,:])         # Calculates the median of row 100.
+                                  # In Python the array order is [y,x] (IDL is [x,y]). 
+                                  # ':' means all the pixels in the row
+
+   np.std(data)                   # Get the standard deviation
+   help np.std                    # see what the help section says about it
+
+   np.amax(data); np.amin(data)   # 2 commands in one line (separator is ';')    
+       
+   dir ad                         # See all the functions available with the
+                                  # object 'ad' associated to the FITS file.
+
+   # FITS HEADER with Astrodata 
+
+   hdr = ad[0].header             # Get 1st extension header
+   hdr.items()                    # list keywords with their values
+   hdr['crpix1']                  # print keyword value
+
+   phu = ad.getPHUHeader()        # Get Primary Header Unit (note the (); it's a function)
+   phu.items()
+   phu['datalab']
+
+.. _hdr: 
+
+2. Example 2: ADUtoElectrons scripts under Astrodata.
 --------------------------------------------------------------
    
 In order to run this example you need to have:   
 
 - Python installed in your machine
-- Astrodata module. If you don't, please ask somebody from Kathleen group.
+- Astrodata module. If you don't, please ask somebody from Kathleen's group.
 - Some GMOS data
 
 To run the example in your UNIX shell please do::
@@ -154,7 +248,7 @@ Please copy and paste this example into a file 'adu2electron.py'
 
 .. _linebyline:
 
-2. Line by line explanation of Example3
+3. Line by line explanation of Example2
 ---------------------------------------
 
 **Line 1:  #! /usr/bin/env python**
@@ -251,101 +345,6 @@ Please copy and paste this example into a file 'adu2electron.py'
  Writes to disk the updated output AstroData object. The filename was already
  defined in 'prepOutput()'
 
-.. _stats:
-
-3. Example 2: Python and Astrodata beginners example.
----------------------------------------------------------------
-     
- ::  
-
-   # Starting PYTHON in unix and MacOS.
-   #
-   # Astrodata module needs to be visible to Python via the
-   # unix environment variable PYTHONPATH. Please append a 
-   # pathname to this variable where Astrodata is located in 
-   # your machine.
-   #
-   # Example: setenv PYTHONPATH ${PYTHONPATH}:/home/user/soft/astrodata
-   #
-   # Now start 'ipython', (a better python shell) and try these commands. 
-
-   ipython
-
-
-   from astrodata.AstroData import AstroData    # Load Astrodata module
-
-   import numpy as np             # Load the numpy module and define an alias 'np'
-
-   file = 'N20020214S060.fits'    # Define a variable 'file' with a string. 
-
-   ad = AstroData(file)           # Open the FITS file using Astrodata
-                                  # 'ad' is the Astrodata object. 'ad' is just
-                                  # a variable name.
-
-   ad.info()                      # Get FITS file information. This notation is python
-                                  # syntax stating that one of the function of the object
-                                  # 'ad' is info(). For a list of all 'ad' functions i
-                                  # please type 'dir ad'.
-
-   print ad.info()                # Same as above. 'print' is optional is most cases using
-                                  # the python interpreter.
-   
-   help ad.info                   # Get help on the 'info' function
-   help(ad.info)                  # (Same) Get help on the 'info' function
-                                  # The parenthesis are mostly optional using the
-                                  # python interpreter. If you are usign PYRAF,
-                                  # these are required.
-   # Astrodata descriptors
-
-   ad.getTypes()                  # Will list the different Astrodata types that this 
-                                  # Gemini FITS file has. As the data goes through different 
-                                  # processing stages, these values will change.
-
-   ad.isType('GMOS_IMAGE')        # Boolean function. True is the data file is of type
-                                  # 'GMOS_IMAGE'
-                            
-
-   # FITS pixel data with Astrodata
-   
-   data = ad[0].data              # Get the first extension pixel data and assign it to
-                                  # the variable 'data' containing the pixels array. 
-                                  # 'ad' is a Python list pointing to FITS extension
-                                  # header and data; hence 'ad[0]' points to the first
-                                  # extension, 'ad[1]' to the second, etc.
-
-   dim = np.shape(data)           # Get array dimensionality. Parenthesis are not needed.
-                                  # Store the values in 'dim'. Here parenthesis are necessary
-                                  # when you are assigning to a variable.
-
-   dim                            # show the values. You can also use 'print dim'
-
-   np.median(data)                # Calculates the median od the pixels in the 'data' array.
-                                  # 'np.median' means 'get the median function from the
-                                  # numpy (np) module and use it with the data array'
-
-   np.median(data[100,:])         # Calculates the median of row 100.
-                                  # In Python the array order is [y,x] (IDL is [x,y]). 
-                                  # ':' means all the pixels in the row
-
-   np.std(data)                   # Get the standard deviation
-   help np.std                    # see what the help section says about it
-
-   np.amax(data); np.amin(data)   # 2 commands in one line (separator is ';')    
-       
-   dir ad                         # See all the functions available with the
-                                  # object 'ad' associated to the FITS file.
-
-   # FITS HEADER with Astrodata 
-
-   hdr = ad[0].header             # Get 1st extension header
-   hdr.items()                    # list keywords with their values
-   hdr['crpix1']                  # print keyword value
-
-   phu = ad.getPHUHeader()        # Get Primary Header Unit (note the (); it's a function)
-   phu.items()
-   phu['datalab']
-
-   
 .. _hdr: 
 
 4.  Example 3: Getting information from list of GEMINI FITS file
