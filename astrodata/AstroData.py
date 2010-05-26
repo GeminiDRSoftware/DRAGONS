@@ -260,9 +260,13 @@ AstroDataType}, the
                 #make sure it exists
                 if type(ext) == int:
                     ext = ext+1 # so 0 does not mean PHU, but 0'th content-extension
-                exttmp = hdul[ext]
+                # print "AD262:", repr(ext)
+                # hdul.info()
+                # self.hdulist.info()
+                exttmp = self.hdulist[ext]
+                # exttmp = hdul[ext]
             except KeyError:
-                # print "gd105: keyerror:[%s]" % ext
+                print "gd105: keyerror:[%s]" % str(ext)
                 # selector not valid
                 self.relhdul()
                 return None
@@ -392,21 +396,25 @@ instance.
                 self.hdulist = None
 
     def getData(self):
-        """Function returns data member(s), specifically for the case in which
-        the AstroData instance has ONE extension (in addition to PHU). This
-        allows a single extension AstroData instance to be used as though
-        it is simply one extension, e.g. allowing gd.data to be used in
-        place of the more esoteric and ultimately more dangerous gd[1].data.
-        One can assure one is dealing with single extension AstroData instances
-        when iterating over the AstroData extensions, e.g.::
-        
-            for gd in dataset[SCI]:
-                ...
-                
-        :raise: gdExcept if AstroData instance has more than one extension 
-        (not including PHU).
-        :return: data array associated with the single extension
-        :rtype: NumArray
+        """
+The 'data' property is returned by the getData(..) member, and returns data member(s)
+specifically for the case in which
+the AstroData instance has ONE HDU (in addition to PHU). This
+allows a single extension AstroData instance to be used as though
+it is simply one extension, e.g. allowing gd.data to be used in
+place of the more esoteric and ultimately more dangerous gd[1].data.
+One can assure one is dealing with single extension AstroData instances
+when iterating over the AstroData extensions, e.g.:
+
+.. code-block: python
+
+    for gd in dataset[SCI]:
+        pass
+
+:raise: gdExcept if AstroData instance has more than one extension 
+    (not including PHU).
+:return: data array associated with the single extension
+:rtype: NumArray
         """
         hdl = self.gethdul()
         if len(hdl) == 2:
@@ -611,15 +619,33 @@ instance.
                 l = len(hdul) # len w/phu
                 # print "AD567: len of hdulist ",l
 
+                
+                nhdul = [hdul[0]]
+                # nhdulist = pyfits.HDUList(nhdul)
+
                 for i in range(1, l):
-                    hdul[i].header.update("EXTNAME", "SCI", "added by AstroData")
-                    hdul[i].header.update("EXTVER", str(i), "added by AstroData")
+                    hdu = hdul[i]
+                    nhdu = hdu.__class__( data= hdu.data, header = hdu.header, name = "SCI")
+                    nhdu._extver = i;
+                    #if "EXTNAME" in nhdu.header:
+                    #    print "AD629:extname = ", nhdu.header["EXTNAME"]
+                    #else:
+                    #    print "AD629: extname = none"
+                    nhdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
+                    # print "AD631:extname = ", nhdu.header["EXTNAME"]
+                    # nhdu.header.__delitem__("EXTVER")
+                    nhdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
+                    nhdul.append(nhdu)
                     #print "AD570:", repr(self.extGetKeyValue(i,"EXTNAME"))
                 
-                nhdul = []
-                for hdu in hdul:
-                    nhdul.append(hdu)
+                #for hdu in hdul[1:]:
+                #    nhdu = hdu.__class__(hdu.data, hdu.header, ext=(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"])))
+                #    nhdul.append(nhdu)
+                #    nhdulist[(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"]))] = nhdu
+                del(hdul)
                 self.hdulist = pyfits.HDUList(nhdul)
+                #print "AD646: nhdul.info()"
+                #self.hdulist.info()
                 # @@NOTE: should we do something make sure the
                 # dropped hdulist goes away?
     def close(self):

@@ -257,7 +257,7 @@ class Parser(SGMLParser):
         self.writeline()
         self.write(
 """.. figure:: %(imdir)s/%(imbase)s
-%(alignstr)s    :width: %(scale)s
+%(alignstr)s    :scale: %(scale)s
     :figwidth: %(inscale)s
     :figclass: align-center
     

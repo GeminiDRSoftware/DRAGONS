@@ -8,17 +8,19 @@ Concepts
 Background
 ~~~~~~~~~~
 
-The astrodata system is a product of a Gemini Astronomers request to
-"handle MEFs better". Investigation showed that the MEF libraries were
-sufficient for handling "MEFs" as such, and the real problem was the
-MEFs are presented by fits libraries (e.g. pyfits) as lists of Header-
-Data Units, aka "extensions", and relationships between the extensions
-are not recognized. AstroData on the other hand is intended to
-recognize those connections and present the data in a MEF as a related
-whole, for example interpreting the set as some particular dataset
-type. The data in a MEF is not incidentally present, it's part of a
-bundle of data associated with this dataset type, which to first order
-map to instrument-modes for those supported.
+The astrodata system traces back to a request by Gemini Astronomers to
+"handle MEFs better" in our reduction package. A "MEF" is of course a
+"Multiple-Extension FITS File", and Gemini's standard dataset storage
+format. Investigation showed that the MEF libraries were sufficient
+for handling "MEFs" as such, and the real problem was the MEFs are
+presented by fits libraries (e.g. pyfits) as lists of Header-Data
+Units, aka "extensions", and relationships between the extensions are
+not recognized. AstroData on the other hand is intended to recognize
+those connections and present the data in a MEF as a related whole,
+for example interpreting the set as some particular dataset type. The
+data in a MEF is not incidentally present, it's part of a bundle of
+data associated with this dataset type, which to first order map to
+instrument-modes for those supported.
 
 Ample header data exists in the datasets to perform this function
 given a definition of how the types are characterized, and what
@@ -245,7 +247,7 @@ configuration.
 
 
 .. figure:: images_types/GMOS-tree-pd.png
-    :width: 90%
+    :scale: 90%
     :figwidth: 5.4in
     :figclass: align-center
     

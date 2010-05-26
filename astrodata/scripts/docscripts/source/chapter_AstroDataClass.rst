@@ -2,8 +2,6 @@ AstroData Class Reference
 !!!!!!!!!!!!!!!!!!!!!!!!!
 
 .. toctree::
-    :numbered:
-    :maxdepth: 10
     
 The following is class information from the docstrings.
 
@@ -16,9 +14,6 @@ AstroData Constructor
 #####################
 
 .. toctree::
-    :numbered:
-    
-The constructor.
     
 .. automethod:: astrodata.data.AstroData.__init__
 
@@ -26,7 +21,6 @@ append(..)
 ###########
 
 .. toctree::
-    :numbered:
 
 .. automethod:: astrodata.data.AstroData.append
 
@@ -34,7 +28,6 @@ open()
 #########
 
 .. toctree::
-    :numbered:
 
 .. automethod:: astrodata.data.AstroData.open
 
@@ -42,66 +35,67 @@ Iteration and Subdata
 @@@@@@@@@@@@@@@@@@@@@@@
 
 .. toctree::
-    :numbered:
+   
+Overview
+############
+ 
+.. toctree::
     
-About Subdata
-#############
-.. include:: gen.ADMANUAL-ADSubdata.rst
+    gen.ADMANUAL-ADSubdata.rst
 
 The [] Operator
 ################
 
 .. toctree::
-    :numbered:
 
 .. automethod:: astrodata.data.AstroData.__getitem__
 
-Single HDU AstroData Methods
-############################
+Single HDU AstroData Attributes
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 .. toctree::
     :numbered:
     
-.. comment
     gen.ADMANUAL_SingleHDUAD
 
-data
-$$$$$    
-
+data attribute
+##############
+ 
+ 
 .. toctree::
     :numbered:
-
+     
 .. autoattribute:: astrodata.data.AstroData.data
 
-header
-$$$$$$$
+header attribute
+###################
 
 .. toctree::
-    :numbered:
 
 .. autoattribute:: astrodata.data.AstroData.header
+
+Accesing Pyfits Objects
+@@@@@@@@@@@@@@@@@@@@@@@@
+
+.. toctree::
+    gen.ADMANUAL-AccessingPyfits
 
 Module Level Functions
 @@@@@@@@@@@@@@@@@@@@@@@@
 
 .. toctree::
-    :numbered:
     
-
 correlate(..)
 #############
 
 .. toctree::
-    :numbered:
-    astrodata.data.correlate
-
+    
 .. autofunction:: astrodata.data.correlate
 
 prepOutput(..)
 ################
 
 .. toctree::
-    :numbered:
 
 .. autofunction:: astrodata.data.prepOutput
 
@@ -109,6 +103,5 @@ reHeaderKeys(..)
 #################
 
 .. toctree::
-    :numbered:
 
 .. autofunction:: astrodata.data.reHeaderKeys
