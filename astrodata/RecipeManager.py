@@ -873,7 +873,9 @@ class ReductionContext(dict):
             raise RecipeExcept("You may only use " + 
                 "'standard' category output at this time.")
         if type(inp) == str:
-            self.outputs["standard"].append(AstroDataRecord(inp, self.displayID, load=load))
+            self.outputs[category].append(AstroDataRecord(inp, self.displayID, load=load))
+        elif isinstance(inp, AstroData):
+            self.outputs[category].append(AstroDataRecord(inp))
         elif type(inp) == list:
             for temp in inp:
                 # This is a good way to check if IRAF failed.
@@ -885,6 +887,9 @@ class ReductionContext(dict):
                         raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
                     orecord = AstroDataRecord(temp[0], self.displayID, parent=temp[1], load=load)
                     #print 'RM370:', orecord
+                elif isinstance(temp, AstroData):
+                    print "RM891:", type(temp)
+                    orecord = AstroDataRecord(temp)
                 elif type(temp) == str:
                     if not os.path.exists(temp):
                         raise "LAST PRIMITIVE FAILED."
@@ -892,7 +897,7 @@ class ReductionContext(dict):
                 else:
                     raise "RM292 type: " + str(type(temp))
                 #print "RM344:", orecord
-                self.outputs["standard"].append(orecord)
+                self.outputs[category].append(orecord)
     
     def restoreCalIndex(self, filename):
         if os.path.exists(filename):
