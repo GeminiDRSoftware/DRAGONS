@@ -1357,18 +1357,26 @@ def %(name)s(self,cfgObj):
             if line == "" or line[0] == "#":
                 continue
             newl = """
-    cfgObj.localparms = eval('''%s''')
-    cfgObj.localparms.update(recipeLocalParms)
-    for co in self.substeps('%s', cfgObj):
-        if (co.isFinished()):
-            break
-        yield co
-    yield co""" % (repr(d), line)
+            
+    if "%(line)s" in recipeLocalParms:
+        dostep = (recipeLocalParms["%(line)s"] != "False")
+    else:
+        dostep = True
+    if dostep:
+        cfgObj.localparms = eval('''%(parms)s''')
+        cfgObj.localparms.update(recipeLocalParms)
+        for co in self.substeps('%(line)s', cfgObj):
+            if (co.isFinished()):
+                break
+            yield co
+    yield co""" % {"parms":repr(d),
+                    "line":line}
             lines += newl
             
         rets = templ % {    "name" : name,
                             "lines" : lines,
                             }
+        print "RM1374:", rets
         return rets
         
     def compileRecipe(self, name, recipeinpython):
