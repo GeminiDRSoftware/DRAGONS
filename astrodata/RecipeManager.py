@@ -1364,7 +1364,12 @@ def %(name)s(self,cfgObj):
         dostep = True
     if dostep:
         cfgObj.localparms = eval('''%(parms)s''')
-        cfgObj.localparms.update(recipeLocalParms)
+        #cfgObj.localparms.update(recipeLocalParms)
+        # add parms specified
+        for pkey in cfgObj.localparms:
+            val = cfgObj.localparms[pkey]
+            if val[0]=="[" and val[-1]=="]":
+                cfgObj.localparms[pkey] = recipeLocalParms[val[1:-1]]
         for co in self.substeps('%(line)s', cfgObj):
             if (co.isFinished()):
                 break
