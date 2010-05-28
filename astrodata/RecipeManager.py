@@ -6,6 +6,7 @@ import pickle # for persisting the calibration index
 import socket # to get host name for local statistics
 #------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
+import traceback
 import AstroDataType
 from AstroDataType import getClassificationLibrary
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
@@ -1111,11 +1112,12 @@ class RecipeLibrary(object):
         """
         Will load a single recipe, compile and bind it to the given reduction objects
         """
-
+        
         if astrotype != None:
             # get recipe source
+            
             rec = self.retrieveRecipe(name, astrotype=astrotype)
-            # print "RM1113:", rec, astrotype
+            # print "RM1113:", name, rec, astrotype
             try:
                 # print "RM1115: before"
                 ps = ro.getPrimSet(name, astrotype=astrotype)
@@ -1250,7 +1252,10 @@ class RecipeLibrary(object):
         ro = ReductionObjects.ReductionObject()
         primsetlist = self.retrievePrimitiveSet(dataset=dataset, astrotype=astrotype)
         ro.recipeLib = self
-        ro.curPrimType = primsetlist[0].astrotype
+        if primsetlist:
+            ro.curPrimType = primsetlist[0].astrotype
+        else:
+            return None
         for primset in primsetlist:
             ro.addPrimSet(primset)
         
@@ -1273,9 +1278,12 @@ class RecipeLibrary(object):
             if len(k) != 1:
                 raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
             astrotype = k[0]
+        # print "RM1272:", astrotype
         primset = None
+        # print "RM1275:", repr(centralPrimitivesIndex)
         if (astrotype != None) and (astrotype in centralPrimitivesIndex):
             primdeflist = centralPrimitivesIndex[astrotype]
+            # print "RM1276:", repr(primdeflist)
             primlist = []
             for primdef in primdeflist:
                 rfilename = primdef[0] # the first in the tuple is the primset file
@@ -1283,7 +1291,12 @@ class RecipeLibrary(object):
                 rootpath = os.path.dirname(rpathname)
                 importname = os.path.splitext(rfilename)[0]
                 a = datetime.now()
-                exec ("import " + importname)
+                try:
+                    # print "RM1282: about to import", importname, primdef[1]
+                    exec ("import " + importname)
+                    # print ("RM1285: after import")
+                except:
+                    print traceback.format_exc()
                 b = datetime.now()
                 primset = eval (importname + "." + primdef[1] + "()")
                 # set filename and directory name
@@ -1300,6 +1313,7 @@ class RecipeLibrary(object):
         templ = """
 def %(name)s(self,cfgObj):
     print "${BOLD}RECIPE BEGINS: %(name)s${NORMAL}"
+    recipeLocalParms = cfgObj.localparms
 %(lines)s
     print "${BOLD}RECIPE ENDS:   %(name)s${NORMAL}"
     yield cfgObj
@@ -1344,6 +1358,7 @@ def %(name)s(self,cfgObj):
                 continue
             newl = """
     cfgObj.localparms = eval('''%s''')
+    cfgObj.localparms.update(recipeLocalParms)
     for co in self.substeps('%s', cfgObj):
         if (co.isFinished()):
             break
@@ -1371,18 +1386,21 @@ def %(name)s(self,cfgObj):
     def checkMethod(self, redobj, primitivename):
         ps = redobj.getPrimSet(primitivename)
         if ps == None:
+            # print "RM1382: %s doesn't exist" % primitivename
             # then this name doesn't exist
             return False
         else:
+            # print "RM1382: %s does exist" % primitivename
             return True
         
     def checkAndBind(self, redobj, name, context=None):
         dir (redobj)
+        # print "RM1389:", name
         if self.checkMethod(redobj, name):
             return False
         else:
             # print "RM1078:", str(dir(context.inputs[0]))
-            self.loadAndBindRecipe(redobj, name, dataset=context.inputs[0].filename)
+            self.loadAndBindRecipe(redobj, name, astrotype = redobj.curPrimType)
             return True
 
     def getApplicableParameters(self, dataset):
@@ -1534,8 +1552,12 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 efile.close()
                 cpis = set(centralPrimitivesIndex.keys())
                 cpi = centralPrimitivesIndex
-                lpis = set(localPrimitiveIndex.keys())
-                lpi = localPrimitiveIndex
+                try:
+                    lpis = set(localPrimitiveIndex.keys())
+                    lpi = localPrimitiveIndex
+                except NameError:
+                    print "WARNING: localPrimitiveIndex not found in %s" % fullpath
+                    continue
                 intersect = cpis & lpis
                 if  intersect:
                     for typ in intersect:

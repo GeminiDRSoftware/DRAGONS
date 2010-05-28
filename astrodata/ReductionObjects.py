@@ -1,5 +1,7 @@
 import re 
 import os
+import traceback
+
 class ReductionExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -135,7 +137,8 @@ class ReductionObject(object):
         for primset in primsetary:
             if hasattr(primset, primname):
                 return primset
-        raise ReductionExcept("No valid primset for type %s, primitive name %s" % (self.curPrimType, primname)) 
+        return None
+        # draise ReductionExcept("No valid primset for type %s, primitive name: %s" % (self.curPrimType, primname)) 
         
         
 class PrimitiveSet(object):
@@ -173,7 +176,12 @@ class PrimitiveSet(object):
                 d = f.read()
                 f.close()
                 
-                pdict = eval(d)
+                try:
+                    pdict = eval(d)
+                except:
+                    pdict = {}
+                    print "WARNING: can't load parameter dict in:", paramfile
+                    traceback.format_exc()
                 # this loop add all paramaters for all primnames which
                 # do not already contain the parameter, giving precedence
                 # to parameter dicts for leaf types, while inheriting
