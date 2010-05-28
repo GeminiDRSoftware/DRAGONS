@@ -241,7 +241,7 @@ AstroDataType}, the
                     
                     if (hdul[i].header["EXTNAME"] == extname):
                         try:
-                            extver = hdul[i].header["EXTVER"]
+                            extver = int(hdul[i].header["EXTVER"])
                         except KeyError:
                             extver = 1
                             
@@ -355,7 +355,7 @@ instance.
     or an HDU instance. When present, data and header will be ignored.
 
 :type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
-
+)
 :param data: if moredata *is not* specified, data and header should 
     both be set and areare used to instantiate
     a new HDU which is then added to the 
@@ -487,7 +487,7 @@ when iterating over the AstroData extensions, e.g.:
         
         for gd in dataset[SCI]: ...
         
-        :param header: header to set for given extension
+        :param header: header )to set for given extension
         :type header: pyfits.Header
         
         :param extension: Extension index from which to retrieve header, if None or not present then this must be
@@ -527,7 +527,6 @@ when iterating over the AstroData extensions, e.g.:
         self.relhdul()
         return retary
         
-    
     def open(self, source, mode = "readonly"):
         '''
         This function initiates interaction with a given set of
