@@ -1359,7 +1359,7 @@ def %(name)s(self,cfgObj):
             newl = """
             
     if "%(line)s" in recipeLocalParms:
-        dostep = (recipeLocalParms["%(line)s"] != "False")
+        dostep = (recipeLocalParms["%(line)s"].lower() != "false")
     else:
         dostep = True
     if dostep:
@@ -1369,7 +1369,9 @@ def %(name)s(self,cfgObj):
         for pkey in cfgObj.localparms:
             val = cfgObj.localparms[pkey]
             if val[0]=="[" and val[-1]=="]":
-                cfgObj.localparms[pkey] = recipeLocalParms[val[1:-1]]
+                vkey = val[1:-1]
+                if vkey in recipeLocalParms:
+                    cfgObj.localparms[pkey] = recipeLocalParms[vkey]
         for co in self.substeps('%(line)s', cfgObj):
             if (co.isFinished()):
                 break
@@ -1381,7 +1383,6 @@ def %(name)s(self,cfgObj):
         rets = templ % {    "name" : name,
                             "lines" : lines,
                             }
-        print "RM1374:", rets
         return rets
         
     def compileRecipe(self, name, recipeinpython):
