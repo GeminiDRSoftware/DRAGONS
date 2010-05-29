@@ -5,11 +5,15 @@ import time
 from astrodata.adutils import filesystem
 from astrodata import IDFactory
 from astrodata import Descriptors
+from astrodata.data import AstroData
+
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
 import pyraf
 import iqtool
 from iqtool.iq import getiq
+from preparelib.prepareTK import PrepareTK
+from preparelib.wcsTK import WCSTK
 
 
 import pyfits
@@ -367,30 +371,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise 
             
         yield rc
-        
-    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   
-    def prepare(self, rc):
-        try:
-            print 'preparing'
-            print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
-            print "Updating GAIN keyword by calling GGAIN"
-            
-            print "pGI391:",repr(rc)
-            gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath=rc['iraf']['adata'],
-                                 Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-            
-            if gemini.gmos.gprepare.status:
-                raise GMOS_IMAGEException( 'gprepare failed')
-            
-            rc.reportOutput(rc.prependNames("g", currentDir = True))
-            
-        except:
-            print "Problem preparing the image."
-            raise 
-        
-        yield rc 
-        
+    
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
     def setForFringe(self, rc):
@@ -489,4 +470,97 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
    
     def showParams(self, rc):
         for rc in GEMINIPrimitives.showParams(self, rc):
-            yield rc
+            yield rc1
+    
+     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   
+    def prepare(self, rc):
+        try:
+            print 'preparing'
+            print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
+            print "Updating GAIN keyword by calling GGAIN"
+            
+            print "pGI391:",repr(rc)
+            gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath=rc['iraf']['adata'],
+                                 Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+            #
+            if gemini.gmos.gprepare.status:
+                raise GMOS_IMAGEException( 'gprepare failed')
+            
+            rc.reportOutput(rc.prependNames("g", currentDir = True))
+            
+        except:
+            print "Problem preparing the image."
+            raise 
+        
+        yield rc    
+        
+    #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
+    '''
+    all the stuff in here is very much a work in progress and I will not be fully
+    commenting it for others while developing it, sorry.
+    '''
+    
+    
+    def validateData(self,rc):
+        #to be written
+        print "prim_G_I507: nothing in here yet"
+        yield rc
+    def standardizeHeaders(self,rc):
+        #to be written
+        print "prim_G_I511: nothing in here yet"
+        yield rc
+    def validateWCS(self,rc):
+        #to be written
+        print "prim_G_I515: nothing in here yet"
+        yield rc
+
+    def standardizeHeaders(self,rc):
+        try:
+            print 'prepare step 1'
+            #print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
+            #print "Updating GAIN keyword by calling GGAIN"
+            ptk = PrepareTK()
+            #print rc.inputsAsStr(strippath = True)
+            #print rc['iraf']['adata']
+            #print rc.getIrafStdout()
+            #print rc.getIrafStderr()
+            #outnamerc = rc.prependNames("g", currentDir = True)
+            #print 'outnamerc: ', outnamerc
+            
+            #outs=os.path.basename(outnamerc[0][0])
+            #print outs
+            
+            #ad = AstroData()
+            #rc.reportOutput([ad,ad,rc.inputs[0].filename, rc.inputs[0].ad])
+            
+            #for inp in rc.inputs:
+            #    print "input id:", id(inp.ad)
+            #for inp in rc.outputs["standard"]:
+            #    print "output id:", id(inp.ad)    
+            
+            for ad in rc.getInputs(style="AD"):
+                infilename = ad.filename
+                print 'prim_G_I529 :', infilename
+                #print 'prim_G_I531: ', os.path.abspath(infilename) #absolute path of input file
+                #print 'prim_G_I531: ', os.path.dirname(infilename) #reletive directory of input file without /
+                ad.filename = 'g'+os.path.basename(ad.filename)
+                outfilename = ad.filename
+                print 'prim_G_I531 :', outfilename
+                ptk.fixHeader(ad)
+            
+            
+            
+            # ptk.fixHeader(ins,outs)
+            
+            #outfilerc = rc.reportOutput(outnameptk)
+            #print 'outfilerc: ', outfilerc
+            
+        except:
+            print "Problem preparing the image."
+            raise 
+        
+        yield rc 
+        
+    #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
+        
