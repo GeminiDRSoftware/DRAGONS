@@ -10,8 +10,8 @@ from time import strptime
 
 import GemCalcUtil
 
+from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGMOSKeyDict import stdkeyDictGMOS
-from StandardGenericKeyDict import stdkeyDictGeneric
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
@@ -40,37 +40,46 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                    'gmosampsRdnoise',
                                    'gmosampsRdnoiseBefore20060831')
     
-    def amproa(self, dataset, asList=False, **args):
+    def amp_read_area(self, dataset, asList=False, **args):
         """
-        Return the amproa value for GMOS
+        Return the amp_read_area value for GMOS
         This is a composite string containing the name of the detector
-        amplifier (ampname) and the readout area of that ccd (detsec). If
-        asList = True, a list is returned, where the number of array elements
-        equals the number of pixel data extensions in the image.
+        amplifier (ampname) and the readout area of that ccd (detsec).
         @param dataset: the data set
         @type dataset: AstroData
+        @param asList: set to True to return a list, where the number of array
+        elements equals the number of pixel data extensions in the image.
         @rtype: string or list (if asList = True)
         @return: the combined detector amplifier name and readout area
         """
         try:
-            if (asList):
-                retamproa = []
-                for ext in dataset:
-                    ampname = ext.header[stdkeyDictGMOS['key_gmos_ampname']]
-                    detsec = ext.header[stdkeyDictGMOS['key_gmos_detsec']]
-                    retamproa.append("'%s':%s" % (ampname, detsec))
-            
+            if asList:
+                ret_amp_read_area = []
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
+                    ampname = \
+                        hdu[1].header[stdkeyDictGMOS['key_ampname']]
+                    detsec = \
+                        hdu[1].header[globalStdkeyDict['key_detector_section']]
+                    ret_amp_read_area.append("'%s':%s" % (ampname, detsec))
+                else:
+                    for ext in dataset:
+                        ampname = ext.header[stdkeyDictGMOS['key_ampname']]
+                        detsec = \
+                            ext.header[globalStdkeyDict['key_detector_section']]
+                        ret_amp_read_area.append("'%s':%s" % (ampname, detsec))
             else:
                 try:
-                    if (dataset.nsciext() < 1):
+                    if dataset.countExts('SCI') <= 1:
                         hdu = dataset.hdulist
                         ampname = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_ampname']]
+                            hdu[1].header[stdkeyDictGMOS['key_ampname']]
                         detsec = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_detsec']]
-                        retamproa = ("'%s':%s" % (ampname, detsec))
+                            hdu[1].header[globalStdkeyDict['key_detector_section']]
+                        ret_amp_read_area = ("'%s':%s" % (ampname, detsec))
                     else:
-                        raise Exception('Please use asList=True to obtain a list')
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
                 
                 except Exception:
                     print traceback.format_exc()
@@ -78,7 +87,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return retamproa
+        return ret_amp_read_area
     
     def camera(self, dataset, **args):
         """
@@ -90,16 +99,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictGMOS['key_gmos_camera']]
+            ret_camera = hdu[0].header[stdkeyDictGMOS['key_camera']]
         
         except KeyError:
             return None
         
-        return str(retcamerastring)
+        return str(ret_camera)
     
-    def cwave(self, dataset, **args):
+    def central_wavelength(self, dataset, **args):
         """
-        Return the cwave value for GMOS
+        Return the central_wavelength value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -107,39 +116,47 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            cwave = float(hdu[0].header[stdkeyDictGMOS['key_gmos_cwave']])
-            retcwavefloat = cwave / 1000.
+            central_wavelength = \
+                hdu[0].header[stdkeyDictGMOS['key_central_wavelength']]
+            ret_central_wavelength = float(central_wavelength) / 1000.
         
         except KeyError:
             return None
         
-        return float(retcwavefloat)
+        return float(ret_central_wavelength)
     
-    def datasec(self, dataset, asList=False, **args):
+    def data_section(self, dataset, asList=False, **args):
         """
-        Return the datasec value for GMOS
-        If asList = True, a list is returned, where the number of array
+        Return the data_section value for GMOS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param asList: set to True to return a list, where the number of array
         elements equals the number of pixel data extensions in the image.
-        @param dataset: the data set
-        @type dataset: AstroData
         @rtype: string or list (if asList = True)
-        @returns: the data section
+        @return: the data section
         """
         try:
-            if (asList):
-                retdatasec = []
-                for ext in dataset:
-                    datasec = ext.header[stdkeyDictGMOS['key_gmos_datasec']]
-                    retdatasec.append(datasec)
-            
+            if asList:
+                ret_data_section = []
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
+                    data_section = \
+                        hdu[1].header[globalStdkeyDict['key_data_section']]
+                    ret_data_section.append(data_section)
+                else:
+                    for ext in dataset:
+                        data_section = \
+                            ext.header[globalStdkeyDict['key_data_section']]
+                        ret_data_section.append(data_section)
             else:
                 try:
-                    if (dataset.nsciext() < 1):
+                    if dataset.countExts('SCI') <= 1:
                         hdu = dataset.hdulist
-                        retdatasec = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_datasec']]
+                        ret_data_section = \
+                            hdu[1].header[globalStdkeyDict['key_data_section']]
                     else:
-                        raise Exception('Please use asList=True to obtain a list')
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
                 
                 except Exception:
                     print traceback.format_exc()
@@ -147,73 +164,40 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return retdatasec
+        return ret_data_section
     
-    def detroa(self, dataset, asList=False, **args):
+    def detector_section(self, dataset, asList=False, **args):
         """
-        Return the detroa value for GMOS
-        This is a composite string containing the name of the detector
-        (ccdname) and the readout area of that detector (detsec). If
-        asList = True, a list is returned, where the number of array elements
-        equals the number of pixel data extensions in the image.
+        Return the detector_section value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
-        @rtype: string of list (if asList = True)
-        @return: the combined detector name and readout area
-        """
-        try:
-            if (asList):
-                retdetroa = []
-                for ext in dataset:
-                    ccdname = ext.header[stdkeyDictGMOS['key_gmos_ccdname']]
-                    detsec = ext.header[stdkeyDictGMOS['key_gmos_detsec']]
-                    retdetroa.append("'%s':%s" % (ccdname, detsec))
-            
-            else:
-                try:
-                    if (dataset.nsciext() < 1):
-                        hdu = dataset.hdulist
-                        ccdname = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_ccdname']]
-                        detsec = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_detsec']]
-                        retdetroa = ("'%s':%s" % (ccdname, detsec))
-                    else:
-                        raise Exception('Please use asList=True to obtain a list')
-                
-                except Exception:
-                    print traceback.format_exc()
-        
-        except KeyError:
-            return None
-        
-        return retdetroa
-    
-    def detsec(self, dataset, asList=False, **args):
-        """
-        Return the detsec value for GMOS
-        If asList = True, a list is returned, where the number of array
+        @param asList: set to True to return a list, where the number of array
         elements equals the number of pixel data extensions in the image.
-        @param dataset: the data set
-        @type dataset: AstroData
         @rtype: string or list (if asList = True)
-        @returns: the detector section
+        @return: the detector section
         """
         try:
-            if (asList):
-                retdetsec = []
-                for ext in dataset:
-                    detsec = ext.header[stdkeyDictGMOS['key_gmos_detsec']]
-                    retdetsec.append(detsec)
-            
+            if asList:
+                ret_detector_section = []
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
+                    detector_section = \
+                        hdu[1].header[globalStdkeyDict['key_detector_section']]
+                    ret_detector_section.append(detector_section)
+                else:
+                    for ext in dataset:
+                        detector_section = \
+                            ext.header[globalStdkeyDict['key_detector_section']]
+                        ret_detector_section.append(detector_section)
             else:
                 try:
-                    if (dataset.nsciext() < 1):
+                    if dataset.countExts('SCI') <= 1:
                         hdu = dataset.hdulist
-                        retdetsec = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_detsec']]
+                        ret_detector_section = \
+                            hdu[1].header[globalStdkeyDict['key_detector_section']]
                     else:
-                        raise Exception('Please use asList=True to obtain a list')
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
                 
                 except Exception:
                     print traceback.format_exc()
@@ -221,7 +205,53 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return retdetsec
+        return ret_detector_section
+    
+    def detector_x_bin(self, dataset, **args):
+        """
+        Return the detector_x_bin value for GMOS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: integer
+        @return: the binning of the detector x-axis
+        """
+        try:
+            hdu = dataset.hdulist
+            # Assume ccdsum is the same in all extensions
+            ccdsum = hdu[1].header[stdkeyDictGMOS['key_ccdsum']]
+            
+            if ccdsum != None:
+                ret_detector_x_bin, detector_y_bin = ccdsum.split()
+            else:
+                return None
+        
+        except KeyError:
+            return None
+        
+        return int(ret_detector_x_bin)
+    
+    def detector_y_bin(self, dataset, **args):
+        """
+        Return the detector_y_bin value for GMOS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: integer
+        @return: the binning of the detector y-axis
+        """
+        try:
+            hdu = dataset.hdulist
+            # Assume ccdsum is the same in all extensions            
+            ccdsum = hdu[1].header[stdkeyDictGMOS['key_ccdsum']]
+            
+            if ccdsum != None:
+                detector_x_bin, ret_detector_y_bin = ccdsum.split()
+            else:
+                return None
+        
+        except KeyError:
+            return None
+        
+        return int(ret_detector_y_bin)
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
@@ -233,31 +263,72 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            disperser = hdu[0].header[stdkeyDictGMOS['key_gmos_disperser']]
+            disperser = hdu[0].header[stdkeyDictGMOS['key_disperser']]
             
-            if (pretty):
+            if pretty:
                 # In the case of GMOS, pretty is stripID with additionally the
                 # '+' removed from the string
                 stripID = True
             
-            if (stripID):
-                if (pretty):
-                    retdisperserstring = \
+            if stripID:
+                if pretty:
+                    ret_disperser = \
                         GemCalcUtil.removeComponentID(disperser).strip('+')
                 else:
-                    retdisperserstring = \
+                    ret_disperser = \
                         GemCalcUtil.removeComponentID(disperser)
             else:
-                retdisperserstring = disperser
+                ret_disperser = disperser
         
         except KeyError:
             return None
         
-        return str(retdisperserstring)
+        return str(ret_disperser)
     
-    def exptime(self, dataset, **args):
+    def dispersion(self, dataset, asList=False, **args):
         """
-        Return the exptime value for GMOS
+        Return the dispersion value for GMOS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param asList: set to True to return a list, where the number of array
+        elements equals the number of pixel data extensions in the image.
+        @rtype: float or list (if asList = True)
+        @return: the dispersion value (angstroms/pixel)
+        """
+        try:
+            if asList:
+                ret_dispersion = []
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
+                    ret_dispersion = \
+                        hdu[1].header[stdkeyDictGMOS['key_dispersion']]
+                    ret_dispersion.append(dispersion)
+                else:
+                    for ext in dataset:
+                        dispersion = \
+                            ext.header[stdkeyDictGMOS['key_dispersion']]
+                        ret_dispersion.append(dispersion)
+            else:
+                try:
+                    if dataset.countExts('SCI') <= 1:
+                        hdu = dataset.hdulist
+                        ret_dispersion = \
+                            hdu[1].header[stdkeyDictGMOS['key_dispersion']]
+                    else:
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
+                
+                except Exception:
+                    print traceback.format_exc()
+        
+        except KeyError:
+            return None
+        
+        return ret_dispersion
+    
+    def exposure_time(self, dataset, **args):
+        """
+        Return the exposure_time value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -265,22 +336,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            exptime = hdu[0].header[stdkeyDictGMOS['key_gmos_exptime']]
+            exposure_time = \
+                hdu[0].header[globalStdkeyDict['key_exposure_time']]
             
             # Sanity check for times when the GMOS DC is stoned
-            if ((exptime > 10000.) or (exptime < 0.)):
+            if exposure_time > 10000. or exposure_time < 0.:
                 return None
             else:
-                retexptimefloat = exptime
+                ret_exposure_time = exposure_time
         
         except KeyError:
             return None
         
-        return float(retexptimefloat)
+        return float(ret_exposure_time)
     
-    def filterid(self, dataset, **args):
+    def filter_id(self, dataset, **args):
         """
-        Return the filterid value for GMOS
+        Return the filter_id value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -288,23 +360,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            filtid1 = str(hdu[0].header[stdkeyDictGMOS['key_gmos_filtid1']])
-            filtid2 = str(hdu[0].header[stdkeyDictGMOS['key_gmos_filtid2']])
+            filtid1 = str(hdu[0].header[stdkeyDictGMOS['key_filtid1']])
+            filtid2 = str(hdu[0].header[stdkeyDictGMOS['key_filtid2']])
             
             filtsid = []
             filtsid.append(filtid1)
             filtsid.append(filtid2)
             filtsid.sort()
-            retfilteridstring = '&'.join(filtsid)
+            ret_filter_id = '&'.join(filtsid)
         
         except KeyError:
             return None
         
-        return str(retfilteridstring)
+        return str(ret_filter_id)
     
-    def filtername(self, dataset, stripID=False, pretty=False, **args):
+    def filter_name(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the filtername value for GMOS
+        Return the filter_name value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -312,13 +384,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            filter1 = hdu[0].header[stdkeyDictGMOS['key_gmos_filter1']]
-            filter2 = hdu[0].header[stdkeyDictGMOS['key_gmos_filter2']]
+            filter1 = hdu[0].header[stdkeyDictGMOS['key_filter1']]
+            filter2 = hdu[0].header[stdkeyDictGMOS['key_filter2']]
             
-            if (pretty):
+            if pretty:
                 stripID = True
             
-            if (stripID):
+            if stripID:
                 filter1 = GemCalcUtil.removeComponentID(filter1)
                 filter2 = GemCalcUtil.removeComponentID(filter2)
             
@@ -329,18 +401,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 filters.append(filter2)
             
             if len(filters) == 0:
-                retfilternamestring = 'open'
+                ret_filter_name = 'open'
             else:
-                retfilternamestring = '&'.join(filters)
+                ret_filter_name = '&'.join(filters)
         
         except KeyError:
             return None
         
-        return str(retfilternamestring)
+        return str(ret_filter_name)
     
-    def fpmask(self, dataset, **args):
+    def focal_plane_mask(self, dataset, **args):
         """
-        Return the fpmask value for GMOS
+        Return the focal_plane_mask value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -348,56 +420,57 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            fpmask = hdu[0].header[stdkeyDictGMOS['key_gmos_fpmask']]
+            focal_plane_mask = \
+                hdu[0].header[stdkeyDictGMOS['key_focal_plane_mask']]
             
-            if fpmask == 'None':
-                retfpmaskstring = 'Imaging'
+            if focal_plane_mask == 'None':
+                ret_focal_plane_mask = 'Imaging'
             else:
-                retfpmaskstring = fpmask
+                ret_focal_plane_mask = focal_plane_mask
         
         except KeyError:
             return None
         
-        return str(retfpmaskstring)
+        return str(ret_focal_plane_mask)
     
     def gain(self, dataset, asList=False, **args):
         """
         Return the gain value for GMOS
-        If asList = True, a list is returned, where the number of array
-        elements equals the number of pixel data extensions in the image.
         @param dataset: the data set
         @type dataset: AstroData
+        @param asList: set to True to return a list, where the number of array
+        elements equals the number of pixel data extensions in the image.
         @rtype: float or list (if asList = True)
-        @returns: the gain in electrons/ADU
+        @return: the gain in electrons/ADU
         """
         try:
             hdu = dataset.hdulist
-            ampinteg = hdu[0].header[stdkeyDictGMOS['key_gmos_ampinteg']]
-            utdate = hdu[0].header[stdkeyDictGeneric['key_generic_utdate']]
-            obsutdate = datetime(*strptime(utdate, '%Y-%m-%d')[0:6])
-            oldutdate = datetime(2006, 8, 31, 0, 0)
-
-            if (asList):
-                retgain = []
-                for ext in dataset:
-                    # Descriptors must work for all AstroData Types so check
-                    # if the original gain keyword exists to use for the
-                    # look-up table
-                    if ext.header.has_key(stdkeyDictGMOS['key_gmos_gainorig']):
+            ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
+            ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
+            obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
+            old_ut_date = datetime(2006, 8, 31, 0, 0)
+            
+            if asList:
+                ret_gain = []
+                if dataset.countExts('SCI') <= 1:
+                    # Descriptors must work for all AstroData Types so
+                    # check if the original gain keyword exists to use for
+                    # the look-up table
+                    if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
                         headergain = \
-                            ext.header[stdkeyDictGMOS['key_gmos_gainorig']]
+                            hdu[1].header[stdkeyDictGMOS['key_gainorig']]
                     else:
                         headergain = \
-                            ext.header[stdkeyDictGMOS['key_gmos_gain']]
+                            hdu[1].header[globalStdkeyDict['key_gain']]
                     
-                    ampname = ext.header[stdkeyDictGMOS['key_gmos_ampname']]
-                    gmode = dataset.gainmode()
-                    rmode = dataset.readspeedmode()
+                    ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
+                    gmode = dataset.gain_mode()
+                    rmode = dataset.read_speed_mode()
                     
                     gainkey = (rmode, gmode, ampname)
                     
                     try:
-                        if (obsutdate > oldutdate):
+                        if obs_ut_date > old_ut_date:
                             gain = self.gmosampsGain[gainkey]
                         else:
                             gain = self.gmosampsGainBefore20060831[gainkey]
@@ -405,41 +478,66 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     except KeyError:
                         gain = None
                     
-                    retgain.append(gain)
-            
-            else:
-                try:
-                    # print "GDC412", dataset.nsciext(), len(dataset["SCI"])
-                    if (dataset.nsciext() < 1):
+                    ret_gain.append(gain)
+                else:
+                    for ext in dataset:
                         # Descriptors must work for all AstroData Types so
                         # check if the original gain keyword exists to use for
                         # the look-up table
-                        if hdu[1].header.has_key(stdkeyDictGMOS['key_gmos_gainorig']):
+                        if ext.header.has_key(stdkeyDictGMOS['key_gainorig']):
                             headergain = \
-                                hdu[1].header[stdkeyDictGMOS['key_gmos_gainorig']]
+                                ext.header[stdkeyDictGMOS['key_gainorig']]
                         else:
                             headergain = \
-                                hdu[1].header[stdkeyDictGMOS['key_gmos_gain']]
+                                ext.header[globalStdkeyDict['key_gain']]
                         
-                        ampname = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_ampname']]
-                        gmode = dataset.gainmode()
-                        rmode = dataset.readspeedmode()
+                        ampname = ext.header[stdkeyDictGMOS['key_ampname']]
+                        gmode = dataset.gain_mode()
+                        rmode = dataset.read_speed_mode()
                         
                         gainkey = (rmode, gmode, ampname)
                         
                         try:
-                            if (obsutdate > oldutdate):
-                                retgain = self.gmosampsGain[gainkey]
+                            if obs_ut_date > old_ut_date:
+                                gain = self.gmosampsGain[gainkey]
                             else:
-                                retgain = \
+                                gain = self.gmosampsGainBefore20060831[gainkey]
+                        
+                        except KeyError:
+                            gain = None
+                        
+                        ret_gain.append(gain)
+            else:
+                try:
+                    if dataset.countExts('SCI') <= 1:
+                        # Descriptors must work for all AstroData Types so
+                        # check if the original gain keyword exists to use for
+                        # the look-up table
+                        if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
+                            headergain = \
+                                hdu[1].header[stdkeyDictGMOS['key_gainorig']]
+                        else:
+                            headergain = \
+                                hdu[1].header[globalStdkeyDict['key_gain']]
+                        
+                        ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
+                        gmode = dataset.gain_mode()
+                        rmode = dataset.read_speed_mode()
+                        
+                        gainkey = (rmode, gmode, ampname)
+                        
+                        try:
+                            if obs_ut_date > old_ut_date:
+                                ret_gain = self.gmosampsGain[gainkey]
+                            else:
+                                ret_gain = \
                                     self.gmosampsGainBefore20060831[gainkey]
                         
                         except KeyError:
                             return None
-                    
                     else:
-                        raise Exception('Please use asList=True to obtain a list')
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
                 
                 except Exception:
                     print traceback.format_exc()
@@ -447,64 +545,77 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return retgain
+        return ret_gain
     
     gmosampsGain = None
     gmosampsGainBefore20060831 = None
     
-    def gainmode(self, dataset, **args):
+    def gain_mode(self, dataset, **args):
         """
-        Return the gain mode value for GMOS
+        Return the gain_mode value for GMOS
         This is used in the gain descriptor for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
-        @returns: the gain mode
+        @return: the gain mode
         """
         try:
             hdu = dataset.hdulist
             # Descriptors must work for all AstroData Types so check
             # if the original gain keyword exists to use for the look-up table
-            if hdu[1].header.has_key(stdkeyDictGMOS['key_gmos_gainorig']):
+            if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
                 headergain = \
-                    hdu[1].header[stdkeyDictGMOS['key_gmos_gainorig']]
+                    hdu[1].header[stdkeyDictGMOS['key_gainorig']]
             else:
                 headergain = \
-                    hdu[1].header[stdkeyDictGMOS['key_gmos_gain']]
+                    hdu[1].header[globalStdkeyDict['key_gain']]
             
-            if (headergain > 3.0):
-                retgainmodestring = 'high'
+            if headergain > 3.0:
+                ret_gain_mode = 'high'
             else:
-                retgainmodestring = 'low'
+                ret_gain_mode = 'low'
         
         except KeyError:
             return None
         
-        return retgainmodestring
+        return str(ret_gain_mode)
     
-    def mdfrow(self, dataset, asList=False, **args):
+    def mdf_row_id(self, dataset, asList=False, **args):
         """
-        Return the mdfrow value for GMOS
+        Return the mdf_row_id value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
+        @param asList: set to True to return a list, where the number of array
+        elements equals the number of pixel data extensions in the image.
         @rtype: integer
         @return: the corresponding reference row in the MDF
         """
         try:
-            if (asList):
-                retmdfrow = []
-                for ext in dataset:
-                    mdfrow = ext.header[stdkeyDictGMOS['key_gmos_mdfrow']]
-                    retmdfrow.append(mdfrow)
-            
+            # This descriptor function will only work on data that has been
+            # reduced to a certain point (~gscut), so the descriptor function
+            # should return None if the data is RAW, etc and the true value
+            # when it is past the given data reduction point - TO BE DONE!
+            if asList:
+                ret_mdf_row_id = []
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
+                    mdf_row_id = \
+                        hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
+                    ret_mdf_row_id.append(mdf_row_id)
+                else:
+                    for ext in dataset:
+                        mdf_row_id = \
+                            ext.header[globalStdkeyDict['key_mdf_row_id']]
+                        ret_mdf_row_id.append(mdf_row_id)
             else:
                 try:
-                    if (dataset.nsciext() < 1):
+                    if dataset.countExts('SCI') <= 1:
                         hdu = dataset.hdulist
-                        retmdfrow = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_mdfrow']]
+                        ret_mdf_row_id = \
+                            hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
                     else:
-                        raise Exception('Please use asList=True to obtain a list')
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
                 
                 except Exception:
                     print traceback.format_exc()
@@ -512,170 +623,186 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return retmdfrow
+        return ret_mdf_row_id
     
-    def nsciext(self, dataset, **args):
+    def observation_mode(self, dataset, **args):
         """
-        Return the nsciext value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the number of science extensions
-        """
-        retnsciextint = dataset.countExts('SCI')
-        
-        return int(retnsciextint)
-    
-    def obsmode(self, dataset, **args):
-        """
-        Return the obsmode value for GMOS
+        Return the observation_mode value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
-        @returns: the observing mode
+        @return: the observing mode
         """
         try:
             hdu = dataset.hdulist
-            masktype = hdu[0].header[stdkeyDictGMOS['key_gmos_masktype']]
-            maskname = hdu[0].header[stdkeyDictGMOS['key_gmos_maskname']]
-            grating = hdu[0].header[stdkeyDictGMOS['key_gmos_disperser']]
+            masktype = hdu[0].header[stdkeyDictGMOS['key_masktype']]
+            maskname = hdu[0].header[stdkeyDictGMOS['key_maskname']]
+            grating = hdu[0].header[stdkeyDictGMOS['key_disperser']]
             
             if masktype == 0:
-                retobsmodestring = 'IMAGE'
+                ret_observation_mode = 'IMAGE'
             
             elif masktype == -1:
-                retobsmodestring = 'IFU'
+                ret_observation_mode = 'IFU'
             
             elif masktype == 1:
                 
                 if re.search('arcsec', maskname) != None and \
                     re.search('NS', maskname) == None:
-                    retobsmodestring = 'LONGSLIT'
+                    ret_observation_mode = 'LONGSLIT'
                 else:
-                    retobsmodestring = 'MOS'
-            
+                    ret_observation_mode = 'MOS'
             else:
                 # if obsmode cannot be determined, set it equal to IMAGE
                 # instead of crashing
-                retobsmodestring = 'IMAGE'
+                ret_observation_mode = 'IMAGE'
             
             # mask or IFU cannot be used without grating
             if grating == 'MIRROR' and masktype != 0:
-                retobsmodestring == 'IMAGE' 
+                ret_observation_mode == 'IMAGE' 
         
         except KeyError:
             return None
         
-        return str(retobsmodestring)
+        return str(ret_observation_mode)
     
-    def pixscale(self, dataset, **args):
+    def pixel_scale(self, dataset, **args):
         """
-        Return the pixscale value for GMOS
+        Return the pixel_scale value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
-        @returns: the pixel scale (arcsec/pixel)
+        @return: the pixel scale (arcsec/pixel)
         """
         try:
             hdu = dataset.hdulist
             instrument = \
-                hdu[0].header[stdkeyDictGeneric['key_generic_instrument']]
-            # Assume ccdsum is the same in all extensions
-            ccdsum = hdu[1].header[stdkeyDictGMOS['key_gmos_ccdsum']]
+                hdu[0].header[globalStdkeyDict['key_instrument']]
+            detector_y_bin = dataset.detector_y_bin()
             
             if instrument == 'GMOS-N':
                 scale = 0.0727
             if instrument == 'GMOS-S':
                 scale = 0.073
             
-            if ccdsum != None:
-                xccdbin, yccdbin = ccdsum.split()
-                retpixscalefloat = float(yccdbin) * scale
+            if detector_y_bin != None:
+                ret_pixel_scale = float(detector_y_bin) * scale
             else:
-                retpixscalefloat = scale
+                ret_pixel_scale = scale
         
         except KeyError:
             return None
         
-        return float(retpixscalefloat)
+        return float(ret_pixel_scale)
     
-    def rdnoise(self, dataset, asList=False, **args):
+    def read_noise(self, dataset, asList=False, **args):
         """
-        Return the rdnoise value for GMOS
-        If asList = True, a list is returned, where the number of array
-        elements equals the number of pixel data extensions in the image.
+        Return the read_noise value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
+        @param asList: set to True to return a list, where the number of array
+        elements equals the number of pixel data extensions in the image.
         @rtype: float or list (if asList = True)
-        @returns: the estimated readout noise values (electrons)
+        @return: the estimated readout noise values (electrons)
         """
         try:
             hdu = dataset.hdulist
-            ampinteg = hdu[0].header[stdkeyDictGMOS['key_gmos_ampinteg']]
-            utdate = hdu[0].header[stdkeyDictGeneric['key_generic_utdate']]
-            obsutdate = datetime(*strptime(utdate, '%Y-%m-%d')[0:6])
-            oldutdate = datetime(2006, 8, 31, 0, 0)
+            ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
+            ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
+            obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
+            old_ut_date = datetime(2006, 8, 31, 0, 0)
             
-            if (asList):
-                retrdnoise = []
-                for ext in dataset:
-                    # Descriptors must work for all AstroData Types so check
-                    # if the original gain keyword exists to use for the
-                    # look-up table
-                    if ext.header.has_key(stdkeyDictGMOS['key_gmos_gainorig']):
+            if asList:
+                ret_read_noise = []
+                if dataset.countExts('SCI') <= 1:
+                    # Descriptors must work for all AstroData Types so
+                    # check if the original gain keyword exists to use for
+                    # the look-up table
+                    if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
                         headergain = \
-                            ext.header[stdkeyDictGMOS['key_gmos_gainorig']]
+                            hdu[1].header[stdkeyDictGMOS['key_gainorig']]
                     else:
                         headergain = \
-                            ext.header[stdkeyDictGMOS['key_gmos_gain']]
+                            hdu[1].header[globalStdkeyDict['key_gain']]
                     
-                    ampname = ext.header[stdkeyDictGMOS['key_gmos_ampname']]
-                    gmode = dataset.gainmode()
-                    rmode = dataset.readspeedmode()
+                    ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
+                    gmode = dataset.gain_mode()
+                    rmode = dataset.read_speed_mode()
                     
-                    rdnoisekey = (rmode, gmode, ampname)
+                    read_noise_key = (rmode, gmode, ampname)
                     
                     try:
-                        if (obsutdate > oldutdate):
-                            rdnoise = self.gmosampsRdnoise[rdnoisekey]
+                        if obs_ut_date > old_ut_date:
+                            ret_read_noise = \
+                                self.gmosampsRdnoise[read_noise_key]
                         else:
-                            rdnoise = \
-                                self.gmosampsRdnoiseBefore20060831[rdnoisekey]
-                    
+                            ret_read_noise = \
+                                self.gmosampsRdnoiseBefore20060831[read_noise_key]
                     except KeyError:
-                        rdnoise = None
+                        return None
                     
-                    retrdnoise.append(rdnoise)
-            
-            else:
-                try:
-                    if (dataset.nsciext() < 1):
+                    ret_read_noise.append(read_noise)
+
+                else:
+                    for ext in dataset:
                         # Descriptors must work for all AstroData Types so
                         # check if the original gain keyword exists to use for
                         # the look-up table
-                        if hdu[1].header.has_key(stdkeyDictGMOS['key_gmos_gainorig']):
+                        if ext.header.has_key(stdkeyDictGMOS['key_gainorig']):
                             headergain = \
-                                hdu[1].header[stdkeyDictGMOS['key_gmos_gainorig']]
+                                ext.header[stdkeyDictGMOS['key_gainorig']]
                         else:
                             headergain = \
-                                hdu[1].header[stdkeyDictGMOS['key_gmos_gain']]
+                                ext.header[globalStdkeyDict['key_gain']]
                         
-                        ampname = hdu[1].header[stdkeyDictGMOS['key_gmos_ampname']]
-                        gmode = dataset.gainmode()
-                        rmode = dataset.readspeedmode()
+                        ampname = ext.header[stdkeyDictGMOS['key_ampname']]
+                        gmode = dataset.gain_mode()
+                        rmode = dataset.read_speed_mode()
                         
-                        rdnoisekey = (rmode, gmode, ampname)
+                        read_noise_key = (rmode, gmode, ampname)
                         
                         try:
-                            if (obsutdate > oldutdate):
-                                retrdnoise = self.gmosampsRdnoise[rdnoisekey]
+                            if obs_ut_date > old_ut_date:
+                                read_noise = \
+                                    self.gmosampsRdnoise[read_noise_key]
                             else:
-                                retrdnoise = \
-                                    self.gmosampsRdnoiseBefore20060831[rdnoisekey]
+                                read_noise = \
+                                    self.gmosampsRdnoiseBefore20060831[read_noise_key]
+                        
+                        except KeyError:
+                            read_noise = None
+                        
+                        ret_read_noise.append(read_noise)
+            else:
+                try:
+                    if dataset.countExts('SCI') <= 1:
+                        # Descriptors must work for all AstroData Types so
+                        # check if the original gain keyword exists to use for
+                        # the look-up table
+                        if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
+                            headergain = \
+                                hdu[1].header[stdkeyDictGMOS['key_gainorig']]
+                        else:
+                            headergain = \
+                                hdu[1].header[globalStdkeyDict['key_gain']]
+                        
+                        ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
+                        gmode = dataset.gain_mode()
+                        rmode = dataset.read_speed_mode()
+                        
+                        read_noise_key = (rmode, gmode, ampname)
+                        
+                        try:
+                            if obs_ut_date > old_ut_date:
+                                ret_read_noise = self.gmosampsRdnoise[read_noise_key]
+                            else:
+                                ret_read_noise = \
+                                    self.gmosampsRdnoiseBefore20060831[read_noise_key]
                         except KeyError:
                             return None
                     else:
-                        raise Exception('Please use asList=True to obtain a list')
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
                 
                 except Exception:
                     print traceback.format_exc()
@@ -683,87 +810,78 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return retrdnoise
+        return ret_read_noise
     
     gmosampsRdnoise = None
     gmosampsRdnoiseBefore20060831 = None
     
-    def ronorig( self, dataset , **args):
-        '''
-        
-        '''
-        # Epic klugin' right here.
-        # print 'GRD 692: called ronorig'
-        temp = []
-        try:
-            for ext in dataset:
-                temp.append(ext.header['RONORIG'])
-        except:
-            temp = self.fetchValue('RDNOISE', dataset)
-            
-        #print 'GRD700:', repr(temp)
-        return temp
-    
-    def readspeedmode(self, dataset, **args):
+    def read_speed_mode(self, dataset, **args):
         """
-        Return the read mode value for GMOS
+        Return the read_speed_mode value for GMOS
         This is used in the gain descriptor for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
-        @returns: the read mode
+        @return: the read speed mode
         """
         try:
             hdu = dataset.hdulist
-            ampinteg = hdu[0].header[stdkeyDictGMOS['key_gmos_ampinteg']]
+            ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
             
-            if (ampinteg == 1000):
-                retreadspeedmodestring = 'fast'
+            if ampinteg == 1000:
+                ret_read_speed_mode = 'fast'
             else:
-                retreadspeedmodestring = 'slow'
+                ret_read_speed_mode = 'slow'
         
         except KeyError:
             return None
         
-        return retreadspeedmodestring
+        return str(ret_read_speed_mode)
     
-    def satlevel(self, dataset, **args):
+    def saturation_level(self, dataset, **args):
         """
-        Return the satlevel value for GMOS
+        Return the saturation_level value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
-        @returns: the saturation level in the raw images (ADU)
+        @return: the saturation level in the raw images (ADU)
         """
-        retsaturationint = 65000
+        ret_saturation_level = 65000
         
-        return int(retsaturationint)
+        return int(ret_saturation_level)
     
-    def wdelta(self, dataset, asList=False, **args):
+    def wavelength_reference_pixel(self, dataset, asList=False, **args):
         """
-        Return the wdelta value for GMOS
-        If asList = True, a list is returned, where the number of array
-        elements equals the number of pixel data extensions in the image.
+        Return the wavelength_reference_pixel value for GMOS
         @param dataset: the data set
         @type dataset: AstroData
+        @param asList: set to True to return a list, where the number of array
+        elements equals the number of pixel data extensions in the image.
         @rtype: float or list (if asList = True)
-        @returns: the dispersion value (angstroms/pixel)
+        @return: the reference pixel of the central wavelength
         """
         try:
-            if (asList):
-                retwdelta = []
-                for ext in dataset:
-                    wdelta = ext.header[stdkeyDictGMOS['key_gmos_wdelta']]
-                    retwdelta.append(wdelta)
-            
+            if asList:
+                ret_wavelength_reference_pixel = []
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
+                    wavelength_reference_pixel = \
+                        hdu[1].header[stdkeyDictGMOS['key_wavelength_reference_pixel']]
+                    ret_wavelength_reference_pixel.append(wavelength_reference_pixel)
+                else:
+                    for ext in dataset:
+                        wavelength_reference_pixel = \
+                            ext.header[stdkeyDictGMOS['key_wavelength_reference_pixel']]
+                        ret_wavelength_reference_pixel.append(wavelength_reference_pixel)
             else:
                 try:
-                    if (dataset.nsciext() < 1):
+                    if dataset.countExts('SCI') <= 1:
                         hdu = dataset.hdulist
-                        retwdelta = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_wdelta']]
+                        ret_wavelength_reference_pixel = \
+                            hdu[1].header[stdkeyDictGMOS['key_wavelength_reference_pixel']]
                     else:
-                        raise Exception('Please use asList=True to obtain a list')
+                        msg = 'Please use asList=True to obtain a list'
+                        raise Exception(msg)
                 
                 except Exception:
                     print traceback.format_exc()
@@ -771,82 +889,4 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return retwdelta
-    
-    def wrefpix(self, dataset, asList=False, **args):
-        """
-        Return the wrefpix value for GMOS
-        If asList = True, a list is returned, where the number of array
-        elements equals the number of pixel data extensions in the image.
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float or list (if asList = True)
-        @returns: the reference pixel of the central wavelength
-        """
-        try:
-            if (asList):
-                retwrefpix = []
-                for ext in dataset:
-                    wrefpix = ext.header[stdkeyDictGMOS['key_gmos_wrefpix']]
-                    retwrefpix.append(wrefpix)
-            
-            else:
-                try:
-                    if (dataset.nsciext() < 1):
-                        hdu = dataset.hdulist
-                        retwrefpix = \
-                            hdu[1].header[stdkeyDictGMOS['key_gmos_wrefpix']]
-                    else:
-                        raise Exception('Please use asList=True to obtain a list')
-                
-                except Exception:
-                    print traceback.format_exc()
-        
-        except KeyError:
-            return None
-        
-        return retwrefpix
-    
-    def xccdbin(self, dataset, **args):
-        """
-        Return the xccdbin value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector x-axis
-        """
-        try:
-            hdu = dataset.hdulist
-            ccdsum = hdu[1].header[stdkeyDictGMOS['key_gmos_ccdsum']]
-            
-            if ccdsum != None:
-                retxccdbinint, yccdbin = ccdsum.split()
-            else:
-                return None
-        
-        except KeyError:
-            return None
-        
-        return int(retxccdbinint)
-    
-    def yccdbin(self, dataset, **args):
-        """
-        Return the yccdbin value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector y-axis
-        """
-        try:
-            hdu = dataset.hdulist
-            ccdsum = hdu[1].header[stdkeyDictGMOS['key_gmos_ccdsum']]
-            
-            if ccdsum != None:
-                xccdbin, retyccdbinint = ccdsum.split()
-            else:
-                return None
-        
-        except KeyError:
-            return None
-        
-        return int(retyccdbinint)
+        return ret_wavelength_reference_pixel

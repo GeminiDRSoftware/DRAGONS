@@ -6,38 +6,26 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
 
+from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGNIRSKeyDict import stdkeyDictGNIRS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
-
+    
     gnirsArrayDict = None
     gnirsConfigDict = None
     
     def __init__(self):
-        self.gnirsArrayDict = Lookups.getLookupTable("Gemini/GNIRS/GNIRSArrayDict", "gnirsArrayDict")
-        self.gnirsConfigDict = Lookups.getLookupTable("Gemini/GNIRS/GNIRSConfigDict", "gnirsConfigDict")
+        self.gnirsArrayDict = \
+            Lookups.getLookupTable('Gemini/GNIRS/GNIRSArrayDict',
+                                   'gnirsArrayDict')
+        self.gnirsConfigDict = \
+            Lookups.getLookupTable('Gemini/GNIRS/GNIRSConfigDict',
+                                   'gnirsConfigDict')
     
-    def camera(self, dataset, **args):
+    def central_wavelength(self, dataset, **args):
         """
-        Return the camera value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the camera used to acquire the data
-        """
-        try:
-            hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_camera"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retcamerastring)
-    
-    def cwave(self, dataset, **args):
-        """
-        Return the cwave value for GNIRS
+        Return the central_wavelength value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -45,54 +33,46 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcwavefloat = hdu[0].header[stdkeyDictGNIRS["key_gnirs_cwave"]]
+            ret_central_wavelength = \
+                hdu[0].header[stdkeyDictGNIRS['key_central_wavelength']]
         
         except KeyError:
             return None
         
-        return float(retcwavefloat)
-    
-    def detsec(self, dataset, **args):
-        """
-        Return the detsec value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the detector section
-        """
-        retdetsecstring = None
-        
-        return str(retdetsecstring)
+        return float(ret_central_wavelength)
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for GNIRS
         @param dataset: the data set
-        @param stripID: set to True to strip the component ID from the returned string
         @type dataset: AstroData
+        @param stripID: set to True to strip the component ID from the
+        returned disperser name
+        @param pretty: set to True to return a meaningful disperser name
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
-
-        # No specific pretty names, just use stripID
-        if(pretty):
-            stripID=True
-
         try:
+            # No specific pretty names, just use stripID
+            if pretty:
+                stripID=True
+            
             hdu = dataset.hdulist
-            retdisperserstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_disperser"]]
-
-            if(stripID):
-              retdisperserstring=GemCalcUtil.removeComponentID(retdisperserstring)
+            disperser = hdu[0].header[stdkeyDictGNIRS['key_disperser']]
+            
+            if stripID:
+                ret_disperser = GemCalcUtil.removeComponentID(disperser)
+            else:
+                ret_disperser = disperser
         
         except KeyError:
             return None
         
-        return str(retdisperserstring)
+        return str(ret_disperser)
     
-    def exptime(self, dataset, **args):
+    def exposure_time(self, dataset, **args):
         """
-        Return the exptime value for GNIRS
+        Return the exposure_time value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -100,73 +80,73 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            exptime = hdu[0].header[stdkeyDictGNIRS["key_gnirs_exptime"]]
-            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
+            exposure_time = \
+                hdu[0].header[globalStdkeyDict['key_exposure_time']]
+            coadds = dataset.coadds()
             
-            if dataset.isType("GNIRS_RAW") == True:
-                if coadds != 1:
-                    coaddexp = exptime
-                    retexptimefloat = exptime * coadds
-                else:
-                    retexptimefloat = exptime
+            if dataset.isType('GNIRS_RAW') == True and coadds != 1:
+                ret_exposure_time = exposure_time * coadds
             else:
-                return exptime
+                ret_exposure_time = exposure_time
         
         except KeyError:
             return None
         
-        return float(retexptimefloat)
+        return float(ret_exposure_time)
     
-    def filtername(self, dataset, stripID=False, pretty=False, **args):
+    def filter_name(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the filtername value for GNIRS
+        Return the filter_name value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
+        @param stripID: set to True to remove the component ID from the
+        returned filter name
+        @param pretty: set to True to return a meaningful filter name
         @rtype: string
         @return: the unique filter identifier string
         """
-
-        # No specific pretty names, just use stripID
-        if(pretty):
-            stripID=True
-
         try:
+            # No specific pretty names, just use stripID
+            if pretty:
+                stripID=True
+            
             hdu = dataset.hdulist
-            filter1 = hdu[0].header[stdkeyDictGNIRS["key_gnirs_filter1"]]
-            filter2 = hdu[0].header[stdkeyDictGNIRS["key_gnirs_filter2"]]
-            if(stripID):
+            filter1 = hdu[0].header[stdkeyDictGNIRS['key_filter1']]
+            filter2 = hdu[0].header[stdkeyDictGNIRS['key_filter2']]
+            
+            if stripID:
                 filter1 = GemCalcUtil.removeComponentID(filter1)
                 filter2 = GemCalcUtil.removeComponentID(filter2)
-
-            # create list of filter values
+            
+            # Create list of filter values
             filters = [filter1,filter2]
-
-            # reject "Open"
+            
+            # reject 'Open'
             filters2 = []
             for filt in filters:
-                if ("Open" in filt):
+                if 'Open' in filt:
                     pass
                 else:
                     filters2.append(filt)
             
             filters = filters2
             
-            if "DARK" in filters:
-                retfilternamestring = "blank"
+            if 'DARK' in filters:
+                ret_filter_name = 'blank'
             
             if len(filters) == 0:
-                retfilternamestring = "open"
+                ret_filter_name = 'open'
             else:
-                retfilternamestring = "&".join(filters)
-            
+                ret_filter_name = '&'.join(filters)
+        
         except KeyError:
             return None
         
-        return str(retfilternamestring)
+        return str(ret_filter_name)
     
-    def fpmask(self, dataset, **args):
+    def focal_plane_mask(self, dataset, **args):
         """
-        Return the fpmask value for GNIRS
+        Return the focal_plane_mask value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -174,12 +154,13 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictGNIRS["key_gnirs_fpmask"]]
+            ret_focal_plane_mask = \
+                hdu[0].header[stdkeyDictGNIRS['key_focal_plane_mask']]
         
         except KeyError:
             return None
-                        
-        return str(retfpmaskstring)
+        
+        return str(ret_focal_plane_mask)
     
     def gain(self, dataset, **args):
         """
@@ -187,11 +168,46 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
-        @returns: the gain (electrons/ADU)
+        @return: the gain (electrons/ADU)
         """
         try:
             hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
+            headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
+            
+            biasvalues = self.gnirsArrayDict.keys()
+            
+            for bias in biasvalues:
+                if abs(float(bias) - abs(headerbias)) < 0.1:
+                    array = self.gnirsArrayDict[bias]
+                else:
+                    array = None
+            
+            if array != None:
+                ret_gain = array[2]
+            else:
+                return None
+        
+        except KeyError:
+            return None
+        
+        return float(ret_gain)
+    
+    gnirsArrayDict = None
+    
+    def non_linear_level(self, dataset, **args):
+        """
+        Return the non_linear_level value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: integer
+        @return: the non-linear level in the raw images (ADU)
+        """
+        try:
+            # non_linear_level depends on whether data has been corrected for
+            # non-linearity ... need to check this ...
+            hdu = dataset.hdulist
+            headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
+            coadds = dataset.coadds()
             
             biasvalues = self.gnirsArrayDict.keys()
             for bias in biasvalues:
@@ -199,39 +215,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
                     array = self.gnirsArrayDict[bias]
                 else:
                     array = None
-
-            if array != None:
-                retgainfloat = array[2]
-            else:
-                return None
-        
-        except KeyError:
-            return None
-        
-        return float(retgainfloat)
-
-    gnirsArrayDict = None
-    
-    def nonlinear(self, dataset, **args):
-        """
-        Return the nonlinear value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the non-linear level in the raw images (ADU)
-        """
-        try:
-            hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
-            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
-
-            biasvalues = self.gnirsArrayDict.keys()
-            for bias in biasvalues:
-                if abs(float(bias) - abs(headerbias)) < 0.1:
-                    array = self.gnirsArrayDict[bias]
-                else:
-                    array = None
-
+            
             if array != None:
                 well = float(array[3])
                 linearlimit = float(array[4])
@@ -240,151 +224,139 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
                 return None
             
             saturation = int(well * coadds)
-            retnonlinearint = int(saturation * linearlimit)
-            #retnonlinearint = int(saturation * nonlinearlimit)
+            ret_non_linear_level = int(saturation * linearlimit)
+            #ret_non_linear_level = int(saturation * nonlinearlimit)
         
         except KeyError:
             return None
         
-        return int(retnonlinearint)
+        return int(ret_non_linear_level)
     
     gnirsArrayDict = None
     
-    def nsciext(self, dataset, **args):
+    def observation_mode(self, dataset, **args):
         """
-        Return the nsciext value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the number of science extensions
-        """
-        retnsciextint = dataset.countExts(None)
-        
-        return int(retnsciextint)
-    
-    def obsmode(self, dataset, **args):
-        """
-        Return the obsmode value for GNIRS
+        Return the observation_mode value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
-        @returns: the observing mode
+        @return: the observing mode
         """
         try:
             hdu = dataset.hdulist
-            prism = hdu[0].header[stdkeyDictGNIRS["key_gnirs_prism"]]
-            decker = hdu[0].header[stdkeyDictGNIRS["key_gnirs_decker"]]
-            grating = hdu[0].header[stdkeyDictGNIRS["key_gnirs_grating"]]
-            camera = hdu[0].header[stdkeyDictGNIRS["key_gnirs_camera"]]
+            prism = hdu[0].header[stdkeyDictGNIRS['key_prism']]
+            decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
+            disperser = hdu[0].header[stdkeyDictGNIRS['key_disperser']]
+            camera = hdu[0].header[globalStdkeyDict['key_camera']]
             
-            obsmodekey = (prism, decker, grating, camera)
+            observation_mode_key = (prism, decker, disperser, camera)
             
-            array = self.gnirsConfigDict[obsmodekey]
+            array = self.gnirsConfigDict[observation_mode_key]
             
-            retobsmodestring = array[3]
+            ret_observation_mode = array[3]
         
         except KeyError:
             return None
         
-        return str(retobsmodestring)
+        return str(ret_observation_mode)
     
     gnirsConfigDict = None
-
-    def pixscale(self, dataset, **args):
+    
+    def pixel_scale(self, dataset, **args):
         """
-        Return the pixscale value for GNIRS
+        Return the pixel_scale value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
-        @returns: the pixel scale (arcsec/pixel)
+        @return: the pixel scale (arcsec/pixel)
         """
         try:
             hdu = dataset.hdulist
-            prism = hdu[0].header[stdkeyDictGNIRS["key_gnirs_prism"]]
-            decker = hdu[0].header[stdkeyDictGNIRS["key_gnirs_decker"]]
-            grating = hdu[0].header[stdkeyDictGNIRS["key_gnirs_grating"]]
-            camera = hdu[0].header[stdkeyDictGNIRS["key_gnirs_camera"]]
-
-            pixscalekey = (prism, decker, grating, camera)
-
-            array = self.gnirsConfigDict[pixscalekey]
-
-            retpixscalefloat = array[2]
-                            
+            prism = hdu[0].header[stdkeyDictGNIRS['key_prism']]
+            decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
+            disperser = hdu[0].header[stdkeyDictGNIRS['key_disperser']]
+            camera = dataset.camera()
+            
+            pixel_scale_key = (prism, decker, disperser, camera)
+            
+            array = self.gnirsConfigDict[pixel_scale_key]
+            
+            ret_pixel_scale = array[2]
+        
         except KeyError:
             return None
         
-        return float(retpixscalefloat)
+        return float(ret_pixel_scale)
     
     gnirsConfigDict = None
     
-    def rdnoise(self, dataset, **args):
+    def read_noise(self, dataset, **args):
         """
-        Return the rdnoise value for GNIRS
+        Return the read_noise value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
-        @returns: the estimated readout noise (electrons)
+        @return: the estimated readout noise (electrons)
         """
         try:
             hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
-            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
-            lnrs = hdu[0].header[stdkeyDictGNIRS["key_gnirs_lnrs"]]
-            ndavgs = hdu[0].header[stdkeyDictGNIRS["key_gnirs_ndavgs"]]
-
+            headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
+            lnrs = hdu[0].header[stdkeyDictGNIRS['key_lnrs']]
+            ndavgs = hdu[0].header[stdkeyDictGNIRS['key_ndavgs']]
+            coadds = dataset.coadds()
+            
             biasvalues = self.gnirsArrayDict.keys()
             for bias in biasvalues:
                 if abs(float(bias) - abs(headerbias)) < 0.1:
                     array = self.gnirsArrayDict[bias]
                 else:
                     array = None
-
+            
             if array != None:
-                readnoise = float(array[1])
+                read_noise = float(array[1])
             else:
                 return None
-
-            retrdnoisefloat = (readnoise * math.sqrt(coadds)) / (math.sqrt(lnrs) * math.sqrt(ndavgs))
-
+            
+            ret_read_noise = (read_noise * math.sqrt(coadds)) \
+                / (math.sqrt(lnrs) * math.sqrt(ndavgs))
+        
         except KeyError:
             return None
         
-        return float(retrdnoisefloat)
+        return float(ret_read_noise)
     
     gnirsArrayDict = None
     
-    def satlevel(self, dataset, **args):
+    def saturation_level(self, dataset, **args):
         """
-        Return the satlevel value for GNIRS
+        Return the saturation_level value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
-        @returns: the saturation level in the raw images (ADU)
+        @return: the saturation level in the raw images (ADU)
         """
         try:
             hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictGNIRS["key_gnirs_bias"]]
-            coadds = hdu[0].header[stdkeyDictGNIRS["key_gnirs_coadds"]]
-
+            headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
+            coadds = dataset.coadds()
+            
             biasvalues = self.gnirsArrayDict.keys()
             for bias in biasvalues:
                 if abs(float(bias) - abs(headerbias)) < 0.1:
                     array = self.gnirsArrayDict[bias]
                 else:
                     array = None
-
+            
             if array != None:
                 well = array[3]
             else:
                 return None
-
-            retsaturationint = int(well * coadds)
+            
+            ret_saturation_level = int(well * coadds)
         
         except KeyError:
             return None
         
-        return int(retsaturationint)
+        return int(ret_saturation_level)
     
     gnirsArrayDict = None
-    
