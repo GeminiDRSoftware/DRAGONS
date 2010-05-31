@@ -42,7 +42,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcwavefloat = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_cwave"]]
+            retcwavefloat = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_cwave']]
         
         except KeyError:
             return None
@@ -59,7 +59,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retdisperserstring = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_disperser"]]
+            retdisperserstring = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_disperser']]
         
         except KeyError:
             return None
@@ -76,8 +76,8 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            exptime = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_exptime"]]
-            coadds = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_coadds"]]
+            exptime = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_exptime']]
+            coadds = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_coadds']]
             
             exptime = float(exptime) * float(coadds)
             return exptime
@@ -95,7 +95,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            filter = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_filter"]]
+            filter = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_filter']]
 
         except KeyError:
             return None
@@ -112,7 +112,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_fpmask"]]
+            retfpmaskstring = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_fpmask']]
         
         except KeyError:
             return None
@@ -129,8 +129,8 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            exptime = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_exptime"]]
-            coadds = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_coadds"]]
+            exptime = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_exptime']]
+            coadds = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_coadds']]
 
             ret = float(exptime) * float(coadds)
 
@@ -149,7 +149,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            ra = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_ra"]]
+            ra = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_ra']]
             ra = GemCalcUtil.rasextodec(ra)
             return ra
 
@@ -166,7 +166,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            dec = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_dec"]]
+            dec = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_dec']]
             dec = GemCalcUtil.degsextodec(dec)
             return dec
 
@@ -182,7 +182,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         @return: the total exposure time of the observation (seconds)
         """
 
-        return "Phoenix"
+        return 'Phoenix'
         # ThereIfixedIt
 
     def cwave(self, dataset, **args):
@@ -197,8 +197,8 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            cwavestring = hdu[0].header[stdkeyDictPHOENIX["key_phoenix_cwave"]]
-            #m = re.match("encoder (-*\d*)", string)
+            cwavestring = hdu[0].header[stdkeyDictPHOENIX['key_phoenix_cwave']]
+            #m = re.match('encoder (-*\d*)', string)
             #if(m):
               #enc = m.group(1)
             # The phoenix grating equation, drop the cubic term for now

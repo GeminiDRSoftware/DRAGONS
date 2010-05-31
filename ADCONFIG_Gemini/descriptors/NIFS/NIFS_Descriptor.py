@@ -6,6 +6,7 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
 
+from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardNIFSKeyDict import stdkeyDictNIFS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
@@ -15,8 +16,12 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     nifsConfigDict = None    
     
     def __init__(self):
-        self.nifsArrayDict = Lookups.getLookupTable("Gemini/NIFS/NIFSArrayDict", "nifsArrayDict")
-        self.nifsConfigDict = Lookups.getLookupTable("Gemini/NIFS/NIFSConfigDict", "nifsConfigDict")
+        self.nifsArrayDict = \
+            Lookups.getLookupTable('Gemini/NIFS/NIFSArrayDict',
+                                   'nifsArrayDict')
+        self.nifsConfigDict = \
+            Lookups.getLookupTable('Gemini/NIFS/NIFSConfigDict',
+                                   'nifsConfigDict')
     
     def camera(self, dataset, **args):
         """
@@ -28,16 +33,16 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictNIFS["key_nifs_camera"]]
+            ret_camera = hdu[0].header[stdkeyDictNIFS['key_camera']]
         
         except KeyError:
             return None
         
-        return str(retcamerastring)
+        return str(ret_camera)
     
-    def cwave(self, dataset, **args):
+    def central_wavelength(self, dataset, **args):
         """
-        Return the cwave value for NIFS
+        Return the central_wavelength value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -45,78 +50,46 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcwavefloat = hdu[0].header[stdkeyDictNIFS["key_nifs_cwave"]]
+            ret_central_wavelength = \
+                hdu[0].header[stdkeyDictNIFS['key_central_wavelength']]
         
         except KeyError:
             return None
         
-        return float(retcwavefloat)
-    
-    def datasec(self, dataset, **args):
-        """
-        Return the datasec value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the data section
-        """
-        try:
-            for ext in dataset:
-                # get the value - NIFS raw data will only have one data extension
-                retdatasecstring = ext.header[stdkeyDictNIFS["key_nifs_datasec"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retdatasecstring)
-    
-    def detsec(self, dataset, **args):
-        """
-        Return the detsec value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the detector section
-        """
-        try:
-            for ext in dataset:
-                # get the value - NIFS raw data will only have one data extension
-                retdetsecstring = ext.header[stdkeyDictNIFS["key_nifs_detsec"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retdetsecstring)
+        return float(ret_central_wavelength)
     
     def disperser(self, dataset, stripID = False, pretty=False, **args):
         """
         Return the disperser value for NIFS
         @param dataset: the data set
-        @param stripID: set to True to strip the component ID from the returned string
         @type dataset: AstroData
+        @param stripID: set to True to remove the component ID from the
+        returned disperser name
+        @param pretty: set to True to return a meaningful disperser name
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
-
-        # No specific pretty names, so simply stripID instead
-        if(pretty):
-          stripID=True
-
         try:
+            # No specific pretty names, just stripID
+            if pretty:
+                stripID=True
+
             hdu = dataset.hdulist
-            retdisperserstring = hdu[0].header[stdkeyDictNIFS["key_nifs_disperser"]]
+            disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
+            
+            if stripID:
+                ret_disperser = GemCalcUtil.removeComponentID(disperser)
+            else:
+                ret_disperser = disperser
         
         except KeyError:
             return None
         
-        if(stripID):
-          retdisperserstring = GemCalcUtil.removeComponentID(retdisperserstring)
-
-        return str(retdisperserstring)
+        return str(ret_disperser)
     
-    def exptime(self, dataset, **args):
+    def exposure_time(self, dataset, **args):
         """
-        Return the exptime value for NIFS
+        Return the exposure_time value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -124,66 +97,54 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            exptime = hdu[0].header[stdkeyDictNIFS["key_nifs_exptime"]]
-            coadds = hdu[0].header[stdkeyDictNIFS["key_nifs_coadds"]]
+            exposure_time = \
+                hdu[0].header[globalStdkeyDict['key_exposure_time']]
+            coadds = dataset.coadds()
             
-            if dataset.isType("NIFS_RAW") == True:
-                if coadds != 1:
-                    coaddexp = exptime
-                    retexptimefloat = exptime * coadds
-                else:
-                    retexptimefloat = exptime
+            if dataset.isType('NIFS_RAW') == True and coadds != 1:
+                ret_exposure_time = exposure_time * coadds
             else:
-                return exptime
+                ret_exposure_time = exposure_time
         
         except KeyError:
             return None
         
-        return float(retexptimefloat)
+        return float(ret_exposure_time)
     
-    def filterid(self, dataset, **args):
+    def filter_name(self, dataset, pretty=False, stripID=False, **args):
         """
-        Return the filterid value for NIFS
+        Return the filter_name value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
-        @rtype: string
-        @return: the unique filter ID number string
-        """
-        retfilteridstring = None
-        
-        return str(retfilteridstring)
-    
-    def filtername(self, dataset, pretty=False, stripID=False, **args):
-        """
-        Return the filtername value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
+        @param stripID: set to True to remove the component ID from the
+        returned filter name
+        @param pretty: set to True to return a meaningful filter name
         @rtype: string
         @return: the unique filter identifier string
         """
-        # Pretty is just stripID in this case
-        if(pretty):
-            stripID=True
-
         try:
+            # No specific pretty names, just use stripID
+            if pretty:
+                stripID=True
+
             hdu = dataset.hdulist
-            filter = hdu[0].header[stdkeyDictNIFS["key_nifs_filter"]]
-            if(stripID):
+            filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
+            if stripID:
                 filter = GemCalcUtil.removeComponentID(filter)
 
-            if filter == "Blocked":
-                retfilternamestring = "blank"
+            if filter == 'Blocked':
+                ret_filter_name = 'blank'
             else:
-                retfilternamestring = filter
+                ret_filter_name = filter
         
         except KeyError:
             return None
         
-        return str(retfilternamestring)
+        return str(ret_filter_name)
     
-    def fpmask(self, dataset, **args):
+    def focal_plane_mask(self, dataset, **args):
         """
-        Return the fpmask value for NIFS
+        Return the focal_plane_mask value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -191,12 +152,13 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictNIFS["key_nifs_fpmask"]]
+            ret_focal_plane_mask = \
+                hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
         
         except KeyError:
             return None
                         
-        return str(retfpmaskstring)
+        return str(ret_focal_plane_mask)
     
     def gain(self, dataset, **args):
         """
@@ -208,7 +170,7 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS["key_nifs_bias"]]
+            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
             
             biasvalues = self.nifsArrayDict.keys()
             for bias in biasvalues:
@@ -218,41 +180,31 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
                     array = None
             
             if array != None:
-                retgainfloat = array[1]
+                ret_gain = array[1]
             else:
                 return None
         
         except KeyError:
             return None
         
-        return float(retgainfloat)
+        return float(ret_gain)
     
     nifsArrayDict = None
 
-    def mdfrow(self, dataset, **args):
+    def non_linear_level(self, dataset, **args):
         """
-        Return the mdfrow value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the corresponding reference row in the MDF
-        """
-        retmdfrowint = None
-        
-        return retmdfrowint
-    
-    def nonlinear(self, dataset, **args):
-        """
-        Return the nonlinear value for NIFS
+        Return the non_linear_level value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
         @returns: the non-linear level in the raw images (ADU)
         """
         try:
+            # non_linear_level depends on whether data has been corrected for
+            # non-linearity ... need to check this ...
             hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS["key_nifs_bias"]]
-            coadds = hdu[0].header[stdkeyDictNIFS["key_nifs_coadds"]]
+            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
+            coadds = dataset.coadds()
 
             biasvalues = self.nifsArrayDict.keys()
             for bias in biasvalues:
@@ -269,31 +221,19 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
                 return None
 
             saturation = int(well * coadds)
-            retnonlinearint = int(saturation * linearlimit)
-            #retnonlinearint = int(saturation * nonlinearlimit)
+            ret_non_linear_level = int(saturation * linearlimit)
+            #ret_non_linear_level = int(saturation * nonlinearlimit)
         
         except KeyError:
             return None
                 
-        return int(retnonlinearint)
+        return int(ret_non_linear_level)
     
     nifsArrayDict = None
     
-    def nsciext(self, dataset, **args):
+    def observation_mode(self, dataset, **args):
         """
-        Return the nsciext value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the number of science extensions
-        """
-        retnsciextint = dataset.countExts(None)
-        
-        return int(retnsciextint)
-    
-    def obsmode(self, dataset, **args):
-        """
-        Return the obsmode value for NIFS
+        Return the observation_mode value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -301,26 +241,27 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            fpmask = hdu[0].header[stdkeyDictNIFS["key_nifs_fpmask"]]
-            grating = hdu[0].header[stdkeyDictNIFS["key_nifs_grating"]]
-            filter = hdu[0].header[stdkeyDictNIFS["key_nifs_filter"]]
+            focal_plane_mask = \
+                hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
+            disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
+            filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
 
-            obsmodekey = (fpmask, grating, filter)
+            observation_mode_key = (focal_plane_mask, disperser, filter)
             
-            array = self.nifsConfigDict[obsmodekey]
+            array = self.nifsConfigDict[observation_mode_key]
 
-            retobsmodestring = array[3]
+            ret_observation_mode = array[3]
         
         except KeyError:
             return None
         
-        return str(retobsmodestring)
+        return str(ret_observation_mode)
     
     nifsConfigDict = None
     
-    def pixscale(self, dataset, **args):
+    def pixel_scale(self, dataset, **args):
         """
-        Return the pixscale value for NIFS
+        Return the pixel_scale value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -328,38 +269,27 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            fpmask = hdu[0].header[stdkeyDictNIFS["key_nifs_fpmask"]]
-            grating = hdu[0].header[stdkeyDictNIFS["key_nifs_grating"]]
-            filter = hdu[0].header[stdkeyDictNIFS["key_nifs_filter"]]
+            focal_plane_mask = \
+                hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
+            disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
+            filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
 
-            pixscalekey = (fpmask, grating, filter)
+            pixel_scale_key = (focal_plane_mask, disperser, filter)
 
-            array = self.nifsConfigDict[pixscalekey]
+            array = self.nifsConfigDict[pixel_scale_key]
 
-            retpixscalefloat = array[2]
+            ret_pixel_scale = array[2]
         
         except KeyError:
             return None
         
-        return float(retpixscalefloat)
+        return float(ret_pixel_scale)
     
     nifsConfigDict = None
     
-    def pupilmask(self, dataset, **args):
+    def read_noise(self, dataset, **args):
         """
-        Return the pupilmask value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the pupil mask used to acquire data
-        """
-        retpupilmaskstring = None
-        
-        return str(retpupilmaskstring)
-    
-    def rdnoise(self, dataset, **args):
-        """
-        Return the rdnoise value for NIFS
+        Return the read_noise value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -367,9 +297,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS["key_nifs_bias"]]
-            coadds = hdu[0].header[stdkeyDictNIFS["key_nifs_coadds"]]
-            lnrs = hdu[0].header[stdkeyDictNIFS["key_nifs_lnrs"]]
+            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
+            lnrs = hdu[0].header[stdkeyDictNIFS['key_lnrs']]
+            coadds = dataset.coadds()
 
             biasvalues = self.nifsArrayDict.keys()
             for bias in biasvalues:
@@ -379,22 +309,22 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
                     array = None
 
             if array != None:
-                readnoise = float(array[0])
+                read_noise = float(array[0])
             else:
                 return None
         
-            retrdnoisefloat = (readnoise * math.sqrt(coadds)) / math.sqrt(lnrs)
+            ret_read_noise = (read_noise * math.sqrt(coadds)) / math.sqrt(lnrs)
         
         except KeyError:
             return None
 
-        return float(retrdnoisefloat)
+        return float(ret_read_noise)
     
     nifsArrayDict = None
     
-    def satlevel(self, dataset, **args):
+    def saturation_level(self, dataset, **args):
         """
-        Return the satlevel value for NIFS
+        Return the saturation_level value for NIFS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: integer
@@ -402,8 +332,8 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS["key_nifs_bias"]]
-            coadds = hdu[0].header[stdkeyDictNIFS["key_nifs_coadds"]]
+            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
+            coadds = dataset.coadds()
 
             biasvalues = self.nifsArrayDict.keys()
             for bias in biasvalues:
@@ -414,61 +344,13 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             if array != None:
                 well = float(array[2])
-                retsaturationint = int(well * coadds)
+                ret_saturation_level = int(well * coadds)
             else:
                 return None
         
         except KeyError:
             return None
         
-        return int(retsaturationint)
+        return int(ret_saturation_level)
     
     nifsArrayDict = None
-    
-    def wdelta(self, dataset, **args):
-        """
-        Return the wdelta value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the dispersion (angstroms/pixel)
-        """
-        retwdeltafloat = None
-        
-        return retwdeltafloat
-    
-    def wrefpix(self, dataset, **args):
-        """
-        Return the wrefpix value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the reference pixel of the central wavelength
-        """
-        retwrefpixfloat = None
-        
-        return retwrefpixfloat
-    
-    def xccdbin(self, dataset, **args):
-        """
-        Return the xccdbin value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector x-axis
-        """
-        retxccdbinint = None
-        
-        return retxccdbinint
-    
-    def yccdbin(self, dataset, **args):
-        """
-        Return the yccdbin value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector y-axis
-        """
-        retyccdbinint = None
-        
-        return retyccdbinint

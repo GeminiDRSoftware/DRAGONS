@@ -6,31 +6,18 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
 
+from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardMICHELLEKeyDict import stdkeyDictMICHELLE
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
-
-    def camera(self, dataset, **args):
-        """
-        Return the camera value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the camera used to acquire the data
-        """
-        try:
-            hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_camera"]]
-        
-        except KeyError:
-            return None
-        
-        return str(retcamerastring)
     
-    def cwave(self, dataset, **args):
+    def __init__(self):
+        pass
+    
+    def central_wavelength(self, dataset, **args):
         """
-        Return the cwave value for MICHELLE
+        Return the central_wavelength value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
@@ -38,36 +25,13 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcwavefloat = hdu[0].header[stdkeyDictMICHELLE["key_michelle_cwave"]]
+            ret_central_wavelength = \
+                hdu[0].header[stdkeyDictMICHELLE['key_central_wavelength']]
         
         except KeyError:
             return None
         
-        return float(retcwavefloat)
-    
-    def datasec(self, dataset, **args):
-        """
-        Return the datasec value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the data section
-        """
-        retdatasecstring = None
-        
-        return str(retdatasecstring)
-    
-    def detsec(self, dataset, **args):
-        """
-        Return the detsec value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the detector section
-        """
-        retdetsecstring = None
-        
-        return str(retdetsecstring)
+        return float(ret_central_wavelength)
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
@@ -80,7 +44,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # The Michelle components don't have component IDs so we just ignore the stripID and pretty options
         try:
             hdu = dataset.hdulist
-            retdisperserstring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_disperser"]]
+            retdisperserstring = hdu[0].header[stdkeyDictMICHELLE['key_disperser']]
         
         except KeyError:
             return None
@@ -97,9 +61,9 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            exposure = float(hdu[0].header[stdkeyDictMICHELLE["key_michelle_exposure"]])
-            numexpos = float (hdu[0].header[stdkeyDictMICHELLE["key_michelle_numexpos"]])
-            numext = float(hdu[0].header[stdkeyDictMICHELLE["key_michelle_numext"]])
+            exposure = float(hdu[0].header[stdkeyDictMICHELLE['key_exposure']])
+            numexpos = float (hdu[0].header[stdkeyDictMICHELLE['key_numexpos']])
+            numext = float(hdu[0].header[stdkeyDictMICHELLE['key_numext']])
 
             retexptimefloat = exposure * numexpos * numext
         
@@ -107,18 +71,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             return None
         
         return float(retexptimefloat)
-    
-    def filterid(self, dataset, **args):
-        """
-        Return the filterid value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the unique filter ID number string
-        """
-        retfilteridstring = None
-        
-        return str(retfilteridstring)
     
     def filtername(self, dataset, stripID=False, pretty=False, **args):
         """
@@ -131,10 +83,10 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # The Michelle filters don't have ID strings, so we just ignore the stripID and pretty options
         try:
             hdu = dataset.hdulist
-            filter = hdu[0].header[stdkeyDictMICHELLE["key_michelle_filter"]]
+            filter = hdu[0].header[stdkeyDictMICHELLE['key_filter']]
             
-            if filter == "NBlock":
-                retfilternamestring = "blank"
+            if filter == 'NBlock':
+                retfilternamestring = 'blank'
             else:
                 retfilternamestring = filter
             
@@ -153,7 +105,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_fpmask"]]
+            retfpmaskstring = hdu[0].header[stdkeyDictMICHELLE['key_fpmask']]
         
         except KeyError:
             return None
@@ -170,24 +122,12 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retgainfloat = hdu[0].header[stdkeyDictMICHELLE["key_michelle_gain"]]
+            retgainfloat = hdu[0].header[stdkeyDictMICHELLE['key_gain']]
         
         except KeyError:
             return None
         
         return float(retgainfloat)
-    
-    def mdfrow(self, dataset, **args):
-        """
-        Return the mdfrow value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the corresponding reference row in the MDF
-        """
-        retmdfrowint = None
-        
-        return retmdfrowint
     
     def nonlinear(self, dataset, **args):
         """
@@ -211,7 +151,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retnsciextint = hdu[0].header[stdkeyDictMICHELLE["key_michelle_nsciext"]]
+            retnsciextint = hdu[0].header[stdkeyDictMICHELLE['key_nsciext']]
 
         except KeyError:
             return None
@@ -228,7 +168,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retobsmodestring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_obsmode"]]
+            retobsmodestring = hdu[0].header[stdkeyDictMICHELLE['key_obsmode']]
         
         except KeyError:
             return None
@@ -245,7 +185,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retpixscalefloat = hdu[0].header[stdkeyDictMICHELLE["key_michelle_pixscale"]]
+            retpixscalefloat = hdu[0].header[stdkeyDictMICHELLE['key_pixscale']]
         
         except KeyError:
             return None
@@ -298,7 +238,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictMICHELLE["key_michelle_utdate"]]
+            retutdatestring = hdu[0].header[stdkeyDictMICHELLE['key_utdate']]
         
         except KeyError:
             return None
@@ -315,7 +255,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retwdeltafloat = hdu[0].header[stdkeyDictMICHELLE["key_michelle_wdelta"]]
+            retwdeltafloat = hdu[0].header[stdkeyDictMICHELLE['key_wdelta']]
         
         except KeyError:
             return None
@@ -333,27 +273,3 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         retwrefpixfloat = None
         
         return retwrefpixfloat
-    
-    def xccdbin(self, dataset, **args):
-        """
-        Return the xccdbin value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector x-axis
-        """
-        retxccdbinint = None
-        
-        return retxccdbinint
-    
-    def yccdbin(self, dataset, **args):
-        """
-        Return the yccdbin value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector y-axis
-        """
-        retyccdbinint = None
-        
-        return retyccdbinint

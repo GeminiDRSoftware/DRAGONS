@@ -10,8 +10,8 @@ from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
     
-    #def __init__(self):
-    #    return None
+    def __init__(self):
+        pass
 
     def camera(self, dataset, **args):
         """
@@ -23,7 +23,7 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictNICI["key_nici_camera"]]
+            retcamerastring = hdu[0].header[stdkeyDictNICI['key_nici_camera']]
         
         except KeyError:
             return None
@@ -89,8 +89,8 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
 
         try:
           hdu = dataset.hdulist
-          coadds = hdu[0].header[stdkeyDictNICI["key_nici_coadds_r"]]
-          exptime = hdu[0].header[stdkeyDictNICI["key_nici_exptime_r"]]
+          coadds = hdu[0].header[stdkeyDictNICI['key_nici_coadds_r']]
+          exptime = hdu[0].header[stdkeyDictNICI['key_nici_exptime_r']]
 
           retexptimefloat = float(exptime) * float(coadds)
         
@@ -122,8 +122,8 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            filter1 = hdu[1].header[stdkeyDictNICI["key_nici_filter_r"]]
-            filter2 = hdu[2].header[stdkeyDictNICI["key_nici_filter_b"]]
+            filter1 = hdu[1].header[stdkeyDictNICI['key_nici_filter_r']]
+            filter2 = hdu[2].header[stdkeyDictNICI['key_nici_filter_b']]
             filter1 = GemCalcUtil.removeComponentID(filter1)
             filter2 = GemCalcUtil.removeComponentID(filter2)
 
@@ -145,7 +145,7 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictNICI["key_nici_fpmask"]]
+            retfpmaskstring = hdu[0].header[stdkeyDictNICI['key_nici_fpmask']]
        
         except KeyError:
             return None
@@ -197,7 +197,7 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: integer
         @return: the number of science extensions
         """
-        retnsciextint = dataset.countExts("SCI")
+        retnsciextint = dataset.countExts('SCI')
         
         return int(retnsciextint)
 
@@ -235,7 +235,7 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retpupilmaskstring = hdu[0].header[stdkeyDictNICI["key_nici_pupilmask"]]
+            retpupilmaskstring = hdu[0].header[stdkeyDictNICI['key_nici_pupilmask']]
         
         except KeyError:
             return None
