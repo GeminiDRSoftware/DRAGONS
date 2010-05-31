@@ -5,6 +5,7 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil
 
+from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGEMINIKeyDict import stdkeyDictGEMINI
 from Generic_Descriptor import Generic_DescriptorCalc
 
@@ -20,50 +21,16 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retairmassfloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_airmass"]]
-
+            ret_airmass = hdu[0].header[globalStdkeyDict['key_airmass']]
+        
         except KeyError:
             return None
         
-        return float(retairmassfloat)
+        return float(ret_airmass)
     
-    def azimuth(self, dataset, **args):
+    def data_label(self, dataset, **args):
         """
-        Return the azimuth value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the azimuth of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retazimuthfloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_azimuth"]]
-
-        except KeyError:
-            return None
-        
-        return float(retazimuthfloat)
-    
-    def crpa(self, dataset, **args):
-        """
-        Return the current cass rotator angle value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the current cass rotator angle of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retcrpafloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_crpa"]]
-
-        except KeyError:
-            return None
-        
-        return float(retcrpafloat)
-    
-    def datalab(self, dataset, **args):
-        """
-        Return the DHS data label value for GEMINI data
+        Return the data_label value for GEMINI data
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -71,84 +38,16 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retdatalabstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_datalab"]]
-
+            ret_data_label = hdu[0].header[globalStdkeyDict['key_data_label']]
+        
         except KeyError:
             return None
         
-        return str(retdatalabstring)
+        return str(ret_data_label)
     
-    def dec(self, dataset, **args):
+    def observation_id(self, dataset, **args):
         """
-        Return the declination value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the declination of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retdecfloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_dec"]]
-
-        except KeyError:
-            return None
-        
-        return float(retdecfloat)
-    
-    def elevation(self, dataset, **args):
-        """
-        Return the elevation value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the elevation of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retelevationfloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_elevation"]]
-
-        except KeyError:
-            return None
-        
-        return float(retelevationfloat)
-    
-    def gemprgid(self, dataset, **args):
-        """
-        Return the Gemini science program ID value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the Gemini science program ID of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retgemprgidstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_gemprgid"]]
-
-        except KeyError:
-            return None
-        
-        return str(retgemprgidstring)
-    
-    def obsclass(self, dataset, **args):
-        """
-        Return the observation class value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the class of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retobsclassstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_obsclass"]]
-
-        except KeyError:
-            return None
-        
-        return str(retobsclassstring)
-    
-    def obsid(self, dataset, **args):
-        """
-        Return the observation ID / data label value for GEMINI data
+        Return the observation_id for GEMINI data
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -156,169 +55,34 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retobsidstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_obsid"]]
-
+            ret_observation_id = \
+                hdu[0].header[globalStdkeyDict['key_observation_id']]
+        
         except KeyError:
             return None
         
-        return str(retobsidstring)
+        return str(ret_observation_id)
     
-    def obstype(self, dataset, **args):
+    def program_id(self, dataset, **args):
         """
-        Return the observation type value for GEMINI data
+        Return the program_id value for GEMINI data
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
-        @return: the type of the observation
+        @return: the Gemini science program ID of the observation
         """
         try:
             hdu = dataset.hdulist
-            retobstypestring = hdu[0].header[stdkeyDictGEMINI["key_gemini_obstype"]]
-
+            ret_program_id = hdu[0].header[globalStdkeyDict['key_program_id']]
+        
         except KeyError:
             return None
         
-        return str(retobstypestring)
+        return str(ret_program_id)
     
-    def ra(self, dataset, **args):
+    def ut_time(self, dataset, **args):
         """
-        Return the right ascension value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the right ascension of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retrafloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_ra"]]
-
-        except KeyError:
-            return None
-        
-        return float(retrafloat)
-    
-    def rawbg(self, dataset, **args):
-        """
-        Return the raw background value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the raw background of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retrawbgstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_rawbg"]]
-
-        except KeyError:
-            return None
-        
-        return str(retrawbgstring)
-    
-    def rawcc(self, dataset, **args):
-        """
-        Return the raw cloud cover value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the raw cloud cover of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retrawccstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_rawcc"]]
-
-        except KeyError:
-            return None
-        
-        return str(retrawccstring)
-    
-    def rawgemqa(self, dataset, **args):
-        """
-        Return the raw Gemini quality assesment value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the raw Gemini quality assesment of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retrawgemqastring = hdu[0].header[stdkeyDictGEMINI["key_gemini_rawgemqa"]]
-
-        except KeyError:
-            return None
-        
-        return str(retrawgemqastring)
-    
-    def rawiq(self, dataset, **args):
-        """
-        Return the raw image quality value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string 
-        @return: the raw image quality of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retrawiqstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_rawiq"]]
-
-        except KeyError:
-            return None
-        
-        return str(retrawiqstring)
-    
-    def rawpireq(self, dataset, **args):
-        """
-        Return the raw PI requirements value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string 
-        @return: whether the PI requirement were met
-        """
-        try:
-            hdu = dataset.hdulist
-            retrawpireqstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_rawpireq"]]
-
-        except KeyError:
-            return None
-        
-        return str(retrawpireqstring)
-    
-    def rawwv(self, dataset, **args):
-        """
-        Return the raw water vapour / transparency value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string 
-        @return: the raw water vapour / transparency of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retrawwvstring = hdu[0].header[stdkeyDictGEMINI["key_gemini_rawwv"]]
-
-        except KeyError:
-            return None
-        
-        return str(retrawwvstring)
-    
-    def ssa(self, dataset, **args):
-        """
-        Return the Gemini SSA value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the Gemini SSA for the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retssastring = hdu[0].header[stdkeyDictGEMINI["key_gemini_ssa"]]
-
-        except KeyError:
-            return None
-        
-        return str(retssastring)
-    
-    def uttime(self, dataset, **args):
-        """
-        Return the uttime value for GEMINI data
+        Return the ut_time value for GEMINI data
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
@@ -326,43 +90,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retuttimestring = hdu[0].header[stdkeyDictGEMINI["key_gemini_uttime"]]
+            ret_ut_time = hdu[0].header[globalStdkeyDict['key_ut_time']]
         
         except KeyError:
             return None
         
-        return str(retuttimestring)
-    
-    def xoffset(self, dataset, **args):
-        """
-        Return the telescope offset in x in arcsec value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the telescope offset in x in arcsec of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retxoffsetfloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_xoffset"]]
-
-        except KeyError:
-            return None
-        
-        return float(retxoffsetfloat)
-
-    def yoffset(self, dataset, **args):
-        """
-        Return the telescope offset in y in arcsec value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the telescope offset in y in arcsec of the observation
-        """
-        try:
-            hdu = dataset.hdulist
-            retyoffsetfloat = hdu[0].header[stdkeyDictGEMINI["key_gemini_yoffset"]]
-
-        except KeyError:
-            return None
-        
-        return float(retyoffsetfloat)
+        return str(ret_ut_time)
