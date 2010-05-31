@@ -115,7 +115,7 @@ else:
             funs = dir(CalculatorInterface.CalculatorInterface)
             descs = []
             for fun in funs:
-                if "_" not in fun and (fun.lower() == fun):
+                if not fun.startswith("_") and (fun.lower() == fun):
                     descs.append(fun)
             options.showdescriptors = ",".join(descs) 
 
