@@ -1,7 +1,8 @@
+# This dictionary contains a list of '"key_<name>":"KEYWORD"' pairs that are
+# used in the Generic_Descriptors.py file and are different to those in the
+# 'globalStdkeyDict' dictionary contained in the file
+# StandardDescriptorKeyDict.py.
+
 stdkeyDictGeneric = {
-    "key_generic_utdate":"DATE-OBS",
-    "key_generic_instrument":"INSTRUME",
-    "key_generic_object":"OBJECT",
-    "key_generic_observer":"OBSERVER",
-    "key_generic_telescope":"TELESCOP",
+
     }
