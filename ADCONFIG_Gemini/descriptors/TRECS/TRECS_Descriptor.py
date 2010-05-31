@@ -11,6 +11,9 @@ from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
 
+    def __init__(self):
+        pass
+    
     def camera(self, dataset, **args):
         """
         Return the camera value for TRECS
@@ -21,7 +24,7 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictTRECS["key_trecs_camera"]]
+            retcamerastring = hdu[0].header[stdkeyDictTRECS['key_trecs_camera']]
         
         except KeyError:
             return None
@@ -38,11 +41,11 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            disperser = hdu[0].header[stdkeyDictTRECS["key_trecs_disperser"]]
+            disperser = hdu[0].header[stdkeyDictTRECS['key_trecs_disperser']]
 
-            if disperser == "LowRes-10":
+            if disperser == 'LowRes-10':
                 retcwavefloat = 10.5
-            elif disperser == "LowRes-20":
+            elif disperser == 'LowRes-20':
                 retcwavefloat = 20.0
             else:
                 return None
@@ -51,30 +54,6 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             return None
         
         return float(retcwavefloat)
-    
-    def datasec(self, dataset, **args):
-        """
-        Return the datasec value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the data section
-        """
-        retdatasecstring = None
-        
-        return str(retdatasecstring)
-    
-    def detsec(self, dataset, **args):
-        """
-        Return the detsec value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the detector section
-        """
-        retdetsecstring = None
-        
-        return str(retdetsecstring)
     
     def disperser(self, dataset, **args):
         """
@@ -86,7 +65,7 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retdisperserstring = hdu[0].header[stdkeyDictTRECS["key_trecs_disperser"]]
+            retdisperserstring = hdu[0].header[stdkeyDictTRECS['key_trecs_disperser']]
         
         except KeyError:
             return None
@@ -103,24 +82,12 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retexptimefloat = float(hdu[0].header[stdkeyDictTRECS["key_trecs_exptime"]])
+            retexptimefloat = float(hdu[0].header[stdkeyDictTRECS['key_trecs_exptime']])
                     
         except KeyError:
             return None
         
         return float(retexptimefloat)
-    
-    def filterid(self, dataset, **args):
-        """
-        Return the filterid value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the unique filter ID number string
-        """
-        retfilteridstring = None
-        
-        return str(retfilteridstring)
     
     def filtername(self, dataset, **args):
         """
@@ -132,16 +99,16 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            filter1 = hdu[0].header[stdkeyDictTRECS["key_trecs_filter1"]]
-            filter2 = hdu[0].header[stdkeyDictTRECS["key_trecs_filter2"]]
+            filter1 = hdu[0].header[stdkeyDictTRECS['key_trecs_filter1']]
+            filter2 = hdu[0].header[stdkeyDictTRECS['key_trecs_filter2']]
 
             # create list of filter values
             filters = [filter1,filter2]
 
-            # reject "Open"
+            # reject 'Open'
             filters2 = []
             for filt in filters:
-                if ("Open" in filt):
+                if ('Open' in filt):
                     pass
                 else:
                     filters2.append(filt)
@@ -150,14 +117,14 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Block means an opaque mask was in place, which of course
             # blocks any other in place filters
-            if "Block" in filters:
-                retfilternamestring = "blank"
+            if 'Block' in filters:
+                retfilternamestring = 'blank'
             
             if len(filters) == 0:
-                retfilternamestring = "open"
+                retfilternamestring = 'open'
             else:
                 filters.sort()
-                retfilternamestring = "&".join(filters)
+                retfilternamestring = '&'.join(filters)
             
         except KeyError:
             return None
@@ -174,7 +141,7 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictTRECS["key_trecs_fpmask"]]
+            retfpmaskstring = hdu[0].header[stdkeyDictTRECS['key_trecs_fpmask']]
         
         except KeyError:
             return None
@@ -191,11 +158,11 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            biaslevel = hdu[0].header[stdkeyDictTRECS["key_trecs_biaslevel"]]
+            biaslevel = hdu[0].header[stdkeyDictTRECS['key_trecs_biaslevel']]
 
-            if biaslevel == "2":
+            if biaslevel == '2':
                 retgainfloat = 214.0
-            elif biaslevel == "1":
+            elif biaslevel == '1':
                 retgainfloat = 718.0
             else:
                 return None
@@ -204,18 +171,6 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             return None
 
         return float(retgainfloat)
-    
-    def mdfrow(self, dataset, **args):
-        """
-        Return the mdfrow value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the corresponding reference row in the MDF
-        """
-        retmdfrowint = None
-        
-        return retmdfrowint
     
     def nonlinear(self, dataset, **args):
         """
@@ -237,7 +192,7 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: integer
         @return: the number of science extensions
         """
-        retnsciextint = dataset.countExts(None)
+        retnsciextint = dataset.countExts('SCI')
         
         return int(retnsciextint)
     
@@ -251,7 +206,7 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retobsmodestring = hdu[0].header[stdkeyDictTRECS["key_trecs_obsmode"]]
+            retobsmodestring = hdu[0].header[stdkeyDictTRECS['key_trecs_obsmode']]
         
         except KeyError:
             return None
@@ -280,7 +235,7 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            retpupilmaskstring = hdu[0].header[stdkeyDictTRECS["key_trecs_pupilmask"]]
+            retpupilmaskstring = hdu[0].header[stdkeyDictTRECS['key_trecs_pupilmask']]
         
         except KeyError:
             return None
@@ -321,11 +276,11 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            disperser = hdu[0].header[stdkeyDictTRECS["key_trecs_disperser"]]
+            disperser = hdu[0].header[stdkeyDictTRECS['key_trecs_disperser']]
 
-            if disperser == "LowRes-10":
+            if disperser == 'LowRes-10':
                 retwdeltafloat = 0.022
-            elif disperser == "LowRes-20":
+            elif disperser == 'LowRes-20':
                 retwdeltafloat = 0.033
             else:
                 return None
@@ -346,27 +301,3 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         retwrefpixfloat = None
         
         return retwrefpixfloat
-    
-    def xccdbin(self, dataset, **args):
-        """
-        Return the xccdbin value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector x-axis
-        """
-        retxccdbinint = None
-        
-        return retxccdbinint
-    
-    def yccdbin(self, dataset, **args):
-        """
-        Return the yccdbin value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the binning of the detector y-axis
-        """
-        retyccdbinint = None
-        
-        return retyccdbinint
