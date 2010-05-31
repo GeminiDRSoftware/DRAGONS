@@ -1,24 +1,8 @@
+# This dictionary contains a list of '"key_<name>":"KEYWORD"' pairs that are
+# used in the GEMINI_Descriptors.py file and are different to those in the
+# 'globalStdkeyDict' dictionary contained in the file
+# StandardDescriptorKeyDict.py.
+
 stdkeyDictGEMINI = {
-    "key_gemini_airmass":"AIRMASS",
-    "key_gemini_azimuth":"AZIMUTH",
-    "key_gemini_crpa":"CRPA",
-    "key_gemini_datalab":"DATALAB",
-    "key_gemini_dec":"DEC",
-    "key_gemini_elevation":"ELEVATIO",
-    "key_gemini_progid":"GEMPRGID",
-    "key_gemini_obsclass":"OBSCLASS",
-    "key_gemini_obsid":"OBSID",
-    "key_gemini_obstype":"OBSTYPE",
-    "key_gemini_ra":"RA",
-    "key_gemini_rawbg":"RAWBG",
-    "key_gemini_rawcc":"RAWCC",
-    "key_gemini_rawgemqa":"RAWGEMQA",
-    "key_gemini_rawiq":"RAWIQ",
-    "key_gemini_rawpireq":"RAWPIREQ",
-    "key_gemini_rawwv":"RAWWV",
-    "key_gemini_ssa":"SSA",
-    "key_gemini_telescope":"TELESCOP",
-    "key_gemini_uttime":"UT",
-    "key_gemini_xoffset":"XOFFSET",
-    "key_gemini_yoffset":"YOFFSET",
+
     }
