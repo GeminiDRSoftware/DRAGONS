@@ -1,4 +1,3 @@
-
 import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
@@ -25,19 +24,19 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def amproa(self, **args):
+    def amp_read_area(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "amproa")
-            if not hasattr( self.descriptorCalculator, "amproa"):
-                key = "key_"+"amproa"
+            #print hasattr( self.descriptorCalculator, "amp_read_area")
+            if not hasattr( self.descriptorCalculator, "amp_read_area"):
+                key = "key_"+"amp_read_area"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.amproa(self, **args)
+            return self.descriptorCalculator.amp_read_area(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -96,74 +95,74 @@ class CalculatorInterface:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
-
-    def crpa(self, **args):
+    
+    def cass_rotator_pa(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "crpa")
-            if not hasattr( self.descriptorCalculator, "crpa"):
-                key = "key_"+"crpa"
+            #print hasattr( self.descriptorCalculator, "cass_rotator_pa")
+            if not hasattr( self.descriptorCalculator, "cass_rotator_pa"):
+                key = "key_"+"cass_rotator_pa"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.crpa(self, **args)
+            return self.descriptorCalculator.cass_rotator_pa(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def cwave(self, **args):
+    def central_wavelength(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "cwave")
-            if not hasattr( self.descriptorCalculator, "cwave"):
-                key = "key_"+"cwave"
+            #print hasattr( self.descriptorCalculator, "central_wavelength")
+            if not hasattr( self.descriptorCalculator, "central_wavelength"):
+                key = "key_"+"central_wavelength"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.cwave(self, **args)
+            return self.descriptorCalculator.central_wavelength(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def datalab(self, **args):
+    def data_label(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "datalab")
-            if not hasattr( self.descriptorCalculator, "datalab"):
-                key = "key_"+"datalab"
+            #print hasattr( self.descriptorCalculator, "data_label")
+            if not hasattr( self.descriptorCalculator, "data_label"):
+                key = "key_"+"data_label"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.datalab(self, **args)
+            return self.descriptorCalculator.data_label(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def datasec(self, **args):
+    def data_section(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "datasec")
-            if not hasattr( self.descriptorCalculator, "datasec"):
-                key = "key_"+"datasec"
+            #print hasattr( self.descriptorCalculator, "data_section")
+            if not hasattr( self.descriptorCalculator, "data_section"):
+                key = "key_"+"data_section"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.datasec(self, **args)
+            return self.descriptorCalculator.data_section(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -187,37 +186,55 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def detroa(self, **args):
+    def detector_section(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "detroa")
-            if not hasattr( self.descriptorCalculator, "detroa"):
-                key = "key_"+"detroa"
+            #print hasattr( self.descriptorCalculator, "detector_section")
+            if not hasattr( self.descriptorCalculator, "detector_section"):
+                key = "key_"+"detector_section"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.detroa(self, **args)
+            return self.descriptorCalculator.detector_section(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def detsec(self, **args):
+    def detector_x_bin(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "detsec")
-            if not hasattr( self.descriptorCalculator, "detsec"):
-                key = "key_"+"detsec"
+            #print hasattr( self.descriptorCalculator, "detector_x_bin")
+            if not hasattr( self.descriptorCalculator, "detector_x_bin"):
+                key = "key_"+"detector_x_bin"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.detsec(self, **args)
+            return self.descriptorCalculator.detector_x_bin(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
+    def detector_y_bin(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "detector_y_bin")
+            if not hasattr( self.descriptorCalculator, "detector_y_bin"):
+                key = "key_"+"detector_y_bin"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.detector_y_bin(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -241,6 +258,24 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
+    def dispersion(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "dispersion")
+            if not hasattr( self.descriptorCalculator, "dispersion"):
+                key = "key_"+"dispersion"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.dispersion(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
     def elevation(self, **args):
         try:
             self._lazyloadCalculator()
@@ -259,73 +294,73 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def exptime(self, **args):
+    def exposure_time(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "exptime")
-            if not hasattr( self.descriptorCalculator, "exptime"):
-                key = "key_"+"exptime"
+            #print hasattr( self.descriptorCalculator, "exposure_time")
+            if not hasattr( self.descriptorCalculator, "exposure_time"):
+                key = "key_"+"exposure_time"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.exptime(self, **args)
+            return self.descriptorCalculator.exposure_time(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def filterid(self, **args):
+    def filter_id(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "filterid")
-            if not hasattr( self.descriptorCalculator, "filterid"):
-                key = "key_"+"filterid"
+            #print hasattr( self.descriptorCalculator, "filter_id")
+            if not hasattr( self.descriptorCalculator, "filter_id"):
+                key = "key_"+"filter_id"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.filterid(self, **args)
+            return self.descriptorCalculator.filter_id(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def filtername(self, **args):
+    def filter_name(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "filtername")
-            if not hasattr( self.descriptorCalculator, "filtername"):
-                key = "key_"+"filtername"
+            #print hasattr( self.descriptorCalculator, "filter_name")
+            if not hasattr( self.descriptorCalculator, "filter_name"):
+                key = "key_"+"filter_name"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.filtername(self, **args)
+            return self.descriptorCalculator.filter_name(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def fpmask(self, **args):
+    def focal_plane_mask(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "fpmask")
-            if not hasattr( self.descriptorCalculator, "fpmask"):
-                key = "key_"+"fpmask"
+            #print hasattr( self.descriptorCalculator, "focal_plane_mask")
+            if not hasattr( self.descriptorCalculator, "focal_plane_mask"):
+                key = "key_"+"focal_plane_mask"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.fpmask(self, **args)
+            return self.descriptorCalculator.focal_plane_mask(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -349,19 +384,19 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def gainmode(self, **args):
+    def gain_mode(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "gainmode")
-            if not hasattr( self.descriptorCalculator, "gainmode"):
-                key = "key_"+"gainmode"
+            #print hasattr( self.descriptorCalculator, "gain_mode")
+            if not hasattr( self.descriptorCalculator, "gain_mode"):
+                key = "key_"+"gain_mode"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.gainmode(self, **args)
+            return self.descriptorCalculator.gain_mode(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -385,55 +420,37 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def mdfrow(self, **args):
+    def mdf_row_id(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "mdfrow")
-            if not hasattr( self.descriptorCalculator, "mdfrow"):
-                key = "key_"+"mdfrow"
+            #print hasattr( self.descriptorCalculator, "mdf_row_id")
+            if not hasattr( self.descriptorCalculator, "mdf_row_id"):
+                key = "key_"+"mdf_row_id"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.mdfrow(self, **args)
+            return self.descriptorCalculator.mdf_row_id(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def nonlinear(self, **args):
+    def non_linear_level(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "nonlinear")
-            if not hasattr( self.descriptorCalculator, "nonlinear"):
-                key = "key_"+"nonlinear"
+            #print hasattr( self.descriptorCalculator, "non_linear_level")
+            if not hasattr( self.descriptorCalculator, "non_linear_level"):
+                key = "key_"+"non_linear_level"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.nonlinear(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
-    def nsciext(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "nsciext")
-            if not hasattr( self.descriptorCalculator, "nsciext"):
-                key = "key_"+"nsciext"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.nsciext(self, **args)
+            return self.descriptorCalculator.non_linear_level(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -457,42 +474,6 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def obsclass(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "obsclass")
-            if not hasattr( self.descriptorCalculator, "obsclass"):
-                key = "key_"+"obsclass"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.obsclass(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
-    def obsepoch(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "obsepoch")
-            if not hasattr( self.descriptorCalculator, "obsepoch"):
-                key = "key_"+"obsepoch"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.obsepoch(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
     def observer(self, **args):
         try:
             self._lazyloadCalculator()
@@ -511,109 +492,145 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def obsid(self, **args):
+    def observation_class(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "obsid")
-            if not hasattr( self.descriptorCalculator, "obsid"):
-                key = "key_"+"obsid"
+            #print hasattr( self.descriptorCalculator, "observation_class")
+            if not hasattr( self.descriptorCalculator, "observation_class"):
+                key = "key_"+"observation_class"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.obsid(self, **args)
+            return self.descriptorCalculator.observation_class(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def obsmode(self, **args):
+    def observation_epoch(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "obsmode")
-            if not hasattr( self.descriptorCalculator, "obsmode"):
-                key = "key_"+"obsmode"
+            #print hasattr( self.descriptorCalculator, "observation_epoch")
+            if not hasattr( self.descriptorCalculator, "observation_epoch"):
+                key = "key_"+"observation_epoch"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.obsmode(self, **args)
+            return self.descriptorCalculator.observation_epoch(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def obstype(self, **args):
+    def observation_id(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "obstype")
-            if not hasattr( self.descriptorCalculator, "obstype"):
-                key = "key_"+"obstype"
+            #print hasattr( self.descriptorCalculator, "observation_id")
+            if not hasattr( self.descriptorCalculator, "observation_id"):
+                key = "key_"+"observation_id"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.obstype(self, **args)
+            return self.descriptorCalculator.observation_id(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def pixscale(self, **args):
+    def observation_mode(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "pixscale")
-            if not hasattr( self.descriptorCalculator, "pixscale"):
-                key = "key_"+"pixscale"
+            #print hasattr( self.descriptorCalculator, "observation_mode")
+            if not hasattr( self.descriptorCalculator, "observation_mode"):
+                key = "key_"+"observation_mode"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.pixscale(self, **args)
+            return self.descriptorCalculator.observation_mode(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def progid(self, **args):
+    def observation_type(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "progid")
-            if not hasattr( self.descriptorCalculator, "progid"):
-                key = "key_"+"progid"
+            #print hasattr( self.descriptorCalculator, "observation_type")
+            if not hasattr( self.descriptorCalculator, "observation_type"):
+                key = "key_"+"observation_type"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.progid(self, **args)
+            return self.descriptorCalculator.observation_type(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def pupilmask(self, **args):
+    def pixel_scale(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "pupilmask")
-            if not hasattr( self.descriptorCalculator, "pupilmask"):
-                key = "key_"+"pupilmask"
+            #print hasattr( self.descriptorCalculator, "pixel_scale")
+            if not hasattr( self.descriptorCalculator, "pixel_scale"):
+                key = "key_"+"pixel_scale"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.pupilmask(self, **args)
+            return self.descriptorCalculator.pixel_scale(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
+    def program_id(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "program_id")
+            if not hasattr( self.descriptorCalculator, "program_id"):
+                key = "key_"+"program_id"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.program_id(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
+    def pupil_mask(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "pupil_mask")
+            if not hasattr( self.descriptorCalculator, "pupil_mask"):
+                key = "key_"+"pupil_mask"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.pupil_mask(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -637,181 +654,181 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def rawiq(self, **args):
+    def raw_bg(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "rawiq")
-            if not hasattr( self.descriptorCalculator, "rawiq"):
-                key = "key_"+"rawiq"
+            #print hasattr( self.descriptorCalculator, "raw_bg")
+            if not hasattr( self.descriptorCalculator, "raw_bg"):
+                key = "key_"+"raw_bg"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.rawiq(self, **args)
+            return self.descriptorCalculator.raw_bg(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def rawcc(self, **args):
+    def raw_cc(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "rawcc")
-            if not hasattr( self.descriptorCalculator, "rawcc"):
-                key = "key_"+"rawcc"
+            #print hasattr( self.descriptorCalculator, "raw_cc")
+            if not hasattr( self.descriptorCalculator, "raw_cc"):
+                key = "key_"+"raw_cc"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.rawcc(self, **args)
+            return self.descriptorCalculator.raw_cc(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def rawwv(self, **args):
+    def raw_gemini_qa(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "rawwv")
-            if not hasattr( self.descriptorCalculator, "rawwv"):
-                key = "key_"+"rawwv"
+            #print hasattr( self.descriptorCalculator, "raw_gemini_qa")
+            if not hasattr( self.descriptorCalculator, "raw_gemini_qa"):
+                key = "key_"+"raw_gemini_qa"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.rawwv(self, **args)
+            return self.descriptorCalculator.raw_gemini_qa(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def rawbg(self, **args):
+    def raw_iq(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "rawbg")
-            if not hasattr( self.descriptorCalculator, "rawbg"):
-                key = "key_"+"rawbg"
+            #print hasattr( self.descriptorCalculator, "raw_iq")
+            if not hasattr( self.descriptorCalculator, "raw_iq"):
+                key = "key_"+"raw_iq"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.rawbg(self, **args)
+            return self.descriptorCalculator.raw_iq(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def rawpireq(self, **args):
+    def raw_pi_requirement(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "rawpireq")
-            if not hasattr( self.descriptorCalculator, "rawpireq"):
-                key = "key_"+"rawpireq"
+            #print hasattr( self.descriptorCalculator, "raw_pi_requirement")
+            if not hasattr( self.descriptorCalculator, "raw_pi_requirement"):
+                key = "key_"+"raw_pi_requirement"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.rawpireq(self, **args)
+            return self.descriptorCalculator.raw_pi_requirement(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def rawgemqa(self, **args):
+    def raw_wv(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "rawgemqa")
-            if not hasattr( self.descriptorCalculator, "rawgemqa"):
-                key = "key_"+"rawgemqa"
+            #print hasattr( self.descriptorCalculator, "raw_wv")
+            if not hasattr( self.descriptorCalculator, "raw_wv"):
+                key = "key_"+"raw_wv"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.rawgemqa(self, **args)
+            return self.descriptorCalculator.raw_wv(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def rdnoise(self, **args):
+    def read_noise(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "rdnoise")
-            if not hasattr( self.descriptorCalculator, "rdnoise"):
-                key = "key_"+"rdnoise"
+            #print hasattr( self.descriptorCalculator, "read_noise")
+            if not hasattr( self.descriptorCalculator, "read_noise"):
+                key = "key_"+"read_noise"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.rdnoise(self, **args)
+            return self.descriptorCalculator.read_noise(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def readmode(self, **args):
+    def read_mode(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "readmode")
-            if not hasattr( self.descriptorCalculator, "readmode"):
-                key = "key_"+"readmode"
+            #print hasattr( self.descriptorCalculator, "read_mode")
+            if not hasattr( self.descriptorCalculator, "read_mode"):
+                key = "key_"+"read_mode"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.readmode(self, **args)
+            return self.descriptorCalculator.read_mode(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def readspeedmode(self, **args):
+    def read_speed_mode(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "readspeedmode")
-            if not hasattr( self.descriptorCalculator, "readspeedmode"):
-                key = "key_"+"readspeedmode"
+            #print hasattr( self.descriptorCalculator, "read_speed_mode")
+            if not hasattr( self.descriptorCalculator, "read_speed_mode"):
+                key = "key_"+"read_speed_mode"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.readspeedmode(self, **args)
+            return self.descriptorCalculator.read_speed_mode(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def satlevel(self, **args):
+    def saturation_level(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "satlevel")
-            if not hasattr( self.descriptorCalculator, "satlevel"):
-                key = "key_"+"satlevel"
+            #print hasattr( self.descriptorCalculator, "saturation_level")
+            if not hasattr( self.descriptorCalculator, "saturation_level"):
+                key = "key_"+"saturation_level"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.satlevel(self, **args)
+            return self.descriptorCalculator.saturation_level(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
@@ -853,163 +870,109 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def utdate(self, **args):
+    def ut_date(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "utdate")
-            if not hasattr( self.descriptorCalculator, "utdate"):
-                key = "key_"+"utdate"
+            #print hasattr( self.descriptorCalculator, "ut_date")
+            if not hasattr( self.descriptorCalculator, "ut_date"):
+                key = "key_"+"ut_date"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.utdate(self, **args)
+            return self.descriptorCalculator.ut_date(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def uttime(self, **args):
+    def ut_time(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "uttime")
-            if not hasattr( self.descriptorCalculator, "uttime"):
-                key = "key_"+"uttime"
+            #print hasattr( self.descriptorCalculator, "ut_time")
+            if not hasattr( self.descriptorCalculator, "ut_time"):
+                key = "key_"+"ut_time"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.uttime(self, **args)
+            return self.descriptorCalculator.ut_time(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def wdelta(self, **args):
+    def well_depth_mode(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "wdelta")
-            if not hasattr( self.descriptorCalculator, "wdelta"):
-                key = "key_"+"wdelta"
+            #print hasattr( self.descriptorCalculator, "well_depth_mode")
+            if not hasattr( self.descriptorCalculator, "well_depth_mode"):
+                key = "key_"+"well_depth_mode"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.wdelta(self, **args)
+            return self.descriptorCalculator.well_depth_mode(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def welldepthmode(self, **args):
+    def wavelength_reference_pixel(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "welldepthmode")
-            if not hasattr( self.descriptorCalculator, "welldepthmode"):
-                key = "key_"+"welldepthmode"
+            #print hasattr( self.descriptorCalculator, "wavelength_reference_pixel")
+            if not hasattr( self.descriptorCalculator, "wavelength_reference_pixel"):
+                key = "key_"+"wavelength_reference_pixel"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.welldepthmode(self, **args)
+            return self.descriptorCalculator.wavelength_reference_pixel(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def wrefpix(self, **args):
+    def x_offset(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "wrefpix")
-            if not hasattr( self.descriptorCalculator, "wrefpix"):
-                key = "key_"+"wrefpix"
+            #print hasattr( self.descriptorCalculator, "x_offset")
+            if not hasattr( self.descriptorCalculator, "x_offset"):
+                key = "key_"+"x_offset"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.wrefpix(self, **args)
+            return self.descriptorCalculator.x_offset(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
-    def xccdbin(self, **args):
+    def y_offset(self, **args):
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "xccdbin")
-            if not hasattr( self.descriptorCalculator, "xccdbin"):
-                key = "key_"+"xccdbin"
+            #print hasattr( self.descriptorCalculator, "y_offset")
+            if not hasattr( self.descriptorCalculator, "y_offset"):
+                key = "key_"+"y_offset"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
                 else:
                     return None
-            return self.descriptorCalculator.xccdbin(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
-    def xoffset(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "xoffset")
-            if not hasattr( self.descriptorCalculator, "xoffset"):
-                key = "key_"+"xoffset"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.xoffset(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
-    def yccdbin(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "yccdbin")
-            if not hasattr( self.descriptorCalculator, "yccdbin"):
-                key = "key_"+"yccdbin"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.yccdbin(self, **args)
-        except:
-            #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
-    
-    def yoffset(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "yoffset")
-            if not hasattr( self.descriptorCalculator, "yoffset"):
-                key = "key_"+"yoffset"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
-            return self.descriptorCalculator.yoffset(self, **args)
+            return self.descriptorCalculator.y_offset(self, **args)
         except:
             #print "NONE BY EXCEPTION"
             self.noneMsg = str(sys.exc_info()[1])
