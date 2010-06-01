@@ -5,6 +5,8 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil
 
+import re
+
 from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGEMINIKeyDict import stdkeyDictGEMINI
 from Generic_Descriptor import Generic_DescriptorCalc
@@ -102,5 +104,15 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         except KeyError:
             return None
-        
-        return str(ret_ut_time)
+
+        # Validate the result.
+        # The assumption is that the standard mandates HH:MM:SS[.S] 
+        # We don't enforce the number of decimal places
+        # These are somewhat basic checks, it's not completely rigorous
+        # Note that seconds can be > 59 when leap seconds occurs
+
+        if(re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', ret_ut_time)):
+            return ret_ut_time
+        else:
+            return None
+
