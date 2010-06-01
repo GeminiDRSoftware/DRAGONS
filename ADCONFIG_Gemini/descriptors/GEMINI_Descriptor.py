@@ -26,7 +26,15 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         except KeyError:
             return None
         
-        return float(ret_airmass)
+        try:
+            ret_airmass = float(ret_airmass)
+        except ValueError:
+            return None
+
+        if(ret_airmass < 0.0):
+            return None
+
+        return ret_airmass
     
     def data_label(self, dataset, **args):
         """
