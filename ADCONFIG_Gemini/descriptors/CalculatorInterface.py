@@ -1,3 +1,4 @@
+
 import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
@@ -906,6 +907,24 @@ class CalculatorInterface:
             self.noneMsg = str(sys.exc_info()[1])
             return None
     
+    def local_time(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "local_time")
+            if not hasattr( self.descriptorCalculator, "local_time"):
+                key = "key_"+"local_time"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                else:
+                    return None
+            return self.descriptorCalculator.local_time(self, **args)
+        except:
+            #print "NONE BY EXCEPTION"
+            self.noneMsg = str(sys.exc_info()[1])
+            return None
+    
     def well_depth_mode(self, **args):
         try:
             self._lazyloadCalculator()
@@ -985,3 +1004,4 @@ class CalculatorInterface:
         loading it if it is not needed.'''
         if self.descriptorCalculator == None:
             self.descriptorCalculator = Descriptors.getCalculator(self, **args)
+

@@ -45,6 +45,7 @@ globalStdkeyDict = {
     "key_telescope":"TELESCOP",
     "key_ut_date":"DATE-OBS",
     "key_ut_time":"UT",
+    "key_local_time":"LT",
     "key_wavelength_reference_pixel":"WREFPIX",
     "key_x_offset":"XOFFSET",
     "key_y_offset":"YOFFSET",

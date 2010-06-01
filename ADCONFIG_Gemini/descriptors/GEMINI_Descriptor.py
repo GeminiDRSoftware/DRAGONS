@@ -116,3 +116,29 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         else:
             return None
 
+    def local_time(self, dataset, **args):
+        """
+        Return the local_time value for GEMINI data
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the LT at the start of the observation (HH:MM:SS.S)
+        """
+        try:
+            hdu = dataset.hdulist
+            ret_local_time = hdu[0].header[globalStdkeyDict['key_local_time']]
+
+        except KeyError:
+            return None
+
+        # Validate the result.
+        # The assumption is that the standard mandates HH:MM:SS[.S] 
+        # We don't enforce the number of decimal places
+        # These are somewhat basic checks, it's not completely rigorous
+        # Note that seconds can be > 59 when leap seconds occurs
+
+        if(re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', ret_local_time)):
+            return ret_local_time
+        else:
+            return None
+
