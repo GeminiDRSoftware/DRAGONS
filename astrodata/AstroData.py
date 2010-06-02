@@ -588,6 +588,7 @@ when iterating over the AstroData extensions, e.g.:
                             os.remove(self.filename)
                         mode = 'append'
                     self.hdulist = pyfits.open(self.filename, mode = mode)
+		    #print "AD591:", self.hdulist[1].header["EXTNAME"]
                     #print "AD543: opened with pyfits", len(self.hdulist)
                 except IOError:
                     print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
@@ -599,19 +600,21 @@ when iterating over the AstroData extensions, e.g.:
                 self.discoverTypes()
             except:
                 raise ADExcept("discover types failed")
+
         # do inferences
-        if inferRAW and self.isType("RAW"):
+        if inferRAW and self.isType("GMOS_RAW"):
             
             # for raw, if no extensions are named
             # infer the name as "SCI"
             hdul = self.hdulist
             namedext = False
-            for hdu in hdul[1:]:
+	    
+	    for hdu in hdul[1:]:
                 if "EXTNAME" in hdu.header: 
                     namedext = True
-                    #print "AD562: Named"
+                    print "AD562: Named"
                 else:
-                    #print "AD562: Not Named"
+                    print "AD562: Not Named"
                     pass
                     
             if namedext == False:
