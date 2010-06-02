@@ -375,7 +375,8 @@ instance.
             else:
                 self.hdulist.append(pyfits.ImageHDU(data = data, header=header))
         elif isinstance(moredata, AstroData):
-            self.hdulist.append(moredata.hdulist[1:])
+            for hdu in moredata.hdulist[1:]:
+                self.hdulist.append(hdu)
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.append(hdu)

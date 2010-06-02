@@ -180,8 +180,8 @@ class PrimitiveSet(object):
                     pdict = eval(d)
                 except:
                     pdict = {}
-                    # print "WARNING: can't load parameter dict in:", paramfile
-                    # traceback.format_exc()
+                    print "WARNING: can't load parameter dict in:", paramfile
+                    traceback.format_exc()
                 # this loop add all paramaters for all primnames which
                 # do not already contain the parameter, giving precedence
                 # to parameter dicts for leaf types, while inheriting
