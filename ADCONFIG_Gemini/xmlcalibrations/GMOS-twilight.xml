@@ -6,11 +6,11 @@
 	</identifier>
 	<criteria>
 		<property key="CCDSUM" extension="SCI,1" type="string" />
-		<property key="DETSEC" extension="SCI,1" type="string" />
+		<property key="detector_section" extension="SCI,1" type="string" />
 		<property key="GRATING" extension="PHU" type="string" ></property>
-		<property key="FILTERNAME" extension="PHU" type="string"></property>
+		<property key="filter_name" extension="PHU" type="string"></property>
 	</criteria>
 	<priorities>
-		<property key="OBSEPOCH" extension="PHU" type="real" value=""/>
+		<property key="observation_epoch" extension="PHU" type="real" value=""/>
 	</priorities>
 </query>
