@@ -4,5 +4,8 @@
 # StandardDescriptorKeyDict.py.
 
 stdkeyDictGEMINI = {
-
+    "key_aowfs":"AOWFS_ST",
+    "key_oiwfs":"OIWFS_ST",
+    "key_pwfs1":"PWFS1_ST",
+    "key_pwfs2":"PWFS2_ST",
     }

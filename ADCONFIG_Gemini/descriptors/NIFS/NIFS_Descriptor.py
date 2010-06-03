@@ -231,6 +231,26 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     nifsArrayDict = None
     
+    def observation_epoch(self, dataset, **args):
+        """
+        Return the observation_epoch value for NIFS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the observing epoch
+        """
+        try:
+            hdu = dataset.hdulist
+            ret_observation_epoch = \
+                hdu[0].header[stdkeyDictNIFS['key_observation_epoch']]
+        
+        except KeyError:
+            return None
+        
+        return str(ret_observation_epoch)
+    
+    nifsConfigDict = None
+    
     def observation_mode(self, dataset, **args):
         """
         Return the observation_mode value for NIFS
