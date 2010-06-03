@@ -22,9 +22,12 @@ import glob
 
 from distutils.core import setup
 
+svndir = re.compile('.svn')
+
 PACKAGENAME = 'astrodata_Gemini'
 VERSION = '0.1.0'
 MODULENAME = 'RECIPES_Gemini'
+CONFIGNAME = 'ADCONFIG_Gemini'
 
 #PACKAGES and PACKAGE_DIRS
 SUBMODULES = ['primitives']
@@ -47,12 +50,34 @@ for s in ['.']+SUBMODULES:
 PACKAGE_DATA[MODULENAME].extend(glob.glob('recipe.*'))
 PACKAGE_DATA[MODULENAME].append('primitives/primitives_List.txt')
 
-print PACKAGE_DATA
+
+#PACKAGE_DATA[MODULENAME].append(os.path.join('..',CONFIGNAME,'structures','*.py'))
+#PACKAGE_DATA[MODULENAME].append(os.path.join('..',CONFIGNAME,'xmlcalibrations','*.xml'))
+#for root, dirs, files in os.walk(os.path.join('..',CONFIGNAME,'lookups')):
+#    if not svndir.search(root) and len(files) > 0:
+#        PACKAGE_DATA[MODULENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+#for root, dirs, files in os.walk(os.path.join('..',CONFIGNAME,'descriptors')):
+#    if not svndir.search(root) and len(files) > 0:
+#        PACKAGE_DATA[MODULENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+#for root, dirs, files in os.walk(os.path.join('..',CONFIGNAME,'classifications')):
+#    if not svndir.search(root) and len(files) > 0:
+#        PACKAGE_DATA[MODULENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+
+
+
+
+#print PACKAGE_DATA
 
 # DATA_DIRS and DATA_FILES
 DATA_FILES = []
+
+#ADCONFIG_DIR = os.path.join('..','ADCONFIG_Gemini')
+#for root, dirs, files in os.walk(ADCONFIG_DIR):
+#    if not svndir.search(root) and len(files) > 0:
+#        ADCONFIG_FILES = map((lambda f: os.path.join(root,f)),files)
+#        print ADCONFIG_FILES
+
 DOC_DIR = os.path.join('doc','astrodata_Gemini','Recipes')
-svndir = re.compile('.svn')
 for root, dirs, files in os.walk('doc'):
     if not svndir.search(root) and len(files) > 0:
         dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
@@ -87,3 +112,5 @@ setup ( name=PACKAGENAME,
             'Topic :: Astronomy',
             ],
        )
+
+
