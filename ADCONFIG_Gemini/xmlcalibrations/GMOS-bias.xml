@@ -1,15 +1,15 @@
 <query id="bias">
 	<identifier>
-		<property key="OBSTYPE" extension="PHU" type="string" value="BIAS" />
+		<property key="observation_type" extension="PHU" type="string" value="BIAS" />
 	</identifier>
 	<criteria>
-		<property key="yccdbin" extension="SCI,1" type="string" />
-		<property key="xccdbin" extension="SCI,1" type="string" />
-		<property key="detsec" extension="SCI,1" type="string" />
+		<property key="detector_y_bin" extension="SCI,1" type="string" />
+		<property key="detector_x_bin" extension="SCI,1" type="string" />
+		<property key="detector_section" extension="SCI,1" type="string" />
 		<property key="gain" extension="SCI,1" type="real" />
-		<property key="rdnoise" extension="SCI,1" type="real" />
+		<property key="read_noise" extension="SCI,1" type="real" />
 	</criteria>
 	<priorities>
-		<property key="OBSEPOCH" extension="PHU" type="real" value=""/>
+		<property key="observation_epoch" extension="PHU" type="real" value=""/>
 	</priorities>
 </query>
