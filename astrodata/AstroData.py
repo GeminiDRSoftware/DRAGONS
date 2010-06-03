@@ -612,9 +612,9 @@ when iterating over the AstroData extensions, e.g.:
 	    for hdu in hdul[1:]:
                 if "EXTNAME" in hdu.header: 
                     namedext = True
-                    print "AD562: Named"
+                    #print "AD615: Named"
                 else:
-                    print "AD562: Not Named"
+                    #print "AD617: Not Named"
                     pass
                     
             if namedext == False:
