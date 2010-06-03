@@ -148,7 +148,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
     def display(self, rc):
-        from adutils.future import gemDisplay
+        from astrodata.adutils.future import gemDisplay
         import pyraf
         from pyraf import iraf
         iraf.set(stdimage='imtgmos')
@@ -425,9 +425,9 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 # -River
                 #===================================================================
                 
-                xoffset = inp.ad.xoffset()
-                pixscale = inp.ad.pixscale()
-                yoffset = inp.ad.yoffset()
+                xoffset = inp.ad.x_offset()
+                pixscale = inp.ad.pixel_scale()
+                yoffset = inp.ad.y_offset()
                 
                 if xoffset and pixscale and yoffset:
                     xshift = xoffset / pixscale * -1
@@ -518,8 +518,6 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def standardizeHeaders(self,rc):
         try:
             print 'prepare step 1'
-            #print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
-            #print "Updating GAIN keyword by calling GGAIN"
             ptk = PrepareTK()
             #print rc.inputsAsStr(strippath = True)
             #print rc['iraf']['adata']
@@ -541,26 +539,27 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             
             for ad in rc.getInputs(style="AD"):
                 infilename = ad.filename
-                print 'prim_G_I529 :', infilename
+                #print 'prim_G_I529 :', infilename
                 #print 'prim_G_I531: ', os.path.abspath(infilename) #absolute path of input file
                 #print 'prim_G_I531: ', os.path.dirname(infilename) #reletive directory of input file without /
                 ad.filename = 'g'+os.path.basename(ad.filename)
                 outfilename = ad.filename
-                print 'prim_G_I531 :', outfilename
-                ptk.fixHeader(ad)
-            
+                #print 'prim_G_I531 :', outfilename
+                ptk.fixHeader(ad,fullPrint=False)
+                print "Prim_G_I549: ", 'header fixed'
             
             
             # ptk.fixHeader(ins,outs)
             
             #outfilerc = rc.reportOutput(outnameptk)
-            #print 'outfilerc: ', outfilerc
+            #print 'outfilerc: ', outf
             
         except:
             print "Problem preparing the image."
             raise 
         
         yield rc 
+        
         
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
