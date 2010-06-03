@@ -73,8 +73,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             y_start = hdu[1].header[stdkeyDictNIRI['key_lowcol']]
             y_end = hdu[1].header[stdkeyDictNIRI['key_hicol']]
             
+            # The convention is that we start counting pixels from 1 in this case.
             ret_data_section = \
-                '[%d:%d,%d:%d]' % (x_start, x_end, y_start, y_end)
+                '[%d:%d,%d:%d]' % (x_start+1, x_end+1, y_start+1, y_end+1)
         
         except KeyError:
             return None
