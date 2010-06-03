@@ -6,4 +6,5 @@ stdkeyDictNIFS = {
     "key_filter":"FILTER",
     "key_focal_plane_mask":"APERTURE",
     "key_lnrs":"LNRS",
+    "key_observation_epoch":"EPOCH",
     }

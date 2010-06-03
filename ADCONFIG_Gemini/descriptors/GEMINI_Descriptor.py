@@ -23,20 +23,17 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            ret_airmass = hdu[0].header[globalStdkeyDict['key_airmass']]
+            airmass = hdu[0].header[globalStdkeyDict['key_airmass']]
+            
+            if airmass < 0.0:
+                ret_airmass = None
+            else:
+                ret_airmass = airmass
         
         except KeyError:
             return None
         
-        try:
-            ret_airmass = float(ret_airmass)
-        except ValueError:
-            return None
-
-        if(ret_airmass < 0.0):
-            return None
-
-        return ret_airmass
+        return float(ret_airmass)
     
     def data_label(self, dataset, **args):
         """
@@ -54,6 +51,35 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             return None
         
         return str(ret_data_label)
+    
+    def local_time(self, dataset, **args):
+        """
+        Return the local_time value for GEMINI data
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the local time at the start of the observation (HH:MM:SS.S)
+        """
+        try:
+            hdu = dataset.hdulist
+            local_time = hdu[0].header[globalStdkeyDict['key_local_time']]
+            
+            # Validate the result.
+            # The assumption is that the standard mandates HH:MM:SS[.S] 
+            # We don't enforce the number of decimal places
+            # These are somewhat basic checks, it's not completely rigorous
+            # Note that seconds can be > 59 when leap seconds occurs
+            
+            if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', \
+                        local_time):
+                ret_local_time = local_time
+            else:
+                ret_local_time = None
+        
+        except KeyError:
+            return None
+        
+        return str(ret_local_time)
     
     def observation_id(self, dataset, **args):
         """
@@ -101,44 +127,55 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         try:
             hdu = dataset.hdulist
             ret_ut_time = hdu[0].header[globalStdkeyDict['key_ut_time']]
+            
+            # Validate the result.
+            # The assumption is that the standard mandates HH:MM:SS[.S] 
+            # We don't enforce the number of decimal places
+            # These are somewhat basic checks, it's not completely rigorous
+            # Note that seconds can be > 59 when leap seconds occurs
+            
+            if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', \
+                        ut_time):
+                ret_ut_time = ut_time
+            else:
+                ret_ut_time = None
         
         except KeyError:
             return None
-
-        # Validate the result.
-        # The assumption is that the standard mandates HH:MM:SS[.S] 
-        # We don't enforce the number of decimal places
-        # These are somewhat basic checks, it's not completely rigorous
-        # Note that seconds can be > 59 when leap seconds occurs
-
-        if(re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', ret_ut_time)):
-            return ret_ut_time
-        else:
-            return None
-
-    def local_time(self, dataset, **args):
+        
+        return str(ret_ut_time)
+    
+    def wavefront_sensor(self, dataset, **args):
         """
-        Return the local_time value for GEMINI data
+        Return the wavefront_sensor value for GEMINI data
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
-        @returns: the LT at the start of the observation (HH:MM:SS.S)
+        @returns: the wavefront sensor used for the observation
         """
         try:
             hdu = dataset.hdulist
-            ret_local_time = hdu[0].header[globalStdkeyDict['key_local_time']]
-
+            aowfs = hdu[0].header[stdkeyDictGEMINI['key_aowfs']]
+            oiwfs = hdu[0].header[stdkeyDictGEMINI['key_oiwfs']]
+            pwfs1 = hdu[0].header[stdkeyDictGEMINI['key_pwfs1']]
+            pwfs2 = hdu[0].header[stdkeyDictGEMINI['key_pwfs2']]
+            
+            wavefront_sensors = []
+            if aowfs == 'guiding':
+                wavefront_sensors.append('AOWFS')
+            if oiwfs == 'guiding':
+                wavefront_sensors.append('OIWFS')
+            if pwfs1 == 'guiding':
+                wavefront_sensors.append('PWFS1')
+            if pwfs2 == 'guiding':
+                wavefront_sensors.append('PWFS2')
+            
+            if len(wavefront_sensors) == 0:
+                ret_wavefront_sensor = None
+            else:
+                ret_wavefront_sensor = '&'.join(wavefront_sensors)
+        
         except KeyError:
             return None
-
-        # Validate the result.
-        # The assumption is that the standard mandates HH:MM:SS[.S] 
-        # We don't enforce the number of decimal places
-        # These are somewhat basic checks, it's not completely rigorous
-        # Note that seconds can be > 59 when leap seconds occurs
-
-        if(re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', ret_local_time)):
-            return ret_local_time
-        else:
-            return None
-
+        
+        return str(ret_wavefront_sensor)
