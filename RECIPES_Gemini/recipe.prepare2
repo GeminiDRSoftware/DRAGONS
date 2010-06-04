@@ -1,0 +1,5 @@
+#validateData(repairData=False)
+#standardizeStructure
+standardizeHeaders
+#validateWCS(repairWCS=False)
+#attachMDF
