@@ -613,7 +613,7 @@ class ReductionContext(dict):
             else:
                 return ", ".join([os.path.basename(path) for path in outputlist])
     
-    def runstep(self, stepname):
+    def run(self, stepname):
         """proxy for rc.ro.runstep, since runstep take a context"""
         return self.ro.runstep(stepname, self)
             
