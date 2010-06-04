@@ -53,7 +53,7 @@ access FITS header values and data in a way that is non instrument dependent.</p
 </div>
 <div class="section" id="intended-audience">
 <h2>Intended Audience<a class="headerlink" href="#intended-audience" title="Permalink to this headline">¶</a></h2>
-<p>If you have not seen Python  you could start with Example 2 for an introductory
+<p>If you have not seen Python  you could start with Example 1 for an introductory
 examples of Astrodata usage.</p>
 <p>If you know IDL already, then you could quickly become familiar with Python as the
 syntax is very similar, with a noticeable exception that Python does not use
@@ -69,13 +69,207 @@ be part of your Python installation.</p>
 <div class="section" id="tutorial">
 <span id="quick-tutorial"></span><h2>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
-<li><a class="reference internal" href="#ggain"><em>Example 1: ADUtoElectrons scripts under Astrodata.</em></a></li>
-<li><a class="reference internal" href="#linebyline"><em>Line by line explanation of Example 1</em></a></li>
-<li><a class="reference internal" href="#stats"><em>Example 2: Python and Astrodata beginners example.</em></a></li>
-<li><a class="reference internal" href="#hdr"><em>Example 3: Getting information from list of GEMINI FITS file.</em></a></li>
+<li><a class="reference internal" href="#stats"><em>Example 1: Python and Astrodata beginners example.</em></a></li>
+<li><a class="reference internal" href="#hdr"><em>Example 2: Getting information from list of GEMINI FITS file.</em></a></li>
+<li><a class="reference internal" href="#ggain"><em>Example 3: ADUtoElectrons scripts under Astrodata.</em></a></li>
+<li><a class="reference internal" href="#linebyline"><em>Line by line explanation of Example 3</em></a></li>
 </ol>
-<div class="section" id="example-1-adutoelectrons-scripts-under-astrodata">
-<span id="ggain"></span><h3>1. Example 1: ADUtoElectrons scripts under Astrodata.<a class="headerlink" href="#example-1-adutoelectrons-scripts-under-astrodata" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="example-1-python-and-astrodata-beginners-example">
+<span id="stats"></span><h3>1. Example 1: Python and Astrodata beginners example.<a class="headerlink" href="#example-1-python-and-astrodata-beginners-example" title="Permalink to this headline">¶</a></h3>
+<p>This is an interactive Python session with separate commands that give
+you results right at the terminal.</p>
+<blockquote>
+<div class="highlight-python"><pre># Starting PYTHON in unix and MacOS.
+#
+# Astrodata module needs to be visible to Python via the
+# unix environment variable PYTHONPATH. Please append a
+# pathname to this variable where Astrodata is located in
+# your machine.
+#
+# Example: setenv PYTHONPATH ${PYTHONPATH}:/home/user/soft/astrodata
+#
+# Now start 'ipython', (a better python shell) and try these commands.
+
+ipython
+
+
+from astrodata import AstroData         # Load Astrodata module
+import numpy as np             # Load the numpy module and define an alias 'np'
+
+file = 'N20020214S060.fits'    # Define a variable 'file' with a string.
+
+ad = AstroData(file)           # Open the FITS file using Astrodata
+                               # 'ad' is the Astrodata object. 'ad' is just
+                               # a variable name.
+                               # The default mode is READ_ONLY
+                               # Astrodata support 'new' mode as well
+
+ad.info()                      # Get FITS file information. This notation is python
+                               # syntax stating that one of the function of the object
+                               # 'ad' is info(). For a list of all 'ad' functions i
+                               # please type 'dir ad'.
+
+print ad.info()                # Same as above. 'print' is optional is most cases using
+                               # the python interpreter.
+
+help ad.info                   # Get help on the 'info' function
+help(ad.info)                  # (Same) Get help on the 'info' function
+                               # The parenthesis are mostly optional using the
+                               # python interpreter. If you are usign PYRAF,
+                               # these are required.
+# Astrodata descriptors
+
+ad.getTypes()                  # Will list the different Astrodata types that this
+                               # Gemini FITS file has. As the data goes through different
+                               # processing stages, these values will change.
+
+ad.isType('GMOS_IMAGE')        # Boolean function. True is the data file is of type
+                               # 'GMOS_IMAGE'
+
+
+# FITS pixel data with Astrodata
+
+data = ad[0].data              # Get the first extension pixel data and assign it to
+                               # the variable 'data' containing the pixels array.
+                               # 'ad' is a Python list pointing to FITS extension
+                               # header and data; hence 'ad[0]' points to the first
+                               # extension, 'ad[1]' to the second, etc.
+
+dim = np.shape(data)           # Get array dimensionality. Parenthesis are not needed.
+                               # Store the values in 'dim'. Here parenthesis are necessary
+                               # when you are assigning to a variable.
+
+dim                            # show the values. You can also use 'print dim'
+
+np.median(data)                # Calculates the median od the pixels in the 'data' array.
+                               # 'np.median' means 'get the median function from the
+                               # numpy (np) module and use it with the data array'
+
+np.median(data[100,:])         # Calculates the median of row 100.
+                               # In Python the array order is [y,x] (IDL is [x,y]).
+                               # ':' means all the pixels in the row
+
+np.std(data)                   # Get the standard deviation
+help np.std                    # see what the help section says about it
+
+maxval = np.amax(data); minval = np.amin(data)  # 2 commands in one line(separator is ';')
+
+dir ad                         # See all the functions available with the
+                               # object 'ad' associated to the FITS file.
+
+# FITS HEADER with Astrodata
+
+hdr = ad[0].header             # Get 1st extension header
+hdr.items()                    # list keywords with their values
+hdr['crpix1']                  # print keyword value (case insensitive)
+
+phu = ad.getPHUHeader()        # Get Primary Header Unit (note the (); it's a function)
+phu.items()
+phu['datalab']</pre>
+</div>
+</blockquote>
+</div>
+<div class="section" id="example-2-getting-information-from-list-of-gemini-fits-file">
+<span id="hdr"></span><h3>2.  Example 2: Getting information from list of GEMINI FITS file<a class="headerlink" href="#example-2-getting-information-from-list-of-gemini-fits-file" title="Permalink to this headline">¶</a></h3>
+<p>This example is a Python script written into a text file which you
+can run at the Unix prompt or as a single command in the Python Shell.</p>
+<p><strong>Running from Unix</strong></p>
+<blockquote>
+<p>Notice that this file contains one function called &#8216;list_info&#8217; and that the
+first line is &#8216;#! /usr/bin/env python&#8217; telling the UNIX system to use the
+Python interpreter to execute the rest of the script. This happens when you
+type &#8216;list_FITS_info.py&#8217; at the unix prompt.</p>
+<p>The file needs to have executable mode:</p>
+<div class="highlight-python"><pre>chmod u+x list_FITS_info.py</pre>
+</div>
+<p>To run &#8216;list_FITS_info.py&#8217; simply type:</p>
+<div class="highlight-python"><pre>list_FITS_info.py
+
+or equivalently
+
+python list_FITS_info.py    # you do not need execute mode in this case</pre>
+</div>
+</blockquote>
+<p><strong>Running from the Python Shell</strong></p>
+<ul>
+<li><p class="first">Assuming you are where &#8216;list_FITS_info.py&#8217; is located.</p>
+</li>
+<li><p class="first">Tell Python that you have a file (list_FITS_info.py) with a function
+&#8216;list_info&#8217;:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">list_FITS_info</span> <span class="kn">import</span> <span class="n">list_info</span>
+
+<span class="c"># now run the script:</span>
+
+<span class="n">list_info</span><span class="p">()</span>             <span class="c"># The scripts does not have arguments, but you need</span>
+                        <span class="c"># the parentheses.</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p><strong>list_FITS_info.py</strong>. Copy and paste into a file called &#8216;list_FITS_info.py&#8217;:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#! /usr/bin/env python</span>
+
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+
+<span class="k">def</span> <span class="nf">list_info</span><span class="p">():</span>
+
+    <span class="c"># Generates a list of FITS files in directory &#39;/data2/rtf_data&#39;</span>
+    <span class="n">filelist</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;/data2/rtf_data/*.fits&#39;</span><span class="p">)</span>
+
+    <span class="c"># Placeholder information for the fields to be output</span>
+    <span class="k">print</span> <span class="s">&#39;nsciext: camera: exptime: filtername: instrument: object: ut&#39;</span>
+
+    <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">filelist</span><span class="p">:</span>         <span class="c"># Loop over all the items in filelist.</span>
+
+        <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>      <span class="c"># Open the current file</span>
+
+        <span class="c"># Get information for files that are type &#39;NIRI&#39; and &#39;GMOS&#39; only.</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;NIRI&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;GMOS&#39;</span><span class="p">):</span>
+           <span class="k">continue</span>               <span class="c"># Skip to next file in filelist is not</span>
+                                  <span class="c"># NIRI nor GMOS</span>
+
+        <span class="k">print</span> <span class="s">&#39;****** &#39;</span><span class="p">,</span><span class="nb">file</span>
+
+        <span class="n">nxts</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">)</span>       <span class="c"># Get number of FITS Science extensions</span>
+
+        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">getTypes</span><span class="p">()</span>              <span class="c"># show the Astrodata types associated</span>
+                                         <span class="c"># with this FITS file and its current</span>
+                                         <span class="c"># processing state.</span>
+
+        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">camera</span><span class="p">()</span>                <span class="c"># Show the value of the PHU keyword &#39;CAMERA&#39;</span>
+
+        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">ad</span><span class="o">.</span><span class="n">exposure_time</span><span class="p">()</span>               <span class="c"># This is the actual EXPTIME*NCOADDS value</span>
+
+        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">filter_name</span><span class="p">()</span>            <span class="c"># Filtername is a unique string discribing</span>
+                                         <span class="c"># the filter for the instrument.</span>
+
+        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">instrument</span><span class="p">(),</span> <span class="n">ad</span><span class="o">.</span><span class="n">object</span><span class="p">(),</span> <span class="n">ad</span><span class="o">.</span><span class="n">ut_date</span><span class="p">()</span>    <span class="c"># Header keyword values</span>
+
+        <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;GMOS&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">nxts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;GAIN:&quot;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">asList</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>    <span class="c"># print a list of gains</span>
+            <span class="c"># Based on the value of the PHU keywords MASKTYPE, MASKNAME</span>
+            <span class="c"># and GRATING, the followinf values can be inferred:</span>
+            <span class="c"># IMAGE, IFU, LONGSLIST or  MOS.</span>
+            <span class="k">print</span> <span class="s">&quot;OBSMODE:&quot;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">observation_mode</span><span class="p">(),</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
+
+        <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;NIRI&#39;</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&#39;NIRI FILTER header keywords:&#39;</span><span class="p">,</span>\
+            <span class="c"># this next form is a Python &#39;list comprehension&#39; syntax. It is</span>
+            <span class="c"># a compressed &#39;for loop&#39;.</span>
+            <span class="p">[(</span><span class="n">ff</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">getPHUHeader</span><span class="p">()[</span><span class="n">ff</span><span class="p">])</span> <span class="k">for</span> <span class="n">ff</span> <span class="ow">in</span> <span class="n">ad</span><span class="o">.</span><span class="n">rePHUKeys</span><span class="p">(</span><span class="s">&#39;FILTER\w*&#39;</span><span class="p">)]</span>
+            <span class="k">print</span> <span class="s">&#39;From niri.descriptor:&#39;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">filter_name</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&#39;Non Linear value:&#39;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">non_linear_level</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+   <span class="n">list_info</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-3-adutoelectrons-scripts-under-astrodata">
+<span id="ggain"></span><h3>3. Example 3: ADUtoElectrons scripts under Astrodata.<a class="headerlink" href="#example-3-adutoelectrons-scripts-under-astrodata" title="Permalink to this headline">¶</a></h3>
 <p>In order to run this example you need to have:</p>
 <ul class="simple">
 <li>Python installed in your machine</li>
@@ -179,7 +373,8 @@ adu2electron.py gmos1.fits gmos2.fits   # 2 input FITS files</pre>
 89
 90</pre></div></td><td class="code"><div class="highlight"><pre>  <span class="c">#! /usr/bin/env python</span>
 
-  <span class="kn">from</span> <span class="nn">astrodata.AstroData</span> <span class="kn">import</span> <span class="n">AstroData</span><span class="p">,</span> <span class="n">prepOutput</span>
+  <span class="kn">import</span> <span class="nn">astrodata</span> <span class="kn">as</span> <span class="nn">ad</span>
+  <span class="kn">from</span> <span class="nn">astrodata.AstroData</span> <span class="kn">import</span> <span class="n">prepOutput</span>
   <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
   <span class="k">def</span> <span class="nf">ADUToElectron</span><span class="p">(</span><span class="n">filelist</span><span class="p">,</span> <span class="n">oprefix</span><span class="p">):</span>
@@ -192,7 +387,7 @@ adu2electron.py gmos1.fits gmos2.fits   # 2 input FITS files</pre>
       <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filelist</span><span class="p">:</span>
 
           <span class="c"># Open the file as an AstroData object</span>
-          <span class="n">adinput</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;readonly&#39;</span><span class="p">)</span>
+          <span class="n">adinput</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">AstroData</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;readonly&#39;</span><span class="p">)</span>
 
           <span class="c"># Verify whether the data has already been converted to electrons</span>
           <span class="k">if</span> <span class="n">adinput</span><span class="o">.</span><span class="n">phuValue</span><span class="p">(</span><span class="s">&#39;ELECTRON&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
@@ -215,12 +410,12 @@ adu2electron.py gmos1.fits gmos2.fits   # 2 input FITS files</pre>
           <span class="c"># Get the gain values to apply</span>
           <span class="c"># adinput.gain() returns a list, one value for each science extension.</span>
 
-          <span class="n">gain</span> <span class="o">=</span> <span class="n">adinput</span><span class="o">.</span><span class="n">gain</span><span class="p">()</span>
+          <span class="n">gain</span> <span class="o">=</span> <span class="n">adinput</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">asList</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 
           <span class="c"># Multiply each science extension by the gain.</span>
           <span class="c"># Append new extension to already prepared output.</span>
           <span class="c"># Use the deepcopy function to create a true copy and ensure that</span>
-          <span class="c"># the original is not modified.s</span>
+          <span class="c"># the original is not modified.</span>
 
           <span class="n">adc</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">adinput</span><span class="p">)</span>
           <span class="k">for</span> <span class="n">extension</span><span class="p">,</span><span class="n">g</span><span class="p">,</span><span class="n">xn</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">adc</span><span class="p">,</span> <span class="n">gain</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gain</span><span class="p">))):</span>
@@ -248,7 +443,6 @@ adu2electron.py gmos1.fits gmos2.fits   # 2 input FITS files</pre>
 <span class="sd">      &quot;&quot;&quot;</span>
 
       <span class="n">gmt</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">gmtime</span><span class="p">()</span>
-      <span class="n">time</span><span class="o">.</span><span class="n">asctime</span><span class="p">(</span><span class="n">gmt</span><span class="p">)</span>
       <span class="n">fitsT</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">-</span><span class="si">%02d</span><span class="s">-</span><span class="si">%02d</span><span class="s">T</span><span class="si">%02d</span><span class="s">:</span><span class="si">%02d</span><span class="s">:</span><span class="si">%02d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">gmt</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span>
 
       <span class="k">return</span> <span class="n">fitsT</span>
@@ -270,57 +464,64 @@ adu2electron.py gmos1.fits gmos2.fits   # 2 input FITS files</pre>
 </pre></div>
 </td></tr></table></div>
 </div>
-<div class="section" id="line-by-line-explanation-of-example3">
-<span id="linebyline"></span><h3>2. Line by line explanation of Example3<a class="headerlink" href="#line-by-line-explanation-of-example3" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="line-by-line-explanation-of-example-3">
+<span id="linebyline"></span><h3>4. Line by line explanation of Example 3<a class="headerlink" href="#line-by-line-explanation-of-example-3" title="Permalink to this headline">¶</a></h3>
 <p><strong>Line 1:  #! /usr/bin/env python</strong></p>
 <blockquote>
 If you want to run the Python script as a Unix command, this statement
 tells the UNIX shell that indeed is a Python program and loads the
 interpreter.</blockquote>
-<p><strong>Line 3:  from astrodata.AstroData import AstroData, prepOutput</strong></p>
-<blockquote>
-Python modules that are not part of the default installation
+<dl class="docutils">
+<dt><strong>Line 3:  import astrodata as ad</strong></dt>
+<dd><blockquote class="first">
+from astrodata.AstroData import prepOutput</blockquote>
+<p class="last">Python modules that are not part of the default installation
 need to be loaded using some of these constructions.
-&#8216;from astrodata.AstroData import AstroData, prepOutput&#8217;: Will look at the directory
-&#8216;astrodata&#8217; and load the Python file &#8216;AstroData.py&#8217; in that
-directory; from this file, it will make available the class Astrodata and the
-function prepOutput.
+&#8216;import astrodata as ad&#8217;: Will look at the directory
+&#8216;astrodata&#8217; and executes the file &#8216;__init__.py&#8217; creating a shorter name
+&#8216;ad&#8217; as an alias.
+&#8216;from astrodata.AstroData import prepOutput&#8217; will load the module
+&#8216;AstroData.py&#8217; and loads the function  &#8216;prepOutput&#8217;
 The pathname to this directory needs to be accessible
-via the environment variable PYTHONPATH.</blockquote>
-<p><strong>Line 6:  def ADUToElectron(filelist, outprefix, verbose)</strong></p>
+via the environment variable PYTHONPATH.</p>
+</dd>
+</dl>
+<p><strong>Line 7:  def ADUToElectron(filelist, outprefix, verbose)</strong></p>
 <blockquote>
 This is the function definition, its name is &#8216;ADUToElectron&#8217;.
 When calling it you must give the one or more filenames in a list
 and the output prefix for the output files as a string, verbose is a
 True/ False argument.</blockquote>
-<p><strong>Line 13:   for filename in filelist:</strong></p>
+<p><strong>Line 14:   for filename in filelist:</strong></p>
 <blockquote>
 The first line is a DO loop statement. It will take each
 element of &#8216;filelist&#8217; and put the value in &#8216;filename&#8217;.</blockquote>
-<p><strong>Line 16:  adinput = AstroData(file, mode=&#8217;readonly&#8217;)</strong></p>
+<p><strong>Line 17:  adinput = ad.AstroData(file, mode=&#8217;readonly&#8217;)</strong></p>
 <blockquote>
+We use the function &#8216;AstroData()&#8217; from the module &#8216;AstroData.py&#8217;
+that was loaded when we imported in Line 3.
 This is the starting point of the &#8216;astrodata&#8217; usage. We are opening
-a file and returning a list of FITS HDUs (header data units), and functions. To see
+a file and returning a list of Astrodata (iterable) and functions. To see
 a list of these functions please type &#8216;dir adinput&#8217; in your Python shell. For help
 on any: &#8216;help adinput.phuValue&#8217;</blockquote>
-<p><strong>Line 19: if adinput.phuValue(&#8216;ELECTRON&#8217;) != None:</strong></p>
+<p><strong>Line 20: if adinput.phuValue(&#8216;ELECTRON&#8217;) != None:</strong></p>
 <blockquote>
 This function looks for the value of the PHU (primary header unit) keyword &#8216;ELECTRON&#8217;;
 if there is no such keyword, it returns the value &#8216;None&#8217;.</blockquote>
-<p><strong>Line 34: adout = prepOutput(adinput, outputname)</strong></p>
+<p><strong>Line 35: adout = prepOutput(adinput, outputname)</strong></p>
 <blockquote>
 This function returns an AstroData object with the PHU of the input
 file. The output filename will be &#8216;outputname&#8217;.</blockquote>
-<p><strong>Line 39: gain = ad.gain()</strong></p>
+<p><strong>Line 40: gain = ad.gain(asList=True)</strong></p>
 <blockquote>
 The fits file openned has gain information in each of the EHUs (extension header
 unit). This command returns a python list with those values.
 It assumes that the keyword name is &#8216;GAIN&#8217;.</blockquote>
-<p><strong>Line 46: adc = deepcopy(adinput)</strong></p>
+<p><strong>Line 47: adc = deepcopy(adinput)</strong></p>
 <blockquote>
 Make a new copy of the input Astrodata object; we do not want to
 change the input data in memory.</blockquote>
-<p><strong>Line 47: for extension,g,xn in zip(adinput, gain, range(len(gain))):</strong></p>
+<p><strong>Line 48: for extension,g,xn in zip(adinput, gain, range(len(gain))):</strong></p>
 <blockquote>
 <p>This is a compound Do loop statement of the form &#8216;for VARS in LIST&#8217;.
 The &#8216;zip&#8217; function takes as arguments one or more Python lists and
@@ -329,223 +530,28 @@ zip([1,2],[&#8216;a&#8217;,&#8217;b&#8217;]), returns [(1, &#8216;a&#8217;), (2,
 takes an integer and expands it into an increasing sequence from 0..n-1.</p>
 <p>The VARS will then contain one set of tuples at a time.</p>
 </blockquote>
-<p><strong>Line 48:   extension.data = extension.data * g</strong></p>
+<p><strong>Line 49:   extension.data = extension.data * g</strong></p>
 <blockquote>
 &#8216;extension&#8217; is a python  object containing the pixel area data among other things.
 we just replace those values with the new ones. This is a memory operation
 and does not affect the input file.</blockquote>
-<p><strong>Line 49:   adout.append(data=extension.data, header=extension.header)</strong></p>
+<p><strong>Line 50:   adout.append(data=extension.data, header=extension.header)</strong></p>
 <blockquote>
 We now append a new FITS extension to the output file with its data and header.</blockquote>
 <dl class="docutils">
-<dt><strong>Line 52: adout.phuSetKeyValue(&#8216;ELECTRON&#8217;, fits_utc(), \</strong></dt>
+<dt><strong>Line 53: adout.phuSetKeyValue(&#8216;ELECTRON&#8217;, fits_utc(), \</strong></dt>
 <dd><blockquote class="first">
 <strong>comment=&#8217;UT Modified with convertToElectrons&#8217;)</strong></blockquote>
 <p class="last">Appends the indicated keyword to the PHU; its value is the value of the function
-&#8216;fits_utc()&#8217; defined at the end of the Example1. Notice that Python
+&#8216;fits_utc()&#8217; defined at the end of the Example. Notice that Python
 allows for a statement to be broken in different lines; mostly a
 comma is a good line separator.</p>
 </dd>
 </dl>
-<p><strong>Line 56: adout.write()</strong></p>
+<p><strong>Line 57: adout.write()</strong></p>
 <blockquote>
 Writes to disk the updated output AstroData object. The filename was already
 defined in &#8216;prepOutput()&#8217;</blockquote>
-</div>
-<div class="section" id="example-2-python-and-astrodata-beginners-example">
-<span id="stats"></span><h3>3. Example 2: Python and Astrodata beginners example.<a class="headerlink" href="#example-2-python-and-astrodata-beginners-example" title="Permalink to this headline">¶</a></h3>
-<blockquote>
-<div class="highlight-python"><pre># Starting PYTHON in unix and MacOS.
-#
-# Astrodata module needs to be visible to Python via the
-# unix environment variable PYTHONPATH. Please append a
-# pathname to this variable where Astrodata is located in
-# your machine.
-#
-# Example: setenv PYTHONPATH ${PYTHONPATH}:/home/user/soft/astrodata
-#
-# Now start 'ipython', (a better python shell) and try these commands.
-
-ipython
-
-
-from astrodata.AstroData import AstroData    # Load Astrodata module
-
-import numpy as np             # Load the numpy module and define an alias 'np'
-
-file = 'N20020214S060.fits'    # Define a variable 'file' with a string.
-
-ad = AstroData(file)           # Open the FITS file using Astrodata
-                               # 'ad' is the Astrodata object. 'ad' is just
-                               # a variable name.
-
-ad.info()                      # Get FITS file information. This notation is python
-                               # syntax stating that one of the function of the object
-                               # 'ad' is info(). For a list of all 'ad' functions i
-                               # please type 'dir ad'.
-
-print ad.info()                # Same as above. 'print' is optional is most cases using
-                               # the python interpreter.
-
-help ad.info                   # Get help on the 'info' function
-help(ad.info)                  # (Same) Get help on the 'info' function
-                               # The parenthesis are mostly optional using the
-                               # python interpreter. If you are usign PYRAF,
-                               # these are required.
-# Astrodata descriptors
-
-ad.getTypes()                  # Will list the different Astrodata types that this
-                               # Gemini FITS file has. As the data goes through different
-                               # processing stages, these values will change.
-
-ad.isType('GMOS_IMAGE')        # Boolean function. True is the data file is of type
-                               # 'GMOS_IMAGE'
-
-
-# FITS pixel data with Astrodata
-
-data = ad[0].data              # Get the first extension pixel data and assign it to
-                               # the variable 'data' containing the pixels array.
-                               # 'ad' is a Python list pointing to FITS extension
-                               # header and data; hence 'ad[0]' points to the first
-                               # extension, 'ad[1]' to the second, etc.
-
-dim = np.shape(data)           # Get array dimensionality. Parenthesis are not needed.
-                               # Store the values in 'dim'. Here parenthesis are necessary
-                               # when you are assigning to a variable.
-
-dim                            # show the values. You can also use 'print dim'
-
-np.median(data)                # Calculates the median od the pixels in the 'data' array.
-                               # 'np.median' means 'get the median function from the
-                               # numpy (np) module and use it with the data array'
-
-np.median(data[100,:])         # Calculates the median of row 100.
-                               # In Python the array order is [y,x] (IDL is [x,y]).
-                               # ':' means all the pixels in the row
-
-np.std(data)                   # Get the standard deviation
-help np.std                    # see what the help section says about it
-
-np.amax(data); np.amin(data)   # 2 commands in one line (separator is ';')
-
-dir ad                         # See all the functions available with the
-                               # object 'ad' associated to the FITS file.
-
-# FITS HEADER with Astrodata
-
-hdr = ad[0].header             # Get 1st extension header
-hdr.items()                    # list keywords with their values
-hdr['crpix1']                  # print keyword value
-
-phu = ad.getPHUHeader()        # Get Primary Header Unit (note the (); it's a function)
-phu.items()
-phu['datalab']</pre>
-</div>
-</blockquote>
-</div>
-<div class="section" id="example-3-getting-information-from-list-of-gemini-fits-file">
-<span id="hdr"></span><h3>4.  Example 3: Getting information from list of GEMINI FITS file<a class="headerlink" href="#example-3-getting-information-from-list-of-gemini-fits-file" title="Permalink to this headline">¶</a></h3>
-<p>Example 2 is an interactive Python session with separate commands that give
-you results right at the terminal.</p>
-<p>Example 3 is a Python script written into a text file which you can run at the Unix
-prompt or as a single command in the Python Shell.</p>
-<p>Copy and paste the source below is a Python called &#8216;list_FITS_info.py&#8217;</p>
-<p><strong>Running from Unix</strong></p>
-<blockquote>
-<p>Notice that this file contains one function called &#8216;list_info&#8217; and that the
-first line is &#8216;#! /usr/bin/env python&#8217; telling the UNIX system to use the
-Python interpreter to execute the rest of the script. This happens when you
-type &#8216;list_FITS_info.py&#8217; at the unix prompt.</p>
-<p>The file needs to have executable mode:</p>
-<div class="highlight-python"><pre>chmod u+x list_FITS_info.py</pre>
-</div>
-<p>To run &#8216;list_FITS_info.py&#8217; simply type:</p>
-<div class="highlight-python"><pre>list_FITS_info.py
-
-or equivalently
-
-python list_FITS_info.py    # you do not need execute mode in this case</pre>
-</div>
-</blockquote>
-<p><strong>Running from the Python Shell</strong></p>
-<ul>
-<li><p class="first">Assuming you are where &#8216;list_FITS_info.py&#8217; is located.</p>
-</li>
-<li><p class="first">Tell Python that you have a file (list_FITS_info.py) with a function
-&#8216;list_info&#8217;:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">list_FITS_info</span> <span class="kn">import</span> <span class="n">list_info</span>
-
-<span class="c"># now run the script:</span>
-
-<span class="n">list_info</span><span class="p">()</span>             <span class="c"># The scripts does not have arguments, but you need</span>
-                        <span class="c"># the parentheses.</span>
-</pre></div>
-</div>
-</li>
-</ul>
-<p><strong>list_FITS_info.py</strong>. Copy and paste into a file called &#8216;list_FITS_info.py&#8217;:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="c">#! /usr/bin/env python</span>
-
-<span class="kn">from</span> <span class="nn">astrodata.AstroData</span> <span class="kn">import</span> <span class="n">AstroData</span>
-<span class="kn">import</span> <span class="nn">glob</span>
-
-<span class="k">def</span> <span class="nf">list_info</span><span class="p">():</span>
-
-    <span class="c"># Generates a list of FITS files in directory &#39;/data2/rtf_data&#39;</span>
-    <span class="n">filelist</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s">&#39;/data2/rtf_data/*.fits&#39;</span><span class="p">)</span>
-
-    <span class="c"># Placeholder information for the fields to be output</span>
-    <span class="k">print</span> <span class="s">&#39;nsciext: camera: exptime: filtername: instrument: object: ut&#39;</span>
-
-    <span class="k">for</span> <span class="nb">file</span> <span class="ow">in</span> <span class="n">filelist</span><span class="p">:</span>         <span class="c"># Loop over all the items in filelist.</span>
-
-        <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>      <span class="c"># Open the current file</span>
-
-        <span class="c"># Get information for files that are type &#39;NIRI&#39; and &#39;GMOS&#39; only.</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;NIRI&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;GMOS&#39;</span><span class="p">):</span>
-           <span class="k">continue</span>               <span class="c"># Skip to next file in filelist is not</span>
-                                  <span class="c"># NIRI nor GMOS</span>
-
-        <span class="k">print</span> <span class="s">&#39;****** &#39;</span><span class="p">,</span><span class="nb">file</span>
-
-        <span class="n">nxts</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">)</span>       <span class="c"># Get number of FITS Science extensions</span>
-
-        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">getTypes</span><span class="p">()</span>              <span class="c"># show the Astrodata types associated</span>
-                                         <span class="c"># with this FITS file and its current</span>
-                                         <span class="c"># processing state.</span>
-
-        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">camera</span><span class="p">()</span>                <span class="c"># Show the value of the PHU keyword &#39;CAMERA&#39;</span>
-
-        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">exptime</span><span class="p">()</span>               <span class="c"># This is the actual EXPTIME*NCOADDS value</span>
-
-        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">filtername</span><span class="p">()</span>            <span class="c"># Filtername is a unique string discribing</span>
-                                         <span class="c"># the filter for the instrument.</span>
-
-        <span class="k">print</span> <span class="n">ad</span><span class="o">.</span><span class="n">instrument</span><span class="p">(),</span> <span class="n">ad</span><span class="o">.</span><span class="n">object</span><span class="p">(),</span> <span class="n">ad</span><span class="o">.</span><span class="n">utdate</span><span class="p">()</span>    <span class="c"># Header keyword values</span>
-
-        <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;GMOS&#39;</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">nxts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&quot;GAIN:&quot;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">gain</span><span class="p">()</span>    <span class="c"># print a list of gains</span>
-            <span class="c"># Based on the value of the PHU keywords MASKTYPE, MASKNAME</span>
-            <span class="c"># and GRATING, the followinf values can be inferred:</span>
-            <span class="c"># IMAGE, IFU, LONGSLIST or  MOS.</span>
-            <span class="k">print</span> <span class="s">&quot;OBSMODE:&quot;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">obsmode</span><span class="p">(),</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>
-
-        <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">isType</span><span class="p">(</span><span class="s">&#39;NIRI&#39;</span><span class="p">):</span>
-            <span class="k">print</span> <span class="s">&#39;NIRI FILTER header keywords:&#39;</span><span class="p">,</span>\
-            <span class="c"># this next form is a Python &#39;list comprehension&#39; syntax. It is</span>
-            <span class="c"># a compressed &#39;for loop&#39;.</span>
-            <span class="p">[(</span><span class="n">ff</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">getPHU</span><span class="p">()[</span><span class="n">ff</span><span class="p">])</span> <span class="k">for</span> <span class="n">ff</span> <span class="ow">in</span> <span class="n">ad</span><span class="o">.</span><span class="n">rePHUKeys</span><span class="p">(</span><span class="s">&#39;FILTER\w*&#39;</span><span class="p">)]</span>
-
-            <span class="k">print</span> <span class="s">&#39;From niri.descriptor:&#39;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">filtername</span><span class="p">()</span>
-            <span class="k">print</span> <span class="s">&#39;Non Linear value:&#39;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">nonlinear</span><span class="p">()</span>
-
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
-   <span class="n">list_info</span><span class="p">()</span>
-</pre></div>
-</div>
 </div>
 </div>
 </div>
@@ -563,10 +569,10 @@ python list_FITS_info.py    # you do not need execute mode in this case</pre>
 <li><a class="reference external" href="#intended-audience">Intended Audience</a></li>
 <li><a class="reference external" href="#required-software">Required software</a></li>
 <li><a class="reference external" href="#tutorial">Tutorial</a><ul>
-<li><a class="reference external" href="#example-1-adutoelectrons-scripts-under-astrodata">1. Example 1: ADUtoElectrons scripts under Astrodata.</a></li>
-<li><a class="reference external" href="#line-by-line-explanation-of-example3">2. Line by line explanation of Example3</a></li>
-<li><a class="reference external" href="#example-2-python-and-astrodata-beginners-example">3. Example 2: Python and Astrodata beginners example.</a></li>
-<li><a class="reference external" href="#example-3-getting-information-from-list-of-gemini-fits-file">4.  Example 3: Getting information from list of GEMINI FITS file</a></li>
+<li><a class="reference external" href="#example-1-python-and-astrodata-beginners-example">1. Example 1: Python and Astrodata beginners example.</a></li>
+<li><a class="reference external" href="#example-2-getting-information-from-list-of-gemini-fits-file">2.  Example 2: Getting information from list of GEMINI FITS file</a></li>
+<li><a class="reference external" href="#example-3-adutoelectrons-scripts-under-astrodata">3. Example 3: ADUtoElectrons scripts under Astrodata.</a></li>
+<li><a class="reference external" href="#line-by-line-explanation-of-example-3">4. Line by line explanation of Example 3</a></li>
 </ul>
 </li>
 </ul>
