@@ -7,7 +7,8 @@ __docformat__ = "restructuredtext" #for epydoc
 from AstroDataType import *
 
 import Descriptors
-
+# this gets SCI (== "SCI") etc
+from gemconstants import *
 import Calculator
 
 try:
@@ -548,21 +549,13 @@ when iterating over the AstroData extensions, e.g.:
         
         if True:
             hdu = self.hdulist[1]
-            print dir(hdu.header.ascardlist())
-            nheader = deepcopy(hdu.header)
+            nheader = hdu.header
             nheader.update("extname", name, "added by AstroData")
             nheader.update("extver", ver, "added by AstroData")
-
+            hdu.name = name
+            hdu._extver = ver
             # print "AD553:", repr(hdu.__class__)
-            nhdu = hdu.__class__() # data= hdu.data, header = hdu.header) #, name = name)
             
-            nhdu.data = hdu.data
-            nhdu.header = nheader
-            
-            self.hdulist[1] = nhdu
-            
-            del(hdu)
-
 
     def open(self, source, mode = "readonly"):
         '''
@@ -638,19 +631,21 @@ when iterating over the AstroData extensions, e.g.:
                 raise ADExcept("discover types failed")
 
         # do inferences
-        if inferRAW and self.isType("GMOS_RAW"):
+        if inferRAW and self.isType("RAW"):
             
             # for raw, if no extensions are named
             # infer the name as "SCI"
             hdul = self.hdulist
             namedext = False
 	    
-	    for hdu in hdul[1:]:
-                if "EXTNAME" in hdu.header: 
+            for hdu in hdul[1:]:
+    	        # print "AD642:",hdu.name
+
+                if hdu.name or "extname" in hdu.header: 
                     namedext = True
-                    #print "AD615: Named"
+                    #print "AD615: Named", hdu.header["extname"]
                 else:
-                    #print "AD617: Not Named"
+                    # print "AD617: Not Named"
                     pass
                     
             if namedext == False:
@@ -659,35 +654,32 @@ when iterating over the AstroData extensions, e.g.:
                 # print "AD567: len of hdulist ",l
 
                 
-                nhdul = [hdul[0]]
+                # nhdul = [hdul[0]]
                 # nhdulist = pyfits.HDUList(nhdul)
 
                 for i in range(1, l):
                     hdu = hdul[i]
-                    print "AD667:",hdu.name
+                    #print "AD667:",hdu.name
                     hdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
-                    hdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
-                    
-                    nhdu = hdu.__class__( data= hdu.data, header = hdu.header, name = "SCI")
-                    nhdu._extver = i;
-                    #if "EXTNAME" in nhdu.header:
-                    #    print "AD629:extname = ", nhdu.header["EXTNAME"]
-                    #else:
-                    #    print "AD629: extname = none"
-                    nhdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
+                    hdu.header.update("EXTVER", i, "added by AstroData", after='EXTNAME')
+                    hdu.name = SCI
+                    hdu._extver = i
+                    #print "AD672:", hdu._extver, i, id(hdu)
+                    #nhdu = hdu.__class__( data= hdu.data, header = hdu.header, name = "SCI")
+                    #nhdu._extver = i;
+                    #nhdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
                     # print "AD631:extname = ", nhdu.header["EXTNAME"]
                     # nhdu.header.__delitem__("EXTVER")
-                    nhdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
-                    print "AD681:",nhdu.name
-                    nhdul.append(nhdu)
+                    #nhdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
+                    #print "AD681:",nhdu.name
+                    #nhdul.append(nhdu)
                     #print "AD570:", repr(self.extGetKeyValue(i,"EXTNAME"))
-                                
                 #for hdu in hdul[1:]:
                 #    nhdu = hdu.__class__(hdu.data, hdu.header, ext=(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"])))
                 #    nhdul.append(nhdu)
                 #    nhdulist[(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"]))] = nhdu
-                del(hdul)
-                self.hdulist = pyfits.HDUList(nhdul)
+                #del(hdul)
+                #self.hdulist = pyfits.HDUList(nhdul)
                 
                 #print "AD646: nhdul.info()"
                 #self.hdulist.info()
