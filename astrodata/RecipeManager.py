@@ -2,6 +2,7 @@
 from copy import deepcopy, copy
 from datetime import datetime
 import new
+import inspect
 import pickle # for persisting the calibration index
 import socket # to get host name for local statistics
 #------------------------------------------------------------------------------ 
@@ -615,7 +616,11 @@ class ReductionContext(dict):
     
     def run(self, stepname):
         """proxy for rc.ro.runstep, since runstep take a context"""
-        return self.ro.runstep(stepname, self)
+        cleanname = re.sub(r'\(.*?\).*?$', '', stepname)
+        cleanname = re.sub(r'#.*?$', '', cleanname)
+        name = "proxy_"+cleanname+"_for_"+inspect.stack()[1][3]
+        self.ro.recipeLib.loadAndBindRecipe(self.ro, name, src=stepname)
+        return self.ro.runstep(name, self)
             
     #------------------ PAUSE ---------------------------------------------------- 
     def isPaused(self, bpaused=None):
@@ -1112,14 +1117,21 @@ class RecipeLibrary(object):
                         }
             print "Module '%(module)s took %(duration)s to load'" % pargs
 
-    def loadAndBindRecipe(self, ro, name, dataset=None, astrotype=None):
+    def loadAndBindRecipe(self, ro, name, dataset=None, astrotype=None, src = None):
         """
-        Will load a single recipe, compile and bind it to the given reduction objects
+        Will load a single recipe, compile and bind it to the given reduction objects.
+        If src is set, dataset and astrotype are ignored (no recipe lookup)
         """
-        
-        if astrotype != None:
+        if src != None:
+            rec = src
+            # compose to python source
+            prec = self.composeRecipe(name, rec)
+            # compile to unbound function (using the python interpretor obviously)
+            rfunc = self.compileRecipe(name, prec)
+            # bind the recipe to the reduction object
+            ro = self.bindRecipe(ro, name, rfunc)
+        elif astrotype != None:
             # get recipe source
-            
             rec = self.retrieveRecipe(name, astrotype=astrotype)
             # print "RM1113:", name, rec, astrotype
             try:
