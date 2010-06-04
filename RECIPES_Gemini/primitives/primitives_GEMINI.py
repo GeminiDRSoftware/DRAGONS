@@ -7,6 +7,8 @@ import os,sys
 from astrodata import IDFactory
 from sets import Set
 from iqtool.iq import getiq
+from gempy.instruments.geminitools import *
+
 
 from datetime import datetime
 
@@ -272,5 +274,40 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
         
   
-#----------------------------------------------------------eof
+#-------------------------------------------------------------------
+#$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
+    '''
+    all the stuff in here is very much a work in progress and I will not be fully
+    commenting it for others while developing it, sorry.
+    '''
+    
+    def validateData(self,rc, repair = True):
+        #to be written
+        print "prim_G_I507: nothing in here yet"
+        yield rc
+#----------------------------------------------------------------------
+    def standardizeStructure(self,rc, addmdf=True):
+        #to be written
+        print "prim_G_I511: nothing in here yet"
+        if addmdf:
+            rc.ro.runstep("attachMDF")
+        yield rc
 
+#-------------------------------------------------------------------
+    def standardizeHeaders(self,rc):
+        try:           
+            for ad in rc.getInputs(style="AD"):
+                stdObsHdrs(ad)
+                print "Prim_G299: ", 'observatory headers fixed'
+            print 'prim_G300: calling standardizeInstrumentHeaders'
+            rc.ro.runstep("standardizeInstrumentHeaders")
+            print 'prim_G3002: instrument headers fixed'
+            
+        except:
+            print "Problem preparing the image."
+            raise 
+        
+        yield rc 
+        
+#--------------------------------------------------------------------------
+#$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
