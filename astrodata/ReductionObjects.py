@@ -87,6 +87,8 @@ class ReductionObject(object):
         yield context.end(primname)
         
     def runstep(self, primname, cfgobj):
+        """runsetp(primitiveName, reductionContext)"""
+        
         cfgobj.status = "RUNNING"
         for cfg in self.substeps(primname, cfgobj):
             ## call command clause

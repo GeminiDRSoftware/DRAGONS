@@ -612,6 +612,10 @@ class ReductionContext(dict):
                 return ", ".join(outputlist)
             else:
                 return ", ".join([os.path.basename(path) for path in outputlist])
+    
+    def runstep(self, stepname):
+        """proxy for rc.ro.runstep, since runstep take a context"""
+        return self.ro.runstep(stepname, self)
             
     #------------------ PAUSE ---------------------------------------------------- 
     def isPaused(self, bpaused=None):
