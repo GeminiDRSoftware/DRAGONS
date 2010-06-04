@@ -61,6 +61,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         Return the data_section value for NIRI
         This has to be derived from the first extension, but pertains to the
         whole data file
+        The pixels are numbered starting from 1, not 0.
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
