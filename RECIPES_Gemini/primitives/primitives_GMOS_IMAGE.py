@@ -12,9 +12,7 @@ from pyraf.iraf import gemini
 import pyraf
 import iqtool
 from iqtool.iq import getiq
-from preparelib.prepareTK import PrepareTK
-from preparelib.wcsTK import WCSTK
-
+from gempy.instruments import gmostools
 
 import pyfits
 import numdisplay
@@ -501,65 +499,18 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     commenting it for others while developing it, sorry.
     '''
     
-    
-    def validateData(self,rc):
-        #to be written
-        print "prim_G_I507: nothing in here yet"
-        yield rc
-    def standardizeHeaders(self,rc):
-        #to be written
-        print "prim_G_I511: nothing in here yet"
-        yield rc
-    def validateWCS(self,rc):
-        #to be written
-        print "prim_G_I515: nothing in here yet"
-        yield rc
-
-    def standardizeHeaders(self,rc):
+    def standardizeInstrumentHeaders(self,rc):
         try:
-            print 'prepare step 1'
-            ptk = PrepareTK()
-            #print rc.inputsAsStr(strippath = True)
-            #print rc['iraf']['adata']
-            #print rc.getIrafStdout()
-            #print rc.getIrafStderr()
-            #outnamerc = rc.prependNames("g", currentDir = True)
-            #print 'outnamerc: ', outnamerc
-            
-            #outs=os.path.basename(outnamerc[0][0])
-            #print outs
-            
-            #ad = AstroData()
-            #rc.reportOutput([ad,ad,rc.inputs[0].filename, rc.inputs[0].ad])
-            
-            #for inp in rc.inputs:
-            #    print "input id:", id(inp.ad)
-            #for inp in rc.outputs["standard"]:
-            #    print "output id:", id(inp.ad)    
-            
             for ad in rc.getInputs(style="AD"):
-                infilename = ad.filename
-                #print 'prim_G_I529 :', infilename
-                #print 'prim_G_I531: ', os.path.abspath(infilename) #absolute path of input file
-                #print 'prim_G_I531: ', os.path.dirname(infilename) #reletive directory of input file without /
-                ad.filename = 'g'+os.path.basename(ad.filename)
-                outfilename = ad.filename
-                #print 'prim_G_I531 :', outfilename
-                ptk.fixHeader(ad,fullPrint=False)
-                print "Prim_G_I549: ", 'header fixed'
-            
-            
-            # ptk.fixHeader(ins,outs)
-            
-            #outfilerc = rc.reportOutput(outnameptk)
-            #print 'outfilerc: ', outf
-            
+                stdInstHdrs(ad)
+                
         except:
             print "Problem preparing the image."
             raise 
         
-        yield rc 
+        yield rc
         
-        
+
+ 
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
