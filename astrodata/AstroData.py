@@ -548,6 +548,7 @@ when iterating over the AstroData extensions, e.g.:
         
         if True:
             hdu = self.hdulist[1]
+            print dir(hdu.header.ascardlist())
             nheader = deepcopy(hdu.header)
             nheader.update("extname", name, "added by AstroData")
             nheader.update("extver", ver, "added by AstroData")
@@ -663,6 +664,7 @@ when iterating over the AstroData extensions, e.g.:
 
                 for i in range(1, l):
                     hdu = hdul[i]
+                    print "AD667:",hdu.name
                     hdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
                     hdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
                     
@@ -676,6 +678,7 @@ when iterating over the AstroData extensions, e.g.:
                     # print "AD631:extname = ", nhdu.header["EXTNAME"]
                     # nhdu.header.__delitem__("EXTVER")
                     nhdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
+                    print "AD681:",nhdu.name
                     nhdul.append(nhdu)
                     #print "AD570:", repr(self.extGetKeyValue(i,"EXTNAME"))
                                 
