@@ -626,6 +626,7 @@ for infiles in allinputs: #for dealing with multiple files.
             # create fresh context object
             # @@TODO:possible: see if deepcopy can do this better 
             co = ReductionContext()
+            co.ro = ro
             # restore cache
             if not os.path.exists(".reducecache"):
                 os.mkdir(".reducecache")

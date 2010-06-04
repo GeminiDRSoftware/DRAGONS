@@ -117,7 +117,7 @@ class ReductionContext(dict):
     arguments = None
     _localparms = None # dictionary with local args (given in recipe as args, generally)
     userParams = None # meant to be UserParams instance
-    
+    ro = None
     #------------------------------------------------------------------------------ 
  
      

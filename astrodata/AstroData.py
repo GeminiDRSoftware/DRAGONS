@@ -43,7 +43,13 @@ class ADExcept:
         :returns: string representation of this exception, the self.message member
         :rtype: string"""
         return self.message
-        
+class SingleHDUMemberExcept(ADExcept):
+    def __init__(self, msg=None):
+        if msg == None:
+            self.message = "This member can only be called for Single HDU AstroData instances"
+        else:
+            self.message = "SingleHDUMember: "+msg     
+
 class OutputExists(ADExcept):
     def __init__(self, msg=None):
         if msg == None:
@@ -527,7 +533,36 @@ when iterating over the AstroData extensions, e.g.:
 
         self.relhdul()
         return retary
+
+    def hasSingleHDU(self):
+        return len(self.hdulist) == 2
+    
+    def setExtname(self, name, ver):
+        """WARNING: this function recreates HDUs and is not to be used on subdata"""
+        if self.borrowedHDUList:
+            raise ADExcept("cannot setExtname on subdata")
         
+        print "AD545:", name, ver
+        if not self.hasSingleHDU():
+            raise SingleHDUMemberExcept("ad.setExtname(%s,%s)"%(str(name), str(ver)))
+        
+        if True:
+            hdu = self.hdulist[1]
+            nheader = deepcopy(hdu.header)
+            nheader.update("extname", name, "added by AstroData")
+            nheader.update("extver", ver, "added by AstroData")
+
+            # print "AD553:", repr(hdu.__class__)
+            nhdu = hdu.__class__() # data= hdu.data, header = hdu.header) #, name = name)
+            
+            nhdu.data = hdu.data
+            nhdu.header = nheader
+            
+            self.hdulist[1] = nhdu
+            
+            del(hdu)
+
+
     def open(self, source, mode = "readonly"):
         '''
         This function initiates interaction with a given set of
@@ -628,6 +663,9 @@ when iterating over the AstroData extensions, e.g.:
 
                 for i in range(1, l):
                     hdu = hdul[i]
+                    hdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
+                    hdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
+                    
                     nhdu = hdu.__class__( data= hdu.data, header = hdu.header, name = "SCI")
                     nhdu._extver = i;
                     #if "EXTNAME" in nhdu.header:
@@ -640,13 +678,14 @@ when iterating over the AstroData extensions, e.g.:
                     nhdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
                     nhdul.append(nhdu)
                     #print "AD570:", repr(self.extGetKeyValue(i,"EXTNAME"))
-                
+                                
                 #for hdu in hdul[1:]:
                 #    nhdu = hdu.__class__(hdu.data, hdu.header, ext=(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"])))
                 #    nhdul.append(nhdu)
                 #    nhdulist[(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"]))] = nhdu
                 del(hdul)
                 self.hdulist = pyfits.HDUList(nhdul)
+                
                 #print "AD646: nhdul.info()"
                 #self.hdulist.info()
                 # @@NOTE: should we do something make sure the
@@ -705,8 +744,22 @@ when iterating over the AstroData extensions, e.g.:
 	                
         return self.classificationLibrary
     
+    def pruneTypelist(self, typelist):
+        cl = self.getClassificationLibrary()
+        retary = typelist;
+        pary = []
+        for typ in retary:
+            notSuper = True
+            for supertype in retary:
+                sto = cl.getTypeObj(supertype)
+                if sto.isSubtypeOf(typ):
+                    notSuper = False
+            if notSuper:
+                pary.append(typ)
+        return pary
+
     
-    def getTypes(self, prune = False, tmp=False):
+    def getTypes(self, prune = False):
         """This function returns an array of string type names, just as discoverTypes
         but also takes arguments to modify the list. 
         :param prune: flag which controls 'pruning' the returned type list so that only the
@@ -723,20 +776,8 @@ when iterating over the AstroData extensions, e.g.:
             # ClassificationLibrary.discoverTypes()
             #  basic algo: run through types, if one is a supertype of another, 
             #  remove the supertype
+            retary = self.pruneTypelist(retary)
             
-            cl = self.getClassificationLibrary()
-            pary = []
-            for typ in retary:
-                notSuper = True
-                for supertype in retary:
-                    sto = cl.getTypeObj(supertype)
-                    if sto.isSubtypeOf(typ):
-                        notSuper = False
-                if notSuper:
-                    pary.append(typ)
-                    
-                        
-            retary = pary
         
         return retary
         
@@ -771,14 +812,16 @@ lse, the return value is a list which is in fact
         else:
             return self.types
         
-    def getStatus(self):
+    def getStatus(self, prune=False):
         """ This function returns specifically "status" related classifications
         about the encapsulated data.
         :returns: a list of string classification names
         :rtype: list
         """
-        
         retary = self.discoverStatus()
+        if prune:
+            retary = self.pruneTypelist(retary)
+
         return retary
     
     def discoverStatus(self):
@@ -805,6 +848,8 @@ lse, the return value is a list which is in fact
         :rtype: list"""
         
         retary = self.discoverTypology()
+        if prune:
+            retary = self.pruneTypelist(retary)
         return retary
 
     def discoverTypology(self):

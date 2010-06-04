@@ -174,7 +174,7 @@ class DataSpider(object):
                        
                         try:
                             fl = AstroData(fname)
-                        except:
+                        except ADExcept:
                             print "${RED}Could not open %s as AstroData${NORMAL}" %fname
                             continue
 
