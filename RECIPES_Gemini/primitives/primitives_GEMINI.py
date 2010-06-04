@@ -300,7 +300,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 stdObsHdrs(ad)
                 print "Prim_G299: ", 'observatory headers fixed'
             print 'prim_G300: calling standardizeInstrumentHeaders'
-            rc.ro.runstep("standardizeInstrumentHeaders")
+            rc.runstep("standardizeInstrumentHeaders")
             print 'prim_G3002: instrument headers fixed'
             
         except:
