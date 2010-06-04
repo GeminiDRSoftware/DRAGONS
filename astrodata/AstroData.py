@@ -542,8 +542,8 @@ when iterating over the AstroData extensions, e.g.:
         """WARNING: this function recreates HDUs and is not to be used on subdata"""
         if self.borrowedHDUList:
             raise ADExcept("cannot setExtname on subdata")
-        
-        print "AD545:", name, ver
+        if ver == None:
+            ver = 1
         if not self.hasSingleHDU():
             raise SingleHDUMemberExcept("ad.setExtname(%s,%s)"%(str(name), str(ver)))
         
@@ -641,7 +641,7 @@ when iterating over the AstroData extensions, e.g.:
             for hdu in hdul[1:]:
     	        # print "AD642:",hdu.name
 
-                if hdu.name or "extname" in hdu.header: 
+                if hdu.name or ("extname" in hdu.header): 
                     namedext = True
                     #print "AD615: Named", hdu.header["extname"]
                 else:
@@ -659,32 +659,10 @@ when iterating over the AstroData extensions, e.g.:
 
                 for i in range(1, l):
                     hdu = hdul[i]
-                    #print "AD667:",hdu.name
                     hdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
                     hdu.header.update("EXTVER", i, "added by AstroData", after='EXTNAME')
                     hdu.name = SCI
                     hdu._extver = i
-                    #print "AD672:", hdu._extver, i, id(hdu)
-                    #nhdu = hdu.__class__( data= hdu.data, header = hdu.header, name = "SCI")
-                    #nhdu._extver = i;
-                    #nhdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
-                    # print "AD631:extname = ", nhdu.header["EXTNAME"]
-                    # nhdu.header.__delitem__("EXTVER")
-                    #nhdu.header.update("EXTVER", str(i), "added by AstroData", after='EXTNAME')
-                    #print "AD681:",nhdu.name
-                    #nhdul.append(nhdu)
-                    #print "AD570:", repr(self.extGetKeyValue(i,"EXTNAME"))
-                #for hdu in hdul[1:]:
-                #    nhdu = hdu.__class__(hdu.data, hdu.header, ext=(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"])))
-                #    nhdul.append(nhdu)
-                #    nhdulist[(str(hdu.header["EXTNAME"]), int( hdu.header["EXTVER"]))] = nhdu
-                #del(hdul)
-                #self.hdulist = pyfits.HDUList(nhdul)
-                
-                #print "AD646: nhdul.info()"
-                #self.hdulist.info()
-                # @@NOTE: should we do something make sure the
-                # dropped hdulist goes away?
     def close(self):
         """
         This function closes the pyfits.HDUList object if this instance
