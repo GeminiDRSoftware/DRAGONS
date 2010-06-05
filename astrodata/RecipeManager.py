@@ -898,7 +898,7 @@ class ReductionContext(dict):
                     orecord = AstroDataRecord(temp[0], self.displayID, parent=temp[1], load=load)
                     #print 'RM370:', orecord
                 elif isinstance(temp, AstroData):
-                    print "RM891:", type(temp)
+                    # print "RM891:", type(temp)
                     orecord = AstroDataRecord(temp)
                 elif type(temp) == str:
                     if not os.path.exists(temp):
