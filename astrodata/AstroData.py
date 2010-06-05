@@ -538,7 +538,7 @@ when iterating over the AstroData extensions, e.g.:
     def hasSingleHDU(self):
         return len(self.hdulist) == 2
     
-    def setExtname(self, name, ver):
+    def setExtname(self, name, ver = None):
         """WARNING: this function recreates HDUs and is not to be used on subdata"""
         if self.borrowedHDUList:
             raise ADExcept("cannot setExtname on subdata")
