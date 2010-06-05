@@ -107,7 +107,7 @@ class AstroDataRecord( ReductionContextRecord ):
     
     def __init__(self, filename, displayID=None, timestamp=None, ad=None, parent=None, load = True):
         super( AstroDataRecord, self ).__init__( timestamp )
-        print "RCR110:", type(filename), isinstance(filename, AstroData)
+        #print "RCR110:", type(filename), isinstance(filename, AstroData)
         if isinstance(filename, AstroData):
             self.filename = filename.filename
             self.ad = filename
