@@ -118,6 +118,7 @@ class ReductionContext(dict):
     arguments = None
     _localparms = None # dictionary with local args (given in recipe as args, generally)
     userParams = None # meant to be UserParams instance
+    proxyID = 1 # used to ensure uniqueness
     ro = None
     #------------------------------------------------------------------------------ 
  
@@ -616,9 +617,16 @@ class ReductionContext(dict):
     
     def run(self, stepname):
         """proxy for rc.ro.runstep, since runstep take a context"""
-        cleanname = re.sub(r'\(.*?\).*?$', '', stepname)
-        cleanname = re.sub(r'#.*?$', '', cleanname)
-        name = "proxy_"+cleanname+"_for_"+inspect.stack()[1][3]
+        a = stepname.split()
+        cleanname = ""
+        for line in a:
+            cleanname = re.sub(r'\(.*?\).*?$', '', line)
+            cleanname = re.sub(r'#.*?$', '', cleanname)
+            if line != "":
+                break;
+        # cleanname not used!
+        name = "proxy_recipe%d"%self.proxyID
+        self.proxyID += 1
         self.ro.recipeLib.loadAndBindRecipe(self.ro, name, src=stepname)
         return self.ro.runstep(name, self)
             

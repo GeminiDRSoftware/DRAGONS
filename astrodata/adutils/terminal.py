@@ -523,6 +523,7 @@ class PrimitiveFilter(Filter):
         h = ""
         st = tb.extract_stack()
         started = True # ignore deep part of stack
+        finalonly = True
         for f in st:
             if started:
                 if f[2]:
@@ -530,7 +531,12 @@ class PrimitiveFilter(Filter):
                 else:
                     nam = "{}"
                 if ("rimitives" in f[0]) or ("string" in f[0]):
-                    h += (nam+": ")
+                    if finalonly:
+                        h = (nam+": ")
+                        if len(h)<20:
+                            h = " "*(20-len(h))+h
+                    else:
+                        h += (nam+": ")
         return h
     def setPrefix(self, val):
         self._prefix = val
