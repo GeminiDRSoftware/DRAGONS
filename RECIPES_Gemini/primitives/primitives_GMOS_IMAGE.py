@@ -464,12 +464,6 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise 
 
         yield rc
-
-   
-    def showParams(self, rc):
-        for rc in GEMINIPrimitives.showParams(self, rc):
-            yield rc1
-    
      #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    
     def prepare(self, rc):
