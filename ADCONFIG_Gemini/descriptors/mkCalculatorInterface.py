@@ -16,9 +16,12 @@ class DescriptorDescriptor:
                     return None
             return self.descriptorCalculator.%(name)s(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     """
     def __init__(self, name = None):
         self.name = name

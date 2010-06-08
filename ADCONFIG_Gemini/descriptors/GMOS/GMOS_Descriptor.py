@@ -443,6 +443,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float or list (if asList = True)
         @return: the gain in electrons/ADU
         """
+        
         try:
             hdu = dataset.hdulist
             ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]

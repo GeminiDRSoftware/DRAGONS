@@ -21,9 +21,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.airmass(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def amp_read_area(self, **args):
         try:
@@ -39,9 +42,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.amp_read_area(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def azimuth(self, **args):
         try:
@@ -57,9 +63,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.azimuth(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def camera(self, **args):
         try:
@@ -75,9 +84,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.camera(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def cass_rotator_pa(self, **args):
         try:
@@ -93,9 +105,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.cass_rotator_pa(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def central_wavelength(self, **args):
         try:
@@ -111,9 +126,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.central_wavelength(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def coadds(self, **args):
         try:
@@ -129,9 +147,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.coadds(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def data_label(self, **args):
         try:
@@ -147,9 +168,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.data_label(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def data_section(self, **args):
         try:
@@ -165,9 +189,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.data_section(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def dec(self, **args):
         try:
@@ -183,9 +210,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.dec(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def detector_section(self, **args):
         try:
@@ -201,9 +231,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.detector_section(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def detector_x_bin(self, **args):
         try:
@@ -219,9 +252,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.detector_x_bin(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def detector_y_bin(self, **args):
         try:
@@ -237,9 +273,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.detector_y_bin(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def disperser(self, **args):
         try:
@@ -255,9 +294,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.disperser(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def dispersion(self, **args):
         try:
@@ -273,9 +315,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.dispersion(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def dispersion_axis(self, **args):
         try:
@@ -291,9 +336,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.dispersion_axis(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def elevation(self, **args):
         try:
@@ -309,9 +357,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.elevation(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def exposure_time(self, **args):
         try:
@@ -327,9 +378,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.exposure_time(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def filter_id(self, **args):
         try:
@@ -345,9 +399,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.filter_id(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def filter_name(self, **args):
         try:
@@ -363,9 +420,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.filter_name(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def focal_plane_mask(self, **args):
         try:
@@ -381,9 +441,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.focal_plane_mask(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def gain(self, **args):
         try:
@@ -399,9 +462,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.gain(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def gain_mode(self, **args):
         try:
@@ -417,9 +483,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.gain_mode(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def instrument(self, **args):
         try:
@@ -435,9 +504,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.instrument(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def local_time(self, **args):
         try:
@@ -453,9 +525,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.local_time(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def mdf_row_id(self, **args):
         try:
@@ -471,9 +546,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.mdf_row_id(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def non_linear_level(self, **args):
         try:
@@ -489,9 +567,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.non_linear_level(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def object(self, **args):
         try:
@@ -507,9 +588,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.object(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def observation_class(self, **args):
         try:
@@ -525,9 +609,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.observation_class(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def observation_epoch(self, **args):
         try:
@@ -543,9 +630,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.observation_epoch(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def observation_id(self, **args):
         try:
@@ -561,9 +651,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.observation_id(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def observation_mode(self, **args):
         try:
@@ -579,9 +672,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.observation_mode(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def observation_type(self, **args):
         try:
@@ -597,9 +693,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.observation_type(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def observer(self, **args):
         try:
@@ -615,9 +714,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.observer(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def pixel_scale(self, **args):
         try:
@@ -633,9 +735,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.pixel_scale(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def program_id(self, **args):
         try:
@@ -651,9 +756,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.program_id(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def pupil_mask(self, **args):
         try:
@@ -669,9 +777,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.pupil_mask(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def ra(self, **args):
         try:
@@ -687,9 +798,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.ra(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def raw_bg(self, **args):
         try:
@@ -705,9 +819,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.raw_bg(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def raw_cc(self, **args):
         try:
@@ -723,9 +840,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.raw_cc(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def raw_gemini_qa(self, **args):
         try:
@@ -741,9 +861,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.raw_gemini_qa(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def raw_iq(self, **args):
         try:
@@ -759,9 +882,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.raw_iq(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def raw_pi_requirement(self, **args):
         try:
@@ -777,9 +903,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.raw_pi_requirement(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def raw_wv(self, **args):
         try:
@@ -795,9 +924,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.raw_wv(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def read_mode(self, **args):
         try:
@@ -813,9 +945,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.read_mode(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def read_noise(self, **args):
         try:
@@ -831,9 +966,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.read_noise(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def read_speed_mode(self, **args):
         try:
@@ -849,9 +987,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.read_speed_mode(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def saturation_level(self, **args):
         try:
@@ -867,9 +1008,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.saturation_level(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def ssa(self, **args):
         try:
@@ -885,9 +1029,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.ssa(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def telescope(self, **args):
         try:
@@ -903,9 +1050,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.telescope(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def ut_date(self, **args):
         try:
@@ -921,9 +1071,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.ut_date(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def ut_time(self, **args):
         try:
@@ -939,9 +1092,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.ut_time(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def wavefront_sensor(self, **args):
         try:
@@ -957,9 +1113,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.wavefront_sensor(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def wavelength_reference_pixel(self, **args):
         try:
@@ -975,9 +1134,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.wavelength_reference_pixel(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def well_depth_mode(self, **args):
         try:
@@ -993,9 +1155,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.well_depth_mode(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def x_offset(self, **args):
         try:
@@ -1011,9 +1176,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.x_offset(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
     def y_offset(self, **args):
         try:
@@ -1029,9 +1197,12 @@ class CalculatorInterface:
                     return None
             return self.descriptorCalculator.y_offset(self, **args)
         except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
             #print "NONE BY EXCEPTION"
-            self.noneMsg = str(sys.exc_info()[1])
-            return None
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
     
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
