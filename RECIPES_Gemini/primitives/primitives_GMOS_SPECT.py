@@ -13,7 +13,7 @@ from pyraf.iraf import gemini
 import pyraf
 import iqtool
 from iqtool.iq import getiq
-from gempy.instruments import gmostools
+from gempy.instruments.gmos import *
 
 
 
@@ -94,49 +94,78 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
     '''
 
     def standardizeInstrumentHeaders(self,rc):
+        #adds specific headers for a GMOS_SPECT file
         try:
             for ad in rc.getInputs(style="AD"):
+                if int(rc['debugLevel'])>=1: 
+                    print 'prim-G_I505: calling stdInstHdrs' #$$$$$$$$$$$$$$$
                 stdInstHdrs(ad)
+                if int(rc['debugLevel'])>=3:  
+                    # printing the updated headers
+                    for ext in range(len(ad)+1):    
+                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
+                if int(rc['debugLevel'])>=1:          
+                    print 'prim_G_I507: instrument headers fixed' 
                 
         except:
             print "Problem preparing the image."
             raise 
         
         yield rc
-    
+    #-----------------------------------------------------------------------
     def attachMDF(self,rc):
+        # this works to add an MDF if there is a MASKNAME in the images PHU only.  
+        # will be upgraded later, early testing complete
+        
         try:
-            print 'prepare step 2'
+            if int(rc['debugLevel'])>=1:
+                print 'prepare step 2'
             
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
-                print 'prim_G_S162:', infilename
+                if int(rc['debugLevel'])>=1:
+                    print 'prim_G_S162:', infilename
                 #print 'prim_G_I531: ', os.path.abspath(infilename) #absolute path of input file
                 #print 'prim_G_I531: ', os.path.dirname(infilename) #reletive directory of input file without /
                 
                 pathname = 'kyles_test_images/' #$$$$ HARDCODED FOR NOW, TILL FIX COMES FROM CRAIG
                 maskname = ad.phuGetKeyValue("MASKNAME")
-                print "Pim_G_S170: maskname = ", maskname
+                if int(rc['debugLevel'])>=1:
+                    print "Pim_G_S170: maskname = ", maskname
                 inMDFname = 'kyles_test_images/'+maskname +'.fits'
-                print 'Prim_G_S172: input MDF file = ', inMDFname
+                if int(rc['debugLevel'])>=1:
+                    print 'Prim_G_S172: input MDF file = ', inMDFname
                 admdf = AstroData(inMDFname)
+                admdf.setExtname('MDF',1)  #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER??
                 admdf.extSetKeyValue(len(admdf)-1,'EXTNAME', 'MDF',"Extension name" )
+                admdf.extSetKeyValue(len(admdf)-1,'EXTVER', 1,"Extension version" ) #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER?? this one is to add the comment
                 
-                print admdf[0].getHeader()
-                print admdf.info()
-                #admdf[0].setKeyValue("EXTNAME","MDF")
-                #admdf[0].setKeyValue("EXTVER",1)
-                #print 'prim_G_S172: ', os.path.dirname(infilename) #reletive directory of input file without /
-                ad.append(moredata=admdf)
-                print ad.info()
+                if int(rc['debugLevel'])>=3:
+                    print admdf[0].getHeader()
+                    print admdf.info()
                 
-                ad.extSetKeyValue(len(ad)-1,'EXTNAME', 'MDF',"Extension name" )
-                ad.extSetKeyValue(len(ad)-1,'EXTVER', 1,"Extension version" )
-                #print ad[3].getHeader()
-                #addMDF(ad,mdf,fullPrint=True)
-                print ad.info()
-                #print len(ad)
-                print 'prim_G_S177: finished adding the MDF'
+                ad.append(moredata=admdf)  #$$$$$$$$$$  STILL NEED TO GET CRAIG TO CREATE A FN THAT INSERTS RATHER THAN APPENDS
+                if int(rc['debugLevel'])>=1:
+                    print ad.info()
+                
+                #addMDF(ad,mdf)     #$$ the call to the tool box function, currently not in use
+                if int(rc['debugLevel'])>=1:
+                    print 'prim_G_S177: finished adding the MDF'
+        except:
+            print "Problem preparing the image."
+            raise 
+        
+        yield rc
+    #------------------------------------------------------------------------
+    def validateInstrumentData(self,rc):
+        try:
+            for ad in rc.getInputs(style="AD"):
+                if int(rc['debugLevel'])>=4:
+                    print 'prim_G_S164: validating data for file = ',ad.filename
+                valInstData(ad)
+                if int(rc['debugLevel'])>=4:
+                    print 'prim_G_S167: data validated for file = ', ad.filename
+                
         except:
             print "Problem preparing the image."
             raise 
