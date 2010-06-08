@@ -1,13 +1,13 @@
 from time import sleep
 import time
 from astrodata.ReductionObjects import PrimitiveSet
-from astrodata.adutils import filesystem
+from astrodata.adutils import filesystem, geminiLogger
 from astrodata import IDFactory
 import os,sys
-from astrodata import IDFactory
+from astrodata import IDFactoryrm
 from sets import Set
 from iqtool.iq import getiq
-from gempy.instruments.geminitools import *
+from gempy.instruments.gemini import *
 
 
 from datetime import datetime
@@ -98,7 +98,7 @@ class GEMINIPrimitives(PrimitiveSet):
             print "${RED}${REVERSE}STOPPING RECIPE${NORMAL}"
             rc.finish()
         yield rc
-#------------------------------------------------------------------------------ 
+#------------------------------------------------------------------------------                 
     def getProcessedFlat(self, rc):
         try:
             print "getting flat"
@@ -280,29 +280,140 @@ class GEMINIPrimitives(PrimitiveSet):
     all the stuff in here is very much a work in progress and I will not be fully
     commenting it for others while developing it, sorry.
     '''
-    
-    def validateData(self,rc, repair = True):
-        #to be written
-        print "prim_G_I507: nothing in here yet"
+
+#----------------------------------------------------------------------------    
+    def validateData(self,rc, repair=True):
+        try:
+            gemLog = geminiLogger.getLogger( name="prepare", logfile='prepare.log', verbose=False)
+            gemLog.info('test line from the standardizeHeaders call')
+            # gemLog.critical('this is a critical line')      # these print to the screen as well!!!!!
+            rc["log"]=gemLog
+            for ad in rc.getInputs(style="AD"):
+                for ext in range(len(ad)+1):    
+                        print gemLog.info(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
+
+            
+            #checking if there is a default debugLevel, if not set to 1
+            if not rc['debugLevel']:
+                rc['debugLevel']=1
+                print 'prim_G290: using the default debugLevel=1'
+                
+            if int(rc['debugLevel'])>=1:
+                print 'prim_G_I527: validating input data'
+            
+            rc.run("validateInstrumentData")
+            
+            # updating the filenames in the RC
+            for ad in rc.getInputs(style="AD"):        
+                postpend='_validated'
+                infilename = os.path.basename(ad.filename)
+                (name,filetype) = os.path.splitext(infilename)
+                if int(rc['debugLevel'])>=2:
+                    print 'prim_G292: infilename = ', infilename
+                outFileName = name+postpend+filetype
+                ad.filename = outFileName
+                if int(rc['debugLevel'])>=2: 
+                    print 'prim_G295: printing output file  = ',outFileName
+                if int(rc['debugLevel'])>=10:
+                    # printing the updated headers
+                    for ext in range(len(ad)+1):    
+                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
+                rc.reportOutput(ad)
+                    
+            if int(rc['debugLevel'])>=1:
+                print 'prim_G_I536: input data validated, off to a good start'
+                
+            if int(rc['debugLevel'])>=10:
+                print 'prim_G318: writing the outputs of validateData to disk'
+                rc.run('writeOutputs')  #$$$$$$$$$$$$$this need to accept arguments to work right!!!!!!!!!!!! currently hardcoded
+                print 'prim_G320: writing complete'
+                
+        except:
+            print "Problem preparing the image."
+            raise 
+        
         yield rc
+
 #----------------------------------------------------------------------
-    def standardizeStructure(self,rc, addmdf=True):
-        #to be written
-        print "prim_G_I511: nothing in here yet"
-        if addmdf:
-            rc.ro.runstep("attachMDF")
+    def standardizeStructure(self,rc, addMDF=False):
+        try:
+            gemLog=rc["log"]
+            
+            if addMDF:
+                rc.run("attachMDF")
+                
+            for ad in rc.getInputs(style="AD"):
+                stdObsStruct(ad)
+                
+                # updating the filenames in the RC
+                postpend='_structure'
+                infilename = os.path.basename(ad.filename)
+                (name,filetype) = os.path.splitext(infilename)
+                if int(rc['debugLevel'])>=2: 
+                    print 'prim_G309: infilename = ', infilename
+                outFileName = name+postpend+filetype
+                ad.filename = outFileName 
+                if int(rc['debugLevel'])>=2: 
+                    print 'prim_G312: printing output file  = ',outFileName
+                if int(rc['debugLevel'])>=10:
+                    # printing the updated headers
+                    for ext in range(len(ad)+1):    
+                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
+                rc.reportOutput(ad)
+                
+                if int(rc['debugLevel'])>=10:
+                    print 'prim_G349: writing the outputs of standardizeStructure to disk'
+                    rc.run('writeOutputs')  #$$$$$$$$$$$$$this need to accept arguments to work right!!!!!!!!!!!! currently hardcoded
+                    print 'prim_G351: writing complete'
+        except:
+            print "Problem preparing the image."
+            raise
+                     
         yield rc
+        
 
 #-------------------------------------------------------------------
     def standardizeHeaders(self,rc):
-        try:           
+        try:    
+            gemLog=rc["log"]
+                   
             for ad in rc.getInputs(style="AD"):
+                if int(rc['debugLevel'])>=1: 
+                    print 'prim_G300: calling stdObsHdrs'   #$$$$$$$$$$$$$$$
                 stdObsHdrs(ad)
-                print "Prim_G299: ", 'observatory headers fixed'
-            print 'prim_G300: calling standardizeInstrumentHeaders'
+                
+                if int(rc['debugLevel'])>=4: 
+                    print "prim_G304: printing the updated headers"
+                    for ext in range(len(ad)+1):
+                        print '--------------------------------------------------------------'    
+                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
+                
+            if int(rc['debugLevel'])>=1:  
+                print "Prim_G332: ", 'observatory headers fixed'  #$$$$$$$$$$$$$$$
+                print 'prim_G333: calling standardizeInstrumentHeaders'  #$$$$$$$$$$$$$$$
             rc.run("standardizeInstrumentHeaders")
-            print 'prim_G3002: instrument headers fixed'
-            
+            if int(rc['debugLevel'])>=1:  
+                print 'prim_G335: instrument headers fixed'  #$$$$$$$$$$$$$$$
+
+            # updating the filenames in the RC
+            for ad in rc.getInputs(style="AD"):
+                postpend='_prepared'
+                infilename = os.path.basename(ad.filename)
+                rootname = stripPostfix(infilename)
+                (name,filetype) = os.path.splitext(rootname)
+                if int(rc['debugLevel'])>=2:  
+                    print 'prim_G327: infilename = ', infilename
+                outFileName = name+postpend+filetype
+                ad.filename = outFileName
+                if int(rc['debugLevel'])>=2: 
+                    print 'prim_G323: current output filename  = ',ad.filename
+                rc.reportOutput(ad)
+                
+            if int(rc['debugLevel'])>=1:
+                print 'prim_G381: writing the outputs of prepare to disk'
+                rc.run('writeOutputs')  #$$$$$$$$$$$$$this need to accept arguments to work right!!!!!!!!!!!! currently hardcoded
+                print 'prim_G383: writing complete'
+                
         except:
             print "Problem preparing the image."
             raise 
@@ -310,4 +421,40 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc 
         
 #--------------------------------------------------------------------------
+
+    def writeOutputs(self,rc):
+        outfilename=rc["outfilename"]
+        postpend = rc["postpend"]
+        gemLog=rc["log"]
+        
+        if int(rc['debugLevel'])>=1:  
+            print 'prim_G397: postpend = ',postpend
+        try:
+            for ad in rc.getInputs(style="AD"):
+                infilename = os.path.basename(ad.filename)
+                (name,filetype) = os.path.splitext(infilename)
+                #if int(rc['debugLevel'])>=2:  
+                print 'prim_G403: infilename = ', infilename
+                if postpend:
+                    outFileName = name+postpend+filetype
+                else:
+                    if int(rc['debugLevel'])>=2: 
+                        print 'prim_G406: not changing the file name to be written from the input name'
+                    outFileName=infilename
+                ad.filename = outFileName
+                if int(rc['debugLevel'])>=2:
+                    print 'prim_G412: currentoutput filename  = ',outFileName       
+                # ad.write(fname=outFileName)     #AstroData checks if the output exists and raises and exception
+                rc.reportOutput(ad)
+                
+        except:
+            print "Problem preparing the image."
+            raise 
+        
+        yield rc 
+             
+                
 #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+    
