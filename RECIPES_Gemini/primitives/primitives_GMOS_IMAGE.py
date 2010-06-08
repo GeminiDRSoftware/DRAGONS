@@ -12,7 +12,7 @@ from pyraf.iraf import gemini
 import pyraf
 import iqtool
 from iqtool.iq import getiq
-from gempy.instruments import gmostools
+from gempy.instruments.gmos import *
 
 import pyfits
 import numdisplay
@@ -495,16 +495,46 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     
     def standardizeInstrumentHeaders(self,rc):
         try:
+            
+            gemLog=rc["log"]
+            gemLog.info("a line from teh stdInstHdrs primitive")
+            
             for ad in rc.getInputs(style="AD"):
+                if int(rc['debugLevel'])>=1:  
+                    print 'prim-G_I505: calling stdInstHdrs' #$$$$$$$$$$$$$$$
                 stdInstHdrs(ad)
+                if int(rc['debugLevel'])>=3:  
+                    print "prim_G304: printing the updated headers"
+                    for ext in range(len(ad)+1):    
+                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
+                if int(rc['debugLevel'])>=1:        
+                    print 'prim_G_I512: instrument headers fixed' #$$$$$$$$$$$$$$
                 
+            if int(rc['debugLevel'])>=5:
+                print 'prim_G_I514: writing the outputs to disk'
+                rc.run('writeOutputs(postpend=_instHdrs)')  #$$$$$$$$$$$$$this need to accept arguments to work right!!!!!!!!!!!! currently hardcoded
+                print 'prim_G_I517: writting complete'
+                    
         except:
             print "Problem preparing the image."
             raise 
         
         yield rc
+    #------------------------------------------------------------------------    
+    def validateInstrumentData(self,rc):
+        try:
+            for ad in rc.getInputs(style="AD"):
+                if int(rc['debugLevel'])>=4:
+                    print 'prim_G_I530: validating data for file = ',ad.filename
+                valInstData(ad)
+                if int(rc['debugLevel'])>=4:
+                    print 'prim_G_I533: data validated for file = ', ad.filename
+                
+        except:
+            print "Problem preparing the image."
+            raise 
         
-
+        yield rc       
  
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
