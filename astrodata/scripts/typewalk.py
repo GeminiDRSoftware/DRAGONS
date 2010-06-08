@@ -102,10 +102,11 @@ if (options.listdescriptors):
     import CalculatorInterface
     funs = dir(CalculatorInterface.CalculatorInterface)
     descs = []
+    print "${UNDERLINE}Avaiable Descriptors${NORMAL}"
     for fun in funs:
-        if "_" not in fun and (fun.lower() == fun):
+        if "_" != fun[0] and (fun.lower() == fun):
             descs.append(fun)
-    print ", ".join(descs)
+    print "\t"+"\n\t".join(descs)
 elif (options.htmldoc):
     print cl.htmlDoc()
 else:

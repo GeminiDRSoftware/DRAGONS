@@ -58,6 +58,7 @@ class Calculator(object):
     @ivar usage: Used to document this Descriptor.    
     """
     usage = ""
+    throwExceptions = True 
         
     stdkeyDict = globalStdkeyDict
     def fetchPHUValue(self, keyname, dataset):
