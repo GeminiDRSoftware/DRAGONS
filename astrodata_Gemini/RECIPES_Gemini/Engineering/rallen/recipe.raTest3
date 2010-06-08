@@ -1,0 +1,5 @@
+##############################################
+# Simple, default test to make sure nothing obvious is broken.
+##############################################
+getProcessedBias
+prepare

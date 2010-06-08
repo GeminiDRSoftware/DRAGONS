@@ -1,0 +1,11 @@
+##############################################
+# My test sciReduce.
+##############################################
+	prepare
+	getProcessedBias
+	display
+	overscanSub    
+	overscanTrim
+	biasSub
+	display
+	setStackable

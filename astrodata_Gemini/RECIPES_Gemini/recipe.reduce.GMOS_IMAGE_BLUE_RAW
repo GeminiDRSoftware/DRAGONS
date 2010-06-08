@@ -1,0 +1,11 @@
+    # note, these primitives use the calibration manager to 
+    # identify the appropriate flats and biases
+    gem_produce_im_flat
+    gem_produce_bias
+
+    prepare
+    overscanSub
+    overscanTrim
+    biasSub
+    flatField
+    findshiftsAndCombine

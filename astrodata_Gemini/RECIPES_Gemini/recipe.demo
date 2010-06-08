@@ -1,0 +1,26 @@
+# Recipe for the prototype presentation
+
+getProcessedBias
+getProcessedFlat
+
+showCals
+
+
+prepare
+
+overscanTrim
+
+biasCorrect
+flatfieldCorrect
+mosaicChips
+
+display(displayID = single)
+shift
+
+measureIQ
+
+setStackable
+
+averageCombine
+display(displayID = combined)
+measureIQ

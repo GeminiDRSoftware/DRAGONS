@@ -1,0 +1,15 @@
+<query id="bias">
+	<identifier>
+		<property key="observation_type" extension="PHU" type="string" value="BIAS" />
+	</identifier>
+	<criteria>
+		<property key="detector_y_bin" extension="SCI,1" type="string" />
+		<property key="detector_x_bin" extension="SCI,1" type="string" />
+		<property key="detector_section" extension="SCI,1" type="string" />
+		<property key="gain" extension="SCI,1" type="real" />
+		<property key="read_noise" extension="SCI,1" type="real" />
+	</criteria>
+	<priorities>
+		<property key="observation_epoch" extension="PHU" type="real" value=""/>
+	</priorities>
+</query>
