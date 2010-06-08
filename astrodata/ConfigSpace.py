@@ -8,7 +8,7 @@ import os
 #
 ######################
 
-
+PACKAGEMARKER = "astrodata_"
 CONFIGMARKER = "ADCONFIG_"
 spaces = {  "descriptors":"descriptors",
             "structures":"structures",
@@ -103,7 +103,10 @@ class ConfigSpace(object):
                             # print "ISADIR"
                             subdirs = os.listdir(path)
                             for subpath in subdirs:
-                                if CONFIGMARKER in subpath:
+                                if PACKAGEMARKER in subpath:
+                                    print os.path.listdir(subpath)
+                                    print "CS107:", subpath
+                                    
                                     packdir = os.path.join(path,subpath)
                                     if packdir not in self.configpacks:
                                         self.configpacks.append(packdir)
