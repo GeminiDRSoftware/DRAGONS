@@ -122,7 +122,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             else:
                  disperser = None
             
-            if stripID:
+            if stripID and (disperser != None):
                 ret_disperser = GemCalcUtil.removeComponentID(disperser)
             else:
                 ret_disperser = disperser
