@@ -281,23 +281,32 @@ class GEMINIPrimitives(PrimitiveSet):
     '''
 
 #----------------------------------------------------------------------------    
-    def validateData(self,rc, repair=True):
+    def validateData(self,rc):
         try:
+            # setting the input 'repair' to a boolean from its current string type
+            repair = rc["repair"]
+            if repair == None:
+                repair = True
+            else:
+                repair = ((rc["repair"]).lower() == "true")
+            
+            # creating the log file (MAYBE MOVE THIS TO BEING GLOBAL???)
             gemLog = geminiLogger.getLogger( name="prepare", logfile='prepare.log', verbose=False)
             gemLog.info('test line from the standardizeHeaders call')
             # gemLog.critical('this is a critical line')      # these print to the screen as well!!!!!
             rc["log"]=gemLog
-            for ad in rc.getInputs(style="AD"):
-                for ext in range(len(ad)+1):    
-                        print gemLog.info(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
-
             
             #checking if there is a default debugLevel, if not set to 1
             if not rc['debugLevel']:
                 rc['debugLevel']=1
                 print 'prim_G290: using the default debugLevel=1'
+            debugLevel=int(rc['debugLevel'])
+            
+            for ad in rc.getInputs(style="AD"):
+                for ext in range(len(ad)+1):    
+                        gemLog.info(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
                 
-            if int(rc['debugLevel'])>=1:
+            if debugLevel>=1:
                 print 'prim_G_I527: validating input data'
             
             rc.run("validateInstrumentData")
@@ -307,22 +316,22 @@ class GEMINIPrimitives(PrimitiveSet):
                 postpend='_validated'
                 infilename = os.path.basename(ad.filename)
                 (name,filetype) = os.path.splitext(infilename)
-                if int(rc['debugLevel'])>=2:
+                if debugLevel>=2:
                     print 'prim_G292: infilename = ', infilename
                 outFileName = name+postpend+filetype
                 ad.filename = outFileName
-                if int(rc['debugLevel'])>=2: 
+                if debugLevel>=2: 
                     print 'prim_G295: printing output file  = ',outFileName
-                if int(rc['debugLevel'])>=10:
+                if debugLevel>=10:
                     # printing the updated headers
                     for ext in range(len(ad)+1):    
                         print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
                 rc.reportOutput(ad)
                     
-            if int(rc['debugLevel'])>=1:
+            if debugLevel>=1:
                 print 'prim_G_I536: input data validated, off to a good start'
                 
-            if int(rc['debugLevel'])>=10:
+            if debugLevel>=10:
                 print 'prim_G318: writing the outputs of validateData to disk'
                 rc.run('writeOutputs')  #$$$$$$$$$$$$$this need to accept arguments to work right!!!!!!!!!!!! currently hardcoded
                 print 'prim_G320: writing complete'
@@ -334,10 +343,19 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
 
 #----------------------------------------------------------------------
-    def standardizeStructure(self,rc, addMDF=False):
+    def standardizeStructure(self,rc):
         try:
+            # setting the input 'repair' to a boolean from its current string type
+            addMDF = rc["addMDF"]
+            if addMDF == None:
+                addMDF = True
+            else:
+                addMDF = ((rc["addMDF"]).lower() == "true")
+            # 'importing' the logger and debug level   
             gemLog=rc["log"]
+            debugLevel=int(rc['debugLevel'])
             
+            # add the MDF if not set to false
             if addMDF:
                 rc.run("attachMDF")
                 
@@ -348,19 +366,19 @@ class GEMINIPrimitives(PrimitiveSet):
                 postpend='_structure'
                 infilename = os.path.basename(ad.filename)
                 (name,filetype) = os.path.splitext(infilename)
-                if int(rc['debugLevel'])>=2: 
+                if debugLevel>=2: 
                     print 'prim_G309: infilename = ', infilename
                 outFileName = name+postpend+filetype
                 ad.filename = outFileName 
-                if int(rc['debugLevel'])>=2: 
+                if debugLevel>=2: 
                     print 'prim_G312: printing output file  = ',outFileName
-                if int(rc['debugLevel'])>=10:
+                if debugLevel>=10:
                     # printing the updated headers
                     for ext in range(len(ad)+1):    
                         print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
                 rc.reportOutput(ad)
                 
-                if int(rc['debugLevel'])>=10:
+                if debugLevel>=10:
                     print 'prim_G349: writing the outputs of standardizeStructure to disk'
                     rc.run('writeOutputs')  #$$$$$$$$$$$$$this need to accept arguments to work right!!!!!!!!!!!! currently hardcoded
                     print 'prim_G351: writing complete'
@@ -374,7 +392,9 @@ class GEMINIPrimitives(PrimitiveSet):
 #-------------------------------------------------------------------
     def standardizeHeaders(self,rc):
         try:    
+            # 'importing' the logger and debug level   
             gemLog=rc["log"]
+            debugLevel=int(rc['debugLevel'])
                    
             for ad in rc.getInputs(style="AD"):
                 if int(rc['debugLevel'])>=1: 
@@ -422,9 +442,12 @@ class GEMINIPrimitives(PrimitiveSet):
 #--------------------------------------------------------------------------
 
     def writeOutputs(self,rc):
+        # 'importing' the filename or prepend strings if they exist
         outfilename=rc["outfilename"]
         postpend = rc["postpend"]
+        # 'importing' the logger and debug level
         gemLog=rc["log"]
+        debugLevel=int(rc['debugLevel'])
         
         if int(rc['debugLevel'])>=1:  
             print 'prim_G397: postpend = ',postpend
@@ -443,7 +466,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 ad.filename = outFileName
                 if int(rc['debugLevel'])>=2:
                     print 'prim_G412: currentoutput filename  = ',outFileName       
-                # ad.write(fname=outFileName)     #AstroData checks if the output exists and raises and exception
+                ad.write(fname=outFileName)     #AstroData checks if the output exists and raises and exception
                 rc.reportOutput(ad)
                 
         except:
