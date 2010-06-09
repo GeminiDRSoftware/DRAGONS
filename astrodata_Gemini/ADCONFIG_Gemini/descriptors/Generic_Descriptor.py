@@ -37,8 +37,9 @@ class Generic_DescriptorCalc(Calculator):
             
             if (m):
                 ret_ut_date = m.group(1)
-        
+                return str(ret_ut_date)
+            else:
+                return None
         except KeyError:
             return None
         
-        return str(ret_ut_date)
