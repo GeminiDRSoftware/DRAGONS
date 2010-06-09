@@ -24,6 +24,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         self.niriFilternameMapConfig = \
             Lookups.getLookupTable('Gemini/NIRI/NIRIFilterMap',
                                    'niriFilternameMapConfig')
+        self.makeFilternameMap()
         
         self.nsappwave = \
             Lookups.getLookupTable('Gemini/IR/nsappwavepp.fits', 1)
@@ -414,34 +415,34 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         return str(well_depth_mode)
     
     ## UTILITY MEMBER FUNCTIONS (NOT DESCRIPTORS)
-    #
-    #def filternameFrom(self, filters, **args):
-    #    
-    #    # reject 'open' 'grism' and 'pupil'
-    #    filters2 = []
-    #    for filt in filters:
-    #        filtlow = filt.lower()
-    #        if ('open' in filtlow) or ('grism' in filtlow) or ('pupil' in filtlow):
-    #            pass
-    #        else:
-    #            filters2.append(filt)
-    #    
-    #    filters = filters2
-    #    
-    #    # blank means an opaque mask was in place, which of course
-    #    # blocks any other in place filters
-    #    if 'blank' in filters:
-    #        retfilternamestring = 'blank'
-    #    elif len(filters) == 0:
-    #        retfilternamestring = 'open'
-    #    else:
-    #        filters.sort()
-    #        retfilternamestring = '&'.join(filters)
-    #    return retfilternamestring
-    # 
-    #def makeFilternameMap(self, **args):
-    #    filternamemap = {}
-    #    for line in self.niriFilternameMapConfig:
-    #        linefiltername = self.filternameFrom( [line[1], line[2], line[3]])
-    #        filternamemap.update({linefiltername:line[0] })
-    #    self.niriFilternameMap = filternamemap
+    
+    def filternameFrom(self, filters, **args):
+        
+        # reject 'open' 'grism' and 'pupil'
+        filters2 = []
+        for filt in filters:
+            filtlow = filt.lower()
+            if ('open' in filtlow) or ('grism' in filtlow) or ('pupil' in filtlow):
+                pass
+            else:
+                filters2.append(filt)
+        
+        filters = filters2
+        
+        # blank means an opaque mask was in place, which of course
+        # blocks any other in place filters
+        if 'blank' in filters:
+            retfilternamestring = 'blank'
+        elif len(filters) == 0:
+            retfilternamestring = 'open'
+        else:
+            filters.sort()
+            retfilternamestring = '&'.join(filters)
+        return retfilternamestring
+     
+    def makeFilternameMap(self, **args):
+        filternamemap = {}
+        for line in self.niriFilternameMapConfig:
+            linefiltername = self.filternameFrom( [line[1], line[2], line[3]])
+            filternamemap.update({linefiltername:line[0] })
+        self.niriFilternameMap = filternamemap
