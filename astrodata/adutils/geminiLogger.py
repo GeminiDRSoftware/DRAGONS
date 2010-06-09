@@ -103,6 +103,7 @@ def getLogger( name="", logfile="", verbose=False, debug=True, errorlogfile="" )
     if name == "" or name == logName:
         getLog = logging.getLogger( logName )
     else:
+        print 'gemlogger106: logName = ', logName
         getLog = logging.getLogger( logName + "." + name )
     
     minlevel = logging.INFO

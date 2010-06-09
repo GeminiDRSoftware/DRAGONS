@@ -627,6 +627,7 @@ class ReductionContext(dict):
         # cleanname not used!
         name = "proxy_recipe%d"%self.proxyID
         self.proxyID += 1
+        # print "RM630:", stepname
         self.ro.recipeLib.loadAndBindRecipe(self.ro, name, src=stepname)
         return self.ro.runstep(name, self)
             
@@ -731,6 +732,7 @@ class ReductionContext(dict):
         if filepaths is None:
             dataset = self.inputs
         else:
+            
             dataset = filepaths
             
         for data in dataset:
@@ -818,7 +820,7 @@ class ReductionContext(dict):
                 elapsed = ""
                 format = "%(indent)s%(stepname)s %(elapsed)s%(mark)s at %(time)s"
                 
-            lastdt = dt
+            lastdt = dtpostpend
             if startdt == None:
                 startdt = dt
 
@@ -1134,6 +1136,7 @@ class RecipeLibrary(object):
             rec = src
             # compose to python source
             prec = self.composeRecipe(name, rec)
+            # print "RM1139:", prec
             # compile to unbound function (using the python interpretor obviously)
             rfunc = self.compileRecipe(name, prec)
             # bind the recipe to the reduction object
