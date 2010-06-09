@@ -126,7 +126,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         try:
             hdu = dataset.hdulist
-            ret_ut_time = hdu[0].header[globalStdkeyDict['key_ut_time']]
+            ut_time = hdu[0].header[globalStdkeyDict['key_ut_time']]
             
             # Validate the result.
             # The assumption is that the standard mandates HH:MM:SS[.S] 
