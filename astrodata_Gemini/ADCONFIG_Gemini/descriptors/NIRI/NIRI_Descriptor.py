@@ -119,6 +119,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                 disperser = filter2
             elif disperser_key in filter3:
                 disperser = filter3
+            else:
+                 disperser = None
             
             if stripID:
                 ret_disperser = GemCalcUtil.removeComponentID(disperser)
