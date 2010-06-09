@@ -1,9 +1,0 @@
-# Have not tested this, but this is taken from the GMOSImgQAWalkthrough
-
-getProcessedBias
-prepare
-overscanCorrect
-biasCorrect
-setStackable
-averageCombine
-normalizeFlat

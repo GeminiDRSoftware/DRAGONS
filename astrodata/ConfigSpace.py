@@ -104,17 +104,17 @@ class ConfigSpace(object):
                             subdirs = os.listdir(path)
                             for subpath in subdirs:
                                 if PACKAGEMARKER in subpath:
-                                    print os.path.listdir(subpath)
-                                    print "CS107:", subpath
-                                    
-                                    packdir = os.path.join(path,subpath)
-                                    if packdir not in self.configpacks:
-                                        self.configpacks.append(packdir)
-                                    fullpath = os.path.join(path, subpath, postfix)
-                                    # print "full", fullpath
-                                    if os.path.isdir(fullpath):
-                                        # then this is one of the config space directories
-                                        adconfdirs.append(fullpath)
+                                    subsubpaths = os.listdir(os.path.join(path,subpath))
+                                    for subsubpath in subsubpaths:
+                                        if CONFIGMARKER in subsubpath:
+                                            packdir = os.path.join(path,subpath, subsubpath)
+                                            if packdir not in self.configpacks:
+                                                self.configpacks.append(packdir)
+                                            fullpath = os.path.join(path, subpath, subsubpath, postfix)
+                                            # print "full", fullpath
+                                            if os.path.isdir(fullpath):
+                                                # then this is one of the config space directories
+                                                adconfdirs.append(fullpath)
                             else:
                                 pass # print ""
                             
@@ -150,12 +150,15 @@ class ConfigSpace(object):
                         # print "ISADIR"
                         subdirs = os.listdir(path)
                         for subpath in subdirs:
-                            if RECIPEMARKER in subpath:
-                                fullpath = os.path.join(path, subpath)
-                                # print "full", fullpath
-                                if os.path.isdir(fullpath):
-                                    # then this is one of the config space directories
-                                    adconfdirs.append(fullpath)
+                            if PACKAGEMARKER in subpath:
+                                subsubpaths = os.listdir(os.path.join(path,subpath))
+                                for subsubpath in subsubpaths:
+                                    if RECIPEMARKER in subsubpath:
+                                        fullpath = os.path.join(path, subpath, subsubpath)
+                                        # print "full", fullpath
+                                        if os.path.isdir(fullpath):
+                                            # then this is one of the config space directories
+                                            adconfdirs.append(fullpath)
                         else:
                             pass # print ""
         self.recipedirs = adconfdirs
