@@ -55,7 +55,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         except KeyError:
             return None
         
-        return float(ret_central_wavelength)
+        # This doesn't work until we define ret_central_wavelength above
+        #return float(ret_central_wavelength)
+        return None
      
     def data_section(self, dataset, **args):
         """
