@@ -1,9 +1,0 @@
-<query id="bias">
-	<identifier>
-	</identifier>
-	<criteria>
-		<property key="DATALAB" extension="SCI,1" type="string" />
-	</criteria>
-	<priorities>
-	</priorities>
-</query>
