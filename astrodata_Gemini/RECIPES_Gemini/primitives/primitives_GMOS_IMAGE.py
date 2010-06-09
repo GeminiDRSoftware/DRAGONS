@@ -495,26 +495,27 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     
     def standardizeInstrumentHeaders(self,rc):
         try:
-            
+            # 'importing' the logger and debug level
             gemLog=rc["log"]
-            gemLog.info("a line from teh stdInstHdrs primitive")
+            debugLevel=int(rc['debugLevel'])
+            
             
             for ad in rc.getInputs(style="AD"):
-                if int(rc['debugLevel'])>=1:  
+                if debugLevel>=1:  
                     print 'prim-G_I505: calling stdInstHdrs' 
                 stdInstHdrs(ad)
-                if int(rc['debugLevel'])>=3:  
+                if debugLevel>=3:  
                     print "prim_G304: printing the updated headers"
                     for ext in range(len(ad)+1):    
                         print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
-                if int(rc['debugLevel'])>=1:        
+                if debugLevel>=1:        
                     print 'prim_G_I512: instrument headers fixed' 
-                if int(rc['debugLevel'])>=10:
+                if debugLevel>=10:
                     # printing the updated headers
                     for ext in range(len(ad)+1):    
                         print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
                 
-            if int(rc['debugLevel'])>=5:
+            if debugLevel>=5:
                 print 'prim_G_I514: writing the outputs to disk'
                 rc.run('writeOutputs(postpend=_instHdrs)')  #$$$$$$$$$$$$$this needs to accept arguments to work right!!!!!!!!!!!! currently hardcoded
                 print 'prim_G_I517: writting complete'
@@ -527,11 +528,15 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     #------------------------------------------------------------------------    
     def validateInstrumentData(self,rc):
         try:
+            # 'importing' the logger and debug level
+            gemLog=rc["log"]
+            debugLevel=int(rc['debugLevel'])
+            
             for ad in rc.getInputs(style="AD"):
-                if int(rc['debugLevel'])>=4:
+                if debugLevel>=4:
                     print 'prim_G_I530: validating data for file = ',ad.filename
                 valInstData(ad)
-                if int(rc['debugLevel'])>=4:
+                if debugLevel>=4:
                     print 'prim_G_I533: data validated for file = ', ad.filename
                 
         except:
