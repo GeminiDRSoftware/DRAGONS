@@ -136,14 +136,14 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             
             if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', \
                         ut_time):
-                ret_ut_time = ut_time
+                ret_ut_time = str(ut_time)
             else:
                 ret_ut_time = None
         
         except KeyError:
             return None
         
-        return str(ret_ut_time)
+        return ret_ut_time
     
     def wavefront_sensor(self, dataset, **args):
         """
