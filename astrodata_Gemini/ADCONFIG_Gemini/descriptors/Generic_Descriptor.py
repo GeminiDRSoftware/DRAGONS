@@ -30,16 +30,17 @@ class Generic_DescriptorCalc(Calculator):
             # don't do cleverer checks like 01<=M<=12. nb. seconds ss > 59 is
             # valid when leap seconds occur.
             
+            ret_ut_date = None
+
             if (re.match('\d\d\d\d-[01]\d-[0123]\d', ut_date)):
                 ret_ut_date = ut_date
             
             m = re.match('(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)', ut_date)
-            
             if (m):
                 ret_ut_date = m.group(1)
-                return str(ret_ut_date)
-            else:
-                return None
+
+            return ret_ut_date
+
         except KeyError:
             return None
         
