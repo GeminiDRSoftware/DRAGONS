@@ -387,6 +387,50 @@ instance.
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.append(hdu)
+
+    def insert(self, index, moredata=None, data=None, header=None):
+        """
+This function inserts more data units (aka an "HDU") to the AstroData
+instance.
+
+:param index: The extension index, either an int or (EXTNAME, EXTVER) pair
+before which the extension is to be inserted.
+:param moredata: Either an AstroData instance, an HDUList instance, 
+    or an HDU instance. When present, data and header will be ignored.
+
+:type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
+)
+:param data: if moredata *is not* specified, data and header should 
+    both be set and areare used to instantiate
+    a new HDU which is then added to the 
+    AstroData instance.
+
+:type data: numarray.numaraycore.NumArray
+
+:param header: if moredata *is not* specified, data and header are used to make 
+    an HDU which is then added to the HDUList associated with this
+    AstroData instance.
+
+:type header: pyfits.Header
+        """
+        # print "AD416", type(index), index
+        if type(index) == tuple:
+            index = self.getIntExt(index, hduref=True)
+        # print "AD416", type(index), index
+            
+        
+        if (moredata == None):
+            if len(self.hdulist) == 0:
+                self.hdulist.insert(index, pyfits.PrimaryHDU(data = data, header=header))
+            else:
+                self.hdulist.insert(indexpyfits.ImageHDU(data = data, header=header))
+        elif isinstance(moredata, AstroData):
+            for hdu in moredata.hdulist[1:]:
+                self.hdulist.insert(index, hdu)
+        elif type(moredata) is pyfits.HDUList:
+            for hdu in moredata[1:]:
+                self.hdulist.insert(index, hdu)
+                index += 1
     
     def close(self):
         """This function will close the attachment to the file on disk
@@ -402,6 +446,28 @@ instance.
             if self.hdulist != None:
                 self.hdulist.close()
                 self.hdulist = None
+                
+    def infostr(self):
+        rets = ""
+        for ext in ad:
+            rets += "id =",id(ext.hdulist[1]), "\n"
+            rets += "    ", ext.extname(), ext.extver(), "\n"
+        
+    def exceptIfSingle(self):
+        if len(self.hdulist) != 2:
+            raise SingleHDUMemberExcept()
+            
+    def extname(self):
+        self.exceptIfSingle()
+        return self.hdulist[1].header.get("EXTNAME", None)
+        
+    def extver(self):
+        self.exceptIfSingle()
+        retv = self.hdulist[1].header.get("EXTVER", None)
+        if retv:
+            retv = int(retv)
+        return retv
+        
 
     def getData(self):
         """
@@ -538,6 +604,23 @@ when iterating over the AstroData extensions, e.g.:
     def hasSingleHDU(self):
         return len(self.hdulist) == 2
     
+    def getIntExt(self, extension, hduref=False):
+        if type(extension) == int:
+            return extension
+        if type(extension) == tuple:
+            
+            for i in range(1, len( self.hdulist)):
+                hdu = self.hdulist[i]
+                nam = hdu.header.get("extname", None)
+                ver = int(hdu.header.get("extver", None))
+                if nam and ver:
+                    if nam == extension[0] and ver == extension[1]:
+                        if not hduref:
+                            return i -1
+                        else:
+                            return i
+        return None
+        
     def setExtname(self, name, ver = None):
         """WARNING: this function recreates HDUs and is not to be used on subdata"""
         if self.borrowedHDUList:
