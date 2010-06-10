@@ -72,14 +72,14 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             
             if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', \
                         local_time):
-                ret_local_time = local_time
+                ret_local_time = str(local_time)
             else:
                 ret_local_time = None
         
         except KeyError:
             return None
         
-        return str(ret_local_time)
+        return ret_local_time
     
     def observation_id(self, dataset, **args):
         """
