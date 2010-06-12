@@ -331,7 +331,9 @@ class DataSpider(object):
                                         print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
                                         
                                     except:
-                                        print '         ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}:"%s"' % (sd,str(sys.exc_info()[1])) 
+                                        pad = " " * (maxlen - len(sd))
+                                        sd = str(sd) + pad
+                                        print ("          ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}: %s") % (sd, str(sys.exc_info()[1])) 
                                         if raiseExcept:
                                             raise
                                         

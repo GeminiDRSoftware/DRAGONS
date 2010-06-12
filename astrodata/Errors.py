@@ -24,3 +24,10 @@ class ExistError(Error):
     def __init__(self, message = "Keyword value not yet determined for this instrument"):
         self.message = message
 
+class DescriptorListError(Error):
+    """
+    Exception raised for instances where the asList=True parameter should be
+    used, but isn't
+    """
+    def __init__(self, message = "Please use asList=True to obtain a list"):
+        self.message = message
