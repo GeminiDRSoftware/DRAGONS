@@ -61,7 +61,7 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         hdu = dataset.hdulist
         disperser = hdu[0].header[stdkeyDictTRECS['key_disperser']]
         
-        ret_disperer = str(disperser)
+        ret_disperser = str(disperser)
         
         return ret_disperser
     
