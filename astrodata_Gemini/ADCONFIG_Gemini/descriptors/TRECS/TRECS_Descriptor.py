@@ -6,11 +6,12 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil 
 
+from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardTRECSKeyDict import stdkeyDictTRECS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
-
+    
     def __init__(self):
         pass
     
@@ -22,38 +23,32 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @return: the camera used to acquire the data
         """
-        try:
-            hdu = dataset.hdulist
-            retcamerastring = hdu[0].header[stdkeyDictTRECS['key_trecs_camera']]
+        hdu = dataset.hdulist
+        camera = hdu[0].header[stdkeyDictTRECS['key_camera']]
         
-        except KeyError:
-            return None
+        ret_camera = str(camera)
         
-        return str(retcamerastring)
+        return ret_camera
     
-    def cwave(self, dataset, **args):
+    def central_wavelength(self, dataset, **args):
         """
-        Return the cwave value for TRECS
+        Return the central_wavelength value for TRECS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @return: the central wavelength (nanometers)
         """
-        try:
-            hdu = dataset.hdulist
-            disperser = hdu[0].header[stdkeyDictTRECS['key_trecs_disperser']]
-
-            if disperser == 'LowRes-10':
-                retcwavefloat = 10.5
-            elif disperser == 'LowRes-20':
-                retcwavefloat = 20.0
-            else:
-                return None
+        hdu = dataset.hdulist
+        disperser = hdu[0].header[stdkeyDictTRECS['key_disperser']]
         
-        except KeyError:
-            return None
+        if disperser == 'LowRes-10':
+            ret_central_wavelength = 10.5
+        elif disperser == 'LowRes-20':
+            ret_central_wavelength = 20.0
+        else:
+            ret_central_wavelength = None
         
-        return float(retcwavefloat)
+        return ret_central_wavelength
     
     def disperser(self, dataset, **args):
         """
@@ -63,90 +58,81 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
-        try:
-            hdu = dataset.hdulist
-            retdisperserstring = hdu[0].header[stdkeyDictTRECS['key_trecs_disperser']]
+        hdu = dataset.hdulist
+        disperser = hdu[0].header[stdkeyDictTRECS['key_disperser']]
         
-        except KeyError:
-            return None
+        ret_disperer = str(disperser)
         
-        return str(retdisperserstring)
+        return ret_disperser
     
-    def exptime(self, dataset, **args):
+    def exposure_time(self, dataset, **args):
         """
-        Return the exptime value for TRECS
+        Return the exposure_time value for TRECS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @return: the total exposure time of the observation (seconds)
         """
-        try:
-            hdu = dataset.hdulist
-            retexptimefloat = float(hdu[0].header[stdkeyDictTRECS['key_trecs_exptime']])
-                    
-        except KeyError:
-            return None
+        hdu = dataset.hdulist
+        exposure_time = hdu[0].header[stdkeyDictTRECS['key_exposure_time']]
         
-        return float(retexptimefloat)
+        ret_exposure_time = float(exposure_time)
+        
+        return ret_exposure_time
     
-    def filtername(self, dataset, **args):
+    def filter_name(self, dataset, **args):
         """
-        Return the filtername value for TRECS
+        Return the filter_name value for TRECS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @return: the unique filter identifier string
         """
-        try:
-            hdu = dataset.hdulist
-            filter1 = hdu[0].header[stdkeyDictTRECS['key_trecs_filter1']]
-            filter2 = hdu[0].header[stdkeyDictTRECS['key_trecs_filter2']]
-
-            # create list of filter values
-            filters = [filter1,filter2]
-
-            # reject 'Open'
-            filters2 = []
-            for filt in filters:
-                if ('Open' in filt):
-                    pass
-                else:
-                    filters2.append(filt)
-            
-            filters = filters2
-            
-            # Block means an opaque mask was in place, which of course
-            # blocks any other in place filters
-            if 'Block' in filters:
-                retfilternamestring = 'blank'
-            
-            if len(filters) == 0:
-                retfilternamestring = 'open'
-            else:
-                filters.sort()
-                retfilternamestring = '&'.join(filters)
-            
-        except KeyError:
-            return None
+        hdu = dataset.hdulist
+        filter1 = hdu[0].header[stdkeyDictTRECS['key_filter1']]
+        filter2 = hdu[0].header[stdkeyDictTRECS['key_filter2']]
         
-        return str(retfilternamestring)
+        # create list of filter values
+        filters = [filter1,filter2]
+        
+        # reject 'Open'
+        filters2 = []
+        for filt in filters:
+            if ('Open' in filt):
+                pass
+            else:
+                filters2.append(filt)
+        
+        filters = filters2
+        
+        # Block means an opaque mask was in place, which of course
+        # blocks any other in place filters
+        if 'Block' in filters:
+            ret_filter_name = 'blank'
+        
+        if len(filters) == 0:
+            ret_filter_name = 'open'
+        else:
+            filters.sort()
+            ret_filter_name = str('&'.join(filters))
+        
+        return ret_filter_name
     
-    def fpmask(self, dataset, **args):
+    def focal_plane_mask(self, dataset, **args):
         """
-        Return the fpmask value for TRECS
+        Return the focal_plane_mask value for TRECS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @return: the focal plane mask used to acquire the data
         """
-        try:
-            hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictTRECS['key_trecs_fpmask']]
+        hdu = dataset.hdulist
+        focal_plane_mask = \
+            hdu[0].header[stdkeyDictTRECS['key_focal_plane_mask']]
         
-        except KeyError:
-            return None
-                        
-        return str(retfpmaskstring)
+        ret_focal_plane_mask = str(focal_plane_mask)
+        
+        return ret_focal_plane_mask
     
     def gain(self, dataset, **args):
         """
@@ -156,148 +142,61 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float
         @returns: the gain (electrons/ADU)
         """
-        try:
-            hdu = dataset.hdulist
-            biaslevel = hdu[0].header[stdkeyDictTRECS['key_trecs_biaslevel']]
-
-            if biaslevel == '2':
-                retgainfloat = 214.0
-            elif biaslevel == '1':
-                retgainfloat = 718.0
-            else:
-                return None
+        hdu = dataset.hdulist
+        biaslevel = hdu[0].header[stdkeyDictTRECS['key_biaslevel']]
         
-        except KeyError:
-            return None
-
-        return float(retgainfloat)
+        if biaslevel == '2':
+            ret_gain = 214.0
+        elif biaslevel == '1':
+            ret_gain = 718.0
+        else:
+            ret_gain = None
+        
+        return ret_gain
     
-    def nonlinear(self, dataset, **args):
+    def pixel_scale(self, dataset, **args):
         """
-        Return the nonlinear value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the non-linear level in the raw images (ADU)
-        """
-        retnonlinearint = None
-        
-        return retnonlinearint
-    
-    def nsciext(self, dataset, **args):
-        """
-        Return the nsciext value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the number of science extensions
-        """
-        retnsciextint = dataset.countExts('SCI')
-        
-        return int(retnsciextint)
-    
-    def obsmode(self, dataset, **args):
-        """
-        Return the obsmode value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the observing mode
-        """
-        try:
-            hdu = dataset.hdulist
-            retobsmodestring = hdu[0].header[stdkeyDictTRECS['key_trecs_obsmode']]
-        
-        except KeyError:
-            return None
-        
-        return str(retobsmodestring)
-    
-    def pixscale(self, dataset, **args):
-        """
-        Return the pixscale value for TRECS
+        Return the pixel_scale value for TRECS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @returns: the pixel scale (arcsec/pixel)
         """
-        retpixscalefloat = 0.089
-
-        return float(retpixscalefloat)
+        ret_pixel_scale = 0.089
+        
+        return ret_pixel_scale
     
-    def pupilmask(self, dataset, **args):
+    def pupil_mask(self, dataset, **args):
         """
-        Return the pupilmask value for TRECS
+        Return the pupil_mask value for TRECS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @returns: the pupil mask used to acquire data
         """
-        try:
-            hdu = dataset.hdulist
-            retpupilmaskstring = hdu[0].header[stdkeyDictTRECS['key_trecs_pupilmask']]
+        hdu = dataset.hdulist
+        pupil_mask = hdu[0].header[stdkeyDictTRECS['key_pupil_mask']]
         
-        except KeyError:
-            return None
+        ret_pupil_mask = str(pupil_mask)
         
-        return str(retpupilmaskstring)
+        return ret_pupil_mask
     
-    def rdnoise(self, dataset, **args):
+    def dispersion(self, dataset, **args):
         """
-        Return the rdnoise value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the estimated readout noise
-        """
-        retrdnoisefloat = None
-        
-        return retrdnoisefloat
-    
-    def satlevel(self, dataset, **args):
-        """
-        Return the satlevel value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the saturation level in the raw images (ADU)
-        """
-        retsaturationint = None
-        
-        return retsaturationint
-    
-    def wdelta(self, dataset, **args):
-        """
-        Return the wdelta value for TRECS
+        Return the dispersion value for TRECS
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @returns: the dispersion (angstroms/pixel)
         """
-        try:
-            hdu = dataset.hdulist
-            disperser = hdu[0].header[stdkeyDictTRECS['key_trecs_disperser']]
-
-            if disperser == 'LowRes-10':
-                retwdeltafloat = 0.022
-            elif disperser == 'LowRes-20':
-                retwdeltafloat = 0.033
-            else:
-                return None
+        hdu = dataset.hdulist
+        disperser = hdu[0].header[stdkeyDictTRECS['key_disperser']]
         
-        except KeyError:
-            return None
+        if disperser == 'LowRes-10':
+            ret_dispersion = 0.022
+        elif disperser == 'LowRes-20':
+            ret_dispersion = 0.033
+        else:
+            ret_dispersion = None
         
-        return float(retwdeltafloat)
-    
-    def wrefpix(self, dataset, **args):
-        """
-        Return the wrefpix value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the reference pixel of the central wavelength
-        """
-        retwrefpixfloat = None
-        
-        return retwrefpixfloat
+        return ret_dispersion

@@ -12,8 +12,6 @@ class DescriptorDescriptor:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-                else:
-                    return None
             return self.descriptorCalculator.%(name)s(self, **args)
         except:
             if self.descriptorCalculator.throwExceptions == True:

@@ -11,7 +11,7 @@ from StandardNIFSKeyDict import stdkeyDictNIFS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
-
+    
     nifsArrayDict = None
     nifsConfigDict = None    
     
@@ -31,14 +31,12 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @return: the camera used to acquire the data
         """
-        try:
-            hdu = dataset.hdulist
-            ret_camera = hdu[0].header[stdkeyDictNIFS['key_camera']]
+        hdu = dataset.hdulist
+        camera = hdu[0].header[stdkeyDictNIFS['key_camera']]
         
-        except KeyError:
-            return None
+        ret_camera = str(camera)
         
-        return str(ret_camera)
+        return ret_camera
     
     def central_wavelength(self, dataset, **args):
         """
@@ -48,15 +46,13 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float
         @return: the central wavelength (nanometers)
         """
-        try:
-            hdu = dataset.hdulist
-            ret_central_wavelength = \
-                hdu[0].header[stdkeyDictNIFS['key_central_wavelength']]
+        hdu = dataset.hdulist
+        central_wavelength = \
+            hdu[0].header[stdkeyDictNIFS['key_central_wavelength']]
         
-        except KeyError:
-            return None
+        ret_central_wavelength = float(central_wavelength)
         
-        return float(ret_central_wavelength)
+        return ret_central_wavelength
     
     def disperser(self, dataset, stripID = False, pretty=False, **args):
         """
@@ -69,23 +65,19 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
-        try:
-            # No specific pretty names, just stripID
-            if pretty:
-                stripID=True
-
-            hdu = dataset.hdulist
-            disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
-            
-            if stripID:
-                ret_disperser = GemCalcUtil.removeComponentID(disperser)
-            else:
-                ret_disperser = disperser
+        # No specific pretty names, just stripID
+        if pretty:
+            stripID=True
         
-        except KeyError:
-            return None
+        hdu = dataset.hdulist
+        disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
         
-        return str(ret_disperser)
+        if stripID:
+            ret_disperser = str(GemCalcUtil.removeComponentID(disperser))
+        else:
+            ret_disperser = str(disperser)
+        
+        return ret_disperser
     
     def exposure_time(self, dataset, **args):
         """
@@ -95,21 +87,16 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float
         @return: the total exposure time of the observation (seconds)
         """
-        try:
-            hdu = dataset.hdulist
-            exposure_time = \
-                hdu[0].header[globalStdkeyDict['key_exposure_time']]
-            coadds = dataset.coadds()
-            
-            if dataset.isType('NIFS_RAW') == True and coadds != 1:
-                ret_exposure_time = exposure_time * coadds
-            else:
-                ret_exposure_time = exposure_time
+        hdu = dataset.hdulist
+        exposure_time = hdu[0].header[globalStdkeyDict['key_exposure_time']]
+        coadds = dataset.coadds()
         
-        except KeyError:
-            return None
+        if dataset.isType('NIFS_RAW') == True and coadds != 1:
+            ret_exposure_time = float(exposure_time * coadds)
+        else:
+            ret_exposure_time = float(exposure_time)
         
-        return float(ret_exposure_time)
+        return ret_exposure_time
     
     def filter_name(self, dataset, pretty=False, stripID=False, **args):
         """
@@ -122,25 +109,21 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @return: the unique filter identifier string
         """
-        try:
-            # No specific pretty names, just use stripID
-            if pretty:
-                stripID=True
-
-            hdu = dataset.hdulist
-            filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
-            if stripID:
-                filter = GemCalcUtil.removeComponentID(filter)
-
-            if filter == 'Blocked':
-                ret_filter_name = 'blank'
-            else:
-                ret_filter_name = filter
+        # No specific pretty names, just use stripID
+        if pretty:
+            stripID=True
         
-        except KeyError:
-            return None
+        hdu = dataset.hdulist
+        filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
+        if stripID:
+            filter = GemCalcUtil.removeComponentID(filter)
         
-        return str(ret_filter_name)
+        if filter == 'Blocked':
+            ret_filter_name = 'blank'
+        else:
+            ret_filter_name = str(filter)
+        
+        return ret_filter_name
     
     def focal_plane_mask(self, dataset, **args):
         """
@@ -150,15 +133,13 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @return: the focal plane mask used to acquire the data
         """
-        try:
-            hdu = dataset.hdulist
-            ret_focal_plane_mask = \
-                hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
+        hdu = dataset.hdulist
+        focal_plane_mask = \
+            hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
         
-        except KeyError:
-            return None
-                        
-        return str(ret_focal_plane_mask)
+        ret_focal_plane_mask = str(focal_plane_mask)
+        
+        return ret_focal_plane_mask
     
     def gain(self, dataset, **args):
         """
@@ -168,29 +149,25 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float
         @returns: the gain (electrons/ADU)
         """
-        try:
-            hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
-            
-            biasvalues = self.nifsArrayDict.keys()
-            for bias in biasvalues:
-                if abs(float(bias) - abs(headerbias)) < 0.1:
-                    array = self.nifsArrayDict[bias]
-                else:
-                    array = None
-            
-            if array != None:
-                ret_gain = array[1]
+        hdu = dataset.hdulist
+        headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
+        
+        biasvalues = self.nifsArrayDict.keys()
+        for bias in biasvalues:
+            if abs(float(bias) - abs(headerbias)) < 0.1:
+                array = self.nifsArrayDict[bias]
             else:
-                return None
+                array = None
         
-        except KeyError:
-            return None
+        if array != None:
+            ret_gain = float(array[1])
+        else:
+            ret_gain = None
         
-        return float(ret_gain)
+        return ret_gain
     
     nifsArrayDict = None
-
+    
     def non_linear_level(self, dataset, **args):
         """
         Return the non_linear_level value for NIFS
@@ -199,35 +176,29 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: integer
         @returns: the non-linear level in the raw images (ADU)
         """
-        try:
-            # non_linear_level depends on whether data has been corrected for
-            # non-linearity ... need to check this ...
-            hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
-            coadds = dataset.coadds()
-
-            biasvalues = self.nifsArrayDict.keys()
-            for bias in biasvalues:
-                if abs(float(bias) - abs(headerbias)) < 0.1:
-                    array = self.nifsArrayDict[bias]
-                else:
-                    array = None
-
-            if array != None:
-                well = float(array[2])
-                linearlimit = float(array[3])
-                nonlinearlimit = float(array[7])
+        # non_linear_level depends on whether data has been corrected for
+        # non-linearity ... need to check this ...
+        hdu = dataset.hdulist
+        headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
+        coadds = dataset.coadds()
+        
+        biasvalues = self.nifsArrayDict.keys()
+        for bias in biasvalues:
+            if abs(float(bias) - abs(headerbias)) < 0.1:
+                array = self.nifsArrayDict[bias]
             else:
-                return None
-
+                array = None
+        
+        if array != None:
+            well = float(array[2])
+            linearlimit = float(array[3])
+            nonlinearlimit = float(array[7])
             saturation = int(well * coadds)
             ret_non_linear_level = int(saturation * linearlimit)
-            #ret_non_linear_level = int(saturation * nonlinearlimit)
+        else:
+            ret_non_linear_level = None
         
-        except KeyError:
-            return None
-                
-        return int(ret_non_linear_level)
+        return ret_non_linear_level
     
     nifsArrayDict = None
     
@@ -239,15 +210,13 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @returns: the observing epoch
         """
-        try:
-            hdu = dataset.hdulist
-            ret_observation_epoch = \
-                hdu[0].header[stdkeyDictNIFS['key_observation_epoch']]
+        hdu = dataset.hdulist
+        observation_epoch = \
+            hdu[0].header[stdkeyDictNIFS['key_observation_epoch']]
         
-        except KeyError:
-            return None
+        ret_observation_epoch = str(observation_epoch)
         
-        return str(ret_observation_epoch)
+        return ret_observation_epoch
     
     nifsConfigDict = None
     
@@ -259,23 +228,19 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: string
         @returns: the observing mode
         """
-        try:
-            hdu = dataset.hdulist
-            focal_plane_mask = \
-                hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
-            disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
-            filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
-
-            observation_mode_key = (focal_plane_mask, disperser, filter)
-            
-            array = self.nifsConfigDict[observation_mode_key]
-
-            ret_observation_mode = array[3]
+        hdu = dataset.hdulist
+        focal_plane_mask = \
+            hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
+        disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
+        filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
         
-        except KeyError:
-            return None
+        observation_mode_key = (focal_plane_mask, disperser, filter)
         
-        return str(ret_observation_mode)
+        array = self.nifsConfigDict[observation_mode_key]
+        
+        ret_observation_mode = str(array[3])
+        
+        return ret_observation_mode
     
     nifsConfigDict = None
     
@@ -287,23 +252,19 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float
         @returns: the pixel scale (arcsec/pixel)
         """
-        try:
-            hdu = dataset.hdulist
-            focal_plane_mask = \
-                hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
-            disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
-            filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
-
-            pixel_scale_key = (focal_plane_mask, disperser, filter)
-
-            array = self.nifsConfigDict[pixel_scale_key]
-
-            ret_pixel_scale = array[2]
+        hdu = dataset.hdulist
+        focal_plane_mask = \
+            hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
+        disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
+        filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
         
-        except KeyError:
-            return None
+        pixel_scale_key = (focal_plane_mask, disperser, filter)
         
-        return float(ret_pixel_scale)
+        array = self.nifsConfigDict[pixel_scale_key]
+        
+        ret_pixel_scale = float(array[2])
+        
+        return ret_pixel_scale
     
     nifsConfigDict = None
     
@@ -315,30 +276,26 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float
         @returns: the estimated readout noise (electrons)
         """
-        try:
-            hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
-            lnrs = hdu[0].header[stdkeyDictNIFS['key_lnrs']]
-            coadds = dataset.coadds()
-
-            biasvalues = self.nifsArrayDict.keys()
-            for bias in biasvalues:
-                if abs(float(bias) - abs(headerbias)) < 0.1:
-                    array = self.nifsArrayDict[bias]
-                else:
-                    array = None
-
-            if array != None:
-                read_noise = float(array[0])
+        hdu = dataset.hdulist
+        headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
+        lnrs = hdu[0].header[stdkeyDictNIFS['key_lnrs']]
+        coadds = dataset.coadds()
+        
+        biasvalues = self.nifsArrayDict.keys()
+        for bias in biasvalues:
+            if abs(float(bias) - abs(headerbias)) < 0.1:
+                array = self.nifsArrayDict[bias]
             else:
-                return None
+                array = None
         
-            ret_read_noise = (read_noise * math.sqrt(coadds)) / math.sqrt(lnrs)
+        if array != None:
+            read_noise = float(array[0])
+            ret_read_noise = float((read_noise * math.sqrt(coadds)) \
+                / math.sqrt(lnrs))
+        else:
+            ret_read_noise = None
         
-        except KeyError:
-            return None
-
-        return float(ret_read_noise)
+        return ret_read_noise
     
     nifsArrayDict = None
     
@@ -350,27 +307,23 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: integer
         @returns: the saturation level in the raw images (ADU)
         """
-        try:
-            hdu = dataset.hdulist
-            headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
-            coadds = dataset.coadds()
-
-            biasvalues = self.nifsArrayDict.keys()
-            for bias in biasvalues:
-                if abs(float(bias) - abs(headerbias)) < 0.1:
-                    array = self.nifsArrayDict[bias]
-                else:
-                    array = None
-            
-            if array != None:
-                well = float(array[2])
-                ret_saturation_level = int(well * coadds)
+        hdu = dataset.hdulist
+        headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
+        coadds = dataset.coadds()
+        
+        biasvalues = self.nifsArrayDict.keys()
+        for bias in biasvalues:
+            if abs(float(bias) - abs(headerbias)) < 0.1:
+                array = self.nifsArrayDict[bias]
             else:
-                return None
+                array = None
         
-        except KeyError:
-            return None
+        if array != None:
+            well = float(array[2])
+            ret_saturation_level = int(well * coadds)
+        else:
+            ret_saturation_level = None
         
-        return int(ret_saturation_level)
+        return ret_saturation_level
     
     nifsArrayDict = None

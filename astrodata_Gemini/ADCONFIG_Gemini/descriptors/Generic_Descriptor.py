@@ -19,28 +19,24 @@ class Generic_DescriptorCalc(Calculator):
         @rtype: string
         @return: the UT date of the observation (YYYY-MM-DD)
         """
-        try:
-            hdu = dataset.hdulist
-            ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
-            
-            # Validate the result. The definition is taken from the FITS
-            # standard document v3.0. Must be YYYY-MM-DD or
-            # YYYY-MM-DDThh:mm:ss[.sss]. Here I also do some very basic checks
-            # like ensuring the first digit of the month is 0 or 1, but I
-            # don't do cleverer checks like 01<=M<=12. nb. seconds ss > 59 is
-            # valid when leap seconds occur.
-            
-            ret_ut_date = None
-
-            if (re.match('\d\d\d\d-[01]\d-[0123]\d', ut_date)):
-                ret_ut_date = ut_date
-            
-            m = re.match('(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)', ut_date)
-            if (m):
-                ret_ut_date = m.group(1)
-
-            return ret_ut_date
-
-        except KeyError:
-            return None
+        hdu = dataset.hdulist
+        ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
         
+        # Validate the result. The definition is taken from the FITS
+        # standard document v3.0. Must be YYYY-MM-DD or
+        # YYYY-MM-DDThh:mm:ss[.sss]. Here I also do some very basic checks
+        # like ensuring the first digit of the month is 0 or 1, but I
+        # don't do cleverer checks like 01<=M<=12. nb. seconds ss > 59 is
+        # valid when leap seconds occur.
+        
+        match1 = re.match('\d\d\d\d-[01]\d-[0123]\d', ut_date)
+        match2 = re.match('(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)', ut_date)
+        
+        if match1:
+            ret_ut_date = str(ut_date)
+        elif match2:
+            ret_ut_date = str(match2.group(1))
+        else:
+            ret_ut_date = None
+        
+        return ret_ut_date

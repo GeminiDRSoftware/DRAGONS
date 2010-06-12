@@ -23,253 +23,147 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: float
         @return: the central wavelength (nanometers)
         """
-        try:
-            hdu = dataset.hdulist
-            ret_central_wavelength = \
-                hdu[0].header[stdkeyDictMICHELLE['key_central_wavelength']]
+        hdu = dataset.hdulist
+        central_wavelength = \
+            hdu[0].header[stdkeyDictMICHELLE['key_central_wavelength']]
         
-        except KeyError:
-            return None
+        ret_central_wavelength = float(central_wavelength)
         
-        return float(ret_central_wavelength)
+        return ret_central_wavelength
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
+        @param stripID: set to True to remove the component ID from the
+        returned disperser name
+        @param pretty: set to True to return a meaningful disperser name
         @rtype: string
         @return: the disperser / grating used to acquire the data
         """
-        # The Michelle components don't have component IDs so we just ignore the stripID and pretty options
-        try:
-            hdu = dataset.hdulist
-            retdisperserstring = hdu[0].header[stdkeyDictMICHELLE['key_disperser']]
+        # The Michelle components don't have component IDs so we just ignore
+        # the stripID and pretty options
+        hdu = dataset.hdulist
+        disperser = hdu[0].header[stdkeyDictMICHELLE['key_disperser']]
         
-        except KeyError:
-            return None
+        ret_disperser = str(disperser)
         
-        return str(retdisperserstring)
+        return ret_disperser
     
-    def exptime(self, dataset, **args):
+    def exposure_time(self, dataset, **args):
         """
-        Return the exptime value for MICHELLE
+        Return the exposure_time value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @return: the total exposure time of the observation (seconds)
         """
-        try:
-            hdu = dataset.hdulist
-            exposure = float(hdu[0].header[stdkeyDictMICHELLE['key_exposure']])
-            numexpos = float (hdu[0].header[stdkeyDictMICHELLE['key_numexpos']])
-            numext = float(hdu[0].header[stdkeyDictMICHELLE['key_numext']])
-
-            retexptimefloat = exposure * numexpos * numext
+        hdu = dataset.hdulist
+        exposure = float(hdu[0].header[stdkeyDictMICHELLE['key_exposure']])
+        numexpos = float(hdu[0].header[stdkeyDictMICHELLE['key_numexpos']])
+        numext = float(hdu[0].header[stdkeyDictMICHELLE['key_numext']])
         
-        except KeyError:
-            return None
+        ret_exposure_time = float(exposure * numexpos * numext)
         
-        return float(retexptimefloat)
+        return ret_exposure_time
     
-    def filtername(self, dataset, stripID=False, pretty=False, **args):
+    def filter_name(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the filtername value for MICHELLE
+        Return the filter_name value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
+        @param stripID: set to True to remove the component ID from the
+        returned filter name
+        @param pretty: set to True to return a meaningful filter name
         @rtype: string
         @return: the unique filter identifier string
         """
-        # The Michelle filters don't have ID strings, so we just ignore the stripID and pretty options
-        try:
-            hdu = dataset.hdulist
-            filter = hdu[0].header[stdkeyDictMICHELLE['key_filter']]
-            
-            if filter == 'NBlock':
-                retfilternamestring = 'blank'
-            else:
-                retfilternamestring = filter
-            
-        except KeyError:
-            return None
+        # The Michelle filters don't have ID strings, so we just ignore the
+        # stripID and pretty options
+        hdu = dataset.hdulist
+        filter = hdu[0].header[stdkeyDictMICHELLE['key_filter']]
         
-        return str(retfilternamestring)
+        if filter == 'NBlock':
+            ret_filter_name = 'blank'
+        else:
+            ret_filter_name = str(filter)
+        
+        return ret_filter_name
     
-    def fpmask(self, dataset, **args):
+    def focal_plane_mask(self, dataset, **args):
         """
-        Return the fpmask value for MICHELLE
+        Return the focal_plane_mask value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @return: the focal plane mask used to acquire the data
         """
-        try:
-            hdu = dataset.hdulist
-            retfpmaskstring = hdu[0].header[stdkeyDictMICHELLE['key_fpmask']]
+        hdu = dataset.hdulist
+        focal_plane_mask = \
+            hdu[0].header[stdkeyDictMICHELLE['key_focal_plane_mask']]
         
-        except KeyError:
-            return None
-                        
-        return str(retfpmaskstring)
+        ret_focal_plane_mask = str(focal_plane_mask)
+        
+        return ret_focal_plane_mask
     
-    def gain(self, dataset, **args):
+    def observation_mode(self, dataset, **args):
         """
-        Return the gain value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the gain (electrons/ADU)
-        """
-        try:
-            hdu = dataset.hdulist
-            retgainfloat = hdu[0].header[stdkeyDictMICHELLE['key_gain']]
-        
-        except KeyError:
-            return None
-        
-        return float(retgainfloat)
-    
-    def nonlinear(self, dataset, **args):
-        """
-        Return the nonlinear value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the non-linear level in the raw images (ADU)
-        """
-        retnonlinearint = None
-        
-        return retnonlinearint
-    
-    def nsciext(self, dataset, **args):
-        """
-        Return the nsciext value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the number of science extensions
-        """
-        try:
-            hdu = dataset.hdulist
-            retnsciextint = hdu[0].header[stdkeyDictMICHELLE['key_nsciext']]
-
-        except KeyError:
-            return None
-        
-        return int(retnsciextint)
-    
-    def obsmode(self, dataset, **args):
-        """
-        Return the obsmode value for MICHELLE
+        Return the observation_mode value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
-        @returns: the observing mode
+        @returns: the observation mode
         """
-        try:
-            hdu = dataset.hdulist
-            retobsmodestring = hdu[0].header[stdkeyDictMICHELLE['key_obsmode']]
+        hdu = dataset.hdulist
+        observation_mode = \
+            hdu[0].header[stdkeyDictMICHELLE['key_observation_mode']]
         
-        except KeyError:
-            return None
+        ret_observation_mode = str(observation_mode)
         
-        return str(retobsmodestring)
+        return ret_observation_mode
     
-    def pixscale(self, dataset, **args):
+    def pixel_scale(self, dataset, **args):
         """
-        Return the pixscale value for MICHELLE
+        Return the pixel_scale value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: float
         @returns: the pixel scale (arcsec/pixel)
         """
-        try:
-            hdu = dataset.hdulist
-            retpixscalefloat = hdu[0].header[stdkeyDictMICHELLE['key_pixscale']]
+        hdu = dataset.hdulist
+        pixel_scale = hdu[0].header[stdkeyDictMICHELLE['key_pixel_scale']]
         
-        except KeyError:
-            return None
+        ret_pixel_scale = float(pixel_scale)
         
-        return float(retpixscalefloat)
+        return ret_pixel_scale
     
-    def pupilmask(self, dataset, **args):
+    def ut_date(self, dataset, **args):
         """
-        Return the pupilmask value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the pupil mask used to acquire data
-        """
-        retpupilmaskstring = None
-        
-        return str(retpupilmaskstring)
-    
-    def rdnoise(self, dataset, **args):
-        """
-        Return the rdnoise value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the estimated readout noise
-        """
-        retrdnoisefloat = None
-        
-        return retrdnoisefloat
-    
-    def satlevel(self, dataset, **args):
-        """
-        Return the satlevel value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @returns: the saturation level in the raw images (ADU)
-        """
-        retsaturationint = None
-        
-        return retsaturationint
-    
-    def utdate(self, dataset, **args):
-        """
-        Return the utdate value for MICHELLE
+        Return the ut_date value for MICHELLE
         @param dataset: the data set
         @type dataset: AstroData
         @rtype: string
         @returns: the UT date of the observation (YYYY-MM-DD)
         """
-        try:
-            hdu = dataset.hdulist
-            retutdatestring = hdu[0].header[stdkeyDictMICHELLE['key_utdate']]
+        hdu = dataset.hdulist
+        ut_date = hdu[0].header[stdkeyDictMICHELLE['key_ut_date']]
         
-        except KeyError:
-            return None
+        # Validate the result. The definition is taken from the FITS
+        # standard document v3.0. Must be YYYY-MM-DD or
+        # YYYY-MM-DDThh:mm:ss[.sss]. Here I also do some very basic checks
+        # like ensuring the first digit of the month is 0 or 1, but I
+        # don't do cleverer checks like 01<=M<=12. nb. seconds ss > 59 is
+        # valid when leap seconds occur.
         
-        return str(retutdatestring)
-    
-    def wdelta(self, dataset, **args):
-        """
-        Return the wdelta value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the dispersion (angstroms/pixel)
-        """
-        try:
-            hdu = dataset.hdulist
-            retwdeltafloat = hdu[0].header[stdkeyDictMICHELLE['key_wdelta']]
+        match1 = re.match('\d\d\d\d-[01]\d-[0123]\d', ut_date)
+        match2 = re.match('(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)', ut_date)
         
-        except KeyError:
-            return None
+        if match1:
+            ret_ut_date = str(ut_date)
+        elif match2:
+            ret_ut_date = str(match2.group(1))
+        else:
+            ret_ut_date = None
         
-        return float(retwdeltafloat)
-    
-    def wrefpix(self, dataset, **args):
-        """
-        Return the wrefpix value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the reference pixel of the central wavelength
-        """
-        retwrefpixfloat = None
-        
-        return retwrefpixfloat
+        return ret_ut_date
