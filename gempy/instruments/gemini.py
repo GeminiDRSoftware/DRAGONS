@@ -48,7 +48,20 @@ def stdObsStruct(ad):
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'EXTNAME', 'SCI', "Extension name")        
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'EXTVER', int(ext.header['EXTVER']), "Extension version")        
         
-        
+def fileNameUpdater(ad, debugLevel, postpend , strip=False):
+    print 'gemini52: entered fileNameUpdater'
+    infilename = os.path.basename(ad.filename)
+    if strip:
+        infilename = stripPostfix(infilename)
+    (name,filetype) = os.path.splitext(infilename)
+    if debugLevel>=2:  
+        print 'gemini56: infilename = ', infilename
+    outFileName = name+postpend+filetype
+    ad.filename = outFileName
+    if debugLevel>=2: 
+        print 'gemini60: current output filename  = ',ad.filename
+    
+ 
 
 def stripPostfix(filename):
     dirname = os.path.dirname(filename)
@@ -57,4 +70,9 @@ def stripPostfix(filename):
     a = name.split("_")
     name = a[0]
     retname = os.path.join(dirname,name+filetype)
-    return retname       
+    return retname    
+
+
+
+
+   
