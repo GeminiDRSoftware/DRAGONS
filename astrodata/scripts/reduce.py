@@ -54,6 +54,8 @@ from astrodata.adutils.future import gemDisplay
 from astrodata.adutils import paramutil
 from astrodata.adutils.gemutil import gemdate
 #------------------------------------------------------------------------------ 
+from astrodata.adutils.future import gemLog
+#-----------------------------------------------------------------------------
 #oet = time.time()
 #print 'TIME:', (oet -ost)
 b = datetime.now()
@@ -124,9 +126,15 @@ parser.add_option("-i", "--intelligence", dest='intelligence', default=False, ac
 parser.add_option("--force-width", dest = "forceWidth", default=None,
                   help="Use to force width of terminal for output purposes instead of using actual terminal width.")
 parser.add_option("--force-height", dest = "forceHeight", default=None,
-                  help="Use to force height of terminal for output purposes instead of using actual temrinal height.")
+                  help="Use to force height of terminal for output purposes instead of using actual terminal height.")
 parser.add_option("--addprimset", dest = "primsetname", default = None,
-                  help="Use to add user supplied primitives to the reduction object.")                  
+                  help="Use to add user supplied primitives to the reduction object.")
+parser.add_option("-d", "--debug",dest='debug', default=False, action="store_true",
+                  help="debug will set verbosity to highest for console and file.")
+parser.add_option("--verbose",dest='verbose', default=2, type='int',
+                  help="verbose will set the verbosity level for the console; 0=none, 5=highest.") 
+parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
+                  help="name of log")                  
 (options,  args) = parser.parse_args()
 
 useTK =  options.bMonitor
@@ -140,6 +148,10 @@ stkindfile = "./.reducecache/stkindex.pkl"
 
 terminal.forceWidth = options.forceWidth
 terminal.forceHeight = options.forceHeight
+
+#---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
+log = gemLog.getGeminiLog(logName=options.logName,verbose=options.verbose,debug=options.debug)
+#-------------------------------------------------------------------------
 
 def abortBadParamfile(lines):
     for i in range(0,len(lines)):
