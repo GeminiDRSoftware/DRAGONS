@@ -129,12 +129,12 @@ parser.add_option("--force-height", dest = "forceHeight", default=None,
                   help="Use to force height of terminal for output purposes instead of using actual terminal height.")
 parser.add_option("--addprimset", dest = "primsetname", default = None,
                   help="Use to add user supplied primitives to the reduction object.")
-parser.add_option("-d", "--debug",dest='debug', default=False, action="store_true",
-                  help="debug will set verbosity to highest for console and file.")
+parser.add_option("--debug",dest='debug', default=False, action="store_true",
+                  help="debug will set verbosity for console and log file to the extremely high developers debug level.")
 parser.add_option("--verbose",dest='verbose', default=2, type='int',
-                  help="verbose will set the verbosity level for the console; 0=none, 5=highest.") 
+                  help="verbose will set the verbosity level for the console; 0=none, 6=highest.") 
 parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
-                  help="name of log")                  
+                  help="name of log; default is 'gemini.log'.")                  
 (options,  args) = parser.parse_args()
 
 useTK =  options.bMonitor
