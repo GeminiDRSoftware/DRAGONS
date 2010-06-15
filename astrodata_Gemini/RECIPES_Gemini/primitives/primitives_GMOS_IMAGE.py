@@ -3,6 +3,7 @@ from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
+from astrodata.adutils.future import gemLog
 from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
@@ -17,7 +18,7 @@ from gempy.instruments.gmos import *
 import pyfits
 import numdisplay
 import string
-
+log=gemLog.getGeminiLog()
 yes = pyraf.iraf.yes
 no = pyraf.iraf.no
 
@@ -495,52 +496,38 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     
     def standardizeInstrumentHeaders(self,rc):
         try:
-            # 'importing' the logger and debug level
-            gemLog=rc["log"]
             debugLevel=int(rc['debugLevel'])
-            
-            
-            for ad in rc.getInputs(style="AD"):
-                if debugLevel>=1:  
-                    print 'prim-G_I505: calling stdInstHdrs' 
-                stdInstHdrs(ad)
-                if debugLevel>=3:  
-                    print "prim_G304: printing the updated headers"
-                    for ext in range(len(ad)+1):    
-                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
-                if debugLevel>=1:        
-                    print 'prim_G_I512: instrument headers fixed' 
-                if debugLevel>=10:
-                    # printing the updated headers
-                    for ext in range(len(ad)+1):    
-                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
-                
+                                   
+            for ad in rc.getInputs(style="AD"): 
+                log.info('prim-G_I502: calling stdInstHdrs','status') 
+                stdInstHdrs(ad) 
+                log.debug("prim_G_I504: printing the updated headers")
+                for ext in range(len(ad)+1):    
+                    log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions        
+                log.info('prim_G_I507: instrument headers fixed','status') 
+                # printing the updated headers
+                for ext in range(len(ad)+1):    
+                    log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
             if debugLevel>=5:
-                print 'prim_G_I514: writing the outputs to disk'
+                log.debug('prim_G_I512: writing the outputs to disk')
                 rc.run('writeOutputs(postpend=_instHdrs)')  #$$$$$$$$$$$$$this needs to accept arguments to work right!!!!!!!!!!!! currently hardcoded
-                print 'prim_G_I517: writting complete'
+                log.debug('prim_G_I514: writting complete')
                     
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc
     #------------------------------------------------------------------------    
     def validateInstrumentData(self,rc):
         try:
-            # 'importing' the logger and debug level
-            gemLog=rc["log"]
-            debugLevel=int(rc['debugLevel'])
-            
             for ad in rc.getInputs(style="AD"):
-                if debugLevel>=4:
-                    print 'prim_G_I530: validating data for file = ',ad.filename
+                log.info('prim_G_I525: validating data for file = '+ad.filename,'status')
                 valInstData(ad)
-                if debugLevel>=4:
-                    print 'prim_G_I533: data validated for file = ', ad.filename
+                log.info('prim_G_I527: data validated for file = '+ad.filename,'status')
                 
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc       
