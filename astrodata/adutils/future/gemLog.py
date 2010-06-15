@@ -35,8 +35,8 @@ class GeminiLogger(object):
                 ch.setLevel(logging.DEBUG)
                 fh.setLevel(logging.DEBUG)
         #create formatters
-        ch_formatter = logging.Formatter("%(category)-6s  %(levelno)d  %(levelname)s  %(message)s")
-        fh_formatter = logging.Formatter("%(asctime)s %(category)-6s  %(levelno)d  %(levelname)s  %(message)s")
+        ch_formatter = logging.Formatter("%(category)-7s %(levelno)d %(levelname)-8s- %(message)s")
+        fh_formatter = logging.Formatter("%(asctime)s %(category)-7s %(levelno)d %(levelname)-8s- %(message)s")
         
         #add formatter to ch and fh
         ch.setFormatter(ch_formatter)
@@ -48,23 +48,33 @@ class GeminiLogger(object):
     
     def info(self,msg,cat='DEFAULT'):
         a={'category':cat}
-        self.logger.info(msg, extra=a)
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.info(line, extra=a)
         
-    def debug(self,msg,cat='DEFAULT'):     
+    def debug(self,msg,cat='DEFAULT'):    
         a={'category':cat}
-        self.logger.debug(msg, extra=a)
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.debug(line, extra=a)
         
     def critical(self,msg,cat='DEFAULT'):
         a={'category': cat}
-        self.logger.critical(msg,extra=a)
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.critical(line,extra=a)
         
     def warning(self,msg,cat='DEFAULT'):
         a={'category':cat}
-        self.logger.warning(msg,extra=a)
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.warning(line,extra=a)
         
     def error(self,msg,cat='DEFAULT'):
         a={'category': cat}
-        self.logger.error(msg,extra=a)
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.error(line,extra=a)
         
 def getGeminiLog(logName=None ,verbose = 0, debug = False):
     global _geminiLogger
