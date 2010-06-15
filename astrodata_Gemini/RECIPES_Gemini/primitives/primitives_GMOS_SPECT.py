@@ -4,6 +4,7 @@ from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
+from astrodata.adutils.future import gemLog
 from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
@@ -15,7 +16,7 @@ import iqtool
 from iqtool.iq import getiq
 from gempy.instruments.gmos import *
 
-
+log=gemLog.getGeminiLog()
 
 import pyfits
 import numdisplay
@@ -95,23 +96,18 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
 
     def standardizeInstrumentHeaders(self,rc):
         #adds specific headers for a GMOS_SPECT file
-        try:
-            # 'importing' the logger and debug level    
-            gemLog=rc["log"]
-            
-            for ad in rc.getInputs(style="AD"):
-                if debugLevel>=1: 
-                    print 'prim-G_I505: calling stdInstHdrs' #$$$$$$$$$$$$$$$
-                stdInstHdrs(ad)
-                if debugLevel>=3:  
-                    # printing the updated headers
-                    for ext in range(len(ad)+1):    
-                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
-                if debugLevel>=1:          
-                    print 'prim_G_I507: instrument headers fixed' 
+        try: 
+            for ad in rc.getInputs(style="AD"): 
+                log.info('prim-G_S101: calling stdInstHdrs','status')
+                stdInstHdrs(ad) 
+                
+                # printing the updated headers
+                for ext in range(len(ad)+1):    
+                    log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions          
+                log.info('prim_G_S107: instrument headers fixed','status') 
                 
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc
@@ -120,65 +116,46 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         # this works to add an MDF if there is a MASKNAME in the images PHU only.  
         # will be upgraded later, early testing complete
         
-        try:
-            # 'importing' the logger and debug level  
-            gemLog=rc["log"]
-            debugLevel=int(rc['debugLevel'])
-            
-            if debugLevel>=1:
-                print 'prepare step 2'
-            
+        try:            
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
-                if debugLevel>=1:
-                    print 'prim_G_S162:', infilename
+                log.info(('prim_G_S122:', infilename),'status')
                 #print 'prim_G_I531: ', os.path.abspath(infilename) #absolute path of input file
                 #print 'prim_G_I531: ', os.path.dirname(infilename) #reletive directory of input file without /
                 
                 pathname = 'kyles_test_images/' #$$$$ HARDCODED FOR NOW, TILL FIX COMES FROM CRAIG
                 maskname = ad.phuGetKeyValue("MASKNAME")
-                if debugLevel>=1:
-                    print "Pim_G_S170: maskname = ", maskname
+                log.info(("Pim_G_S128: maskname = ", maskname),'status')
                 inMDFname = 'kyles_test_images/'+maskname +'.fits'
-                if debugLevel>=1:
-                    print 'Prim_G_S172: input MDF file = ', inMDFname
+                log.info(('Prim_G_S130: input MDF file = ', inMDFname),'status')
                 admdf = AstroData(inMDFname)
                 admdf.setExtname('MDF',1)  #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER??
                 admdf.extSetKeyValue(len(admdf)-1,'EXTNAME', 'MDF',"Extension name" )
                 admdf.extSetKeyValue(len(admdf)-1,'EXTVER', 1,"Extension version" ) #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER?? this one is to add the comment
                 
-                if debugLevel>=3:
-                    print admdf[0].getHeader()
-                    print admdf.info()
+                log.debug(admdf[0].getHeader())
+                log.debut(admdf.info())
                 
                 ad.append(moredata=admdf)  #$$$$$$$$$$  STILL NEED TO GET CRAIG TO CREATE A FN THAT INSERTS RATHER THAN APPENDS
-                if debugLevel>=1:
-                    print ad.info()
+                log.info(ad.info(),'status')
                 
                 #addMDF(ad,mdf)     #$$ the call to the tool box function, currently not in use
-                if debugLevel>=1:
-                    print 'prim_G_S177: finished adding the MDF'
+                log.info('prim_G_S143: finished adding the MDF','status')
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.", 'critical')
             raise 
         
         yield rc
     #------------------------------------------------------------------------
     def validateInstrumentData(self,rc):
-        try:
-            # 'importing' the logger and debug level   
-            gemLog=rc["log"]
-            debugLevel=int(rc['debugLevel'])
-            
+        try:        
             for ad in rc.getInputs(style="AD"):
-                if debugLevel>=4:
-                    print 'prim_G_S164: validating data for file = ',ad.filename
+                log.info(('prim_G_S153: validating data for file = ',ad.filename),'status')
                 valInstData(ad)
-                if debugLevel>=4:
-                    print 'prim_G_S167: data validated for file = ', ad.filename
+                log.info(('prim_G_S155: data validated for file = ', ad.filename),'status')
                 
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc
