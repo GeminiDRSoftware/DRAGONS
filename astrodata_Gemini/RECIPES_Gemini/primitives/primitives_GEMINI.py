@@ -289,53 +289,50 @@ class GEMINIPrimitives(PrimitiveSet):
                 repair = True
             else:
                 repair = ((rc["repair"]).lower() == "true")
-            #checking if there is a default debugLevel, if not set to 1
+            
+            # checking if there is a default debugLevel, if not set to 1
             if not rc['debugLevel']:
                 rc['debugLevel']=1
-                print 'prim_G290: using the default debugLevel=1'
+                print 'prim_G296: using the default debugLevel=1'
             debugLevel=int(rc['debugLevel'])
             
              # inserting the input file's headers to log for debugging (makes log HUGE)    
-            if debugLevel==10:
-                for ad in rc.getInputs(style="AD"):
-                    log.gDebug('******** input headers to prepare **************')
-                    log.gDebug(('################### Headers for file: '+ad.filename+' ##################'))
-                    for ext in range(len(ad)+1):    
-                            log.gDebug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
-                            log.gDebug('---------------------------------------------------------------------------------')
+            for ad in rc.getInputs(style="AD"):
+                log.debug('******** input headers to prepare **************')
+                log.debug('################### Headers for file: '+ad.filename+' ##################')
+                for ext in range(len(ad)+1):    
+                        log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
+                        log.debug('---------------------------------------------------------------------------------')
                 
-            if debugLevel>=1:
-                print 'prim_G_I527: validating input data'
+            log.info('prim_G307: validating input data','status')
             
             rc.run("validateInstrumentData")
             
             # updating the filenames in the RC
             for ad in rc.getInputs(style="AD"):        
-                fileNameUpdater(ad,debugLevel, postpend='_validated', strip=True)
-                if debugLevel>=10:
-                    # printing the updated headers
-                    for ext in range(len(ad)+1):    
-                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
+                fileNameUpdater(ad,debugLevel, postpend='_validated', strip=False)
+                # printing the updated headers
+                for ext in range(len(ad)+1):    
+                    log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
                 rc.reportOutput(ad) 
                     
-            if debugLevel>=1:
-                print 'prim_G_I536: input data validated, off to a good start'
-                
-            if debugLevel==10:
+            log.info('prim_G319: input data validated, off to a good start','status')
+            
+            if debugLevel>=5:    
                 # writing outputs of this primitive for debugging
-                print 'prim_G349: writing the outputs of standardizeStructure to disk'
+                log.info('prim_G323: writing the outputs of standardizeStructure to disk','status')
                 rc.run('writeOutputs')
-                print 'prim_G351: writing complete'
-                # inserting the primitive output file's headers to log for debugging (makes log HUGE)
-                for ad in rc.getInputs(style="AD"):
-                    log.gDebug('******** output headers of validateData **************')
-                    log.gDebug(('################### Headers for file: '+ad.filename+' ##################'))
-                    for ext in range(len(ad)+1):    
-                            log.gDebug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
-                            log.gDebug('---------------------------------------------------------------------------------')
+                log.info('prim_G325: writing complete','status')
+            # inserting the primitive output file's headers to log for debugging (makes log HUGE)
+            for ad in rc.getInputs(style="AD"):
+                log.debug('******** output headers of validateData **************')
+                log.debug(('################### Headers for file: '+ad.filename+' ##################'))
+                for ext in range(len(ad)+1):    
+                        log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
+                        log.debug('---------------------------------------------------------------------------------')
                 
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc
@@ -349,7 +346,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 addMDF = True
             else:
                 addMDF = ((rc["addMDF"]).lower() == "true")
-
+                
             debugLevel=int(rc['debugLevel'])
             
             # add the MDF if not set to false
@@ -358,30 +355,29 @@ class GEMINIPrimitives(PrimitiveSet):
                 
             for ad in rc.getInputs(style="AD"):
                 stdObsStruct(ad)
-                
                 # updating the filenames in the RC
                 fileNameUpdater(ad,debugLevel, postpend='_struct', strip=False)
-                if debugLevel==10:
-                    # gemLog=rc["log"]printing the updated headers
-                    for ext in range(len(ad)+1):    
-                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
                 rc.reportOutput(ad)
-                 
-                if debugLevel==10:
-                    # writing outputs of this primitive for debugging
-                    print 'prim_G349: writing the outputs of standardizeStructure to disk'
-                    rc.run('writeOutputs')
-                    print 'prim_G351: writing complete'
-                    # inserting the primitive output file's headers to log for debugging (makes log HUGE)
-                    for ad in rc.getInputs(style="AD"):
-                        log.gDebug('******** output headers of standardizeStructure **************')
-                        log.gDebug(('################### Headers for file: '+ad.filename+' ##################'))
-                        for ext in range(len(ad)+1):    
-                                log.gDebug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
-                                log.gDebug('---------------------------------------------------------------------------------')
+                
+            for ext in range(len(ad)+1):    
+                log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
+                
+             
+            if debugLevel>=5:     
+                # writing outputs of this primitive for debugging
+                log.info('prim_G368: writing the outputs of standardizeStructure to disk','status')
+                rc.run('writeOutputs')
+                log.info('prim_G370: writing complete','status')
+            # inserting the primitive output file's headers to log for debugging (makes log HUGE)
+            for ad in rc.getInputs(style="AD"):
+                log.debug('******** output headers of standardizeStructure **************')
+                log.debug('################### Headers for file: '+ad.filename+' ##################')
+                for ext in range(len(ad)+1):    
+                        log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
+                        log.debug('---------------------------------------------------------------------------------')
                             
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.",'critical')
             raise
                      
         yield rc
@@ -389,27 +385,22 @@ class GEMINIPrimitives(PrimitiveSet):
 
 #-------------------------------------------------------------------
     def standardizeHeaders(self,rc):
-        try:    
-
-            debugLevel=int(rc['debugLevel'])
-                   
+        try:            
             for ad in rc.getInputs(style="AD"):
-                if debugLevel>=1: 
-                    print 'prim_G300: calling stdObsHdrs'   #$$$$$$$$$$$$$$$
+                log.info('prim_G390: callgDing stdObsHdrs','status')   
                 stdObsHdrs(ad)
                 
-                if debugLevel>=4: 
-                    print "prim_G304: printing the updated headers"
-                    for ext in range(len(ad)+1):
-                        print '--------------------------------------------------------------'    
-                        print ad.getHeaders()[ext-1] #this will loop to print the PHU and then each of the following pixel extensions
-                
-            if debugLevel>=1:  
-                print "Prim_G332: ", 'observatory headers fixed'  #$$$$$$$$$$$$$$$
-                print 'prim_G333: calling standardizeInstrumentHeaders'  #$$$$$$$$$$$$$$$
-            rc.run("standardizeInstrumentHeaders")
-            if debugLevel>=1:  
-                print 'prim_G335: instrument headers fixed'  #$$$$$$$$$$$$$$$
+            debugLevel=int(rc['debugLevel'])
+                 
+            log.debug("prim_G304: printing the updated headers")
+            for ext in range(len(ad)+1):
+                log.debug('--------------------------------------------------------------')    
+                log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
+                  
+            log.info("Prim_G400: observatory headers fixed",'status')
+            log.info('prim_G401: calling standardizeInstrumentHeaders','status')
+            rc.run("standardizeInstrumentHeaders") 
+            log.info('prim_G403: instrument headers fixed','status')
 
             # updating the filenames in the RC #$$$$$$$$$$ this is temperarily commented out, uncomment when below brick is put into validateWCS
             # for ad in rc.getInputs(style="AD"):
@@ -420,22 +411,21 @@ class GEMINIPrimitives(PrimitiveSet):
             for ad in rc.getInputs(style="AD"):
                 fileNameUpdater(ad,debugLevel, postpend='_prepared', strip=True)
                 rc.reportOutput(ad)
-                
-            if debugLevel>=1:
-                # writing output file of prepare
-                print 'prim_G381: writing the outputs of prepare to disk'
-                rc.run('writeOutputs')
-                print 'prim_G461: writing complete'
-                # inserting the primitive output file's headers to log for debugging (makes log HUGE)
-                for ad in rc.getInputs(style="AD"):
-                    log.gDebug('******** output headers of standardizeStructure **************')
-                    log.gDebug(('################### Headers for file: '+ad.filename+' ##################'))
-                    for ext in range(len(ad)+1):    
-                            log.gDebug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
-                            log.gDebug('---------------------------------------------------------------------------------')
+              
+            # writing output file of prepare
+            log.info('prim_G416: writing the outputs of prepare to disk','status')
+            rc.run('writeOutputs')
+            log.info('prim_G418: writing complete','status')
+            # inserting the primitive output file's headers to log for debugging (makes log HUGE)
+            for ad in rc.getInputs(style="AD"):
+                log.debug('******** output headers of standardizeStructure **************')
+                log.debug(('################### Headers for file: '+ad.filename+' ##################'))
+                for ext in range(len(ad)+1):    
+                        log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
+                        log.debug('---------------------------------------------------------------------------------')
                 
         except:
-            print "Problem preparing the image."
+            log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc 
@@ -443,30 +433,24 @@ class GEMINIPrimitives(PrimitiveSet):
 #--------------------------------------------------------------------------
 
     def writeOutputs(self,rc):
-        # 'importing' the logger and debug level
-
-        debugLevel=int(rc['debugLevel'])
-        
-        if debugLevel>=5:  
-            print 'prim_G461: postpend = ',rc["postpend"]
         try:
+            
+            log.info('prim_G438: postpend = '+str(rc["postpend"]),'status')
             for ad in rc.getInputs(style="AD"):
                 if rc["postpend"]:
-                    fileNameUpdater(ad,debugLevel, postpend, strip=False)
+                    fileNameUpdater(ad,debugLevel, rc["postpend"], strip=False)
                     outfilename=os.path.basename(ad.filename)
                 elif rc["outfilename"]:
                     outfilename=rc["outfilename"]   
                 else:
-                    outfilename=os.path.basename(ad.filename)
-                    if debugLevel>=2: 
-                        print 'prim_G469: not changing the file name to be written from its current name'
-                if debugLevel>=2:  
-                    print 'prim_G470:  writing to file', outfilename      
+                    outfilename=os.path.basename(ad.filename) 
+                    log.info('prim_G447: not changing the file name to be written from its current name','status') 
+                    log.info('prim_G448:  writing to file'+outfilename,'status')      
                 ad.write(fname=outfilename)     #AstroData checks if the output exists and raises and exception
                 rc.reportOutput(ad)
                 
         except:
-            print "Problem preparing the image."
+            log.critical("Problem writing the image.",'critical')
             raise 
         
         yield rc 
