@@ -8,23 +8,44 @@ class GeminiLogger(object):
         if not logName:
             logName="gemini.log"
             
+        # setting up additional logger levels
+        FULLINFO = 15
+        STDINFO = 21
+        STATUS = 25
+
+        log_levels = {
+        FULLINFO : 'FULLINFO',
+        STDINFO : 'STDINFO',
+        STATUS : 'STATUS'
+        }
+        for lvl in log_levels.keys():
+            logging.addLevelName(lvl,log_levels[lvl])
+        
         #create logger
         self.logger = logging.getLogger(logName)
         self.logger.setLevel(logging.DEBUG)
     
+        setattr(self.logger, 'stdinfo', lambda *args: self.logger.log(STDINFO, *args))
+        setattr(self.logger, 'status', lambda *args: self.logger.log(STATUS, *args))
+        setattr(self.logger, 'fullinfo', lambda *args: self.logger.log(FULLINFO, *args))
+
         #create console and file handler 
         ch = logging.StreamHandler()
         fh = logging.FileHandler(logName)
         
         #set levels according to flags
-        fh.setLevel(logging.INFO)
+        fh.setLevel(FULLINFO)
         if debug:
             ch.setLevel(logging.DEBUG)
             fh.setLevel(logging.DEBUG)
         else:
-            fh.setLevel(logging.INFO)
-            if (verbose == 4):
-                ch.setLevel(logging.INFO)
+            fh.setLevel(FULLINFO)
+            if (verbose == 6):
+                ch.setLevel(FULLINFO)
+            elif (verbose == 5):
+                ch.setLevel(STDINFO)
+            elif (verbose == 4):
+                ch.setLevel(STATUS)
             elif (verbose == 3):
                 ch.setLevel(logging.WARNING)
             elif (verbose == 2):
@@ -32,50 +53,69 @@ class GeminiLogger(object):
             elif (verbose == 1):
                 ch.setLevel(logging.CRITICAL)
             else:
-                ch.setLevel(logging.DEBUG)
-                fh.setLevel(logging.DEBUG)
+                ch.setLevel(FULLINFO)
+                fh.setLevel(FULLINFO)
         #create formatters
-        ch_formatter = logging.Formatter("%(category)-7s %(levelno)d %(levelname)-8s- %(message)s")
-        fh_formatter = logging.Formatter("%(asctime)s %(category)-7s %(levelno)d %(levelname)-8s- %(message)s")
+        ch_formatter = logging.Formatter("%(levelname)-8s %(levelno)d- %(message)s")
+        fh_formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(levelno)d- %(message)s")
         
         #add formatter to ch and fh
         ch.setFormatter(ch_formatter)
-        fh.setFormatter(fh_formatter)
+        fh.setFormatter(fh_formatter) 
         
         #add ch and fh to logger
         self.logger.addHandler(ch)
         self.logger.addHandler(fh)
     
-    def info(self,msg,cat='DEFAULT'):
-        a={'category':cat}
-        msgs = str(msg).split('\n')
-        for line in msgs:
-            self.logger.info(line, extra=a)
-        
     def debug(self,msg,cat='DEFAULT'):    
-        a={'category':cat}
+        #a={'category':cat}
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.debug(line, extra=a)
+            self.logger.debug(cat.ljust(10)+'-'+line)
+            
+    def fullinfo(self,msg,cat ='DEFAULT'):
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.fullinfo(cat.ljust(10)+'-'+line)
+    
+    def info(self,msg,cat='DEFAULT'):
+       #a={'category':cat}
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.info(cat.ljust(10)+'-'+line)
+            #self.logger.info(line,extra=a)
+            
+    def stdinfo(self,msg,cat = 'DEFAULT'):
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.stdinfo(cat.ljust(10)+'-'+line)
+            
+    def status(self,msg,cat = 'DEFAULT'):
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            self.logger.status(cat.ljust(10)+'-'+line)
         
     def critical(self,msg,cat='DEFAULT'):
-        a={'category': cat}
+        #a={'category': cat}
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.critical(line,extra=a)
+            self.logger.critical(cat.ljust(10)+'-'+line)
+            #self.logger.critical(line,extra=a)
         
     def warning(self,msg,cat='DEFAULT'):
-        a={'category':cat}
+        #a={'category':cat}
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.warning(line,extra=a)
+            self.logger.warning(cat.ljust(10)+'-'+line)
+            #self.logger.warning(line,extra=a)
         
     def error(self,msg,cat='DEFAULT'):
-        a={'category': cat}
+        #a={'category': cat}
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.error(line,extra=a)
-        
+            self.logger.error(cat.ljust(10)+'-'+line)
+            #self.logger.error(line,extra=a)
+    
 def getGeminiLog(logName=None ,verbose = 0, debug = False):
     global _geminiLogger
     
@@ -83,12 +123,28 @@ def getGeminiLog(logName=None ,verbose = 0, debug = False):
         _geminiLogger=GeminiLogger(logName, verbose, debug)
     return _geminiLogger
         
-    
+def checkHandlers(log, remove=True ):
+    '''
+    this function is to close the handlers of the log to avoid an error when used in pyraf
+    $$$$$$$ THIS FUNCTION IS CURRENTLY NOT BEING USED, IT WILL BE INCORPERATED WHEN WE START USING PYRAF $$$$$$$$$$
+    '''
+    handlers = log.logger.handlers
+    if len( handlers ) > 0:
+        if remove:
+            for handler in handlers:
+                try:
+                    handler.close()
+                except:
+                    pass
+                finally:
+                    log.logger.removeHandler( handler )
+            return log
+        else:
+            return True
+    else:
+        if remove:
+            return log
+        else:
+            return False    
 
-    #"application" code
-    #logger.debug("debug message")
-    #logger.info("info message")
-    #logger.warn("warn message")
-    #logger.error("error message")
-    #logger.critical("critical message")
 
