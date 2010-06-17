@@ -134,7 +134,13 @@ parser.add_option("--debug",dest='debug', default=False, action="store_true",
 parser.add_option("--verbose",dest='verbose', default=2, type='int',
                   help="verbose will set the verbosity level for the console; 0=none, 6=highest.") 
 parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
-                  help="name of log; default is 'gemini.log'.")                  
+                  help="name of log; default is 'gemini.log'.") 
+#$$$$$$$$$$$$$$$$ DOESNT WORK YET!!! $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+parser.add_option("--writeInt",dest='writeInt', default=False, action="store_true",
+                  help="writeInt (short for writeIntermediate) will set it so the outputs of" + \
+                  "each primitive are written to disk rather than only at the end of the recipe. default=False."+ \
+                  "(CURRENTLY THIS DOESN'T WORK)")                 
+
 (options,  args) = parser.parse_args()
 
 useTK =  options.bMonitor
@@ -467,7 +473,7 @@ def commandClause(ro, coi):
 
                 else:    
                 # this was a kludge to mark the image with the metric 
-                # The following is annoying IRAF file methodology.
+                # The following i)s annoying IRAF file methodology.
                     tmpFilename = 'tmpfile.tmp'
                     tmpFile = open( tmpFilename, 'w' )
                     coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
@@ -657,6 +663,8 @@ for infiles in allinputs: #for dealing with multiple files.
             if hasattr(options, "globalParams"):
                 for pkey in options.globalParams.keys():
                     co.update({pkey:options.globalParams[pkey]})
+            if (options.writeInt == True):       #$$$$$ to be removed after writeIntermediate thing works correctly
+                    co.update({"writeInt":True})  #$$$$$ to be removed after writeIntermediate thing works correctly
             # print "r352:", repr(co.userParams.userParamDict)
             if (useTK):
                 while cw.bReady == False:
