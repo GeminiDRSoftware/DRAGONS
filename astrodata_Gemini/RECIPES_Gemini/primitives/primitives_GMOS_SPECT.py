@@ -98,13 +98,10 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         #adds specific headers for a GMOS_SPECT file
         try: 
             for ad in rc.getInputs(style="AD"): 
-                log.info('prim-G_S101: calling stdInstHdrs','status')
+                log.status('calling stdInstHdrs','status')
                 stdInstHdrs(ad) 
                 
-                # printing the updated headers
-                for ext in range(len(ad)+1):    
-                    log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions          
-                log.info('prim_G_S107: instrument headers fixed','status') 
+                log.status('instrument headers fixed','status') 
                 
         except:
             log.critical("Problem preparing the image.",'critical')
@@ -116,31 +113,29 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         # this works to add an MDF if there is a MASKNAME in the images PHU only.  
         # will be upgraded later, early testing complete
         
-        try:            
+        try:           
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
-                log.info(('prim_G_S122:', infilename),'status')
-                #print 'prim_G_I531: ', os.path.abspath(infilename) #absolute path of input file
-                #print 'prim_G_I531: ', os.path.dirname(infilename) #reletive directory of input file without /
+                log.status('file having MDF attached= '+infilename,'status')
                 
                 pathname = 'kyles_test_images/' #$$$$ HARDCODED FOR NOW, TILL FIX COMES FROM CRAIG
                 maskname = ad.phuGetKeyValue("MASKNAME")
-                log.info(("Pim_G_S128: maskname = ", maskname),'status')
+                log.stdinfo("maskname = "+maskname,'stdinfo')
                 inMDFname = 'kyles_test_images/'+maskname +'.fits'
-                log.info(('Prim_G_S130: input MDF file = ', inMDFname),'status')
+                log.status('input MDF file = '+inMDFname,'status')
                 admdf = AstroData(inMDFname)
                 admdf.setExtname('MDF',1)  #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER??
                 admdf.extSetKeyValue(len(admdf)-1,'EXTNAME', 'MDF',"Extension name" )
                 admdf.extSetKeyValue(len(admdf)-1,'EXTVER', 1,"Extension version" ) #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER?? this one is to add the comment
                 
                 log.debug(admdf[0].getHeader())
-                log.debut(admdf.info())
+                log.debug(admdf.info())
                 
                 ad.append(moredata=admdf)  #$$$$$$$$$$  STILL NEED TO GET CRAIG TO CREATE A FN THAT INSERTS RATHER THAN APPENDS
-                log.info(ad.info(),'status')
+                log.status(ad.info(),'status')
                 
                 #addMDF(ad,mdf)     #$$ the call to the tool box function, currently not in use
-                log.info('prim_G_S143: finished adding the MDF','status')
+                log.status('finished adding the MDF','status')
         except:
             log.critical("Problem preparing the image.", 'critical')
             raise 
@@ -150,9 +145,9 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
     def validateInstrumentData(self,rc):
         try:        
             for ad in rc.getInputs(style="AD"):
-                log.info(('prim_G_S153: validating data for file = ',ad.filename),'status')
+                log.status('validating data for file = '+ad.filename,'status')
                 valInstData(ad)
-                log.info(('prim_G_S155: data validated for file = ', ad.filename),'status')
+                log.status('data validated for file = '+ad.filename,'status')
                 
         except:
             log.critical("Problem preparing the image.",'critical')
