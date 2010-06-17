@@ -22,6 +22,7 @@ log=gemLog.getGeminiLog()
 yes = pyraf.iraf.yes
 no = pyraf.iraf.no
 
+
 # NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
 # don't execute pyraf code and so do not need to print this interactive 
 # package init display (it shows something akin to the dir(gmos)
@@ -495,23 +496,17 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     '''
     
     def standardizeInstrumentHeaders(self,rc):
-        try:
-            debugLevel=int(rc['debugLevel'])
-                                   
+        try:      
+            writeInt = rc['writeInt']
+                               
             for ad in rc.getInputs(style="AD"): 
-                log.info('prim-G_I502: calling stdInstHdrs','status') 
+                log.debug('calling stdInstHdrs','status') 
                 stdInstHdrs(ad) 
-                log.debug("prim_G_I504: printing the updated headers")
-                for ext in range(len(ad)+1):    
-                    log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions        
-                log.info('prim_G_I507: instrument headers fixed','status') 
-                # printing the updated headers
-                for ext in range(len(ad)+1):    
-                    log.debug(ad.getHeaders()[ext-1]) #this will loop to print the PHU and then each of the following pixel extensions
-            if debugLevel>=5:
-                log.debug('prim_G_I512: writing the outputs to disk')
+            
+            if writeInt:
+                log.debug('writing the outputs to disk')
                 rc.run('writeOutputs(postpend=_instHdrs)')  #$$$$$$$$$$$$$this needs to accept arguments to work right!!!!!!!!!!!! currently hardcoded
-                log.debug('prim_G_I514: writting complete')
+                log.debug('writting complete')
                     
         except:
             log.critical("Problem preparing the image.",'critical')
@@ -522,9 +517,9 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     def validateInstrumentData(self,rc):
         try:
             for ad in rc.getInputs(style="AD"):
-                log.info('prim_G_I525: validating data for file = '+ad.filename,'status')
+                log.status('validating data for file = '+ad.filename,'status')
                 valInstData(ad)
-                log.info('prim_G_I527: data validated for file = '+ad.filename,'status')
+                #log.status('data validated for file = '+ad.filename,'status')
                 
         except:
             log.critical("Problem preparing the image.",'critical')
