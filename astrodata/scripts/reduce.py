@@ -135,7 +135,6 @@ parser.add_option("--verbose",dest='verbose', default=2, type='int',
                   help="verbose will set the verbosity level for the console; 0=none, 6=highest.") 
 parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
                   help="name of log; default is 'gemini.log'.") 
-#$$$$$$$$$$$$$$$$ DOESNT WORK YET!!! $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 parser.add_option("--writeInt",dest='writeInt', default=False, action="store_true",
                   help="writeInt (short for writeIntermediate) will set it so the outputs of" + \
                   "each primitive are written to disk rather than only at the end of the recipe. default=False."+ \
