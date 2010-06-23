@@ -175,6 +175,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             filter_name = self.filternameFrom(filters)
             if filter_name in self.niriFilternameMap:
                 ret_filter_name = str(self.niriFilternameMap[filter_name])
+            else:
+                ret_filter_name = filter_name
         else:
             ret_filter_name = str(self.filternameFrom(filters))
         
