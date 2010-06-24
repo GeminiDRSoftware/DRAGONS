@@ -275,12 +275,19 @@ class GEMINIPrimitives(PrimitiveSet):
 #-------------------------------------------------------------------
 #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
-    all the stuff in here is very much a work in progress and I will not be fully
-    commenting it for others while developing it, sorry.
+    these primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
+    commenting has been added to hopefully assist those reading the code.
+    excluding validateWCS, all the primitives for prepare are complete (as far as we know of at the moment that is)
+    and so I am moving onto working on the primitives following prepare.
     '''
 
 #----------------------------------------------------------------------------    
     def validateData(self,rc):
+        '''
+        this primitive will ensure the data is not corrupted or in an odd format that will effect later steps
+        in the reduction process
+        '''
+        
         try:
             # setting the input 'repair' to a boolean from its current string type
             repair = rc["repair"]
@@ -288,9 +295,10 @@ class GEMINIPrimitives(PrimitiveSet):
                 repair = True
             else:
                 repair = ((rc["repair"]).lower() == "true")
-            writeInt = rc['writeInt']
+            writeInt = rc['writeInt'] #current way we are passing a boolean around to cue the writing of intermediate files, later this will be done in Reduce
             
-             ## inserting the input file's headers to log for debugging (makes log HUGE)    
+            
+            ## inserting the input file's headers to log for debugging (makes log HUGE, so commenting out for now)    
             #for ad in rc.getInputs(style="AD"):
                 #log.debug('******** input headers to prepare **************','debug')
                 #log.debug('########## Headers for file: '+ad.filename+' ########','debug')
@@ -306,9 +314,6 @@ class GEMINIPrimitives(PrimitiveSet):
             for ad in rc.getInputs(style="AD"):
                 log.debug('calling fileNameUpdater','status')        
                 fileNameUpdater(ad, postpend='_validated', strip=False)
-                # printing the updated headers
-                #for ext in range(len(ad)+1):    
-                    #log.debug(ad.getHeaders()[ext-1],'debug') #this will loop to print the PHU and then each of the following pixel extensions
                 rc.reportOutput(ad) 
                         
             log.status('FINISHED validating input data','status')
@@ -318,7 +323,8 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.status('writing the outputs of validateData to disk','status')
                 rc.run('writeOutputs')
                 log.status('writing complete','status')
-            # inserting the primitive output file's headers to log for debugging (makes log HUGE)
+                
+            ## inserting the primitive output file's headers to log for debugging (makes log HUGE, so commenting out for now)
             #for ad in rc.getInputs(style="AD"):
                 #log.debug('******** output headers of validateData **************','debug')
                 #log.debug('######### Headers for file: '+ad.filename+' #########','debug')
@@ -334,6 +340,11 @@ class GEMINIPrimitives(PrimitiveSet):
 
 #----------------------------------------------------------------------
     def standardizeStructure(self,rc):
+        '''
+        this primitive ensures the MEF structure is ready for further processing, through 
+        adding the MDF if necessary and the needed keywords to the headers
+        '''
+        
         try:
             writeInt = rc['writeInt']
             
@@ -366,7 +377,8 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.status('writing the outputs of standardizeStructure to disk','status')
                 rc.run('writeOutputs')
                 log.status('writing complete','status')
-            # inserting the primitive output file's headers to log for debugging (makes log HUGE)
+                
+            # inserting the primitive output file's headers to log for debugging (makes log HUGE, so commenting out for now)
             #for ad in rc.getInputs(style="AD"):
                 #log.debug('******** output headers of standardizeStructure **************','debug')
                 #log.debug('########## Headers for file: '+ad.filename+' ########','debug')
@@ -383,6 +395,10 @@ class GEMINIPrimitives(PrimitiveSet):
 
 #-------------------------------------------------------------------
     def standardizeHeaders(self,rc):
+        '''
+        this primitive updates and adds the important header keywords for the input MEFs
+        '''
+        
         try:   
             writeInt = rc['writeInt']
             
@@ -433,16 +449,72 @@ class GEMINIPrimitives(PrimitiveSet):
             raise 
         
         yield rc 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$ 
+    def addVAR(self,rc):
+        '''
+        this will calculate and add the variance frame to the input MEF
+        '''
+        try:
+            # currently hardcoded input parameters till we get the user modifiable parameters system working/developed
+            outsuffix = '_vardq'
+            fl_saturated = True
+            fl_nonlinear = True
+            
+            # section for working on the VAR frame(s)
+            log.fullinfo('STARTING to add the VAR frame(s) to the input data', 'fullinfo')
+            log.critical('CURRENTLY NO VAR FRAME IS BEING ADDED!!!!', 'critical')
+            log.fullinfo('FINISHED the VAR frame(s) to the input data', 'fullinfo')
+            
         
+        except:
+            log.critical("Problem adding the VARDQ to the image.",'critical',)
+            raise 
+        
+        yield rc 
+      
 #--------------------------------------------------------------------------
 
+    def addDQ(self,rc):
+        '''
+        this will calculate and add the data quality frame to the input MEF
+        '''
+        try:
+            # currently hardcoded input parameters till we get the user modifiable parameters system working/developed
+            outsuffix = '_vardq'
+            fl_saturated = True
+            fl_nonlinear = True
+            
+            # section for working on the DQ frame(s)
+            log.fullinfo('STARTING to add the DQ frame(s) to the input data', 'fullinfo')
+            
+            log.fullinfo('FINISHED adding the VAR frame(s) to the input data', 'fullinfo')
+        
+            
+        
+        except:
+            log.critical("Problem adding the VARDQ to the image.",'critical',)
+            raise 
+        
+        yield rc 
+        
+  #--------------------------------------------------------------------------      
+        
+
     def writeOutputs(self,rc):
+        '''
+        a primitive that may be called by a recipe at any stage for if the user would like files to be written to disk
+        at specific stages of the recipe, compared to that of it writing the outputs of each primitive with the --writeInt flag of 
+        Reduce.  An example call in this case would be : writeOutputs(postpend= '_string'), or writeOutputs(outfilename='name.fits') if you 
+        have a full file name in mind for a SINGLE file being ran through Reduce.
+        '''
         try:
             log.status('postpend = '+str(rc["postpend"]),'status')
             for ad in rc.getInputs(style="AD"):
                 if rc["postpend"]:
                     log.debug('calling fileNameUpdater','status')
-                    fileNameUpdater(ad, rc["postpend"], strip=False)
+                    fileNameUpdater(ad, rc["postpend"], strip=True)
                     outfilename=os.path.basename(ad.filename)
                 elif rc["outfilename"]:
                     outfilename=rc["outfilename"]   
@@ -461,6 +533,7 @@ class GEMINIPrimitives(PrimitiveSet):
              
                 
 #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
+
 
 
     
