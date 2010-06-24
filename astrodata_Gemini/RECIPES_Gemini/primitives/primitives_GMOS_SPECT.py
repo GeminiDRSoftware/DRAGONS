@@ -95,7 +95,10 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
     '''
 
     def standardizeInstrumentHeaders(self,rc):
-        #adds specific headers for a GMOS_SPECT file
+        '''
+        makes the changes and additions to the headers of the input files that are instrument specific
+        '''
+        
         try: 
             for ad in rc.getInputs(style="AD"): 
                 log.status('calling stdInstHdrs','status')
@@ -110,8 +113,10 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         yield rc
     #-----------------------------------------------------------------------
     def attachMDF(self,rc):
-        # this works to add an MDF if there is a MASKNAME in the images PHU only.  
-        # will be upgraded later, early testing complete
+        '''
+        this works to add an MDF if there is a MASKNAME in the images PHU only.  
+        will be upgraded later, early testing complete
+        '''
         
         try:           
             for ad in rc.getInputs(style ='AD'):
@@ -143,6 +148,10 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         yield rc
     #------------------------------------------------------------------------
     def validateInstrumentData(self,rc):
+        '''
+        instrument specific validations for the input file
+        '''
+        
         try:        
             for ad in rc.getInputs(style="AD"):
                 log.status('validating data for file = '+ad.filename,'status')
@@ -154,7 +163,20 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
             raise 
         
         yield rc
-        
-        
+   #----------------------------------------------------------------------------------
+  #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
+         
+def pyrafBoolean(pythonBool):
+    '''
+    a very basic function to reduce code repetition that simply 'casts' any given 
+    Python boolean into a pyraf/iraf one for use in the CL scripts
+    '''
+    
+    if pythonBool:
+        return 'pyraf.iraf.yes'
+    elif  not pythonBool:
+        return 'pyraf.iraf.'
+    else:
+        print "DANGER DANGER Will Robinson, pythonBool not True or False"        
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
