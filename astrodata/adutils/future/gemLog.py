@@ -72,7 +72,7 @@ class GeminiLogger(object):
         self.logger.addHandler(ch)
         self.logger.addHandler(fh)
     
-    def debug(self,msg,cat='DefautCat',linenum=0, func ='DefaultFuncName'):    
+    def debug(self,msg,cat='DefautCat'):    
         #a={'category':cat}
         b=callInfo()
         msgs = str(msg).split('\n')
@@ -101,28 +101,28 @@ class GeminiLogger(object):
         for line in msgs:
             self.logger.status(cat.ljust(10)+'-'+line)
         
-    def critical(self,msg,cat='DefautCat',linenum=0, func ='DefaultFuncName'):
+    def critical(self,msg,cat='DefautCat'):
         #a={'category': cat}
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.debug(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
+            self.logger.critical(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
             #self.logger.critical(line,extra=a)
         
-    def warning(self,msg,cat='DefautCat',linenum=0, func ='DefaultFuncName'):
+    def warning(self,msg,cat='DefautCat'):
         #a={'category':cat}
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.debug(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
+            self.logger.warning(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
             #self.logger.warning(line,extra=a)
         
-    def error(self,msg,cat='DefautCat',linenum=0, func ='DefaultFuncName'):
+    def error(self,msg,cat='DefautCat'):
         #a={'category': cat}
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.debug(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
+            self.logger.error(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
             #self.logger.error(line,extra=a)
     
 def getGeminiLog(logName=None ,verbose = 0, debug = False):
@@ -155,12 +155,6 @@ def checkHandlers(log, remove=True ):
             return log
         else:
             return False    
-#def lineno():
-#    return inspect.currentframe().f_back.f_lineno
-    #return sys._getframe().f_lineno
-
-#def whoami():
-#    return sys._getframe(1).f_code.co_name
 
 def callInfo():
     st = tb.extract_stack()
