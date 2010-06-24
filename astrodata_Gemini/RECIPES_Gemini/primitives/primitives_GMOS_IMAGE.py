@@ -338,7 +338,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         try:
             print "Determining overscan subtraction region using nbiascontam"
             print "parameter and BIASSEC header keyword"
-            print "Subtracting overscan bias levels using colbias"
+            print "Subtracting overscan bias levels using colbias"    
             gemini.gmos.gireduce(rc.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=no, fl_bias=no, \
                 fl_flat=no, outpref="oversub_",Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
             
@@ -491,11 +491,17 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         
     #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
-    all the stuff in here is very much a work in progress and I will not be fully
-    commenting it for others while developing it, sorry.
+    these primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
+    commenting has been added to hopefully assist those reading the code.
+    excluding validateWCS, all the primitives for prepare are complete (as far as we know of at the moment that is)
+    and so I am moving onto working on the primitives following prepare.
     '''
     
     def standardizeInstrumentHeaders(self,rc):
+        '''
+        makes the changes and additions to the headers of the input files that are instrument specific
+        '''
+        
         try:      
             writeInt = rc['writeInt']
                                
@@ -515,6 +521,10 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         yield rc
     #------------------------------------------------------------------------    
     def validateInstrumentData(self,rc):
+        '''
+        instrument specific validations for the input file
+        '''
+        
         try:
             for ad in rc.getInputs(style="AD"):
                 log.status('validating data for file = '+ad.filename,'status')
@@ -526,6 +536,22 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise 
         
         yield rc       
- 
+ #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$      
+
+def pyrafBoolean(pythonBool):
+    '''
+    a very basic function to reduce code repetition that simply 'casts' any given 
+    Python boolean into a pyraf/iraf one for use in the CL scripts
+    '''
+    
+    if pythonBool:
+        return 'pyraf.iraf.yes'
+    elif  not pythonBool:
+        return 'pyraf.iraf.'
+    else:
+        print "DANGER DANGER Will Robinson, pythonBool not True or False"
+
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
