@@ -604,13 +604,36 @@ class ReductionContext(dict):
                     if "default" in primset.paramDict[primname][param]:
                         self.localparms.update({param:primset.paramDict[primname][param]["default"]})
                 # print "rm606:", param, repr(self.localparms)
+                
+            # about to add user paramets... some of which may be in the global context (and not in correct UPD)
+            # strictly speaking these may not have been added by the user but we consider it user space
+            # and at any rate expect it to not be overrided by ANY means (we may want a diferent flag
+            # than userOverride
+            for param in primset.paramDict[primname].keys():
+                # if this param is already set in the context... there is a problem, it's not to be set.
+                userOvrd = ("userOverride" not in primset.paramDict[primname][param])\
+                             or primset.paramDict[primname][param]["userOverride"]
+                if param in self:
+                    # note: if it's in self.localparms, that's due to legal behavior above... primitives
+                    # parameters (as passed in recipes) are always added to the localparms space
+                    # thus, if a value is in the main context, it MUST be userOverridable
+                    if not userOvrd:
+                        exs =  "Parm set in context when userOverride is False\n"
+                        exs += "\tastrotype = %s\n" % astrotype
+                        exs += "\tprimitive = %s\n" % primname
+                        exs += "\tparameter = %s\n" % str(param)
+                        exs += "\t\tattempt to set to = %s\n" % self[param]
+                        exs += "\t\tfixed setting = %s\n" % primset.paramDict[primname][param]["default"]
+
+                        raise SettingFixedParam(exs, astrotype = astrotype)
+            
             # users override everything else if  it gets here... and is allowed
             if correctUPD:
                 for param in correctUPD:
-                    # print "RM610:", param
+                    userOvrd = ("userOverride" not in primset.paramDict[primname][param])\
+                                 or primset.paramDict[primname][param]["userOverride"]
                     if param in self.localparms or param in self:
-                        userOvrd = ("userOverride" not in primset.paramDict[primname][param])\
-                                      or primset.paramDict[primname][param]["userOverride"]
+                        
                         if not userOvrd:
                             exs =  "User attempted to set fixed parameter\n"
                             exs += "\tastrotype = %s\n" % astrotype
@@ -623,8 +646,7 @@ class ReductionContext(dict):
                         else:
                             self.localparms.update({param:correctUPD[param]})
                     else:
-                        self.localparms.update({param:correctUPD[param]})
-              
+                        self.localparms.update({param:correctUPD[param]})              
     def paramNames(self, subset = None):
         if subset == "local":
             return self.localparms.keys()
