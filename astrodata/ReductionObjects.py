@@ -21,6 +21,7 @@ class ReductionObject(object):
     # primDict is a dictionary of primitive sets keyed by astrodata type (a string)
     primDict = None
     curPrimType = None
+    curPrimName = None
     FUNCcommandClause = None
     
     def __init__(self):
@@ -42,8 +43,22 @@ class ReductionObject(object):
         a.btype = "RECIPE"
         a.astrotype = primtype
         return a
-
+     
+    def parameterProp(self, param, prop= "default"):
+        if self.curPrimType not in self.primDict:
+            return None
+        prims = self.primDict[self.curPrimType]
+        for prim in prims:
+            if self.curPrimName in prim.paramDict:
+                if ((param in prim.paramDict[self.curPrimName]) 
+                    and 
+                    (prop  in prim.paramDict[self.curPrimName][param])):
+                    return prim.paramDict[self.curPrimName][param][prop]
+        return None
+                     
     def substeps(self, primname, context):
+        prevprimname = self.curPrimName
+        self.curPrimName = primname
         # check to see current primitive set type is correct
         correctPrimType = self.recipeLib.discoverCorrectPrimType(context)
         # will be NONE if there are no current inputs, maintain current
@@ -59,6 +74,7 @@ class ReductionObject(object):
             prim = eval("primset.%s" % primname)
         else:
             msg = "There is no recipe or primitive named \"%s\" in  %s" % (primname, str(repr(self)))
+            self.curPrimName = prevprimname
             raise ReductionExcept(msg)
                 
         context.begin(primname)
@@ -84,6 +100,7 @@ class ReductionObject(object):
             print "%(name)s failed due to an exception." %{'name':primname}
             raise
         context.curPrimName = None
+        self.curPrimName = prevprimname
         yield context.end(primname)
         
     def runstep(self, primname, cfgobj):

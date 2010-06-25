@@ -159,6 +159,10 @@ class ConfigSpace(object):
                                         if os.path.isdir(fullpath):
                                             # then this is one of the config space directories
                                             adconfdirs.append(fullpath)
+                            elif RECIPEMARKER in subpath:
+                                fullpath = os.path.join(path, subpath)
+                                if os.path.isdir(fullpath):
+                                    adconfdirs.append(fullpath)
                         else:
                             pass # print ""
         self.recipedirs = adconfdirs

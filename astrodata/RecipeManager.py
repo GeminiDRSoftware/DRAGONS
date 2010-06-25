@@ -51,7 +51,10 @@ class RecipeExcept:
         
 class SettingFixedParam(RecipeExcept):
     pass
-    
+
+class RCBadParmValue(RecipeExcept):
+    pass
+       
 class UserParam(object):
     astrotype = None
     primname = None
@@ -149,14 +152,47 @@ class ReductionContext(dict):
     def __getitem__(self, arg):
         """Note, the ReductionContext version of __getitem__ returns None instead of throwing a KeyError.
         """
+        
+        
         if self.localparms and arg in self.localparms:
-            return self.localparms[arg]
+            value = self.localparms[arg]
         else:
             try:
-                return dict.__getitem__(self, arg)
+                value = dict.__getitem__(self, arg)
             except KeyError:
                 return None
-    
+            
+        retval = self.convertParmToVal(arg, value)
+        return retval
+        
+    def convertParmToVal(self, parmname, value):
+        legalvartypes = ["bool", 
+                        "int",
+                        "str",
+                        "float",
+                        
+                        None]
+        vartype = self.ro.parameterProp( parmname, prop="type")
+        
+        if vartype not in legalvartypes:
+            raise "TEMPORARY EXCEPTION: illegal type in parameter defintions for %s." % str(value)
+            return value
+        
+        if vartype:
+            # bool needs special handling
+            if vartype == "bool":
+                if type(value) == str:
+                    if (value.lower() == "true"):
+                        value = True
+                    elif (value.lower() == "false"):
+                        value = False
+                    else:
+                        raise RCBadParmValue('%s is not legal boolean setting for boolean "%s"' % (value, parmname))
+            retval = eval("%s(value)"%(vartype))
+        else:
+            retval = value
+        return retval
+        
     def __str__(self):
         """Used to dump Reduction Context(co) into file for test system
         """
@@ -524,7 +560,7 @@ class ReductionContext(dict):
         finally:
             fh.close()
         return "@" + filename
-        
+                
     def parameterCollate(self, astrotype, primset, primname):
         """This function looks at the default primset paramaters for primname
         and sets the localparms member."""
@@ -532,7 +568,6 @@ class ReductionContext(dict):
         # @@HERE: is where parameter metadata is respected, or not
         if primname in primset.paramDict:
             # localparms should always be defined by here
-            
             # users can never override argument in recipes (too confusing)
             correctUPD = None
             if self.userParams != None:
@@ -551,7 +586,8 @@ class ReductionContext(dict):
             # use primset.paramDict to update self.localparms
             for param in primset.paramDict[primname].keys():
                 # @@NAMING: naming of default value in parameter dictionary hardcoded
-                if param in self.localparms:
+                # print "RM571:", param, repr(self.localparms), repr(self), param in self
+                if param in self.localparms or param in self:
                     repOvrd = ("recipeOverride" not in primset.paramDict[primname][param])\
                                  or primset.paramDict[primname][param]["recipeOverride"]
                     # then it's already in there, check metadata
@@ -564,16 +600,15 @@ class ReductionContext(dict):
                         exs += "\t\tattempt to set to = %s\n" % self.localparms[param]
                         exs += "\t\tfixed setting = %s\n" % primset.paramDict[primname][param]["default"]
                         raise SettingFixedParam(exs)
-                    else:
-                        # don't update this one, because the recipe is allowed to override
-                        continue
-                if "default" in primset.paramDict[primname][param]:
-                    self.localparms.update({param:primset.paramDict[primname][param]["default"]})
-                
+                if param not in self.localparms and param not in self:
+                    if "default" in primset.paramDict[primname][param]:
+                        self.localparms.update({param:primset.paramDict[primname][param]["default"]})
+                # print "rm606:", param, repr(self.localparms)
             # users override everything else if  it gets here... and is allowed
             if correctUPD:
                 for param in correctUPD:
-                    if param in self.localparms:
+                    # print "RM610:", param
+                    if param in self.localparms or param in self:
                         userOvrd = ("userOverride" not in primset.paramDict[primname][param])\
                                       or primset.paramDict[primname][param]["userOverride"]
                         if not userOvrd:

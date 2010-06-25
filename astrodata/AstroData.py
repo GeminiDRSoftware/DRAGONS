@@ -427,6 +427,7 @@ before which the extension is to be inserted.
         elif isinstance(moredata, AstroData):
             for hdu in moredata.hdulist[1:]:
                 self.hdulist.insert(index, hdu)
+                index+=1
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.insert(index, hdu)
