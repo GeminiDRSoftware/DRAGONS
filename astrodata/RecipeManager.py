@@ -426,7 +426,19 @@ class ReductionContext(dict):
             
             self.inputs = newinputlist
             self.outputs.update({"standard":[]})
-            
+    #$$$$$$ NEW FUNCTIONS BY KYLE $$$$$$$$$$$$
+    def clearInputsOutputs(self): 
+        self.outputs.update({"standard":[]}) 
+        self.inputs=[] 
+    def inputNameUpdater(self,names):
+        if len(self.inputs)==len(names):
+            i=0
+            for inp in self.inputs:
+                inp.filename= names[i]    
+                i=i+1
+        else:
+            raise 'length of new names list is not equal to the number of inputs' 
+    #$$$$$$$$$$$$$ END OF NEW FUNCITONS BY KYLE $$$$$$$$$$$
 #------------------ FINISH ----------------------------------------------------   
     def isFinished(self, arg=None):
         if arg == None:
