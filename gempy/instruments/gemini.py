@@ -30,7 +30,7 @@ def stdObsHdrs(ad):
 
     ut = datetime.now().isoformat()  #$$$$$$$$$$$ just for saving the sintax, move this to its final destination when determined
     ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')  #$$$$$$$$$$$ just for saving the sintax, move this to its final destination when determined
-         
+    ad.phuSetKeyValue("GPREPARE",ut,'fake UT Time stamp for GPREPARE')     ##$$$$ possible fix to gireduce flag to not call gprepare
     ##updating logger with updated/added keywords
     log.fullinfo('****************************************************','header')
     log.fullinfo('file = '+ad.filename,'header')
@@ -80,12 +80,18 @@ def stdObsStruct(ad):
         log.fullinfo('EXTVER = '+str(ext.header['EXTVER']),'header' )
         log.fullinfo('---------------------------------------------------','header')
         
-def fileNameUpdater(ad, postpend , strip=False):
+def fileNameUpdater(ad, postpend='',prepend='' , strip=False):
     infilename = os.path.basename(ad.filename)
-    if strip:
-        infilename = stripPostfix(infilename)
-    (name,filetype) = os.path.splitext(infilename)
-    outFileName = name+postpend+filetype
+    if postpend !='':
+        if strip:
+            infilename = stripPostfix(infilename)
+        (name,filetype) = os.path.splitext(infilename)
+        outFileName = name+postpend+filetype
+    elif prepend !='':
+        if strip:
+            infilename = stripPostfix(infilename)
+        (name,filetype) = os.path.splitext(infilename)
+        outFileName = prepend+name+filetype
     ad.filename = outFileName
 
 def stripPostfix(filename):
@@ -96,8 +102,6 @@ def stripPostfix(filename):
     name = a[0]
     retname = os.path.join(dirname,name+filetype)
     return retname    
-
-
 
 
    
