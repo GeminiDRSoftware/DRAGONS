@@ -429,7 +429,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.debug('calling fileNameUpdater','status')
                 fileNameUpdater(ad, postpend='_prepared', strip=True)
                 rc.reportOutput(ad)
-                
+                  
             log.status('FINISHED standardizing the headers','status')
               
             # writing output file of prepare
@@ -511,19 +511,27 @@ class GEMINIPrimitives(PrimitiveSet):
         '''
         try:
             log.status('postpend = '+str(rc["postpend"]),'status')
+            log.status('prepend = '+str(rc["prepend"]),'status')
             for ad in rc.getInputs(style="AD"):
                 if rc["postpend"]:
                     log.debug('calling fileNameUpdater','status')
-                    fileNameUpdater(ad, rc["postpend"], strip=True)
+                    fileNameUpdater(ad, postpend=rc["postpend"], strip=True)
                     outfilename=os.path.basename(ad.filename)
+                elif rc["prepend"]:
+                    infilename=os.path.basename(ad.filename)
+                    outfilename=rc['prepend']+infilename
                 elif rc["outfilename"]:
                     outfilename=rc["outfilename"]   
                 else:
                     outfilename=os.path.basename(ad.filename) 
                     log.status('not changing the file name to be written from its current name','status') 
-                    log.status('writing to file = '+outfilename,'status')      
+                log.status('writing to file = '+outfilename,'status')      
                 ad.write(fname=outfilename)     #AstroData checks if the output exists and raises and exception
-                rc.reportOutput(ad)
+                #rc.reportOutput(ad)
+            
+            # clearing the value of 'postpend' and 'prepend' in the RC so they don't persist to the next writeOutputs call and screw it up
+            rc["postpend"]=None
+            rc['prepend']=None
                 
         except:
             log.critical("Problem writing the image.",'critical')
