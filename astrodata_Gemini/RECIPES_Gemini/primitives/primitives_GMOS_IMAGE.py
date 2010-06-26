@@ -13,6 +13,7 @@ from pyraf.iraf import gemini
 import pyraf
 import iqtool
 from iqtool.iq import getiq
+from gempy.instruments.gemini import *
 from gempy.instruments.gmos import *
 
 import pyfits
@@ -528,6 +529,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         try:
             for ad in rc.getInputs(style="AD"):
                 log.status('validating data for file = '+ad.filename,'status')
+                log.debug('calling valInstData', 'status')
                 valInstData(ad)
                 #log.status('data validated for file = '+ad.filename,'status')
                 
@@ -538,7 +540,54 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         yield rc       
  #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$      
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
+    def overscanSubtract(self,rc):
+        try:
+            # writing input files to disk with temp prepended onto their file namesls  
+            for ad in rc.getInputs(style='AD'):
+                fileNameUpdater(ad,prepend='tmpfile', strip=False)
+                rc.reportOutput(ad)
+            preCLfilenames=rc.getInputsAsFilenames()
+            print 'preCLfilenames: ', preCLfilenames 
+            rc.run('writeOutputs')
+
+            #print type(rc['fl_over'])    
+            rc["fl_over"]=True #$$$$$$$$$$$$$ HARDCODING CAUSE SOMETHING FUCKED UP AFTER CRAIG LEFT
+            rc["outpref"]='oversub'
+            # params in the dictionaries: flover, fltrim, flvardq, outpref
+            gemini.gmos.gireduce(rc.inputsAsStr(), gp_outpref='tmpfile',fl_over=pyrafBoolean(rc["fl_over"]), \
+                    fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
+                    fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']),\
+                    Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+            
+            if gemini.gmos.gireduce.status:
+                raise GMOS_IMAGEException('gireduce failed') 
+            
+            # loading CL outputs back into memory and cleaning up the intermediate files written to disk
+            rc.clearInputsOutputs()
+            for name in preCLfilenames:
+                rc.addInput('oversubtmpfile'+name)
+            print 'output files from CL: ', rc.inputsAsStr()
+            os.system('rm gtmpfile* oversubgtmpfile* tmpfile* &> /dev/null')
+            
+            i=0
+            newNames=[]
+            for ad in rc.getInputs(style="AD"):
+                if ad.phuGetKeyValue('GIREDUCE'):
+                    log.fullinfo('file '+preCLfilenames[i-1]+' had its overscan subracted successfully')
+                ad.filename = preCLfilenames[i-1]
+                fileNameUpdater(ad,postpend='_oversubed', strip=False)
+                #print ad.filename
+                newNames.append(ad.filename)
+                i=i+1
+            rc.inputNameUpdater(newNames)
+            #print rc.inputsAsStr()
+            
+        except:
+            log.critical("Problem preparing the image.",'critical')
+            raise 
+        
+        yield rc    
 
 def pyrafBoolean(pythonBool):
     '''
@@ -547,9 +596,9 @@ def pyrafBoolean(pythonBool):
     '''
     
     if pythonBool:
-        return 'pyraf.iraf.yes'
+        return pyraf.iraf.yes
     elif  not pythonBool:
-        return 'pyraf.iraf.'
+        return pyraf.iraf.no
     else:
         print "DANGER DANGER Will Robinson, pythonBool not True or False"
 
