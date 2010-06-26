@@ -662,7 +662,7 @@ class ReductionContext(dict):
             return ""
         else:
             outputlist = []
-            for inp in self.outputs:
+            for inp in self.outputs['standard']: 
                 outputlist.append(inp.filename)
             #print "RM289:", outputlist
             #"""
@@ -1396,10 +1396,10 @@ class RecipeLibrary(object):
     def composeRecipe(self, name, recipebuffer):
         templ = """
 def %(name)s(self,cfgObj):
-    print "${BOLD}RECIPE BEGINS: %(name)s${NORMAL}"
+    #print "${BOLD}RECIPE BEGINS: %(name)s${NORMAL}" #$$$$$$$$$$$$$$$$$$$$$$$$$$$
     recipeLocalParms = cfgObj.localparms
 %(lines)s
-    print "${BOLD}RECIPE ENDS:   %(name)s${NORMAL}"
+    #print "${BOLD}RECIPE ENDS:   %(name)s${NORMAL}" #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
     yield cfgObj
 """
         recipelines = recipebuffer.splitlines()
