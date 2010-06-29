@@ -426,19 +426,7 @@ class ReductionContext(dict):
             
             self.inputs = newinputlist
             self.outputs.update({"standard":[]})
-    #$$$$$$ NEW FUNCTIONS BY KYLE $$$$$$$$$$$$
-    def clearInputsOutputs(self): 
-        self.outputs.update({"standard":[]}) 
-        self.inputs=[] 
-    def inputNameUpdater(self,names):
-        if len(self.inputs)==len(names):
-            i=0
-            for inp in self.inputs:
-                inp.filename= names[i]    
-                i=i+1
-        else:
-            raise 'length of new names list is not equal to the number of inputs' 
-    #$$$$$$$$$$$$$ END OF NEW FUNCITONS BY KYLE $$$$$$$$$$$
+   
 #------------------ FINISH ----------------------------------------------------   
     def isFinished(self, arg=None):
         if arg == None:
@@ -501,6 +489,22 @@ class ReductionContext(dict):
             return retl
         else:
             return None # this should not happen, but given a mispelled style arg
+         
+    def getOutputs(self, style=None):
+        if style==None:
+            return outputs
+        elif style == "AD": #@@HARDCODED: means "as AstroData instances"
+            retl = []
+            for inp in self.outputs['standard']:
+                if inp.ad == None:
+                    inp.load()
+                retl.append(inp.ad)
+            return retl
+        elif style == "FN": #@@HARDCODED: means "as Filenames"
+            retl = [inp.filename for inp in self.outputs['standard']]
+            return retl
+        else:
+            return None # this should not happen, but given a mispelled style arg    
 
     def getInputsAsAstroData(self):
         return self.getInputs(style="AD")
