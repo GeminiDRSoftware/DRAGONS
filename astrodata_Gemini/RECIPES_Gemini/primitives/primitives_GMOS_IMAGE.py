@@ -543,51 +543,75 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
     def overscanSubtract(self,rc):
         try:
-            # writing input files to disk with temp prepended onto their file namesls  
+            log.status('STARTING to subtract the overscan from the input data')
+            ## writing input files to disk with temp prepended onto their file names so they can be deleted later easily 
+            preCLfilenames=rc.getInputsAsFilenames() # original names prior to any renaming
+            #print 'preCLfilenames: ', preCLfilenames
+            #print 'outputs in RC before fileNameUpdater: ', rc.outputsAsStr()
             for ad in rc.getInputs(style='AD'):
                 fileNameUpdater(ad,prepend='tmpfile', strip=False)
                 rc.reportOutput(ad)
-            preCLfilenames=rc.getInputsAsFilenames()
-            print 'preCLfilenames: ', preCLfilenames 
-            rc.run('writeOutputs')
+            #print 'inputs in RC after fileNameUpdater: ', rc.inputsAsStr()
+            #print 'outputs in RC after fileNameUpdater: ', rc.outputsAsStr()
+            #rc.finalizeOutputs()
+            rc.run('writeOutputs')           
+            #raise #$%%%%%%%%%%%%%%%%
 
-            #print type(rc['fl_over'])    
+            print type(rc['fl_over'])    
             rc["fl_over"]=True #$$$$$$$$$$$$$ HARDCODING CAUSE SOMETHING FUCKED UP AFTER CRAIG LEFT
             rc["outpref"]='oversub'
-            # params in the dictionaries: flover, fltrim, flvardq, outpref
+            rc["fl_trim"]=False
+            rc['fl_vardq']=False
+            ## params in the dictionaries: fl_over, fl_trim, fl_vardq, outpref
+            log.fullinfo('calling the gireduce CL script', 'status')
             gemini.gmos.gireduce(rc.inputsAsStr(), gp_outpref='tmpfile',fl_over=pyrafBoolean(rc["fl_over"]), \
                     fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
                     fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']),\
                     Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
             
             if gemini.gmos.gireduce.status:
-                raise GMOS_IMAGEException('gireduce failed') 
+                log.critical('gireduce failed','critical') 
+                raise
+            else:
+                log.fullinfo('exited the gireduce CL script successfully', 'status')
             
-            # loading CL outputs back into memory and cleaning up the intermediate files written to disk
-            rc.clearInputsOutputs()
+            # loading CL outputs back into memory and cleaning up the intermediate tmp files written to disk
             for name in preCLfilenames:
-                rc.addInput('oversubtmpfile'+name)
-            print 'output files from CL: ', rc.inputsAsStr()
-            os.system('rm gtmpfile* oversubgtmpfile* tmpfile* &> /dev/null')
+                rc.reportOutput('oversubtmpfile'+name)
+            #rc.finalizeOutputs()
+            print 'outputs in RC after loading CL files, using outputAsStr: ', rc.outputsAsStr() 
+            print 'inputs in RC after loading CL files, in filename format: ', rc.getInputs(style='FN')
+            print 'outputs in RC after loading CL files, in filename format: ', rc.getOutputs(style='FN')
+            os.system('rm oversubtmpfile* tmpfile* &> /dev/null')
             
+            ## renaming the files output by the CL script to be more suitible 
             i=0
-            newNames=[]
-            for ad in rc.getInputs(style="AD"):
-                if ad.phuGetKeyValue('GIREDUCE'):
-                    log.fullinfo('file '+preCLfilenames[i-1]+' had its overscan subracted successfully')
-                ad.filename = preCLfilenames[i-1]
-                fileNameUpdater(ad,postpend='_oversubed', strip=False)
-                #print ad.filename
-                newNames.append(ad.filename)
+            for ad in rc.getOutputs(style="AD"):
+                ad.filename = preCLfilenames[i-1] #make file name match name before this primitive 
+                fileNameUpdater(ad,postpend='_oversubed', strip=False) #adding postpend to the name so it is up to date with current step
+                if ad.phuGetKeyValue('GIREDUCE'): # varifies gireduce was actually ran on the file
+                    log.fullinfo('file '+preCLfilenames[i-1]+' had its overscan subracted successfully', 'status')
+                    log.fullinfo('new file name is: '+ad.filename, 'status')
+                rc.reportOutput(ad)
                 i=i+1
-            rc.inputNameUpdater(newNames)
-            #print rc.inputsAsStr()
+            print 'outputs in RC after editting CL names, in filename format: ', rc.getOutputs(style='FN')
             
+            log.status('FINISHED subtracting the overscan from the input data')
         except:
             log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc    
+        
+    def overscanTrim(self,rc):
+        try:
+            
+            pass
+        except:
+            log.critical("Problem preparing the image.",'critical')
+            raise 
+        
+        yield rc
 
 def pyrafBoolean(pythonBool):
     '''
