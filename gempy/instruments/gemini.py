@@ -80,8 +80,9 @@ def stdObsStruct(ad):
         log.fullinfo('EXTVER = '+str(ext.header['EXTVER']),'header' )
         log.fullinfo('---------------------------------------------------','header')
         
-def fileNameUpdater(ad, postpend='',prepend='' , strip=False):
-    infilename = os.path.basename(ad.filename)
+def fileNameUpdater(origfilename, postpend='',prepend='' , strip=False):
+    
+    infilename = os.path.basename(origfilename)
     if postpend !='':
         if strip:
             infilename = stripPostfix(infilename)
@@ -92,7 +93,8 @@ def fileNameUpdater(ad, postpend='',prepend='' , strip=False):
             infilename = stripPostfix(infilename)
         (name,filetype) = os.path.splitext(infilename)
         outFileName = prepend+name+filetype
-    ad.filename = outFileName
+    #ad.filename=outFileName
+    return outFileName
 
 def stripPostfix(filename):
     dirname = os.path.dirname(filename)
@@ -103,5 +105,16 @@ def stripPostfix(filename):
     retname = os.path.join(dirname,name+filetype)
     return retname    
 
-
+def secStrToIntList(string):
+    ## string must be of the format '[#1:#2,#3:#4]', returns list of ints [#1,#2,#3,#4]
+    coords=string.strip('[').strip(']').split(',')
+    Ys=coords[0].split(':')
+    Xs=coords[1].split(':')
+    retl=[]
+    retl.append(int(Ys[0]))
+    retl.append(int(Ys[1]))
+    retl.append(int(Xs[0]))
+    retl.append(int(Xs[1]))
+    
+    return retl
    
