@@ -100,7 +100,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                     inlistname = "inlist."+stackID
                     
                     # slight kludge, remove output if it already exists from another run
-                    # since it always uses the zeroetsh image.s
+                    # since it always uses the zeroeth image
                     if (os.path.exists(stackname)):
                         os.remove(stackname)
                         
@@ -546,20 +546,14 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             log.status('STARTING to subtract the overscan from the input data')
             ## writing input files to disk with temp prepended onto their file names so they can be deleted later easily 
             preCLfilenames=rc.getInputsAsFilenames() # original names prior to any renaming
-            #print 'preCLfilenames: ', preCLfilenames
-            #print 'outputs in RC before fileNameUpdater: ', rc.outputsAsStr()
             for ad in rc.getInputs(style='AD'):
-                fileNameUpdater(ad,prepend='tmpfile', strip=False)
+                ad.filename=fileNameUpdater(ad.filename,prepend='tmpfile', strip=False)
                 rc.reportOutput(ad)
-            #print 'inputs in RC after fileNameUpdater: ', rc.inputsAsStr()
-            #print 'outputs in RC after fileNameUpdater: ', rc.outputsAsStr()
-            #rc.finalizeOutputs()
             rc.run('writeOutputs')           
-            #raise #$%%%%%%%%%%%%%%%%
 
             print type(rc['fl_over'])    
-            rc["fl_over"]=True #$$$$$$$$$$$$$ HARDCODING CAUSE SOMETHING FUCKED UP AFTER CRAIG LEFT
-            rc["outpref"]='oversub'
+            rc["fl_over"]=True #$$$$$$$$$$$$$ HARDCODING CAUSE SOMETHING went wrong AFTER CRAIG LEFT
+            rc["outpref"]='_oversubed'
             rc["fl_trim"]=False
             rc['fl_vardq']=False
             ## params in the dictionaries: fl_over, fl_trim, fl_vardq, outpref
@@ -567,36 +561,42 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             gemini.gmos.gireduce(rc.inputsAsStr(), gp_outpref='tmpfile',fl_over=pyrafBoolean(rc["fl_over"]), \
                     fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
                     fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']),\
-                    Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-            
+                    Stdout = "dev$null", Stderr = rc.getIrafStderr())
+            #"dev$null" #use this for Stdout for no outputs of the CL script to go to screen
+            #rc.getIrafStdout() #us this for Stdout for outputs of the CL script to go to screen
             if gemini.gmos.gireduce.status:
                 log.critical('gireduce failed','critical') 
                 raise
             else:
                 log.fullinfo('exited the gireduce CL script successfully', 'status')
             
-            # loading CL outputs back into memory and cleaning up the intermediate tmp files written to disk
+            # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
             for name in preCLfilenames:
-                rc.reportOutput('oversubtmpfile'+name)
-            #rc.finalizeOutputs()
-            print 'outputs in RC after loading CL files, using outputAsStr: ', rc.outputsAsStr() 
-            print 'inputs in RC after loading CL files, in filename format: ', rc.getInputs(style='FN')
-            print 'outputs in RC after loading CL files, in filename format: ', rc.getOutputs(style='FN')
-            os.system('rm oversubtmpfile* tmpfile* &> /dev/null')
-            
+                curname='_oversubedtmpfile'+name #name of file CL wrote to disk
+                usename=fileNameUpdater(name,postpend=rc['outpref'],strip=False) #name i want the file to be 
+                os.rename(curname,usename)
+                rc.reportOutput(usename)
+                os.system('rm %s tmpfile* &> /dev/null' % usename)
+                          
             ## renaming the files output by the CL script to be more suitible 
             i=0
             for ad in rc.getOutputs(style="AD"):
-                ad.filename = preCLfilenames[i-1] #make file name match name before this primitive 
-                fileNameUpdater(ad,postpend='_oversubed', strip=False) #adding postpend to the name so it is up to date with current step
                 if ad.phuGetKeyValue('GIREDUCE'): # varifies gireduce was actually ran on the file
                     log.fullinfo('file '+preCLfilenames[i-1]+' had its overscan subracted successfully', 'status')
                     log.fullinfo('new file name is: '+ad.filename, 'status')
-                rc.reportOutput(ad)
                 i=i+1
-            print 'outputs in RC after editting CL names, in filename format: ', rc.getOutputs(style='FN')
+                ut = datetime.now().isoformat()  
+                ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')
+                
+                log.fullinfo('****************************************************','header')
+                log.fullinfo('file = '+ad.filename,'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+str(ut),'header' )
+                
+            #print 'outputs in RC after editting CL names, in filename format: ', rc.getOutputs(style='FN')
             
-            log.status('FINISHED subtracting the overscan from the input data')
+            log.status('FINISHED subtracting the overscan from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
             raise 
@@ -605,8 +605,49 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         
     def overscanTrim(self,rc):
         try:
+            log.status('STARTING to trim the overscan region from the input data','status')
             
-            pass
+            #print 'input filenames into overscanTrim: ',rc.inputsAsStr()
+            for ad in rc.getInputs(style='AD'):
+                for sciExt in ad['SCI']:
+                    datasecStr=sciExt.data_section()
+                    datasecList=secStrToIntList(datasecStr) 
+                    dsl=datasecList
+                    #print ad.filename+' '+str(sciExt.extver()),datasecList
+                    log.stdinfo('\nfor: '+ad.filename+' extension: '+str(sciExt.extver())+\
+                                                            ', keeping the data from the section: '+datasecStr,'science')
+                    #print ad.filename+' NAXIS1 before: '+str(sciExt.header['NAXIS1'])
+                    #print ad.filename+' NAXIS2 before: '+str(sciExt.header['NAXIS2'])
+                    #print ad.filename+' shape before : '+repr(np.shape(sciExt.data))
+                    sciExt.hdulist[1].data=sciExt.data[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
+                    #print ad.filename+' shape after : '+repr(np.shape(sciExt.data))
+                    sciExt.header['NAXIS1']=dsl[1]-dsl[0]+1
+                    sciExt.header['NAXIS2']=dsl[3]-dsl[2]+1
+                    #print ad.filename+' NAXIS1 after: '+str(sciExt.header['NAXIS1'])
+                    #print ad.filename+' NAXIS2 after: '+str(sciExt.header['NAXIS2'])
+                    
+                    ## updating logger with updated/added keywords to each SCI frame
+                    log.fullinfo('****************************************************','header')
+                    log.fullinfo('file = '+ad.filename,'header')
+                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+                    log.fullinfo('SCI extension number '+str(sciExt.extver())+' keywords updated/added:\n', 'header')
+                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),'header' )
+                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),'header' )
+                    
+                # updating the GEM-TLM value and reporting the output to the RC    
+                ut = datetime.now().isoformat()  
+                ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')
+                ad.filename=fileNameUpdater(ad.filename,postpend='_overtrimd', strip=False)
+                rc.reportOutput(ad)
+                
+                # updating logger with updated/added keywords to the PHU
+                log.fullinfo('****************************************************','header')
+                log.fullinfo('file = '+ad.filename,'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+str(ut),'header' )
+            #print 'outputs after updating at end of overtrim: ',rc.outputsAsStr()    
+            log.status('FINISHED trimming the overscan region from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
             raise 
@@ -624,7 +665,7 @@ def pyrafBoolean(pythonBool):
     elif  not pythonBool:
         return pyraf.iraf.no
     else:
-        print "DANGER DANGER Will Robinson, pythonBool not True or False"
+        print "DANGER DANGER Will Robinson, pythonBool passed in not True or False"
 
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
