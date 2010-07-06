@@ -387,6 +387,8 @@ instance.
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.append(hdu)
+        elif type(moredata) is pyfits.ImageHDU:
+            self.hdulist.append(moredata)
 
     def insert(self, index, moredata=None, data=None, header=None):
         """
@@ -423,7 +425,7 @@ before which the extension is to be inserted.
             if len(self.hdulist) == 0:
                 self.hdulist.insert(index, pyfits.PrimaryHDU(data = data, header=header))
             else:
-                self.hdulist.insert(indexpyfits.ImageHDU(data = data, header=header))
+                self.hdulist.insert(index,pyfits.ImageHDU(data = data, header=header))
         elif isinstance(moredata, AstroData):
             for hdu in moredata.hdulist[1:]:
                 self.hdulist.insert(index, hdu)
@@ -432,6 +434,8 @@ before which the extension is to be inserted.
             for hdu in moredata[1:]:
                 self.hdulist.insert(index, hdu)
                 index += 1
+        elif type(moredata) is pyfits.ImageHDU:
+            self.hdulist.insert(index, moredata)
     
     def close(self):
         """This function will close the attachment to the file on disk
