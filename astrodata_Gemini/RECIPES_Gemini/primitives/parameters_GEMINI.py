@@ -1,9 +1,10 @@
 {   "showParams": {"test": 
                    {
-                    "default": "GEMINI_SETTING",
-                    "recipeOverride": True,
+                    "default": True,
+                    "recipeOverride": False,
                     "uiLevel": "debug",
-                    "userOverride":True
+                    "userOverride":True,
+                    "type": "bool"
                     
                     },
                  

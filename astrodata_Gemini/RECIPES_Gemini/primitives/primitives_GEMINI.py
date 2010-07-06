@@ -206,6 +206,8 @@ class GEMINIPrimitives(PrimitiveSet):
         else:
             for param in rcparams:
                 print param+" = "+repr(rc[param])
+        
+        # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
         yield rc
             
             
