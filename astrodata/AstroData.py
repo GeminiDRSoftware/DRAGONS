@@ -516,12 +516,13 @@ when iterating over the AstroData extensions, e.g.:
         """
         hdl = self.gethdul()
         if len(hdl) == 2:
-            retv = hdl[1].data
+            # note: should we check type of newdata?
+            hdl[1].data = newdata
         else:
             raise gdError()
             
         self.relhdul()
-        return retv
+        return
         
     data = property(getData, setData)
     
