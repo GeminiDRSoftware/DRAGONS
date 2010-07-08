@@ -117,4 +117,71 @@ def secStrToIntList(string):
     retl.append(int(Xs[1]))
     
     return retl
-   
+
+
+
+
+# clm = CLManager(rc)
+# ....
+# clm.finishCL()
+
+class CLManager(object):
+    _preCLcachestorenames = []
+    _preCLfilenames = []
+    rc = None
+    prefix = None
+    outpref = None
+    
+    def __init__(self, rc, outpref = None):
+        self.rc  = rc
+        if outpref == None:
+            outpref = rc["outpref"]
+        self.outpref=outpref
+        self.prefix = self.uniquePrefix()
+        self.preCLwrites()
+    
+    #perform all the finalizing steps after CL script is ran, currently just an alias for postCLloads
+    def finishCL(self): 
+        self.postCLloads()    
+    
+    def preCLwrites(self):
+        self._preCLfilenames = self.rc.getInputs(style="FN")
+        for ad in self.rc.getInputs(style="AD"):
+            name = fileNameUpdater(ad.filename,prepend=self.prefix, strip=True)
+            self._preCLcachestorenames.append(name)
+            ad.write(name, rename = False)    
+    
+    #just a function to return the 'private' member variable _preCLcachestorenames
+    def cacheStoreNames(self):
+        return self._preCLcachestorenames
+    
+    #just a function to return the 'private' member variable _preCLfilenames
+    def preCLNames(self):
+        return self._preCLfilenames
+    
+    def inputsAsStr(self):
+        return ",".join(self._preCLcachestorenames)
+
+    def uniquePrefix(self):
+        #print 'g163: using uniquePrefix = ',"tmp"+ str(os.getpid())+self.rc.ro.curPrimName
+        return "tmp"+ str(os.getpid())+self.rc.ro.curPrimName
+        
+    def postCLloads(self):
+        for i in range(0, len(self._preCLcachestorenames)):
+            storename = self._preCLcachestorenames[i]  #name of file written to disk for input to CL script
+            cloutname = self.outpref + storename  #name of file CL wrote to disk
+            finalname = fileNameUpdater(self._preCLfilenames[i], postpend= self.outpref, strip=False)  #name i want the file to be
+            #print 'g169: storename = ',storename
+            #print 'g170: cloutname = ', cloutname
+            #print 'g171: finalname = ',finalname
+            
+            os.rename(cloutname, finalname )
+            # THIS LOADS THE FILE INTO MEMORY
+            self.rc.reportOutput(finalname)
+            os.remove(finalname) # clearing file written for CL input
+            os.remove(storename) # clearing renamed file ouput by CL
+            
+        
+        
+        
+        
