@@ -503,7 +503,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         makes the changes and additions to the headers of the input files that are instrument specific
         '''
         
-        try:      
+        try:            
             writeInt = rc['writeInt']
                                
             for ad in rc.getInputs(style="AD"): 
@@ -543,7 +543,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
     def overscanSubtract(self,rc):
         try:
-            log.status('STARTING to subtract the overscan from the input data')
+            log.status('*STARTING* to subtract the overscan from the input data')
             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
             clm = CLManager(rc)
             curprefix=clm.uniquePrefix()
@@ -579,7 +579,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut)+'/n','header' )
             
-            log.status('FINISHED subtracting the overscan from the input data','status')
+            log.status('*FINISHED* subtracting the overscan from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
             raise 
@@ -588,7 +588,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         
     def overscanTrim(self,rc):
         try:
-            log.status('STARTING to trim the overscan region from the input data','status')
+            log.status('*STARTING* to trim the overscan region from the input data','status')
             
             for ad in rc.getInputs(style='AD'):
                 for sciExt in ad['SCI']:
@@ -612,7 +612,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 # updating the GEM-TLM value and reporting the output to the RC    
                 ut = datetime.now().isoformat()  
                 ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')
-                ad.filename=fileNameUpdater(ad.filename,postpend='_overtrimd', strip=False)
+                ad.filename=fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
                 rc.reportOutput(ad)
                 
                 # updating logger with updated/added keywords to the PHU
@@ -621,7 +621,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut)+'/n','header' ) 
-            log.status('FINISHED trimming the overscan region from the input data','status')
+            log.status('*FINISHED* trimming the overscan region from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
             raise 
