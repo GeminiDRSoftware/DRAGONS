@@ -153,7 +153,8 @@ AstroDataType}, the
     # ClassificationLibrary Singleton, must be retrieved through
     #   getClassificationLibrary()
     classificationLibrary = None
-    def __init__(self, fname=None, mode="readonly", exts = None, extInsts = None):
+    def __init__(self, fname=None, mode="readonly", exts = None, extInsts = None,
+                    header = None, data = None):
         """
         Constructor for AstroData. Note, the file will be opened.
         
@@ -190,6 +191,9 @@ AstroDataType}, the
         self.extensions = exts
         self.extInsts = extInsts
         
+        if (fname == None) and (header != None) and (data != None):
+            fname = pyfits.ImageHDU(data = data, header=header)
+            
         self.open(fname, mode)
 
     def __del__(self):
@@ -627,10 +631,16 @@ when iterating over the AstroData extensions, e.g.:
                             return i
         return None
         
-    def setExtname(self, name, ver = None):
-        """WARNING: this function recreates HDUs and is not to be used on subdata"""
+    def renameExt(self, name, ver = None):
+        """WARNING: this function maniplates private (or somewhat private) 
+            HDU members, name and _extver"""
         if self.borrowedHDUList:
             raise ADExcept("cannot setExtname on subdata")
+        
+        if type(name) == tuple:
+            name = name[0]
+            ver = name[1]
+        
         if ver == None:
             ver = 1
         if not self.hasSingleHDU():
@@ -644,6 +654,8 @@ when iterating over the AstroData extensions, e.g.:
             hdu.name = name
             hdu._extver = ver
             # print "AD553:", repr(hdu.__class__)
+    setExtname = renameExt
+            
             
 
     def open(self, source, mode = "readonly"):
@@ -692,6 +704,9 @@ when iterating over the AstroData extensions, e.g.:
             # print "AD559:", self.hdulist[1].header["EXTVER"]
         elif type(source) == pyfits.HDUList:
             self.hdulist = source
+        elif type(source) == pyfits.ImageHDU:
+            phu = pyfits.PrimaryHDU()
+            self.hdulist= pyfits.HDUList([phu, source])
         else:
             if source == None:
                 phu = pyfits.PrimaryHDU()
@@ -1094,7 +1109,7 @@ lse, the return value is a list which is in fact
         self.hdulist.info()
         
  
-    def write(self, fname = None, clobber = False):
+    def write(self, fname = None, clobber = False, rename=True):
         """
         This function acts similarly to C{HDUList.writeto} if name is given, 
         or C{HDUList.update} if none is given,
@@ -1105,20 +1120,25 @@ lse, the return value is a list which is in fact
         :type fname: string
         """
         hdul = self.gethdul()
-        if fname != None:
-            self.filename = fname
-            
-        if (self.filename == None):
+        if fname == None:
+            rename = False
+            fname = self.filename
+        else:
+            if rename == True:
+                self.filename = fname
+           
+        # by here fname is either the name passed in, or if None, it is self.filename
+        if (fname == None):
             # @@FUTURE:
             # perhaps create tempfile name and use it?
             raise gdExcept()
            
-        if os.path.exists(self.filename):
+        if os.path.exists(fname):
             if clobber:
-                os.remove(self.filename)
+                os.remove(fname)
             else:
-                raise OutputExists(self.filename)
-        hdul.writeto(self.filename)
+                raise OutputExists(fname)
+        hdul.writeto(fname)
         
         
     # MID LEVEL MEF INFORMATION
