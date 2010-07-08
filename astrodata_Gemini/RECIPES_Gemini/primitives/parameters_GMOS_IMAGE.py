@@ -21,17 +21,17 @@
               },
     "overscanSubtract":{"fl_over":
                         {
-                          'default': True ,
+                          'default': True , #maybe hardcode this as this is the purpose of this prim, so setting it to False is pointless
                           'recipeOverride': True,
                           'type': 'bool',
                           'userOverride':True                                      
                          },
                          "fl_trim":
                          {
-                          'default': False ,
-                          'recipeOverride': True,
+                          'default': False , #trim the overscan region after it has been subracted? maybe hardcode this as there is a separate prim to do this
+                          'recipeOverride': False,
                           'type': 'bool',
-                          'userOverride':True    
+                          'userOverride':False    
                           },
                           "fl_vardq":
                           {
@@ -42,11 +42,18 @@
                            },
                           "outpref":
                           {
-                           'default': 'oversub' ,
+                           'default': '_oversubed' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
                           'type': 'str',
-                          'userOverride':True    
+                          'userOverride':False    
                            }
-                        }
-            
+                        },
+        "overscanTrim":{"outsuffix":
+                          {
+                           'default': '_overtrimd' , #value to be post pended to this primitives outputs
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':False    
+                           }
+                        } 
 }
