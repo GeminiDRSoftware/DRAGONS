@@ -18,6 +18,14 @@
               "note1":"these are just test parameters...",
               "note2":"pause doesn't need a 'message' parameter"
             }
-            }
+           },
+    "attachMDF":{"outsuffix":
+                          {
+                           'default': '_mdf' , #value to be post pended to this primitives outputs
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':False    
+                           }
+                        } 
             
 }
