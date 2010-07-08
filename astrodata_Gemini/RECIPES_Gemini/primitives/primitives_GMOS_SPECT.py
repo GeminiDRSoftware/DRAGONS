@@ -129,15 +129,18 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
                 inMDFname = 'kyles_test_images/'+maskname +'.fits'
                 log.status('input MDF file = '+inMDFname,'status')
                 admdf = AstroData(inMDFname)
-                admdf.setExtname('MDF',1)  #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER??
+                admdf.renameExt('MDF',1)  #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER??
                 admdf.extSetKeyValue(len(admdf)-1,'EXTNAME', 'MDF',"Extension name" )
                 admdf.extSetKeyValue(len(admdf)-1,'EXTVER', 1,"Extension version" ) #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER?? this one is to add the comment
                 
                 log.debug(admdf[0].getHeader())
                 log.debug(admdf.info())
                 
-                ad.append(moredata=admdf)  #$$$$$$$$$$  STILL NEED TO GET CRAIG TO CREATE A FN THAT INSERTS RATHER THAN APPENDS
+                ad.append(moredata=admdf)  
                 log.status(ad.info(),'status')
+                
+                ad.filename=fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
+                rc.reportOutput(ad)
                 
                 #addMDF(ad,mdf)     #$$ the call to the tool box function, currently not in use
                 log.status('finished adding the MDF','status')
