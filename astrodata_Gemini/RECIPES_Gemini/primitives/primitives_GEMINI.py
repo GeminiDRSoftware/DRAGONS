@@ -292,24 +292,13 @@ class GEMINIPrimitives(PrimitiveSet):
         '''
         
         try:
-            # setting the input 'repair' to a boolean from its current string type
-            repair = rc["repair"]
-            if repair == None:
-                repair = True
-            else:
-                repair = ((rc["repair"]).lower() == "true")
+            if rc["repair"]==True:
+               #this should repair the file if it is broken, but this function isn't coded yet
+               pass
+           
             writeInt = rc['writeInt'] #current way we are passing a boolean around to cue the writing of intermediate files, later this will be done in Reduce
             
-            
-            ## inserting the input file's headers to log for debugging (makes log HUGE, so commenting out for now)    
-            #for ad in rc.getInputs(style="AD"):
-                #log.debug('******** input headers to prepare **************','debug')
-                #log.debug('########## Headers for file: '+ad.filename+' ########','debug')
-                #for ext in range(len(ad)+1):    
-                        #log.debug(ad.getHeaders()[ext-1],'debug') #this will loop to print the PHU and then each of the following pixel extensions
-                        #log.debug('--------------------------------------------------------------------------','debug')
-              
-            log.status('STARTING to validate the input data','status')
+            log.status('*STARTING* to validate the input data','status')
             log.debug('calling validateInstrumentData', 'status')
             rc.run("validateInstrumentData")
             
@@ -319,21 +308,13 @@ class GEMINIPrimitives(PrimitiveSet):
                 ad.filename=fileNameUpdater(ad.filename, postpend='_validated', strip=False)
                 rc.reportOutput(ad) 
                         
-            log.status('FINISHED validating input data','status')
+            log.status('*FINISHED* validating input data','status')
             
             if writeInt:    
                 # writing outputs of this primitive for debugging
                 log.status('writing the outputs of validateData to disk','status')
                 rc.run('writeOutputs')
                 log.status('writing complete','status')
-                
-            ## inserting the primitive output file's headers to log for debugging (makes log HUGE, so commenting out for now)
-            #for ad in rc.getInputs(style="AD"):
-                #log.debug('******** output headers of validateData **************','debug')
-                #log.debug('######### Headers for file: '+ad.filename+' #########','debug')
-                #for ext in range(len(ad)+1):    
-                        #log.debug(ad.getHeaders()[ext-1],'debug') #this will loop to print the PHU and then each of the following pixel extensions
-                        #log.debug('---------------------------------------------------------------------------','debug')
                 
         except:
             log.critical("Problem preparing the image.",'critical')
@@ -351,44 +332,28 @@ class GEMINIPrimitives(PrimitiveSet):
         try:
             writeInt = rc['writeInt']
             
-            # setting the input 'repair' to a boolean from its current string type
-            addMDF = rc["addMDF"]
-            if addMDF == None:
-                addMDF = True
-            else:
-                addMDF = ((rc["addMDF"]).lower() == "true")
-            
             # add the MDF if not set to false
-            if addMDF:
+            if rc["addMDF"]==True:
                 log.debug('calling attachMDF','status')
                 rc.run("attachMDF")
              
-            log.status('STARTING to standardize the structure of input data','status')
+            log.status('*STARTING* to standardize the structure of input data','status')
             
-                
             for ad in rc.getInputs(style="AD"):
                 log.debug('calling stdObsStruct', 'status')
                 stdObsStruct(ad)
                 # updating the filenames in the RC
                 log.debug('calling fileNameUpdater','status')
-                ad.filename=fileNameUpdater(ad.filename, postpend='_struct', strip=False)
+                ad.filename=fileNameUpdater(ad.filename, postpend=rc['outsuffix'], strip=False)
                 rc.reportOutput(ad)
             
-            log.status('FINISHED standardizing the structure of input data','status')
+            log.status('*FINISHED* standardizing the structure of input data','status')
                 
             if writeInt:
                 log.status('writing the outputs of standardizeStructure to disk','status')
                 rc.run('writeOutputs')
                 log.status('writing complete','status')
-                
-            # inserting the primitive output file's headers to log for debugging (makes log HUGE, so commenting out for now)
-            #for ad in rc.getInputs(style="AD"):
-                #log.debug('******** output headers of standardizeStructure **************','debug')
-                #log.debug('########## Headers for file: '+ad.filename+' ########','debug')
-                #for ext in range(len(ad)+1):    
-                        #log.debug(ad.getHeaders()[ext-1],'debug') #this will loop to print the PHU and then each of the following pixel extensions
-                        #log.debug('---------------------------------------------------------------------------','debug')
-                            
+ 
         except:
             log.critical("Problem preparing the image.",'critical')
             raise
@@ -405,17 +370,12 @@ class GEMINIPrimitives(PrimitiveSet):
         try:   
             writeInt = rc['writeInt']
             
-            log.status('STARTING to standardize the headers','status')
+            log.status('*STARTING* to standardize the headers','status')
             log.status('standardizing observatory general headers','status')            
             for ad in rc.getInputs(style="AD"):
                 log.debug('calling stdObsHdrs','status')
                 stdObsHdrs(ad)
-                 
-            #log.debug("printing the updated headers",'debug')
-            #for ext in range(len(ad)+1):
-                #log.debug('--------------------------------------------------------------','debug')    
-                #log.debug(ad.getHeaders()[ext-1],'debug') #this will loop to print the PHU and then each of the following pixel extensions
-                  
+   
             log.status("observatory headers fixed",'status')
             log.debug('calling standardizeInstrumentHeaders','status')
             log.status('standardizing instrument specific headers','status')
@@ -427,24 +387,17 @@ class GEMINIPrimitives(PrimitiveSet):
             #     ad.filename=fileNameUpdater(ad.filename,postpend='_Hdrs', strip=False)
             # rc.reportOutput(ad)
                 
-            # updating the filenames in the RC $$$$ TEMPERARILY HERE TILL validateWCS IS WRITEN AND THIS WILL THEN GO THERE
+            # updating the filenames in the RC $$$$ TEMPERARILY HERE TILL validateWCS IS WRITEN AND THIS WILL THEN GO THERE as it will be the final prim of prepare
             for ad in rc.getInputs(style="AD"):
                 log.debug('calling fileNameUpdater','status')
-                ad.filename=fileNameUpdater(ad.filename, postpend='_prepared', strip=True)
+                ad.filename=fileNameUpdater(ad.filename, postpend=rc['outsuffix'], strip=True)
                 rc.reportOutput(ad)
-            log.status('FINISHED standardizing the headers','status')
+            log.status('*FINISHED* standardizing the headers','status')
               
             # writing output file of prepare
             log.status('writing the outputs of prepare to disk','status')
             rc.run('writeOutputs')
             log.status('writing complete','status')
-            # inserting the primitive output file's headers to log for debugging (makes log HUGE)
-            #for ad in rc.getInputs(style="AD"):
-                #log.debug('******** output headers of standardizeStructure **************','debug')
-                #log.debug('######### Headers for file: '+ad.filename+' ########','debug')
-                #for ext in range(len(ad)+1):    
-                        #log.debug(ad.getHeaders()[ext-1],'debug') #this will loop to print the PHU and then each of the following pixel extensions
-                        #log.debug('---------------------------------------------------------------------------','debug')
                 
         except:
             log.critical("Problem preparing the image.",'critical',)
@@ -454,42 +407,33 @@ class GEMINIPrimitives(PrimitiveSet):
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$ 
-    def addVAR(self,rc):
+    def calculateVAR(self,rc):
         '''
         this will calculate and add the variance frame to the input MEF
         '''
         try:
-            # currently hardcoded input parameters till we get the user modifiable parameters system working/developed
-            outsuffix = '_vardq'    #move to parameters file
-            fl_saturated = True     #move to parameters file
-            fl_nonlinear = True     #move to parameters file
-            
-            log.fullinfo('STARTING to add the VAR frame(s) to the input data', 'fullinfo')
+            log.fullinfo('*STARTING* to add the VAR frame(s) to the input data', 'fullinfo')
             log.critical('CURRENTLY VARIENCE IS NOT BEING CALCULATED, JUST ADDING A ZEROS ARRAY!!!!', 'critical')
             
             for ad in rc.getInputs(style='AD'):
                 for sciExt in ad['SCI']:
                     varArray=np.zeros(sciExt.data.shape,dtype=np.float32)
                 
-                    varHDU=pyfits.ImageHDU()
-                    varHDU.data=varArray
+                    varheader = pyfits.Header()
+                    varheader.update('NAXIS', 2)
+                    varheader.update('PCOUNT', 0, 'required keyword; must = 0 ')
+                    varheader.update('GCOUNT', 1, 'required keyword; must = 1')
+                    # varHDU.renameExt("VAR", sciExt.extver())
+                    varheader.update('EXTNAME', 'VAR', 'Extension Name')
+                    varheader.update('EXTVER', sciExt.extver(), 'Extension Version')
+                    varheader.update('BITPIX', 32, 'number of bits per data pixel')
+                    
+                    varAD = AstroData( header = varheader, data = varArray )
+                
                     log.fullinfo('varHDU created and data added, now updating the header keys','status')
-                    #varHDU.header.update('XTENSION', 'numpy array', 'extension type')
-                    varHDU.header.update('BITPIX', 32, 'number of bits per data pixel')
-                    varHDU.header.update('NAXIS', 2)
-                    varHDU.header.update('PCOUNT', 0, 'required keyword; must = 0 ')
-                    varHDU.header.update('GCOUNT', 1, 'required keyword; must = 1')
-                    varHDU.header.update('EXTNAME', 'VAR', 'Extension Name')
-                    varHDU.header.update('EXTVER', sciExt.extver(), 'Extension Version')
-                    
                     log.fullinfo('appending new HDU onto the file','status')
-                    ad.append(varHDU)
+                    ad.append(varAD)
                     log.fullinfo('appending complete','status')
-                    
-                    #print 'len(ad); ',str(len(ad))
-                    #print ad.getHeaders()[len(ad)]
-                    #ad.extSetKeyValue(len(ad)-1,'EXTNAME', 'VAR',"Extension name" )
-                    #ad.extSetKeyValue(len(ad)-1,'EXTVER',sciExt.extver(),"Extension version" )
                     
                     ut = datetime.now().isoformat()  
                     ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')  
@@ -517,12 +461,12 @@ class GEMINIPrimitives(PrimitiveSet):
                 print ad.info()
                 
                 ## check if there filename all ready has the suffix '_vardq', if not add it
-                if not re.search(outsuffix,ad.filename): #%%%% this is printing a 'None' on the screen, fix that!!!
+                if not re.search(rc['outsuffix'],ad.filename): #%%%% this is printing a 'None' on the screen, fix that!!!
                     log.debug('calling fileNameUpdater','status')
-                    ad.filename=fileNameUpdater(ad.filename, postpend=outsuffix, strip=False)
-                    rc.reportOutput(ad)        
+                    ad.filename=fileNameUpdater(ad.filename, postpend=rc['outsuffix'], strip=False)
+                rc.reportOutput(ad)        
                 
-            log.fullinfo('FINISHED adding the VAR frame(s) to the input data', 'fullinfo')
+            log.fullinfo('*FINISHED* adding the VAR frame(s) to the input data', 'fullinfo')
      
         except:
             log.critical("Problem adding the VARDQ to the image.",'critical',)
@@ -532,22 +476,17 @@ class GEMINIPrimitives(PrimitiveSet):
       
 #--------------------------------------------------------------------------
 
-    def addDQ(self,rc):
+    def calculateDQ(self,rc):
         '''
         this will calculate and add the data quality frame to the input MEF
         '''
         try:
-            # currently hardcoded input parameters till we get the user modifiable parameters system working/developed
-            outsuffix = '_vardq'    #move to parameters file
-            fl_saturated = True     #move to parameters file
-            fl_nonlinear = True     #move to parameters file
-            
-            log.status('STARTING to add the DQ frame(s) to the input data', 'status')
+            log.status('*STARTING* to add the DQ frame(s) to the input data', 'status')
             log.critical('CURRENTLY NO BPM FILE LOADING, JUST ADDING A ZEROS ARRAY!!!!', 'critical')
             
             for ad in rc.getInputs(style='AD'):
                 
-                BPMfilename='None' #$$$$$$$$ this will be changed to an actual name when we know how to load them in
+                BPMfilename='None' #$$$$$$$$ this will be changed to an actual name when we know how to load them in (awaiting callibration system upgrade)
                 
                 for sciExt in ad['SCI']:
                     
@@ -557,33 +496,31 @@ class GEMINIPrimitives(PrimitiveSet):
                     linear=sciExt.non_linear_level()
                     saturated=sciExt.saturation_level()
 
-                    if linear!=None: 
+                    if (linear!=None) and (rc['fl_nonlinear']==True): 
                         log.fullinfo('performing a np.where to find non-linear pixels','status')
                         nonLinArray=np.where(sciExt.data>linear,2,0)
-                    if saturated!=None:
+                    if (saturated!=None) and (rc['fl_saturated']==True):
                         log.fullinfo('performing a np.where to find saturated pixels','status')
                         saturatedArray=np.where(sciExt.data>saturated,4,0)
                        
                     dqArray=np.add(BPMArray,nonLinArray,saturatedArray)
-                    dqHDU=pyfits.ImageHDU()
-                    dqHDU.data=dqArray
-                    #dqHDU.header.update('XTENSION', 'numpy array', 'extension type')
-                    dqHDU.header.update('BITPIX', 16, 'number of bits per data pixel')
-                    dqHDU.header.update('NAXIS', 2)
-                    dqHDU.header.update('PCOUNT', 0, 'required keyword; must = 0 ')
-                    dqHDU.header.update('GCOUNT', 1, 'required keyword; must = 1')
-                    dqHDU.header.update('BUNIT', 'bit', 'Physical units')
-                    dqHDU.header.update('BPMFILE', BPMfilename, 'Name of input Bad Pixel Mask file')
-                    dqHDU.header.update('EXTNAME', 'DQ', 'Extension Name')
-                    dqHDU.header.update('EXTVER', sciExt.extver(), 'Extension Version')
+                    
+                    dqheader = pyfits.Header()
+
+                    dqheader.update('BITPIX', 16, 'number of bits per data pixel')
+                    dqheader.update('NAXIS', 2)
+                    dqheader.update('PCOUNT', 0, 'required keyword; must = 0 ')
+                    dqheader.update('GCOUNT', 1, 'required keyword; must = 1')
+                    dqheader.update('BUNIT', 'bit', 'Physical units')
+                    dqheader.update('BPMFILE', BPMfilename, 'Name of input Bad Pixel Mask file')
+                    dqheader.update('EXTNAME', 'DQ', 'Extension Name')
+                    dqheader.update('EXTVER', sciExt.extver(), 'Extension Version')
+                    
+                    dqAD = AstroData( header = dqheader, data = dqArray )
                     
                     log.fullinfo('appending new HDU onto the file','status')
-                    ad.append(dqHDU)
+                    ad.append(dqAD)
                     log.fullinfo('appending complete','status')
-                    #print 'len(ad); ',str(len(ad))
-                    #print ad.getHeaders()[len(ad)]
-                    #ad.extSetKeyValue(len(ad)-1,'EXTNAME', 'DQ',"Extension name" )
-                    #ad.extSetKeyValue(len(ad)-1,'EXTVER',sciExt.extver(),"Extension version" )
                     
                     ut = datetime.now().isoformat()  
                     ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')  
@@ -613,13 +550,13 @@ class GEMINIPrimitives(PrimitiveSet):
                 print ad.info()
                 
                 ## check if there filename all ready has the suffix '_vardq', if not add it
-                if not re.search(outsuffix,ad.filename): #%%%% this is printing a 'None' on the screen, fix that!!!
+                if not re.search(rc['outsuffix'],ad.filename): #%%%% this is printing a 'None' on the screen, fix that!!!
                     log.debug('calling fileNameUpdater','status')
-                    ad.filename=fileNameUpdater(ad.filename, postpend=outsuffix, strip=False)
-                    log.stats('output of addDQ will have the filename: '+ad.filename,'status')
-                    rc.reportOutput(ad)        
+                    ad.filename=fileNameUpdater(ad.filename, postpend=rc['outsuffix'], strip=False)
+                    log.status('output of addDQ will have the filename: '+ad.filename,'status')
+                rc.reportOutput(ad)        
             
-            log.status('FINISHED adding the DQ frame(s) to the input data', 'status')
+            log.status('*FINISHED* adding the DQ frame(s) to the input data', 'status')
 
         except:
             log.critical("Problem adding the VARDQ to the image.",'critical',)
@@ -634,7 +571,7 @@ class GEMINIPrimitives(PrimitiveSet):
         it will do ..... (&*(*&(*& to the VAR and DQ frames... FILL THIS IN!!!!!!!!!!!!!!!
         '''
         try:
-            log.status('STARTING combine the images of the input data', 'status')
+            log.status('*STARTING* combine the images of the input data', 'status')
             
             ## Need a section here to read in the list or create one for input to gemcombine
             
