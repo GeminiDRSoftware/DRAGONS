@@ -572,16 +572,22 @@ class GEMINIPrimitives(PrimitiveSet):
         '''
         try:
             log.status('*STARTING* combine the images of the input data', 'status')
-            
-            ## Need a section here to read in the list or create one for input to gemcombine
-            
-                
-            #gemini.gemcombine( list,  output=outname,
-            #           combine="average", reject="none" ,Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-                    
+             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily
+            clm=CLManager(rc)
+            log.fullinfo('calling the gemcombine CL script', 'status')
+            gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine="average", reject="none",\
+                              Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+                   
             if gemini.gemcombine.status:
                 log.critical('gemcombine failed','critical')
                 raise 
+            else:
+                log.fullinfo('exited the gemcombine CL script successfully', 'status')
+                
+            clm.postCLloads(combine=True) #$$ change this to work with the .finishCL(combine=True) call to look same as overscanSubtract
+            
+            
+            #$$$$$$$ flush out the header info updated to log and GEM-TLM... as done at end of overscanSubtract.
             
             log.status('FINISHED combining the images of the input data', 'status')
         except:
