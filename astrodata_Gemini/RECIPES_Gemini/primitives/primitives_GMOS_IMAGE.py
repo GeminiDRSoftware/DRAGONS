@@ -546,11 +546,10 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to subtract the overscan from the input data')
             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
             clm = CLManager(rc)
-            curprefix=clm.uniquePrefix()
 
             ## params in the dictionaries: fl_over, fl_trim, fl_vardq, outpref
             log.fullinfo('calling the gireduce CL script', 'status')
-            gemini.gmos.gireduce(clm.inputsAsStr(), gp_outpref=curprefix,fl_over=pyrafBoolean(rc["fl_over"]), \
+            gemini.gmos.gireduce(clm.inputsAsStr(), gp_outpref=clm.uniquePrefix(),fl_over=pyrafBoolean(rc["fl_over"]), \
                     fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
                     fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']),\
                     Stdout = "dev$null", Stderr = rc.getIrafStderr())
