@@ -131,12 +131,14 @@ class CLManager(object):
     rc = None
     prefix = None
     outpref = None
+    listname = None
     
     def __init__(self, rc, outpref = None):
         self.rc  = rc
         if outpref == None:
             outpref = rc["outpref"]
         self.outpref=outpref
+        self._preCLcachestorenames=[]
         self.prefix = self.uniquePrefix()
         self.preCLwrites()
     
@@ -161,25 +163,46 @@ class CLManager(object):
     
     def inputsAsStr(self):
         return ",".join(self._preCLcachestorenames)
-
+    
+    def inputList(self):
+        self.listname='List'+str(os.getpid())+self.rc.ro.curPrimName
+        return self.rc.makeInlistFile(self.listname,self._preCLcachestorenames)
+        
     def uniquePrefix(self):
         #print 'g163: using uniquePrefix = ',"tmp"+ str(os.getpid())+self.rc.ro.curPrimName
         return "tmp"+ str(os.getpid())+self.rc.ro.curPrimName
-        
-    def postCLloads(self):
-        for i in range(0, len(self._preCLcachestorenames)):
-            storename = self._preCLcachestorenames[i]  #name of file written to disk for input to CL script
-            cloutname = self.outpref + storename  #name of file CL wrote to disk
-            finalname = fileNameUpdater(self._preCLfilenames[i], postpend= self.outpref, strip=False)  #name i want the file to be
-            #print 'g169: storename = ',storename
-            #print 'g170: cloutname = ', cloutname
-            #print 'g171: finalname = ',finalname
-            
+    
+    def combineOutname(self):
+        print self.outpref
+        print self._preCLcachestorenames[0]
+        return self.outpref+self._preCLcachestorenames[0]
+    
+    def postCLloads(self,combine=False):
+        if combine==True:
+            cloutname=self.outpref+self._preCLcachestorenames[0]
+            finalname=fileNameUpdater(self._preCLfilenames[0], postpend= self.outpref, strip=False)
             os.rename(cloutname, finalname )
-            # THIS LOADS THE FILE INTO MEMORY
             self.rc.reportOutput(finalname)
-            os.remove(finalname) # clearing file written for CL input
-            os.remove(storename) # clearing renamed file ouput by CL
+            os.remove(finalname)
+            os.remove(self.listname)
+            
+            for i in range(0, len(self._preCLcachestorenames)):
+                storename = self._preCLcachestorenames[i]  #name of file written to disk for input to CL script
+                os.remove(storename) # clearing renamed file ouput by CL
+                
+        elif combine==False:
+            for i in range(0, len(self._preCLcachestorenames)):
+                storename = self._preCLcachestorenames[i]  #name of file written to disk for input to CL script
+                cloutname = self.outpref + storename  #name of file CL wrote to disk
+                finalname = fileNameUpdater(self._preCLfilenames[i], postpend= self.outpref, strip=False)  #name i want the file to be
+                
+                os.rename(cloutname, finalname )
+                
+                # THIS LOADS THE FILE INTO MEMORY
+                self.rc.reportOutput(finalname)
+                
+                os.remove(finalname) # clearing file written for CL input
+                os.remove(storename) # clearing renamed file ouput by CL
             
         
         
