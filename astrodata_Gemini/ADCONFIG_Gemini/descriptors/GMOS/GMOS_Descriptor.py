@@ -532,7 +532,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         maskname = hdu[0].header[stdkeyDictGMOS['key_maskname']]
         grating = hdu[0].header[stdkeyDictGMOS['key_disperser']]
         
-        if masktype == 0:
+        if masktype == 0 or dataset.isType('GMOS_BIAS') == True:
             ret_observation_mode = 'IMAGE'
         
         elif masktype == -1:
@@ -546,7 +546,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             else:
                 ret_observation_mode = 'MOS'
         else:
-            # if obsmode cannot be determined, set it equal to IMAGE
+            # if observation_mode cannot be determined, set it equal to IMAGE
             # instead of crashing
             ret_observation_mode = 'IMAGE'
         
