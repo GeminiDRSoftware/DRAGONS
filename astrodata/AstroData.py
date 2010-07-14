@@ -18,6 +18,7 @@ except ImportError:
         pass
 
 import re
+from datetime import datetime
 
 verbose = False
 verboseLoadTypes = True
@@ -149,7 +150,7 @@ AstroDataType}, the
     
     # None means "all", otherwise, an array of extensions
     extensions = None
-    
+    tlm=None
     # ClassificationLibrary Singleton, must be retrieved through
     #   getClassificationLibrary()
     classificationLibrary = None
@@ -1186,6 +1187,21 @@ lse, the return value is a list which is in fact
     def getPHUHeader(self):
         return self.getHDU(0).header
             
+    def historyMark(self,key=None,comment=None, stomp=True):
+        if stomp:
+            self.tlm = datetime.now().isoformat()[0:-7]
+        elif (stomp==False) and (self.tlm==None):
+            self.tlm = datetime.now().isoformat()[0:-7]
+        
+        if comment==None and key!=None:
+            comment='UT Time stamp for '+key
+            
+        if key !=None:
+            self.phuSetKeyValue(key,self.tlm,comment)
+        else:
+             self.phuSetKeyValue('GEM-TLM',self.tlm,'UT Last modification with GEMINI')     
+        
+        return self.tlm
         
 # SERVICE FUNCTIONS and FACTORIES
 def correlate( *iary):
