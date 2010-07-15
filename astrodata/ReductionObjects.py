@@ -57,6 +57,9 @@ class ReductionObject(object):
         return None
                      
     def substeps(self, primname, context):
+        savedLocalparms = context.localparms
+        context.status = "RUNNING"
+        
         prevprimname = self.curPrimName
         self.curPrimName = primname
         # check to see current primitive set type is correct
@@ -102,11 +105,12 @@ class ReductionObject(object):
         context.curPrimName = None
         self.curPrimName = prevprimname
         yield context.end(primname)
+        context.localparms = savedLocalparms
+        yield context
         
     def runstep(self, primname, cfgobj):
         """runsetp(primitiveName, reductionContext)"""
         
-        cfgobj.status = "RUNNING"
         for cfg in self.substeps(primname, cfgobj):
             ## call command clause
             if cfg.isFinished():
@@ -115,6 +119,7 @@ class ReductionObject(object):
             if cfg.isFinished():
                 break
             pass
+        
         return cfg
     # run is alias for runstep
     run = runstep
