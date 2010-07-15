@@ -152,8 +152,6 @@ class ReductionContext(dict):
     def __getitem__(self, arg):
         """Note, the ReductionContext version of __getitem__ returns None instead of throwing a KeyError.
         """
-        
-        
         if self.localparms and arg in self.localparms:
             value = self.localparms[arg]
         else:
@@ -161,7 +159,7 @@ class ReductionContext(dict):
                 value = dict.__getitem__(self, arg)
             except KeyError:
                 return None
-            
+        
         retval = self.convertParmToVal(arg, value)
         return retval
         
@@ -550,7 +548,10 @@ class ReductionContext(dict):
         else:
             inputlist = []
             for inp in self.inputs:
-                inputlist.append(inp.filename)
+                if inp.ad != None:
+                    inputlist.append(inp.ad.filename)
+                else:
+                    inputlist.append(inp.filename)
 
             if strippath == False:
                 return ",".join(inputlist)                
