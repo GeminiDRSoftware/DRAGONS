@@ -6,9 +6,9 @@ getProcessedFlat
 showCals
 
 
-prepare
+dprepare
 
-overscanTrim
+doverscanTrim
 
 biasCorrect
 flatfieldCorrect
@@ -21,6 +21,6 @@ measureIQ
 
 setStackable
 
-averageCombine
+daverageCombine
 display(displayID = combined)
 measureIQ
