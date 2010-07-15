@@ -70,7 +70,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
        
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
-    def averageCombine(self, rc):
+    def daverageCombine(self, rc):
         try:
             # @@TODO: need to include parameter options here
             print "Combining and averaging" 
@@ -260,7 +260,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
          
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
-    def makeProcessedBias(self, rc):
+    def dmakeProcessedBias(self, rc):
         # Things done to the bias image before we subtract it:
         # overscan subtract
         # overscan trim
@@ -282,7 +282,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
 
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
-    def makeProcessedFlat(self, rc):
+    def dmakeProcessedFlat(self, rc):
         # FLAT made for all GMOS modes (imaging, spectroscopy, IFU) we need to
        
         try:
@@ -316,7 +316,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
        yield rc
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
-    def overscanCorrect(self, rc):
+    def doverscanCorrect(self, rc):
         print "Performing Overscan Correct (overSub, overTrim)"
         try:
             gemini.gmos.gireduce(rc.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=pyraf.iraf.yes,
@@ -335,7 +335,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
-    def overscanSub(self, rc):
+    def doverscanSub(self, rc):
         try:
             print "Determining overscan subtraction region using nbiascontam"
             print "parameter and BIASSEC header keyword"
@@ -355,7 +355,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
-    def overscanTrim(self, rc):
+    def doverscanTrim(self, rc):
         try:
             print "Determining overscan region using BIASSEC header keyword"
             print "Trimming off overscan"
@@ -469,7 +469,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         yield rc
      #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    
-    def prepare(self, rc):
+    def dprepare(self, rc):
         try:
             print 'preparing'
             print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
@@ -492,17 +492,17 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         
     #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
-    these primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
+    These primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
     commenting has been added to hopefully assist those reading the code.
-    excluding validateWCS, all the primitives for prepare are complete (as far as we know of at the moment that is)
-    and so I am moving onto working on the primitives following prepare.
+    Excluding validateWCS, all the primitives for 'prepare' are complete (as far as we know of at the moment that is)
+    and so I am moving onto working on the primitives following 'prepare'.
     '''
     
     def standardizeInstrumentHeaders(self,rc):
         '''
-        makes the changes and additions to the headers of the input files that are instrument specific
+        This primitive is called by standardizeHeaders to makes the changes and additions to
+        the headers of the input files that are instrument specific.
         '''
-        
         try:            
             writeInt = rc['writeInt']
                                
@@ -523,7 +523,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
     #------------------------------------------------------------------------    
     def validateInstrumentData(self,rc):
         '''
-        instrument specific validations for the input file
+        This primitive is called by validateData to validate the instrument specific data checks for all input files.
         '''
         
         try:
@@ -542,11 +542,14 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
     def overscanSubtract(self,rc):
+        """
+        This primitive uses the CL script gireduce to subtract the overscan from the input images.
+        """
         try:
             log.status('*STARTING* to subtract the overscan from the input data')
             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
             clm = CLManager(rc)
-
+            clm.LogCurParams()
             ## params in the dictionaries: fl_over, fl_trim, fl_vardq, outpref
             log.fullinfo('calling the gireduce CL script', 'status')
             gemini.gmos.gireduce(clm.inputsAsStr(), gp_outpref=clm.uniquePrefix(),fl_over=pyrafBoolean(rc["fl_over"]), \
@@ -569,9 +572,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                     log.fullinfo('file '+clm.preCLNames()[i]+' had its overscan subracted successfully', 'status')
                     log.fullinfo('new file name is: '+ad.filename, 'status')
                 i=i+1
-                ut = datetime.now().isoformat()  
-                ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')
-                
+                ut = ad.historyMark()  
+                #$$$$$ should we also have a OVERSUB UT time stame in the PHU???
                 log.fullinfo('****************************************************','header')
                 log.fullinfo('file = '+ad.filename,'header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
@@ -586,6 +588,10 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         yield rc    
         
     def overscanTrim(self,rc):
+        """
+        This primitive uses pyfits and AstroData to trim the overscan region from the input images
+        and update their headers.
+        """
         try:
             log.status('*STARTING* to trim the overscan region from the input data','status')
             
@@ -599,7 +605,8 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                     sciExt.data=sciExt.data[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
                     sciExt.header['NAXIS1']=dsl[1]-dsl[0]+1
                     sciExt.header['NAXIS2']=dsl[3]-dsl[2]+1
-
+                    newDataSecStr='[1:'+str(dsl[1]-dsl[0]+1)+',1:'+str(dsl[3]-dsl[2]+1)+']' 
+                    sciExt.header['DATASEC']=newDataSecStr
                     ## updating logger with updated/added keywords to each SCI frame
                     log.fullinfo('****************************************************','header')
                     log.fullinfo('file = '+ad.filename,'header')
@@ -607,10 +614,11 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                     log.fullinfo('SCI extension number '+str(sciExt.extver())+' keywords updated/added:\n', 'header')
                     log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),'header' )
                     log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),'header' )
+                    log.fullinfo('DATASEC= '+newDataSecStr,'header' )
                     
                 # updating the GEM-TLM value and reporting the output to the RC    
-                ut = datetime.now().isoformat()  
-                ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')
+                ut = ad.historyMark()
+                #$$$$$ should we also have a OVERTRIM UT time stame in the PHU???
                 ad.filename=fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
                 rc.reportOutput(ad)
                 
@@ -620,25 +628,13 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut)+'/n','header' ) 
+                
             log.status('*FINISHED* trimming the overscan region from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
             raise 
         
         yield rc
-
-def pyrafBoolean(pythonBool):
-    '''
-    a very basic function to reduce code repetition that simply 'casts' any given 
-    Python boolean into a pyraf/iraf one for use in the CL scripts
-    '''
-    
-    if pythonBool:
-        return pyraf.iraf.yes
-    elif  not pythonBool:
-        return pyraf.iraf.no
-    else:
-        print "DANGER DANGER Will Robinson, pythonBool passed in not True or False"
 
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
