@@ -90,8 +90,11 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
    
     #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
-    all the stuff in here is very much a work in progress and I will not be fully
-    commenting it for others while developing it, sorry.
+    These are the primitives for 'prepare' that are just to check how the general primitives in 
+    primitives_GEMINI will work for a GMOS_SPEC image and its MDF file.  Since these are just to check 
+    how it will work, they are operational but not thuroughly tested or robust and will be needing more
+    work when we start writing the rest of the prims for GMOS_SPEC.  Because of this, sorry for the lack
+    of commenting if you end up reading this code.
     '''
 
     def standardizeInstrumentHeaders(self,rc):
