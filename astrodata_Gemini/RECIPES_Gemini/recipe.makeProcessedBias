@@ -1,0 +1,4 @@
+prepare
+overscanCorrect
+avgCombine
+writeOutputs #storeProcessBias
