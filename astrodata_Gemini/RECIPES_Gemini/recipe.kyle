@@ -1,2 +1,5 @@
-prepare2
+prepare
 overscanSubtract
+overscanTrim
+calculateDQ
+avgCombine
