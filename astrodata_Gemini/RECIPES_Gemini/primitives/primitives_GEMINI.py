@@ -278,22 +278,25 @@ class GEMINIPrimitives(PrimitiveSet):
 #-------------------------------------------------------------------
 #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
-    these primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
+    These primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
     commenting has been added to hopefully assist those reading the code.
-    excluding validateWCS, all the primitives for prepare are complete (as far as we know of at the moment that is)
-    and so I am moving onto working on the primitives following prepare.
+    Excluding validateWCS, all the primitives for 'prepare' are complete (as far as we know of at the moment that is)
+    and so I am moving onto working on the primitives following 'prepare'.
     '''
 
 #----------------------------------------------------------------------------    
     def validateData(self,rc):
         '''
-        this primitive will ensure the data is not corrupted or in an odd format that will effect later steps
-        in the reduction process
+        This primitive will ensure the data is not corrupted or in an odd format that will effect later steps
+        in the reduction process.  It will call a function to take care of the general Gemini issues and then 
+        one for the instrument specific ones. If there are issues with the data, the flag 'repair' can be used to 
+        turn the feature to repair it or not (eg. validateData(repair=True)).
         '''
         
         try:
             if rc["repair"]==True:
-               #this should repair the file if it is broken, but this function isn't coded yet
+               #this should repair the file if it is broken, but this function isn't coded yet and would require
+               #some sort of flag set while checking the data to tell this to perform the corrections
                pass
            
             writeInt = rc['writeInt'] #current way we are passing a boolean around to cue the writing of intermediate files, later this will be done in Reduce
@@ -325,8 +328,11 @@ class GEMINIPrimitives(PrimitiveSet):
 #----------------------------------------------------------------------
     def standardizeStructure(self,rc):
         '''
-        this primitive ensures the MEF structure is ready for further processing, through 
-        adding the MDF if necessary and the needed keywords to the headers
+        This primitive ensures the MEF structure is ready for further processing, through 
+        adding the MDF if necessary and the needed keywords to the headers.  First the 
+        MEF's will be checked for the general Gemini structure requirements and then the 
+        instrument specific ones. If the data requires a MDF to be attached, use the 
+        'addMDF' flag to make this happen (eg. standardizeStructure(addMDF=False)).
         '''
         
         try:
@@ -364,7 +370,9 @@ class GEMINIPrimitives(PrimitiveSet):
 #-------------------------------------------------------------------
     def standardizeHeaders(self,rc):
         '''
-        this primitive updates and adds the important header keywords for the input MEFs
+        This primitive updates and adds the important header keywords for the input MEFs. 
+        First the general headers for Gemini will be update/created, followed by those
+        that are instrument specific.
         '''
         
         try:   
@@ -387,14 +395,14 @@ class GEMINIPrimitives(PrimitiveSet):
             #     ad.filename=fileNameUpdater(ad.filename,postpend='_Hdrs', strip=False)
             # rc.reportOutput(ad)
                 
-            # updating the filenames in the RC $$$$ TEMPERARILY HERE TILL validateWCS IS WRITEN AND THIS WILL THEN GO THERE as it will be the final prim of prepare
+            # updating the filenames in the RC $$$$ TEMPERARILY HERE TILL validateWCS IS WRITTEN AND THIS WILL THEN GO THERE as it will be the final prim of prepare
             for ad in rc.getInputs(style="AD"):
                 log.debug('calling fileNameUpdater','status')
                 ad.filename=fileNameUpdater(ad.filename, postpend=rc['outsuffix'], strip=True)
                 rc.reportOutput(ad)
             log.status('*FINISHED* standardizing the headers','status')
               
-            # writing output file of prepare
+            # writing output file of prepare make this require the 'writeint' flag or something when validateWCS is written
             log.status('writing the outputs of prepare to disk','status')
             rc.run('writeOutputs')
             log.status('writing complete','status')
@@ -409,7 +417,8 @@ class GEMINIPrimitives(PrimitiveSet):
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$ 
     def calculateVAR(self,rc):
         '''
-        this will calculate and add the variance frame to the input MEF
+        This primitive uses numpy to calculate the variance of each SCI frame in the input files and 
+        appends it as a VAR frame using AstroData.
         '''
         try:
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data', 'fullinfo')
@@ -435,10 +444,6 @@ class GEMINIPrimitives(PrimitiveSet):
                     ad.append(varAD)
                     log.fullinfo('appending complete','status')
                     
-                    ut = datetime.now().isoformat()  
-                    ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')  
-                    ad.phuSetKeyValue("ADDVARDQ",ut,'UT Time stamp for addVARDQ')
-                    
                     ## updating logger with updated/added keywords
                     log.fullinfo('****************************************************','header')
                     log.fullinfo('file = '+ad.filename,'header')
@@ -449,7 +454,9 @@ class GEMINIPrimitives(PrimitiveSet):
                     log.fullinfo('EXTNAME= '+'VAR','header' )
                     log.fullinfo('EXTVER= '+str(sciExt.extver()),'header' )
                     log.fullinfo('---------------------------------------------------','header')
-                    
+                
+                ut =  ad.historyMark()
+                ad.historyMark(key="ADDVARDQ",stomp=False)    
                 log.fullinfo('****************************************************','header')
                 log.fullinfo('file = '+ad.filename,'header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
@@ -478,7 +485,10 @@ class GEMINIPrimitives(PrimitiveSet):
 
     def calculateDQ(self,rc):
         '''
-        this will calculate and add the data quality frame to the input MEF
+        This primitive will create a numpy array for the data quality of each SCI frame of the input data.
+        This will then have a header created and be append to the input using AstroData as a DQ frame.
+        The value of a pixel will be the sum of the following: 
+        (0=good, 1=bad pixel (found in bad pixel mask), 2= value is in non linear region, 4=pixel is saturated)
         '''
         try:
             log.status('*STARTING* to add the DQ frame(s) to the input data', 'status')
@@ -522,10 +532,6 @@ class GEMINIPrimitives(PrimitiveSet):
                     ad.append(dqAD)
                     log.fullinfo('appending complete','status')
                     
-                    ut = datetime.now().isoformat()  
-                    ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')  
-                    ad.phuSetKeyValue("ADDVARDQ",ut,'UT Time stamp for addVARDQ')
-                    
                     ## updating logger with updated/added keywords
                     log.fullinfo('****************************************************','header')
                     log.fullinfo('file = '+ad.filename,'header')
@@ -538,9 +544,8 @@ class GEMINIPrimitives(PrimitiveSet):
                     log.fullinfo('EXTNAME= '+'VAR','header' )
                     log.fullinfo('EXTVER= '+str(sciExt.extver()),'header' )
                     log.fullinfo('---------------------------------------------------','header')
-                    
-                log.fullinfo('****************************************************','header')
-                log.fullinfo('file = '+ad.filename,'header')
+                
+                ut = ad.historyMark()  
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut),'header' )
@@ -567,29 +572,45 @@ class GEMINIPrimitives(PrimitiveSet):
   #--------------------------------------------------------------------------      
     def avgCombine(self,rc):
         '''
-        this will average and combine the SCI extensions of the inputs. 
-        it will do ..... (&*(*&(*& to the VAR and DQ frames... FILL THIS IN!!!!!!!!!!!!!!!
+        This primitive will average and combine the SCI extensions of the inputs. 
+        It takes all the inputs and creates a list of them and then combines each
+        of their SCI extensions together to create average combination file.
+        New VAR frames are made from these combined SCI frames and the DQ frames
+        are propagated through to the final file.
         '''
         try:
             log.status('*STARTING* combine the images of the input data', 'status')
-             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily
+            #preparing input files, lists, parameters... for input to the CL script
             clm=CLManager(rc)
+            clm.LogCurParams()
+            
             log.fullinfo('calling the gemcombine CL script', 'status')
             gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine="average", reject="none",\
-                              Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-                   
+                              fl_vardq=pyrafBoolean(rc['fl_vardq']), fl_dqprop=pyrafBoolean(rc['fl_dqprop']),\
+                               Stdout = "dev$null", Stderr = rc.getIrafStderr())
             if gemini.gemcombine.status:
                 log.critical('gemcombine failed','critical')
                 raise 
             else:
                 log.fullinfo('exited the gemcombine CL script successfully', 'status')
                 
-            clm.postCLloads(combine=True) #$$ change this to work with the .finishCL(combine=True) call to look same as overscanSubtract
+            # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
+            clm.finishCL(combine=True) 
+
+            ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
+            
+            ut = ad.historyMark()
+            ad.historyMark(key='GBIAS',stomp=False)
+            log.fullinfo('****************************************************','header')
+            log.fullinfo('file = '+ad.filename,'header')
+            log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+            log.fullinfo('PHU keywords updated/added:\n', 'header')
+            log.fullinfo('GEM-TLM = '+str(ut),'header' )
+            log.fullinfo('GBIAS = '+str(ut),'header' )
+            log.fullinfo('---------------------------------------------------','header')    
             
             
-            #$$$$$$$ flush out the header info updated to log and GEM-TLM... as done at end of overscanSubtract.
-            
-            log.status('FINISHED combining the images of the input data', 'status')
+            log.status('*FINISHED* combining the images of the input data', 'status')
         except:
             log.critical("Problem combining the images.",'critical',)
             raise 
@@ -602,8 +623,8 @@ class GEMINIPrimitives(PrimitiveSet):
         '''
         a primitive that may be called by a recipe at any stage for if the user would like files to be written to disk
         at specific stages of the recipe, compared to that of it writing the outputs of each primitive with the --writeInt flag of 
-        Reduce.  An example call in this case would be : writeOutputs(postpend= '_string'), or writeOutputs(outfilename='name.fits') if you 
-        have a full file name in mind for a SINGLE file being ran through Reduce.
+        Reduce.  An example call in this case would be : writeOutputs(postpend= '_string'), writeOutputs(prepend= '_string') or if you 
+        have a full file name in mind for a SINGLE file being ran through Reduce you may use writeOutputs(outfilename='name.fits').
         '''
         try:
             log.status('postpend = '+str(rc["postpend"]),'status')
