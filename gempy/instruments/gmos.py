@@ -9,7 +9,7 @@ import numpy as np
 import time
 from datetime import datetime
 from astrodata.adutils import mefutil, paramutil
-from astrodata.adutils.future import gemLog
+from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 
 log=gemLog.getGeminiLog() 
