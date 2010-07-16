@@ -169,7 +169,7 @@ def callInfo():
     #    funcnam=st[i][2]
     #    print funcnam
     #    print '------------------'
-    print 'callInfo using ('+os.path.basename(st[-3][0])+","+str(st[-3][1])+","+st[-3][2]+")"
+    #print 'callInfo using ('+os.path.basename(st[-3][0])+","+str(st[-3][1])+","+st[-3][2]+")"
     return [os.path.basename(st[-3][0]),st[-3][1],st[-3][2]]
 
     
