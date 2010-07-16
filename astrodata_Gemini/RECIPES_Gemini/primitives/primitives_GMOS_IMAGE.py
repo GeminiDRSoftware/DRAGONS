@@ -3,7 +3,7 @@ from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
-from astrodata.adutils.future import gemLog
+from astrodata.adutils import gemLog
 from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
@@ -91,7 +91,6 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                                 for f in rc.getStack(stackID).filelist ]
                 
                 #print "pG147: STACKLIST:", stacklist
-
                 
                 if len( stacklist ) > 1:
                     # @@REFERENCEIMAGE: first image used as reference image to
@@ -555,7 +554,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             gemini.gmos.gireduce(clm.inputsAsStr(), gp_outpref=clm.uniquePrefix(),fl_over=pyrafBoolean(rc["fl_over"]), \
                     fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
                     fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']),\
-                    Stdout = "dev$null", Stderr = rc.getIrafStderr())
+                    Stdout = IrafStdout(), Stderr = IrafStdout())
             #"dev$null" #use this for Stdout for no outputs of the CL script to go to screen
             #rc.getIrafStdout() #us this for Stdout for outputs of the CL script to go to screen
             if gemini.gmos.gireduce.status:
