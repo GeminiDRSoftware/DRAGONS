@@ -9,8 +9,9 @@ import numpy as np
 import time
 from datetime import datetime
 from astrodata.adutils import mefutil, paramutil
-from astrodata.adutils.future import gemLog
+from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
+import pyraf
 
 log=gemLog.getGeminiLog() 
 
@@ -28,9 +29,8 @@ def stdObsHdrs(ad):
     effExpTime = ad.phuValue("EXPTIME")*numcoadds    
     ad.phuSetKeyValue('EXPTIME', effExpTime , 'Effective exposure time') 
 
-    ut = datetime.now().isoformat()  #$$$$$$$$$$$ just for saving the sintax, move this to its final destination when determined
-    ad.phuSetKeyValue('GEM-TLM', ut , 'UT Last modification with GEMINI')  #$$$$$$$$$$$ just for saving the sintax, move this to its final destination when determined
-    ad.phuSetKeyValue("GPREPARE",ut,'fake UT Time stamp for GPREPARE')     ##$$$$ possible fix to gireduce flag to not call gprepare
+    ut = ad.historyMark()
+    ad.historyMark(key="GPREPARE",stomp=False)    
     ##updating logger with updated/added keywords
     log.fullinfo('****************************************************','header')
     log.fullinfo('file = '+ad.filename,'header')
@@ -119,11 +119,18 @@ def secStrToIntList(string):
     return retl
 
 
-
-
-# clm = CLManager(rc)
-# ....
-# clm.finishCL()
+def pyrafBoolean(pythonBool):
+    '''
+    a very basic function to reduce code repetition that simply 'casts' any given 
+    Python boolean into a pyraf/iraf one for use in the CL scripts
+    '''
+    
+    if pythonBool:
+        return pyraf.iraf.yes
+    elif  not pythonBool:
+        return pyraf.iraf.no
+    else:
+        print "DANGER DANGER Will Robinson, pythonBool passed in not True or False"
 
 class CLManager(object):
     _preCLcachestorenames = []
@@ -143,14 +150,15 @@ class CLManager(object):
         self.preCLwrites()
     
     #perform all the finalizing steps after CL script is ran, currently just an alias for postCLloads
-    def finishCL(self): 
-        self.postCLloads()    
+    def finishCL(self,combine=False): 
+        self.postCLloads(combine)    
     
     def preCLwrites(self):
         self._preCLfilenames = self.rc.getInputs(style="FN")
         for ad in self.rc.getInputs(style="AD"):
             name = fileNameUpdater(ad.filename,prepend=self.prefix, strip=True)
             self._preCLcachestorenames.append(name)
+            log.fullinfo('Temporary file on disk for input to CL: '+name,'fullinfo')
             ad.write(name, rename = False)    
     
     #just a function to return the 'private' member variable _preCLcachestorenames
@@ -173,8 +181,9 @@ class CLManager(object):
         return "tmp"+ str(os.getpid())+self.rc.ro.curPrimName
     
     def combineOutname(self):
-        print self.outpref
-        print self._preCLcachestorenames[0]
+        #@@ REFERENCE IMAGE: for output name
+        # print "g184:", repr(self.outpref)
+        # print "g185", repr( self._preCLcachestorenames)
         return self.outpref+self._preCLcachestorenames[0]
     
     def postCLloads(self,combine=False):
@@ -185,10 +194,15 @@ class CLManager(object):
             self.rc.reportOutput(finalname)
             os.remove(finalname)
             os.remove(self.listname)
+            log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n '+finalname,'fullinfo')
+            log.fullinfo(finalname+' was loaded into memory', 'fullinfo')
+            log.fullinfo(finalname+' was deleted from disk', 'fullinfo')
+            log.fullinfo(self.listname+' was deleted from disk','fullinfo')
             
             for i in range(0, len(self._preCLcachestorenames)):
                 storename = self._preCLcachestorenames[i]  #name of file written to disk for input to CL script
                 os.remove(storename) # clearing renamed file ouput by CL
+                log.fullinfo(storename+' was deleted from disk', 'fullinfo')
                 
         elif combine==False:
             for i in range(0, len(self._preCLcachestorenames)):
@@ -203,8 +217,34 @@ class CLManager(object):
                 
                 os.remove(finalname) # clearing file written for CL input
                 os.remove(storename) # clearing renamed file ouput by CL
-            
+                log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n '+finalname,'fullinfo')
+                log.fullinfo(finalname+' was loaded into memory', 'fullinfo')
+                log.fullinfo(finalname+' was deleted from disk', 'fullinfo')
+                log.fullinfo(storename+' was deleted from disk','fullinfo')
         
+    def LogCurParams(self):
+        log.fullinfo('\ncurrent general parameters:', 'params')
+        for key in self.rc:
+            val=self.rc[key]
+            log.fullinfo(repr(key)+' = '+repr(val),'params')
+
+        log.fullinfo('\ncurrent primitive specific parameters:', 'params')
+        for key in self.rc.localparms:
+            val=self.rc.localparms[key]
+            log.fullinfo(repr(key)+' = '+repr(val),'params')
+
+class IrafStdout():
+
+    def __init__(self):
+        pass
+    
+    def write(self, out):
+        if "PANIC" in out or "ERROR" in out:
+            log.error(out,'clError')
+        elif len(out)>1:
+            log.fullinfo(out,'clInfo')
         
-        
+    def flush(self):
+        pass
+ 
         
