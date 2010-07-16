@@ -10,6 +10,7 @@ class SPECT(DataClassification):
                         ISCLASS("NIRI_SPECT"),
                         ISCLASS("MICHELLE_SPECT"),
                         ISCLASS("TRECS_SPECT"),
+                        ISCLASS("GNIRS_SPECT"),
                         ISCLASS("NIFS_SPECT")
                     ])
                         
