@@ -2,7 +2,7 @@ from time import sleep
 import time
 from astrodata.ReductionObjects import PrimitiveSet
 from astrodata.adutils import filesystem
-from astrodata.adutils.future import gemLog
+from astrodata.adutils import gemLog
 from astrodata import IDFactory
 import os,sys, re
 from sets import Set
@@ -119,6 +119,11 @@ class GEMINIPrimitives(PrimitiveSet):
         try:
             print "getting stack"
             rc.rqStackGet()
+            yield rc
+            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
+            stackid = IDFactory.generateStackableID( rc.inputs[0].ad )
+            stack = rc.getStack(stackid).filelist
+            rc.reportOutput(stack)
         except:
             print "Problem getting stack"
             raise 
@@ -570,47 +575,51 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc 
         
   #--------------------------------------------------------------------------      
-    def avgCombine(self,rc):
+    def combine(self,rc):
         '''
         This primitive will average and combine the SCI extensions of the inputs. 
         It takes all the inputs and creates a list of them and then combines each
         of their SCI extensions together to create average combination file.
         New VAR frames are made from these combined SCI frames and the DQ frames
         are propagated through to the final file.
+        
         '''
-        try:
-            log.status('*STARTING* combine the images of the input data', 'status')
-            #preparing input files, lists, parameters... for input to the CL script
-            clm=CLManager(rc)
-            clm.LogCurParams()
-            
-            log.fullinfo('calling the gemcombine CL script', 'status')
-            gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine="average", reject="none",\
-                              fl_vardq=pyrafBoolean(rc['fl_vardq']), fl_dqprop=pyrafBoolean(rc['fl_dqprop']),\
-                               Stdout = "dev$null", Stderr = rc.getIrafStderr())
-            if gemini.gemcombine.status:
-                log.critical('gemcombine failed','critical')
-                raise 
-            else:
-                log.fullinfo('exited the gemcombine CL script successfully', 'status')
-                
-            # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
-            clm.finishCL(combine=True) 
 
-            ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
-            
-            ut = ad.historyMark()
-            ad.historyMark(key='GBIAS',stomp=False)
-            log.fullinfo('****************************************************','header')
-            log.fullinfo('file = '+ad.filename,'header')
-            log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
-            log.fullinfo('PHU keywords updated/added:\n', 'header')
-            log.fullinfo('GEM-TLM = '+str(ut),'header' )
-            log.fullinfo('GBIAS = '+str(ut),'header' )
-            log.fullinfo('---------------------------------------------------','header')    
-            
-            
-            log.status('*FINISHED* combining the images of the input data', 'status')
+        try:
+            if len(rc.getInputs())>1:
+                log.status('*STARTING* combine the images of the input data', 'status')
+                #preparing input files, lists, parameters... for input to the CL script
+                clm=CLManager(rc)
+                clm.LogCurParams()
+                
+                log.fullinfo('calling the gemcombine CL script', 'status')
+                gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine="average", reject="none",\
+                                  fl_vardq=pyrafBoolean(rc['fl_vardq']), fl_dqprop=pyrafBoolean(rc['fl_dqprop']),\
+                                   Stdout = IrafStdout(), Stderr = IrafStdout(),\
+                                   logfile='temp.log',verbose=pyrafBoolean(True))
+                if gemini.gemcombine.status:
+                    log.critical('gemcombine failed','critical')
+                    raise 
+                else:
+                    log.fullinfo('exited the gemcombine CL script successfully', 'status')
+                    
+                # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
+                clm.finishCL(combine=True) 
+    
+                ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
+                
+                ut = ad.historyMark()
+                ad.historyMark(key='GBIAS',stomp=False)
+                log.fullinfo('****************************************************','header')
+                log.fullinfo('file = '+ad.filename,'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+str(ut),'header' )
+                log.fullinfo('GBIAS = '+str(ut),'header' )
+                log.fullinfo('---------------------------------------------------','header')    
+                
+                
+                log.status('*FINISHED* combining the images of the input data', 'status')
         except:
             log.critical("Problem combining the images.",'critical',)
             raise 
