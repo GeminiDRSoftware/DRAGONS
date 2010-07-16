@@ -54,7 +54,7 @@ from astrodata.adutils.future import gemDisplay
 from astrodata.adutils import paramutil
 from astrodata.adutils.gemutil import gemdate
 #------------------------------------------------------------------------------ 
-from astrodata.adutils.future import gemLog
+from astrodata.adutils import gemLog
 #-----------------------------------------------------------------------------
 #oet = time.time()
 #print 'TIME:', (oet -ost)
