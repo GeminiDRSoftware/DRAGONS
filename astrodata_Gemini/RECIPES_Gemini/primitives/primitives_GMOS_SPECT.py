@@ -4,7 +4,7 @@ from primitives_GEMINI import GEMINIPrimitives
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
-from astrodata.adutils.future import gemLog
+from astrodata.adutils import gemLog
 from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
