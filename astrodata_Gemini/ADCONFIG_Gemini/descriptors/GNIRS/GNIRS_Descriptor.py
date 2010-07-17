@@ -119,13 +119,13 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         filters = filters2
         
-        if 'DARK' in filters:
-            ret_filter_name = 'blank'
-        
         if len(filters) == 0:
             ret_filter_name = 'open'
         else:
             ret_filter_name = str('&'.join(filters))
+        
+        if 'Dark' in filters:
+            ret_filter_name = 'blank'
         
         return ret_filter_name
     
