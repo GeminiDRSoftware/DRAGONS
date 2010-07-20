@@ -26,63 +26,55 @@ svndir = re.compile('.svn')
 
 PACKAGENAME = 'astrodata_Gemini'
 VERSION = '0.1.0'
-MODULENAME = 'RECIPES_Gemini'
+RECIPENAME = 'RECIPES_Gemini'
 CONFIGNAME = 'ADCONFIG_Gemini'
 
 #PACKAGES and PACKAGE_DIRS
-SUBMODULES = ['primitives']
-PACKAGES = [MODULENAME]
-for m in SUBMODULES:
-    PACKAGES.append('.'.join([MODULENAME,m]))
+PACKAGES = [PACKAGENAME]
+PACKAGES.append('.'.join([PACKAGENAME,RECIPENAME]))
+PACKAGES.append('.'.join([PACKAGENAME,RECIPENAME,'primitives']))
+#for m in SUBMODULES:
+#    PACKAGES.append('.'.join([MODULENAME,m]))
 PACKAGE_DIRS = {}
-PACKAGE_DIRS[MODULENAME] = '.'
+PACKAGE_DIRS[PACKAGENAME] = '.'
 
 
 # PACKAGE_DATA
 PACKAGE_DATA = {}
-PACKAGE_DATA[MODULENAME] = []
-for s in ['.']+SUBMODULES:
-    PACKAGE_DATA[MODULENAME].extend([os.path.join(s,'Copyright'),
+PACKAGE_DATA[PACKAGENAME] = []
+for s in ['.']+[RECIPENAME]:
+    PACKAGE_DATA[PACKAGENAME].extend([os.path.join(s,'Copyright'),
                                      os.path.join(s,'ReleaseNote'),
                                      os.path.join(s,'README'),
                                      os.path.join(s,'INSTALL'),
                                      ])
-PACKAGE_DATA[MODULENAME].extend(glob.glob('recipe.*'))
-PACKAGE_DATA[MODULENAME].append('primitives/primitives_List.txt')
+PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'recipe.*')))
+PACKAGE_DATA[PACKAGENAME].append(os.path.join(RECIPENAME,'primitives','primitives_List.txt'))
 
 
-#PACKAGE_DATA[MODULENAME].append(os.path.join('..',CONFIGNAME,'structures','*.py'))
-#PACKAGE_DATA[MODULENAME].append(os.path.join('..',CONFIGNAME,'xmlcalibrations','*.xml'))
-#for root, dirs, files in os.walk(os.path.join('..',CONFIGNAME,'lookups')):
-#    if not svndir.search(root) and len(files) > 0:
-#        PACKAGE_DATA[MODULENAME].extend( map((lambda f: os.path.join(root, f)), files) )
-#for root, dirs, files in os.walk(os.path.join('..',CONFIGNAME,'descriptors')):
-#    if not svndir.search(root) and len(files) > 0:
-#        PACKAGE_DATA[MODULENAME].extend( map((lambda f: os.path.join(root, f)), files) )
-#for root, dirs, files in os.walk(os.path.join('..',CONFIGNAME,'classifications')):
-#    if not svndir.search(root) and len(files) > 0:
-#        PACKAGE_DATA[MODULENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+PACKAGE_DATA[PACKAGENAME].append(os.path.join(CONFIGNAME,'structures','*.py'))
+PACKAGE_DATA[PACKAGENAME].append(os.path.join(CONFIGNAME,'xmlcalibrations','*.xml'))
+for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'lookups')):
+    if not svndir.search(root) and len(files) > 0:
+        PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'descriptors')):
+    if not svndir.search(root) and len(files) > 0:
+        PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'classifications')):
+    if not svndir.search(root) and len(files) > 0:
+        PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
 
-
-
-
-#print PACKAGE_DATA
 
 # DATA_DIRS and DATA_FILES
 DATA_FILES = []
 
-#ADCONFIG_DIR = os.path.join('..','ADCONFIG_Gemini')
-#for root, dirs, files in os.walk(ADCONFIG_DIR):
-#    if not svndir.search(root) and len(files) > 0:
-#        ADCONFIG_FILES = map((lambda f: os.path.join(root,f)),files)
-#        print ADCONFIG_FILES
-
-DOC_DIR = os.path.join('doc','astrodata_Gemini','Recipes')
-for root, dirs, files in os.walk('doc'):
+DOC_DIR = os.path.join('doc','astrodata_Gemini','RECIPES_Gemini')
+for root, dirs, files in os.walk(os.path.join('RECIPES_Gemini','doc')):
     if not svndir.search(root) and len(files) > 0:
-        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
+        dest = root.split('/',2)[2] if len(root.split('/',2)) > 2 else ""
         DOC_FILES = map((lambda f: os.path.join(root,f)), files)
         DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
+
 
 # SCRIPTS
 SCRIPTS = []
