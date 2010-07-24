@@ -1,7 +1,10 @@
 import os
 import strutil
 #------------------------------------------------------------------------------ 
-import geminiLogger
+#import geminiLogger
+
+# removed old logger, commented out old calls, added prints,
+# need to incorporate the new logger
 #------------------------------------------------------------------------------ 
 """This file contains the following utilities:
 
@@ -37,7 +40,7 @@ def checkImageParam( image ):
     checkParam( parameter, paramType, defaultValue, compareValue=0.0 ):
     """
     #logger set up
-    glog = geminiLogger.getLogger( name="checkImageParam")
+    #glog = geminiLogger.getLogger( name="checkImageParam")
     root = os.path.dirname( image )
     imageName = os.path.basename( image )
     inList = []    
@@ -58,7 +61,8 @@ def checkImageParam( image ):
                 #adds .fits if there is none
                     inList.append(strutil.appendFits(readList[i]))
             except:
-                glog.exception("An error occurred when opening and reading from the image.")
+                #glog.exception("An error occurred when opening and reading from the image.")
+                print ("paramutil_65: An error occurred when opening and reading from the image.")
                 return None
             finally:
                 imageFile.close()
@@ -71,16 +75,18 @@ def checkImageParam( image ):
             if type(img) == str:
                 inList.append( img )
             else:
-                glog.warning('Type'+ str(type(image))+ \
+                #glog.warning('Type'+ str(type(image))+ \
+                print ('paramutil_79: Type'+ str(type(image))+ \
                     'is not supported. The only supported types are String and List of Strings.')
                 return None
     else:
-        glog.warning('Type'+ str(type(image))+ \
+        #glog.warning('Type'+ str(type(image))+ \
+        print ('paramutil_84: Type'+ str(type(image))+ \
                     'is not supported. The only supported types are String and List of Strings.')
         return None
     for img in inList:
         if not os.access(img,os.R_OK):
-            glog.error('cannot read file: ' + str(img))
+            #glog.error('cannot read file: ' + str(img))
             raise 'Cannot read file', img    
     return inList
 
@@ -109,7 +115,7 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
     @rtype: list, None
     """
     #logger set up
-    glog = geminiLogger.getLogger( name="checkOutputParam") 
+    #glog = geminiLogger.getLogger( name="checkOutputParam") 
     ##@FIXME: This needs to be fixed to work like its input sibling.
     outList = []
     if type(outfile) == str:
@@ -132,7 +138,8 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
                         #adds .fits if there is none                            
                         outList = strutil.appendFits(outList)                
             except:
-                glog.exception("An error occurred when opening and reading from the outlist file.")
+                #glog.exception("An error occurred when opening and reading from the outlist file.")
+                print ("paramutil_142: An error occurred when opening and reading from the outlist file.")
                 return None
             finally:
                 outListFile.close()            
@@ -144,11 +151,13 @@ def checkOutputParam( outfile, defaultValue="out.fits" ):
             if type( file ) == str:
                 inList.append( file )
             else:
-                glog.warning('Type'+ str(type(image))+ \
+                #glog.warning('Type'+ str(type(image))+ \
+                print ('paramutil_155: Type'+ str(type(image))+ \
                     'is not supported. The only supported types are String and List of Strings.')
                 return None
     else:
-         glog.warning('Type'+ str(type(image))+ \
+         #glog.warning('Type'+ str(type(image))+ \
+         print ('paramutil_160: Type'+ str(type(image))+ \
                     'is not supported. The only supported types are String and List of Strings.')
          return None
     return outList
@@ -167,7 +176,7 @@ def verifyOutlist( inlist, outlist ):
     
     """
     #logger set up
-    glog = geminiLogger.getLogger( name="verifyOutlist") 
+    #glog = geminiLogger.getLogger( name="verifyOutlist") 
     try:    
         if outlist == []:
             #will append unique filenames if none exist in outlist             
@@ -185,7 +194,8 @@ def verifyOutlist( inlist, outlist ):
         else:
             return outlist
     except:
-        glog.exception('verifyOutlist in paramUtil failure')
+        #glog.exception('verifyOutlist in paramUtil failure')
+        print ('paramutil_198: verifyOutlist in paramUtil failure')
         return None                
 
 #------------------------------------------------------------------------------ 
