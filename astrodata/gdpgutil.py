@@ -5,7 +5,7 @@ import AstroDataType
 
 from ReductionContextRecords import AstroDataRecord
 
-from astrodata.adutils import geminiLogger
+#removed old logger, calls changed to prints, need to incorporate new logger
 #------------------------------------------------------------------------------ 
 class GDPGUtilExcept:
     """ This is the general exception the classes and functions in the
@@ -69,8 +69,8 @@ def clusterTypes( datalist ):
     @return: Index of AstroDatas keyed by types.
     @rtype: dict
     '''
-    log = geminiLogger.getLogger( name='clusterTypes' )
-    log.debug( 'Importing AstroData' )
+    
+    #log.debug( 'Importing AstroData' )
     from astrodata.AstroData import AstroData
     
     datalist = checkDataSet( datalist )
@@ -81,7 +81,8 @@ def clusterTypes( datalist ):
         try:
             assert( type(data) == AstroData )
         except:
-            log.exception( "Bad Argument: '%(data)s' '%(astr)s'" %{'data':str(type(data)), 'astr':str(AstroData)})
+            #log.exception( "Bad Argument: '%(data)s' '%(astr)s'" %{'data':str(type(data)), 'astr':str(AstroData)})
+            print ( "gdbputil 85: Bad Argument: '%(data)s' '%(astr)s'" %{'data':str(type(data)), 'astr':str(AstroData)} )
             raise
         
         types = tuple( data.getTypes() )
@@ -92,7 +93,7 @@ def clusterTypes( datalist ):
             dlist = [data]
         clusterIndex.update( {types:dlist} )
     
-    log.debug( 'clusterIndex: ' + str(clusterIndex) )
+    #log.debug( 'clusterIndex: ' + str(clusterIndex) )
     return clusterIndex
 
 #------------------------------------------------------------------------------ 
