@@ -1241,7 +1241,7 @@ class RecipeLibrary(object):
                 # bind the recipe to the reduction object
                 ro = self.bindRecipe(ro, name, rfunc)
             else:
-                raise "can't find recipe!"
+                raise RecipeExcept("type=%s, name=%s, src=%s"%(astrotype, name, src))
         elif dataset != None:
             gd, bnc = openIfName(dataset)
             types = gd.getTypes()
