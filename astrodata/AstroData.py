@@ -1188,6 +1188,19 @@ lse, the return value is a list which is in fact
         return self.getHDU(0).header
             
     def historyMark(self,key=None,comment=None, stomp=True):
+        """
+        This function will add the timestamp type keys to the astrodata instances PHU.
+        The default will be to update the GEM-TLM key by just calling ad.historyMark() 
+        without any input vals. value stored is the UT time in the same format as the CL scripts.
+        
+        param key: header keyword to be changed/added
+        type key: string
+        param comment: comment for the keyword in the PHU, keep it short
+                       default if key is provided is 'UT Time stamp for '+key 
+        type comment: string
+        param stomp: if True, use the current time; if False, use the latest saved time
+        type stomp: boolean (True/False)
+        """
         if stomp:
             self.tlm = datetime.now().isoformat()[0:-7]
         elif (stomp==False) and (self.tlm==None):
