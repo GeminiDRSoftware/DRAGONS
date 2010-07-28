@@ -1,4 +1,5 @@
 prepare
+addVARDQ
 overscanCorrect
 avgCombine
-writeOutputs #storeProcessBias
+#writeOutputs #storeProcessBias
