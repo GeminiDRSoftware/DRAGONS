@@ -115,7 +115,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
         
 #------------------------------------------------------------------------------ 
-    def getStackable(self, rc):
+    def dgetStackable(self, rc):
         try:
             print "getting stack"
             rc.rqStackGet()
@@ -123,6 +123,7 @@ class GEMINIPrimitives(PrimitiveSet):
             # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
             stackid = IDFactory.generateStackableID( rc.inputs[0].ad )
             stack = rc.getStack(stackid).filelist
+            print 'prim_g126: ',repr(stack)
             rc.reportOutput(stack)
         except:
             print "Problem getting stack"
@@ -219,7 +220,7 @@ class GEMINIPrimitives(PrimitiveSet):
             
                       
 #------------------------------------------------------------------------------ 
-    def setStackable(self, rc):
+    def dsetStackable(self, rc):
         try:
             print "updating stackable with input"
             rc.rqStackUpdate()
@@ -281,6 +282,40 @@ class GEMINIPrimitives(PrimitiveSet):
         
   
 #-------------------------------------------------------------------
+#$$$$$$$$$$$$$$$$$$$$$$$$ NEW VERSIONS OF ABOVE PRIMS BY KYLE $$$$$$$$$$$$$
+
+    def getStackable(self, rc):
+        try:
+            log.fullinfo("getting stack",'Clprep')
+            rc.rqStackGet()
+            yield rc
+            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
+            stackid = IDFactory.generateStackableID( rc.inputs[0].ad )
+            stack = rc.getStack(stackid).filelist
+            #print 'prim_G295: ',repr(stack)
+            rc.reportOutput(stack)
+        except:
+            log.critical("Problem getting stack", 'critical')
+            raise 
+
+        yield rc      
+ #---------------------------------------------------------------------------     
+ 
+    def setStackable(self, rc):
+        try:
+            log.fullinfo("updating stackable with input", 'CLprep')
+            rc.rqStackUpdate()
+            # writing the files in the stack to disk if not all ready there
+            for ad in rc.getInputs(style="AD"):
+                if not os.path.exists(ad.filename):
+                    log.fullinfo('temporarily writing '+ad.filename+' to disk', 'CLprep')
+                    ad.write(ad.filename)
+        except:
+            log.critical("Problem stacking input",'critical')
+            raise
+
+        yield rc
+
 #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
     These primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
@@ -418,7 +453,7 @@ class GEMINIPrimitives(PrimitiveSet):
         
         yield rc 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
+                
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$ 
     def calculateVAR(self,rc):
         '''
@@ -497,17 +532,40 @@ class GEMINIPrimitives(PrimitiveSet):
         '''
         try:
             log.status('*STARTING* to add the DQ frame(s) to the input data', 'status')
-            log.critical('CURRENTLY NO BPM FILE LOADING, JUST ADDING A ZEROS ARRAY!!!!', 'critical')
+            #log.critical('CURRENTLY NO BPM FILE LOADING, JUST ADDING A ZEROS ARRAY!!!!', 'critical')
+            
+            packagePath=sys.argv[0].split('gemini_python')[0]
+            calPath='gemini_python/test_data/GMOS_BPM_files/'
+            
+            #$$$$$$$$$$$$$ this block is GMOS IMAGE specific, consider moving or something $$$$$$$$$$$$
+            BPM_11=AstroData(packagePath+calPath+'GMOS_BPM_11.fits')
+            BPM_22=AstroData(packagePath+calPath+'GMOS_BPM_22.fits')
+            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             for ad in rc.getInputs(style='AD'):
                 
-                BPMfilename='None' #$$$$$$$$ this will be changed to an actual name when we know how to load them in (awaiting callibration system upgrade)
-                
                 for sciExt in ad['SCI']:
+                    
+                    #$$$$$$$$$$$$$ this block is GMOS IMAGE specific, consider moving or something $$$$$$$$$$$$
+                    if sciExt.getKeyValue('CCDSUM')=='1 1':
+                        BPMArray=BPM_11['DQ'][sciExt.extver()-1].data
+                        BPMfilename = 'GMOS_BPM_11.fits'
+                    elif sciExt.getKeyValue('CCDSUM')=='2 2':
+                        BPMArray=BPM_22['DQ'][sciExt.extver()-1].data
+                        BPMfilename = 'GMOS_BPM_22.fits'
+                    else:
+                        BPMArray=np.zeros(sciExt.data.shape,dtype=np.int16)
+                        log.error('CCDSUM is not 1x1 or 2x2, using zeros array for BPM', 'error')
+                        BPMfilename='None'
+                    BPMArray=np.where(BPMArray>=1,1,0)
+                    #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$    
+                    
+                    datasecStr=sciExt.data_section()
+                    datasecList=secStrToIntList(datasecStr) 
+                    dsl=datasecList
                     
                     nonLinArray=np.zeros(sciExt.data.shape,dtype=np.int16)
                     saturatedArray=np.zeros(sciExt.data.shape,dtype=np.int16)
-                    BPMArray=np.zeros(sciExt.data.shape,dtype=np.int16) #TEMP########
                     linear=sciExt.non_linear_level()
                     saturated=sciExt.saturation_level()
 
@@ -517,8 +575,12 @@ class GEMINIPrimitives(PrimitiveSet):
                     if (saturated!=None) and (rc['fl_saturated']==True):
                         log.fullinfo('performing a np.where to find saturated pixels','status')
                         saturatedArray=np.where(sciExt.data>saturated,4,0)
-                       
-                    dqArray=np.add(BPMArray,nonLinArray,saturatedArray)
+                    
+                    # BPM file has had its overscan region trimmed all ready, so must trim the overscan section from the nonLin and saturated arrays to match
+                    nonLinArrayTrimmed = nonLinArray[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
+                    saturatedArrayTrimmed = saturatedArray[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]  
+                     
+                    dqArray=np.add(BPMArray,nonLinArrayTrimmed,saturatedArrayTrimmed)
                     
                     dqheader = pyfits.Header()
 
@@ -557,7 +619,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.fullinfo('ADDVARDQ = '+str(ut),'header' )
                 log.fullinfo('---------------------------------------------------','header')
                     
-                print ad.info()
+                #print ad.info()
                 
                 ## check if there filename all ready has the suffix '_vardq', if not add it
                 if not re.search(rc['outsuffix'],ad.filename): #%%%% this is printing a 'None' on the screen, fix that!!!
@@ -575,7 +637,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc 
         
   #--------------------------------------------------------------------------      
-    def combine(self,rc):
+    def combine(self,rc,clob=False):
         '''
         This primitive will average and combine the SCI extensions of the inputs. 
         It takes all the inputs and creates a list of them and then combines each
@@ -593,7 +655,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 clm.LogCurParams()
                 
                 log.fullinfo('calling the gemcombine CL script', 'status')
-                gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine="average", reject="none",\
+                gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine=rc['method'], reject="none",\
                                   fl_vardq=pyrafBoolean(rc['fl_vardq']), fl_dqprop=pyrafBoolean(rc['fl_dqprop']),\
                                    Stdout = IrafStdout(), Stderr = IrafStdout(),\
                                    logfile='temp.log',verbose=pyrafBoolean(True))
@@ -605,7 +667,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     
                 # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
                 clm.finishCL(combine=True) 
-    
+                #clm.rmStackFiles() #$$$$$$$$$ DON"T do this if intermediate outputs are wanted!!!!
                 ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
                 
                 ut = ad.historyMark()
@@ -620,6 +682,9 @@ class GEMINIPrimitives(PrimitiveSet):
                 
                 
                 log.status('*FINISHED* combining the images of the input data', 'status')
+                
+                # $$$$$TEMP$$$$$$
+                ad.write(ad.filename,clobber=clob)
         except:
             log.critical("Problem combining the images.",'critical',)
             raise 
@@ -628,7 +693,7 @@ class GEMINIPrimitives(PrimitiveSet):
             
    #--------------------------------------------------------------------------                
 
-    def writeOutputs(self,rc):
+    def writeOutputs(self,rc, clob = False):
         '''
         a primitive that may be called by a recipe at any stage for if the user would like files to be written to disk
         at specific stages of the recipe, compared to that of it writing the outputs of each primitive with the --writeInt flag of 
@@ -652,7 +717,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     outfilename=os.path.basename(ad.filename) 
                     log.status('not changing the file name to be written from its current name','status') 
                 log.status('writing to file = '+outfilename,'status')      
-                ad.write(fname=outfilename)     #AstroData checks if the output exists and raises and exception
+                ad.write(fname=outfilename,clobber=clob)     #AstroData checks if the output exists and raises and exception
                 #rc.reportOutput(ad)
             
             # clearing the value of 'postpend' and 'prepend' in the RC so they don't persist to the next writeOutputs call and screw it up
@@ -667,7 +732,21 @@ class GEMINIPrimitives(PrimitiveSet):
              
                 
 #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
-
+# 
+# # TEMP PRIM FOR PLAYING WITH BIAS AND FLAT FILE TO BE MADE INTO BPM FILES
+#    def ccdsumloop(self, rc):
+#        try:
+#            for ad in rc.getInputs(style='AD'):
+#                print 'prim_g712: ',ad.filename
+#                print 'prim_G715: EXPOSURE=',ad.phuGetKeyValue('EXPOSURE')
+#                for sciExt in ad['SCI']:
+#                    print 'prim_G714: ',sciExt.getKeyValue('CCDSUM')
+#                    
+#        except:
+#            log.critical("Problem writing the image.",'critical')
+#            raise 
+#        
+#        yield rc 
 
 
     
