@@ -146,6 +146,7 @@ class CLManager(object):
             outpref = rc["outpref"]
         self.outpref=outpref
         self._preCLcachestorenames=[]
+        self._preCLfilenames = []
         self.prefix = self.uniquePrefix()
         self.preCLwrites()
     
@@ -154,17 +155,26 @@ class CLManager(object):
         self.postCLloads(combine)    
     
     def preCLwrites(self):
-        self._preCLfilenames = self.rc.getInputs(style="FN")
+        #print 'g158: ',self.rc.inputsAsStr()
         for ad in self.rc.getInputs(style="AD"):
+            self._preCLfilenames.append(ad.filename)
+            #print 'g161: adding to preCLfilenames ',ad.filename
+            #print 'g162: currently in preCLfilenames ',repr(self._preCLfilenames)
             name = fileNameUpdater(ad.filename,prepend=self.prefix, strip=True)
             self._preCLcachestorenames.append(name)
-            log.fullinfo('Temporary file on disk for input to CL: '+name,'fullinfo')
+            log.fullinfo('Temporary file on disk for input to CL: '+name,'CLprep')
             ad.write(name, rename = False)    
     
     #just a function to return the 'private' member variable _preCLcachestorenames
     def cacheStoreNames(self):
         return self._preCLcachestorenames
-    
+       
+    # A function to remove the filenames written to disk by setStackable 
+    def rmStackFiles(self):
+        for file in self._preCLfilenames:
+            log.fullinfo('removing file '+file+' from disk', 'postCL')
+            os.remove(file)
+        
     #just a function to return the 'private' member variable _preCLfilenames
     def preCLNames(self):
         return self._preCLfilenames
@@ -194,15 +204,15 @@ class CLManager(object):
             self.rc.reportOutput(finalname)
             os.remove(finalname)
             os.remove(self.listname)
-            log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n '+finalname,'fullinfo')
-            log.fullinfo(finalname+' was loaded into memory', 'fullinfo')
-            log.fullinfo(finalname+' was deleted from disk', 'fullinfo')
-            log.fullinfo(self.listname+' was deleted from disk','fullinfo')
+            log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n'+finalname,'postCL')
+            log.fullinfo(finalname+' was loaded into memory', 'postCL')
+            log.fullinfo(finalname+' was deleted from disk', 'postCL')
+            log.fullinfo(self.listname+' was deleted from disk','postCL')
             
             for i in range(0, len(self._preCLcachestorenames)):
                 storename = self._preCLcachestorenames[i]  #name of file written to disk for input to CL script
                 os.remove(storename) # clearing renamed file ouput by CL
-                log.fullinfo(storename+' was deleted from disk', 'fullinfo')
+                log.fullinfo(storename+' was deleted from disk', 'postCL')
                 
         elif combine==False:
             for i in range(0, len(self._preCLcachestorenames)):
@@ -217,10 +227,10 @@ class CLManager(object):
                 
                 os.remove(finalname) # clearing file written for CL input
                 os.remove(storename) # clearing renamed file ouput by CL
-                log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n '+finalname,'fullinfo')
-                log.fullinfo(finalname+' was loaded into memory', 'fullinfo')
-                log.fullinfo(finalname+' was deleted from disk', 'fullinfo')
-                log.fullinfo(storename+' was deleted from disk','fullinfo')
+                log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n '+finalname,'postCL')
+                log.fullinfo(finalname+' was loaded into memory', 'postCL')
+                log.fullinfo(finalname+' was deleted from disk', 'postCL')
+                log.fullinfo(storename+' was deleted from disk','postCL')
         
     def LogCurParams(self):
         log.fullinfo('\ncurrent general parameters:', 'params')
