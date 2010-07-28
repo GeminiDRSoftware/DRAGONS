@@ -474,7 +474,7 @@ class ReductionContext(dict):
     
     def getInputs(self, style=None):
         if style==None:
-            return inputs
+            return self.inputs
         elif style == "AD": #@@HARDCODED: means "as AstroData instances"
             retl = []
             for inp in self.inputs:
