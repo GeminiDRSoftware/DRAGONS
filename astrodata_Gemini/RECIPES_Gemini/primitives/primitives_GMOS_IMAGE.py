@@ -545,7 +545,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
         This primitive uses the CL script gireduce to subtract the overscan from the input images.
         """
         try:
-            log.status('*STARTING* to subtract the overscan from the input data')
+            log.status('*STARTING* to subtract the overscan from the input data','status')
             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
             clm = CLManager(rc)
             clm.LogCurParams()
@@ -626,7 +626,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
                 log.fullinfo('file = '+ad.filename,'header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+str(ut)+'/n','header' ) 
+                log.fullinfo('GEM-TLM = '+str(ut)+'\n','header' ) 
                 
             log.status('*FINISHED* trimming the overscan region from the input data','status')
         except:
