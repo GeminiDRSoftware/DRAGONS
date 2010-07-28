@@ -19,7 +19,7 @@ shift
 
 measureIQ
 
-setStackable
+dsetStackable
 
 daverageCombine
 display(displayID = combined)
