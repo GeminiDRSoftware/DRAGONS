@@ -101,6 +101,28 @@
                       'type': 'bool',
                       'userOverride':True                                      
                      }
-                    }
+                    },
+    "combine":{'outpref':
+                   {
+                    'default': '_comb' , #value to be post pended to this primitives outputs
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False 
+                    },
+                      'fl_dqprop':
+                   {
+                    'default': True , 
+                      'recipeOverride': True,
+                      'type': 'bool',
+                      'userOverride':True            
+                    },
+                    'fl_vardq':
+                   {
+                   'default': True , 
+                      'recipeOverride': True,
+                      'type': 'bool',
+                      'userOverride':True 
+                    },   
+                          }
 }    
 
