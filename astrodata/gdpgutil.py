@@ -164,7 +164,7 @@ def pickConfig(dataset, index, style = "unique"):
     else:
         types = ad.getTypes()
         
-    # print "\nGU58:", types, "\nindex:",index, "\n"
+    print "\nGU58:", types, "\nindex:",index, "\n"
     # only one type can imply a package
     # this goes through the types, making candidates of the
     # first value in the index in order from child 
@@ -180,8 +180,7 @@ def pickConfig(dataset, index, style = "unique"):
             if typo.parent:
                 return inheritConfig(typo.parent, index)
             else:
-                return None
-                
+                return None   
     for typ in types:
         cand = None
         if typ in index:
@@ -189,6 +188,8 @@ def pickConfig(dataset, index, style = "unique"):
         if cand:
             candidates.update({typ:cand})
     k = candidates.keys()
+    print "GU191:", repr(candidates)
+    
     if len(k) == 0:
         for typ in types:
             candtuple = inheritConfig(typ, index)
@@ -197,7 +198,7 @@ def pickConfig(dataset, index, style = "unique"):
 
     k = candidates.keys()
     
-    #    print "\nGU61: candidates:", candidates, "\n"
+    print "\nGU61: candidates:", candidates, "\n"
         # sys.exit(1)
     # style unique this can only be one thing
     if style=="unique":
