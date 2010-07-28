@@ -1,0 +1,7 @@
+#showInputs
+setStackable
+#showInputs
+#writeOutputs
+getStackable
+#showInputs
+combine(clob=True,method="average", outpref="_avgcomb")
