@@ -26,6 +26,5 @@
                           'type': 'str',
                           'userOverride':False    
                            }
-                        } 
-            
+                        }  
 }
