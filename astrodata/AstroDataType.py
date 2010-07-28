@@ -1045,6 +1045,12 @@ class ClassificationLibrary (object):
             return rettype
         except KeyError:
             return None
+            
+    def typeIsChildOf(self, typename, parenttyp):
+        child = self.getTypeObj(typename)
+        parent = self.getTypeObj(parenttyp)
+        
+        return child.isSubtypeOf(parenttyp)
 
     def discoverTypes(self, dataset, all = False):
         """This function returns a list of string names for the classifications

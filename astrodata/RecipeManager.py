@@ -1653,6 +1653,10 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         print "The Original:"
                         print centralRecipeIndex[recname]
                         print
+                        
+                        # @@TODO: eventually continue, don't raise!
+                        # don't raise, this makes bad recipe packages halt the whole package!
+                        # raise now because this should NEVER happen.
                         raise RecipeExcept("Two Recipes with the same name.")
                 
                 centralRecipeIndex.update({recname: fullpath})
