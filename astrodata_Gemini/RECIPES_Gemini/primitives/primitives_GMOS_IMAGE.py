@@ -1,5 +1,5 @@
 #from Reductionobjects import Reductionobject
-from primitives_GEMINI import GEMINIPrimitives
+from primitives_GMOS import GMOSPrimitives
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
@@ -48,7 +48,7 @@ class GMOS_IMAGEException:
         return self.message
 
 
-class GMOS_IMAGEPrimitives(GEMINIPrimitives):
+class GMOS_IMAGEPrimitives(GMOSPrimitives):
     astrotype = "GMOS_IMAGE"
     
     def init(self, rc):
@@ -519,24 +519,7 @@ class GMOS_IMAGEPrimitives(GEMINIPrimitives):
             raise 
         
         yield rc
-    #------------------------------------------------------------------------    
-    def validateInstrumentData(self,rc):
-        '''
-        This primitive is called by validateData to validate the instrument specific data checks for all input files.
-        '''
-        
-        try:
-            for ad in rc.getInputs(style="AD"):
-                log.status('validating data for file = '+ad.filename,'status')
-                log.debug('calling valInstData', 'status')
-                valInstData(ad)
-                #log.status('data validated for file = '+ad.filename,'status')
-                
-        except:
-            log.critical("Problem preparing the image.",'critical')
-            raise 
-        
-        yield rc       
+
  #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
