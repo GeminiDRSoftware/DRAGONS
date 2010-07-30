@@ -645,8 +645,21 @@ for infiles in allinputs: #for dealing with multiple files.
             co = ReductionContext()
             co.ro = ro
             # restore cache
-            if not os.path.exists(".reducecache"):
-                os.mkdir(".reducecache")
+            cachedirs = [".reducecache",
+                         ".reducecache/storedcals",
+                         ".reducecache/storedcals/storedbiases",
+                         ".reducecache/storedcals/storedflats",
+                         ".reducecache/storedcals/retrievedbiases",
+                         ".reducecache/storedcals/retrievedflats",                        
+                         ]
+            for cachedir in cachedirs:
+                if not os.path.exists(cachedir):                        
+                    os.mkdir(cachedir)
+                cachename = os.path.basename(cachedir)
+                if cachename[0] == ".":
+                    cachename = cachename[1:]
+                co.update({cachename:cachedir})
+            # rc.["storedcals"] will be the proper directory
             
             co.restoreCalIndex(calindfile)
             co.restoreStkIndex( stkindfile )
