@@ -205,7 +205,9 @@ def pickConfig(dataset, index, style = "unique"):
     for cantyp in candscopy.keys():
         for partyp in candscopy.keys():
             if cl.typeIsChildOf(cantyp, partyp):
-                del(candidates[partyp])
+                if partyp in candidates:
+                    del(candidates[partyp])
+    # print "gu205:", repr(candidates)
     
     
     # print "GU211:", repr(candidates)
