@@ -9,9 +9,9 @@ class GMOS(DataClassification):
     parent = "GEMINI"
     requirement = ISCLASS("GMOS_N") | ISCLASS("GMOS_S")
     # equivalent to...
-    #requirement = OR([
-    #                        ClassReq("GMOS_N"), 
-    #                        ClassReq("GMOS_S")
-    #                    ])
+    #requirement = OR(   
+    #                    ClassReq("GMOS_N"), 
+    #                    ClassReq("GMOS_S")
+    #                    )
 
 newtypes.append( GMOS())

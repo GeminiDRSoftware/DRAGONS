@@ -115,7 +115,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
         
 #------------------------------------------------------------------------------ 
-    def dgetStackable(self, rc):
+    def getStackable(self, rc):
         try:
             print "getting stack"
             rc.rqStackGet()

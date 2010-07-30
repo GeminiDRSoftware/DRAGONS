@@ -3,6 +3,7 @@ class GMOS_IM_FLAT(DataClassification):
     usage = ""
     parent = "GMOS_IMAGE"
     requirement = AND( ISCLASS('GMOS_IMAGE'),
-                       PHU(OBSTYPE=  'FLAT') ) 
+                       PHU(OBSTYPE=  'FLAT'),
+                       NOT(ISCLASS("GMOS_IM_TWFLAT")))
 
 newtypes.append(GMOS_IM_FLAT())
