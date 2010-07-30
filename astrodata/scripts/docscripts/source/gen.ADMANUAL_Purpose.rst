@@ -14,19 +14,31 @@ Astrodata source code and two which contain configurations (including
 code) used to handle data intelligently based on the type of dataset
 it represents.
 
+The term "astrodata" is used in different related sense, generally
+distinguished in writing by the capitalization, but sometimes perhaps
+depending on context. There is "AstroData" the class, which presents
+itself as an I/O class (given a filename it loads the dataset and
+returns an object representing it, the AstroData "instance"). There is
+"astrodata" the package, which includes related classes but no Gemini
+specific configurations, and there is simply "Astrodata" a loose term
+for the whole package and possibly refering to astrodata plus its
+Gemini configuration.
+
 
 Intended Audience
 -----------------
 
 This document is intended for users of the astrodata package in
-general, given any configuration of datatypes. Examples refer to the
-astrodata_Gemini configuration, and use Gemini definitions for dataset
-types, high level meta-data handlers, and definitions of primitive
-dataset transformations. specific Readers should in most cases begin
-with the AstroData User Tutorial, which can be found here
-`http://nihal.hi.gemini.edu/LINK_TO_AD_TUTORIAL
-<http://nihal.hi.gemini.edu/LINK_TO_AD_TUTORIAL>`__, for a quick
-introduction to the concepts involved using Gemini data. This document
-gives a more complete and detailed picture, emphasizing how the system
-works.
+general, given any configuration of datatypes. Particular examples
+refer to the astrodata_Gemini configuration, the only currently extant
+configuration, and use Gemini definitions for dataset types, high
+level meta-data names, and definitions of primitive dataset
+transformations. In most cases, users should begin with the AstroData
+User Tutorial, which can currently be found here
+`http://ophiuchus.hi.gemini.edu/ADTRUNK/astrodata/doc/ADTutorial.pdf <
+http://ophiuchus.hi.gemini.edu/ADTRUNK/astrodata/doc/ADTutorial.pdf>`_
+_. It provides a quick hands-on introduction to the concepts involved
+using AstroData to work with Gemini datasets. In contrast, this
+document gives a more complete and detailed picture, emphasizing how
+the system works.
 

@@ -234,6 +234,8 @@ class Parser(SGMLParser):
         src = os.path.basename(adict.get('src', None))
         
         scale = adict.get('width', "100 %")
+        if scale[-1] == "%":
+            scale = scale[0:-1]
         align = adict.get('align', None)
         if align == None:
             alignstr = ""
