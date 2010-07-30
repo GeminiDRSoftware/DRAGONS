@@ -86,7 +86,7 @@ class AndReq(Requirement):
                 return False
         
         return True
-AND= AndReq            
+AND=AndReq            
 
 class ClassReq(Requirement):
     typeReqs = None
