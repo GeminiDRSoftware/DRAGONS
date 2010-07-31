@@ -535,7 +535,7 @@ class GEMINIPrimitives(PrimitiveSet):
             #log.critical('CURRENTLY NO BPM FILE LOADING, JUST ADDING A ZEROS ARRAY!!!!', 'critical')
             
             packagePath=sys.argv[0].split('gemini_python')[0]
-            calPath='gemini_python/test_data/GMOS_BPM_files/'
+            calPath='gemini_python/test_data/test_cal_files/GMOS_BPM_files/'
             
             #$$$$$$$$$$$$$ this block is GMOS IMAGE specific, consider moving or something $$$$$$$$$$$$
             BPM_11=AstroData(packagePath+calPath+'GMOS_BPM_11.fits')
@@ -612,7 +612,8 @@ class GEMINIPrimitives(PrimitiveSet):
                     log.fullinfo('EXTVER= '+str(sciExt.extver()),'header' )
                     log.fullinfo('---------------------------------------------------','header')
                 
-                ut = ad.historyMark()  
+                ut = ad.historyMark() 
+                ad.historyMark(key="ADDVARDQ",stomp=False) 
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut),'header' )
@@ -637,7 +638,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc 
         
   #--------------------------------------------------------------------------      
-    def combine(self,rc,clob=False):
+    def combine(self,rc):
         '''
         This primitive will average and combine the SCI extensions of the inputs. 
         It takes all the inputs and creates a list of them and then combines each
@@ -672,6 +673,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 
                 ut = ad.historyMark()
                 ad.historyMark(key='GBIAS',stomp=False)
+                
                 log.fullinfo('****************************************************','header')
                 log.fullinfo('file = '+ad.filename,'header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
@@ -682,9 +684,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 
                 
                 log.status('*FINISHED* combining the images of the input data', 'status')
-                
-                # $$$$$TEMP$$$$$$
-                ad.write(ad.filename,clobber=clob)
+        
         except:
             log.critical("Problem combining the images.",'critical',)
             raise 
@@ -717,7 +717,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     outfilename=os.path.basename(ad.filename) 
                     log.status('not changing the file name to be written from its current name','status') 
                 log.status('writing to file = '+outfilename,'status')      
-                ad.write(fname=outfilename,clobber=clob)     #AstroData checks if the output exists and raises and exception
+                ad.write(filename=outfilename,clobber=clob)     #AstroData checks if the output exists and raises and exception
                 #rc.reportOutput(ad)
             
             # clearing the value of 'postpend' and 'prepend' in the RC so they don't persist to the next writeOutputs call and screw it up
