@@ -10,7 +10,7 @@ dprepare
 
 doverscanTrim
 
-biasCorrect
+dbiasCorrect
 flatfieldCorrect
 mosaicChips
 
