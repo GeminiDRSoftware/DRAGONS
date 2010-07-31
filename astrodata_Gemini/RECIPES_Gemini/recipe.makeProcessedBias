@@ -2,4 +2,4 @@ prepare
 addVARDQ
 overscanCorrect
 avgCombine
-#writeOutputs #storeProcessBias
+storeProcessedBias(clob=True)
