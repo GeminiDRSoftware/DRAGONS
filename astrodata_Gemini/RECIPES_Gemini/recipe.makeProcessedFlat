@@ -3,5 +3,14 @@ prepare
 overscanCorrect
 addVARDQ
 biasCorrect
-#makeNormalizedFlat
-#storeProcessedFlat
+setStackable
+
+showInputs
+setStackable
+showInputs
+getStackable
+showInputs
+
+makeNormalizedFlat
+
+storeProcessedFlat
