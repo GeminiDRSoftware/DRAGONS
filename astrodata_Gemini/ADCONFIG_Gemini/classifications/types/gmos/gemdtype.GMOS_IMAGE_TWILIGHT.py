@@ -1,8 +1,8 @@
-class GMOS_IM_TWFLAT(DataClassification):
-    name="GMOS_IM_TWFLAT"
+class GMOS_IMAGE_TWILIGHT(DataClassification):
+    name="GMOS_IMAGE_TWILIGHT"
     usage = ""
     parent = "GMOS_IMAGE"
     requirement = AND( ISCLASS( 'GMOS_IMAGE'),
                        PHU(OBJECT='Twilight') ) 
 
-newtypes.append(GMOS_IM_TWFLAT())
+newtypes.append(GMOS_IMAGE_TWILIGHT())

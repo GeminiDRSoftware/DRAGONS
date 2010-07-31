@@ -8,7 +8,5 @@ class GMOS_SPECT(DataClassification):
     parent = "GMOS"
     requirement = AND( ISCLASS('GMOS'),
                        PHU({'{prohibit}GRATING': 'MIRROR'}) )
-                       #not sure if we need line below anymore?
-                       #NOT(ISCLASS("GMOS_BIAS")))
 
 newtypes.append( GMOS_SPECT())
