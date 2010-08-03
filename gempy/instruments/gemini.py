@@ -28,6 +28,7 @@ def stdObsHdrs(ad):
         numcoadds = 1      #for if there are no coadds performed, set to 1
     effExpTime = ad.phuValue("EXPTIME")*numcoadds    
     ad.phuSetKeyValue('EXPTIME', effExpTime , 'Effective exposure time') 
+    ad.phuSetKeyValue('NCOADD', str(numcoadds) , 'Number of coadds')
 
     ut = ad.historyMark()
     ad.historyMark(key="GPREPARE",stomp=False)    
@@ -52,6 +53,8 @@ def stdObsHdrs(ad):
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'RDNOISE', ext.read_noise() , "readout noise in e-")
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'BUNIT','adu' , 'Physical units')
         nonlin = ext.non_linear_level()
+        #print nonlin
+        #print type(nonlin)
         if not nonlin:
             nonlin = 'None'     #if no nonlinear section provided then set to string 'None'
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'NONLINEA',nonlin , 'Non-linear regime level in ADU')
@@ -163,7 +166,10 @@ class CLManager(object):
             name = fileNameUpdater(ad.filename,prepend=self.prefix, strip=True)
             self._preCLcachestorenames.append(name)
             log.fullinfo('Temporary file on disk for input to CL: '+name,'CLprep')
-            ad.write(name, rename = False)    
+            ad.hdulist.writeto(name)
+            #ad.write(name, rename = False)
+            #print "g170: WARNING TEST CLOSE!"
+            #ad.close() # @@WARNING TEXT CODE   
     
     #just a function to return the 'private' member variable _preCLcachestorenames
     def cacheStoreNames(self):
@@ -203,6 +209,7 @@ class CLManager(object):
             os.rename(cloutname, finalname )
             self.rc.reportOutput(finalname)
             os.remove(finalname)
+            print 'g209: self.listname = ',self.listname
             os.remove(self.listname)
             log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n'+finalname,'postCL')
             log.fullinfo(finalname+' was loaded into memory', 'postCL')
