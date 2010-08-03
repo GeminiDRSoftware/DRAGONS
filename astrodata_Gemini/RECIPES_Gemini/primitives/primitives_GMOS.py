@@ -30,26 +30,7 @@ import shutil
 import sys, StringIO, os
 SAVEOUT = sys.stdout
 capture = StringIO.StringIO()#from Reductionobjects import Reductionobject
-from primitives_GEMINI import GEMINIPrimitives
-# All GEMINI IRAF task wrappers.
-import time
-from astrodata.adutils import filesystem
-from astrodata.adutils import gemLog
-from astrodata import IDFactory
-from astrodata import Descriptors
-from astrodata.data import AstroData
 
-from pyraf.iraf import tables, stsdas, images
-from pyraf.iraf import gemini
-import pyraf
-import iqtool
-from iqtool.iq import getiq
-from gempy.instruments.gemini import *
-from gempy.instruments.gmos import *
-
-import pyfits
-import numdisplay
-import string
 log=gemLog.getGeminiLog()
 yes = pyraf.iraf.yes
 no = pyraf.iraf.no
@@ -161,20 +142,20 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         try:
             log.status('*STARTING* to subtract the overscan from the input data','status')
-            ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
+            # writing input files to disk with prefixes onto their file names so they can be deleted later easily 
             clm = CLManager(rc)
             clm.LogCurParams()
-            ## params in the dictionaries: fl_over, fl_trim, fl_vardq, outpref
+            
             log.fullinfo('calling the gireduce CL script', 'status')
+
             gemini.gmos.gireduce(clm.inputsAsStr(), gp_outpref=clm.uniquePrefix(),fl_over=pyrafBoolean(rc["fl_over"]), \
                     fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
-                    fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']),\
+                    fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']), \
                     Stdout = IrafStdout(), Stderr = IrafStdout())
-            #"dev$null" #use this for Stdout for no outputs of the CL script to go to screen
-            #rc.getIrafStdout() #us this for Stdout for outputs of the CL script to go to screen
+
             if gemini.gmos.gireduce.status:
                 log.critical('gireduce failed','critical') 
-                raise
+                raise "gireduce exception"
             else:
                 log.fullinfo('exited the gireduce CL script successfully', 'status')
          
@@ -235,7 +216,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     
                 # updating the GEM-TLM value and reporting the output to the RC    
                 ut = ad.historyMark()
-                #$$$$$ should we also have a OVERTRIM UT time stame in the PHU???
+                #$$$$$ should we also have a OVERTRIM UT time same in the PHU???
                 ad.filename=fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
                 rc.reportOutput(ad)
                 
@@ -261,14 +242,13 @@ class GMOSPrimitives(GEMINIPrimitives):
         '''
         
         try:
-            clob = rc['clob']
                 
             log.status('*STARTING* to store the processed bias by writing it to disk','status')
             for ad in rc.getInputs(style='AD'):
                 ad.filename=fileNameUpdater(ad.filename, postpend="_preparedBias", strip=True)
                 ad.historyMark(key='GBIAS',comment='fake key to trick CL that GBIAS was ran')
                 log.fullinfo('filename written to = '+rc["storedbiases"]+"/"+ad.filename,'fullinfo')
-                ad.write(os.path.join(rc['storedbiases'],ad.filename),clobber=clob)
+                ad.write(os.path.join(rc['storedbiases'],ad.filename),clobber=rc['clob'])
             log.status('*FINISHED* storing the processed bias on disk','status')
         except:
             log.critical("Problem preparing the image.",'critical')
@@ -286,13 +266,12 @@ class GMOSPrimitives(GEMINIPrimitives):
         '''
         
         try:
-            clob = rc['clob']
                 
             log.status('*STARTING* to store the processed bias by writing it to disk','status')
             for ad in rc.getInputs(style='AD'):
                 ad.filename=fileNameUpdater(ad.filename, postpend="_preparedFlat", strip=True)
                 log.fullinfo('filename written to = '+rc["storedflats"]+"/"+ad.filename,'fullinfo')
-                ad.write(os.path.join(rc['storedflats'],ad.filename),clobber=clob)
+                ad.write(os.path.join(rc['storedflats'],ad.filename),clobber=rc['clob'])
             log.status('*FINISHED* storing the processed bias on disk','status')
         except:
             log.critical("Problem preparing the image.",'critical')
@@ -311,7 +290,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             packagePath=sys.argv[0].split('gemini_python')[0]
             calPath='gemini_python/test_data/test_cal_files/processed_biases/'
-           
             
             for ad in rc.getInputs(style='AD'):
                 if ad.extGetKeyValue(1,'CCDSUM')=='1 1':
@@ -347,31 +325,26 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             clm=CLManager(rc)
             clm.LogCurParams()
-            cacheStoreNames=clm.cacheStoreNames() # list of the temp names of the inputs written to disk
             
-            # as i think the best approach to using gireduce here is to perform the bias subtraction 
-            # one by one, to ensure there are no 'which bias goes with which flat' issues. thus, i wrote
-            # it in a loop. seems to work well with the CLManager, so i'll keep it this way for now.
-            j=0
-            for ad in rc.getInputs(style='AD'):
-                processedBias=rc.getCal(ad,'bias')
-                
-                #print ad.info()
-                
-                log.fullinfo('calling the gireduce CL script', 'status')
-                
-                gemini.gmos.gireduce(cacheStoreNames[j], fl_over=pyrafBoolean(rc["fl_over"]),\
-                    fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=yes,bias=processedBias,\
-                    fl_flat=no, outpref=rc["outpref"],bpm='',fl_vardq=pyrafBoolean(True),\
-                   Stdout = IrafStdout(), Stderr = IrafStdout())
-           
-                j=j+1
-                
-                if gemini.gmos.gireduce.status:
-                     log.critical('gireduce failed','critical') 
-                     raise
-                else:
-                     log.fullinfo('exited the gireduce CL script successfully', 'status')
+            # getting the bias file for the first file of the inputs and assuming it is the same for all the inputs.
+            # This should be corrected in the future to be more intelligent and get the correct bias for each input
+            # individually if they are not all the same. Then gireduce can be called in a loop with one flat and one bias,
+            # this will work well with the CLManager as that was how i wrote this prim originally.
+            ad=rc.getInputs(style='AD')[0]
+            processedBias=rc.getCal(ad,'bias')
+
+            log.fullinfo('calling the gireduce CL script', 'status')
+            
+            gemini.gmos.gireduce(clm.inputList(), fl_over=pyrafBoolean(rc["fl_over"]),\
+                fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=yes,bias=processedBias,\
+                fl_flat=no, outpref=rc["outpref"],bpm='',fl_vardq=pyrafBoolean(True),\
+               Stdout = IrafStdout(), Stderr = IrafStdout())
+            
+            if gemini.gmos.gireduce.status:
+                 log.critical('gireduce failed','critical') 
+                 raise
+            else:
+                 log.fullinfo('exited the gireduce CL script successfully', 'status')
             
             # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
             clm.finishCL()
@@ -389,7 +362,6 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut)+'\n','header' )
                 
-                #print ad.info()
             log.warning('The CL script gireduce REPLACED the previously calculated DQ frames','warning')
             log.status('*FINISHED* subtracting the bias from the input flats','status')
         except:
@@ -408,16 +380,12 @@ class GMOSPrimitives(GEMINIPrimitives):
         '''
         
         try:
-            for ad in rc.getInputs(style='AD'):
-                print ad.filename
-                
-                #raise
             
             log.status('*STARTING* to combine and normalize the input flats','status')
             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
             clm = CLManager(rc)
             clm.LogCurParams()
-            ## params in the dictionaries: fl_over, fl_trim, fl_vardq, outpref
+
             log.fullinfo('calling the giflat CL script', 'status')
             
             gemini.giflat(clm.inputList(), outflat=clm.combineOutname(),\
@@ -435,7 +403,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
             clm.finishCL(combine=True) 
             
-            ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
+            ad = rc.getOutputs(style='AD')[0] #there is only one after above combination, so no need to perform a loop
                 
             ut = ad.historyMark()
             ad.historyMark(key='GIFLAT',stomp=False)
