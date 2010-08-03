@@ -1,6 +1,6 @@
-#prepare
+prepare
 #overscanSubtract
 #overscanTrim
 #calculateDQ
 #avgCombine
-ccdsumloop
+#ccdsumloop
