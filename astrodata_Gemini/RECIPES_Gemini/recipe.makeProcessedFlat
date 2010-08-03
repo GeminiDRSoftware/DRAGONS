@@ -3,14 +3,13 @@ prepare
 overscanCorrect
 addVARDQ
 biasCorrect
-setStackable
 
-showInputs
+#showInputs
 setStackable
-showInputs
+#showInputs
 getStackable
-showInputs
+#showInputs
 
 makeNormalizedFlat
 
-storeProcessedFlat
+storeProcessedFlat(clob=True)
