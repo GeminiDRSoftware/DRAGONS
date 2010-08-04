@@ -4,13 +4,21 @@
                     "recipeOverride": False,
                     "uiLevel": "debug",
                     "userOverride":True,
-                    "type": "bool"
-                    
+                    "type": "bool",
+                    "tags": ["test", "iraf"]
                     },
                  
                  "otherTest":
-                    {"default": "default",
-                     "userOverride":True}
+                    {"default": False,
+                     "userOverride":True,
+                     
+                    },
+                 
+                 "otherTest2":
+                    {
+                     "userOverride":True,
+                     "tags":["test", "wcslib"]
+                    }
                 },
     "pause": {"message":
               { "default":"Pausing Reduction by Control System Request",

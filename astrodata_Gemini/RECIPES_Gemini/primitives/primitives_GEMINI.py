@@ -213,6 +213,11 @@ class GEMINIPrimitives(PrimitiveSet):
             for param in rcparams:
                 print param+" = "+repr(rc[param])
         
+        # print "all",repr(rc.parmDictByTag("showParams", "all"))
+        # print "iraf",repr(rc.parmDictByTag("showParams", "iraf"))
+        # print "test",repr(rc.parmDictByTag("showParams", "test"))
+        # print "sdf",repr(rc.parmDictByTag("showParams", "sdf"))
+
         # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
         yield rc
             
