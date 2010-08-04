@@ -55,7 +55,32 @@ class ReductionObject(object):
                     (prop  in prim.paramDict[self.curPrimName][param])):
                     return prim.paramDict[self.curPrimName][param][prop]
         return None
-                     
+        
+    def parmDictByTag(self, prim, tag):
+        if self.curPrimType not in self.primDict:
+            return {}
+        primsets = self.primDict[self.curPrimType]
+        retd = {}
+        # for each primset assigned this type, check paramDict in order
+        for primset in primsets:
+            if prim in primset.paramDict:
+                params = primset.paramDict[prim]
+            else:
+                continue
+            for pkey in params.keys():
+                param = params[pkey]
+                
+                include = False
+                if (tag == "all"):
+                    include = True
+                elif "tags" in param and tag in param["tags"]:
+                    include = True
+                if include:    
+                    retd.update({pkey:
+                                 None if not "default" in param 
+                                      else param["default"]})
+        return retd
+        
     def substeps(self, primname, context):
         savedLocalparms = context.localparms
         context.status = "RUNNING"
