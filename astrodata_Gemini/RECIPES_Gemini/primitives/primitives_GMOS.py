@@ -146,12 +146,35 @@ class GMOSPrimitives(GEMINIPrimitives):
             clm = CLManager(rc)
             clm.LogCurParams()
             
+            # params set by the CLManager or the definition of the prim 
+            clPrimParams={
+                          'inimages'    :clm.inputsAsStr(),
+                          'gp_outpref'  :clm.uniquePrefix(),
+                          'fl_over'     :yes, #yes=pyraf.iraf.yes and no=pyraf.iraf.no globally set
+                          'Stdout'      :IrafStdout(), #this is actually in the default dict but wanted to show it again
+                          'Stderr'      :IrafStdout(), #this is actually in the default dict but wanted to show it again
+                          'logfile'    :'', # this is actually in the default dict but wanted to show it again
+                          'verbose'    :yes # this is actually in the default dict but wanted to show it again
+                          }
+            # params from the Parameter file adjustable by the user
+            clSoftcodedParams={
+                               'fl_trim'    :pyrafBoolean(rc["fl_trim"]),
+                               'outpref'    :rc["outpref"],
+                               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
+                               }
+            # grabbing the default params dict and updating it with the two above dicts
+            clParamsDict=CLDefaultParamsDict('gireduce')
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
             log.fullinfo('calling the gireduce CL script', 'status')
-
-            gemini.gmos.gireduce(clm.inputsAsStr(), gp_outpref=clm.uniquePrefix(),fl_over=pyrafBoolean(rc["fl_over"]), \
-                    fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
-                    fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']), \
-                    Stdout = IrafStdout(), Stderr = IrafStdout())
+            
+            gemini.gmos.gireduce(**clParamsDict)
+            
+            #gemini.gmos.gireduce(clm.inputsAsStr(), gp_outpref=clm.uniquePrefix(),fl_over=pyrafBoolean(True), \
+            #        fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=no, \
+            #        fl_flat=no, outpref=rc["outpref"], fl_vardq=pyrafBoolean(rc['fl_vardq']), \
+            #        Stdout = IrafStdout(), Stderr = IrafStdout())
 
             if gemini.gmos.gireduce.status:
                 log.critical('gireduce failed','critical') 
@@ -191,7 +214,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to trim the overscan region from the input data','status')
             
             for ad in rc.getInputs(style='AD'):
-                ad.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')
+                ad.phuSetKeyValue('TRIMMED','yes','Overscan sectiUIADVANCEDon trimmed')
                 for sciExt in ad['SCI']:
                     datasecStr=sciExt.data_section()
                     datasecList=secStrToIntList(datasecStr) 
@@ -332,13 +355,38 @@ class GMOSPrimitives(GEMINIPrimitives):
             # this will work well with the CLManager as that was how i wrote this prim originally.
             ad=rc.getInputs(style='AD')[0]
             processedBias=rc.getCal(ad,'bias')
-
+            
+             # params set by the CLManager or the definition of the prim 
+            clPrimParams={
+                          'inimages'    :clm.inputList(),
+                          'gp_outpref'  :clm.uniquePrefix(),
+                          'fl_bias'     :yes,
+                          'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                          'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                          'logfile'     :'', # this is actually in the default dict but wanted to show it again
+                          'verbose'     :yes # this is actually in the default dict but wanted to show it again
+                          }
+            # params from the Parameter file adjustable by the user
+            clSoftcodedParams={
+                               'fl_trim'    :pyrafBoolean(rc["fl_trim"]),
+                               'outpref'    :rc["outpref"],
+                               'fl_over'    :pyrafBoolean(rc["fl_over"]),
+                               'bias'       :processedBias, #possibly add a easier way for the user to pass in a bias in the future??
+                               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
+                               }
+            # grabbing the default params dict and updating it with the two above dicts
+            clParamsDict=CLDefaultParamsDict('gireduce')
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
             log.fullinfo('calling the gireduce CL script', 'status')
             
-            gemini.gmos.gireduce(clm.inputList(), fl_over=pyrafBoolean(rc["fl_over"]),\
-                fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=yes,bias=processedBias,\
-                fl_flat=no, outpref=rc["outpref"],bpm='',fl_vardq=pyrafBoolean(True),\
-               Stdout = IrafStdout(), Stderr = IrafStdout())
+            gemini.gmos.gireduce(**clParamsDict)
+            
+            #gemini.gmos.gireduce(clm.inputList(), fl_over=pyrafBoolean(rc["fl_over"]),\
+            #    fl_trim=pyrafBoolean(rc["fl_trim"]), fl_bias=yes,bias=processedBias,\
+            #    fl_flat=no, outpref=rc["outpref"],bpm='',fl_vardq=pyrafBoolean(True),\
+            #  Stdout = IrafStdout(), Stderr = IrafStdout())
             
             if gemini.gmos.gireduce.status:
                  log.critical('gireduce failed','critical') 
@@ -386,13 +434,36 @@ class GMOSPrimitives(GEMINIPrimitives):
             clm = CLManager(rc)
             clm.LogCurParams()
 
+            # params set by the CLManager or the definition of the prim 
+            clPrimParams={
+                          'inflats'    :clm.inputList(),
+                          'outflat'    :clm.combineOutname(),
+                          'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                          'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                          'logfile'     :'', # this is actually in the default dict but wanted to show it again
+                          'verbose'     :yes # this is actually in the default dict but wanted to show it again
+                          }
+            # params from the Parameter file adjustable by the user
+            clSoftcodedParams={
+                               'fl_bias'    :rc['fl_bias'],
+                               'fl_vardq'   :rc["fl_vardq"],
+                               'fl_over'    :rc["fl_over"],
+                               'fl_trim'    :rc["fl_trim"]
+                               }
+            # grabbing the default params dict and updating it with the two above dicts
+            clParamsDict=CLDefaultParamsDict('giflat')
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
             log.fullinfo('calling the giflat CL script', 'status')
             
-            gemini.giflat(clm.inputList(), outflat=clm.combineOutname(),\
-                fl_bias=rc['fl_bias'],fl_vardq=rc["fl_vardq"],\
-                fl_over=rc["fl_over"], fl_trim=rc["fl_trim"], \
-                Stdout = IrafStdout(), Stderr = IrafStdout(),\
-                verbose=pyrafBoolean(True))
+            gemini.giflat(**clParamsDict)
+            
+           # gemini.giflat(clm.inputList(), outflat=clm.combineOutname(),\
+           #     fl_bias=rc['fl_bias'],fl_vardq=rc["fl_vardq"],\
+           #     fl_over=rc["fl_over"], fl_trim=rc["fl_trim"], \
+           #     Stdout = IrafStdout(), Stderr = IrafStdout(),\
+           #     verbose=pyrafBoolean(True))
             
             if gemini.giflat.status:
                 log.critical('giflat failed','critical')
@@ -424,7 +495,120 @@ class GMOSPrimitives(GEMINIPrimitives):
             
         yield rc
         
-        
+def CLDefaultParamsDict(CLscript):
+    '''
+    A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
+    '''
+    if CLscript=='gireduce':
+        defaultParams={
+                           'inimages'    :'',
+                           'outpref'    :'DEFAULT',
+                           'outimages'  :"",
+                           'fl_over'    :no,
+                           'fl_trim'    :no,
+                           'fl_bias'    :no,
+                           'fl_dark'    :no, 
+                           'fl_flat'    :no,
+                           'fl_vardq'   :no,
+                           'fl_addmdf'  :no,
+                           'bias'       :'',
+                           'dark'       :'',
+                           'flat1'      :'',
+                           'flat2'      :'',
+                           'flat3'      :'',
+                           'flat4'      :'',
+                           'key_exptime':'EXPTIME',
+                           'key_biassec':'BIASSEC',
+                           'key_datasec':'DATASEC',
+                           'rawpath'    :'',
+                           'gp_outpref' :'g',
+                           'sci_ext'    :'SCI',
+                           'var_ext'    :'VAR',
+                           'dq_ext'     :'DQ',
+                           'key_mdf'    :'MASKNAME',
+                           'mdffile'    :'',
+                           'mdfdir'     :'',
+                           'bpm'        :'',
+                           #'giandb'     :'default',
+                           'sat'        :65000,
+                           'key_nodcount':"NODCOUNT",
+                           'key_nodpix' :"NODPIX",
+                           'key_filter' :"FILTER2",
+                           'key_ron'    :"RDNOISE",
+                           'key_gain'   :"GAIN",
+                           'ron'        :3.5,
+                           'gain'       :2.2,
+                           'fl_mult'    :yes, #$$$$$$$$$
+                           'fl_inter'   :no,
+                           'median'     :no,
+                           'function'   :"chebyshev",
+                           'nbiascontam':4, #$$$$$$$$$$$$$$$$$$$$$$$$
+                           'biasrows'   :"default",
+                           'order'      :1,
+                           'low_reject' :3.0,
+                           'high_reject':3.0,
+                           'niterate'   :2,
+                           'logfile'    :'',
+                           'verbose'    :yes,
+                           'status'     :0,
+                           'Stdout'      :IrafStdout(),
+                           'Stderr'      :IrafStdout()
+                           }
+    if CLscript=='giflat':
+        defaultParams={ 
+                       'inflats'    :'',
+                       'outflat'    :"",
+                       'normsec'    :'default',
+                       'fl_scale'   :yes,
+                       'sctype'     :"mean",
+                       'statsec'    :"default",
+                       'key_gain'   :"GAIN",
+                       'fl_stamp'   :no,
+                       'sci_ext'    :'SCI',
+                       'var_ext'    :'VAR',
+                       'dq_ext'     :'DQ',
+                       'fl_vardq'   :no,
+                       'sat'        :65000,
+                       'verbose'    :yes,
+                       'logfile'    :'',
+                       'status'     :0,
+                       'combine'    :"average",
+                       'reject'     :"avsigclip",
+                       'lthreshold' :'INDEF',
+                       'hthreshold' :'INDEF',
+                       'nlow'       :0,
+                       'nhigh'      :1,
+                       'nkeep'      :1,
+                       'mclip'      :yes,
+                       'lsigma'     :3.0,
+                       'hsigma'     :3.0,
+                       'sigscale'   :0.1,
+                       'grow'       :0.0,
+                       'gp_outpref' :'g',
+                       'rawpath'    :'',
+                       'key_ron'    :"RDNOISE",
+                       'key_datasec':'DATASEC',
+                       #'giandb'     :'default',
+                       'bpm'        :'',
+                       'gi_outpref' :'r',
+                       'bias'       :'',
+                       'fl_over'    :no,
+                       'fl_trim'    :no,
+                       'fl_bias'    :no,
+                       'fl_inter'   :no,
+                       'nbiascontam':4, #$$$$$$$$$$$$$$$$$$$$$$$$
+                       'biasrows'   :"default",
+                       'key_biassec':'BIASSEC',
+                       'median'     :no,
+                       'function'   :"chebyshev",
+                       'order'      :1,
+                       'low_reject' :3.0,
+                       'high_reject':3.0,
+                       'niterate'   :2,
+                       'Stdout'      :IrafStdout(),
+                       'Stderr'      :IrafStdout()
+                       }      
+    return defaultParams    
         
         
    
