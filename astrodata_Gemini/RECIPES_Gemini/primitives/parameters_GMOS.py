@@ -1,13 +1,6 @@
-{    "overscanSubtract":{"fl_over":
-                        {
-                          'default': True , #maybe hardcode this as this is the purpose of this prim, so setting it to False is pointless
-                          'recipeOverride': True,
-                          'type': 'bool',
-                          'userOverride':True                                      
-                         },
-                         "fl_trim":
+{    "overscanSubtract":{"fl_trim":
                          {
-                          'default': False , #trim the overscan region after it has been subracted? maybe hardcode this as there is a separate prim to do this
+                          'default': False , 
                           'recipeOverride': False,
                           'type': 'bool',
                           'userOverride':False    
@@ -105,7 +98,7 @@
                            },
                           "outpref":
                           {
-                           'default': '_normalized' , #value to be post pended to this primitives outputs
+                           'default': '_normalized' , #value to be post pended to this primitives outputs (used by CLManager not CL directly for this prim)
                           'recipeOverride': True,
                           'type': 'str',
                           'userOverride':False    
