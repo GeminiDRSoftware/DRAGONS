@@ -361,6 +361,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           'inimages'    :clm.inputList(),
                           'gp_outpref'  :clm.uniquePrefix(),
                           'fl_bias'     :yes,
+                          'bias'       :processedBias, #possibly add this to the prameters file so the user can override this file
                           'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
                           'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
                           'logfile'     :'', # this is actually in the default dict but wanted to show it again
@@ -371,7 +372,6 @@ class GMOSPrimitives(GEMINIPrimitives):
                                'fl_trim'    :pyrafBoolean(rc["fl_trim"]),
                                'outpref'    :rc["outpref"],
                                'fl_over'    :pyrafBoolean(rc["fl_over"]),
-                               'bias'       :processedBias, #possibly add a easier way for the user to pass in a bias in the future??
                                'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
                                }
             # grabbing the default params dict and updating it with the two above dicts
