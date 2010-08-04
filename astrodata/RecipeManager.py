@@ -1399,6 +1399,7 @@ class RecipeLibrary(object):
                 except:
                     print traceback.format_exc()
                 b = datetime.now()
+                print "RM1403:", importname, primdef[1], sys.path
                 primset = eval (importname + "." + primdef[1] + "()")
                 # set filename and directory name
                 # used by other parts of the system for naming convention based retrieval
