@@ -3,7 +3,9 @@ AstroData Class Reference
 
 .. toctree::
     
-The following is class information from the docstrings.
+The following is information about the AstroData class. For the meaning of
+the class arguments see the documentation for the AstroData constructor
+(AstroData.__init__(..)), from docstrings in the source.
 
 .. autoclass:: astrodata.data.AstroData
 
