@@ -6,7 +6,6 @@ from astrodata.adutils import gemLog
 from astrodata import IDFactory
 import os,sys, re
 from sets import Set
-from iqtool.iq import getiq
 from gempy.instruments.gemini import *
 import numpy as np
 import pyfits
@@ -160,6 +159,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 else:
                     observ = 'gemini-north'
                 st = time.time()
+                from iqtool.iq import getiq
                 iqdata = getiq.gemiq( inp.filename, function='moffat', display=False, mosaic=True, qa=True)
                 et = time.time()
                 print 'MeasureIQ time:', (et - st)
