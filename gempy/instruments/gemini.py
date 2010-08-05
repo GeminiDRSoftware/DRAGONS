@@ -120,14 +120,60 @@ def secStrToIntList(string):
     retl.append(int(Xs[1]))
     
     return retl
-
-
+    
+def biassecStrTonbiascontam(biassec,ad):
+    ''' this function works with nbiascontam() of the CLManager. 
+    It will find the largest horizontal difference between biassec and BIASSEC for each SCI extension i a single input.
+    
+    @param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+    @type biassec: string  
+    
+    @param ad: AstroData instance
+    @type ad: AstroData instance
+    '''
+    try:
+        ccdStrList=biassec.split('],[')
+        ccdIntList=[]
+        for string in ccdStrList:
+            ccdIntList.append(secStrToIntList(string))
+            
+        retvalue=0
+        for i in range(0,len(ad['SCI'])):
+            BIASSEClist=secStrToIntList(ad.extGetKeyValue(i,'BIASSEC'))
+            biasseclist=ccdIntList[i]
+            #print 'g136: BIASSEClist= ',BIASSEClist
+            #print 'g137: biasseclist= ',biasseclist
+            if biasseclist[2]==BIASSEClist[2] and biasseclist[3]==BIASSEClist[3]:
+                if biasseclist[0]<50: #ie overscan/bias section is on the left side of chip
+                    if biasseclist[0]==BIASSEClist[0]: 
+                        nbiascontam=BIASSEClist[1]-biasseclist[1]
+                    else:
+                        log.error('left horizontal components of biassec and BIASSEC did not match so using default nbiascontam=4','error')
+                        nbiascontam=4
+                else: #ie overscan/bias section is on the right side of chip
+                    if biasseclist[1]==BIASSEClist[1]: 
+                        nbiascontam=BIASSEClist[0]-biasseclist[0]
+                    else:
+                        log.error('right horizontal components of biassec and BIASSEC did not match so using default nbiascontam=4','error') 
+                        nbiascontam=4
+            else:
+                log.error('vertical components of biassec and BIASSEC parameters did not match so using default nbiascontam=4', 'error')
+                nbiascontam=4
+            if nbiascontam>retvalue: # ie returning the largest nbiascontam value throughout all chips 
+                retvalue=nbiascontam
+            
+        return retvalue
+            
+    except:
+        log.error('An error ocured while trying to calculate the nbiascontam so using default value = 4','error')
+        return 4
+        
+        
 def pyrafBoolean(pythonBool):
     '''
     a very basic function to reduce code repetition that simply 'casts' any given 
     Python boolean into a pyraf/iraf one for use in the CL scripts
     '''
-    
     if pythonBool:
         return pyraf.iraf.yes
     elif  not pythonBool:
@@ -158,18 +204,12 @@ class CLManager(object):
         self.postCLloads(combine)    
     
     def preCLwrites(self):
-        #print 'g158: ',self.rc.inputsAsStr()
         for ad in self.rc.getInputs(style="AD"):
             self._preCLfilenames.append(ad.filename)
-            #print 'g161: adding to preCLfilenames ',ad.filename
-            #print 'g162: currently in preCLfilenames ',repr(self._preCLfilenames)
             name = fileNameUpdater(ad.filename,prepend=self.prefix, strip=True)
             self._preCLcachestorenames.append(name)
             log.fullinfo('Temporary file on disk for input to CL: '+name,'CLprep')
-            ad.hdulist.writeto(name)
-            #ad.write(name, rename = False)
-            #print "g170: WARNING TEST CLOSE!"
-            #ad.close() # @@WARNING TEXT CODE   
+            ad.write(name, rename = False) 
     
     #just a function to return the 'private' member variable _preCLcachestorenames
     def cacheStoreNames(self):
@@ -249,6 +289,19 @@ class CLManager(object):
         for key in self.rc.localparms:
             val=self.rc.localparms[key]
             log.fullinfo(repr(key)+' = '+repr(val),'params')
+            
+    def nbiascontam(self):
+        '''this function will find the largest difference between the horizontal component 
+           of every BIASSEC value and those of the biassec parameter and return that difference 
+           as an integer to be the value for the nbiascontam parameter used in the gireduce call of the overscanSubtract prim'''
+        
+        retval=0
+        for ad in self.rc.getInputs(style='AD'):
+            biassec=self.rc['biassec']
+            val = biassecStrTonbiascontam(biassec,ad)
+            if val>retval:
+                retval=val
+        return retval
 
 class IrafStdout():
 
