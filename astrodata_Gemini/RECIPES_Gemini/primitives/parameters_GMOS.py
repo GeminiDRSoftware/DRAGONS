@@ -18,7 +18,14 @@
                           'recipeOverride': True,
                           'type': 'str',
                           'userOverride':False    
-                           }
+                           },
+                           'biassec':
+                           {
+                            'default': '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' ,
+                            'recipeOverride': True,
+                            'type': 'str',
+                            'userOverride':True
+                            }
                         },
         "overscanTrim":{"outsuffix":
                           {
@@ -75,26 +82,31 @@
                           'userOverride':False    
                            }
                           },
-            "makeNormalizedFlat":{"fl_over":
+            "makeNormalizedFlat":{
+                        "fl_over":
                         {
                           'default': False , 
                           'recipeOverride': False,
                           'type': 'bool',
-                          'userOverride':False                                      
+                          'userOverride':False,
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                          },
                          "fl_trim":
                          {
                           'default': False , 
                           'recipeOverride': False,
                           'type': 'bool',
-                          'userOverride':False    
+                          'userOverride':False,    
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+                         
                           },
                           "fl_vardq":
                           {
                            'default': True ,
                           'recipeOverride': True,
                           'type': 'bool',
-                          'userOverride':True    
+                          'userOverride':True,  
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            },
                           "outpref":
                           {
@@ -108,7 +120,8 @@
                            'default': False , 
                           'recipeOverride': False,
                           'type': 'bool',
-                          'userOverride':False 
+                          'userOverride':False, 
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            }
                           }
 }
