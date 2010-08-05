@@ -153,7 +153,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           'fl_over'     :yes, #yes=pyraf.iraf.yes and no=pyraf.iraf.no globally set
                           'Stdout'      :IrafStdout(), #this is actually in the default dict but wanted to show it again
                           'Stderr'      :IrafStdout(), #this is actually in the default dict but wanted to show it again
-                          'logfile'    :'', # this is actually in the default dict but wanted to show it again
+                          'logfile'    :'TEMP.log', # this log will get created and will then be deleted near the end of this prim
                           'verbose'    :yes # this is actually in the default dict but wanted to show it again
                           }
             # params from the Parameter file adjustable by the user
@@ -167,6 +167,12 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
+            # taking care of the biasec->nbiascontam param
+            if not rc['biassec']=='':
+                nbiascontam=clm.nbiascontam()
+                clParamsDict.update({'nbiascontam':nbiascontam})
+                log.fullinfo('nbiascontam parameter was updated to = '+str(clParamsDict['nbiascontam']),'params')
+
             log.fullinfo('calling the gireduce CL script', 'status')
             
             gemini.gmos.gireduce(**clParamsDict)
@@ -184,6 +190,7 @@ class GMOSPrimitives(GEMINIPrimitives):
          
             # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
             clm.finishCL()
+            os.remove(clPrimParams['logfile'])
             i=0
             for ad in rc.getOutputs(style="AD"):
                 if ad.phuGetKeyValue('GIREDUCE'): # varifies gireduce was actually ran on the file
@@ -364,7 +371,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           'bias'       :processedBias, #possibly add this to the prameters file so the user can override this file
                           'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
                           'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
-                          'logfile'     :'', # this is actually in the default dict but wanted to show it again
+                          'logfile'     :'TEMP.log', # this log will get created and will then be deleted near the end of this prim
                           'verbose'     :yes # this is actually in the default dict but wanted to show it again
                           }
             # params from the Parameter file adjustable by the user
@@ -396,6 +403,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
             clm.finishCL()
+            os.remove(clPrimParams['logfile'])
             i=0
             for ad in rc.getOutputs(style="AD"):
                 if ad.phuGetKeyValue('GIREDUCE'): # varifies gireduce was actually ran on the file
@@ -437,10 +445,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             # params set by the CLManager or the definition of the prim 
             clPrimParams={
                           'inflats'    :clm.inputList(),
-                          'outflat'    :clm.combineOutname(),
+                          'outflat'    :clm.combineOutname(), # maybe allow the user to override this in the future
                           'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
                           'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
-                          'logfile'     :'', # this is actually in the default dict but wanted to show it again
+                          'logfile'     :'TEMP.log', # this log will get created and will then be deleted near the end of this prim
                           'verbose'     :yes # this is actually in the default dict but wanted to show it again
                           }
             # params from the Parameter file adjustable by the user
@@ -473,6 +481,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
             # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
             clm.finishCL(combine=True) 
+            os.remove(clPrimParams['logfile'])
             
             ad = rc.getOutputs(style='AD')[0] #there is only one after above combination, so no need to perform a loop
                 
@@ -501,110 +510,110 @@ def CLDefaultParamsDict(CLscript):
     '''
     if CLscript=='gireduce':
         defaultParams={
-                           'inimages'    :'',
-                           'outpref'    :'DEFAULT',
-                           'outimages'  :"",
-                           'fl_over'    :no,
-                           'fl_trim'    :no,
-                           'fl_bias'    :no,
-                           'fl_dark'    :no, 
-                           'fl_flat'    :no,
-                           'fl_vardq'   :no,
-                           'fl_addmdf'  :no,
-                           'bias'       :'',
-                           'dark'       :'',
-                           'flat1'      :'',
-                           'flat2'      :'',
-                           'flat3'      :'',
-                           'flat4'      :'',
-                           'key_exptime':'EXPTIME',
-                           'key_biassec':'BIASSEC',
-                           'key_datasec':'DATASEC',
-                           'rawpath'    :'',
-                           'gp_outpref' :'g',
-                           'sci_ext'    :'SCI',
-                           'var_ext'    :'VAR',
-                           'dq_ext'     :'DQ',
-                           'key_mdf'    :'MASKNAME',
-                           'mdffile'    :'',
-                           'mdfdir'     :'',
-                           'bpm'        :'',
-                           #'giandb'     :'default',
-                           'sat'        :65000,
-                           'key_nodcount':"NODCOUNT",
-                           'key_nodpix' :"NODPIX",
-                           'key_filter' :"FILTER2",
-                           'key_ron'    :"RDNOISE",
-                           'key_gain'   :"GAIN",
-                           'ron'        :3.5,
-                           'gain'       :2.2,
-                           'fl_mult'    :yes, #$$$$$$$$$
-                           'fl_inter'   :no,
-                           'median'     :no,
-                           'function'   :"chebyshev",
-                           'nbiascontam':4, #$$$$$$$$$$$$$$$$$$$$$$$$
-                           'biasrows'   :"default",
-                           'order'      :1,
-                           'low_reject' :3.0,
-                           'high_reject':3.0,
-                           'niterate'   :2,
-                           'logfile'    :'',
-                           'verbose'    :yes,
-                           'status'     :0,
+                           'inimages'    :'',               #Input GMOS images 
+                           'outpref'    :'DEFAULT',         #Prefix for output images
+                           'outimages'  :"",                #Output images
+                           'fl_over'    :no,                #Subtract overscan level
+                           'fl_trim'    :no,                #Trim off the overscan section
+                           'fl_bias'    :no,                #Subtract bias image
+                           'fl_dark'    :no,                #Subtract (scaled) dark image
+                           'fl_flat'    :no,                #Do flat field correction?
+                           'fl_vardq'   :no,                #Create variance and data quality frames
+                           'fl_addmdf'  :no,                #Add Mask Definition File? (LONGSLIT/MOS/IFU modes)
+                           'bias'       :'',                #Bias image name
+                           'dark'       :'',                #Dark image name
+                           'flat1'      :'',                #Flatfield image 1
+                           'flat2'      :'',                #Flatfield image 2
+                           'flat3'      :'',                #Flatfield image 3
+                           'flat4'      :'',                #Flatfield image 4
+                           'key_exptime':'EXPTIME',         #Header keyword of exposure time
+                           'key_biassec':'BIASSEC',         #Header keyword for bias section
+                           'key_datasec':'DATASEC',         #Header keyword for data section
+                           'rawpath'    :'',                #GPREPARE: Path for input raw images
+                           'gp_outpref' :'g',               #GPREPARE: Prefix for output images
+                           'sci_ext'    :'SCI',             #Name of science extension
+                           'var_ext'    :'VAR',             #Name of variance extension
+                           'dq_ext'     :'DQ',              #Name of data quality extension
+                           'key_mdf'    :'MASKNAME',        #Header keyword for the Mask Definition File
+                           'mdffile'    :'',                #MDF file to use if keyword not found
+                           'mdfdir'     :'',                #MDF database directory
+                           'bpm'        :'',                #Bad pixel mask
+                           #'giandb'     :'default',        #Database with gain data
+                           'sat'        :65000,             #Saturation level in raw images [ADU]
+                           'key_nodcount':"NODCOUNT",       #Header keyword with number of nod cycles
+                           'key_nodpix' :"NODPIX",          #Header keyword with shuffle distance
+                           'key_filter' :"FILTER2",         #Header keyword of filter
+                           'key_ron'    :"RDNOISE",         #Header keyword for readout noise
+                           'key_gain'   :"GAIN",            #Header keyword for gain (e-/ADU)
+                           'ron'        :3.5,               #Readout noise in electrons
+                           'gain'       :2.2,               #Gain in e-/ADU
+                           'fl_mult'    :yes, #$$$$$$$$$    #Multiply by gains to get output in electrons
+                           'fl_inter'   :no,                #Interactive overscan fitting?
+                           'median'     :no,                #Use median instead of average in column bias?
+                           'function'   :"chebyshev",       #Overscan fitting function
+                           'nbiascontam':4, #$$$$$$$        #Number of columns removed from overscan region
+                           'biasrows'   :"default",         #Rows to use for overscan region
+                           'order'      :1,                 #Order of overscan fitting function
+                           'low_reject' :3.0,               #Low sigma rejection factor in overscan fit
+                           'high_reject':3.0,               #High sigma rejection factor in overscan fit
+                           'niterate'   :2,                 #Number of rejection iterations in overscan fit
+                           'logfile'    :'',                #Logfile
+                           'verbose'    :yes,               #Verbose?
+                           'status'     :0,                 #Exit status (0=good)
                            'Stdout'      :IrafStdout(),
                            'Stderr'      :IrafStdout()
                            }
     if CLscript=='giflat':
         defaultParams={ 
-                       'inflats'    :'',
-                       'outflat'    :"",
-                       'normsec'    :'default',
-                       'fl_scale'   :yes,
-                       'sctype'     :"mean",
-                       'statsec'    :"default",
-                       'key_gain'   :"GAIN",
-                       'fl_stamp'   :no,
-                       'sci_ext'    :'SCI',
-                       'var_ext'    :'VAR',
-                       'dq_ext'     :'DQ',
-                       'fl_vardq'   :no,
-                       'sat'        :65000,
-                       'verbose'    :yes,
-                       'logfile'    :'',
-                       'status'     :0,
-                       'combine'    :"average",
-                       'reject'     :"avsigclip",
-                       'lthreshold' :'INDEF',
-                       'hthreshold' :'INDEF',
-                       'nlow'       :0,
-                       'nhigh'      :1,
-                       'nkeep'      :1,
-                       'mclip'      :yes,
-                       'lsigma'     :3.0,
-                       'hsigma'     :3.0,
-                       'sigscale'   :0.1,
-                       'grow'       :0.0,
-                       'gp_outpref' :'g',
-                       'rawpath'    :'',
-                       'key_ron'    :"RDNOISE",
-                       'key_datasec':'DATASEC',
-                       #'giandb'     :'default',
-                       'bpm'        :'',
-                       'gi_outpref' :'r',
-                       'bias'       :'',
-                       'fl_over'    :no,
-                       'fl_trim'    :no,
-                       'fl_bias'    :no,
-                       'fl_inter'   :no,
-                       'nbiascontam':4, #$$$$$$$$$$$$$$$$$$$$$$$$
-                       'biasrows'   :"default",
-                       'key_biassec':'BIASSEC',
-                       'median'     :no,
-                       'function'   :"chebyshev",
-                       'order'      :1,
-                       'low_reject' :3.0,
-                       'high_reject':3.0,
-                       'niterate'   :2,
+                       'inflats'    :'',            #Input flat field images
+                       'outflat'    :"",            #Output flat field image
+                       'normsec'    :'default',     #Image section to get the normalization.
+                       'fl_scale'   :yes,           #Scale the flat images before combining?
+                       'sctype'     :"mean",        #Type of statistics to compute for scaling
+                       'statsec'    :"default",     #Image section for relative intensity scaling
+                       'key_gain'   :"GAIN",        #Header keyword for gain (e-/ADU)
+                       'fl_stamp'   :no,            #Input is stamp image
+                       'sci_ext'    :'SCI',         #Name of science extension
+                       'var_ext'    :'VAR',         #Name of variance extension
+                       'dq_ext'     :'DQ',          #Name of data quality extension
+                       'fl_vardq'   :no,            #Create variance and data quality frames?
+                       'sat'        :65000,         #Saturation level in raw images (ADU)
+                       'verbose'    :yes,           #Verbose output?
+                       'logfile'    :'',            #Name of logfile
+                       'status'     :0,             #Exit status (0=good)
+                       'combine'    :"average",     #Type of combine operation
+                       'reject'     :"avsigclip",   #Type of rejection in flat average
+                       'lthreshold' :'INDEF',       #Lower threshold when combining
+                       'hthreshold' :'INDEF',       #Upper threshold when combining
+                       'nlow'       :0,             #minmax: Number of low pixels to reject
+                       'nhigh'      :1,             #minmax: Number of high pixels to reject
+                       'nkeep'      :1,             #avsigclip: Minimum to keep (pos) or maximum to reject (neg)
+                       'mclip'      :yes,           #avsigclip: Use median in clipping algorithm?
+                       'lsigma'     :3.0,           #avsigclip: Lower sigma clipping factor
+                       'hsigma'     :3.0,           #avsigclip: Upper sigma clipping factor
+                       'sigscale'   :0.1,           #avsigclip: Tolerance for clipping scaling corrections
+                       'grow'       :0.0,           #minmax or avsigclip: Radius (pixels) for neighbor rejection
+                       'gp_outpref' :'g',           #Gprepare prefix for output images
+                       'rawpath'    :'',            #GPREPARE: Path for input raw images
+                       'key_ron'    :"RDNOISE",     #Header keyword for readout noise
+                       'key_datasec':'DATASEC',     #Header keyword for data section
+                       #'giandb'     :'default',    #Database with gain data
+                       'bpm'        :'',            #Bad pixel mask
+                       'gi_outpref' :'r',           #Gireduce prefix for output images
+                       'bias'       :'',            #Bias calibration image
+                       'fl_over'    :no,            #Subtract overscan level?
+                       'fl_trim'    :no,            #Trim images?
+                       'fl_bias'    :no,            #Bias-subtract images?
+                       'fl_inter'   :no,            #Interactive overscan fitting?
+                       'nbiascontam':4, #$$$$$$$    #Number of columns removed from overscan region
+                       'biasrows'   :"default",     #Rows to use for overscan region
+                       'key_biassec':'BIASSEC',     #Header keyword for overscan image section
+                       'median'     :no,            #Use median instead of average in column bias?
+                       'function'   :"chebyshev",   #Overscan fitting function.
+                       'order'      :1,             #Order of overscan fitting function.
+                       'low_reject' :3.0,           #Low sigma rejection factor.
+                       'high_reject':3.0,           #High sigma rejection factor.
+                       'niterate'   :2,             #Number of rejection iterations.
                        'Stdout'      :IrafStdout(),
                        'Stderr'      :IrafStdout()
                        }      
