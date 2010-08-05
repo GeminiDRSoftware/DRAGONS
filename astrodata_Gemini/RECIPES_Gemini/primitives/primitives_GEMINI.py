@@ -11,6 +11,8 @@ import numpy as np
 import pyfits
 from datetime import datetime
 log=gemLog.getGeminiLog()
+yes = pyraf.iraf.yes
+no = pyraf.iraf.no
 if True:
 
     from pyraf.iraf import tables, stsdas, images
@@ -660,11 +662,38 @@ class GEMINIPrimitives(PrimitiveSet):
                 clm=CLManager(rc)
                 clm.LogCurParams()
                 
+                # params set by the CLManager or the definition of the prim 
+                clPrimParams={
+                              'input'       :clm.inputList(),
+                              'output'      :clm.combineOutname(), # maybe allow the user to override this in the future. 
+                              'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                              'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                              'logfile'     :'TEMP.log', # this is actually in the default dict but wanted to show it again
+                              'verbose'     :yes # this is actually in the default dict but wanted to show it again
+                              }
+                
+                # params from the Parameter file adjustable by the user
+                clSoftcodedParams={
+                                    'fl_vardq'      :rc["fl_vardq"],
+                                    'fl_dqprop'     :pyrafBoolean(rc['fl_dqprop']),
+                                    'combine'       :rc['method'],
+                                    'reject'        :"none"
+                                    }
+                 
+                # grabbing the default params dict and updating it with the two above dicts
+                clParamsDict=CLDefaultParamsDict('gemcombine')
+                clParamsDict.update(clPrimParams)
+                clParamsDict.update(clSoftcodedParams)
+                 
                 log.fullinfo('calling the gemcombine CL script', 'status')
-                gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine=rc['method'], reject="none",\
-                                  fl_vardq=pyrafBoolean(rc['fl_vardq']), fl_dqprop=pyrafBoolean(rc['fl_dqprop']),\
-                                   Stdout = IrafStdout(), Stderr = IrafStdout(),\
-                                   logfile='temp.log',verbose=pyrafBoolean(True))
+                
+                gemini.gemcombine(**clParamsDict)
+                
+                #gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine=rc['method'], reject="none",\
+                #                  fl_vardq=pyrafBoolean(rc['fl_vardq']), fl_dqprop=pyrafBoolean(rc['fl_dqprop']),\
+                #                   Stdout = IrafStdout(), Stderr = IrafStdout(),\
+                #                   logfile='temp.log',verbose=pyrafBoolean(True))
+                
                 if gemini.gemcombine.status:
                     log.critical('gemcombine failed','critical')
                     raise 
@@ -673,6 +702,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     
                 # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
                 clm.finishCL(combine=True) 
+                os.remove(clPrimParams['logfile'])
                 #clm.rmStackFiles() #$$$$$$$$$ DON"T do this if intermediate outputs are wanted!!!!
                 ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
                 
@@ -735,23 +765,58 @@ class GEMINIPrimitives(PrimitiveSet):
         
         yield rc 
              
-                
+def CLDefaultParamsDict(CLscript):
+    '''
+    A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
+    '''
+    if CLscript=='gemcombine':
+        defaultParams={
+                       'input'      :'',            #Input MEF images
+                       'output'     :"",            #Output MEF image
+                       'title'      :'DEFAULT',     #Title for output SCI plane
+                       'combine'    :"average",     #Combination operation
+                       'reject'     :"avsigclip",   #Rejection algorithm
+                       'offsets'    :"none",        #Input image offsets
+                       'masktype'   :"none",        #Mask type
+                       'maskvalue'  :0.0,           #Mask value
+                       'scale'      :"none",        #Image scaling
+                       'zero'       :"none",        #Image zeropoint offset
+                       'weight'     :"none",        #Image weights
+                       'statsec'    :"[*,*]",       #Statistics section
+                       'expname'    :"EXPTIME",     #Exposure time header keyword
+                       'lthreshold' :'INDEF',       #Lower threshold
+                       'hthreshold' :'INDEF',       #Upper threshold
+                       'nlow'       :1,             #minmax: Number of low pixels to reject
+                       'nhigh'      :1,             #minmax: Number of high pixels to reject
+                       'nkeep'      :1,             #Minimum to keep or maximum to reject
+                       'mclip'      :yes,           #Use median in sigma clipping algorithms?
+                       'lsigma'     :3.0,           #Lower sigma clipping factor
+                       'hsigma'     :3.0,           #Upper sigma clipping factor
+                       'key_ron'    :"RDNOISE",     #Keyword for readout noise in e-
+                       'key_gain'   :"GAIN",        #Keyword for gain in electrons/ADU
+                       'ron'        :0.0,           #Readout noise rms in electrons
+                       'gain'       :1.0,           #Gain in e-/ADU
+                       'snoise'     :"0.0",         #ccdclip: Sensitivity noise (electrons
+                       'sigscale'   :0.1,           #Tolerance for sigma clipping scaling correction                                
+                       'pclip'      :-0.5,          #pclip: Percentile clipping parameter
+                       'grow'       :0.0,           #Radius (pixels) for neighbor rejection
+                       'bpmfile'    :'',            #Name of bad pixel mask file or image.
+                       'nrejfile'   :'',            #Name of rejected pixel count image.
+                       'sci_ext'    :'SCI',         #Name(s) or number(s) of science extension
+                       'var_ext'    :'VAR',         #Name(s) or number(s) of variance extension
+                       'dq_ext'     :'DQ',          #Name(s) or number(s) of data quality extension
+                       'fl_vardq'   :no,            #Make variance and data quality planes?
+                       'logfile'    :'',            #Log file
+                       'fl_dqprop'  :no,            #Propagate all DQ values?
+                       'verbose'    :yes,           #Verbose output?
+                       'status'     :0,             #Exit status (0=good)
+                       'Stdout'     :IrafStdout(),
+                       'Stderr'     :IrafStdout()
+                       }
+        return defaultParams                  
+                       
+                       
+                                       
 #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
-# 
-# # TEMP PRIM FOR PLAYING WITH BIAS AND FLAT FILE TO BE MADE INTO BPM FILES
-#    def ccdsumloop(self, rc):
-#        try:
-#            for ad in rc.getInputs(style='AD'):
-#                print 'prim_g712: ',ad.filename
-#                print 'prim_G715: EXPOSURE=',ad.phuGetKeyValue('EXPOSURE')
-#                for sciExt in ad['SCI']:
-#                    print 'prim_G714: ',sciExt.getKeyValue('CCDSUM')
-#                    
-#        except:
-#            log.critical("Problem writing the image.",'critical')
-#            raise 
-#        
-#        yield rc 
-
 
     
