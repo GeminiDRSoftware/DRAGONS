@@ -340,7 +340,38 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
             
     #-----------------------------------------------------------------------
-    
+   
+    def getProcessedFlat(self,rc):
+        '''
+        a prim that works with the calibration system (MAYBE), but as it isn't written yet this simply
+        copies the bias file from the stored processed bias directory and reports its name to the
+        reduction context. this is the basic form that the calibration system will work as well but 
+        with proper checking for what the correct bias file would be rather than my oversimplified checking
+        the binning alone.
+        '''
+        try:
+            packagePath=sys.argv[0].split('gemini_python')[0]
+            calPath='gemini_python/test_data/test_cal_files/processed_flats/'
+            
+            for ad in rc.getInputs(style='AD'):
+                if ad.extGetKeyValue(1,'CCDSUM')=='1 1':
+                    log.error('NO 1x1 PROCESSED BIAS YET TO USE','error')
+                    raise 'error'
+                elif ad.extGetKeyValue(1,'CCDSUM')=='2 2':
+                    flatfilename = 'N20020211S156_preparedFlat.fits'
+                    if not os.path.exists(os.path.join('.reducecache/storedcals/retrievedflats',flatfilename)):
+                        shutil.copy(packagePath+calPath+flatfilename, '.reducecache/storedcals/retrievedflats')
+                    rc.addCal(ad,'flat',os.path.join('.reducecache/storedcals/retrievedflats',flatfilename))
+                else:
+                    log.error('CCDSUM is not 1x1 or 2x2 for the input image!!', 'error')
+           
+        except:
+            log.critical("Problem preparing the image.",'critical')
+            raise 
+        
+        yield rc
+        
+     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def biasCorrect(self, rc):
         '''
         This primitive will subtract the biases from the inputs using the CL script gireduce.
