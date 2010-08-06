@@ -31,6 +31,26 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_airmass
     
+    def cass_rotator_pa(self, dataset, **args):
+        """
+        Return the cassegrain rotator position angle value for GEMINI data
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: float
+        @return: the crpa for the observation
+        """
+        hdu = dataset.hdulist
+        crpa = hdu[0].header[globalStdkeyDict['key_cass_rotator_pa']]
+
+        if (crpa < -999.0) or (crpa > 999.0):
+            ret_crpa = None
+        else:
+            ret_crpa = float(crpa)
+
+        return ret_crpa
+
+
+
     def data_label(self, dataset, **args):
         """
         Return the data_label value for GEMINI data
