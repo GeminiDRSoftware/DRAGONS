@@ -16,6 +16,7 @@ from iqtool.iq import getiq
 from gempy.instruments.gemini import *
 from gempy.instruments.gmos import *
 
+
 import pyfits
 import numdisplay
 import string
@@ -247,7 +248,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # updating the GEM-TLM value and reporting the output to the RC    
                 ut = ad.historyMark()
                 #$$$$$ should we also have a OVERTRIM UT time same in the PHU???
-                ad.filename=fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
+                ad.filename=fileNameUpdater(ad.filename,postpend=rc["outpref"], strip=False)
                 rc.reportOutput(ad)
                 
                 # updating logger with updated/added keywords to the PHU
@@ -396,7 +397,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
              # params set by the CLManager or the definition of the prim 
             clPrimParams={
-                          'inimages'    :clm.inputList(),
+                          'inimages'    :clm.inputsAsStr(),
                           'gp_outpref'  :clm.uniquePrefix(),
                           'fl_bias'     :yes,
                           'bias'       :processedBias, #possibly add this to the prameters file so the user can override this file
@@ -531,6 +532,30 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* combining and normalizing the input flats', 'status')
         except:
             print "Problem subtracting bias"
+            raise
+            
+        yield rc
+    #------------------------------------------------------------------------------------------
+    def flatCorrect(self,rc):
+        '''
+        This primitive performs a flat correction by deviding the inputs by aprocessed flat similar
+        to the way gireduce would perform this operation but written in pure python.
+        '''
+        try:
+            log.status('*STARTING* to flat correct the inputs','status')
+            ad=rc.getInputs(style='AD')[0]
+            processedFlat=AstroData(rc.getCal(ad,'flat'))
+            
+            for ad in rc.getInputs(style='AD'):
+                log.fullinfo('calling ad.div','fullinfo')
+                adOut = ad.div(processedFlat)
+                ut = adOut.historyMark()
+                adOut.filename=fileNameUpdater(ad.filename,postpend=rc["outpref"], strip=False)
+                rc.reportOutput(adOut)   
+                
+            log.status('*FINISHED* flat correcting the inputs','status')    
+        except:
+            print "Problem flat correcting the input"
             raise
             
         yield rc
