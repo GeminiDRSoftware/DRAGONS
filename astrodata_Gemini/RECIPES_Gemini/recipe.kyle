@@ -1,6 +1,10 @@
+getProcessedBias
 prepare
-#overscanSubtract
-#overscanTrim
-#calculateDQ
-#avgCombine
-#ccdsumloop
+overscanCorrect
+addVARDQ
+biasCorrect
+
+getProcessedFlat
+flatCorrect
+
+writeOutputs
