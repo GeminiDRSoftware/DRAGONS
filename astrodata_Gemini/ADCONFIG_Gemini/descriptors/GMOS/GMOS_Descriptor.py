@@ -519,6 +519,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_mdf_row_id
     
+    def non_linear_level(self, dataset, **args):
+        """
+        Return the non_linear_level value for GMOS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: integer
+        @return: the non linear level in the raw images (ADU)
+        """
+        ret_non_linear_level = dataset.saturation_level()
+        
+        return ret_non_linear_level
+    
     def observation_mode(self, dataset, **args):
         """
         Return the observation_mode value for GMOS
@@ -702,7 +714,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         @rtype: integer
         @return: the saturation level in the raw images (ADU)
         """
-        ret_saturation_level = int(65000)
+        ret_saturation_level = int(65536)
         
         return ret_saturation_level
     
