@@ -9,6 +9,7 @@ from sets import Set
 from gempy.instruments.gemini import *
 import numpy as np
 import pyfits
+import pyraf
 from datetime import datetime
 log=gemLog.getGeminiLog()
 yes = pyraf.iraf.yes
@@ -736,6 +737,7 @@ class GEMINIPrimitives(PrimitiveSet):
         have a full file name in mind for a SINGLE file being ran through Reduce you may use writeOutputs(outfilename='name.fits').
         '''
         try:
+            log.status('*STARTING* to write the outputs','status')
             log.status('postpend = '+str(rc["postpend"]),'status')
             log.status('prepend = '+str(rc["prepend"]),'status')
             for ad in rc.getInputs(style="AD"):
@@ -758,7 +760,7 @@ class GEMINIPrimitives(PrimitiveSet):
             # clearing the value of 'postpend' and 'prepend' in the RC so they don't persist to the next writeOutputs call and screw it up
             rc["postpend"]=None
             rc['prepend']=None
-                
+            log.status('*FINISHED* writting the outputs','status')   
         except:
             log.critical("Problem writing the image.",'critical')
             raise 
