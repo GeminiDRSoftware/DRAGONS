@@ -11,6 +11,8 @@ import Descriptors
 from gemconstants import *
 import Calculator
 
+from astrodata.adutils import arith
+
 try:
     from CalculatorInterface import CalculatorInterface
 except ImportError:
@@ -1370,6 +1372,12 @@ lse, the return value is a list which is in fact
              self.phuSetKeyValue('GEM-TLM',self.tlm,'UT Last modification with GEMINI')     
         
         return self.tlm
+    #-------------------------------------------------------
+    
+    def div(self,denominator):
+        
+        adOut=arith.div(self,denominator)
+        return adOut
         
 # SERVICE FUNCTIONS and FACTORIES
 def correlate( *iary):
