@@ -27,7 +27,7 @@
                             'userOverride':True
                             }
                         },
-        "overscanTrim":{"outsuffix":
+        "overscanTrim":{"outpref":
                           {
                            'default': '_overtrimd' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
@@ -123,5 +123,15 @@
                           'userOverride':False, 
                           'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            }
-                          }
+                          },
+        'flatCorrect':{
+                       'outpref':
+                       {
+                        'default': '_FlatCorrected' , 
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':False  
+                        
+                        }
+                       }
 }
