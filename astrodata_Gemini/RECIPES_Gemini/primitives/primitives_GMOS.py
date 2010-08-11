@@ -603,7 +603,7 @@ def CLDefaultParamsDict(CLscript):
                            'key_gain'   :"GAIN",            #Header keyword for gain (e-/ADU)
                            'ron'        :3.5,               #Readout noise in electrons
                            'gain'       :2.2,               #Gain in e-/ADU
-                           'fl_mult'    :yes, #$$$$$$$$$    #Multiply by gains to get output in electrons
+                           'fl_mult'    :no, #$$$$$$$$$     #Multiply by gains to get output in electrons
                            'fl_inter'   :no,                #Interactive overscan fitting?
                            'median'     :no,                #Use median instead of average in column bias?
                            'function'   :"chebyshev",       #Overscan fitting function
