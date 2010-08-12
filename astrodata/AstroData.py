@@ -1378,7 +1378,19 @@ lse, the return value is a list which is in fact
         
         adOut=arith.div(self,denominator)
         return adOut
-        
+    
+    def mult(self,inputB):
+        adOut=arith.mult(self,inputB)
+        return adOut
+    
+    def add(self,inputB):
+        adOut=arith.add(self,inputB)
+        return adOut
+    
+    def sub(self,inputB):
+        adOut=arith.sub(self,inputB)
+        return adOut
+    
 # SERVICE FUNCTIONS and FACTORIES
 def correlate( *iary):
     """
