@@ -726,7 +726,23 @@ class GEMINIPrimitives(PrimitiveSet):
             raise 
         
         yield rc   
+        
+    #------------------------------------------------------------------------
+    
+    def ADUtoElectrons(self,rc):
+        '''
+        '''
+        try:
             
+            for ad in rc.getInputs(style='AD'):
+                
+                ad.mult(ad['SCI'].gain(asList=True))
+            
+        except:
+            log.critical("Problem combining the images.",'critical',)
+            raise 
+        
+        yield rc         
    #--------------------------------------------------------------------------                
 
     def writeOutputs(self,rc, clob = False):
