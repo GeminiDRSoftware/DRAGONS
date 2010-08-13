@@ -367,8 +367,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_focal_plane_mask = str(focal_plane_mask)
         
         return ret_focal_plane_mask
-    
-    def gain(self, dataset, asList=False, **args):
+
+    def gain(self, dataset, asList=False, asDict = False, **args):
         """
         Return the gain value for GMOS
         @param dataset: the data set
@@ -383,9 +383,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
-        
-        if asList:
-            ret_gain = []
+        dataset=dataset['SCI']
+        if asList or asDict:
+            if asList:
+                ret_gain = []
+            elif asDict:
+                ret_gain = {}
+            
             if dataset.countExts('SCI') <= 1:
                 # Descriptors must work for all AstroData Types so
                 # check if the original gain keyword exists to use for
@@ -428,7 +432,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     else:
                         gain = self.gmosampsGainBefore20060831[gainkey]
                     
-                    ret_gain.append(gain)
+                    if asList:
+                        ret_gain.append(gain)
+                    elif asDict:
+                        ret_gain.update({(ext.extname(), ext.extver()):gain})
         else:
             if dataset.countExts('SCI') <= 1:
                 # Descriptors must work for all AstroData Types so
