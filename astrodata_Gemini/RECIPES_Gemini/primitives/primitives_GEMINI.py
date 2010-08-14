@@ -369,7 +369,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GEMINIException
         
         yield rc
 
@@ -410,7 +410,7 @@ class GEMINIPrimitives(PrimitiveSet):
  
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise
+            raise GEMINIException
                      
         yield rc
         
@@ -457,7 +457,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 
         except:
             log.critical("Problem preparing the image.",'critical',)
-            raise 
+            raise GEMINIException
         
         yield rc 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -525,7 +525,7 @@ class GEMINIPrimitives(PrimitiveSet):
      
         except:
             log.critical("Problem adding the VARDQ to the image.",'critical',)
-            raise 
+            raise GEMINIException
         
         yield rc 
       
@@ -641,7 +641,7 @@ class GEMINIPrimitives(PrimitiveSet):
 
         except:
             log.critical("Problem adding the VARDQ to the image.",'critical',)
-            raise 
+            raise GEMINIException
         
         yield rc 
         
@@ -723,7 +723,7 @@ class GEMINIPrimitives(PrimitiveSet):
         
         except:
             log.critical("Problem combining the images.",'critical',)
-            raise 
+            raise GEMINIException
         
         yield rc   
         
@@ -731,16 +731,56 @@ class GEMINIPrimitives(PrimitiveSet):
     
     def ADUtoElectrons(self,rc):
         '''
+        This primitive will convert the inputs from pixel units of ADU to electrons
         '''
         try:
-            
+            log.status('*STARTING* to convert the pixel values from ADU to electrons','status')
             for ad in rc.getInputs(style='AD'):
+                adOut = ad.mult(ad['SCI'].gain(asDict=True))  
+                ut = adOut.historyMark()
+                adOut.historyMark('ADU2ELEC',stomp=False)
+                adOut.filename=fileNameUpdater(ad.filename,postpend=rc["outpref"], strip=False)
+                #print adOut.info()
+                log.fullinfo('****************************************************','header')
+                log.fullinfo('file = '+adOut.filename,'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+str(ut),'header' )
+                log.fullinfo('ADU2ELEC = '+str(ut),'header' )
+                log.fullinfo('---------------------------------------------------','header')
                 
-                ad.mult(ad['SCI'].gain(asList=True))
-            
+                # updating SCI headers
+                for ext in adOut["SCI"]:
+                    gainorig=ext.gain()
+                    ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'GAINORIG', gainorig, 'Gain prior to unit conversion (e-/ADU)')
+                    ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'GAIN', 1.0, "Gain (e-/ADU)")
+                    ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'BUNIT','electrons' , 'Physical units')
+                    
+                    log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+' keywords updated/added:\n', 'header')
+                    log.fullinfo('GAINORIG = '+str(gainorig),'header' )
+                    log.fullinfo('GAIN = '+str(1.0),'header' )
+                    log.fullinfo('BUNIT = '+'electrons','header' )
+                    log.fullinfo('---------------------------------------------------','header')
+                # updating VAR headers if they exist    
+                if adOut.countExts('VAR')==adOut.countExts('SCI'):
+                    for ext in adOut["VAR"]:
+                        gainorig=adOut.extGetKeyValue(('SCI',ext.extver()),'GAINORIG')
+                        
+                        ext.extSetKeyValue(('VAR',int(ext.header['EXTVER'])),'GAINORIG', gainorig, 'Gain prior to unit conversion (e-/ADU)')
+                        ext.extSetKeyValue(('VAR',int(ext.header['EXTVER'])),'GAIN', gainorig*gainorig, "Gain (e-/ADU)")
+                        ext.extSetKeyValue(('VAR',int(ext.header['EXTVER'])),'BUNIT','electrons squared' , 'Physical units')
+                        
+                        log.fullinfo('VAR extension number '+str(ext.header['EXTVER'])+' keywords updated/added:\n', 'header')
+                        log.fullinfo('GAINORIG = '+str(gainorig),'header' )
+                        log.fullinfo('GAIN = '+str(gainorig*gainorig),'header' )
+                        log.fullinfo('BUNIT = '+'electrons squared','header' )
+                        log.fullinfo('---------------------------------------------------','header')
+                rc.reportOutput(adOut)   
+                
+            log.status('*FINISHED* converting the pixels units to electrons','status')
         except:
-            log.critical("Problem combining the images.",'critical',)
-            raise 
+            log.critical("Problem converting the pixel units of the images.",'critical',)
+            raise GEMINIException
         
         yield rc         
    #--------------------------------------------------------------------------                
@@ -779,7 +819,7 @@ class GEMINIPrimitives(PrimitiveSet):
             log.status('*FINISHED* writting the outputs','status')   
         except:
             log.critical("Problem writing the image.",'critical')
-            raise 
+            raise GEMINIException
         
         yield rc 
              
