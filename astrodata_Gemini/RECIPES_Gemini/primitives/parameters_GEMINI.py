@@ -131,6 +131,14 @@
                       'type': 'bool',
                       'userOverride':True 
                     },   
-                          }
+                          },
+    'ADUtoElectrons':{'outpref':
+                      {
+                    'default': '_aduToElect' , #value to be post pended to this primitives outputs
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':True 
+                       }
+                      }
 }    
 
