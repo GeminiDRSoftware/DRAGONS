@@ -106,7 +106,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc       
         
@@ -130,7 +130,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc
 
@@ -185,7 +185,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
             if gemini.gmos.gireduce.status:
                 log.critical('gireduce failed','critical') 
-                raise "gireduce exception"
+                raise GMOSException("gireduce exception")
             else:
                 log.fullinfo('exited the gireduce CL script successfully', 'status')
          
@@ -209,7 +209,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* subtracting the overscan from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc    
     #--------------------------------------------------------------------------------------------    
@@ -261,7 +261,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* trimming the overscan region from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc
     #---------------------------------------------------------------------------    
@@ -283,7 +283,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* storing the processed bias on disk','status')
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc
     
@@ -306,7 +306,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* storing the processed bias on disk','status')
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -336,7 +336,7 @@ class GMOSPrimitives(GEMINIPrimitives):
            
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc
             
@@ -368,7 +368,7 @@ class GMOSPrimitives(GEMINIPrimitives):
            
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise 
+            raise GMOSException
         
         yield rc
         
@@ -429,7 +429,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             if gemini.gmos.gireduce.status:
                  log.critical('gireduce failed','critical') 
-                 raise
+                 raise GMOSException('gireduce failed')
             else:
                  log.fullinfo('exited the gireduce CL script successfully', 'status')
             
@@ -454,7 +454,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* subtracting the bias from the input flats','status')
         except:
             print "Problem subtracting bias"
-            raise
+            raise GMOSException
             
         yield rc
     #---------------------------------------------------------------------------
@@ -507,7 +507,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             if gemini.giflat.status:
                 log.critical('giflat failed','critical')
-                raise 
+                raise GMOSException('giflat failed')
             else:
                 log.fullinfo('exited the giflat CL script successfully', 'status')
                 
@@ -532,7 +532,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* combining and normalizing the input flats', 'status')
         except:
             print "Problem subtracting bias"
-            raise
+            raise GMOSException
             
         yield rc
     #------------------------------------------------------------------------------------------
@@ -552,11 +552,16 @@ class GMOSPrimitives(GEMINIPrimitives):
                 ut = adOut.historyMark()
                 adOut.filename=fileNameUpdater(ad.filename,postpend=rc["outpref"], strip=False)
                 rc.reportOutput(adOut)   
-                
+                log.fullinfo('****************************************************','header')
+                log.fullinfo('file = '+adOut.filename,'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+str(ut),'header' )
+                log.fullinfo('---------------------------------------------------','header')    
             log.status('*FINISHED* flat correcting the inputs','status')    
         except:
             print "Problem flat correcting the input"
-            raise
+            raise GMOSException
             
         yield rc
         
