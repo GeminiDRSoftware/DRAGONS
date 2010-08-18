@@ -496,7 +496,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     log.fullinfo('****************************************************','header')
                     log.fullinfo('file = '+ad.filename,'header')
                     log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
-                    log.fullinfo('SCI extension number '+str(sciExt.extver())+' keywords updated/added:\n', 'header')
+                    log.fullinfo('VAR extension number '+str(sciExt.extver())+' keywords updated/added:\n', 'header')
                     log.fullinfo('BITPIX= '+str(32),'header' )
                     log.fullinfo('NAXIS= '+str(2),'header' )
                     log.fullinfo('EXTNAME= '+'VAR','header' )
@@ -611,12 +611,12 @@ class GEMINIPrimitives(PrimitiveSet):
                     log.fullinfo('****************************************************','header')
                     log.fullinfo('file = '+ad.filename,'header')
                     log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
-                    log.fullinfo('SCI extension number '+str(sciExt.extver())+' keywords updated/added:\n', 'header')
+                    log.fullinfo('DQ extension number '+str(sciExt.extver())+' keywords updated/added:\n', 'header')
                     log.fullinfo('BITPIX= '+str(16),'header' )
                     log.fullinfo('NAXIS= '+str(2),'header' )
                     log.fullinfo('BUNIT= '+'bit','header' )
                     log.fullinfo('BPMFILE= '+BPMfilename,'header' )
-                    log.fullinfo('EXTNAME= '+'VAR','header' )
+                    log.fullinfo('EXTNAME= '+'DQ','header' )
                     log.fullinfo('EXTVER= '+str(sciExt.extver()),'header' )
                     log.fullinfo('---------------------------------------------------','header')
                 
@@ -822,7 +822,23 @@ class GEMINIPrimitives(PrimitiveSet):
             raise GEMINIException
         
         yield rc 
-             
+# TEMP prim for testing gain values of inputs #######################################################
+    def gotGain(self,rc):
+        for ad in rc.getInputs(style='AD'):
+            print ad.info()
+            for sci in ad:
+                print ad.filename, ' extension ', str(sci.extname()),str(sci.extver())
+                try:
+                    print 'GAIN = ',str(sci.getKeyValue('GAIN'))
+                except:
+                    print 'no GAIN value'
+                try:
+                    print 'GAINORIG = ',sci.getKeyValue('GAINORIG')        
+                except:
+                    print 'no GAINORIG value'
+        yield rc
+# end of temp test prim ###################################################################   
+         
 def CLDefaultParamsDict(CLscript):
     '''
     A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
@@ -876,5 +892,5 @@ def CLDefaultParamsDict(CLscript):
                        
                                        
 #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
-
+    
     
