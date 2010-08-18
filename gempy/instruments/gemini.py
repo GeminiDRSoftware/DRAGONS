@@ -59,7 +59,7 @@ def stdObsHdrs(ad):
             nonlin = 'None'     #if no nonlinear section provided then set to string 'None'
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'NONLINEA',nonlin , 'Non-linear regime level in ADU')
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'SATLEVEL',ext.saturation_level() , 'Saturationlevel in ADU')
-        ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'EXPTIME', effExpTime , 'Saturationlevel in ADU')
+        ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'EXPTIME', effExpTime , 'Effective exposure time')
         log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+' keywords updated/added:\n', 'header')
         log.fullinfo('GAIN = '+str(ext.gain()),'header' )
         log.fullinfo('PIXSCALE = '+str(ext.pixel_scale()),'header' )
