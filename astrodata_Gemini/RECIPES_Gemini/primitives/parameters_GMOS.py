@@ -133,5 +133,47 @@
                           'userOverride':False  
                         
                         }
-                       }
+                       },
+        'mosaic':{
+                  "fl_paste":
+                          {
+                           'default': False ,
+                          'recipeOverride': True,
+                          'type': 'bool',
+                          'userOverride':True,  
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+                           },
+                  'outpref':
+                       {
+                        'default': '_mosaic' , 
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':False  ,
+                        'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+                        },
+                        "outimages":
+                          {
+                           'default': '' ,
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':True,  
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+                           },
+                        "geointer":
+                          {
+                           'default': 'linear' ,
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':True,  
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+                           },
+                           "fl_fixpix":
+                          {
+                           'default': False ,
+                          'recipeOverride': True,
+                          'type': 'bool',
+                          'userOverride':True,  
+                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+                           },
+                  }
 }
