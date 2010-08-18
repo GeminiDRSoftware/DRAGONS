@@ -7,27 +7,33 @@ from astrodata.AstroData import AstroData
 import astrodata
 log=gemLog.getGeminiLog() 
 
+class ArithExcept:
+    def __init__(self, msg="Exception Raised in arith toolbox"):
+        self.message = msg
+    def __str__(self):
+        return self.message
+
 def div(numerator, denominator):
     '''
     A function to divide a input science image by a another image(or flat) or an floating point integer.
     If the denominator is a AstroData MEF then this function will loop through the SCI, VAR and DQ frames
     to divide each SCI of the numerator by the denominator SCI of the same EXTVER. It will apply a 
     bitwise-or to the DQ frames to preserve their binary formats.
-    If the denominator is a float integer then only the SCI frames of the numerator are each divided by the int.
+    If the denominator is a float integer then only the SCI frames of the numerator are each divided by the float.
     
     @param numerator: input image to be divided by the denominator
     @type numerator: a MEF or single extension fits file in the form of an AstroData instance
     
     @param denominator: denominator to divide the numerator by
-    @type denominator: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float int  
+    @type denominator: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance, a float 
+                        list, a single float (list must be in order of the SCI extension EXTVERs) OR 
+                        a dictionary of the format {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
+                        of the SCI extensions and ## are the corresponding float values to multiply that extension by.
     '''
     num=numerator
     den=denominator 
     from copy import deepcopy
-    out=AstroData.prepOutput(inputAry = num, clobber = False)
-    #out=deepcopy(num)
-    #print out.info()
-    #print 'a30: type(den) ',type(den), den.filename,(type(den)==astrodata.AstroData)
+    out=AstroData.prepOutput(inputAry = num, clobber = False)      
     if type(den)==astrodata.AstroData:
         #print 'a30: den is type AstroData'
         for sci in num['SCI']:
@@ -70,42 +76,36 @@ def div(numerator, denominator):
                     else:
                         log.critical('arrays are different sizes for SCI extension '+str(extver)+' of the input '\
                                      +num.filename+' and '+den.filename,'critical')
-                        raise 'An error occurred while performing an arith task'
+                        raise ArithExcept('An error occurred while performing an arith task')
                 
             except:
-                raise 'An error occurred while performing an arith task'
-    elif type(den)==float:
-        for sci in num['SCI']:
-            extver = sci.extver()
-            outsci = deepcopy(num[('SCI',extver)]) # we assume there are at least SCI extensions in the input
+                raise ArithExcept('An error occurred while performing an arith task')
+
+    elif type(den)==dict or type(den)==list or type(den)==float:
+        # creating the dict if input is a float or float list
+        if type(den)==float: 
+            denDict={}
+            for ext in num['SCI']:
+                extver=ext.extver()
+                denDict[('SCI',extver)]=den
+                print repr(denDict)
+        if type(den)==list:    
+            denDict={}
+            for ext in num['SCI']:
+                extver=ext.extver()
+                denDict[('SCI',extver)]=den[extver-1]
+                print repr(denDict)
+        if type(den)==dict:
+            denDict=den
+        
+        for extver in range(1,num.countExts("SCI")+1):
+            int=denDict[('SCI',extver)]
+            outsci=deepcopy(num[('SCI',extver)]) #$$$ since the dict has the extname we could make this more general??
             try:
-                #print 'a53: simple division of SCI frames by the float '+str(den)
-                # dividing the SCI frames by the constant
-                outsci.data=np.divide(num[('SCI',extver)].data,den)
+                outsci.data=np.divide(num[('SCI',extver)].data,int)  
                 out.append(outsci)
                 if num.countExts('VAR')==num.countExts('SCI'): # ie there are VAR frames to operate on
                     outvar = deepcopy(num[('VAR',extver)])
-                    # multiplying the VAR frames by the constant^2
-                    outvar.data=np.multiply(num[('VAR',extver)].data,den*den)
-                    out.append(outvar)
-                if num.countExts('DQ')==num.countExts('SCI'):  # ie there are DQ frames to operate on 
-                        outdq = deepcopy(num[('DQ',extver)])
-                        out.append(outdq)
-            except:
-                raise 'An error occurred while performing an arith task'
-    elif type(den)==list:
-        for sci in num['SCI']:
-            extver = sci.extver()
-            outsci = deepcopy(num[('SCI',extver)]) # we assume there are at least SCI extensions in the input
-            try:
-                int = den[extver-1]
-                #print 'a53: simple division of SCI frames by the float '+str(int)
-                # dividing the SCI frames by the constant
-                outsci.data=np.divide(num[('SCI',extver)].data,int)
-                out.append(outsci)
-                if num.countExts('VAR')==num.countExts('SCI'): # ie there are VAR frames to operate on
-                    outvar = deepcopy(num[('VAR',extver)])
-                
                     # multiplying the VAR frames by the constant^2
                     outvar.data=np.multiply(num[('VAR',extver)].data,int*int)
                     out.append(outvar)
@@ -113,10 +113,11 @@ def div(numerator, denominator):
                     outdq = deepcopy(num[('DQ',extver)])
                     out.append(outdq)
             except:
-                raise 'An error occurred while performing an arith task'
+                raise ArithExcept('An error occurred while performing an arith task')
+        
     else:
-        log.critical('arith.div() only accepts inputB of types AstroData, list and float, '+str(type(den))+' passed in', 'critical')    
-        raise 'An error occurred while performing an arith task'            
+        log.critical('arith.div() only accepts inputB of types AstroData, list, float or dict, '+str(type(den))+' passed in', 'critical')    
+        raise ArithExcept('An error occurred while performing an arith task')            
     return out       
                 
 def mult(inputA, inputB):
@@ -125,24 +126,23 @@ def mult(inputA, inputB):
     If the inputB is a AstroData MEF then this function will loop through the SCI, VAR and DQ frames
     to divide each SCI of the inputA by the inputB SCI of the same EXTVER. It will apply a 
     bitwise-or to the DQ frames to preserve their binary formats.
-    If the inputB is a float integer then only the SCI frames of the inputA are each divided by the int.
+    If the inputB is a float integer then only the SCI frames of the inputA are each divided by the float.
     
     @param inputA: input image to be multiplied by the inputB
     @type inputA: a MEF or single extension fits file in the form of an AstroData instance
     
     @param inputB: inputB to multiply the inputA by
-    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float int  
+    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float 
+                    list or a single float (list must be in order of the SCI extension EXTVERs) OR 
+                    a dictionary of the format {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
+                    of the SCI extensions and ## are the corresponding float values to multiply that extension by.   
     '''
    
     inA=inputA
     inB=inputB 
     from copy import deepcopy
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
-    #out=deepcopy(inA)
-    #print out.info()
-    #print 'a30: type(inB) ',type(inB), inB.filename,(type(inB)==astrodata.AstroData)
     if type(inB)==astrodata.AstroData:
-        #print 'a30: inB is type AstroData'
         for sci in inA['SCI']:
             extver = sci.extver()
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
@@ -181,52 +181,47 @@ def mult(inputA, inputB):
                 else:
                     log.critical('arrays are different sizes for SCI extension '+i+' of the input '\
                                  +inA.filename+' and '+inB.filename,'critical')
-                    raise 'An error occurred while performing an arith task'
+                    raise ArithExcept('An error occurred while performing an arith task')
             except:
-                raise 'An error occurred while performing an arith task'
-    elif type(inB)==float:
-        for sci in inA['SCI']:
-            extver = sci.extver()
-            outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
+                raise ArithExcept('An error occurred while performing an arith task')
+
+    elif type(inB)==dict or type(inB)==list or type(inB)==float:
+        # creating the dict if input is a float or float list
+        if type(inB)==float: 
+            inBDict={}
+            for ext in inA['SCI']:
+                extver=ext.extver()
+                inBDict[('SCI',extver)]=inB
+                #print repr(inBDict)
+        if type(inB)==list:    
+            inBDict={}
+            for ext in inA['SCI']:
+                extver=ext.extver()
+                inBDict[('SCI',extver)]=inB[extver-1]
+                #print repr(inBDict)
+        if type(inB)==dict:
+            inBDict=inB
+        
+        for extver in range(1,inA.countExts("SCI")+1):
+            int=inBDict[('SCI',extver)]
+            outsci=deepcopy(inA[('SCI',extver)]) #$$$ since the dict has the extname we could make this more general??
             try:
-                #print 'a53: simple multiplication of SCI frames by the float '+str(inB)
-                # multiplying the SCI frames by the constant
-                outsci.data=np.multiply(inA[('SCI',extver)].data,inB)
+                outsci.data=np.multiply(inA[('SCI',extver)].data,int)  
                 out.append(outsci)
                 if inA.countExts('VAR')==inA.countExts('SCI'): # ie there are VAR frames to operate on
                     outvar = deepcopy(inA[('VAR',extver)])
-                    #multiplying the VAR frames by the constant^2
-                    outvar.data=np.multiply(inA[('VAR',extver)].data,inB*inB)
-                    out.append(outvar)
-                if inA.countExts('DQ')==inA.countExts('SCI'):  # ie there are DQ frames to operate on 
-                    outdq = deepcopy(inA[('DQ',extver)])
-                    out.append(outdq)
-            except:
-                raise 'An error occurred while performing an arith task'
-              
-    elif type(inB)==list:
-        for sci in inA['SCI']:
-            extver = sci.extver()
-            outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
-            try:
-                int = inB[extver-1]
-                #print 'a53: simple multiplication of SCI frames by the float '+str(int)
-                # multiplying the SCI frames by the constant
-                outsci.data=np.multiply(inA[('SCI',extver)].data,int)
-                out.append(outsci)
-                if inA.countExts('VAR')==inA.countExts('SCI'): # ie there are VAR frames to operate on
-                    outvar = deepcopy(inA[('VAR',extver)])
-                    #multiplying the VAR frames by the constant^2
+                    # multiplying the VAR frames by the constant^2
                     outvar.data=np.multiply(inA[('VAR',extver)].data,int*int)
                     out.append(outvar)
                 if inA.countExts('DQ')==inA.countExts('SCI'):  # ie there are DQ frames to operate on 
                     outdq = deepcopy(inA[('DQ',extver)])
                     out.append(outdq)
             except:
-                raise 'An error occurred while performing an arith task'
+                raise ArithExcept('An error occurred while performing an arith task')
+    
     else:
         log.critical('arith.mult() only accepts inputB of types AstroData, list and float, '+str(type(inB))+' passed in', 'critical')    
-        raise 'An error occurred while performing an arith task'      
+        raise ArithExcept('An error occurred while performing an arith task')      
     return out   
 
 def add(inputA, inputB):
@@ -251,11 +246,7 @@ def add(inputA, inputB):
     inB=inputB 
     from copy import deepcopy
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
-    #out=deepcopy(inA)
-    #print out.info()
-    #print 'a30: type(inB) ',type(inB), inB.filename,(type(inB)==astrodata.AstroData)
     if type(inB)==astrodata.AstroData:
-        #print 'a30: inB is type AstroData'
         for sci in inA['SCI']:
             extver = sci.extver()
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
@@ -280,9 +271,9 @@ def add(inputA, inputB):
                 else:
                     log.critical('arrays are different sizes for SCI extension '+i+' of the input '\
                                  +inA.filename+' and '+inB.filename,'critical')
-                    raise 'An error occurred while performing an arith task'
+                    raise ArithExcept('An error occurred while performing an arith task')
             except:
-                raise 'An error occurred while performing an arith task'
+                raise ArithExcept('An error occurred while performing an arith task')
     elif type(inB)==float:
         for sci in inA['SCI']:
             extver = sci.extver()
@@ -300,10 +291,10 @@ def add(inputA, inputB):
                     outdq = deepcopy(inA[('DQ',extver)])   
                     out.append(outdq)
             except:
-                raise 'An error occurred while performing an arith task'
+                raise ArithExcept('An error occurred while performing an arith task')
     else:
         log.critical('arith.add() only accepts inputB of types AstroData and float, '+str(type(inB))+' passed in', 'critical')    
-        raise 'An error occurred while performing an arith task'            
+        raise ArithExcept('An error occurred while performing an arith task')            
     return out     
         
 def sub(inputA, inputB):
@@ -328,11 +319,7 @@ def sub(inputA, inputB):
     inB=inputB 
     from copy import deepcopy
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
-    #out=deepcopy(inA)
-    #print out.info()
-    #print 'a30: type(inB) ',type(inB), inB.filename,(type(inB)==astrodata.AstroData)
     if type(inB)==astrodata.AstroData:
-        #print 'a30: inB is type AstroData'
         for sci in inA['SCI']:
             extver = sci.extver()  
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input          
@@ -359,9 +346,9 @@ def sub(inputA, inputB):
                 else:
                     log.critical('arrays are different sizes for SCI extension '+i+' of the input '\
                                  +inA.filename+' and '+inB.filename,'critical')
-                    raise 'An error occurred while performing an arith task'
+                    raise ArithExcept('An error occurred while performing an arith task')
             except:
-                raise 'An error occurred while performing an arith task'
+                raise ArithExcept('An error occurred while performing an arith task')
     elif type(inB)==float:
         for sci in inA['SCI']:
             extver = sci.extver()
@@ -380,8 +367,8 @@ def sub(inputA, inputB):
                     outdq = deepcopy(inA[('DQ',extver)])   
                     out.append(outdq)
             except:
-                raise 'An error occurred while performing an arith task'
+                raise ArithExcept('An error occurred while performing an arith task')
     else:
         log.critical('arith.sub() only accepts inputB of types AstroData and float, '+str(type(inB))+' passed in', 'critical')    
-        raise 'An error occurred while performing an arith task'            
+        raise ArithExcept('An error occurred while performing an arith task')            
     return out 
