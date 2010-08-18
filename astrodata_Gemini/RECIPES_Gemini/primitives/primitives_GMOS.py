@@ -222,7 +222,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to trim the overscan region from the input data','status')
             
             for ad in rc.getInputs(style='AD'):
-                ad.phuSetKeyValue('TRIMMED','yes','Overscan sectiUIADVANCEDon trimmed')
+                ad.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')
                 for sciExt in ad['SCI']:
                     datasecStr=sciExt.data_section()
                     datasecList=secStrToIntList(datasecStr) 
@@ -419,7 +419,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clSoftcodedParams)
             
             log.fullinfo('calling the gireduce CL script', 'status')
-            
+
             gemini.gmos.gireduce(**clParamsDict)
             
             #gemini.gmos.gireduce(clm.inputList(), fl_over=pyrafBoolean(rc["fl_over"]),\
@@ -443,18 +443,21 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.fullinfo('new file name is: '+ad.filename, 'status')
                 i=i+1
                 ut = ad.historyMark()  
+                ad.phuSetKeyValue('BIASIM',os.path.basename(processedBias)) # reseting the value set by gireduce to just the filename for clarity
+                
                 #$$$$$ should we also have a OVERSUB UT time stame in the PHU???
                 log.fullinfo('****************************************************','header')
                 log.fullinfo('file = '+ad.filename,'header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+str(ut)+'\n','header' )
+                log.fullinfo('GEM-TLM = '+str(ut),'header' )
+                log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n','header' )
                 
             log.warning('The CL script gireduce REPLACED the previously calculated DQ frames','warning')
             log.status('*FINISHED* subtracting the bias from the input flats','status')
         except:
-            print "Problem subtracting bias"
-            raise GMOSException
+        
+            raise GMOSException("Problem subtracting bias")
             
         yield rc
     #---------------------------------------------------------------------------
@@ -531,8 +534,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
             log.status('*FINISHED* combining and normalizing the input flats', 'status')
         except:
-            print "Problem subtracting bias"
-            raise GMOSException
+            raise GMOSException("Problem normalizing the input flat")
             
         yield rc
     #------------------------------------------------------------------------------------------
@@ -549,6 +551,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             for ad in rc.getInputs(style='AD'):
                 log.fullinfo('calling ad.div','fullinfo')
                 adOut = ad.div(processedFlat)
+                log.fullinfo('input flat file '+processedFlat.filename,'fullinfo')
                 ut = adOut.historyMark()
                 adOut.filename=fileNameUpdater(ad.filename,postpend=rc["outpref"], strip=False)
                 rc.reportOutput(adOut)   
@@ -560,11 +563,80 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('---------------------------------------------------','header')    
             log.status('*FINISHED* flat correcting the inputs','status')    
         except:
-            print "Problem flat correcting the input"
-            raise GMOSException
+      
+            raise GMOSException("Problem flat correcting the input")
             
         yield rc
         
+    def mosaic(self,rc):
+        '''
+        '''
+        try:
+            log.status('*STARTING* to mosaic the input images SCI extensions together','status')
+            ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
+            clm = CLManager(rc)
+            clm.LogCurParams() 
+            
+            ad=rc.getInputs(style='AD')[0]
+            if ad.countExts('VAR')==ad.countExts('DQ')==ad.countExts('SCI'):
+                fl_vardq=yes
+            else:
+                fl_vardq=no
+                
+            
+            # params set by the CLManager or the definition of the prim 
+            clPrimParams={
+                          'inimages'    :clm.inputsAsStr(),
+                          'fl_vardq'    :fl_vardq,
+                          'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                          'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
+                          'logfile'     :'TEMP.log', # this log will get created and will then be deleted near the end of this prim
+                          'verbose'     :yes # this is actually in the default dict but wanted to show it again
+                          }
+
+            # params from the Parameter file adjustable by the user
+            clSoftcodedParams={
+                              'fl_paste'    :pyrafBoolean(rc["fl_paste"]),
+                              'outpref'     :rc["outpref"],
+                              'outimages'   :rc['outimages'],
+                              'geointer'    :rc['geointer'],
+                              'fl_fixpix'   :pyrafBoolean(rc['fl_fixpix']),
+                              }
+            
+            # grabbing the default params dict and updating it with the two above dicts
+            clParamsDict=CLDefaultParamsDict('gmosaic')
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
+            log.fullinfo('calling the gmosaic CL script', 'status')
+            
+            gemini.gmos.gmosaic(**clParamsDict)
+            
+            # renaming CL outputs and loading them back into memory and cleaning up the intermediate tmp files written to disk
+            clm.finishCL()
+            os.remove(clPrimParams['logfile'])
+            i=0
+            for ad in rc.getOutputs(style="AD"):
+                if ad.phuGetKeyValue('GMOSAIC'): # varifies gireduce was actually ran on the file
+                    log.fullinfo('file '+clm.preCLNames()[i]+' mosaicing successfully', 'status')
+                    log.fullinfo('new file name is: '+ad.filename, 'status')
+                i=i+1
+                ut = ad.historyMark()  
+                
+                #$$$$$ should we also have a OVERSUB UT time stame in the PHU???
+                log.fullinfo('****************************************************','header')
+                log.fullinfo('file = '+ad.filename,'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+str(ut),'header' )
+                
+            log.status('*FINISHED* mosaicing the input images','status')
+        except:
+        
+            raise #GMOSException("Problem mosaicing the images")
+            
+        yield rc
+#***************************************************************************************************
 def CLDefaultParamsDict(CLscript):
     '''
     A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
@@ -678,6 +750,33 @@ def CLDefaultParamsDict(CLscript):
                        'Stdout'      :IrafStdout(),
                        'Stderr'      :IrafStdout()
                        }      
+    if CLscript=='gmosaic':
+        defaultParams={ 
+                       'inimages'   :'',                    #Input GMOS images 
+                       'outimages'  :"",                    #Output images
+                       'outpref'    :'DEFAULT',             #Prefix for output images
+                       'fl_paste'   :no,                     #Paste images instead of mosaic
+                       'fl_vardq'   :no,                     #Propagate the variance and data quality planes
+                       'fl_fixpix'  :no,                     #Interpolate across chip gaps
+                       'fl_clean'   :yes ,                   #Clean imaging data outside imaging field
+                       'geointer'   :'linear',               #Interpolant to use with geotran
+                       'gap'        :'default',              #Gap between the CCDs in unbinned pixels
+                       'bpmfile'    :"gmos$data/chipgaps.dat",   # Info on location of chip gaps ## HUH??? Why is variable called 'bpmfile' if it for chip gaps??
+                       'statsec'    :'default',             #Statistics section for cleaning
+                       'obsmode'    :'IMAGE',                #Value of key_obsmode for imaging data
+                       'sci_ext'    :'SCI',                 #Science extension(s) to mosaic, use '' for raw data
+                       'var_ext'    :'VAR',                 #Variance extension(s) to mosaic
+                       'dq_ext'     :'DQ',                  #Data quality extension(s) to mosaic
+                       'mdf_ext'    :'MDF',                  #Mask definition file extension name
+                       'key_detsec' :'DETSEC',               #Header keyword for detector section
+                       'key_datsec' :'DATASEC',              #Header keyword for data section
+                       'key_ccdsum' :'CCDSUM',               #Header keyword for CCD binning
+                       'key_obsmode':'OBSMODE',              #Header keyword for observing mode
+                       'logfile'    :'',                     #Logfile
+                       'fl_real'    :no,                     #Convert file to real before transforming
+                       'verbose'    :yes,                    #Verbose
+                       'status'     :0,                      #Exit status (0=good)
+                       }
     return defaultParams    
         
         
