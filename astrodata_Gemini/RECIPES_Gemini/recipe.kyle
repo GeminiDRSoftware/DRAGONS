@@ -1,10 +1,17 @@
-getProcessedBias
-prepare
-overscanCorrect
-addVARDQ
-biasCorrect
+#getProcessedBias
+#prepare
+#overscanCorrect
+#addVARDQ
 
-getProcessedFlat
-flatCorrect
+#writeOutputs
+
+#biasCorrect
+
+#writeOutputs
+
+#getProcessedFlat
+#flatCorrect
+
+mosaic
 
 writeOutputs
