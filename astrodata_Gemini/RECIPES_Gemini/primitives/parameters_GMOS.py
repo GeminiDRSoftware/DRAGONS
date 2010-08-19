@@ -159,7 +159,7 @@
                           'userOverride':True,  
                           'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            },
-                        "geointer":
+                        "interp_function":  #this is the geointer parameters new name for easier reading to the user
                           {
                            'default': 'linear' ,
                           'recipeOverride': True,
@@ -167,13 +167,6 @@
                           'userOverride':True,  
                           'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            },
-                           "fl_fixpix":
-                          {
-                           'default': False ,
-                          'recipeOverride': True,
-                          'type': 'bool',
-                          'userOverride':True,  
-                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-                           },
+                           
                   }
 }

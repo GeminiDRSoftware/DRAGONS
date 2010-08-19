@@ -574,6 +574,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         
     def mosaic(self,rc):
         '''
+        This primitive will mosaic the SCI frames of the input images, along with the VAR and DQ frames if they exist.
+        The interpolation parameter 'inter_function' can be changed to 'nearest','poly3',poly5','spline3' or 'sinc' from the 
+        default value of 'linear'.  
         '''
         try:
             log.status('*STARTING* to mosaic the input images SCI extensions together','status')
@@ -603,8 +606,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                               'fl_paste'    :pyrafBoolean(rc["fl_paste"]),
                               'outpref'     :rc["outpref"],
                               'outimages'   :rc['outimages'],
-                              'geointer'    :rc['geointer'],
-                              'fl_fixpix'   :pyrafBoolean(rc['fl_fixpix']),
+                              'geointer'    :rc['interp_function'],
                               }
             
             # grabbing the default params dict and updating it with the two above dicts
