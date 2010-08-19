@@ -58,6 +58,11 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
        
  #------------------------------------------------------------------------------ 
+    def clearCalCache(self, rc):
+        print "pG61:", rc.calindfile
+        rc.persistCalIndex(rc.calindfile, newindex = {})
+        yield rc
+        
     def display(self, rc):
         try:
             rc.rqDisplay(displayID=rc["displayID"])           
@@ -248,9 +253,13 @@ class GEMINIPrimitives(PrimitiveSet):
     def showCals(self, rc):
         for adr in rc.inputs:
             sid = IDFactory.generateAstroDataID(adr.ad)
+            num = 0
             for calkey in rc.calibrations:
                 if sid in calkey:
+                    num += 1
                     print rc.calibrations[calkey]
+            if (num == 0):
+                print "There are no calibrations in the cache."
         yield rc
     ptusage_showCals = "Used to show calibrations currently in cache for inputs."
 #------------------------------------------------------------------------------ 

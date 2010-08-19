@@ -11,8 +11,6 @@ from astrodata.data import AstroData
 from pyraf.iraf import tables, stsdas, images
 from pyraf.iraf import gemini
 import pyraf
-import iqtool
-from iqtool.iq import getiq
 from gempy.instruments.gemini import *
 from gempy.instruments.gmos import *
 
@@ -309,6 +307,12 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise GMOSException
         
         yield rc
+
+    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def NEWgetProcessedBias(self,rc):
+        rc.rqCal("bias", rc.getInputs(style="AD"))
+        yield rc
+
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def getProcessedBias(self,rc):
         '''
