@@ -32,8 +32,10 @@ class CalibrationRequest( ReductionObjectRequest ):
     criteria = {}
     priorities = {}
     caltype = None
+    datalabel = None
     
-    def __init__( self,  filename=None, identifiers={}, criteria={}, priorities={}, caltype=None ):
+    def __init__( self,  filename=None, identifiers={}, criteria={}, 
+                    priorities={}, caltype=None ):
         super( CalibrationRequest, self ).__init__()
         self.filename = None#filename
         self.identifiers = {}#identifiers
@@ -41,7 +43,20 @@ class CalibrationRequest( ReductionObjectRequest ):
         self.priorities = {}#priorities
         self.caltype = None#caltype
         
-    
+    def asDict(self):
+        retd = {}
+        retd.update({"filename": self.filename,
+                     "caltype": self.caltype,
+                     "datalabel" : self.datalabel
+                     })
+        print "ROR50:", retd
+        return retd
+        
+    def fromDict(self, params):
+        self.filename = params["filename"] if "filename" in params else None
+        self.caltype = params["caltype"] if "caltype" in params else None
+        self.datalable = params["datalabel"] if "datalabel" in params else None
+        
     def __str__(self):
         tempStr = super( CalibrationRequest, self ).__str__()
         tempStr = tempStr + """filename: %(name)s

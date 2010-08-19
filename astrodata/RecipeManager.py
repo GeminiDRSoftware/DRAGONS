@@ -113,6 +113,7 @@ class ReductionContext(dict):
     displayName = None
     stephistory = None
     stackeep = None
+    calindfile = None
     displayMode = None
     displayID = None
     irafstdout = None
@@ -257,7 +258,11 @@ class ReductionContext(dict):
         if self.calibrations == None:
             self.calibrations = {}
         
-        calrec = CalibrationRecord(data.filename, calname, caltyp, timestamp)
+        if isinstance(data, AstroData):
+            filename = data.filename
+        else:
+            filename = data
+        calrec = CalibrationRecord(filename, calname, caltyp, timestamp)
         key = (adID, caltyp)
         #print "RM542:", key, calrec
         self.calibrations.update({key: calrec})
@@ -769,11 +774,15 @@ class ReductionContext(dict):
         
         return rets
     
-    def persistCalIndex(self, filename):
+    def persistCalIndex(self, filename, newindex = None):
         #print "Calibration List Before Persist:"
         #print self.calsummary()
+        if newindex != None:
+            print "P781:", repr(newindex)
+            self.calibrations = newindex
         try:
             pickle.dump(self.calibrations, open(filename, "w"))
+            self.calindfile = filename
         except:
             print "Could not persist the calibration cache."
             raise 
@@ -1001,6 +1010,7 @@ class ReductionContext(dict):
     def restoreCalIndex(self, filename):
         if os.path.exists(filename):
             self.calibrations = pickle.load(open(filename, 'r'))
+            self.calindfile = filename
         else:
             pickle.dump({}, open(filename, 'w'))
     
@@ -1050,6 +1060,8 @@ class ReductionContext(dict):
         @param caltype: The type of calibration. For example, 'bias' and 'flat'.
         @type caltype: str
         '''
+        if type(caltype) != str:
+            raise RecipeExcept("caltype not string, type = " + str( type(caltype)))
         if inputs is None:
             addToCmdQueue = self.cdl.getCalReq(self.originalInputs, caltype)
         else:

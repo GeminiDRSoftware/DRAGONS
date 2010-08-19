@@ -22,6 +22,8 @@ except ImportError:
 import re
 from datetime import datetime
 
+from adutils.netutil import urlfetch
+
 verbose = False
 verboseLoadTypes = True
 verbt = False
@@ -152,6 +154,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
     typesStatus = None
     typesTypology = None
     filename = None
+    url = None # if retrieved
     hdulist = None
     hdurefcount = 0
     mode = "readonly"
@@ -170,7 +173,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
     classificationLibrary = None
 
     def __init__(self, dataset=None, mode="readonly", exts = None, extInsts = None,
-                    header = None, data = None):
+                    header = None, data = None, store = None, storeClobber = False):
         """
         The AstroData constructor constructs an in memory representation of a dataset.
         If given a filename it uses pyfits to open the dataset, reads the header
@@ -215,11 +218,49 @@ Note, the variable "ad" is generally used to represent an already constructed As
         # print exts
         self.extensions = exts
         self.extInsts = extInsts
-        
+        fname = None
+        headers = None
+        if type(dataset) == str:
+            parts = dataset.split(":")
+            if len(parts)>1:
+                # then the string is an URL, retrieve it
+                import urllib
+                from urllib import urlretrieve
+                savename = os.path.basename(dataset)
+                print "Retrieving remote file from %s to %s" % (dataset, os.path.join(store,savename))
+                if store:
+                    print "AD230: Storing in,", store
+                    fname = urlfetch(dataset, store = store, clobber = storeClobber)
+                    #fname,headers = urlretrieve(dataset, os.path.join(store, savename), None, 
+                    #    urllib.urlencode({"gemini_fits_authorization":"good_to_go"}))
+                else:
+                    print "AD235: Retrieved to temp file"
+                    fname = urlfetch(dataset)
+                    #fname, headers = urlretrieve(dataset)
+                dataset = savename
+            elif store:
+                import shutil
+                shutil.copy(dataset, store)
+                dataset = os.path.join(store,dataset)
+                print "AD235:", dataset
+            
         if (dataset == None) and (header != None) and (data != None):
             dataset = pyfits.ImageHDU(data = data, header=header)
             
-        self.open(dataset, mode)
+        if fname == None:
+            self.open(dataset, mode)
+        else:
+            # fname is set when retrieving an url, it will be the temporary 
+            #   filename that urlretrieve returns.  Nice to use since it's 
+            #   guarenteed to be unique.  But it's only on disk to load (we
+            #   could build the stream up from the open url but that might be
+            #   a pain (depending on how well pyfits cooperates)... and this means
+            #   we don't need to load the whole file into memory.
+            self.open(fname, mode)
+            if store == None:
+                # because if store == None then file was retrieved to a persistent location
+                os.remove(fname)
+                
 
     def __del__(self):
         """ This is the destructor for AstroData. It performs reference 

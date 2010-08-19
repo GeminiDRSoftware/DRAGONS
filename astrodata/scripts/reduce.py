@@ -53,12 +53,34 @@ from astrodata.LocalCalibrationService import CalibrationService
 from astrodata.adutils.future import gemDisplay
 from astrodata.adutils import paramutil
 from astrodata.adutils.gemutil import gemdate
+
+from astrodata import Proxies
+
 #------------------------------------------------------------------------------ 
 from astrodata.adutils import gemLog
 #-----------------------------------------------------------------------------
 #oet = time.time()
 #print 'TIME:', (oet -ost)
 b = datetime.now()
+
+
+# GLOBAL/CONSTANTS (could be exported to config file)
+cachedirs = [".reducecache",
+             ".reducecache/storedcals",
+             ".reducecache/storedcals/storedbiases",
+             ".reducecache/storedcals/storedflats",
+             ".reducecache/storedcals/retrievedbiases",
+             ".reducecache/storedcals/retrievedflats",                        
+             ]
+CALDIR = ".reducecache/storedcals"
+cachedict = {} # constructed below             
+for cachedir in cachedirs:
+    if not os.path.exists(cachedir):                        
+        os.mkdir(cachedir)
+    cachename = os.path.basename(cachedir)
+    if cachename[0] == ".":
+        cachename = cachename[1:]
+    cachedict.update({cachename:cachedir})
 ############################################################
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as
@@ -87,7 +109,7 @@ is 'ASTROTYPE' and the primitive is 'primitivename'.
 Multiple settings can appear separated by commas, but
 no whitespace in the setting, i.e. 'param=val,param2=val2',
 not 'param=val, param2=val2'.""")
-parser.add_option("-f", "--paramfile", dest = "paramfile", default = None,
+parser.add_option("-c", "--paramfile", dest = "paramfile", default = None,
                     help="Specify a parameter file.")
 parser.add_option("-t", "--astrotype", dest = "astrotype", default = None,
                     help="To run a recipe based on astrotype, either to override the default type of the file, or to start a recipe without initial input (i.e. which begin with primitives that acquire dta).")
@@ -142,6 +164,8 @@ parser.add_option("--writeInt",dest='writeInt', default=False, action="store_tru
 
 (options,  args) = parser.parse_args()
 
+
+
 useTK =  options.bMonitor
 # ------
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
@@ -170,10 +194,102 @@ def command_line():
     Hopefully, this makes things look a little cleaner.
     '''
     
+    # this is done first because command line options can be set in the 
+    # config file
+    if options.paramfile:
+        ups = []
+        gparms = {}
+        pfile = file(options.paramfile)
+        astrotype = None
+        primname = None
+        cl = getClassificationLibrary()
+        
+        i = 0
+        lines = []
+        for line in pfile:
+            i += 1
+            oline = line
+            lines.append(oline)
+            # strip comments
+            line = re.sub("#.*?$", "", line)
+            line = line.strip()
+            
+            # see if they are command options
+            if len(line)>2 and line[:2] == "--":
+                #then it's an option
+                
+                if "=" not in line:
+                    opt = line
+                    
+                    option = parser.get_option(opt)
+                    # note, it would do to not assume flags mean a true dest value
+                    val = "True"
+                else:
+                    opt,val = line.split("=")
+
+                print "r204:",opt, val
+                opt = opt.strip()
+                val = val.strip()
+                    
+                if opt == "--files":
+                    files = val.split()
+                    args.extend(files)
+                elif parser.has_option(opt):
+                    option = parser.get_option(opt)
+                    exec("options.%s=val" % str(option.dest))
+            
+            elif len(line)>0:
+                if "]" in line:
+                    # then line is a header
+                    name = re.sub("[\[\]]", "", line)
+                    name = name.strip()
+                    if len(name)== 0:
+                        astrotype = None
+                        primname = None
+                    elif cl.isNameOfType(name):
+                        astrotype = name
+                    else:
+                        primname = name
+                else:
+                    # not a section
+                    keyval = line.split("=")
+                    if len(keyval)<2:
+                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                              "\n  Line #%d: %s""" % (options.paramfile, i, oline)
+                        abortBadParamfile(lines)
+                        sys.exit(1)
+                    key = keyval[0].strip()
+                    val = keyval[1].strip()
+                    if val[0] == "'" or val[0] == '"':
+                        val = val[1:]
+                    if val[-1] == "'" or val[-1] == '"':
+                        val = val[0:-1]
+                    if primname and not astrotype:
+                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                              '\n  The primitive name is set to "%s", but the astrotype is not set' \
+                              "\n  Line #%d: %s" % (options.paramfile, primname, i, oline[:-1])
+                        
+                        abortBadParamfile(lines)
+                    if not primname and astrotype:
+                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                              '\n  The astrotype is set to "%s", but the primitive name is not set' \
+                              "\n  Line #%d: %s" % (options.paramfile, astrotype, i, oline)
+                        abortBadParamfile(lines)
+                    if not primname and not astrotype:
+                        gparms.update({key:val})
+                    else:
+                        up = RecipeManager.UserParam(astrotype, primname, key, val)
+                        ups.append(up)
+                        
+        # parameter file ups and gparms                                
+        pfups = ups
+        pfgparms = gparms
+        
     if  options.show_colors:
         print dir(filteredstdout.term)
         sys.exit(0)
     infile = None
+    
     if options.clr_cal:
         clrFile = None
         
@@ -181,7 +297,13 @@ def command_line():
         co.restoreCalIndex(calindfile)
         co.calibrations = {}
         co.persistCalIndex( calindfile )
-        print "Entire calibration cache cleared."
+        print "Calibration cache index cleared"
+        import shutil
+        
+        if os.path.exists(CALDIR):
+            shutil.rmtree(CALDIR)
+        print "Calibration directory removed"
+        
         sys.exit(0)
     
     print "${NORMAL}",
@@ -275,70 +397,6 @@ def command_line():
         clups = ups
         clgparms = gparms
         
-    if options.paramfile:
-        ups = []
-        gparms = {}
-        pfile = file(options.paramfile)
-        astrotype = None
-        primname = None
-        cl = getClassificationLibrary()
-        
-        i = 0
-        lines = []
-        for line in pfile:
-            i += 1
-            oline = line
-            lines.append(oline)
-            # strip comments
-            line = re.sub("#.*?$", "", line)
-            line = line.strip()
-            
-            if len(line)>0:
-                if "]" in line:
-                    # then line is a header
-                    name = re.sub("[\[\]]", "", line)
-                    name = name.strip()
-                    if len(name)== 0:
-                        astrotype = None
-                        primname = None
-                    elif cl.isNameOfType(name):
-                        astrotype = name
-                    else:
-                        primname = name
-                else:
-                    # not a section
-                    keyval = line.split("=")
-                    if len(keyval)<2:
-                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
-                              "\n  Line #%d: %s""" % (options.paramfile, i, oline)
-                        abortBadParamfile(lines)
-                        sys.exit(1)
-                    key = keyval[0].strip()
-                    val = keyval[1].strip()
-                    if val[0] == "'" or val[0] == '"':
-                        val = val[1:]
-                    if val[-1] == "'" or val[-1] == '"':
-                        val = val[0:-1]
-                    if primname and not astrotype:
-                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
-                              '\n  The primitive name is set to "%s", but the astrotype is not set' \
-                              "\n  Line #%d: %s" % (options.paramfile, primname, i, oline[:-1])
-                        
-                        abortBadParamfile(lines)
-                    if not primname and astrotype:
-                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
-                              '\n  The astrotype is set to "%s", but the primitive name is not set' \
-                              "\n  Line #%d: %s" % (options.paramfile, astrotype, i, oline)
-                        abortBadParamfile(lines)
-                    if not primname and not astrotype:
-                        gparms.update({key:val})
-                    else:
-                        up = RecipeManager.UserParam(astrotype, primname, key, val)
-                        ups.append(up)
-                        
-        # parameter file ups and gparms                                
-        pfups = ups
-        pfgparms = gparms
     fups = RecipeManager.UserParams()
     for up in clups:
         fups.addUserParam(up)
@@ -351,11 +409,20 @@ def command_line():
        
             
     return input_files
-    
+
+
+  
+# CONTACT THE PRS PROXY
+
+prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
+usePRS = True
+
+print "r395: usePRS=", usePRS
 
 # called once per substep (every yeild in any primitive when struck)
 # registered with the reduction object
 def commandClause(ro, coi):
+    global prs
     print "${NORMAL}",
     coi.processCmdReq()
     while (coi.paused):
@@ -372,22 +439,27 @@ def commandClause(ro, coi):
             fn = rq.filename
             typ = rq.caltype
             calname = coi.getCal(fn, typ)
-
+            print "r399:", "handling calibrations"
             if calname == None:
                 # Do the calibration search
-                calname = cs.search( rq )
-                if calname == None:
-                    break; # ignore
-                    raise "No suitable calibration for '" + str(fn) + "'."
-                elif len( calname ) >= 1:
-                    # Not sure if this is where the one returned calibration is chosen, or if
-                    # that is done in the calibration service, etc.
-                    calname = calname[0]
-
+                calurl = None
+                if usePRS and prs == None:
+                    prs = Proxies.PRSProxy.getPRSProxy()    
+                    calurl = prs.calibrationSearch( rq )
+                
+                print "r396:", calurl
+                if calurl == None:
+                    # @@NOTE: should log no calibrations found
+                    break
 
                 msg += 'A suitable %s found:\n' %(str(typ))
-                coi.addCal(fn, typ, calname)
+                
+                storenames = {"bias":"retrievedbiases",
+                              "flat":"retrievedflats"
+                              }
+                coi.addCal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
                 coi.persistCalIndex( calindfile )
+                calname = calurl
             else:
                 msg += '%s already stored.\n' %(str(typ))
                 msg += 'Using:\n'
@@ -542,7 +614,7 @@ else:
 # Local PRS Components
 #===============================================================================
 # Local Calibration Service Setup
-cs = CalibrationService()
+cs = CalibrationService() # is this used anymore, don't think so...
 
 # Local Display Service Setup
 ds = gemDisplay.getDisplayService()
@@ -644,21 +716,10 @@ for infiles in allinputs: #for dealing with multiple files.
             # @@TODO:possible: see if deepcopy can do this better 
             co = ReductionContext()
             co.ro = ro
-            # restore cache
-            cachedirs = [".reducecache",
-                         ".reducecache/storedcals",
-                         ".reducecache/storedcals/storedbiases",
-                         ".reducecache/storedcals/storedflats",
-                         ".reducecache/storedcals/retrievedbiases",
-                         ".reducecache/storedcals/retrievedflats",                        
-                         ]
-            for cachedir in cachedirs:
-                if not os.path.exists(cachedir):                        
-                    os.mkdir(cachedir)
-                cachename = os.path.basename(cachedir)
-                if cachename[0] == ".":
-                    cachename = cachename[1:]
-                co.update({cachename:cachedir})
+            # @@DOC: put cachedirs in context
+            for cachename in cachedict:
+                co.update({cachename:cachedict[cachename]})
+
             # rc.["storedcals"] will be the proper directory
             
             co.restoreCalIndex(calindfile)

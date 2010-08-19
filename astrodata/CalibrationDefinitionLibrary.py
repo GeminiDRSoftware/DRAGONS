@@ -51,26 +51,35 @@ class CalibrationDefinitionLibrary( object ):
         @rtype: list
         """
         reqEvents = []
-        for input in inputs:
-            calIndex = self.generateCalIndex( caltype)
-            print "CDL56:", calIndex, input.ad.getTypes(prune=True)
-          
-            retDict = gdpgutil.pickConfig( input.ad,  calIndex )
-            key = retDict.keys()[0]
-            filename = calIndex[key]            
+        
+        for inp in inputs:
+            cr = CalibrationRequest()
+            # print "CDL56:", repr(inp), inp.filename, str(inp)
+            cr.filename = inp.filename
+            cr.caltype = caltype
+            cr.datalabel = inp.data_label()
             
-            try:
-                calXMLURI = self.xmlIndex[filename]
-                calXMLFile = open( calXMLURI, 'r' )
-                xmlDom = parse( calXMLFile )
-            except:
-                raise "Error opening '%s'" %calXMLURI
-            finally:
-                calXMLFile.close()
-                
-            # childNodes is the <query> tag(s)           
-            calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input.ad )            
-            reqEvents.append(calReqEvent)
+            reqEvents.append(cr)
+            if (False): # old code to delete
+                calIndex = self.generateCalIndex( caltype)
+                print "CDL56:", calIndex, input.ad.getTypes(prune=True)
+
+                retDict = gdpgutil.pickConfig( input.ad,  calIndex )
+                key = retDict.keys()[0]
+                filename = calIndex[key]            
+
+                try:
+                    calXMLURI = self.xmlIndex[filename]
+                    calXMLFile = open( calXMLURI, 'r' )
+                    xmlDom = parse( calXMLFile )
+                except:
+                    raise "Error opening '%s'" %calXMLURI
+                finally:
+                    calXMLFile.close()
+
+                # childNodes is the <query> tag(s)           
+                calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input.ad )            
+                reqEvents.append(calReqEvent)
         # Goes to reduction context object to add to queue
         return reqEvents
     
