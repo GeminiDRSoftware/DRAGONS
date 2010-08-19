@@ -5,7 +5,7 @@ from urllib import urlopen
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 import os, signal
 import re
-
+import exceptions
 import urllib
 from xml.dom import minidom
 
@@ -66,7 +66,10 @@ def calibrationSearch(rq):
     print "prs66:", response
     dom = minidom.parseString(response)
     calel = dom.getElementsByTagName("calibration")
-    calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
+    try:
+        calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
+    except exceptions.IndexError:
+        return None
     print "prs70:", calurlel.data
     
     return calurlel.data

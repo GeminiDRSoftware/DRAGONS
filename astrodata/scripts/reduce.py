@@ -44,6 +44,7 @@ from astrodata.AstroData import AstroData
 from astrodata.AstroDataType import getClassificationLibrary
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
+from astrodata.RecipeManager import RecipeExcept
 from astrodata.StackKeeper import StackKeeper
 from astrodata.ReductionObjectRequests import CalibrationRequest,\
         UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
@@ -96,6 +97,7 @@ parser.set_description(
  )
 parser.set_usage( parser.get_usage()[:-1] + " file.fits\n" )
 # Testing
+import pyfits as pf
 parser.add_option("-r", "--recipe", dest="recipename", default=None,
                   help="Specify which recipe to run by name.")
 parser.add_option("-p", "--param", dest="userparam", default = None,
@@ -450,6 +452,7 @@ def commandClause(ro, coi):
                 print "r396:", calurl
                 if calurl == None:
                     # @@NOTE: should log no calibrations found
+                    raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
                     break
 
                 msg += 'A suitable %s found:\n' %(str(typ))
@@ -457,7 +460,11 @@ def commandClause(ro, coi):
                 storenames = {"bias":"retrievedbiases",
                               "flat":"retrievedflats"
                               }
-                coi.addCal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
+                calfname = os.path.join(coi[storenames[typ]], os.path.basename(calurl))
+                if os.path.exists(calfname):
+                    coi.addCal(fn, typ, calfname)
+                else:
+                    coi.addCal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
                 coi.persistCalIndex( calindfile )
                 calname = calurl
             else:
