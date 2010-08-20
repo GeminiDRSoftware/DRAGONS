@@ -8,6 +8,8 @@ import re
 import exceptions
 import urllib
 from xml.dom import minidom
+from threading import Thread
+import prsproxyweb
 
 CALMGR = "http://hbffits1.hi.gemini.edu/calmgr"
 CALTYPEDICT = { "bias": "processed_bias"}
@@ -83,7 +85,13 @@ rim = ReduceInstanceManager()
 server.register_instance(rim)
 
 # server.serve_forever(
-
+# start webinterface
+webinterface = True #False
+if (webinterface):
+    #import multiprocessing
+    web = Thread(None, prsproxyweb.main, "webface")
+    web.start()
+    
 outerloopdone = False
 while True:
     if outerloopdone:
@@ -93,19 +101,22 @@ while True:
             # print "prs53:", rim.finished
             server.handle_request() 
             # print "prs55:", rim.finished
-
+            print "prs104:", prsproxyweb.webserverdone
             if options.invoked and rim.finished:
                 print "prsproxy exiting, no reduce instances to serve."
                 outerloopdone = True
+                prsproxyweb.webserverdone = True
                 break
     except KeyboardInterrupt:
         if rim.numinsts>0:
             # note: save reduce pide (pass in register) and 
             #       and check if pids are running!
-            print "prsproxy: Can't exit, %d instances of reduce running", rim.numinsts
+            print "\nprsproxy: Can't exit, %d instances of reduce running", rim.numinsts
         else:
-            print "prsproxy: exiting due to Ctrl-C"
+            print "\nprsproxy: exiting due to Ctrl-C"
             # this directly breaks from the outer loop but outerloopdone for clarity
             outerloopdone = True
+            prsproxyweb.webserverdone = True
+            # not needed os.kill(os.getpid(), signal.SIGTERM)
             break
 

@@ -1,7 +1,9 @@
-
-from pyraf import iraf
-from iraf import gemini
-from iraf import gemlocal
+if False:
+    # ONLY IMPORT THESE WHEN ACTUALLY RUNNING THEM... because
+    # iraf takes a second or ten to import...
+    from pyraf import iraf
+    from iraf import gemini
+    from iraf import gemlocal
 
 import mefutil
 #reload(mefutil)
@@ -61,7 +63,7 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
     @return: image name string with .fits
     @rtype: string
     """
-    
+    import iraf
     #
     #  Make sure rawpath and mdfdir have a trailing "/"
     #

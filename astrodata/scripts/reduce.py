@@ -4,8 +4,10 @@
 # ---PROFILER START to profile imports
 #import hotshot
 #importprof = hotshot.Profile("hotshot_edi_stats")
+import cProfile
 
 #------------------------------------------------------------------------------ 
+
 from astrodata.adutils import terminal
 from astrodata.adutils.terminal import TerminalController, ProgressBar 
 import sys
@@ -23,7 +25,7 @@ import glob
 from optparse import OptionParser
 import os
 #st = time.time()
-if True:
+if False:
     try:
         import pyraf
         from pyraf import iraf
@@ -50,8 +52,8 @@ from astrodata.ReductionObjectRequests import CalibrationRequest,\
         UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
         ImageQualityRequest
 from astrodata import gdpgutil
-from astrodata.LocalCalibrationService import CalibrationService
-from astrodata.adutils.future import gemDisplay
+# from astrodata.LocalCalibrationService import CalibrationService
+# from astrodata.adutils.future import gemDisplay
 from astrodata.adutils import paramutil
 from astrodata.adutils.gemutil import gemdate
 
@@ -418,6 +420,7 @@ def command_line():
 
 prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
 usePRS = True
+#raise "r422: END TEST"
 
 print "r395: usePRS=", usePRS
 
@@ -621,10 +624,10 @@ else:
 # Local PRS Components
 #===============================================================================
 # Local Calibration Service Setup
-cs = CalibrationService() # is this used anymore, don't think so...
+# cs = CalibrationService() # is this used anymore, don't think so...
 
 # Local Display Service Setup
-ds = gemDisplay.getDisplayService()
+# ds = gemDisplay.getDisplayService()
 
 numReductions = len(allinputs)
 i = 1
@@ -726,7 +729,7 @@ for infiles in allinputs: #for dealing with multiple files.
             # @@DOC: put cachedirs in context
             for cachename in cachedict:
                 co.update({cachename:cachedict[cachename]})
-
+            co.update({"cachedict":cachedict})
             # rc.["storedcals"] will be the proper directory
             
             co.restoreCalIndex(calindfile)
