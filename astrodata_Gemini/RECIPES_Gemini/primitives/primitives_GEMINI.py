@@ -11,6 +11,7 @@ import numpy as np
 import pyfits
 import pyraf
 from datetime import datetime
+import shutil
 log=gemLog.getGeminiLog()
 yes = pyraf.iraf.yes
 no = pyraf.iraf.no
@@ -61,6 +62,15 @@ class GEMINIPrimitives(PrimitiveSet):
     def clearCalCache(self, rc):
         print "pG61:", rc.calindfile
         rc.persistCalIndex(rc.calindfile, newindex = {})
+        scals = rc["storedcals"]
+        if scals:
+            if os.path.exists(scals):
+                shutil.rmtree(scals)
+            cachedict = rc["cachedict"]
+            for cachename in cachedict:
+                cachedir = cachedict[cachename]
+                if not os.path.exists(cachedir):                        
+                    os.mkdir(cachedir)                
         yield rc
         
     def display(self, rc):
