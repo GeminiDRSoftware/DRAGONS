@@ -1090,6 +1090,25 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
+    def release_date(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "release_date")
+            if not hasattr( self.descriptorCalculator, "release_date"):
+                key = "key_"+"release_date"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.release_date(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
         '''Function to put at top of all descriptor members

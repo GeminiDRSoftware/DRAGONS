@@ -87,6 +87,7 @@ descriptors =   [   DD("airmass"),
                     DD("well_depth_mode"),
                     DD("x_offset"),
                     DD("y_offset"),
+                    DD("release_date"),
                 ]
 
 wholeout = """
