@@ -88,6 +88,7 @@ descriptors =   [   DD("airmass"),
                     DD("x_offset"),
                     DD("y_offset"),
                     DD("release_date"),
+                    DD("qa_state"),
                 ]
 
 wholeout = """

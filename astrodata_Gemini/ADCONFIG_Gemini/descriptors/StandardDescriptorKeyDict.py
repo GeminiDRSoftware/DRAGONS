@@ -51,4 +51,5 @@ globalStdkeyDict = {
     "key_wavelength_reference_pixel":"WREFPIX",
     "key_x_offset":"XOFFSET",
     "key_y_offset":"YOFFSET",
+    "key_release_date":"RELEASE",
     }

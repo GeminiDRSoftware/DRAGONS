@@ -198,3 +198,29 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             ret_wavefront_sensor = str('&'.join(wavefront_sensors))
         
         return ret_wavefront_sensor
+
+    def qa_state(self, dataset, **args):
+        """
+        Return the QA state for GEMINI data
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the qa state for the observation
+        """
+        hdu = dataset.hdulist
+        rawpireq = hdu[0].header[stdkeyDictGEMINI['key_raw_pi_requirements_met']]
+        rawgemqa = hdu[0].header[stdkeyDictGEMINI['key_raw_gemini_qa']]
+        # Calculate the derived QA state
+        qastate = "%s:%s" % (rawpireq, rawgemqa)
+        if((rawpireq == 'UNKNOWN') and (rawgemqa == 'UNKNOWN')):
+            qastate = 'Undefined'
+        if((rawpireq == 'YES') and (rawgemqa == 'USABLE')):
+            qastate = 'Pass'
+        if((rawpireq == 'NO') and (rawgemqa == 'USABLE')):
+            qastate = 'Usable'
+        if((rawpireq == 'NO') and (rawgemqa == 'BAD')):
+            qastate = 'Fail'
+        if((rawpireq == 'CHECK') and (rawgemqa == 'CHECK')):
+            qastate = 'CHECK'
+
+        return qastate
