@@ -966,9 +966,13 @@ class ClassificationLibrary (object):
                     # this is a definition file then, according to the filenaming convention, that is.
                     
                     fullpath = os.path.join(root, dfile)
-                    defsFile = open(fullpath)
+                    import py_compile
+                    #py_compile.compile(fullpath)
+                    print "ADT970: loading types"
+                    #defsFile = open(fullpath+"c")
                     newtypes=[]
-                    exec defsFile
+                    exec (fullpath)
+                    #exec defsFile
                     defsFile.close()
                     # newtype is declared here and used in the definition file to 
                     # pack in new types and return them to this scope.

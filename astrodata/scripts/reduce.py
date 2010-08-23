@@ -420,7 +420,7 @@ def command_line():
 
 prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
 usePRS = True
-#raise "r422: END TEST"
+raise "r422: END TEST"
 
 print "r395: usePRS=", usePRS
 
