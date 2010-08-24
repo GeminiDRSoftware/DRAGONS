@@ -1,17 +1,22 @@
-#getProcessedBias
+getProcessedBias
 #prepare
-#overscanCorrect
+overscanCorrect
 #addVARDQ
-
+writeOutputs
+measureIQ
 #writeOutputs
 
-#biasCorrect
-
-#writeOutputs
-
-#getProcessedFlat
-#flatCorrect
-
-mosaic
+biasCorrect
 
 writeOutputs
+
+measureIQ
+#overscanCorrect
+getProcessedFlat
+flatCorrect
+writeOutputs
+measureIQ
+mosaic
+writeOutputs
+measureIQ
+#writeOutputs
