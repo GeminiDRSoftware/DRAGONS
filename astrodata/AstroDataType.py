@@ -968,7 +968,7 @@ class ClassificationLibrary (object):
                     fullpath = os.path.join(root, dfile)
                     import py_compile
                     #py_compile.compile(fullpath)
-                    print "ADT970: loading types"
+                    # print "ADT970: loading types"
                     defsFile = open(fullpath)
                     newtypes=[]
                     exec (defsFile)
