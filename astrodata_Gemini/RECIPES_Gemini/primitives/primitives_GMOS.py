@@ -1,5 +1,6 @@
 #from Reductionobjects import Reductionobject
-from primitives_GEMINI import GEMINIPrimitives
+from primitives_GEMINI import GEMINIPrimitives, pyrafLoader
+
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
@@ -8,43 +9,27 @@ from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
 
-from pyraf.iraf import tables, stsdas, images
-from pyraf.iraf import gemini
-import pyraf
 from gempy.instruments.gemini import *
 from gempy.instruments.gmos import *
-
 
 import pyfits
 import numdisplay
 import string
 log=gemLog.getGeminiLog()
-yes = pyraf.iraf.yes
-no = pyraf.iraf.no
+
 import shutil
 
 # NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
 # don't execute pyraf code and so do not need to print this interactive 
 # package init display (it shows something akin to the dir(gmos)
+
 import sys, StringIO, os
-SAVEOUT = sys.stdout
-capture = StringIO.StringIO()#from Reductionobjects import Reductionobject
-
-log=gemLog.getGeminiLog()
-yes = pyraf.iraf.yes
-no = pyraf.iraf.no
-
-
-# NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
-# don't execute pyraf code and so do not need to print this interactive 
-# package init display (it shows something akin to the dir(gmos)
-import sys, StringIO, os
-SAVEOUT = sys.stdout
-capture = StringIO.StringIO()
-sys.stdout = capture
-gemini()
-gemini.gmos()
-sys.stdout = SAVEOUT
+#SAVEOUT = sys.stdout
+#capture = StringIO.StringIO()
+#sys.stdout = capture
+#gemini()
+#gemini.gmos()
+#sys.stdout = SAVEOUT
 
 class GMOSException:
     """ This is the general exception the classes and functions in the
@@ -63,18 +48,6 @@ class GMOSPrimitives(GEMINIPrimitives):
     astrotype = "GMOS"
     
     def init(self, rc):
-        
-        if "iraf" in rc and "adata" in rc["iraf"]:
-            pyraf.iraf.set (adata=rc["iraf"]['adata'])  
-        else:
-            # @@REFERENCEIMAGE: used to set adata path for primitives
-            if len(rc.inputs) > 0:
-                (root, name) = os.path.split(rc.inputs[0].filename)
-                pyraf.iraf.set (adata=root)
-                if "iraf" not in rc:
-                    rc.update({"iraf":{}})
-                if "adata" not in rc["iraf"]:
-                    rc["iraf"].update({"adata":root}) 
         
         GEMINIPrimitives.init(self, rc)
         return rc
@@ -139,6 +112,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         This primitive uses the CL script gireduce to subtract the overscan from the input images.
         """
+        
+        pyraf,gemini, yes, no = pyrafLoader(rc)
+        
         try:
             log.status('*STARTING* to subtract the overscan from the input data','status')
             # writing input files to disk with prefixes onto their file names so they can be deleted later easily 
@@ -207,7 +183,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* subtracting the overscan from the input data','status')
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise GMOSException
+            raise #GMOSException
         
         yield rc    
     #--------------------------------------------------------------------------------------------    
@@ -216,6 +192,8 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive uses pyfits and AstroData to trim the overscan region from the input images
         and update their headers.
         """
+        pyraf,gemini, yes, no = pyrafLoader(rc)
+        
         try:
             log.status('*STARTING* to trim the overscan region from the input data','status')
             
@@ -284,8 +262,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise GMOSException
         
         yield rc
-    
-    
      #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
     def storeProcessedFlat(self,rc):
         '''
@@ -296,12 +272,12 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         try:
                 
-            log.status('*STARTING* to store the processed bias by writing it to disk','status')
+            log.status('*STARTING* to store the processed flat by writing it to disk','status')
             for ad in rc.getInputs(style='AD'):
                 ad.filename=fileNameUpdater(ad.filename, postpend="_preparedFlat", strip=True)
                 log.fullinfo('filename written to = '+rc["storedflats"]+"/"+ad.filename,'fullinfo')
                 ad.write(os.path.join(rc['storedflats'],ad.filename),clobber=rc['clob'])
-            log.status('*FINISHED* storing the processed bias on disk','status')
+            log.status('*FINISHED* storing the processed flat on disk','status')
         except:
             log.critical("Problem preparing the image.",'critical')
             raise GMOSException
@@ -372,7 +348,7 @@ class GMOSPrimitives(GEMINIPrimitives):
            
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise GMOSException
+            raise #GMOSException
         
         yield rc
         
@@ -385,7 +361,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         its own versions.  This may be corrected in the future by replacing the use of the gireduce
         with a Python routine to do the bias subtraction.
         '''
-       
+        pyraf,gemini, yes, no = pyrafLoader(rc)
         try:
             log.status('*STARTING* to subtract the bias from the input flats','status')
             
@@ -473,7 +449,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         This may be fixed in the future by replacing giflat with a Python equivilent with more appropriate options
         for the recipe system.
         '''
-        
+        pyraf,gemini, yes, no = pyrafLoader(rc)
         try:
             
             log.status('*STARTING* to combine and normalize the input flats','status')
@@ -552,6 +528,9 @@ class GMOSPrimitives(GEMINIPrimitives):
             ad=rc.getInputs(style='AD')[0]
             processedFlat=AstroData(rc.getCal(ad,'flat'))
             
+            print 'prim_gmos533: ',processedFlat.filename
+            print processedFlat.info()
+            
             for ad in rc.getInputs(style='AD'):
                 log.fullinfo('calling ad.div','fullinfo')
                 adOut = ad.div(processedFlat)
@@ -565,7 +544,12 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut),'header' )
                 log.fullinfo('---------------------------------------------------','header')    
-            log.status('*FINISHED* flat correcting the inputs','status')    
+            
+                print 'prim_gmos546: ',adOut.info()
+            
+            log.status('*FINISHED* flat correcting the inputs','status')  
+            
+              
         except:
       
             raise GMOSException("Problem flat correcting the input")
@@ -578,6 +562,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         The interpolation parameter 'inter_function' can be changed to 'nearest','poly3',poly5','spline3' or 'sinc' from the 
         default value of 'linear'.  
         '''
+        pyraf,gemini, yes, no = pyrafLoader(rc)
         try:
             log.status('*STARTING* to mosaic the input images SCI extensions together','status')
             ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
@@ -642,11 +627,16 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise #GMOSException("Problem mosaicing the images")
             
         yield rc
+        
+    
+                
+                
 #***************************************************************************************************
 def CLDefaultParamsDict(CLscript):
     '''
     A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
     '''
+    pyraf,gemini, yes, no = pyrafLoader()
     if CLscript=='gireduce':
         defaultParams={
                            'inimages'    :'',               #Input GMOS images 
