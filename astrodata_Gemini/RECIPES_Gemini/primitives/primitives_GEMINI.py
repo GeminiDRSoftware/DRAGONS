@@ -9,21 +9,43 @@ from sets import Set
 from gempy.instruments.gemini import *
 import numpy as np
 import pyfits
-import pyraf
+
 from datetime import datetime
 import shutil
 log=gemLog.getGeminiLog()
-yes = pyraf.iraf.yes
-no = pyraf.iraf.no
-if True:
-
-    from pyraf.iraf import tables, stsdas, images
-    from pyraf.iraf import gemini
-    import pyraf
-
-    gemini()
 
 stepduration = 1.
+ 
+
+def pyrafLoader(rc = None):
+    import sys, StringIO, os
+    SAVEOUT = sys.stdout
+    capture = StringIO.StringIO()
+    sys.stdout = capture
+    
+    import pyraf
+    yes = pyraf.iraf.yes
+    no = pyraf.iraf.no
+    if True:
+    
+        from pyraf.iraf import gemini
+        gemini()
+        gemini.gmos()
+        
+        if rc:
+            if "iraf" in rc and "adata" in rc["iraf"]:
+                pyraf.iraf.set (adata=rc["iraf"]['adata'])  
+            else:
+                # @@REFERENCEIMAGE: used to set adata path for primitives
+                if len(rc.inputs) > 0:
+                    (root, name) = os.path.split(rc.inputs[0].filename)
+                    pyraf.iraf.set (adata=root)
+                    if "iraf" not in rc:
+                        rc.update({"iraf":{}})
+                    if "adata" not in rc["iraf"]:
+                        rc["iraf"].update({"adata":root})
+    return (pyraf,gemini,pyraf.iraf.yes, pyraf.iraf.no)
+# pyraf,gemini, yes, no = pyrafLoader(rc)
 
 class GEMINIException:
     """ This is the general exception the classes and functions in the
@@ -102,7 +124,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
 
 #------------------------------------------------------------------------------ 
-    def getProcessedBias(self, rc):
+    def dgetProcessedBias(self, rc):
         try:
             print "getting bias"
             rc.rqCal( "bias" )
@@ -116,7 +138,7 @@ class GEMINIPrimitives(PrimitiveSet):
             rc.finish()
         yield rc
 #------------------------------------------------------------------------------                 
-    def getProcessedFlat(self, rc):
+    def dgetProcessedFlat(self, rc):
         try:
             print "getting flat"
             rc.rqCal( "twilight" )
@@ -157,7 +179,7 @@ class GEMINIPrimitives(PrimitiveSet):
             yield rc
 
 #------------------------------------------------------------------------------ 
-    def measureIQ(self, rc):
+    def dmeasureIQ(self, rc):
         try:
             #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
             # separate primitives, i.e. detectSources and measureIQ.
@@ -616,6 +638,9 @@ class GEMINIPrimitives(PrimitiveSet):
                     nonLinArrayTrimmed = nonLinArray[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
                     saturatedArrayTrimmed = saturatedArray[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]  
                      
+                    #print BPMArray.shape
+                    #print nonLinArrayTrimmed.shape
+                    #print saturatedArrayTrimmed.shape
                     dqArray=np.add(BPMArray,nonLinArrayTrimmed,saturatedArrayTrimmed)
                     
                     dqheader = pyfits.Header()
@@ -683,7 +708,8 @@ class GEMINIPrimitives(PrimitiveSet):
         are propagated through to the final file.
         
         '''
-
+        pyraf,gemini, yes, no = pyrafLoader(rc)
+        
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* combine the images of the input data', 'status')
@@ -754,7 +780,44 @@ class GEMINIPrimitives(PrimitiveSet):
             raise GEMINIException
         
         yield rc   
+    #-----------------------------------------------------------------------
+    def measureIQ(self,rc):
+        '''
+        '''
+        #@@FIXME: Detecting sources is done here as well. This should eventually be split up into
+        # separate primitives, i.e. detectSources and measureIQ.
+        try:
+            log.status('*STARTING* to detect the sources and measure the IQ of the inputs','status')
+            for ad in rc.getInputs(style='AD'):
+                if not os.path.dirname(ad.filename)=='':
+                    log.critical('The inputs to measureIQ must be in the pwd for it to work correctly','critical')
+                    raise GEMINIException('inputs to measureIQ were not in pwd')
+                print ad.info()    
+               # if 'GEMINI_NORTH' in inp.ad.getTypes():
+               #     observ = 'gemini-north'
+               # elif 'GEMINI_SOUTH' in inp.ad.getTypes():
+               #     observ = 'gemini-south'
+               # else:
+               #     observ = 'gemini-north'
+                
+                st = time.time()
+                from iqtool.iq import getiq
+                iqdata = getiq.gemiq( ad.filename, function='moffat', display=True, mosaic=True, qa=True)
+                et = time.time()
+                print 'MeasureIQ time:', (et - st)
+                # iqdata is list of tuples with image quality metrics
+                # (ellMean, ellSig, fwhmMean, fwhmSig)
+                if len(iqdata) == 0:
+                    print "WARNING: Problem Measuring IQ Statistics, none reported"
+                else:
+                    rc.rqIQ( ad, *iqdata[0] )
+            
+            log.status('*FINISHED* measuring the IQ of the inputs','status')
+        except:
+            log.critical("Problem combining the images.",'critical',)
+            raise #GEMINIException
         
+        yield rc  
     #------------------------------------------------------------------------
     
     def ADUtoElectrons(self,rc):
@@ -865,12 +928,21 @@ class GEMINIPrimitives(PrimitiveSet):
                 except:
                     print 'no GAINORIG value'
         yield rc
+        
+    def ccdSumBiatch(self,rc):
+        
+        for ad in rc.getInputs(style='AD'):
+            print ad.filename
+            for sciExt in ad['SCI']:
+                print 'sciExt: '+sciExt.extver()+' , ccdsum: ',sciExt.getKeyValue('CCDSUM')
 # end of temp test prim ###################################################################   
          
 def CLDefaultParamsDict(CLscript):
     '''
     A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
     '''
+    pyraf,gemini, yes, no = pyrafLoader()
+    
     if CLscript=='gemcombine':
         defaultParams={
                        'input'      :'',            #Input MEF images
