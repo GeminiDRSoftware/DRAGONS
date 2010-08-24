@@ -1,5 +1,6 @@
 #from Reductionobjects import Reductionobject
-from primitives_GMOS import GMOSPrimitives
+from primitives_GMOS import GMOSPrimitives, pyrafLoader
+import primitives_GEMINI
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
@@ -8,9 +9,6 @@ from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
 
-from pyraf.iraf import tables, stsdas, images
-from pyraf.iraf import gemini
-import pyraf
 from gempy.instruments.gemini import *
 from gempy.instruments.gmos import *
 
@@ -18,8 +16,6 @@ import pyfits
 import numdisplay
 import string
 log=gemLog.getGeminiLog()
-yes = pyraf.iraf.yes
-no = pyraf.iraf.no
 
 
 # NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
@@ -29,8 +25,6 @@ import sys, StringIO, os
 SAVEOUT = sys.stdout
 capture = StringIO.StringIO()
 sys.stdout = capture
-gemini()
-gemini.gmos()
 sys.stdout = SAVEOUT
 
 class GMOS_IMAGEException:
@@ -45,31 +39,20 @@ class GMOS_IMAGEException:
         when the exception is not caught."""
         return self.message
 
-
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
     astrotype = "GMOS_IMAGE"
     
     def init(self, rc):
         
-        if "iraf" in rc and "adata" in rc["iraf"]:
-            pyraf.iraf.set (adata=rc["iraf"]['adata'])  
-        else:
-            # @@REFERENCEIMAGE: used to set adata path for primitives
-            if len(rc.inputs) > 0:
-                (root, name) = os.path.split(rc.inputs[0].filename)
-                pyraf.iraf.set (adata=root)
-                if "iraf" not in rc:
-                    rc.update({"iraf":{}})
-                if "adata" not in rc["iraf"]:
-                    rc["iraf"].update({"adata":root}) 
-        
         GMOSPrimitives.init(self, rc)
         return rc
        
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
+
     def daverageCombine(self, rc):
         try:
+            pyraf, gemini, yes, no = pyrafLoader(rc)
+            
             # @@TODO: need to include parameter options here
             print "Combining and averaging" 
             filesystem.deleteFile('inlist')
@@ -120,7 +103,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def dbiasCorrect(self, rc):
         # not really sure we need to use gireduce here. I think we could easily make a
         # more generic bias sub task
+        pyraf,gemini, yes, no = pyrafLoader(rc)
         try:
+            
             print "Subtracting off bias"
             cals = rc.calFilename( 'bias' )
             for cal in cals:
@@ -147,9 +132,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def display(self, rc):
         from astrodata.adutils.future import gemDisplay
-        import pyraf
-        from pyraf import iraf
-        iraf.set(stdimage='imtgmos')
+        pyraf,gemini, yes, no = pyrafLoader(rc)
+        pyraf.iraf.set(stdimage='imtgmos')
         ds = gemDisplay.getDisplayService()
         for i in range(0, len(rc.inputs)):   
             inputRecord = rc.inputs[i]
@@ -165,6 +149,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def findshiftsAndCombine(self, rc):
        try:
+          pyraf,gemini, yes, no = pyrafLoader(rc)
           print "shifting and combining images"
           #@@TODO: hardcoded parmeters and ***imcoadd.dat may need to move from 
           # imcoadd_data/test4 to test_data dir before running
@@ -183,6 +168,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
         # FLAT made with giflat
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print 'combining and normalizing best 20 twilight flats'
             gemini.giflat(rc.inputsAsStr(), outflat=rc["outflat"],
                 bias=rc.calName("REDUCED_BIAS"),rawpath=rc["caldir"],
@@ -198,6 +184,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
     def flatfieldCorrect(self, rc):
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print "Flat field correcting"
             
             cals = rc.calFilename( 'twilight' )
@@ -222,6 +209,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def fringeCorrect(self, rc):
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print "subtracting fringe frame"
             gemini.girmfringe( rc.inputsAsStr(), rc["fringe"],
                               Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
@@ -239,6 +227,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def makeFringeFrame(self, rc):
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print "creating fringe frame"
             gemini.gifringe(rc.inputsAsStr(), "fringe",
                 Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
@@ -266,6 +255,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # BIAS made for all GMOS modes (imaging, spectroscopy, IFU) we need to
         # consider a generic task. using gbias (IRAF generic task)
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print "combining biases to create master bias"
             gemini.gbias(rc.inputsAsStr(), outbias=rc["outbias"],
                 rawpath=rc["caldir"], fl_trim=rc["fl_trim"], 
@@ -283,6 +273,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # FLAT made for all GMOS modes (imaging, spectroscopy, IFU) we need to
        
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print "combining images and bias to create master flat"
             gemini.giflat(rc.inputsAsStr(), outflat=rc["outflat"],
                 rawpath=rc["caldir"], fl_trim=rc["fl_trim"], 
@@ -298,6 +289,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
     def mosaicChips(self, rc):
        try:
+          pyraf,gemini, yes, no = pyrafLoader(rc)
           print "producing image mosaic"
           gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
             Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
@@ -316,6 +308,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def doverscanCorrect(self, rc):
         print "Performing Overscan Correct (overSub, overTrim)"
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             gemini.gmos.gireduce(rc.inputsAsStr(strippath=True), fl_over=pyraf.iraf.yes,fl_trim=pyraf.iraf.yes,
                 fl_bias=no, fl_flat=no, outpref="trim_oversub_",
                 Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
@@ -334,6 +327,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def doverscanSub(self, rc):
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print "Determining overscan subtraction region using nbiascontam"
             print "parameter and BIASSEC header keyword"
             print "Subtracting overscan bias levels using colbias"    
@@ -354,6 +348,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def doverscanTrim(self, rc):
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print "Determining overscan region using BIASSEC header keyword"
             print "Trimming off overscan"
             gemini.gmos.gireduce(rc.inputsAsStr(), fl_over=no,fl_trim=yes, 
@@ -468,6 +463,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
    
     def dprepare(self, rc):
         try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
             print 'preparing'
             print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
             print "Updating GAIN keyword by calling GGAIN"
