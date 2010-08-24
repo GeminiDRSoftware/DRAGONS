@@ -11,5 +11,5 @@ getStackable
 #showInputs
 
 makeNormalizedFlat
-writeOutputs
+#writeOutputs
 storeProcessedFlat(clob=True)
