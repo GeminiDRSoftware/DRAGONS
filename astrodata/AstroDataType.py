@@ -969,9 +969,9 @@ class ClassificationLibrary (object):
                     import py_compile
                     #py_compile.compile(fullpath)
                     print "ADT970: loading types"
-                    #defsFile = open(fullpath+"c")
+                    defsFile = open(fullpath)
                     newtypes=[]
-                    exec (fullpath)
+                    exec (defsFile)
                     #exec defsFile
                     defsFile.close()
                     # newtype is declared here and used in the definition file to 
