@@ -1,7 +1,7 @@
 # Recipe for the prototype presentation
 
-getProcessedBias
-getProcessedFlat
+dgetProcessedBias
+dgetProcessedFlat
 
 showCals
 
@@ -17,10 +17,10 @@ mosaicChips
 display(displayID = single)
 shift
 
-measureIQ
+dmeasureIQ
 
 dsetStackable
 
 daverageCombine
 display(displayID = combined)
-measureIQ
+dmeasureIQ
