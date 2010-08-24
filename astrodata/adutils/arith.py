@@ -33,8 +33,11 @@ def div(numerator, denominator):
     num=numerator
     den=denominator 
     from copy import deepcopy
-    out=AstroData.prepOutput(inputAry = num, clobber = False)      
-    if type(den)==astrodata.AstroData:
+    out=AstroData.prepOutput(inputAry = num, clobber = False) 
+    #print type(den)    
+    #print num.info()
+    #print den.info() 
+    if type(den)==astrodata.AstroData or type(den)==astrodata.AstroData.AstroData:
         #print 'a30: den is type AstroData'
         for sci in num['SCI']:
             extver = sci.extver()
@@ -73,11 +76,11 @@ def div(numerator, denominator):
                         outdq.data=np.bitwise_or(num[('DQ',extver)].data,den[('DQ',extver)].data)
                         out.append(outdq)
                         
-                    else:
-                        log.critical('arrays are different sizes for SCI extension '+str(extver)+' of the input '\
-                                     +num.filename+' and '+den.filename,'critical')
-                        raise ArithExcept('An error occurred while performing an arith task')
-                
+                else:
+                    log.critical('arrays are different sizes for SCI extension '+str(extver)+' of the input '\
+                                 +num.filename+' and '+den.filename,'critical')
+                    raise ArithExcept('An error occurred while performing an arith task')
+             
             except:
                 raise ArithExcept('An error occurred while performing an arith task')
 
