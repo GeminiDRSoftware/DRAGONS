@@ -26,10 +26,11 @@ def stdInstHdrs(ad):
 
 def valInstData(ad):
     # to ensure structure is the normal PHU followed by 3 SCI extensions for GMOS
-    if len(ad)==1 or len(ad)==3 or len(ad)==6 or len(ad)==12:
+    length=ad.countExts('SCI')
+    if length==1 or length==3 or length==6 or length==12:
         pass
     else: 
-        log.critical("gmostools33: there are NOT 1, 3, 6 or 12 extensions in file = "+ad.filename,'critical')
+        log.critical("There are NOT 1, 3, 6 or 12 extensions in file = "+ad.filename,'critical')
         raise 
         
     
