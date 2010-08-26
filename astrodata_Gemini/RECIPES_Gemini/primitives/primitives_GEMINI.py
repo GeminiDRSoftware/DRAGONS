@@ -429,7 +429,7 @@ class GEMINIPrimitives(PrimitiveSet):
         This primitive ensures the MEF structure is ready for further processing, through 
         adding the MDF if necessary and the needed keywords to the headers.  First the 
         MEF's will be checked for the general Gemini structure requirements and then the 
-        instrument specific ones. If the data requires a MDF to be attached, use the 
+        instrument specific ones if needed. If the data requires a MDF to be attached, use the 
         'addMDF' flag to make this happen (eg. standardizeStructure(addMDF=False)).
         '''
         
@@ -524,8 +524,9 @@ class GEMINIPrimitives(PrimitiveSet):
             
             for ad in rc.getInputs(style='AD'):
                 for sciExt in ad['SCI']:
-                    varArray=np.zeros(sciExt.data.shape,dtype=np.float32)
+                    varArray=np.zeros(sciExt.data.shape,dtype=np.float32) ###**** this needs to use arith.py to actually calc the VAR frames ***
                 
+                                   
                     varheader = pyfits.Header()
                     varheader.update('NAXIS', 2)
                     varheader.update('PCOUNT', 0, 'required keyword; must = 0 ')
@@ -928,13 +929,6 @@ class GEMINIPrimitives(PrimitiveSet):
                 except:
                     print 'no GAINORIG value'
         yield rc
-        
-    def ccdSumBiatch(self,rc):
-        
-        for ad in rc.getInputs(style='AD'):
-            print ad.filename
-            for sciExt in ad['SCI']:
-                print 'sciExt: '+sciExt.extver()+' , ccdsum: ',sciExt.getKeyValue('CCDSUM')
 # end of temp test prim ###################################################################   
          
 def CLDefaultParamsDict(CLscript):
