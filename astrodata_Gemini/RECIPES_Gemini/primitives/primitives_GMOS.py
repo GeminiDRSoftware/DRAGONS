@@ -62,7 +62,7 @@ class GMOSPrimitives(GEMINIPrimitives):
     '''
     
     
-    #------------------------------------------------------------------------    
+#------------------------------------------------------------------------    
     def validateInstrumentData(self,rc):
         '''
         This primitive is called by validateData to validate the instrument specific data checks for all input files.
@@ -81,7 +81,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc       
         
-    #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
     def standardizeInstrumentHeaders(self,rc):
         '''
         This primitive is called by standardizeHeaders to makes the changes and additions to
@@ -96,7 +96,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             if writeInt:
                 log.debug('writing the outputs to disk')
-                rc.run('writeOutputs(postpend=_instHdrs)')  #$$$$$$$$$$$$$this needs to accept arguments to work right!!!!!!!!!!!! currently hardcoded
+                rc.run('writeOutputs(postpend=_instHdrs)') 
                 log.debug('writting complete')
                     
         except:
@@ -105,7 +105,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
 
- #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
  
  #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
     def overscanSubtract(self,rc):
@@ -173,7 +173,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.fullinfo('new file name is: '+ad.filename, 'status')
                 i=i+1
                 ut = ad.historyMark()  
-                #$$$$$ should we also have a OVERSUB UT time stame in the PHU???
+                #$$$$$ should we also have a OVERSUB UT time same in the PHU???
                 log.fullinfo('****************************************************','header')
                 log.fullinfo('file = '+ad.filename,'header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
@@ -186,7 +186,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise #GMOSException
         
         yield rc    
-    #--------------------------------------------------------------------------------------------    
+#--------------------------------------------------------------------------------------------    
     def overscanTrim(self,rc):
         """
         This primitive uses pyfits and AstroData to trim the overscan region from the input images
@@ -240,7 +240,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise GMOSException
         
         yield rc
-    #---------------------------------------------------------------------------    
+#---------------------------------------------------------------------------    
     def storeProcessedBias(self,rc):
         '''
         this should be a primitive that interacts with the calibration system (MAYBE) but that isn't up and running yet
@@ -262,7 +262,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise GMOSException
         
         yield rc
-     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
     def storeProcessedFlat(self,rc):
         '''
         this should be a primitive that interacts with the calibration system (MAYBE), but that isn't up and running yet
@@ -284,12 +284,12 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
 
-    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def NEWgetProcessedBias(self,rc):
         rc.rqCal("bias", rc.getInputs(style="AD"))
         yield rc
 
-    #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def getProcessedBias(self,rc):
         '''
         a prim that works with the calibration system (MAYBE), but as it isn't written yet this simply
@@ -320,7 +320,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
             
-    #-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
    
     def getProcessedFlat(self,rc):
         '''
@@ -352,7 +352,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
         
-     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def biasCorrect(self, rc):
         '''
         This primitive will subtract the biases from the inputs using the CL script gireduce.
@@ -440,8 +440,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise GMOSException("Problem subtracting bias")
             
         yield rc
-    #---------------------------------------------------------------------------
-    def makeNormalizedFlat(self,rc):
+#---------------------------------------------------------------------------
+    def normalizeFlat(self,rc):
         '''
         This primitive will combine the input flats and then normalize them using the CL script giflat.
         
@@ -517,7 +517,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise GMOSException("Problem normalizing the input flat")
             
         yield rc
-    #------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
     def flatCorrect(self,rc):
         '''
         This primitive performs a flat correction by deviding the inputs by aprocessed flat similar
@@ -627,10 +627,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise #GMOSException("Problem mosaicing the images")
             
         yield rc
-        
-    
-                
-                
+          
 #***************************************************************************************************
 def CLDefaultParamsDict(CLscript):
     '''
