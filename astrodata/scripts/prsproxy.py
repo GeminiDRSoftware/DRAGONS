@@ -68,7 +68,7 @@ class ReduceInstanceManager(object):
     def register(self, pid, details):
         """This function is exposed to the xmlrpc interface, and is used
         by reduce instances to register their details so the prsproxy
-        can manage it's own and their processes.
+        can manage it's own and their processes. 
         """
         self.numinsts +=1
         print "prs73 reg:",self.numinsts 
