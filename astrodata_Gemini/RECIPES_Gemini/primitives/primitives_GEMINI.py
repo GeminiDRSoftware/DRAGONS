@@ -760,7 +760,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 
                 if gemini.gemcombine.status:
                     log.critical('gemcombine failed','critical')
-                    raise 
+                    raise GEMINIException('gemcombine status was not zero, so it failed')
                 else:
                     log.fullinfo('exited the gemcombine CL script successfully', 'status')
                     
@@ -786,7 +786,7 @@ class GEMINIPrimitives(PrimitiveSet):
         
         except:
             log.critical("Problem combining the images.",'critical',)
-            raise GEMINIException
+            raise #GEMINIException
         
         yield rc   
     #-----------------------------------------------------------------------
