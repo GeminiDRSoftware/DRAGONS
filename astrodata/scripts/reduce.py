@@ -451,7 +451,10 @@ def commandClause(ro, coi):
                 # Do the calibration search
                 calurl = None
                 if usePRS and prs == None:
+                    print "r454: getting prs"
                     prs = Proxies.PRSProxy.getPRSProxy(reduceServer = reduceServer)
+                    
+                if usePRS:
                     calurl = prs.calibrationSearch( rq )
                 
                 # print "r396:", calurl

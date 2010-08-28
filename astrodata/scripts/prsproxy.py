@@ -14,7 +14,9 @@ import socket
 import select
 
 CALMGR = "http://hbffits1.hi.gemini.edu/calmgr"
-CALTYPEDICT = { "bias": "processed_bias"}
+CALTYPEDICT = { "bias": "processed_bias",
+                "flat": "processed_flat"}
+
 
 from optparse import OptionParser
 
