@@ -288,6 +288,10 @@ class GMOSPrimitives(GEMINIPrimitives):
     def NEWgetProcessedBias(self,rc):
         rc.rqCal("bias", rc.getInputs(style="AD"))
         yield rc
+        
+    def NEWgetProcessedFlat(self,rc):
+        rc.rqCal("flat", rc.getInputs(style="AD"))
+        yield rc
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def getProcessedBias(self,rc):
