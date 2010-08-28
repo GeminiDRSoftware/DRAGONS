@@ -231,7 +231,7 @@ def command_line():
                 else:
                     opt,val = line.split("=")
 
-                print "r204:",opt, val
+                # print "r204:",opt, val
                 opt = opt.strip()
                 val = val.strip()
                     
@@ -416,13 +416,15 @@ def command_line():
 
 
   
-# CONTACT THE PRS PROXY
+# launch xmlrpc interface for control and communication
+from astrodata import Proxies
+reduceServer = Proxies.ReduceServer()
+
 
 prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
 usePRS = True
-#raise "r422: END TEST"
 
-print "r395: usePRS=", usePRS
+# print "r395: usePRS=", usePRS
 
 # called once per substep (every yeild in any primitive when struck)
 # registered with the reduction object
@@ -444,15 +446,15 @@ def commandClause(ro, coi):
             fn = rq.filename
             typ = rq.caltype
             calname = coi.getCal(fn, typ)
-            print "r399:", "handling calibrations"
+            # print "r399:", "handling calibrations"
             if calname == None:
                 # Do the calibration search
                 calurl = None
                 if usePRS and prs == None:
-                    prs = Proxies.PRSProxy.getPRSProxy()    
+                    prs = Proxies.PRSProxy.getPRSProxy(reduceServer = reduceServer)
                     calurl = prs.calibrationSearch( rq )
                 
-                print "r396:", calurl
+                # print "r396:", calurl
                 if calurl == None:
                     # @@NOTE: should log no calibrations found
                     raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
@@ -836,6 +838,8 @@ for infiles in allinputs: #for dealing with multiple files.
         except:
             print "CONTEXT AFTER FATAL ERROR"
             print "--------------------------"
+            if reduceServer:
+                reduceServer.finished=True
             co.persistCalIndex(calindfile)
             if (bReportHistory):
                 co.reportHistory()
@@ -882,3 +886,5 @@ for infiles in allinputs: #for dealing with multiple files.
     # main()
     # don't leave the terminal in another color/mode, that's rude
     print "${NORMAL}"
+    
+    reduceServer.finished=True

@@ -227,14 +227,16 @@ Note, the variable "ad" is generally used to represent an already constructed As
                 import urllib
                 from urllib import urlretrieve
                 savename = os.path.basename(dataset)
-                print "Retrieving remote file from %s to %s" % (dataset, os.path.join(store,savename))
+                print "${BOLD}AstroData${NORMAL} retrieving remote file: "
+                print "     from %s" % dataset
+                print "     to   %s" % os.path.join(store,savename)
                 if store:
-                    print "AD230: Storing in,", store
+                    # print "AD230: Storing in,", store
                     fname = urlfetch(dataset, store = store, clobber = storeClobber)
                     #fname,headers = urlretrieve(dataset, os.path.join(store, savename), None, 
                     #    urllib.urlencode({"gemini_fits_authorization":"good_to_go"}))
                 else:
-                    print "AD235: Retrieved to temp file"
+                    # print "AD235: Retrieved to temp file"
                     fname = urlfetch(dataset)
                     #fname, headers = urlretrieve(dataset)
                 dataset = savename
@@ -242,7 +244,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
                 import shutil
                 shutil.copy(dataset, store)
                 dataset = os.path.join(store,dataset)
-                print "AD235:", dataset
+                # print "AD235:", dataset
             
         if (dataset == None) and (header != None) and (data != None):
             dataset = pyfits.ImageHDU(data = data, header=header)

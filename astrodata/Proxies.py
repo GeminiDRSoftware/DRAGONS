@@ -2,48 +2,155 @@ import xmlrpclib
 import subprocess
 from time import sleep
 import os
+from SimpleXMLRPCServer import SimpleXMLRPCServer
+import select
+import socket
+
+PDEB = False
+
+class ReduceCommands(object):
+    prsready = False
+    reduceServer = None
+    
+    def __init__(self, reduceServer):
+        self.reduceServer = reduceServer
+    def get_version(self):
+        return [("ReduceXMLRPS", "0.1")]
+
+    def prsready(self):
+        # print "P80: prs ready!"
+        self.prsready = True
+        reduceServer.prsready = True
+            
+reduceServer = None
+
+class ReduceServer(object):
+    xmlrpcthread = None
+    listenport = 53531    
+    reducecmds = None
+    finished = False
+    prsready = False
+    def __init__(self):
+        global reduceServer
+        from threading import Thread
+        self.xmlrpcthread = Thread(None, self.startListening, "reducexmlrpc")
+        self.xmlrpcthread.start() 
+        reduceServer = self
+        
+    def startListening(self):
+        findingport = True
+        while(findingport):
+            try:
+                # print "p44: startListening on ", self.listenport, self.xmlrpcthread
+                server = SimpleXMLRPCServer(("localhost", self.listenport), allow_none=True, logRequests=False)
+                findingport = False
+                # print "p47: Reduce xmlrpc listening on port %d..." % self.listenport
+            except socket.error:
+                self.listenport += 1
+                
+        self.reducecmds = ReduceCommands(self)
+        server.register_instance(self.reducecmds)
+        
+        try:
+            # print 'p55: started reduce xmlrpc server thread...'
+            #server.serve_forever()
+            while True:
+                r,w,x = select.select([server.socket], [],[],.5)
+                if r:
+                    server.handle_request()
+                # print "prsw: ",webserverdone
+                if self.finished == True:
+                    # print "P63: shutting down reduce xmlrpc thread"
+                    break
+        except KeyboardInterrupt:
+            print '^C received, shutting down server'
+            server.socket.close()
+
+    
 
 class PRSProxy(object):
     prs = None
     found = False
     version = None
-
+    finished = False
+    
+    prsport = 53530
+    reducecmds = None
+    xmlrpcthread = None
+    reduceServer = None
+            
+    def __init__(self, reduceServer = None):
+        # print ("P83: created PROXY")
+        self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
+        self.reduceServer = reduceServer
+        try:
+            self.found = True
+        except socket.error:
+            self.found = False
+        
+        
     @classmethod
-    def getPRSProxy(cls, start = True):
+    def getPRSProxy(cls, start = True, proxy = None, reduceServer = None):
+        
         newProxy = None
-        print "P12: getting PRSProxy"
-        xmlrpcproxy = xmlrpclib.ServerProxy("http://localhost:8777/", allow_none=True)
+
         found = False
         try:
-            newProxy = PRSProxy()
+            if proxy == None:
+                newProxy = PRSProxy(reduceServer = reduceServer)
+                newProxy.version = newProxy.get_version()
             
-            newProxy.version = xmlrpcproxy.version()
-            print "P18: version = ", repr(newProxy.version)
-            newProxy.prs = xmlrpcproxy
-            print "P21: setting found equal true"
+                if (PDEB):
+                    print "P102: newProxy id", id(newProxy), newProxy.found
+                    print "P100: checking for proxy up"
+            else:
+                proxy.reduceServer = reduceServer
+                newProxy = proxy
+                newProxy.version = newProxy.get_version()
+                
+            # After this version call, we know it's up, we keep this
+            # proxy, and start listening for commands
+            if PDEB:
+                print "P109: setting found equal true"
             newProxy.found = True
-            print "P22: about to register"
-            newProxy.prs.register()
-            print "P22: Proxy found"
-        except:
-            print "P24: Proxy Not Found"
+            if PDEB:
+                print "P111: about to register"
+            details =  {"port":reduceServer.listenport}
+            newProxy.prs.register(os.getpid(), details)
+            if PDEB:
+                print "P120: Proxy found"
+        except socket.error:
+            newProxy.found = False
+            if PDEB:
+                print "P123: Proxy Not Found"
             # not running, try starting one...
             if start == False:
                 raise
             if start:
-                del(newProxy)
-                print "P25: starting prsproxy.py"
+                if (PDEB):
+                    print "P132: newProxy id", id(newProxy)
+                    print "P125: starting prsproxy.py"
                 prsout = open("prsproxylog-reduce%d" % os.getpid(), "w")
                 pid = subprocess.Popen(["prsproxy.py", "--invoked"], stdout = prsout, stderr=prsout).pid
-                print "P23: pid =", pid
+                if (PDEB):
+                    print "P128: pid =", pid
                 notfound = True
-                print "P29: waiting"
-                sleep(2)
-                prs = cls.getPRSProxy(start=False)
-                print "P35: prs=",repr(prs), prs.found
-                if prs.found:
+                if (PDEB):
+                    print "P130: waiting"
+                # After this version call, we know it's up, we keep this
+                # proxy, and start listening for commands
+                while reduceServer.prsready == False:
+                    if (PDEB):
+                        print "sleeping .1"
+                    sleep(.1)
+                
+                newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduceServer = reduceServer)
+                if (PDEB):
+                    print "P143:", newProxy.found, newProxy.version, newProxy.finished, newProxy.reduceServer
+                
+                if newProxy.found:
                     notfound = False
-                    return prs
+                    return newProxy
             else:
                 newProxy.found = False
                 
@@ -51,17 +158,31 @@ class PRSProxy(object):
         return newProxy
         
     def __del__(self):
-        print "P54:",repr(self.prs)
+        # raise " no "
+        import traceback
+        if (PDEB):
+            print "P153: self.found =",self.found, id(self)
         if hasattr(self.prs,"found"):
-            print "about to unregister from found prs"
-            self.prs.unregister()
-            print "unregistered from the prs"
+            if (PDEB):
+                print "about to unregister from found prs"
+            self.prs.unregister(os.getpid())
+            if (PDEB):
+                print "unregistered from the prs"
         
             
     def calibrationSearch(self, calRq):
         if self.found == False:
             return None
         else:
-            cal = self.prs.calibrationSearch(calRq.asDict())
-            print "P28:", cal
+            calrqdict = calRq.asDict()
+            if (PDEB):
+                print "P165:", repr(calrqdict)
+            cal = self.prs.calibrationSearch(calrqdict)
+            if (PDEB):
+                print "P167:", cal
             return cal
+    def get_version(self):
+        self.version = self.prs.get_version()
+        return self.version
+            
+

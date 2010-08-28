@@ -778,7 +778,7 @@ class ReductionContext(dict):
         #print "Calibration List Before Persist:"
         #print self.calsummary()
         if newindex != None:
-            print "P781:", repr(newindex)
+            # print "P781:", repr(newindex)
             self.calibrations = newindex
         try:
             pickle.dump(self.calibrations, open(filename, "w"))

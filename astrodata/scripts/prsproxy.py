@@ -10,6 +10,8 @@ import urllib
 from xml.dom import minidom
 from threading import Thread
 import prsproxyweb
+import socket
+import select
 
 CALMGR = "http://hbffits1.hi.gemini.edu/calmgr"
 CALTYPEDICT = { "bias": "processed_bias"}
@@ -24,7 +26,17 @@ parser.add_option("-i", "--invoked", dest = "invoked", action = "store_true",
             help = """Used by processes that invoke prsproxy, so that PRS proxy knows
             when to exit. If not present, the prsproxy registers itself and will
             only exit by user control (or by os-level signal).""")
-
+parser.add_option("-r", "--reduce-port", dest = "reduceport", default=53531, type="int",
+            help="""When invoked by reduce, this is used to inform the prsproxy of the 
+            port on which reduce listens for xmlrpc commands.""")
+parser.add_option("-p", "--reduce-pid", dest ="reducepid", default=None, type="int",
+            help = """When invoked by reduce, this option is used to inform the
+            prsproxy of the reduce application's PID.""")
+parser.add_option("-l", "--listen-port", dest = "listenport", default=53530, type="int",
+            help="""This is the port that the prsproxy listens at for the xmlrps server.""")
+parser.add_option("-w", "--http-port", dest = "httpport", default=8777, type="int",
+            help="""This is the port the web interface will respond to. 
+            http://localhost:<http-port>/""")
 options, args = parser.parse_args()
 # ----- UTILITY FUNCS
 
@@ -40,21 +52,47 @@ def urljoin(*args):
 class ReduceInstanceManager(object):
     numinsts = 0
     finished = False
-    
-    def register(self):
-        self.numinsts +=1
-        self.finished = False
-        print "prs12 reg:",self.numinsts 
+    reducecmds = None
+    reducedict = None
+    def __init__(self):
+        # get my client for the reduce commands
+        print "starting xmlrpc server at port %d..." %options.reduceport,
+        self.reducecmds = xmlrpclib.ServerProxy("http://localhost:%d/" % options.reduceport, allow_none=True)
+        print "started"
+        try:
+            self.reducecmds.prsready()
+        except socket.error:
+            print "prs50: no reduce instances running"
+        self.reducedict = {}
         
-    def unregister(self):
+    def register(self, pid, details):
+        """This function is exposed to the xmlrpc interface, and is used
+        by reduce instances to register their details so the prsproxy
+        can manage it's own and their processes.
+        """
+        self.numinsts +=1
+        print "prs73 reg:",self.numinsts 
+        self.finished = False
+        print "prs75:",repr(details)
+        self.reducedict.update({pid:details})
+        # self.reducecmds.prsready()
+        
+    def unregister(self, pid):
         self.numinsts -= 1
+        if pid in self.reducedict:
+            del self.reducedict[pid] 
         print "prs17 unreg:",self.numinsts 
+        if self.numinsts< 0:
+            self.numinsts = 0
         if self.numinsts == 0:
             self.finished = True
+            
             #quitServer()s
 
-def version():
-    return [("PRSProxy","0.1")]
+def get_version():
+    version = [("PRSProxy","0.1")]
+    print "prsproxy version:", repr(version)
+    return version
     
 def calibrationSearch(rq):
     print "prs38: the request",repr(rq)
@@ -74,22 +112,26 @@ def calibrationSearch(rq):
         return None
     print "prs70:", calurlel.data
     
+    #@@TODO: test only 
     return calurlel.data
     
-server = SimpleXMLRPCServer(("localhost", 8777), allow_none=True)
-print "PRS Proxy listening on port 8777..."
-server.register_function(version, "version")
+server = SimpleXMLRPCServer(("localhost", options.listenport), allow_none=True)
+print "PRS Proxy listening on port %d..." % options.listenport
+server.register_function(get_version, "get_version")
 server.register_function(calibrationSearch, "calibrationSearch")
 
 rim = ReduceInstanceManager()
 server.register_instance(rim)
+
 
 # server.serve_forever(
 # start webinterface
 webinterface = True #False
 if (webinterface):
     #import multiprocessing
-    web = Thread(None, prsproxyweb.main, "webface")
+    web = Thread(None, prsproxyweb.main, "webface", 
+                    kwargs = {"port":8777,
+                              "rim":rim})
     web.start()
     
 outerloopdone = False
@@ -99,10 +141,18 @@ while True:
     try:
         while True: #not finished:
             # print "prs53:", rim.finished
-            server.handle_request() 
+            r,w,x = select.select([server.socket], [],[],.5)
+            if r:
+                server.handle_request() 
+            # print "P146:", repr(rim.reducedict)
             # print "prs55:", rim.finished
-            print "prs104:", prsproxyweb.webserverdone
-            if options.invoked and rim.finished:
+            #print "prs104:", prsproxyweb.webserverdone
+            if prsproxyweb.webserverdone:
+                print "prsproxy exiting due to command vie http interface"
+                print "number of reduce instances abandoned:", rim.numinsts
+                outerloopdone = True
+                break
+            if (options.invoked and rim.finished):
                 print "prsproxy exiting, no reduce instances to serve."
                 outerloopdone = True
                 prsproxyweb.webserverdone = True
@@ -111,7 +161,8 @@ while True:
         if rim.numinsts>0:
             # note: save reduce pide (pass in register) and 
             #       and check if pids are running!
-            print "\nprsproxy: Can't exit, %d instances of reduce running", rim.numinsts
+            print "\nprsproxy: %d instances of reduce running" % rim.numinsts
+            break
         else:
             print "\nprsproxy: exiting due to Ctrl-C"
             # this directly breaks from the outer loop but outerloopdone for clarity

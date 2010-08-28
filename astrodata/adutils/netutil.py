@@ -17,7 +17,7 @@ def urlfetch(url, store = None, clobber = False):
                                  purl.fragment)
     
     url = npurl.geturl()
-    print "nu20:", url
+    # print "nu20:", url
 
     jar = cookielib.CookieJar()
 
@@ -36,15 +36,16 @@ def urlfetch(url, store = None, clobber = False):
     
     handler = urllib2.HTTPCookieProcessor(jar)
     opener = urllib2.build_opener(handler)
-    for index, cookie in enumerate(jar):
-        print index, ":", cookie
+    # for index, cookie in enumerate(jar):
+        # print "nu40:",index, ":", cookie
        
     #res = urllib2.urlopen(req)
-    c = urllib.urlencode( {'gemini_fits_authorization':'good_to_go'})
+    #c = urllib.urlencode( {'gemini_fits_authorization':'value'})
+    c = urllib.urlencode( {'gemini_fits_authorization':'value'})
     res = opener.open(url, c)
 
-    for index, cookie in enumerate(jar):
-        print index, ":", cookie
+    #for index, cookie in enumerate(jar):
+    #    print index, ":", cookie
 
     CHUNK = 65536
     if store:
@@ -55,15 +56,16 @@ def urlfetch(url, store = None, clobber = False):
         outf.close()
 
     if os.path.exists(outname) and not clobber:
-        raise "File Already Exists:", outname
+        raise "File Already Exists:" + outname
     f = open(outname,"w")
-    print "downloading",url
+    print "${BOLD}netutil${NORMAL}: downloading",url
     while True:
         chunk = res.read(CHUNK)
         if chunk == "":
             break
         f.write(chunk)
-    print "retrieved", url,"to",outname
+    print "${BOLD}netutil${NORMAL}: retrieved", url
+    print "${BOLD}netutil${NORMAL}:     to",outname
     
     f.close()
     res.close()

@@ -49,7 +49,7 @@ class CalibrationRequest( ReductionObjectRequest ):
                      "caltype": self.caltype,
                      "datalabel" : self.datalabel
                      })
-        print "ROR50:", retd
+        # print "ROR50:", retd
         return retd
         
     def fromDict(self, params):
