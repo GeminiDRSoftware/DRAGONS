@@ -82,7 +82,7 @@ class GEMINIPrimitives(PrimitiveSet):
        
  #------------------------------------------------------------------------------ 
     def clearCalCache(self, rc):
-        print "pG61:", rc.calindfile
+        # print "pG61:", rc.calindfile
         rc.persistCalIndex(rc.calindfile, newindex = {})
         scals = rc["storedcals"]
         if scals:
@@ -263,6 +263,14 @@ class GEMINIPrimitives(PrimitiveSet):
             
             
             
+    def sleep(self, rc):
+        if rc["duration"]:
+            dur = float(rc["duration"])
+        else:
+            dur = 5.
+        print "Sleeping for %f seconds" % dur
+        sleep(dur)
+        yield rc
                       
 #------------------------------------------------------------------------------ 
     def dsetStackable(self, rc):
