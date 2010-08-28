@@ -1,9 +1,12 @@
 
 prepare
 
+overscanCorrect
+
 addVARDQ
 
-overscanCorrect
+#showInputs
+setStackable
 
 avgCombine
 
