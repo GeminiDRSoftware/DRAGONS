@@ -17,7 +17,7 @@ class ReduceCommands(object):
     def get_version(self):
         return [("ReduceXMLRPS", "0.1")]
 
-    def prsready(self):
+    def prsReady(self):
         # print "P80: prs ready!"
         self.prsready = True
         reduceServer.prsready = True

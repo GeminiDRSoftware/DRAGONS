@@ -58,11 +58,11 @@ class ReduceInstanceManager(object):
     reducedict = None
     def __init__(self):
         # get my client for the reduce commands
-        print "starting xmlrpc server at port %d..." %options.reduceport,
+        print "starting xmlrpc client to port %d..." %options.reduceport,
         self.reducecmds = xmlrpclib.ServerProxy("http://localhost:%d/" % options.reduceport, allow_none=True)
         print "started"
         try:
-            self.reducecmds.prsready()
+            self.reducecmds.prsReady()
         except socket.error:
             print "prs50: no reduce instances running"
         self.reducedict = {}
@@ -105,14 +105,14 @@ def calibrationSearch(rq):
     rqurl = urljoin(CALMGR, CALTYPEDICT[rq['caltype']],rq['datalabel'] )
     print "prs52:", rqurl
     response = urllib.urlopen(rqurl).read()
-    print "prs66:", response
+    #print "prs66:", response
     dom = minidom.parseString(response)
     calel = dom.getElementsByTagName("calibration")
     try:
         calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
     except exceptions.IndexError:
         return None
-    print "prs70:", calurlel.data
+    #print "prs70:", calurlel.data
     
     #@@TODO: test only 
     return calurlel.data

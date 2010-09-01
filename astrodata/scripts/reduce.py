@@ -164,11 +164,17 @@ parser.add_option("--logName",dest='logName', default='gemini.log', type='string
 parser.add_option("--writeInt",dest='writeInt', default=False, action="store_true",
                   help="writeInt (short for writeIntermediate) will set it so the outputs of" + \
                   "each primitive are written to disk rather than only at the end of the recipe. default=False."+ \
-                  "(CURRENTLY THIS DOESN'T WORK)")                 
+                  "(CURRENTLY THIS DOESN'T WORK)")       
+parser.add_option("--invoked", dest="invoked", default=False, action="store_true")
+          
 
 (options,  args) = parser.parse_args()
 
-
+if options.invoked:
+    opener = "REDUCE STARTED BY PRSPROXY"
+    print opener
+    print "."*len(opener)
+    sys.stdout.flush()
 
 useTK =  options.bMonitor
 # ------
@@ -320,6 +326,7 @@ def command_line():
         parser.print_help()
         sys.exit(1)
     
+    
     input_files = []
     for inf in infile:
         #"""
@@ -330,7 +337,6 @@ def command_line():
             raise "The input had "+ str(inf)+" cannot be loaded."
         # extend the list of input files with contents of @ list
         input_files.extend( tmpInp )
-
     # print "r161:", input_files
         
     if options.add_cal != None:
@@ -451,7 +457,7 @@ def commandClause(ro, coi):
                 # Do the calibration search
                 calurl = None
                 if usePRS and prs == None:
-                    print "r454: getting prs"
+                    # print "r454: getting prs"
                     prs = Proxies.PRSProxy.getPRSProxy(reduceServer = reduceServer)
                     
                 if usePRS:
@@ -605,7 +611,14 @@ def commandClause(ro, coi):
 # get RecipeLibrary
 rl = RecipeLibrary()
 
-allinputs = command_line()
+try:
+    allinputs = command_line()
+except:
+    print "command_line() parsing failed."
+    reduceServer.finished=True
+    sys.stdout.flush()
+    sys.stderr.flush()
+    raise
 
 generate_pycallgraphs = False
 if (generate_pycallgraphs):
