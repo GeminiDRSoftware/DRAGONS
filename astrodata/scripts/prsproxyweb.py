@@ -40,11 +40,23 @@ def parsepath(path):
         rparms.update({"query":""})
     
     return rparms
+    
+class PPWState(object):
+    dataSpider = None
+    dirdict = None
+    
+ppwstate = PPWState()
+    
 webserverdone = False
 class MyHandler(BaseHTTPRequestHandler):
     informers = None
+    dataSpider = None
+    dirdict = None
 
+    state = None
+    
     def do_GET(self):
+        self.state = ppwstate
         global webserverdone
         print "path=",self.path
         
@@ -54,7 +66,7 @@ class MyHandler(BaseHTTPRequestHandler):
         print "prs52:", repr(qd)
         rim = self.informers["rim"]
         try:
-            if self.path == "/":
+            if False: # old root self.path == "/":
                 page = """
                 <html>
                 <head>
@@ -71,20 +83,45 @@ class MyHandler(BaseHTTPRequestHandler):
                 </html>""" % {"numinsts":rim.numinsts}
                 self.wfile.write(page)
                 return
-            if parms["path"] == "/datadir":
+            if parms["path"] == "/datadir.xml":
+                #print "*"*300
+                print repr(self.dirdict)
+                if self.state.dirdict == None:
+                    from astrodata.DataSpider import DataSpider
+                    ds = self.state.dataSpider = DataSpider(".")
+                    dirdict = self.state.dirdict = ds.datasetwalk()
+                else:
+                    ds = self.state.dataSpider
+                    dirdict = self.state.dirdict
+                    
                 self.send_response(200)
-                self.send_header('Content-type',	'text/html')
+                self.send_header('Content-type',	'text/xml')
                 self.end_headers()
-                self.wfile.write("<html><head></head><body>\n")
-                dirlistall = os.listdir("recipedata")
-                dirlist= []
-                for f in dirlistall:
-                    if f[-5:].lower() == ".fits":
-                        dirlist.append(f)
-                a = "</li><li>".join(dirlist)
-                a = "<ul><li>"+a+"</li></ul>"
-                self.wfile.write(a)
-                self.wfile.write("</body></html>")
+                self.wfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
+
+                self.wfile.write("<datasetDict>\n")
+                xml = dirdict.asXML()
+                self.wfile.write(xml)
+                
+                self.wfile.write("</datasetDict>")
+                
+                
+                oldway = False
+                if oldway:
+                    self.send_response(200)
+                    self.send_header('Content-type',	'text/html')
+                    self.end_headers()
+                    self.wfile.write("<html><head></head><body>\n")
+                    dirlistall = os.listdir("recipedata")
+                    dirlist= []
+                    for f in dirlistall:
+                        if f[-5:].lower() == ".fits":
+                            dirlist.append(f)
+                    a = "</li><li>".join(dirlist)
+                    a = "<ul><li>"+a+"</li></ul>"
+                    self.wfile.write(a)
+                    self.wfile.write("</body></html>")
+                return
                 
             rrpath = "/runreduce"
             if parms["path"] == "/runreduce":
@@ -114,7 +151,7 @@ class MyHandler(BaseHTTPRequestHandler):
                         stdout = None
                         stderr = None
                         r,v,w = select.select([pid.stdout],[],[],.1)
-                        print "prsw112:", repr(r)
+                        #print "prsw112:", repr(r)
                         if len(r):
                             # print "prsw116: reading"
                             # stdout = pid.stdout.read()
@@ -163,16 +200,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
 
                 return
-            if self.path.endswith(".html"):
-                f = open(curdir + sep + self.path) #self.path has /test.html
-#note that this potentially makes every file on your computer readable by the internet
-
-                self.send_response(200)
-                self.send_header('Content-type',	'text/html')
-                self.end_headers()
-                self.wfile.write(f.read())
-                f.close()
-                return
+            
             if self.path == "/reducelist": #our dynamic content
                 self.send_response(200)
                 self.send_header('Content-type',	'text/html')
@@ -214,8 +242,26 @@ class MyHandler(BaseHTTPRequestHandler):
                 webserverdone = True
                 return
                 
+            print "JEN: chances"
+            dirname = os.path.dirname(__file__)
+            print "JEN: dirname =",dirname
+            print "JEN: path = ", self.path 
+            fname = os.path.join(dirname, "pyjamaface/prsproxygui/output", self.path[1:])
+            print "JEN: fname =",fname
+            
+            f = open(fname, "r")
+            data = f.read()
+            f.close()
+            
+            self.send_response(200)
+            self.send_header('Content-type',	'text/html')
+            self.end_headers()
+            self.wfile.write(data)
+            return 
+
                 
         except IOError:
+            raise
             print "handling IOError"
             self.send_error(404,'File Not Found: %s' % self.path)
      
