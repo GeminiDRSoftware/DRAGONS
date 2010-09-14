@@ -44,6 +44,15 @@ class RecipeListLoader:
             for r in rlist:
                 self.panel.recipeList.addItem(r)
 
+class ADInfoLoader:
+    panel = None
+    
+    def __init__(self, panel):
+        self.panel = panel
+    
+    def onCompletion(self, txt):
+        self.panel.adInfo.setHTML(txt)
+        
 class Trees(Sink):
     pathdict = {}
     reduceFiles = None
@@ -99,12 +108,13 @@ class Trees(Sink):
         
         self.runReduceButton = Button("<b>RUN REDUCE</b>", listener = getattr(self, "onRunReduce"))
         
+        self.adInfo = HTML("file info...")
         # major sub panels
         self.prPanel.add(self.reduceCLPanel)
         self.prPanel.add(self.reduceFilesPanel)
         self.prPanel.add(self.recipeListPanel)
         self.prPanel.add(self.runReduceButton)
-                
+        self.prPanel.add(self.adInfo)
        
         
         dock.add(self.prPanel,DockPanel.EAST)
@@ -181,6 +191,19 @@ class Trees(Sink):
                 return
         self.reduceFiles.addItem(tfile)
         self.updateReduceCL()
+        
+        filename = tfile
+        if filename in pathdict:
+            if pathdict[filename]["filetype"] == "fileEntry":
+                HTTPRequest().asyncGet("adinfo?filename=%s" % self.pathdict[item.getText()]["path"], 
+                               ADInfoLoader(self),
+                              )
+            else:
+                self.adInfo.setHTML("""
+                    <b style="font-size:200%%">%s</b>""" % pathdict[filename]["filetype"])
+        else:
+            self.adInfo.setHTML("unknown node")
+        return
         
         # self.prepareReduce.setHTML('<a href="runreduce?p=-r&p=callen&p=%(fname)s">reduce -r callen %(fname)s</a>' %
         #                            {"fname":item.getText()})
