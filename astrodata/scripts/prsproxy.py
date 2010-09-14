@@ -28,6 +28,11 @@ parser.add_option("-i", "--invoked", dest = "invoked", action = "store_true",
             help = """Used by processes that invoke prsproxy, so that PRS proxy knows
             when to exit. If not present, the prsproxy registers itself and will
             only exit by user control (or by os-level signal).""")
+parser.add_option("--preload", dest = "preload", action = "store_true",
+            default = False,
+            help = """Useful in proxy mode, where some information otherwise produced
+            during the first relevant request is prepared prior to starting the 
+            HTTPServer.""")
 parser.add_option("-r", "--reduce-port", dest = "reduceport", default=53531, type="int",
             help="""When invoked by reduce, this is used to inform the prsproxy of the 
             port on which reduce listens for xmlrpc commands.""")
@@ -125,15 +130,33 @@ server.register_function(calibrationSearch, "calibrationSearch")
 rim = ReduceInstanceManager()
 server.register_instance(rim)
 
+if options.preload == True:
+    print "prsproxy: scanning current directory tree"
+    from astrodata.DataSpider import DataSpider
+    ds = DataSpider(".")
+    dirdict = ds.datasetwalk()
+    print "prsproxy: done scanning current directory tree"
+else:
+    ds = None
+    dirdict = None
+
 
 # server.serve_forever(
 # start webinterface
 webinterface = True #False
 if (webinterface):
     #import multiprocessing
-    web = Thread(None, prsproxyweb.main, "webface", 
+    if ds and dirdict:
+        web = Thread(None, prsproxyweb.main, "webface", 
+                    kwargs = {"port":8777,
+                              "rim":rim,
+                              "dirdict":dirdict,
+                              "dataSpider":ds})
+    else:
+        web = Thread(None, prsproxyweb.main, "webface", 
                     kwargs = {"port":8777,
                               "rim":rim})
+        
     web.start()
     
 outerloopdone = False

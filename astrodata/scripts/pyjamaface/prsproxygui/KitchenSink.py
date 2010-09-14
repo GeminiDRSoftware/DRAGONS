@@ -23,10 +23,13 @@ import Trees
 import Frames
 import Tabs
 import DataTree
+import RecipeSystemIFACE
 from Logger import Logger
 from pyjamas import log
 
 class KitchenSink:
+
+    filexml = None
 
     def onHistoryChanged(self, token):
         log.writebr("onHistoryChanged: %s" % token)
@@ -96,6 +99,7 @@ class KitchenSink:
         
     def loadSinks(self):
         self.sink_list.addSink(DataTree.init())
+        self.sink_list.addSink(RecipeSystemIFACE.init())
         self.sink_list.addSink(Info.init())
         if False:
             self.sink_list.addSink(Buttons.init())
@@ -111,7 +115,7 @@ class KitchenSink:
             self.sink_list.addSink(Tabs.init())
 
     def showInfo(self):
-        self.show(self.sink_list.find("Info"), False)
+        self.show(self.sink_list.find("AstroData Viewer"), False)
 
 
 

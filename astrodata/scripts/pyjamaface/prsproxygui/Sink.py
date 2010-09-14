@@ -1,8 +1,10 @@
 from pyjamas.ui.Composite import Composite
 
 class Sink(Composite):
-    def __init__(self):
+    parent = None
+    def __init__(self, parent = None):
         Composite.__init__(self)
+        self.parent = parent
     
     def onHide(self):
         pass
@@ -19,6 +21,7 @@ class SinkInfo:
         self.description=desc
         self.object_type=object_type
         self.instance=None
+    
 
     def createInstance(self):
         return self.object_type()

@@ -712,6 +712,27 @@ Note, the variable "ad" is generally used to represent an already constructed As
     def hasSingleHDU(self):
         return len(self.hdulist) == 2
     
+    def allDescriptorNames(self):
+        funs = dir(CalculatorInterface)
+        descs = []
+        for fun in funs:
+            if "_" != fun[0] and (fun.lower() == fun):
+                descs.append(fun)
+        return descs
+        
+    def allDescriptors(self):
+        funs = self.allDescriptorNames()
+        rdict = {}
+        for fun in funs:
+            # print "AD727:", repr(fun)
+            try:
+                val = eval("self.%s(asList=True)" % fun)
+            except:
+                val = "ERROR Getting Value"
+            rdict.update({fun:val})
+        return rdict
+        
+    
     def getIntExt(self, extension, hduref=False):
         if type(extension) == int:
             return extension
@@ -728,7 +749,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
                         else:
                             return i
         return None
-        
+    
     def renameExt(self, name, ver = None):
         """The renameExt() function is needed in order to give an HDU an new EXTNAME and EXTVER based identifier.  Merely changing
         the values in the extensions header are not sufficient, as there are in-memory properties of the HDU that are not changes when

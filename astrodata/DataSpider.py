@@ -469,7 +469,11 @@ class DataSpider(object):
                 else:
                     rootln = "\n${NORMAL}${BOLD}directory: ${NORMAL}"+root + "${NORMAL}"
                 firstfile = True
+                # print "DS472:", repr(files)
                 for tfile in files:
+                    
+                    if tfile == None:
+                        raise str(files)
                     # we have considered removing this check in place of a
                     # pyfits open but that was not needed, the pyfits open
                     # is down lower, this is just to avoid checking files
@@ -486,6 +490,7 @@ class DataSpider(object):
                     except:
                         print "BAD FILEMASK (must be a valid regular expression):", mask
                         return str(sys.exc_info()[1])
+                    sys.stdout.write(".")
                     if (re.match(mask, tfile)) :
                         if (ldebug) : print "FITS:", tfile
 
@@ -494,7 +499,7 @@ class DataSpider(object):
                         try:
                             fl = AstroData(fname)
                         except ADExcept:
-                            print "${RED}Could not open %s as AstroData${NORMAL}" %fname
+                            # print "${RED}Could not open %s as AstroData${NORMAL}" %fname
                             continue
 
                         gain = 0
@@ -562,79 +567,19 @@ class DataSpider(object):
                                 continue
 
                             if (firstfile == True):
-                                print rootln
+                                pass # print rootln
                             firstfile = False
-                            
-                            #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            # !!!!PRINTING OUT THE FILE AND TYPE INFO!!!!
-                            #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                            #dirdict tending
                             dirdict.addDir(fullroot)
                             dirdict.addFile(tfile, root=fullroot)
-                            indent = 5
-                            pwid = 40
-                            fwid = pwid - indent 
-                            # print start of string
-                            
-                            while len(tfile)>= fwid:
-                                if False:
-                                    part = tfile[:fwid]
-                                    print "     ${BG_WHITE}%s${NORMAL}" % part
-                                    tfile = tfile[fwid-1:]
-                                else:
-                                    print "     ${BG_WHITE}%s${NORMAL}" % tfile
-                                    tfile = ""
-                            
-                            prlin = "     %s " % tfile
-                            prlincolor = "     ${BG_WHITE}%s " % tfile
-                            empty = " "*indent + "."*fwid
-                            fwid = pwid+indent
-                            lp = len(prlin)
-                            nsp = pwid - ( lp % pwid )
-
-                            # print out indent, filename, and "..." to justify types area"
-                            # there is a way to do with with a comprehension?   
-
-                            print prlincolor+("."*nsp)+"${NORMAL}",
-
-                            # print dtypes
-                            tstr = ""
-                            termsize = terminal.getTerminalSize()
-                            maxlen = termsize[0] - pwid -1
-                            printed = False
-                            dtypes.sort()
-                            
-                            # dirdict
-                            dirdict.addFileProp(tfile, root= fullroot, propname="types", propval=dtypes)
-                            
-                            for dtype in dtypes:
-                                if (dtype != None):
-                                    newtype = "(%s) " % dtype
-                                else:
-                                    newtype = "(Unknown) "
-
-                                # print "(%s)N20091027S0133.fits" % dtype ,
-                                astr = tstr + newtype
-                                if len(astr) >= maxlen:
-                                    print "${BLUE}"+ tstr + "${NORMAL}"
-                                    tstr = newtype
-                                    print empty,
-                                else:
-                                    tstr = astr
-                            if tstr != "":
-                                print "${BLUE}"+ tstr + "${NORMAL}"
-                                tstr = ""
-                                astr = ""
-                                printed = True
-
+                            sys.stdout.write("+")
+                            sys.stdout.flush()
+                            if tfile != "":
+                                dirdict.addFileProp(tfile, root= fullroot, propname="types", propval=dtypes)
                             # new line at the end of the output
                             # print ""
 
-                            if (showinfo == True):
-                                hlist = pyfits.open(fname)
-                                hlist.info()
-                                hlist.close()
-
-                            # print descriptors
                             # show descriptors                            
                             if (showDescriptors != None):
                                 sdl = showDescriptors.split(",")
@@ -661,9 +606,6 @@ class DataSpider(object):
                                         print ("          ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}: %s") % (sd, str(sys.exc_info()[1])) 
                                         if raiseExcept:
                                             raise
-                                        
-                                        
-
                             # if phead then there are headers to print per file
                             if (pheads != None):
                                 #print "          -----------"sys.exec
@@ -709,7 +651,7 @@ class DataSpider(object):
             if False: # done with walk function switching if stayTop == True:
                 # cheap way to not recurse.
                 break;
-
+        print ""
         return dirdict    
         
 def path2list(path):
@@ -744,15 +686,15 @@ class DirDict(object):
             return dirname[len(self.rootdir):]
             
     def addDir(self, path):
-        print "DS746: adding path", path
+        # print "DS746: adding path", path
         if path[:len(self.rootdir)] != self.rootdir:
             raise "can't add that bad directory! "+path
         relpath = path[len(self.rootdir):]
         if self.direntry.path == relpath:
-            print "DS750: path is already added at top:", path
+            # print "DS750: path is already added at top:", path
             return
         else:
-            print "DS753: having subdir add path if need be"
+            # print "DS753: having subdir add path if need be"
             pathlist = path2list(relpath)
             rpathlist = copy(pathlist)
             self.direntry.addDir(rpathlist)
@@ -772,10 +714,10 @@ class DirDict(object):
         
         
     def addFileProp(self, filename, root=None, propname = None, propval = None):
-        print "\nDS775:", repr(filename), repr(root)
+        #print "\nDS775:", repr(filename), repr(root)
         targfileent=self.direntry.findFileEntry(filename, root)
-        print "DS777:",repr(targfileent)
-        print "DS778:",targfileent.fullpath()
+        #print "DS777:",repr(targfileent), repr(filename), repr(root)
+        #print "DS778:",targfileent.fullpath()
         targfileent.addProp(propname, propval)
             
     def fullpath(self):
@@ -819,7 +761,7 @@ class DirEntry(object):
             self.dirs[subdir].addDir(pathlist)
             
     def addFile(self, base, dirlist):
-        print "DS795:", repr(dirlist)
+        #$ print "DS795:", repr(dirlist)
         if len(dirlist)==0:
             # it's my file!
             base.parent=self
@@ -842,7 +784,7 @@ class DirEntry(object):
                     yield dent
                 
     def findFileEntry(self,filename,root=None, dirlist = None):
-        print "DS843:", repr(filename), repr(root), repr(dirlist)
+        # print "DS843:", repr(filename), repr(root), repr(dirlist)
         if root == None:
             base = os.path.basename(filename)
             dirn = os.path.dirname(filename)
@@ -851,16 +793,17 @@ class DirEntry(object):
             base = os.path.basename(filename)
 
         if dirlist == None:
-            print "DS852:", repr(dirn), repr(self.reldir(dirn))
+            # print "DS852:", repr(dirn), repr(self.reldir(dirn))
             dirlist = path2list(self.reldir(dirn))
         if len(dirlist)==0:
             #then find the file
+            # print "self.files, filn", repr(self.files)
             for filn in self.files.keys():
                 if filn == filename:
                     fil = self.files[filn]
-                    print "DS858: found FileEntry:", repr(fil)
+                    # print "DS858: found FileEntry:", repr(fil)
                     return fil
-            raise "fileEntry does not exist"
+            #raise "fileEntry does not exist"
                 
             return None
         else:

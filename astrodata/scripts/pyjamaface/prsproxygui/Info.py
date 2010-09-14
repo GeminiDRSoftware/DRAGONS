@@ -2,9 +2,9 @@ from Sink import Sink, SinkInfo
 from pyjamas.ui.HTML import HTML
 
 class Info(Sink):
-    def __init__(self):
+    def __init__(self, parent=None):
 
-        Sink.__init__(self)
+        Sink.__init__(self, parent)
 
         text="""
             <div class='infoProse'>This is the PRSProxy Interface.  

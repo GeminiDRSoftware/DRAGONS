@@ -23,6 +23,7 @@ from ReductionObjects import ReductionObject
 from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, \
     ImageQualityRequest
 from StackKeeper import StackKeeper, FringeKeeper
+from copy import copy,deepcopy
 
 #------------------------------------------------------------------------------ 
 centralPrimitivesIndex = {}
@@ -1320,8 +1321,37 @@ class RecipeLibrary(object):
         else:
             return recdict
         
+    def recipeIndex(self, asXML = False):
+        cri = centralRecipeIndex
+        
+        if asXML == False:
+            return copy(cri)
+        else:
+            rs  = '<?xml version="1.0" encoding="UTF-8" ?>\n'
+            rs += "<recipeIndex>\n"
+            for typ in cri.keys():
+                recipe = cri[typ]
+                rs += '\t<recipeAssignment type="%s" recipe="%s"/>\n' % (typ, recipe)
+            rs += "</recipeIndex>\n"
+            return rs
+        
     
-    
+    def listRecipes(self, name=None, astrotype=None, asXML = False):
+        
+        cri = centralRecipeIndex
+        
+        recipelist = cri.keys()
+            
+        if asXML==True:
+            retxml  = '<?xml version="1.0" encoding="UTF-8" ?>\n'
+            retxml += "<recipes>\n"
+            for recipe in recipelist:
+                retxml += """\t<recipe name="%s" path="%s"/>\n""" % (recipe, cri[recipe])
+            retxml += "</recipes>\n"
+            return retxml
+        else:
+            return recipelist
+        
     def retrieveRecipe(self, name, astrotype=None):
         # @@NAMING: uses "recipe.TYPE" and recipe for recipe.ALL
         cri = centralRecipeIndex

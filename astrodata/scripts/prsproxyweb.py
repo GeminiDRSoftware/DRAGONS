@@ -3,6 +3,7 @@
 import string,cgi,time
 from os import curdir, sep
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from astrodata.RecipeManager import RecipeLibrary
 #import pri
 import select
 from copy import copy
@@ -10,7 +11,10 @@ import datetime
 import os
 import subprocess
 import cgi
+from astrodata import AstroData
+from SocketServer import ThreadingMixIn
 
+rl = RecipeLibrary()
 def parsepath(path):
     rpath = None
     rquery = None
@@ -55,16 +59,21 @@ class MyHandler(BaseHTTPRequestHandler):
 
     state = None
     
+    def address_string(self):
+        host, port = self.client_address[:2]
+        return host
+        
     def do_GET(self):
         self.state = ppwstate
         global webserverdone
-        print "path=",self.path
-        
         parms = parsepath(self.path)
-        print "prs45:", repr(parms)
+        print "prsw45:", repr(parms)
         qd = cgi.parse_qs(self.path)
-        print "prs52:", repr(qd)
+        print "prsw52:", repr(qd)
         rim = self.informers["rim"]
+        print "prsw70: path=",self.path
+        print "prsw71: parms=",repr(parms)
+
         try:
             if False: # old root self.path == "/":
                 page = """
@@ -83,9 +92,84 @@ class MyHandler(BaseHTTPRequestHandler):
                 </html>""" % {"numinsts":rim.numinsts}
                 self.wfile.write(page)
                 return
+                
+            if parms["path"] == "/recipeindex.xml":
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                
+                self.wfile.write(rl.getRecipeIndex(asXML=True))
+                return
+                
+            if parms["path"] == "/adinfo":
+                self.send_response(200)
+                self.send_header('Content-type',	'text/html')
+                self.end_headers()
+                
+                if "filename" not in parms:
+                    parms.update({"filename" : "set001/N20090902S0099.fits" })
+                if "filename" in parms:
+                    try:
+                        ad = AstroData(parms["filename"][0])
+                    except:
+                        self.wfile.write("Can't use AstroData to open %s"% parms["filename"])
+                        return
+                    if "fullpage" in parms:
+                        self.wfile.write("<html><body>")
+                    if "fullpage" not in parms:
+                    # defaults to false
+                        self.wfile.write("<b>Name</b>: %s \n" % os.path.basename(ad.filename))
+                        self.wfile.write("<br/><b>Path</b>: %s \n" % os.path.abspath(ad.filename))
+                        self.wfile.write("<br/><b>Types</b>: %s\n" % ", ".join(ad.types))
+                        alldesc = ad.allDescriptors()
+                        self.wfile.write("<br/><b>Descriptors</b>:\n")
+                        self.wfile.write('<table style="margin-left:4em">\n')
+                        adkeys = alldesc.keys()
+                        adkeys.sort()
+                        self.wfile.flush()
+                        for desc in adkeys:
+                            value = str(alldesc[desc])
+                            if "ERROR" in value:
+                                value = '<span style="color:red">' + value + '</span>'
+                            self.wfile.write("<tr><td>%s</td><td>%s</td></tr>\n" % (desc, value))
+                            self.wfile.flush()
+                        self.wfile.write("</table>")
+                    if "fullpage" in parms:
+                        self.wfile.write("</body></html>")
+                        
+                return
+                
+                
+            if parms["path"] == "/recipes.xml":
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                # returned in xml  self.wfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
+
+                #self.wfile.write("<html><body>")
+                self.wfile.write(rl.listRecipes(asXML = True) )
+                #self.wfile.write("</body></html>")
+                return
+            
+            if parms["path"] == "/reduceconfigs.xml":
+                import glob
+                rcfgs = glob.glob("./*.rcfg")
+                
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                
+                retxml  = '<?xml version="1.0" encoding="UTF-8" ?>\n'
+                retxml += "<reduceconfigs>\n"
+                for rcfg in rcfgs:
+                    retxml += """\t<reduceconfig name="%s"/>\n""" % rcfg
+                retxml += "</reduceconfigs>\n"
+                self.wfile.write(retxml)
+                return
+            
             if parms["path"] == "/datadir.xml":
                 #print "*"*300
-                print repr(self.dirdict)
+                print "prsw168 in datadir.xml generation dirdict=", repr(self.dirdict)
                 if self.state.dirdict == None:
                     from astrodata.DataSpider import DataSpider
                     ds = self.state.dataSpider = DataSpider(".")
@@ -94,18 +178,20 @@ class MyHandler(BaseHTTPRequestHandler):
                     ds = self.state.dataSpider
                     dirdict = self.state.dirdict
                     
+                
+                print "prsw181: before asXML"
+                xml = dirdict.asXML()
+                print "prsw185: after asXML"
+                
                 self.send_response(200)
                 self.send_header('Content-type',	'text/xml')
                 self.end_headers()
+                
                 self.wfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
-
                 self.wfile.write("<datasetDict>\n")
-                xml = dirdict.asXML()
                 self.wfile.write(xml)
-                
                 self.wfile.write("</datasetDict>")
-                
-                
+                self.wfile.flush()
                 oldway = False
                 if oldway:
                     self.send_response(200)
@@ -241,6 +327,9 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write("Killed this prsproxy instance, pid = %d at %s" %(os.getpid(), str(datetime.datetime.now())))
                 webserverdone = True
                 return
+            
+            if self.path == "/":
+                self.path = "/KitchenSink.html"
                 
             print "JEN: chances"
             dirname = os.path.dirname(__file__)
@@ -249,10 +338,12 @@ class MyHandler(BaseHTTPRequestHandler):
             fname = os.path.join(dirname, "pyjamaface/prsproxygui/output", self.path[1:])
             print "JEN: fname =",fname
             
-            f = open(fname, "r")
-            data = f.read()
-            f.close()
-            
+            try:
+                f = open(fname, "r")
+                data = f.read()
+                f.close()
+            except IOError:
+                data = "<b>NO SUCH RESOURCE FOUND</b>"
             self.send_response(200)
             self.send_header('Content-type',	'text/html')
             self.end_headers()
@@ -282,13 +373,21 @@ class MyHandler(BaseHTTPRequestHandler):
             
         except :
             pass
+            
+class MTHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handles requests using threads"""
+
 def startInterfaceServer(port = 8777, **informers):
     try:
         print "starting httpserver on port ...", port,
         # important to set prior to any instantiations of MyHandler
-        MyHandler.informers = informers 
+        MyHandler.informers = informers
+        if "dirdict" in informers:
+            ppwstate.dirdict    = informers["dirdict"]
+        if "dataSpider" in informers:
+            ppwstate.dataSpider = informers["dataSpider"]
         # e.g. below by the HTTPServer class
-        server = HTTPServer(('', port), MyHandler)
+        server = MTHTTPServer(('', port), MyHandler)
         print "started"
         #server.serve_forever()
         while True:
@@ -302,7 +401,9 @@ def startInterfaceServer(port = 8777, **informers):
     except KeyboardInterrupt:
         print '^C received, shutting down server'
         server.socket.close()
+
 main = startInterfaceServer
+
 if __name__ == '__main__':
     main()
 
