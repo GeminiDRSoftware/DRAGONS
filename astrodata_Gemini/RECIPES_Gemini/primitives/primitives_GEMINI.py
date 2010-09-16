@@ -15,9 +15,12 @@ import shutil
 log=gemLog.getGeminiLog()
 
 stepduration = 1.
- 
 
 def pyrafLoader(rc = None):
+    # NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
+    # don't execute pyraf code and so do not need to print this interactive 
+    # package init display (it shows something akin to the dir(gmos)
+    
     import sys, StringIO, os
     SAVEOUT = sys.stdout
     capture = StringIO.StringIO()
@@ -26,8 +29,8 @@ def pyrafLoader(rc = None):
     import pyraf
     yes = pyraf.iraf.yes
     no = pyraf.iraf.no
-    if True:
     
+    if True:
         from pyraf.iraf import gemini
         gemini()
         gemini.gmos()
@@ -44,8 +47,7 @@ def pyrafLoader(rc = None):
                         rc.update({"iraf":{}})
                     if "adata" not in rc["iraf"]:
                         rc["iraf"].update({"adata":root})
-    return (pyraf,gemini,pyraf.iraf.yes, pyraf.iraf.no)
-# pyraf,gemini, yes, no = pyrafLoader(rc)
+    return (pyraf,gemini,pyraf.iraf.yes,pyraf.iraf.no)
 
 class GEMINIException:
     """ This is the general exception the classes and functions in the
@@ -154,9 +156,9 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
         
 #------------------------------------------------------------------------------ 
-    def getStackable(self, rc):
+    def dgetStackable(self, rc):
         try:
-            print "getting stack"
+            print "getting stack" 
             rc.rqStackGet()
             yield rc
             # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
@@ -345,14 +347,14 @@ class GEMINIPrimitives(PrimitiveSet):
         
         rc.update({"lastTime":cur})
         yield rc
-        
-  
-#-------------------------------------------------------------------
 #$$$$$$$$$$$$$$$$$$$$$$$$ NEW VERSIONS OF ABOVE PRIMS BY KYLE $$$$$$$$$$$$$
 
     def getStackable(self, rc):
+        '''
+        New version of getStackable for the new (non-demo) primitives.
+        '''
         try:
-            log.fullinfo("getting stack",'Clprep')
+            log.fullinfo("getting stack",'CLprep')
             rc.rqStackGet()
             yield rc
             # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
@@ -363,13 +365,14 @@ class GEMINIPrimitives(PrimitiveSet):
         except:
             log.critical("Problem getting stack", 'critical')
             raise 
-
         yield rc      
- #---------------------------------------------------------------------------     
  
     def setStackable(self, rc):
+        '''
+        New version of setStackable for the new (non-demo) primitives.
+        '''
         try:
-            log.fullinfo("updating stackable with input", 'CLprep')
+            log.fullinfo("updating stack with input", 'CLprep')
             rc.rqStackUpdate()
             # writing the files in the stack to disk if not all ready there
             for ad in rc.getInputs(style="AD"):
@@ -379,30 +382,29 @@ class GEMINIPrimitives(PrimitiveSet):
         except:
             log.critical("Problem stacking input",'critical')
             raise
-
         yield rc
 
 #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
     These primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
-    commenting has been added to hopefully assist those reading the code.
+    Commenting has been added to hopefully assist those reading the code.
     Excluding validateWCS, all the primitives for 'prepare' are complete (as far as we know of at the moment that is)
     and so I am moving onto working on the primitives following 'prepare'.
     '''
-
-#----------------------------------------------------------------------------    
+    
     def validateData(self,rc):
         '''
         This primitive will ensure the data is not corrupted or in an odd format that will effect later steps
         in the reduction process.  It will call a function to take care of the general Gemini issues and then 
         one for the instrument specific ones. If there are issues with the data, the flag 'repair' can be used to 
-        turn the feature to repair it or not (eg. validateData(repair=True)).
+        turn on the feature to repair it or not (eg. validateData(repair=True))(this feature is not coded yet).
         '''
         
         try:
             if rc["repair"]==True:
                #this should repair the file if it is broken, but this function isn't coded yet and would require
                #some sort of flag set while checking the data to tell this to perform the corrections
+               print 'Sorry, but the repair feature is not available yet'
                pass
            
             writeInt = rc['writeInt'] #current way we are passing a boolean around to cue the writing of intermediate files, later this will be done in Reduce
@@ -427,18 +429,16 @@ class GEMINIPrimitives(PrimitiveSet):
                 
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise GEMINIException
-        
+            raise 
         yield rc
 
-#----------------------------------------------------------------------
     def standardizeStructure(self,rc):
         '''
         This primitive ensures the MEF structure is ready for further processing, through 
         adding the MDF if necessary and the needed keywords to the headers.  First the 
         MEF's will be checked for the general Gemini structure requirements and then the 
         instrument specific ones if needed. If the data requires a MDF to be attached, use the 
-        'addMDF' flag to make this happen (eg. standardizeStructure(addMDF=False)).
+        'addMDF' flag to make this happen (eg. standardizeStructure(addMDF=True)).
         '''
         
         try:
@@ -468,12 +468,9 @@ class GEMINIPrimitives(PrimitiveSet):
  
         except:
             log.critical("Problem preparing the image.",'critical')
-            raise GEMINIException
-                     
+            raise 
         yield rc
         
-
-#-------------------------------------------------------------------
     def standardizeHeaders(self,rc):
         '''
         This primitive updates and adds the important header keywords for the input MEFs. 
@@ -515,8 +512,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 
         except:
             log.critical("Problem preparing the image.",'critical',)
-            raise GEMINIException
-        
+            raise 
         yield rc 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
                 
@@ -534,7 +530,8 @@ class GEMINIPrimitives(PrimitiveSet):
                 for sciExt in ad['SCI']:
                     varArray=np.zeros(sciExt.data.shape,dtype=np.float32) ###**** this needs to use arith.py to actually calc the VAR frames ***
                 
-                                   
+                
+                           
                     varheader = pyfits.Header()
                     varheader.update('NAXIS', 2)
                     varheader.update('PCOUNT', 0, 'required keyword; must = 0 ')
@@ -580,37 +577,30 @@ class GEMINIPrimitives(PrimitiveSet):
                     ad.filename=fileNameUpdater(ad.filename, postpend=rc['outsuffix'], strip=False)
                 rc.reportOutput(ad)        
                 
-            log.fullinfo('*FINISHED* adding the VAR frame(s) to the input data', 'fullinfo')
-     
+            log.status('*FINISHED* adding the VAR frame(s) to the input data', 'fullinfo')
         except:
             log.critical("Problem adding the VARDQ to the image.",'critical',)
-            raise GEMINIException
-        
+            raise 
         yield rc 
-      
-#--------------------------------------------------------------------------
 
     def calculateDQ(self,rc):
         '''
         This primitive will create a numpy array for the data quality of each SCI frame of the input data.
         This will then have a header created and be append to the input using AstroData as a DQ frame.
         The value of a pixel will be the sum of the following: 
-        (0=good, 1=bad pixel (found in bad pixel mask), 2= value is in non linear region, 4=pixel is saturated)
+        (0=good, 1=bad pixel (found in bad pixel mask), 2=value is in non linear region, 4=pixel is saturated)
         '''
         try:
             log.status('*STARTING* to add the DQ frame(s) to the input data', 'status')
-            #log.critical('CURRENTLY NO BPM FILE LOADING, JUST ADDING A ZEROS ARRAY!!!!', 'critical')
-            
-            packagePath=sys.argv[0].split('gemini_python')[0]
-            calPath='gemini_python/test_data/test_cal_files/GMOS_BPM_files/'
             
             #$$$$$$$$$$$$$ this block is GMOS IMAGE specific, consider moving or something $$$$$$$$$$$$
+            packagePath=sys.argv[0].split('gemini_python')[0]
+            calPath='gemini_python/test_data/test_cal_files/GMOS_BPM_files/'
             BPM_11=AstroData(packagePath+calPath+'GMOS_BPM_11.fits')
             BPM_22=AstroData(packagePath+calPath+'GMOS_BPM_22.fits')
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             for ad in rc.getInputs(style='AD'):
-                
                 for sciExt in ad['SCI']:
                     
                     #$$$$$$$$$$$$$ this block is GMOS IMAGE specific, consider moving or something $$$$$$$$$$$$
@@ -643,14 +633,13 @@ class GEMINIPrimitives(PrimitiveSet):
                         log.fullinfo('performing a np.where to find saturated pixels','status')
                         saturatedArray=np.where(sciExt.data>saturated,4,0)
                     
-                    # BPM file has had its overscan region trimmed all ready, so must trim the overscan section from the nonLin and saturated arrays to match
+                    # BPM file has had its overscan region trimmed all ready, 
+                    # so must trim the overscan section from the nonLin and saturated arrays to match
                     nonLinArrayTrimmed = nonLinArray[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
                     saturatedArrayTrimmed = saturatedArray[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]  
-                     
-                    #print BPMArray.shape
-                    #print nonLinArrayTrimmed.shape
-                    #print saturatedArrayTrimmed.shape
-                    dqArray=np.add(BPMArray,nonLinArrayTrimmed,saturatedArrayTrimmed)
+                    
+                    # creating one DQ array from the three
+                    dqArray=np.add(BPMArray,nonLinArrayTrimmed,saturatedArrayTrimmed) 
                     
                     dqheader = pyfits.Header()
 
@@ -692,7 +681,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     
                 #print ad.info()
                 
-                ## check if there filename all ready has the suffix '_vardq', if not add it
+                # check if the filename all ready has the suffix '_vardq', if not add it
                 if not re.search(rc['outsuffix'],ad.filename): #%%%% this is printing a 'None' on the screen, fix that!!!
                     log.debug('calling fileNameUpdater','status')
                     ad.filename=fileNameUpdater(ad.filename, postpend=rc['outsuffix'], strip=False)
@@ -700,14 +689,11 @@ class GEMINIPrimitives(PrimitiveSet):
                 rc.reportOutput(ad)        
             
             log.status('*FINISHED* adding the DQ frame(s) to the input data', 'status')
-
         except:
             log.critical("Problem adding the VARDQ to the image.",'critical',)
-            raise GEMINIException
-        
+            raise 
         yield rc 
-        
-  #--------------------------------------------------------------------------      
+            
     def combine(self,rc):
         '''
         This primitive will average and combine the SCI extensions of the inputs. 
@@ -717,11 +703,12 @@ class GEMINIPrimitives(PrimitiveSet):
         are propagated through to the final file.
         
         '''
-        pyraf,gemini, yes, no = pyrafLoader(rc)
+        pyraf,gemini,yes,no = pyrafLoader(rc)
         
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* combine the images of the input data', 'status')
+                
                 #preparing input files, lists, parameters... for input to the CL script
                 clm=CLManager(rc)
                 clm.LogCurParams()
@@ -729,13 +716,12 @@ class GEMINIPrimitives(PrimitiveSet):
                 # params set by the CLManager or the definition of the prim 
                 clPrimParams={
                               'input'       :clm.inputList(),
-                              'output'      :clm.combineOutname(), # maybe allow the user to override this in the future. 
-                              'Stdout'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
-                              'Stderr'      :IrafStdout(), # this is actually in the default dict but wanted to show it again
-                              'logfile'     :'TEMP.log', # this is actually in the default dict but wanted to show it again
-                              'verbose'     :yes # this is actually in the default dict but wanted to show it again
+                              'output'      :clm.combineOutname(),  # maybe allow the user to override this in the future. 
+                              'Stdout'      :IrafStdout(),          # this is actually in the default dict but wanted to show it again
+                              'Stderr'      :IrafStdout(),          # this is actually in the default dict but wanted to show it again
+                              'logfile'     :'TEMP.log',            #  this is actually in the default dict but wanted to show it again
+                              'verbose'     :yes                    # this is actually in the default dict but wanted to show it again
                               }
-                
                 # params from the Parameter file adjustable by the user
                 clSoftcodedParams={
                                     'fl_vardq'      :rc["fl_vardq"],
@@ -743,7 +729,6 @@ class GEMINIPrimitives(PrimitiveSet):
                                     'combine'       :rc['method'],
                                     'reject'        :"none"
                                     }
-                 
                 # grabbing the default params dict and updating it with the two above dicts
                 clParamsDict=CLDefaultParamsDict('gemcombine')
                 clParamsDict.update(clPrimParams)
@@ -752,11 +737,6 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.fullinfo('calling the gemcombine CL script', 'status')
                 
                 gemini.gemcombine(**clParamsDict)
-                
-                #gemini.gemcombine(clm.inputList(),  output=clm.combineOutname(),combine=rc['method'], reject="none",\
-                #                  fl_vardq=pyrafBoolean(rc['fl_vardq']), fl_dqprop=pyrafBoolean(rc['fl_dqprop']),\
-                #                   Stdout = IrafStdout(), Stderr = IrafStdout(),\
-                #                   logfile='temp.log',verbose=pyrafBoolean(True))
                 
                 if gemini.gemcombine.status:
                     log.critical('gemcombine failed','critical')
@@ -768,8 +748,8 @@ class GEMINIPrimitives(PrimitiveSet):
                 clm.finishCL(combine=True) 
                 os.remove(clPrimParams['logfile'])
                 #clm.rmStackFiles() #$$$$$$$$$ DON"T do this if intermediate outputs are wanted!!!!
-                ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
                 
+                ad = rc.getOutputs(style='AD')[0] #there is only one at this point so no need to perform a loop
                 ut = ad.historyMark()
                 ad.historyMark(key='GBIAS',stomp=False)
                 
@@ -781,15 +761,12 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.fullinfo('GBIAS = '+str(ut),'header' )
                 log.fullinfo('---------------------------------------------------','header')    
                 
-                
                 log.status('*FINISHED* combining the images of the input data', 'status')
-        
         except:
             log.critical("Problem combining the images.",'critical',)
-            raise #GEMINIException
-        
+            raise 
         yield rc   
-    #-----------------------------------------------------------------------
+
     def measureIQ(self,rc):
         '''
         '''
@@ -824,23 +801,24 @@ class GEMINIPrimitives(PrimitiveSet):
             log.status('*FINISHED* measuring the IQ of the inputs','status')
         except:
             log.critical("Problem combining the images.",'critical',)
-            raise #GEMINIException
-        
+            raise 
         yield rc  
-    #------------------------------------------------------------------------
     
     def ADUtoElectrons(self,rc):
         '''
-        This primitive will convert the inputs from pixel units of ADU to electrons
+        This primitive will convert the inputs from pixel units of ADU to electrons.
         '''
         try:
             log.status('*STARTING* to convert the pixel values from ADU to electrons','status')
             for ad in rc.getInputs(style='AD'):
+                log.fullinfo('calling ad.mult','fullinfo')
+                
                 adOut = ad.mult(ad['SCI'].gain(asDict=True))  
+                
                 ut = adOut.historyMark()
                 adOut.historyMark('ADU2ELEC',stomp=False)
                 adOut.filename=fileNameUpdater(ad.filename,postpend=rc["outpref"], strip=False)
-                #print adOut.info()
+            
                 log.fullinfo('****************************************************','header')
                 log.fullinfo('file = '+adOut.filename,'header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~','header')
@@ -853,7 +831,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 for ext in adOut["SCI"]:
                     gainorig=ext.gain()
                     ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'GAINORIG', gainorig, 'Gain prior to unit conversion (e-/ADU)')
-                    ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'GAIN', 1.0, "Gain (e-/ADU)")
+                    ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'GAIN', 1.0, "Gain (e-/ADU)") # =1 by definition
                     ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'BUNIT','electrons' , 'Physical units')
                     
                     log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+' keywords updated/added:\n', 'header')
@@ -861,7 +839,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     log.fullinfo('GAIN = '+str(1.0),'header' )
                     log.fullinfo('BUNIT = '+'electrons','header' )
                     log.fullinfo('---------------------------------------------------','header')
-                # updating VAR headers if they exist    
+                # updating VAR headers if they exist (not updating any DQ headers as no changes were made to them here)  
                 if adOut.countExts('VAR')==adOut.countExts('SCI'):
                     for ext in adOut["VAR"]:
                         gainorig=adOut.extGetKeyValue(('SCI',ext.extver()),'GAINORIG')
@@ -877,17 +855,15 @@ class GEMINIPrimitives(PrimitiveSet):
                         log.fullinfo('---------------------------------------------------','header')
                 rc.reportOutput(adOut)   
                 
-            log.status('*FINISHED* converting the pixels units to electrons','status')
+            log.status('*FINISHED* converting the pixel units to electrons','status')
         except:
             log.critical("Problem converting the pixel units of the images.",'critical',)
-            raise GEMINIException
-        
-        yield rc         
-   #--------------------------------------------------------------------------                
+            raise
+        yield rc                    
 
     def writeOutputs(self,rc, clob = False):
         '''
-        a primitive that may be called by a recipe at any stage for if the user would like files to be written to disk
+        A primitive that may be called by a recipe at any stage for if the user would like files to be written to disk
         at specific stages of the recipe, compared to that of it writing the outputs of each primitive with the --writeInt flag of 
         Reduce.  An example call in this case would be : writeOutputs(postpend= '_string'), writeOutputs(prepend= '_string') or if you 
         have a full file name in mind for a SINGLE file being ran through Reduce you may use writeOutputs(outfilename='name.fits').
@@ -896,9 +872,9 @@ class GEMINIPrimitives(PrimitiveSet):
             log.status('*STARTING* to write the outputs','status')
             log.status('postpend = '+str(rc["postpend"]),'status')
             log.status('prepend = '+str(rc["prepend"]),'status')
+            
             for ad in rc.getInputs(style="AD"):
                 if rc["postpend"]:
-                    log.debug('calling fileNameUpdater','status')
                     ad.filename=fileNameUpdater(ad.filename, postpend=rc["postpend"], strip=True)
                     outfilename=os.path.basename(ad.filename)
                 elif rc["prepend"]:
@@ -910,7 +886,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     outfilename=os.path.basename(ad.filename) 
                     log.status('not changing the file name to be written from its current name','status') 
                 log.status('writing to file = '+outfilename,'status')      
-                ad.write(filename=outfilename,clobber=clob)     #AstroData checks if the output exists and raises and exception
+                ad.write(filename=outfilename,clobber=clob)     # AstroData checks if the output exists and raises an exception
                 #rc.reportOutput(ad)
             
             # clearing the value of 'postpend' and 'prepend' in the RC so they don't persist to the next writeOutputs call and screw it up
@@ -919,8 +895,7 @@ class GEMINIPrimitives(PrimitiveSet):
             log.status('*FINISHED* writting the outputs','status')   
         except:
             log.critical("Problem writing the image.",'critical')
-            raise GEMINIException
-        
+            raise 
         yield rc 
 # TEMP prim for testing gain values of inputs #######################################################
     def gotGain(self,rc):
@@ -943,56 +918,53 @@ def CLDefaultParamsDict(CLscript):
     '''
     A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
     '''
-    pyraf,gemini, yes, no = pyrafLoader()
+    pyraf,gemini,yes,no = pyrafLoader()
     
     if CLscript=='gemcombine':
         defaultParams={
-                       'input'      :'',            #Input MEF images
-                       'output'     :"",            #Output MEF image
-                       'title'      :'DEFAULT',     #Title for output SCI plane
-                       'combine'    :"average",     #Combination operation
-                       'reject'     :"avsigclip",   #Rejection algorithm
-                       'offsets'    :"none",        #Input image offsets
-                       'masktype'   :"none",        #Mask type
-                       'maskvalue'  :0.0,           #Mask value
-                       'scale'      :"none",        #Image scaling
-                       'zero'       :"none",        #Image zeropoint offset
-                       'weight'     :"none",        #Image weights
-                       'statsec'    :"[*,*]",       #Statistics section
-                       'expname'    :"EXPTIME",     #Exposure time header keyword
-                       'lthreshold' :'INDEF',       #Lower threshold
-                       'hthreshold' :'INDEF',       #Upper threshold
-                       'nlow'       :1,             #minmax: Number of low pixels to reject
-                       'nhigh'      :1,             #minmax: Number of high pixels to reject
-                       'nkeep'      :1,             #Minimum to keep or maximum to reject
-                       'mclip'      :yes,           #Use median in sigma clipping algorithms?
-                       'lsigma'     :3.0,           #Lower sigma clipping factor
-                       'hsigma'     :3.0,           #Upper sigma clipping factor
-                       'key_ron'    :"RDNOISE",     #Keyword for readout noise in e-
-                       'key_gain'   :"GAIN",        #Keyword for gain in electrons/ADU
-                       'ron'        :0.0,           #Readout noise rms in electrons
-                       'gain'       :1.0,           #Gain in e-/ADU
-                       'snoise'     :"0.0",         #ccdclip: Sensitivity noise (electrons
-                       'sigscale'   :0.1,           #Tolerance for sigma clipping scaling correction                                
-                       'pclip'      :-0.5,          #pclip: Percentile clipping parameter
-                       'grow'       :0.0,           #Radius (pixels) for neighbor rejection
-                       'bpmfile'    :'',            #Name of bad pixel mask file or image.
-                       'nrejfile'   :'',            #Name of rejected pixel count image.
-                       'sci_ext'    :'SCI',         #Name(s) or number(s) of science extension
-                       'var_ext'    :'VAR',         #Name(s) or number(s) of variance extension
-                       'dq_ext'     :'DQ',          #Name(s) or number(s) of data quality extension
-                       'fl_vardq'   :no,            #Make variance and data quality planes?
-                       'logfile'    :'',            #Log file
-                       'fl_dqprop'  :no,            #Propagate all DQ values?
-                       'verbose'    :yes,           #Verbose output?
-                       'status'     :0,             #Exit status (0=good)
+                       'input'      :'',            # Input MEF images
+                       'output'     :"",            # Output MEF image
+                       'title'      :'DEFAULT',     # Title for output SCI plane
+                       'combine'    :"average",     # Combination operation
+                       'reject'     :"avsigclip",   # Rejection algorithm
+                       'offsets'    :"none",        # Input image offsets
+                       'masktype'   :"none",        # Mask type
+                       'maskvalue'  :0.0,           # Mask value
+                       'scale'      :"none",        # Image scaling
+                       'zero'       :"none",        # Image zeropoint offset
+                       'weight'     :"none",        # Image weights
+                       'statsec'    :"[*,*]",       # Statistics section
+                       'expname'    :"EXPTIME",     # Exposure time header keyword
+                       'lthreshold' :'INDEF',       # Lower threshold
+                       'hthreshold' :'INDEF',       # Upper threshold
+                       'nlow'       :1,             # minmax: Number of low pixels to reject
+                       'nhigh'      :1,             # minmax: Number of high pixels to reject
+                       'nkeep'      :1,             # Minimum to keep or maximum to reject
+                       'mclip'      :yes,           # Use median in sigma clipping algorithms?
+                       'lsigma'     :3.0,           # Lower sigma clipping factor
+                       'hsigma'     :3.0,           # Upper sigma clipping factor
+                       'key_ron'    :"RDNOISE",     # Keyword for readout noise in e-
+                       'key_gain'   :"GAIN",        # Keyword for gain in electrons/ADU
+                       'ron'        :0.0,           # Readout noise rms in electrons
+                       'gain'       :1.0,           # Gain in e-/ADU
+                       'snoise'     :"0.0",         # ccdclip: Sensitivity noise (electrons
+                       'sigscale'   :0.1,           # Tolerance for sigma clipping scaling correction                                
+                       'pclip'      :-0.5,          # pclip: Percentile clipping parameter
+                       'grow'       :0.0,           # Radius (pixels) for neighbor rejection
+                       'bpmfile'    :'',            # Name of bad pixel mask file or image.
+                       'nrejfile'   :'',            # Name of rejected pixel count image.
+                       'sci_ext'    :'SCI',         # Name(s) or number(s) of science extension
+                       'var_ext'    :'VAR',         # Name(s) or number(s) of variance extension
+                       'dq_ext'     :'DQ',          # Name(s) or number(s) of data quality extension
+                       'fl_vardq'   :no,            # Make variance and data quality planes?
+                       'logfile'    :'',            # Log file
+                       'fl_dqprop'  :no,            # Propagate all DQ values?
+                       'verbose'    :yes,           # Verbose output?
+                       'status'     :0,             # Exit status (0=good)
                        'Stdout'     :IrafStdout(),
                        'Stderr'     :IrafStdout()
                        }
-        return defaultParams                  
-                       
-                       
-                                       
+        return defaultParams                                  
 #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
     
     
