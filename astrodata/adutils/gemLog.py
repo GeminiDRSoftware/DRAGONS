@@ -1,30 +1,31 @@
-    
+#Author: Kyle Mede, 2010.    
 import logging
-import inspect #$$$$$$$$$$$$$$$$$$
 import traceback as tb
 import sys, os
 _geminiLogger = None
 
 class GeminiLogger(object):
+    '''
+    This is a logger object for use in the Gemini recipe system.  It is based on the Python logging object.
+    '''
     logger = None
     def __init__(self,logName=None, verbose=1, debug=False):
         if not logName:
             logName="gemini.log"
             
         # setting up additional logger levels
-        FULLINFO = 15
-        STDINFO = 21
-        STATUS = 25
-
+        FULLINFO    = 15
+        STDINFO     = 21
+        STATUS      = 25
         log_levels = {
-        FULLINFO : 'FULLINFO',
-        STDINFO : 'STDINFO',
-        STATUS : 'STATUS'
-        }
+                      FULLINFO  : 'FULLINFO',
+                      STDINFO   : 'STDINFO',
+                      STATUS    : 'STATUS'
+                      }
         for lvl in log_levels.keys():
             logging.addLevelName(lvl,log_levels[lvl])
         
-        #create logger
+        # create logger
         self.logger = logging.getLogger(logName)
         self.logger.setLevel(logging.DEBUG)
     
@@ -32,14 +33,13 @@ class GeminiLogger(object):
         setattr(self.logger, 'status', lambda *args: self.logger.log(STATUS, *args))
         setattr(self.logger, 'fullinfo', lambda *args: self.logger.log(FULLINFO, *args))
 
-        #create console and file handler 
+        # create console and file handler 
         ch = logging.StreamHandler()
         fh = logging.FileHandler(logName)
         
-        #set levels according to flags
+        # set levels according to flags
         fh.setLevel(FULLINFO)
         if debug:
-            #ch.setLevel(logging.DEBUG)
             ch.setLevel(FULLINFO)
             fh.setLevel(logging.DEBUG)
             
@@ -60,20 +60,19 @@ class GeminiLogger(object):
             else:
                 ch.setLevel(FULLINFO)
                 fh.setLevel(FULLINFO)
-        #create formatters
+        # create formatters
         ch_formatter = logging.Formatter("%(levelname)-8s %(levelno)d- %(message)s")
         fh_formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(levelno)d- %(message)s")
         
-        #add formatter to ch and fh
+        # add formatter to ch and fh
         ch.setFormatter(ch_formatter)
         fh.setFormatter(fh_formatter) 
         
-        #add ch and fh to logger
+        # add ch and fh to logger
         self.logger.addHandler(ch)
         self.logger.addHandler(fh)
     
     def debug(self,msg,cat='DefautCat'):    
-        #a={'category':cat}
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
@@ -85,11 +84,9 @@ class GeminiLogger(object):
             self.logger.fullinfo(cat.ljust(10)+'-'+line)
     
     def info(self,msg,cat='DefautCat'):
-       #a={'category':cat}
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.info(cat.ljust(10)+'-'+line)
-            #self.logger.info(line,extra=a)
             
     def stdinfo(self,msg,cat = 'DefautCat'):
         msgs = str(msg).split('\n')
@@ -102,28 +99,22 @@ class GeminiLogger(object):
             self.logger.status(cat.ljust(10)+'-'+line)
         
     def critical(self,msg,cat='DefautCat'):
-        #a={'category': cat}
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.critical(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
-            #self.logger.critical(line,extra=a)
         
     def warning(self,msg,cat='DefautCat'):
-        #a={'category':cat}
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.warning(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
-            #self.logger.warning(line,extra=a)
         
     def error(self,msg,cat='DefautCat'):
-        #a={'category': cat}
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.error(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
-            #self.logger.error(line,extra=a)
     
 def getGeminiLog(logName=None ,verbose = 0, debug = False):
     global _geminiLogger
@@ -135,7 +126,7 @@ def getGeminiLog(logName=None ,verbose = 0, debug = False):
 def checkHandlers(log, remove=True ):
     '''
     this function is to close the handlers of the log to avoid an error when used in pyraf
-    $$$$$$$ THIS FUNCTION IS CURRENTLY NOT BEING USED, IT WILL BE INCORPERATED WHEN WE START USING PYRAF $$$$$$$$$$
+    $$$$$$$ THIS FUNCTION IS CURRENTLY NOT BEING USED, IT WILL BE INCORPERATED WHEN WE START USING PYRAF DIRECTLY $$$$$$$$$$
     '''
     handlers = log.logger.handlers
     if len( handlers ) > 0:
@@ -173,7 +164,3 @@ def callInfo():
     return [os.path.basename(st[-3][0]),st[-3][1],st[-3][2]]
 
     
-
-
-
-
