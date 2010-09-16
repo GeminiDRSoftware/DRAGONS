@@ -91,7 +91,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
  
- #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
     def overscanSubtract(self,rc):
         """
         This primitive uses the CL script gireduce to subtract the overscan from the input images.
@@ -166,7 +166,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
         
         yield rc    
-#--------------------------------------------------------------------------------------------    
+  
     def overscanTrim(self,rc):
         """
         This primitive uses pyfits and AstroData to trim the overscan region from the input images
@@ -220,7 +220,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
         
         yield rc
-#---------------------------------------------------------------------------    
+   
     def storeProcessedBias(self,rc):
         '''
         This should be a primitive that interacts with the calibration system (MAYBE) but that isn't up and running yet.
@@ -239,7 +239,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.critical("Problem storing the image.",'critical')
             raise 
         yield rc
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
+   
     def storeProcessedFlat(self,rc):
         '''
         This should be a primitive that interacts with the calibration system (MAYBE) but that isn't up and running yet.
@@ -258,7 +258,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
         yield rc
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def NEWgetProcessedBias(self,rc):
         '''
         PRSproxy version
@@ -273,7 +272,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         rc.rqCal("flat", rc.getInputs(style="AD"))
         yield rc
 
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def localGetProcessedBias(self,rc):
         '''
         A prim that works with the calibration system (MAYBE), but as it isn't written yet this simply
@@ -302,8 +300,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.critical("Problem retrieving the image.",'critical')
             raise 
         yield rc
-            
-#-----------------------------------------------------------------------
    
     def localGetProcessedFlat(self,rc):
         '''
@@ -335,7 +331,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
         
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     def biasCorrect(self, rc):
         '''
         This primitive will subtract the biases from the inputs using the CL script gireduce.
@@ -419,7 +415,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
             
         yield rc
-#---------------------------------------------------------------------------
+
     def normalizeFlat(self,rc):
         '''
         This primitive will combine the input flats and then normalize them using the CL script giflat.
@@ -489,7 +485,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
             
         yield rc
-#------------------------------------------------------------------------------------------
+
     def flatCorrect(self,rc):
         '''
         This primitive performs a flat correction by dividing the inputs by a processed flat similar
@@ -523,7 +519,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.critical("Problem processing the image.",'critical')
             raise  
         yield rc
-#------------------------------------------------------------------------------------------       
+       
     def mosaic(self,rc):
         '''
         This primitive will mosaic the SCI frames of the input images, along with the VAR and DQ frames if they exist.  
@@ -597,7 +593,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.critical("Problem processing the image.",'critical')
             raise   
         yield rc    
-#***************************************************************************************************
+
 def CLDefaultParamsDict(CLscript):
     '''
     A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
