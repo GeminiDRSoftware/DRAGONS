@@ -29,9 +29,7 @@ def valInstData(ad):
     else: 
         log.critical("There are NOT 1, 3, 6 or 12 extensions in file = "+ad.filename,'critical')
         raise 
-        
-    
-                 
+            
 def addMDF(ad,mdf): 
         # so far all of this is done in the primitive, will figure this out later
         pass
