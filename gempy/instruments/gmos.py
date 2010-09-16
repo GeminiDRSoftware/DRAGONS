@@ -3,12 +3,10 @@
 
 #!/usr/bin/env python
 
-import os
-import pyfits as pf
-import numpy as np
-import time
-from datetime import datetime
-from astrodata.adutils import mefutil, paramutil
+#import os
+#import pyfits as pf
+#import numpy as np
+#from astrodata.adutils import mefutil, paramutil
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 
@@ -19,10 +17,9 @@ def stdInstHdrs(ad):
     if not ad.isType('GMOS_IMAGE'):
     # do the stuff to the headers that is for the MOS, those for IMAGE are taken care of with stdObsHdrs all ready 
         for ext in ad["SCI"]:
-            log.critical('gmostools22: still need to get the dispersion axis descriptor working you know!!','critical')
-            #ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'DISPAXIS',  , 'Dispersion axis')
-            #ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'',, "")
-            pass
+            #log.critical('gmostools22: still need to get the dispersion axis descriptor working you know!!','critical')
+            ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'DISPAXIS', ext.dispersion_axis() , 'Dispersion axis')
+            ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'DISPAXIS',ext.dispersion_axis(), "Dispersion axis")
 
 def valInstData(ad):
     # to ensure structure is the normal PHU followed by 3 SCI extensions for GMOS
