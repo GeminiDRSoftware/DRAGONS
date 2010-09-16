@@ -1,6 +1,6 @@
 #Author: Kyle Mede, June 2010
 #from Reductionobjects import Reductionobject
-from primitives_GEMINI import GEMINIPrimitives
+from primitives_GEMINI import GEMINIPrimitives, pyrafLoader
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
@@ -9,32 +9,10 @@ from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
 
-from pyraf.iraf import tables, stsdas, images
-from pyraf.iraf import gemini
-import pyraf
-import iqtool
-from iqtool.iq import getiq
+from gempy.instruments.gemini import *
 from gempy.instruments.gmos import *
 
 log=gemLog.getGeminiLog()
-
-import pyfits
-import numdisplay
-import string
-
-yes = pyraf.iraf.yes
-no = pyraf.iraf.no
-
-# NOTE, the sys.stdout stuff is to shut up gemini and gmos startup... some primitives
-# don't execute pyraf code and so do not need to print this interactive 
-# package init display (it shows something akin to the dir(gmos)
-import sys, StringIO, os
-SAVEOUT = sys.stdout
-capture = StringIO.StringIO()
-sys.stdout = capture
-gemini()
-gemini.gmos()
-sys.stdout = SAVEOUT
 
 class GMOS_SPECTException:
     """ This is the general exception the classes and functions in the
@@ -48,34 +26,24 @@ class GMOS_SPECTException:
         when the exception is not caught."""
         return self.message
 
-
 class GMOS_SPECTPrimitives(GEMINIPrimitives):
     astrotype = "GMOS_SPECT"
     
     def init(self, rc):
-        
-        if "iraf" in rc and "adata" in rc["iraf"]:
-            pyraf.iraf.set (adata=rc["iraf"]['adata'])  
-        else:
-            # @@REFERENCEIMAGE: used to set adata path for primitives
-            if len(rc.inputs) > 0:
-                (root, name) = os.path.split(rc.inputs[0].filename)
-                pyraf.iraf.set (adata=root)
-                if "iraf" not in rc:
-                    rc.update({"iraf":{}})
-                if "adata" not in rc["iraf"]:
-                    rc["iraf"].update({"adata":root}) 
-        
         GEMINIPrimitives.init(self, rc)
         return rc
-
     
     def display(self, rc):
+        
+        pyraf,gemini,yes,no = pyrafLoader(rc)
+        
         from adutils.future import gemDisplay
-        import pyraf
         from pyraf import iraf
+        from pyraf.iraf import images
+        
         iraf.set(stdimage='imtgmos')
         ds = gemDisplay.getDisplayService()
+        
         for i in range(0, len(rc.inputs)):   
             inputRecord = rc.inputs[i]
             gemini.gmos.gdisplay( inputRecord.filename, i+1, fl_imexam=iraf.no,
@@ -88,7 +56,7 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
     
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    
-    #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
     These are the primitives for 'prepare' that are just to check how the general primitives in 
     primitives_GEMINI will work for a GMOS_SPEC image and its MDF file.  Since these are just to check 
@@ -120,7 +88,6 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         this works to add an MDF if there is a MASKNAME in the images PHU only.  
         will be upgraded later, early testing complete
         '''
-        
         try:           
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
@@ -150,14 +117,12 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         except:
             log.critical("Problem preparing the image.", 'critical')
             raise 
-        
         yield rc
     #------------------------------------------------------------------------
     def validateInstrumentData(self,rc):
         '''
         instrument specific validations for the input file
         '''
-        
         try:        
             for ad in rc.getInputs(style="AD"):
                 log.status('validating data for file = '+ad.filename,'status')
@@ -167,22 +132,8 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         except:
             log.critical("Problem preparing the image.",'critical')
             raise 
-        
         yield rc
    #----------------------------------------------------------------------------------
-  #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
-         
-def pyrafBoolean(pythonBool):
-    '''
-    a very basic function to reduce code repetition that simply 'casts' any given 
-    Python boolean into a pyraf/iraf one for use in the CL scripts
-    '''
-    
-    if pythonBool:
-        return 'pyraf.iraf.yes'
-    elif  not pythonBool:
-        return 'pyraf.iraf.'
-    else:
-        print "DANGER DANGER Will Robinson, pythonBool not True or False"        
-    #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$      
+#$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
         
