@@ -1,6 +1,8 @@
+#Author: Kyle Mede, Aug 2010
 import os
 import pyfits as pf
 import numpy as np
+from copy import deepcopy
 #from astrodata.adutils import mefutil, paramutil
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
@@ -15,10 +17,12 @@ class ArithExcept:
 
 def div(numerator, denominator):
     '''
-    A function to divide a input science image by a another image(or flat) or an floating point integer.
-    If the denominator is a AstroData MEF then this function will loop through the SCI, VAR and DQ frames
+    A function to divide a input science image by another image(or flat) or a floating point integer.
+    If the denominator is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
     to divide each SCI of the numerator by the denominator SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats.
+    bitwise-or to the DQ frames to preserve their binary formats. The VAR frames output will follow:
+    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) ), where A=numerator and B=denominator frames.
+            
     If the denominator is a float integer then only the SCI frames of the numerator are each divided by the float.
     
     @param numerator: input image to be divided by the denominator
@@ -28,11 +32,10 @@ def div(numerator, denominator):
     @type denominator: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance, a float 
                         list, a single float (list must be in order of the SCI extension EXTVERs) OR 
                         a dictionary of the format {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-                        of the SCI extensions and ## are the corresponding float values to multiply that extension by.
+                        of the SCI extensions and ## are the corresponding float values to divide that extension by.
     '''
     num=numerator
     den=denominator 
-    from copy import deepcopy
     out=AstroData.prepOutput(inputAry = num, clobber = False) 
     #print type(den)    
     #print num.info()
@@ -54,7 +57,7 @@ def div(numerator, denominator):
                         outvar = deepcopy(num[('VAR',extver)])
                         
                         #print 'a44: starting the VAR frame calculations '+str(extver)
-                        ## creating the output VAR frame following varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
+                        # creating the output VAR frame following varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
                         # making empty sciOutSqured array and squaring the sciOut frame to load it up 
                         sciOutSquared=np.multiply(out[('SCI',extver)].data,out[('SCI',extver)].data)
                         # ditto for sciA and sciB 
@@ -71,7 +74,7 @@ def div(numerator, denominator):
                     if num.countExts('DQ')==den.countExts('DQ')==num.countExts('SCI'):  # ie there are an equal number of DQ frames to operate on 
                         outdq = deepcopy(num[('DQ',extver)])
                                                                   
-                        #print 'a41: bitwise_or on DQ frames '+str(extver)
+                        #print 'a77: performing bitwise_or on DQ frames '+str(extver)
                         # bitwise-or 'adding' DQ frames 
                         outdq.data=np.bitwise_or(num[('DQ',extver)].data,den[('DQ',extver)].data)
                         out.append(outdq)
@@ -82,7 +85,7 @@ def div(numerator, denominator):
                     raise ArithExcept('An error occurred while performing an arith task')
              
             except:
-                raise ArithExcept('An error occurred while performing an arith task')
+                raise 
 
     elif type(den)==dict or type(den)==list or type(den)==float:
         # creating the dict if input is a float or float list
@@ -103,7 +106,7 @@ def div(numerator, denominator):
         
         for extver in range(1,num.countExts("SCI")+1):
             int=denDict[('SCI',extver)]
-            outsci=deepcopy(num[('SCI',extver)]) #$$$ since the dict has the extname we could make this more general??
+            outsci=deepcopy(num[('SCI',extver)]) 
             try:
                 outsci.data=np.divide(num[('SCI',extver)].data,int)  
                 out.append(outsci)
@@ -114,9 +117,9 @@ def div(numerator, denominator):
                     out.append(outvar)
                 if num.countExts('DQ')==num.countExts('SCI'):  # ie there are DQ frames to operate on 
                     outdq = deepcopy(num[('DQ',extver)])
-                    out.append(outdq)
+                    out.append(outdq) # ie no change, just propigate DQ frames
             except:
-                raise ArithExcept('An error occurred while performing an arith task')
+                raise 
         
     else:
         log.critical('arith.div() only accepts inputB of types AstroData, list, float or dict, '+str(type(den))+' passed in', 'critical')    
@@ -125,17 +128,19 @@ def div(numerator, denominator):
                 
 def mult(inputA, inputB):
     '''
-    A function to multiply a input science image by a another image(or flat) or an floating point integer.
-    If the inputB is a AstroData MEF then this function will loop through the SCI, VAR and DQ frames
-    to divide each SCI of the inputA by the inputB SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats.
-    If the inputB is a float integer then only the SCI frames of the inputA are each divided by the float.
+    A function to multiply a input science image by another image(or flat) or a floating point integer.
+    If inputB is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
+    to multiply each SCI of the inputA by the inputB SCI of the same EXTVER. It will apply a 
+    bitwise-or to the DQ frames to preserve their binary formats.The VAR frames output will follow:
+    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
+    
+    If inputB is a float integer then only the SCI frames of the inputA are each multiplied by the float.
     
     @param inputA: input image to be multiplied by the inputB
     @type inputA: a MEF or single extension fits file in the form of an AstroData instance
     
     @param inputB: inputB to multiply the inputA by
-    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float 
+    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance, a float 
                     list or a single float (list must be in order of the SCI extension EXTVERs) OR 
                     a dictionary of the format {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
                     of the SCI extensions and ## are the corresponding float values to multiply that extension by.   
@@ -143,15 +148,14 @@ def mult(inputA, inputB):
    
     inA=inputA
     inB=inputB 
-    from copy import deepcopy
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
     if type(inB)==astrodata.AstroData:
         for sci in inA['SCI']:
             extver = sci.extver()
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
             try:
-                if inA[('SCI',extver)].data.shape==inB[('SCI',extver)].data.shape: #making sure arrays are same size/shape
-                    #print 'a100: multiplying SCI frames '+str(extver)
+                if inA[('SCI',extver)].data.shape==inB[('SCI',extver)].data.shape: #ie making sure arrays are same size/shape
+                    #print 'a157: multiplying SCI frames '+str(extver)
                     #  multipling the SCI frames
                     outsci.data=np.multiply(inA[('SCI',extver)].data,inB[('SCI',extver)].data)
                     out.append(outsci)
@@ -159,8 +163,8 @@ def mult(inputA, inputB):
                     if inA.countExts('VAR')==inB.countExts('VAR')==inA.countExts('SCI'): # ie there are an equal numbers of VAR frames to operate on
                         outvar = deepcopy(inA[('VAR',extver)])
                         
-                        #print 'a104: starting the VAR frame calculations '+str(extver)
-                        ## creating the output VAR frame following varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
+                        #print 'a166: starting the VAR frame calculations '+str(extver)
+                        # creating the output VAR frame following varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
                         # squaring the sciOut frame 
                         sciOutSquared=np.multiply(out[('SCI',extver)].data,out[('SCI',extver)].data)
                         # ditto for sciA and sciB 
@@ -177,7 +181,7 @@ def mult(inputA, inputB):
                     
                     if inA.countExts('DQ')==inB.countExts('DQ')==inA.countExts('SCI'):  # ie there are an equal number of DQ frames to operate on 
                         outdq = deepcopy(inA[('DQ',extver)])    
-                        #print 'a41: bitwise_or on DQ frames '+str(extver)
+                        #print 'a184: bitwise_or on DQ frames '+str(extver)
                         # bitwise-or 'adding' DQ frames 
                         outdq.data=np.bitwise_or(inA[('DQ',extver)].data,inB[('DQ',extver)].data) 
                         out.append(outdq)
@@ -186,7 +190,7 @@ def mult(inputA, inputB):
                                  +inA.filename+' and '+inB.filename,'critical')
                     raise ArithExcept('An error occurred while performing an arith task')
             except:
-                raise ArithExcept('An error occurred while performing an arith task')
+                raise 
 
     elif type(inB)==dict or type(inB)==list or type(inB)==float:
         # creating the dict if input is a float or float list
@@ -195,19 +199,17 @@ def mult(inputA, inputB):
             for ext in inA['SCI']:
                 extver=ext.extver()
                 inBDict[('SCI',extver)]=inB
-                #print repr(inBDict)
         if type(inB)==list:    
             inBDict={}
             for ext in inA['SCI']:
                 extver=ext.extver()
                 inBDict[('SCI',extver)]=inB[extver-1]
-                #print repr(inBDict)
         if type(inB)==dict:
             inBDict=inB
         
         for extver in range(1,inA.countExts("SCI")+1):
             int=inBDict[('SCI',extver)]
-            outsci=deepcopy(inA[('SCI',extver)]) #$$$ since the dict has the extname we could make this more general??
+            outsci=deepcopy(inA[('SCI',extver)]) 
             try:
                 outsci.data=np.multiply(inA[('SCI',extver)].data,int)  
                 out.append(outsci)
@@ -218,9 +220,9 @@ def mult(inputA, inputB):
                     out.append(outvar)
                 if inA.countExts('DQ')==inA.countExts('SCI'):  # ie there are DQ frames to operate on 
                     outdq = deepcopy(inA[('DQ',extver)])
-                    out.append(outdq)
+                    out.append(outdq) # ie no change, just propigate DQ frames
             except:
-                raise ArithExcept('An error occurred while performing an arith task')
+                raise 
     
     else:
         log.critical('arith.mult() only accepts inputB of types AstroData, list and float, '+str(type(inB))+' passed in', 'critical')    
@@ -229,25 +231,25 @@ def mult(inputA, inputB):
 
 def add(inputA, inputB):
     '''
-    A function to add a input science image to another image or an floating point integer.
-    If the inputB is a AstroData MEF then this function will loop through the SCI, VAR and DQ frames
+    A function to add a input science image to another image or a floating point integer.
+    If inputB is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
     to add each SCI of the inputA to the inputB SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats. The VAR frames will be added.
+    bitwise-or to the DQ frames to preserve their binary formats and the VAR frames will be added.
     
-    If the inputB is a float integer then only the SCI frames of inputA will each have the float value added 
-    (ie. VAR and DQ frames of inputA are left alone).
-    
+    If the inputB is a float integer then only the SCI frames of inputA will each have the float value added, 
+    while the VAR and DQ frames of inputA are left alone.
+    #$$$$$$$$$$ ARE WE SURE WE DON'T WANT TO OFFER THE ABILITY FOR inputB TO BE A FLOAT LIST OR DICT???????
     
     @param inputA: input image to have inputB added to it
     @type inputA: a MEF or single extension fits file in the form of an AstroData instance
     
     @param inputB: inputB to add to the inputA 
-    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float int  
+    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float integer 
+    #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO??? 
     '''
    
     inA=inputA
     inB=inputB 
-    from copy import deepcopy
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
     if type(inB)==astrodata.AstroData:
         for sci in inA['SCI']:
@@ -255,19 +257,19 @@ def add(inputA, inputB):
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
             try:
                 if inA[('SCI',extver)].data.shape==inB[('SCI',extver)].data.shape: #making sure arrays are same size/shape
-                    #print 'a100: multiplying SCI frames '+str(extver)
+                    #print 'a258: adding SCI frames '+str(extver)
                     #  adding the SCI frames
                     outsci.data=np.add(inA[('SCI',extver)].data,inB[('SCI',extver)].data)
                     out.append(outsci)
                     if inA.countExts('VAR')==inB.countExts('VAR')==inA.countExts('SCI'): # ie there are an equal numbers of VAR frames to operate on
                         outvar = deepcopy(inA[('VAR',extver)])
-                        #print 'a104: starting the VAR frame calculations '+str(extver)
+                        #print 'a264: starting the VAR frame calculations '+str(extver)
                         # creating the output VAR frame following varOut= varA + varB
                         outvar.data=np.add(inA[('VAR',extver)].data,inB[('VAR',extver)].data)
                         out.append(outvar)
                     if inA.countExts('DQ')==inB.countExts('DQ')==inA.countExts('SCI'):  # ie there are an equal number of DQ frames to operate on
                         outdq = deepcopy(inA[('DQ',extver)])   
-                        #print 'a41: bitwise_or on DQ frames '+str(extver)
+                        #print 'a270: bitwise_or on DQ frames '+str(extver)
                         # bitwise-or 'adding' DQ frames 
                         outdq.data=np.bitwise_or(inA[('DQ',extver)].data,inB[('DQ',extver)].data) 
                         out.append(outdq)
@@ -276,25 +278,25 @@ def add(inputA, inputB):
                                  +inA.filename+' and '+inB.filename,'critical')
                     raise ArithExcept('An error occurred while performing an arith task')
             except:
-                raise ArithExcept('An error occurred while performing an arith task')
+                raise 
     elif type(inB)==float:
         for sci in inA['SCI']:
             extver = sci.extver()
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
             try:
-                #print 'a53: simple addition of SCI frames by the float '+str(inB)
+                #print 'a286: simple addition of SCI frames by the float '+str(inB)
                 # adding the SCI frames by the constant
                 outsci.data=np.add(inA[('SCI',extver)].data,inB)
                 out.append(outsci)
                 # adding the inputA VAR and DQ frames un-edited to the outputs
                 if inA.countExts('VAR')==inA.countExts('SCI'): # ie there are VAR frames to operate on
                     outvar = deepcopy(inA[('VAR',extver)])
-                    out.append(outvar)
+                    out.append(outvar) # ie no change, just propigate VAR frames
                 if inA.countExts('DQ')==inA.countExts('SCI'):  # ie there are DQ frames to operate on 
                     outdq = deepcopy(inA[('DQ',extver)])   
-                    out.append(outdq)
+                    out.append(outdq) # ie no change, just propigate DQ frames
             except:
-                raise ArithExcept('An error occurred while performing an arith task')
+                raise 
     else:
         log.critical('arith.add() only accepts inputB of types AstroData and float, '+str(type(inB))+' passed in', 'critical')    
         raise ArithExcept('An error occurred while performing an arith task')            
@@ -303,24 +305,24 @@ def add(inputA, inputB):
 def sub(inputA, inputB):
     '''
     A function to subtract a input science image from another image or a floating point integer.
-    If the inputB is a AstroData MEF then this function will loop through the SCI, VAR and DQ frames
-    to subtract each SCI of the inputA from the inputB SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats. The VAR frames will be added.
+    If inputB is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
+    to subtract each SCI of the inputB from the inputA SCI of the same EXTVER. It will apply a 
+    bitwise-or to the DQ frames to preserve their binary formats and the VAR frames will be added.
     
     If the inputB is a float integer then only the SCI frames of inputA will each have the float value subtracted 
-    (ie. VAR and DQ frames of inputA are left alone).
-    
+    while the VAR and DQ frames of inputA are left alone.
+    #$$$$$$$$$$ ARE WE SURE WE DON'T WANT TO OFFER THE ABILITY FOR inputB TO BE A FLOAT LIST OR DICT???????
     
     @param inputA: input image to be subtracted by inputB
     @type inputA: a MEF or single extension fits file in the form of an AstroData instance
     
     @param inputB: inputB to subtracted from inputA 
     @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float int 
+    #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO???
     '''
     
     inA=inputA
     inB=inputB 
-    from copy import deepcopy
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
     if type(inB)==astrodata.AstroData:
         for sci in inA['SCI']:
@@ -328,21 +330,20 @@ def sub(inputA, inputB):
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input          
             try:
                 if inA[('SCI',extver)].data.shape==inB[('SCI',extver)].data.shape: #making sure arrays are same size/shape
-
-                    #print 'a100: subtracting SCI frames '+str(extver)
+                    #print 'a333: subtracting SCI frames '+str(extver)
                     #  subtracting the SCI frames
                     outsci.data=np.subtract(inA[('SCI',extver)].data,inB[('SCI',extver)].data)
                     out.append(outsci)
                     
                     if inA.countExts('VAR')==inB.countExts('VAR')==inA.countExts('SCI'): # ie there are an equal numbers of VAR frames to operate on
                         outvar = deepcopy(inA[('VAR',extver)])
-                        #print 'a104: adding the VAR frames '+str(extver)
+                        #print 'a340: adding the VAR frames '+str(extver)
                         # creating the output VAR frame following varOut= varA + varB
                         outvar.data=np.add(inA[('VAR',extver)].data,inB[('VAR',extver)].data)
                         out.append(outvar)
                     if inA.countExts('DQ')==inB.countExts('DQ')==inA.countExts('SCI'):  # ie there are an equal number of DQ frames to operate on
                         outdq = deepcopy(inA[('DQ',extver)])       
-                        #print 'a41: bitwise_or on DQ frames '+str(extver)
+                        #print 'a346: bitwise_or on DQ frames '+str(extver)
                         # bitwise-or 'adding' DQ frames 
                         outdq.data=np.bitwise_or(inA[('DQ',extver)].data,inB[('DQ',extver)].data) 
                         out.append(outdq)
@@ -357,7 +358,7 @@ def sub(inputA, inputB):
             extver = sci.extver()
             outsci = deepcopy(inA[('SCI',extver)]) # we assume there are at least SCI extensions in the input
             try:
-                #print 'a53: simple subtraction of SCI frames by the float '+str(inB)
+                #print 'a361: simple subtraction of SCI frames by the float '+str(inB)
                 # subtracting the SCI frames by the constant
                 outsci.data=np.subtract(inA[('SCI',extver)].data,inB)
                 out.append(outsci)
@@ -365,12 +366,12 @@ def sub(inputA, inputB):
                 # adding the inputA VAR and DQ frames un-edited to the outputs
                 if inA.countExts('VAR')==inA.countExts('SCI'): # ie there are VAR frames to operate on
                     outvar = deepcopy(inA[('VAR',extver)])
-                    out.append(outvar)
+                    out.append(outvar) # ie no change, just propigate var frames
                 if inA.countExts('DQ')==inA.countExts('SCI'):  # ie there are DQ frames to operate on 
                     outdq = deepcopy(inA[('DQ',extver)])   
-                    out.append(outdq)
+                    out.append(outdq) # ie no change, just propigate DQ frames
             except:
-                raise ArithExcept('An error occurred while performing an arith task')
+                raise 
     else:
         log.critical('arith.sub() only accepts inputB of types AstroData and float, '+str(type(inB))+' passed in', 'critical')    
         raise ArithExcept('An error occurred while performing an arith task')            
