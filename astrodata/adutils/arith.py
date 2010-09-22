@@ -17,22 +17,30 @@ class ArithExcept:
 
 def div(numerator, denominator):
     '''
-    A function to divide a input science image by another image(or flat) or a floating point integer.
-    If the denominator is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
-    to divide each SCI of the numerator by the denominator SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats. The VAR frames output will follow:
-    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) ), where A=numerator and B=denominator frames.
+    A function to divide a input science image by another image(or flat) or 
+    a floating point integer. If the denominator is an AstroData MEF then 
+    this function will loop through the SCI, VAR and DQ frames
+    to divide each SCI of the numerator by the denominator SCI of 
+    the same EXTVER. It will apply a bitwise-or to the DQ frames to 
+    preserve their binary formats. The VAR frames output will follow:
+    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) ), where A=numerator 
+    and B=denominator frames.
             
-    If the denominator is a float integer then only the SCI frames of the numerator are each divided by the float.
+    If the denominator is a float integer then only the SCI frames of the 
+    numerator are each divided by the float.
     
     @param numerator: input image to be divided by the denominator
-    @type numerator: a MEF or single extension fits file in the form of an AstroData instance
+    @type numerator: a MEF or single extension fits file in the form of an 
+                     AstroData instance
     
     @param denominator: denominator to divide the numerator by
-    @type denominator: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance, a float 
-                        list, a single float (list must be in order of the SCI extension EXTVERs) OR 
-                        a dictionary of the format {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-                        of the SCI extensions and ## are the corresponding float values to divide that extension by.
+    @type denominator:  a MEF of SCI, VAR and DQ frames in the form of an 
+                        AstroData instance, a float list, a single float 
+                        (list must be in order of the SCI extension EXTVERs) OR 
+                        a dictionary of the format 
+                        {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
+                        of the SCI extensions and ## are the corresponding 
+                        float values to divide that extension by.
     '''
     num=numerator
     den=denominator 
@@ -47,7 +55,7 @@ def div(numerator, denominator):
             outsci = deepcopy(num[('SCI',extver)]) # we assume there are at least SCI extensions in the input
         
             try:
-                if num[('SCI',extver)].data.shape==den[('SCI',extver)].data.shape: #making sure arrays are same size/shape
+                if num[('SCI',extver)].data.shape==den[('SCI',extver)].data.shape: # making sure arrays are same size/shape
                     #print 'a35: deviding SCI frames '+str(extver)
                     # dividing the SCI frames
                     outsci.data=np.divide(num[('SCI',extver)].data,den[('SCI',extver)].data)
@@ -128,22 +136,29 @@ def div(numerator, denominator):
                 
 def mult(inputA, inputB):
     '''
-    A function to multiply a input science image by another image(or flat) or a floating point integer.
-    If inputB is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
-    to multiply each SCI of the inputA by the inputB SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats.The VAR frames output will follow:
+    A function to multiply a input science image by another image(or flat) 
+    or a floating point integer. If inputB is an AstroData MEF then this 
+    function will loop through the SCI, VAR and DQ frames to multiply each 
+    SCI of the inputA by the inputB SCI of the same EXTVER. It will apply a 
+    bitwise-or to the DQ frames to preserve their binary formats.
+    The VAR frames output will follow:
     varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
     
-    If inputB is a float integer then only the SCI frames of the inputA are each multiplied by the float.
+    If inputB is a float integer then only the SCI frames of the inputA 
+    are each multiplied by the float.
     
     @param inputA: input image to be multiplied by the inputB
-    @type inputA: a MEF or single extension fits file in the form of an AstroData instance
+    @type inputA: a MEF or single extension fits file in the form of an 
+                  AstroData instance
     
     @param inputB: inputB to multiply the inputA by
-    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance, a float 
-                    list or a single float (list must be in order of the SCI extension EXTVERs) OR 
-                    a dictionary of the format {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-                    of the SCI extensions and ## are the corresponding float values to multiply that extension by.   
+    @type inputB:   a MEF of SCI, VAR and DQ frames in the form of an AstroData 
+                    instance, a float list or a single float (list must be 
+                    in order of the SCI extension EXTVERs) OR a dictionary 
+                    of the format {('SCI',#):##,('SCI',#):##...} 
+                    where # are the EXTVERs of the SCI extensions 
+                    and ## are the corresponding float values 
+                    to multiply that extension by.   
     '''
    
     inA=inputA
@@ -231,20 +246,25 @@ def mult(inputA, inputB):
 
 def add(inputA, inputB):
     '''
-    A function to add a input science image to another image or a floating point integer.
-    If inputB is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
-    to add each SCI of the inputA to the inputB SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats and the VAR frames will be added.
+    A function to add a input science image to another image or a floating 
+    point integer. If inputB is an AstroData MEF then this function will 
+    loop through the SCI, VAR and DQ frames to add each SCI of the inputA 
+    to the inputB SCI of the same EXTVER. It will apply a bitwise-or to the DQ
+     frames to preserve their binary formats and the VAR frames will be added.
     
-    If the inputB is a float integer then only the SCI frames of inputA will each have the float value added, 
-    while the VAR and DQ frames of inputA are left alone.
-    #$$$$$$$$$$ ARE WE SURE WE DON'T WANT TO OFFER THE ABILITY FOR inputB TO BE A FLOAT LIST OR DICT???????
+    If the inputB is a float integer then only the SCI frames of inputA will 
+    each have the float value added, while the VAR and DQ frames of inputA 
+    are left alone.
+    #$$$$$$$$$$ ARE WE SURE WE DON'T WANT TO OFFER THE ABILITY FOR inputB 
+    TO BE A FLOAT LIST OR DICT???????
     
     @param inputA: input image to have inputB added to it
-    @type inputA: a MEF or single extension fits file in the form of an AstroData instance
+    @type inputA: a MEF or single extension fits file in the form of an 
+                  AstroData instance
     
     @param inputB: inputB to add to the inputA 
-    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float integer 
+    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData 
+                  instance or a float integer 
     #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO??? 
     '''
    
@@ -304,20 +324,26 @@ def add(inputA, inputB):
         
 def sub(inputA, inputB):
     '''
-    A function to subtract a input science image from another image or a floating point integer.
-    If inputB is an AstroData MEF then this function will loop through the SCI, VAR and DQ frames
-    to subtract each SCI of the inputB from the inputA SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats and the VAR frames will be added.
+    A function to subtract a input science image from another image or a 
+    floating point integer. If inputB is an AstroData MEF then this function 
+    will loop through the SCI, VAR and DQ frames to subtract each SCI of the 
+    inputB from the inputA SCI of the same EXTVER. It will apply a bitwise-or 
+    to the DQ frames to preserve their binary formats and the VAR frames 
+    will be added.
     
-    If the inputB is a float integer then only the SCI frames of inputA will each have the float value subtracted 
-    while the VAR and DQ frames of inputA are left alone.
-    #$$$$$$$$$$ ARE WE SURE WE DON'T WANT TO OFFER THE ABILITY FOR inputB TO BE A FLOAT LIST OR DICT???????
+    If the inputB is a float integer then only the SCI frames of inputA will 
+    each have the float value subtracted while the VAR and DQ frames of 
+    inputA are left alone.
+    #$$$$$$$$$$ ARE WE SURE WE DON'T WANT TO OFFER THE ABILITY FOR inputB 
+    TO BE A FLOAT LIST OR DICT???????
     
     @param inputA: input image to be subtracted by inputB
-    @type inputA: a MEF or single extension fits file in the form of an AstroData instance
+    @type inputA: a MEF or single extension fits file in the form of an 
+                  AstroData instance
     
     @param inputB: inputB to subtracted from inputA 
-    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData instance or a float int 
+    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData 
+                  instance or a float int 
     #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO???
     '''
     
