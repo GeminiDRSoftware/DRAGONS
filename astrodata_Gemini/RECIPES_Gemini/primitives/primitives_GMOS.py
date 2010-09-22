@@ -27,7 +27,8 @@ class GMOSException:
         """This constructor takes a message to print to the user."""
         self.message = msg
     def __str__(self):
-        """This str conversion member returns the message given by the user (or the default message)
+        """This str conversion member returns the message given 
+        by the user (or the default message)
         when the exception is not caught."""
         return self.message
 
@@ -41,15 +42,18 @@ class GMOSPrimitives(GEMINIPrimitives):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
-    These primitives are now functioning and can be used, BUT are not set up to run with the current demo system.
-    Commenting has been added to hopefully assist those reading the code.
-    Excluding validateWCS, all the primitives for 'prepare' are complete (as far as we know of at the moment that is)
-    and so I am moving onto working on the primitives following 'prepare'.
+    These primitives are now functioning and can be used, BUT are not set 
+    up to run with the current demo system. Commenting has been added to 
+    hopefully assist those reading the code. Excluding validateWCS, 
+    all the primitives for 'prepare' are complete (as far as we know of 
+    at the moment that is) and so I am moving onto working on the 
+    primitives following 'prepare'.
     '''
 #------------------------------------------------------------------------    
     def validateInstrumentData(self,rc):
         '''
-        This primitive is called by validateData to validate the instrument specific data checks for all input files.
+        This primitive is called by validateData to validate the instrument 
+        specific data checks for all input files.
         '''
         
         try:
@@ -68,11 +72,13 @@ class GMOSPrimitives(GEMINIPrimitives):
 #-------------------------------------------------------------------------------
     def standardizeInstrumentHeaders(self,rc):
         '''
-        This primitive is called by standardizeHeaders to makes the changes and additions to
-        the headers of the input files that are instrument specific.
+        This primitive is called by standardizeHeaders to makes the changes and 
+        additions to the headers of the input files that are instrument 
+        specific.
         '''
         try:            
-            writeInt = rc['writeInt'] #we still need to implement a better way to write intermediate outputs
+            writeInt = rc['writeInt'] 
+            #^ we still need to implement a better way to write intermediate outputs
                                
             for ad in rc.getInputs(style="AD"): 
                 log.debug('calling stdInstHdrs','status') 
@@ -89,37 +95,39 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ Prepare primitives end here $$$$$$$$$$$$$$$$$$$$
  
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$$$$$$$  
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ primitives following Prepare below $$$$$$$$$$$$$$  
     def overscanSubtract(self,rc):
         """
-        This primitive uses the CL script gireduce to subtract the overscan from the input images.
+        This primitive uses the CL script gireduce to subtract the overscan 
+        from the input images.
         """
         
         pyraf,gemini,yes,no = pyrafLoader(rc)
         
         try:
             log.status('*STARTING* to subtract the overscan from the input data','status')
-            # writing input files to disk with prefixes onto their file names so they can be deleted later easily 
+            # writing input files to disk with prefixes onto their file 
+            # names so they can be deleted later easily 
             clm = CLManager(rc)
             clm.LogCurParams()
             
             # params set by the CLManager or the definition of the prim 
             clPrimParams={
-                          'inimages'    :clm.inputsAsStr(),
-                          'gp_outpref'  :clm.uniquePrefix(),
-                          'fl_over'     :yes, 
-                          'Stdout'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
-                          'Stderr'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
-                          'logfile'     :'TEMP.log',         # this log will get created and will then be deleted near the end of this prim
-                          'verbose'     :yes                 # this is actually in the default dict but wanted to show it again
+              'inimages'    :clm.inputsAsStr(),
+              'gp_outpref'  :clm.uniquePrefix(),
+              'fl_over'     :yes, 
+              'Stdout'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
+              'Stderr'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
+              'logfile'     :'TEMP.log',        # this log will get created and will then be deleted near the end of this prim
+              'verbose'     :yes                # this is actually in the default dict but wanted to show it again
                           }
             # params from the Parameter file that are adjustable by the user
             clSoftcodedParams={
-                               'fl_trim'    :pyrafBoolean(rc["fl_trim"]),
-                               'outpref'    :rc["outpref"],
-                               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
+               'fl_trim'    :pyrafBoolean(rc["fl_trim"]),
+               'outpref'    :rc["outpref"],
+               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
                                }
             # grabbing the default params dict and updating it with the two above dicts
             clParamsDict=CLDefaultParamsDict('gireduce')
@@ -142,7 +150,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                 log.fullinfo('exited the gireduce CL script successfully', 'status')
          
-            # renaming CL outputs and loading them back into memory, and cleaning up the intermediate tmp files written to disk
+            # renaming CL outputs and loading them back into memory, and 
+            # cleaning up the intermediate tmp files written to disk
             clm.finishCL()
             os.remove(clPrimParams['logfile'])
             # wrap up logging
@@ -169,11 +178,9 @@ class GMOSPrimitives(GEMINIPrimitives):
   
     def overscanTrim(self,rc):
         """
-        This primitive uses pyfits and AstroData to trim the overscan region from the input images
-        and update their headers.
+        This primitive uses pyfits and AstroData to trim the overscan region 
+        from the input images and update their headers.
         """
-        pyraf,gemini,yes,no = pyrafLoader(rc)
-        
         try:
             log.status('*STARTING* to trim the overscan region from the input data','status')
             
@@ -223,9 +230,10 @@ class GMOSPrimitives(GEMINIPrimitives):
    
     def storeProcessedBias(self,rc):
         '''
-        This should be a primitive that interacts with the calibration system (MAYBE) but that isn't up and running yet.
-        Thus, this will just strip the extra postfixes to create the 'final' name for the makeProcessedBias outputs
-        and write them to disk in a storedcals folder.
+        This should be a primitive that interacts with the calibration system 
+        (MAYBE) but that isn't up and running yet. Thus, this will just strip 
+        the extra postfixes to create the 'final' name for the 
+        makeProcessedBias outputs and write them to disk in a storedcals folder.
         '''
         try:  
             log.status('*STARTING* to store the processed bias by writing it to disk','status')
@@ -242,9 +250,10 @@ class GMOSPrimitives(GEMINIPrimitives):
    
     def storeProcessedFlat(self,rc):
         '''
-        This should be a primitive that interacts with the calibration system (MAYBE) but that isn't up and running yet.
-        Thus, this will just strip the extra postfixes to create the 'final' name for the makeProcessedFlat outputs
-        and write them to disk in a storedcals folder.
+        This should be a primitive that interacts with the calibration 
+        system (MAYBE) but that isn't up and running yet. Thus, this will 
+        just strip the extra postfixes to create the 'final' name for the 
+        makeProcessedFlat outputs and write them to disk in a storedcals folder.
         '''
         try:   
             log.status('*STARTING* to store the processed flat by writing it to disk','status')
@@ -274,11 +283,12 @@ class GMOSPrimitives(GEMINIPrimitives):
 
     def localGetProcessedBias(self,rc):
         '''
-        A prim that works with the calibration system (MAYBE), but as it isn't written yet this simply
-        copies the bias file from the stored processed bias directory and reports its name to the
-        reduction context. this is the basic form that the calibration system will work as well but 
-        with proper checking for what the correct bias file would be rather than my oversimplified checking
-        the binning alone.
+        A prim that works with the calibration system (MAYBE), but as it isn't 
+        written yet this simply copies the bias file from the stored processed 
+        bias directory and reports its name to the reduction context. 
+        This is the basic form that the calibration system will work as well 
+        but with proper checking for what the correct bias file would be rather 
+        than my oversimplified checking the bining alone.
         '''
         try:
             packagePath=sys.argv[0].split('gemini_python')[0]
@@ -303,10 +313,12 @@ class GMOSPrimitives(GEMINIPrimitives):
    
     def localGetProcessedFlat(self,rc):
         '''
-        A prim that works with the calibration system (MAYBE), but as it isn't written yet this simply
-        copies the bias file from the stored processed bias directory and reports its name to the
-        reduction context. this is the basic form that the calibration system will work as well but 
-        with proper checking for what the correct bias file would be rather than my oversimplified checking
+        A prim that works with the calibration system (MAYBE), but as it 
+        isn't written yet this simply copies the bias file from the stored 
+        processed bias directory and reports its name to the reduction 
+        context. this is the basic form that the calibration system will work 
+        as well but with proper checking for what the correct bias file would 
+        be rather than my oversimplified checking
         the binning alone.
         '''
         try:
@@ -334,10 +346,12 @@ class GMOSPrimitives(GEMINIPrimitives):
 
     def biasCorrect(self, rc):
         '''
-        This primitive will subtract the biases from the inputs using the CL script gireduce.
+        This primitive will subtract the biases from the inputs using the 
+        CL script gireduce.
         
-        WARNING: The gireduce script used here replaces the previously calculated DQ frames with
-        its own versions.  This may be corrected in the future by replacing the use of the gireduce
+        WARNING: The gireduce script used here replaces the previously 
+        calculated DQ frames with its own versions.  This may be corrected 
+        in the future by replacing the use of the gireduce
         with a Python routine to do the bias subtraction.
         '''
         pyraf,gemini,yes,no = pyrafLoader(rc)
@@ -347,30 +361,33 @@ class GMOSPrimitives(GEMINIPrimitives):
             clm=CLManager(rc)
             clm.LogCurParams()
             
-            # getting the bias file for the first file of the inputs and assuming it is the same for all the inputs.
-            # This should be corrected in the future to be more intelligent and get the correct bias for each input
-            # individually if they are not all the same. Then gireduce can be called in a loop with one flat and one bias,
-            # this will work well with the CLManager as that was how i wrote this prim originally.
+            # getting the bias file for the first file of the inputs and 
+            # assuming it is the same for all the inputs. This should be 
+            # corrected in the future to be more intelligent and get the 
+            # correct bias for each input individually if they are not 
+            # all the same. Then gireduce can be called in a loop with 
+            # one flat and one bias, this will work well with the CLManager
+            # as that was how i wrote this prim originally.
             ad=rc.getInputs(style='AD')[0]
             processedBias=rc.getCal(ad,'bias')
             
             # params set by the CLManager or the definition of the prim 
             clPrimParams={
-                          'inimages'    :clm.inputsAsStr(),
-                          'gp_outpref'  :clm.uniquePrefix(),
-                          'fl_bias'     :yes,
-                          'bias'        :processedBias,     # possibly add this to the params file so the user can override this input file
-                          'Stdout'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
-                          'Stderr'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
-                          'logfile'     :'TEMP.log',        # this log will get created and will then be deleted near the end of this prim
-                          'verbose'     :yes                # this is actually in the default dict but wanted to show it again
+              'inimages'    :clm.inputsAsStr(),
+              'gp_outpref'  :clm.uniquePrefix(),
+              'fl_bias'     :yes,
+              'bias'        :processedBias,     # possibly add this to the params file so the user can override this input file
+              'Stdout'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
+              'Stderr'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
+              'logfile'     :'TEMP.log',        # this log will get created and will then be deleted near the end of this prim
+              'verbose'     :yes                # this is actually in the default dict but wanted to show it again
                           }
             # params from the Parameter file adjustable by the user
             clSoftcodedParams={
-                               'fl_trim'    :pyrafBoolean(rc["fl_trim"]),
-                               'outpref'    :rc["outpref"],
-                               'fl_over'    :pyrafBoolean(rc["fl_over"]),
-                               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
+               'fl_trim'    :pyrafBoolean(rc["fl_trim"]),
+               'outpref'    :rc["outpref"],
+               'fl_over'    :pyrafBoolean(rc["fl_over"]),
+               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
                                }
             # grabbing the default params dict and updating it with the two above dicts
             clParamsDict=CLDefaultParamsDict('gireduce')
@@ -387,7 +404,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                  log.fullinfo('exited the gireduce CL script successfully', 'status')
             
-            # renaming CL outputs and loading them back into memory, and cleaning up the intermediate tmp files written to disk
+            # renaming CL outputs and loading them back into memory, and 
+            # cleaning up the intermediate tmp files written to disk
             clm.finishCL()
             os.remove(clPrimParams['logfile'])
             # wrap up logging
@@ -418,37 +436,41 @@ class GMOSPrimitives(GEMINIPrimitives):
 
     def normalizeFlat(self,rc):
         '''
-        This primitive will combine the input flats and then normalize them using the CL script giflat.
+        This primitive will combine the input flats and then normalize them 
+        using the CL script giflat.
         
-        Warning: giflat calculates its own DQ frames and thus replaces the previously produced ones in calculateDQ.
-        This may be fixed in the future by replacing giflat with a Python equivilent with more appropriate options
-        for the recipe system.
+        Warning: giflat calculates its own DQ frames and thus replaces the 
+        previously produced ones in calculateDQ. This may be fixed in the 
+        future by replacing giflat with a Python equivilent with more 
+        appropriate options for the recipe system.
         '''
         pyraf,gemini,yes,no = pyrafLoader(rc)
         try:
             
             log.status('*STARTING* to combine and normalize the input flats','status')
-            ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
+            # writing input files to disk with prefixes onto their file names 
+            # so they can be deleted later easily 
             clm = CLManager(rc)
             clm.LogCurParams()
 
             # params set by the CLManager or the definition of the prim 
             clPrimParams={
-                          'inflats'     :clm.inputList(),
-                          'outflat'     :clm.combineOutname(),  # maybe allow the user to override this in the future
-                          'Stdout'      :IrafStdout(),          # this is actually in the default dict but wanted to show it again
-                          'Stderr'      :IrafStdout(),          # this is actually in the default dict but wanted to show it again
-                          'logfile'     :'TEMP.log',            # this log will get created and will then be deleted near the end of this prim
-                          'verbose'     :yes                    # this is actually in the default dict but wanted to show it again
+              'inflats'     :clm.inputList(),
+              'outflat'     :clm.combineOutname(),  # maybe allow the user to override this in the future
+              'Stdout'      :IrafStdout(),          # this is actually in the default dict but wanted to show it again
+              'Stderr'      :IrafStdout(),          # this is actually in the default dict but wanted to show it again
+              'logfile'     :'TEMP.log',            # this log will get created and will then be deleted near the end of this prim
+              'verbose'     :yes                    # this is actually in the default dict but wanted to show it again
                           }
             # params from the Parameter file adjustable by the user
             clSoftcodedParams={
-                               'fl_bias'    :rc['fl_bias'],
-                               'fl_vardq'   :rc["fl_vardq"],
-                               'fl_over'    :rc["fl_over"],
-                               'fl_trim'    :rc["fl_trim"]
+               'fl_bias'    :rc['fl_bias'],
+               'fl_vardq'   :rc["fl_vardq"],
+               'fl_over'    :rc["fl_over"],
+               'fl_trim'    :rc["fl_trim"]
                                }
-            # grabbing the default params dict and updating it with the two above dicts
+            # grabbing the default params dict and updating it 
+            # with the two above dicts
             clParamsDict=CLDefaultParamsDict('giflat')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
@@ -463,11 +485,13 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                 log.fullinfo('exited the giflat CL script successfully', 'status')
                 
-            # renaming CL outputs and loading them back into memory, and cleaning up the intermediate tmp files written to disk
+            # renaming CL outputs and loading them back into memory, and 
+            # cleaning up the intermediate tmp files written to disk
             clm.finishCL(combine=True) 
             os.remove(clPrimParams['logfile'])
             
-            ad = rc.getOutputs(style='AD')[0] # there is only one after above combination, so no need to perform a loop
+            ad = rc.getOutputs(style='AD')[0] 
+            #^ there is only one after above combination, so no need to perform a loop
             ut = ad.historyMark()
             ad.historyMark(key='GIFLAT',stomp=False)
             
@@ -488,8 +512,9 @@ class GMOSPrimitives(GEMINIPrimitives):
 
     def flatCorrect(self,rc):
         '''
-        This primitive performs a flat correction by dividing the inputs by a processed flat similar
-        to the way gireduce would perform this operation but written in pure python.
+        This primitive performs a flat correction by dividing the inputs by a 
+        processed flat similar to the way gireduce would perform this operation
+        but written in pure python.
         '''
         try:
             log.status('*STARTING* to flat correct the inputs','status')
@@ -522,12 +547,14 @@ class GMOSPrimitives(GEMINIPrimitives):
        
     def mosaic(self,rc):
         '''
-        This primitive will mosaic the SCI frames of the input images, along with the VAR and DQ frames if they exist.  
+        This primitive will mosaic the SCI frames of the input images, 
+        along with the VAR and DQ frames if they exist.  
         '''
         pyraf,gemini, yes, no = pyrafLoader(rc)
         try:
             log.status('*STARTING* to mosaic the input images SCI extensions together','status')
-            ## writing input files to disk with prefixes onto their file names so they can be deleted later easily 
+            # writing input files to disk with prefixes onto their file names so 
+            # they can be deleted later easily 
             clm = CLManager(rc)
             clm.LogCurParams() 
             
@@ -540,19 +567,19 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
             # params set by the CLManager or the definition of the prim 
             clPrimParams={
-                          'inimages'    :clm.inputsAsStr(),
-                          'fl_vardq'    :fl_vardq,
-                          'Stdout'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
-                          'Stderr'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
-                          'logfile'     :'TEMP.log',        # this log will get created and will then be deleted near the end of this prim
-                          'verbose'     :yes                # this is actually in the default dict but wanted to show it again
+              'inimages'    :clm.inputsAsStr(),
+              'fl_vardq'    :fl_vardq,
+              'Stdout'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
+              'Stderr'      :IrafStdout(),      # this is actually in the default dict but wanted to show it again
+              'logfile'     :'TEMP.log',        # this log will get created and will then be deleted near the end of this prim
+              'verbose'     :yes                # this is actually in the default dict but wanted to show it again
                           }
             # params from the Parameter file adjustable by the user
             clSoftcodedParams={
-                              'fl_paste'    :pyrafBoolean(rc["fl_paste"]),
-                              'outpref'     :rc["outpref"],
-                              'outimages'   :rc['outimages'],
-                              'geointer'    :rc['interp_function'],
+              'fl_paste'    :pyrafBoolean(rc["fl_paste"]),
+              'outpref'     :rc["outpref"],
+              'outimages'   :rc['outimages'],
+              'geointer'    :rc['interp_function'],
                               }
             # grabbing the default params dict and updating it with the two above dicts
             clParamsDict=CLDefaultParamsDict('gmosaic')
@@ -569,7 +596,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                 log.fullinfo('exited the gmosaic CL script successfully', 'status')
             
-            # renaming CL outputs and loading them back into memory, and cleaning up the intermediate tmp files written to disk
+            # renaming CL outputs and loading them back into memory, and cleaning 
+            # up the intermediate tmp files written to disk
             clm.finishCL()
             os.remove(clPrimParams['logfile'])
             # wrap up logging
@@ -596,145 +624,146 @@ class GMOSPrimitives(GEMINIPrimitives):
 
 def CLDefaultParamsDict(CLscript):
     '''
-    A function to return a dictionary full of all the default parameters for each CL script used so far in the Recipe System.
+    A function to return a dictionary full of all the 
+    default parameters for each CL script used so far in the Recipe System.
     '''
     pyraf,gemini,yes,no = pyrafLoader()
     
     if CLscript=='gireduce':
         defaultParams={
-                           'inimages'   :'',                # Input GMOS images 
-                           'outpref'    :'DEFAULT',         # Prefix for output images
-                           'outimages'  :"",                # Output images
-                           'fl_over'    :no,                # Subtract overscan level
-                           'fl_trim'    :no,                # Trim off the overscan section
-                           'fl_bias'    :no,                # Subtract bias image
-                           'fl_dark'    :no,                # Subtract (scaled) dark image
-                           'fl_flat'    :no,                # Do flat field correction?
-                           'fl_vardq'   :no,                # Create variance and data quality frames
-                           'fl_addmdf'  :no,                # Add Mask Definition File? (LONGSLIT/MOS/IFU modes)
-                           'bias'       :'',                # Bias image name
-                           'dark'       :'',                # Dark image name
-                           'flat1'      :'',                # Flatfield image 1
-                           'flat2'      :'',                # Flatfield image 2
-                           'flat3'      :'',                # Flatfield image 3
-                           'flat4'      :'',                # Flatfield image 4
-                           'key_exptime':'EXPTIME',         # Header keyword of exposure time
-                           'key_biassec':'BIASSEC',         # Header keyword for bias section
-                           'key_datasec':'DATASEC',         # Header keyword for data section
-                           'rawpath'    :'',                # GPREPARE: Path for input raw images
-                           'gp_outpref' :'g',               # GPREPARE: Prefix for output images
-                           'sci_ext'    :'SCI',             # Name of science extension
-                           'var_ext'    :'VAR',             # Name of variance extension
-                           'dq_ext'     :'DQ',              # Name of data quality extension
-                           'key_mdf'    :'MASKNAME',        # Header keyword for the Mask Definition File
-                           'mdffile'    :'',                # MDF file to use if keyword not found
-                           'mdfdir'     :'',                # MDF database directory
-                           'bpm'        :'',                # Bad pixel mask
-                           #'giandb'     :'default',        # Database with gain data
-                           'sat'        :65000,             # Saturation level in raw images [ADU]
-                           'key_nodcount':"NODCOUNT",       # Header keyword with number of nod cycles
-                           'key_nodpix' :"NODPIX",          # Header keyword with shuffle distance
-                           'key_filter' :"FILTER2",         # Header keyword of filter
-                           'key_ron'    :"RDNOISE",         # Header keyword for readout noise
-                           'key_gain'   :"GAIN",            # Header keyword for gain (e-/ADU)
-                           'ron'        :3.5,               # Readout noise in electrons
-                           'gain'       :2.2,               # Gain in e-/ADU
-                           'fl_mult'    :no, #$$$$$$$$$     # Multiply by gains to get output in electrons
-                           'fl_inter'   :no,                # Interactive overscan fitting?
-                           'median'     :no,                # Use median instead of average in column bias?
-                           'function'   :"chebyshev",       # Overscan fitting function
-                           'nbiascontam':4, #$$$$$$$        # Number of columns removed from overscan region
-                           'biasrows'   :"default",         # Rows to use for overscan region
-                           'order'      :1,                 # Order of overscan fitting function
-                           'low_reject' :3.0,               # Low sigma rejection factor in overscan fit
-                           'high_reject':3.0,               # High sigma rejection factor in overscan fit
-                           'niterate'   :2,                 # Number of rejection iterations in overscan fit
-                           'logfile'    :'',                # Logfile
-                           'verbose'    :yes,               # Verbose?
-                           'status'     :0,                 # Exit status (0=good)
-                           'Stdout'     :IrafStdout(),
-                           'Stderr'     :IrafStdout()
+            'inimages'   :'',                # Input GMOS images 
+            'outpref'    :'DEFAULT',         # Prefix for output images
+            'outimages'  :"",                # Output images
+            'fl_over'    :no,                # Subtract overscan level
+            'fl_trim'    :no,                # Trim off the overscan section
+            'fl_bias'    :no,                # Subtract bias image
+            'fl_dark'    :no,                # Subtract (scaled) dark image
+            'fl_flat'    :no,                # Do flat field correction?
+            'fl_vardq'   :no,                # Create variance and data quality frames
+            'fl_addmdf'  :no,                # Add Mask Definition File? (LONGSLIT/MOS/IFU modes)
+            'bias'       :'',                # Bias image name
+            'dark'       :'',                # Dark image name
+            'flat1'      :'',                # Flatfield image 1
+            'flat2'      :'',                # Flatfield image 2
+            'flat3'      :'',                # Flatfield image 3
+            'flat4'      :'',                # Flatfield image 4
+            'key_exptime':'EXPTIME',         # Header keyword of exposure time
+            'key_biassec':'BIASSEC',         # Header keyword for bias section
+            'key_datasec':'DATASEC',         # Header keyword for data section
+            'rawpath'    :'',                # GPREPARE: Path for input raw images
+            'gp_outpref' :'g',               # GPREPARE: Prefix for output images
+            'sci_ext'    :'SCI',             # Name of science extension
+            'var_ext'    :'VAR',             # Name of variance extension
+            'dq_ext'     :'DQ',              # Name of data quality extension
+            'key_mdf'    :'MASKNAME',        # Header keyword for the Mask Definition File
+            'mdffile'    :'',                # MDF file to use if keyword not found
+            'mdfdir'     :'',                # MDF database directory
+            'bpm'        :'',                # Bad pixel mask
+            #'giandb'     :'default',        # Database with gain data
+            'sat'        :65000,             # Saturation level in raw images [ADU]
+            'key_nodcount':"NODCOUNT",       # Header keyword with number of nod cycles
+            'key_nodpix' :"NODPIX",          # Header keyword with shuffle distance
+            'key_filter' :"FILTER2",         # Header keyword of filter
+            'key_ron'    :"RDNOISE",         # Header keyword for readout noise
+            'key_gain'   :"GAIN",            # Header keyword for gain (e-/ADU)
+            'ron'        :3.5,               # Readout noise in electrons
+            'gain'       :2.2,               # Gain in e-/ADU
+            'fl_mult'    :no, #$$$$$$$$$     # Multiply by gains to get output in electrons
+            'fl_inter'   :no,                # Interactive overscan fitting?
+            'median'     :no,                # Use median instead of average in column bias?
+            'function'   :"chebyshev",       # Overscan fitting function
+            'nbiascontam':4, #$$$$$$$        # Number of columns removed from overscan region
+            'biasrows'   :"default",         # Rows to use for overscan region
+            'order'      :1,                 # Order of overscan fitting function
+            'low_reject' :3.0,               # Low sigma rejection factor in overscan fit
+            'high_reject':3.0,               # High sigma rejection factor in overscan fit
+            'niterate'   :2,                 # Number of rejection iterations in overscan fit
+            'logfile'    :'',                # Logfile
+            'verbose'    :yes,               # Verbose?
+            'status'     :0,                 # Exit status (0=good)
+            'Stdout'     :IrafStdout(),
+            'Stderr'     :IrafStdout()
                            }
     if CLscript=='giflat':
         defaultParams={ 
-                       'inflats'    :'',            # Input flat field images
-                       'outflat'    :"",            # Output flat field image
-                       'normsec'    :'default',     # Image section to get the normalization.
-                       'fl_scale'   :yes,           # Scale the flat images before combining?
-                       'sctype'     :"mean",        # Type of statistics to compute for scaling
-                       'statsec'    :"default",     # Image section for relative intensity scaling
-                       'key_gain'   :"GAIN",        # Header keyword for gain (e-/ADU)
-                       'fl_stamp'   :no,            # Input is stamp image
-                       'sci_ext'    :'SCI',         # Name of science extension
-                       'var_ext'    :'VAR',         # Name of variance extension
-                       'dq_ext'     :'DQ',          # Name of data quality extension
-                       'fl_vardq'   :no,            # Create variance and data quality frames?
-                       'sat'        :65000,         # Saturation level in raw images (ADU)
-                       'verbose'    :yes,           # Verbose output?
-                       'logfile'    :'',            # Name of logfile
-                       'status'     :0,             # Exit status (0=good)
-                       'combine'    :"average",     # Type of combine operation
-                       'reject'     :"avsigclip",   # Type of rejection in flat average
-                       'lthreshold' :'INDEF',       # Lower threshold when combining
-                       'hthreshold' :'INDEF',       # Upper threshold when combining
-                       'nlow'       :0,             # minmax: Number of low pixels to reject
-                       'nhigh'      :1,             # minmax: Number of high pixels to reject
-                       'nkeep'      :1,             # avsigclip: Minimum to keep (pos) or maximum to reject (neg)
-                       'mclip'      :yes,           # avsigclip: Use median in clipping algorithm?
-                       'lsigma'     :3.0,           # avsigclip: Lower sigma clipping factor
-                       'hsigma'     :3.0,           # avsigclip: Upper sigma clipping factor
-                       'sigscale'   :0.1,           # avsigclip: Tolerance for clipping scaling corrections
-                       'grow'       :0.0,           # minmax or avsigclip: Radius (pixels) for neighbor rejection
-                       'gp_outpref' :'g',           # Gprepare prefix for output images
-                       'rawpath'    :'',            # GPREPARE: Path for input raw images
-                       'key_ron'    :"RDNOISE",     # Header keyword for readout noise
-                       'key_datasec':'DATASEC',     # Header keyword for data section
-                       #'giandb'     :'default',    # Database with gain data
-                       'bpm'        :'',            # Bad pixel mask
-                       'gi_outpref' :'r',           # Gireduce prefix for output images
-                       'bias'       :'',            # Bias calibration image
-                       'fl_over'    :no,            # Subtract overscan level?
-                       'fl_trim'    :no,            # Trim images?
-                       'fl_bias'    :no,            # Bias-subtract images?
-                       'fl_inter'   :no,            # Interactive overscan fitting?
-                       'nbiascontam':4, #$$$$$$$    # Number of columns removed from overscan region
-                       'biasrows'   :"default",     # Rows to use for overscan region
-                       'key_biassec':'BIASSEC',     # Header keyword for overscan image section
-                       'median'     :no,            # Use median instead of average in column bias?
-                       'function'   :"chebyshev",   # Overscan fitting function.
-                       'order'      :1,             # Order of overscan fitting function.
-                       'low_reject' :3.0,           # Low sigma rejection factor.
-                       'high_reject':3.0,           # High sigma rejection factor.
-                       'niterate'   :2,             # Number of rejection iterations.
-                       'Stdout'      :IrafStdout(),
-                       'Stderr'      :IrafStdout()
+            'inflats'    :'',            # Input flat field images
+            'outflat'    :"",            # Output flat field image
+            'normsec'    :'default',     # Image section to get the normalization.
+            'fl_scale'   :yes,           # Scale the flat images before combining?
+            'sctype'     :"mean",        # Type of statistics to compute for scaling
+            'statsec'    :"default",     # Image section for relative intensity scaling
+            'key_gain'   :"GAIN",        # Header keyword for gain (e-/ADU)
+            'fl_stamp'   :no,            # Input is stamp image
+            'sci_ext'    :'SCI',         # Name of science extension
+            'var_ext'    :'VAR',         # Name of variance extension
+            'dq_ext'     :'DQ',          # Name of data quality extension
+            'fl_vardq'   :no,            # Create variance and data quality frames?
+            'sat'        :65000,         # Saturation level in raw images (ADU)
+            'verbose'    :yes,           # Verbose output?
+            'logfile'    :'',            # Name of logfile
+            'status'     :0,             # Exit status (0=good)
+            'combine'    :"average",     # Type of combine operation
+            'reject'     :"avsigclip",   # Type of rejection in flat average
+            'lthreshold' :'INDEF',       # Lower threshold when combining
+            'hthreshold' :'INDEF',       # Upper threshold when combining
+            'nlow'       :0,             # minmax: Number of low pixels to reject
+            'nhigh'      :1,             # minmax: Number of high pixels to reject
+            'nkeep'      :1,             # avsigclip: Minimum to keep (pos) or maximum to reject (neg)
+            'mclip'      :yes,           # avsigclip: Use median in clipping algorithm?
+            'lsigma'     :3.0,           # avsigclip: Lower sigma clipping factor
+            'hsigma'     :3.0,           # avsigclip: Upper sigma clipping factor
+            'sigscale'   :0.1,           # avsigclip: Tolerance for clipping scaling corrections
+            'grow'       :0.0,           # minmax or avsigclip: Radius (pixels) for neighbor rejection
+            'gp_outpref' :'g',           # Gprepare prefix for output images
+            'rawpath'    :'',            # GPREPARE: Path for input raw images
+            'key_ron'    :"RDNOISE",     # Header keyword for readout noise
+            'key_datasec':'DATASEC',     # Header keyword for data section
+            #'giandb'     :'default',    # Database with gain data
+            'bpm'        :'',            # Bad pixel mask
+            'gi_outpref' :'r',           # Gireduce prefix for output images
+            'bias'       :'',            # Bias calibration image
+            'fl_over'    :no,            # Subtract overscan level?
+            'fl_trim'    :no,            # Trim images?
+            'fl_bias'    :no,            # Bias-subtract images?
+            'fl_inter'   :no,            # Interactive overscan fitting?
+            'nbiascontam':4, #$$$$$$$    # Number of columns removed from overscan region
+            'biasrows'   :"default",     # Rows to use for overscan region
+            'key_biassec':'BIASSEC',     # Header keyword for overscan image section
+            'median'     :no,            # Use median instead of average in column bias?
+            'function'   :"chebyshev",   # Overscan fitting function.
+            'order'      :1,             # Order of overscan fitting function.
+            'low_reject' :3.0,           # Low sigma rejection factor.
+            'high_reject':3.0,           # High sigma rejection factor.
+            'niterate'   :2,             # Number of rejection iterations.
+            'Stdout'      :IrafStdout(),
+            'Stderr'      :IrafStdout()
                        }      
     if CLscript=='gmosaic':
         defaultParams={ 
-                       'inimages'   :'',                     # Input GMOS images 
-                       'outimages'  :"",                     # Output images
-                       'outpref'    :'DEFAULT',              # Prefix for output images
-                       'fl_paste'   :no,                     # Paste images instead of mosaic
-                       'fl_vardq'   :no,                     # Propagate the variance and data quality planes
-                       'fl_fixpix'  :no,                     # Interpolate across chip gaps
-                       'fl_clean'   :yes ,                   # Clean imaging data outside imaging field
-                       'geointer'   :'linear',               # Interpolant to use with geotran
-                       'gap'        :'default',              # Gap between the CCDs in unbinned pixels
-                       'bpmfile'    :"gmos$data/chipgaps.dat",   # Info on location of chip gaps ## HUH??? Why is variable called 'bpmfile' if it for chip gaps??
-                       'statsec'    :'default',              # Statistics section for cleaning
-                       'obsmode'    :'IMAGE',                # Value of key_obsmode for imaging data
-                       'sci_ext'    :'SCI',                  # Science extension(s) to mosaic, use '' for raw data
-                       'var_ext'    :'VAR',                  # Variance extension(s) to mosaic
-                       'dq_ext'     :'DQ',                   # Data quality extension(s) to mosaic
-                       'mdf_ext'    :'MDF',                  # Mask definition file extension name
-                       'key_detsec' :'DETSEC',               # Header keyword for detector section
-                       'key_datsec' :'DATASEC',              # Header keyword for data section
-                       'key_ccdsum' :'CCDSUM',               # Header keyword for CCD binning
-                       'key_obsmode':'OBSMODE',              # Header keyword for observing mode
-                       'logfile'    :'',                     # Logfile
-                       'fl_real'    :no,                     # Convert file to real before transforming
-                       'verbose'    :yes,                    # Verbose
-                       'status'     :0,                      # Exit status (0=good)
+            'inimages'   :'',                     # Input GMOS images 
+            'outimages'  :"",                     # Output images
+            'outpref'    :'DEFAULT',              # Prefix for output images
+            'fl_paste'   :no,                     # Paste images instead of mosaic
+            'fl_vardq'   :no,                     # Propagate the variance and data quality planes
+            'fl_fixpix'  :no,                     # Interpolate across chip gaps
+            'fl_clean'   :yes ,                   # Clean imaging data outside imaging field
+            'geointer'   :'linear',               # Interpolant to use with geotran
+            'gap'        :'default',              # Gap between the CCDs in unbinned pixels
+            'bpmfile'    :"gmos$data/chipgaps.dat",   # Info on location of chip gaps ## HUH??? Why is variable called 'bpmfile' if it for chip gaps??
+            'statsec'    :'default',              # Statistics section for cleaning
+            'obsmode'    :'IMAGE',                # Value of key_obsmode for imaging data
+            'sci_ext'    :'SCI',                  # Science extension(s) to mosaic, use '' for raw data
+            'var_ext'    :'VAR',                  # Variance extension(s) to mosaic
+            'dq_ext'     :'DQ',                   # Data quality extension(s) to mosaic
+            'mdf_ext'    :'MDF',                  # Mask definition file extension name
+            'key_detsec' :'DETSEC',               # Header keyword for detector section
+            'key_datsec' :'DATASEC',              # Header keyword for data section
+            'key_ccdsum' :'CCDSUM',               # Header keyword for CCD binning
+            'key_obsmode':'OBSMODE',              # Header keyword for observing mode
+            'logfile'    :'',                     # Logfile
+            'fl_real'    :no,                     # Convert file to real before transforming
+            'verbose'    :yes,                    # Verbose
+            'status'     :0,                      # Exit status (0=good)
                        }
     return defaultParams    
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
