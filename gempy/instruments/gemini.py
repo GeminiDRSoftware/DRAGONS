@@ -54,7 +54,8 @@ def stdObsHdrs(ad):
         #print nonlin
         #print type(nonlin)
         if not nonlin:
-            nonlin = 'None'     # if no nonlinear section provided then set to string 'None'
+            nonlin = 'None'     
+            #^ if no nonlinear section provided then set to string 'None'
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'NONLINEA',nonlin , 'Non-linear regime level in ADU')
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'SATLEVEL',ext.saturation_level() , 'Saturationlevel in ADU')
         ext.extSetKeyValue(('SCI',int(ext.header['EXTVER'])),'EXPTIME', effExpTime , 'Effective exposure time')
@@ -110,8 +111,8 @@ def stripPostfix(filename):
     return retname    
 
 def secStrToIntList(string):
-    
-    ## string must be of the format '[#1:#2,#3:#4]', returns list of ints [#1,#2,#3,#4]
+    ''' string must be of the format '[#1:#2,#3:#4]', 
+        returns list of ints [#1,#2,#3,#4]'''
     coords=string.strip('[').strip(']').split(',')
     Ys=coords[0].split(':')
     Xs=coords[1].split(':')
@@ -125,7 +126,8 @@ def secStrToIntList(string):
 def biassecStrTonbiascontam(biassec,ad):
     ''' 
     This function works with nbiascontam() of the CLManager. 
-    It will find the largest horizontal difference between biassec and BIASSEC for each SCI extension in a single input.
+    It will find the largest horizontal difference between biassec and 
+    BIASSEC for each SCI extension in a single input.
     
     @param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
     @type biassec: string  
@@ -171,8 +173,8 @@ def biassecStrTonbiascontam(biassec,ad):
         
 def pyrafBoolean(pythonBool):
     '''
-    A very basic function to reduce code repetition that simply 'casts' any given 
-    Python boolean into a pyraf/iraf one for use in the CL scripts.
+    A very basic function to reduce code repetition that simply 'casts' any 
+    given Python boolean into a pyraf/iraf one for use in the CL scripts.
     '''
     import pyraf
     
@@ -181,11 +183,13 @@ def pyrafBoolean(pythonBool):
     elif  not pythonBool:
         return pyraf.iraf.no
     else:
-        print "DANGER DANGER Will Robinson, pythonBool passed in was not True or False, and thats just crazy talk :P"
+        print "DANGER DANGER Will Robinson, pythonBool passed in was not"+\
+        " True or False, and thats just crazy talk :P"
 
 class CLManager(object):
     _preCLcachestorenames = [] # the version of the names for input to the CL script
-    _preCLfilenames = [] # the original names of the files at the start of the primitive which called CLManager
+    _preCLfilenames = [] # the original names of the files at the start of the 
+                         # primitive which called CLManager
     rc = None
     prefix = None
     outpref = None
@@ -201,7 +205,8 @@ class CLManager(object):
         self.prefix = self.uniquePrefix()
         self.preCLwrites()
     
-    # perform all the finalizing steps after CL script is ran, currently just an alias for postCLloads
+    # perform all the finalizing steps after CL script is ran, 
+    # currently just an alias for postCLloads
     def finishCL(self,combine=False): 
         self.postCLloads(combine)    
     
@@ -213,7 +218,8 @@ class CLManager(object):
             log.fullinfo('Temporary file on disk for input to CL: '+name,'CLprep')
             ad.write(name, rename = False) 
     
-    # just a function to return the 'private' member variable _preCLcachestorenames
+    # just a function to return the 'private' member variable 
+    # _preCLcachestorenames
     def cacheStoreNames(self):
         return self._preCLcachestorenames
        
@@ -290,9 +296,11 @@ class CLManager(object):
             log.fullinfo(repr(key)+' = '+repr(val),'params')
             
     def nbiascontam(self):
-        '''This function will find the largest difference between the horizontal component 
-           of every BIASSEC value and those of the biassec parameter and return that difference 
-           as an integer to be the value for the nbiascontam parameter used in the gireduce call of the overscanSubtract prim'''
+        '''This function will find the largest difference between the horizontal 
+        component of every BIASSEC value and those of the biassec parameter 
+        and return that difference as an integer to be the value for the 
+        nbiascontam parameter used in the gireduce call of the 
+        overscanSubtract prim'''
         
         retval=0
         for ad in self.rc.getInputs(style='AD'):
