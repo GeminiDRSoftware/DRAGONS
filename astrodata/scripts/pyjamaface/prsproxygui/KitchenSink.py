@@ -24,6 +24,9 @@ import Frames
 import Tabs
 import DataTree
 import RecipeSystemIFACE
+import RecipeViewer
+import CalibrationIFACE
+import FITSStoreFACE
 from Logger import Logger
 from pyjamas import log
 
@@ -98,8 +101,11 @@ class KitchenSink:
         self.curSink.onShow()
         
     def loadSinks(self):
-        self.sink_list.addSink(DataTree.init())
+        #self.sink_list.addSink(DataTree.init())
         self.sink_list.addSink(RecipeSystemIFACE.init())
+        self.sink_list.addSink(CalibrationIFACE.init())
+        self.sink_list.addSink(RecipeViewer.init())
+        self.sink_list.addSink(FITSStoreFACE.init())
         self.sink_list.addSink(Info.init())
         if False:
             self.sink_list.addSink(Buttons.init())

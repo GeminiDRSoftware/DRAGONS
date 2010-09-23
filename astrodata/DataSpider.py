@@ -673,11 +673,14 @@ class DirDict(object):
     rootdirlist = None
     direntry = None
     givenRootdir = None
-    
+    entryDict = None
     def __init__(self, rootdir = "."):
         self.givenRootdir = rootdir
         self.rootdir = os.path.abspath(rootdir)
         self.direntry = DirEntry("",parent=self)
+        self.entryDict = {}
+    def reportEntry( self, name, path):
+        self.entryDict.update({name:path})
         
     def reldir(self, dirname):
         if dirname[:len(self.rootdir)] != self.rootdir:
@@ -728,6 +731,12 @@ class DirDict(object):
             #print "DS760:", direntry.path, direntry.fullpath(),direntry
             yield direntry
             
+    def getFullPath(self,filename):
+        if filename in self.entryDict:
+            return os.path.join(self.entryDict[filename], filename)
+        else:
+            return None
+            
     def asXML(self):
         return self.direntry.asXML()
           
@@ -736,6 +745,7 @@ class DirEntry(object):
     files = None
     dirs = None
     parent = None
+    dataSpider = None
     def __init__(self, dirpath, parent = None):
         self.path = dirpath
         self.files = {}
@@ -744,11 +754,14 @@ class DirEntry(object):
         
     def reldir(self, dirname):
         root = self.parent.fullpath()
-        if dirname[:len(root)] != self.parent.fullpath():
+        if not dirname.startswith(root):
+            print "DS752: (%s) %s", dirname, root
             raise "this shouldn't happen, maybe a security breach"
         else:
             return dirname[len(root):]
- 
+    def reportEntry(self, name, path):
+        self.parent.reportEntry(name, path)
+        
     def addDir(self, pathlist):
         subdir = pathlist.pop(0)
         if subdir not in self.dirs.keys():
@@ -784,13 +797,14 @@ class DirEntry(object):
                     yield dent
                 
     def findFileEntry(self,filename,root=None, dirlist = None):
-        # print "DS843:", repr(filename), repr(root), repr(dirlist)
         if root == None:
             base = os.path.basename(filename)
             dirn = os.path.dirname(filename)
         else:
             dirn = os.path.join(root,os.path.dirname(filename))
             base = os.path.basename(filename)
+
+        self.reportEntry(base, dirn)
 
         if dirlist == None:
             # print "DS852:", repr(dirn), repr(self.reldir(dirn))

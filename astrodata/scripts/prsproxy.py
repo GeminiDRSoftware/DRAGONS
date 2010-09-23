@@ -12,11 +12,7 @@ from threading import Thread
 import prsproxyweb
 import socket
 import select
-
-CALMGR = "http://hbffits1.hi.gemini.edu/calmgr"
-CALTYPEDICT = { "bias": "processed_bias",
-                "flat": "processed_flat"}
-
+from prsproxyutil import calibrationSearch, CALMGR, CALTYPEDICT,urljoin
 
 from optparse import OptionParser
 
@@ -46,14 +42,6 @@ parser.add_option("-w", "--http-port", dest = "httpport", default=8777, type="in
             http://localhost:<http-port>/""")
 options, args = parser.parse_args()
 # ----- UTILITY FUNCS
-
-def urljoin(*args):
-    for arg in args:
-        if arg[-1] == '/':
-            arg = arg[-1]
-    ret = "/".join(args)
-    print "prs31:", repr(args), ret
-    return ret
 
 # -------------------
 class ReduceInstanceManager(object):
@@ -101,26 +89,7 @@ def get_version():
     print "prsproxy version:", repr(version)
     return version
     
-def calibrationSearch(rq):
-    print "prs38: the request",repr(rq)
-    
-    if 'caltype' not in rq or 'datalabel' not in rq:
-        return None
-        
-    rqurl = urljoin(CALMGR, CALTYPEDICT[rq['caltype']],rq['datalabel'] )
-    print "prs52:", rqurl
-    response = urllib.urlopen(rqurl).read()
-    #print "prs66:", response
-    dom = minidom.parseString(response)
-    calel = dom.getElementsByTagName("calibration")
-    try:
-        calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
-    except exceptions.IndexError:
-        return None
-    #print "prs70:", calurlel.data
-    
-    #@@TODO: test only 
-    return calurlel.data
+
     
 server = SimpleXMLRPCServer(("localhost", options.listenport), allow_none=True)
 print "PRS Proxy listening on port %d..." % options.listenport

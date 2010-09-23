@@ -7,7 +7,13 @@ import Descriptors
 #------------------------------------------------------------------------------ 
 version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
 
-
+def generateFingerprint( dataset, version = "1_0"):
+    h = hashlib.md5()
+    fullid = repr(dataset.types)+repr(dataset.allDescriptors())
+    h.update(fullid)
+    return h.hexdigest()
+    
+    
 def generateStackableID( dataset, version = "1_0" ):
     '''
     Generate an ID from which all similar stackable data will have in common.

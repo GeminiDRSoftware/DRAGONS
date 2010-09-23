@@ -13,7 +13,15 @@ import subprocess
 import cgi
 from astrodata import AstroData
 from SocketServer import ThreadingMixIn
+from xml.dom import minidom
 
+def flattenParms(parms):
+    for parmkey in parms:
+        if (        hasattr(parms[parmkey],"__getitem__") 
+            and not type(parms[parmkey]) == str
+            and not parmkey == "orderby"):
+            parms.update({parmkey:parms[parmkey][0]})
+            
 rl = RecipeLibrary()
 def parsepath(path):
     rpath = None
@@ -44,7 +52,79 @@ def parsepath(path):
         rparms.update({"query":""})
     
     return rparms
-    
+  
+from GeminiMetadataUtils import *
+  
+def getselection(things):
+  
+  # this takes a list of things from the URL, and returns a
+  # selection hash that is used by the html generators
+  selection = {}
+  while(len(things)):
+    thing = things.pop(0)
+    recognised=False
+    if(gemini_date(thing)):
+      selection['date']=gemini_date(thing)
+      recognised=True
+    if(gemini_daterange(thing)):
+      selection['daterange']=gemini_daterange(thing)
+      recognised=True
+    gp=GeminiProject(thing)
+    if(gp.progid):
+      selection['progid']=thing
+      recognised=True
+    go=GeminiObservation(thing)
+    if(go.obsid):
+      selection['obsid']=thing
+      recognised=True
+    gdl=GeminiDataLabel(thing)
+    if(gdl.datalabel):
+      selection['datalab']=thing
+      recognised=True
+    if(gemini_instrument(thing, gmos=True)):
+      selection['inst']=gemini_instrument(thing, gmos=True)
+      recognised=True
+    if(gemini_fitsfilename(thing)):
+      selection['filename'] = gemini_fitsfilename(thing)
+      recognised=True
+    if(gemini_obstype(thing)):
+      selection['obstype']=gemini_obstype(thing)
+      recognised=True
+    if(gemini_obsclass(thing)):
+      selection['obsclass']=gemini_obsclass(thing)
+      recognised=True
+    if(gemini_caltype(thing)):
+      selection['caltype']=gemini_caltype(thing)
+      recognised=True
+    if(gmos_gratingname(thing)):
+      selection['gmos_grating']=gmos_gratingname(thing)
+      recognised=True
+    if(gmos_fpmask(thing)):
+      selection['gmos_fpmask']=gmos_fpmask(thing)
+      recognised=True
+    if(thing=='warnings' or thing=='missing' or thing=='requires' or thing=='takenow'):
+      selection['caloption']=thing
+      recognised=True
+    if(thing=='imaging' or thing=='Imaging'):
+      selection['spectroscopy']=False
+      recognised=True
+    if(thing=='spectroscopy' or thing=='Spectroscopy'):
+      selection['spectroscopy']=True
+      recognised=True
+    if(thing=='Pass' or thing=='Usable' or thing=='Fail' or thing=='Win'):
+      selection['qastate']=thing
+      recognised=True
+    if(thing=='AO' or thing=='NOTAO'):
+      selection['ao']=thing
+      recognised=True
+
+    if(not recognised):
+      if('notrecognised' in selection):
+        selection['notrecognised'] += " "+thing
+      else:
+        selection['notrecognised'] = thing
+  return selection
+
 class PPWState(object):
     dataSpider = None
     dirdict = None
@@ -62,17 +142,31 @@ class MyHandler(BaseHTTPRequestHandler):
     def address_string(self):
         host, port = self.client_address[:2]
         return host
+
+    def getDirdict(self):
+        if self.state.dirdict == None:
+            from astrodata.DataSpider import DataSpider
+            ds = self.state.dataSpider = DataSpider(".")
+            dirdict = self.state.dirdict = ds.datasetwalk()
+            dirdict.dataSpider = ds
+        else:
+            ds = self.state.dataSpider
+            dirdict = self.state.dirdict
+            dirdict.dataSpider = ds
+        return dirdict
+
+
         
     def do_GET(self):
         self.state = ppwstate
         global webserverdone
         parms = parsepath(self.path)
-        print "prsw45:", repr(parms)
+        # print "prsw147:", repr(parms)
         qd = cgi.parse_qs(self.path)
-        print "prsw52:", repr(qd)
+        # print "prsw149:", repr(qd)
         rim = self.informers["rim"]
-        print "prsw70: path=",self.path
-        print "prsw71: parms=",repr(parms)
+        # print "prsw151: path=",self.path
+        # print "prsw152: parms=",repr(parms)
 
         try:
             if False: # old root self.path == "/":
@@ -100,7 +194,106 @@ class MyHandler(BaseHTTPRequestHandler):
                 
                 self.wfile.write(rl.getRecipeIndex(asXML=True))
                 return
+             
+            if parms["path"].startswith("/summary"):
+                import searcher
                 
+                #break down path
+                things = parms["path"].split("/")
+                print "prsq185:", repr(things)
+                things = things[2:]
+                print "prsq187:",repr(things)
+                selection = getselection(things)
+                print "psrw188: %s\n" % repr(selection)*20
+               
+                flattenParms(parms)
+                print "psrw194: %s" % repr(parms)
+                parms.update(selection)
+                print "psrw196: %s" % repr(parms)
+                
+                buff = searcher.summary(parms)
+                self.wfile.write(buff)
+                return
+                
+            if parms["path"].startswith("/globalcalsearch.xml"):
+                from prsproxyutil import calibrationSearch
+                flattenParms(parms)
+                resultb = None
+                resultf = None
+                
+                if "caltype" in parms:
+                    caltype = parms["caltype"]
+                    if caltype == "processed_bias" or caltype == "all":
+                        parms.update({"caltype":"processed_bias"})
+                        resultb = calibrationSearch(parms, fullResult=True)
+                    if caltype == "processed_flat" or caltype == "all":
+                        parms.update({"caltype":"processed_flat"})
+                        resultf = calibrationSearch(parms, fullResult = True)
+                
+                if caltype == "all":
+                    domb = minidom.parseString(resultb)
+                    domf = minidom.parseString(resultf)
+                    calnodefs = domf.getElementsByTagName("calibration")
+                    if len(calnodefs) > 0:
+                        calnodef = calnodefs[0]
+                    else:
+                        calnodef = None
+                    calnodebs = domb.getElementsByTagName("dataset")
+                    if len(calnodebs) > 0:
+                        calnodeb = calnodebs[0]
+                    
+                    #print calnodef.toxml()
+                    #print calnodeb.toxml()
+                    # domb.importNode(calnodef, True)
+                    if calnodef and calnodeb:
+                        calnodeb.appendChild(calnodef)
+                    elif calnodef:
+                        result=domb.toxml()                        
+                    else:
+                        result=domb.toxml()
+                    result = domb.toxml()
+                
+                print "prsw207:", result
+                self.send_response(200)
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                
+                self.wfile.write(result)
+                return
+                
+
+            if parms["path"] == "/calsearch.xml":
+                import searcher
+                cparms = {}
+                cparms.update(parms)
+                if "datalab" in parms:
+                    cparms.update({"datalab":parms["datalab"][0]})
+                if "filename" in parms:
+                    cparms.update({"filename":parms["filename"][0]})
+                if "caltype" in parms:
+                    cparms.update({"caltype":parms["caltype"][0]})
+                else:
+                    cparms.update({"caltype":"processed_bias"})
+                    
+                buff = searcher.search(cparms)
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                
+                self.wfile.write(buff)
+                return 
+                
+            if parms["path"] == "/recipecontent":
+                if "recipe" in parms:
+                    recipe = parms["recipe"][0]
+                    content = rl.retrieveRecipe(recipe)
+                    self.send_response(200)
+                    self.send_header('Content-type',	'text/plain')
+                    self.end_headers()
+
+                    self.wfile.write(content)
+                    return
             if parms["path"] == "/adinfo":
                 self.send_response(200)
                 self.send_header('Content-type',	'text/html')
@@ -170,14 +363,8 @@ class MyHandler(BaseHTTPRequestHandler):
             if parms["path"] == "/datadir.xml":
                 #print "*"*300
                 print "prsw168 in datadir.xml generation dirdict=", repr(self.dirdict)
-                if self.state.dirdict == None:
-                    from astrodata.DataSpider import DataSpider
-                    ds = self.state.dataSpider = DataSpider(".")
-                    dirdict = self.state.dirdict = ds.datasetwalk()
-                else:
-                    ds = self.state.dataSpider
-                    dirdict = self.state.dirdict
-                    
+                dirdict = self.getDirdict()
+                ds = dirdict.dataSpider
                 
                 print "prsw181: before asXML"
                 xml = dirdict.asXML()
@@ -328,15 +515,96 @@ class MyHandler(BaseHTTPRequestHandler):
                 webserverdone = True
                 return
             
+            if self.path.startswith("/fullheader"):
+                realpath = self.path.split('/')
+                realpath = realpath[1:]
+                
+                dirdict = self.getDirdict()
+                print "prsw514:", repr(realpath)
+                
+                name = realpath[-1]
+                fname = dirdict.getFullPath(name)
+                ad = AstroData(fname)
+
+                self.send_response(200)
+                self.send_header('Content-type',	'text/html')
+                self.end_headers()
+        
+                self.wfile.write("<html><body>\n")
+                self.wfile.write('<h2>%s</h2>\n' % name)
+                self.wfile.write(ad.infostr(asHTML=True))
+                alld = ad.allDescriptors()
+                self.wfile.write(
+                        """
+                        <table cellspacing="2px">
+                        <COLGROUP align="right" />
+                        <COLGROUP align="left" />
+                        <thead>
+                        <tr>
+                        <td style="background-color:grey">Descriptor</td>
+                        <td style="background-color:grey">Value</td>
+                        </tr>
+                        </thead>
+                        """)
+                alldkeys = alld.keys()
+                alldkeys.sort()
+                for dname in alldkeys:
+                    
+                    if type(alld[dname]) == str and "ERROR" in alld[dname]:
+                        redval = '<span  style="color:red">'+str(alld[dname])+"</span>"
+                        dval = redval
+                    else:
+                        dval = repr(alld[dname])
+                    self.wfile.write("""
+                        <tr>
+                        <td style="text-align:right">
+                        %(dname)s =
+                        </td>
+                        <td>
+                        %(value)s
+                        </td>
+                        </tr>
+                        """ % { "dname":dname,
+                                "value":dval})
+                self.wfile.write("</table>")
+                self.wfile.write("</body></html>\n")
+                                
+                return
+                
+            if self.path.startswith("/htmldocs"):
+                import FitsStorage
+                realpath = self.path.split('/')
+                realpath = realpath[1:]
+                dirname = os.path.dirname(FitsStorage.__file__)
+                fname = os.path.join(dirname, "htmldocroot", *realpath)
+                #print "psrw456: %s\n" % repr(fname)*10
+                fnamelocal = os.path.join(
+                                os.path.dirname(fname),
+                                "FS_LOCALMODE_"+os.path.basename(fname)
+                                )
+                if os.path.exists(fnamelocal):
+                    fname = fnamelocal
+                try:
+                    f = open(fname, "r")
+                    data = f.read()
+                    print repr(data)
+                    f.close()
+                except IOError:
+                    data = "<b>NO SUCH RESOURCE FOUND</b>"
+                self.send_response(200)
+                if fname.endswith(".css"):
+                    self.send_header('Content-type', "text/css")
+                else:
+                    self.send_header('Content-type',	'text/html')
+                self.end_headers()
+                self.wfile.write(data)
+                return
+                
             if self.path == "/":
                 self.path = "/KitchenSink.html"
                 
-            print "JEN: chances"
             dirname = os.path.dirname(__file__)
-            print "JEN: dirname =",dirname
-            print "JEN: path = ", self.path 
             fname = os.path.join(dirname, "pyjamaface/prsproxygui/output", self.path[1:])
-            print "JEN: fname =",fname
             
             try:
                 f = open(fname, "r")

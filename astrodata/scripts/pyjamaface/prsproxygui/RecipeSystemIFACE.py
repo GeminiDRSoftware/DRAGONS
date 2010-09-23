@@ -15,6 +15,8 @@ from pyjamas.ui.Button import Button
 
 from urllib import quote
 
+from rccutil import create_xml_doc
+
 class DirDictLoader:
     panel = None
     def __init__(self, panel):
@@ -135,7 +137,8 @@ class Trees(Sink):
         self.updateReduceCL()
     
     def onClearReduceFiles(self, event):
-        self.reduceFiles.clear()  
+        self.reduceFiles.clear() 
+        self.adInfo.setHTML("file info...") 
         self.updateReduceCL()
         
     def updateReduceCL(self):
@@ -182,6 +185,7 @@ class Trees(Sink):
         if tfile in pathdict:
             ftype = pathdict[tfile]["filetype"]
             if ftype != "fileEntry":
+                item.setState(True)
                 return
         else:
             return
@@ -303,6 +307,8 @@ class Trees(Sink):
             num = str(len(plist))
             # self.createItem(plist[i])
             self.fTree.addItem(plist[i].item)
+            plist[i].item.setState(True)
+
         
     def onShow(self):
         if False:
@@ -321,7 +327,7 @@ class Trees(Sink):
         if len(proto.children) > 0:
             proto.item.addItem(PendingItem())
 
-def create_xml_doc(text):
+def OLDcreate_xml_doc(text):
     JS("""
     var xmlDoc;
     try { //Internet Explorer
@@ -339,13 +345,15 @@ def create_xml_doc(text):
     return xmlDoc;
   """)
 
-
+import os
 class Proto:
     def __init__(self, text, children=None):
         self.children = []
         self.item = None
-        self.text = text
-        
+        if text[-1] == "/":
+            text = text[:-1]
+        # self.text = os.path.basename(text)
+        self.text = text.split("/")[-1]
         if children is not None:
             self.children = children
 
@@ -361,4 +369,4 @@ class PendingItem(TreeItem):
 def init():
     text="""The Recipe System Engineering Interface allows execution of the recipe
     system."""
-    return SinkInfo("Recipe System", text, Trees)
+    return SinkInfo("AstroData Viewer", text, Trees)

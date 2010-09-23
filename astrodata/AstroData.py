@@ -531,11 +531,20 @@ Note, the variable "ad" is generally used to represent an already constructed As
                 self.hdulist.close()
                 self.hdulist = None
                 
-    def infostr(self):
-        rets = ""
-        for ext in ad:
-            rets += "id =",id(ext.hdulist[1]), "\n"
-            rets += "    ", ext.extname(), ext.extver(), "\n"
+    def infostr(self, asHTML = False):
+        if not asHTML:
+            rets = ""
+            for ext in self:
+                rets += "id =",id(ext.hdulist[1]), "\n"
+                rets += "    ", ext.extname(), ext.extver(), "\n"
+        else:
+            rets="<b>Extension List</b>: %d in file" % len(self)
+            rets+="<ul>"
+            for ext in self:
+                rets += "<li>(%s, %s)</li>" % (ext.extname(), str(ext.extver()))
+            rets += "</ul>"
+                     
+        return rets
         
     def exceptIfSingle(self):
         if len(self.hdulist) != 2:
