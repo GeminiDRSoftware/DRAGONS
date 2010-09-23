@@ -307,8 +307,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.error('CCDSUM is not 1x1 or 2x2 for the input flat!!', 'error')
            
         except:
-            log.critical("Problem retrieving the image.",'critical')
-            raise 
+            log.critical("Problem preparing the image.",'critical')
+            raise GMOSException("Can't obtain bias")
         yield rc
    
     def localGetProcessedFlat(self,rc):
