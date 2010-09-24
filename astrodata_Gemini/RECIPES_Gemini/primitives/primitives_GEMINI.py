@@ -546,9 +546,22 @@ class GEMINIPrimitives(PrimitiveSet):
                          'JUST ADDING A ZEROS ARRAY!!!!', 'critical')
             
             for ad in rc.getInputs(style='AD'):
+                print ad.info()
                 for sciExt in ad['SCI']:
-                    varArray=np.zeros(sciExt.data.shape,dtype=np.float32) 
-                    #^** this needs to use arith.py to calc the VAR frames ***
+                    # var = (read noise/gain)2 + max(data,0.0)/gain
+                    
+                    # equation prep
+                    readNoise=sciExt.read_noise()
+                    gain=sciExt.gain()
+                    rnOverG=readNoise/gain
+                    # convert negative numbers (if they exist) to zeros
+                    maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
+                    maxOverGain=np.divide(maxArray,gain)
+                    # put it all together
+                    varArray=np.add(maxOverGain,rnOverG*rnOverG)
+                    
+                    print repr(varArray)
+                    print np.mean(varArray)
                            
                     varheader = pyfits.Header()
                     varheader.update('NAXIS', 2)
