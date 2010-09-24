@@ -10,10 +10,14 @@ class GeminiLogger(object):
     '''
     logger = None
     def __init__(self,logName=None, verbose=1, debug=False):
+        
         if not logName:
-            logName="gemini.log"
-            
+            self._logName="gemini.log"
+        else:
+            self._logName=logName
+                
         # setting up additional logger levels
+        # note: INFO level = 20
         FULLINFO    = 15
         STDINFO     = 21
         STATUS      = 25
@@ -26,7 +30,7 @@ class GeminiLogger(object):
             logging.addLevelName(lvl,log_levels[lvl])
         
         # create logger
-        self.logger = logging.getLogger(logName)
+        self.logger = logging.getLogger(self._logName)
         self.logger.setLevel(logging.DEBUG)
     
         setattr(self.logger, 'stdinfo', lambda *args: self.logger.log(STDINFO, *args))
@@ -35,7 +39,7 @@ class GeminiLogger(object):
 
         # create console and file handler 
         ch = logging.StreamHandler()
-        fh = logging.FileHandler(logName)
+        fh = logging.FileHandler(self._logName)
         
         # set levels according to flags
         fh.setLevel(FULLINFO)
@@ -68,49 +72,136 @@ class GeminiLogger(object):
         ch.setFormatter(ch_formatter)
         fh.setFormatter(fh_formatter) 
         
-        # add ch and fh to logger
+        # check if log has handlers and if so, close them
+        self = checkHandlers(self,remove=True)
+           
+        # add console and file handlers to logger
         self.logger.addHandler(ch)
         self.logger.addHandler(fh)
-    
-    def debug(self,msg,cat='DefautCat'):    
+        
+        # default category default strings by order of importance
+        self._criticalDefaultCategory = 'critical'
+        self._errorDefaultCategory = 'error'
+        self._warningDefaultCategory = 'warning'
+        self._statusDefaultCategory = 'status'
+        self._stdinfoDefaultCategory = 'stdinfo'
+        self._infoDefaultCategory = 'info'
+        self._fullinfoDefaultCategory = 'fullinfo'
+        self._debugDefaultCategory = 'debug'
+        
+    def logname(self):
+        '''just a function to return the 'private' member variable _logName'''
+        return self._logName
+     
+    def defaultCategory(self, level=None, category=None):
+        '''
+         A function to access and set the 'private' default category variables.
+         If category = None, then the current value will be returned.
+         Else, the default value will be replaced with the newly provided 
+         category string.
+         
+         @param level: level to edit the default category for. eg. fullinfo, stdinfo, status...
+         @type level: string
+         
+         @param level: new default value for the levels category
+         @type level: string
+        '''
+        if level == 'critical':
+            if category==None:
+                return self._criticalDefaultCategory
+            else:
+                self._criticalDefaultCategory = category
+        elif level == 'error':
+            if category==None:
+                return self._errorDefaultCategory
+            else:
+                self._errorDefaultCategory = category
+        elif level == 'warning':
+            if category==None:
+                return self._warningDefaultCategory
+            else:
+                self._warningDefaultCategory = category
+        elif level == 'status':
+            if category==None:
+                return self._statusDefaultCategory
+            else:
+                self._statusDefaultCategory = category
+        elif level == 'stdinfo':
+            if category==None:
+                return self._stdinfoDefaultCategory
+            else:
+                self._stdinfoDefaultCategory = category
+        elif level == 'info':
+            if category==None:
+                return self._infoDefaultCategory
+            else:
+                self._infoDefaultCategory = category
+        elif level == 'fullinfo':
+            if category==None:
+                return self._fullinfoDefaultCategory
+            else:
+                self._fullinfoDefaultCategory = category
+        elif level == 'debug':
+            if category==None:
+                return self._debugDefaultCategory
+            else:
+                self._debugDefaultCategory = category
+        
+    def debug(self,msg,cat=None):  
+        if cat==None:
+            cat = self._debugDefaultCategory  
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.debug(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
             
-    def fullinfo(self,msg,cat ='DefautCat'):
+    def fullinfo(self,msg,cat=None):
+        if cat==None:
+            cat = self._fullinfoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.fullinfo(cat.ljust(10)+'-'+line)
     
-    def info(self,msg,cat='DefautCat'):
+    def info(self,msg,cat=None):
+        if cat==None:
+            cat = self._infoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.info(cat.ljust(10)+'-'+line)
             
-    def stdinfo(self,msg,cat = 'DefautCat'):
+    def stdinfo(self,msg,cat =None ):
+        if cat==None:
+            cat = self._stdinfoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.stdinfo(cat.ljust(10)+'-'+line)
             
-    def status(self,msg,cat = 'DefautCat'):
+    def status(self,msg,cat = None):
+        if cat==None:
+            cat = self._statusDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.status(cat.ljust(10)+'-'+line)
         
-    def critical(self,msg,cat='DefautCat'):
+    def critical(self,msg,cat=None):
+        if cat==None:
+            cat = self._criticalDefaultCategory
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.critical(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
         
-    def warning(self,msg,cat='DefautCat'):
+    def warning(self,msg,cat=None):
+        if cat==None:
+            cat = self._warningDefaultCategory
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
             self.logger.warning(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
         
-    def error(self,msg,cat='DefautCat'):
+    def error(self,msg,cat=None):
+        if cat==None:
+            cat = self._errorDefaultCategory
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
@@ -119,19 +210,37 @@ class GeminiLogger(object):
 def getGeminiLog(logName=None ,verbose = 0, debug = False):
     global _geminiLogger
     
+    # no logger exists, so create one
     if not _geminiLogger:
         _geminiLogger=GeminiLogger(logName, verbose, debug)
-    return _geminiLogger
-        
+        return _geminiLogger
+    
+    # you want a non-default logger, but there is a different one already
+    # , so create new non-default logger
+    elif _geminiLogger and (_geminiLogger.logname()!=logName) and (logName!=None):
+        _geminiLogger=GeminiLogger(logName, verbose, debug)
+        return _geminiLogger
+    
+    # a non-default logger exists, but you want a default one, so create it
+    elif _geminiLogger and (logName!=None):
+        _geminiLogger=GeminiLogger(logName, verbose, debug)
+        return _geminiLogger
+    
+    else:
+        return _geminiLogger
+    
 def checkHandlers(log, remove=True ):
     '''
-    this function is to close the handlers of the log to avoid an error when used in pyraf
-    $$$$$$$ THIS FUNCTION IS CURRENTLY NOT BEING USED, IT WILL BE INCORPERATED WHEN WE START USING PYRAF DIRECTLY $$$$$$$$$$
+    This function is to close the handlers of the log to 
+    avoid multiple handlers sending messages to same console and or file 
+    when the logger is used outside of the Recipe System.
     '''
     handlers = log.logger.handlers
     if len( handlers ) > 0:
         if remove:
-            for handler in handlers:
+            #for handler in handlers:
+            for i in range(0,len(handlers)):
+                handler=handlers[0]
                 try:
                     handler.close()
                 except:
