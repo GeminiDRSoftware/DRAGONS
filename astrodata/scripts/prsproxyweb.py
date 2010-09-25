@@ -360,15 +360,15 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(retxml)
                 return
             
-            if parms["path"] == "/datadir.xml":
+            if parms["path"].startswith("/datadir.xml"):
                 #print "*"*300
-                print "prsw168 in datadir.xml generation dirdict=", repr(self.dirdict)
+                #print "prsw168 in datadir.xml generation dirdict=", repr(self.dirdict)
                 dirdict = self.getDirdict()
                 ds = dirdict.dataSpider
                 
-                print "prsw181: before asXML"
+                #print "prsw181: before asXML"
                 xml = dirdict.asXML()
-                print "prsw185: after asXML"
+                #print "prsw185: after asXML"
                 
                 self.send_response(200)
                 self.send_header('Content-type',	'text/xml')
@@ -379,21 +379,6 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(xml)
                 self.wfile.write("</datasetDict>")
                 self.wfile.flush()
-                oldway = False
-                if oldway:
-                    self.send_response(200)
-                    self.send_header('Content-type',	'text/html')
-                    self.end_headers()
-                    self.wfile.write("<html><head></head><body>\n")
-                    dirlistall = os.listdir("recipedata")
-                    dirlist= []
-                    for f in dirlistall:
-                        if f[-5:].lower() == ".fits":
-                            dirlist.append(f)
-                    a = "</li><li>".join(dirlist)
-                    a = "<ul><li>"+a+"</li></ul>"
-                    self.wfile.write(a)
-                    self.wfile.write("</body></html>")
                 return
                 
             rrpath = "/runreduce"

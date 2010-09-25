@@ -25,10 +25,12 @@ import Tabs
 import DataTree
 import RecipeSystemIFACE
 import RecipeViewer
-import CalibrationIFACE
+import ADViewerIFACE
 import FITSStoreFACE
 from Logger import Logger
 from pyjamas import log
+
+import rccutil
 
 class KitchenSink:
 
@@ -68,7 +70,7 @@ class KitchenSink:
 
         History.addHistoryListener(self)
         RootPanel().add(self.panel)
-        RootPanel().add(Logger())
+        # RootPanel().add(Logger())
 
         #Show the initial screen.
         initToken = History.getToken()
@@ -76,7 +78,10 @@ class KitchenSink:
             self.onHistoryChanged(initToken)
         else:
             self.showInfo()
-
+            
+    def getHeight(self):
+        return rccutil.getHeight()
+        
     def show(self, info, affectHistory):
         if info == self.curInfo: return
         self.curInfo = info
@@ -102,8 +107,8 @@ class KitchenSink:
         
     def loadSinks(self):
         #self.sink_list.addSink(DataTree.init())
-        self.sink_list.addSink(RecipeSystemIFACE.init())
-        self.sink_list.addSink(CalibrationIFACE.init())
+        #self.sink_list.addSink(RecipeSystemIFACE.init())
+        self.sink_list.addSink(ADViewerIFACE.init())
         self.sink_list.addSink(RecipeViewer.init())
         self.sink_list.addSink(FITSStoreFACE.init())
         self.sink_list.addSink(Info.init())

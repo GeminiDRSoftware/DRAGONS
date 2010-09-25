@@ -849,7 +849,7 @@ class DirEntry(object):
                     "file":self.files[fil].basename,
                     "full":self.files[fil].fullpath()}
                 props = self.files[fil].props
-                if "types" in props:
+                if False: # DON'T SEND TYPES, no need... ?? --> if "types" in props:
                     tlist = props["types"]
                     for typ in tlist:
                         rfiles += '\t\t<astrodatatype name="%(typ)s"/>\n' % {

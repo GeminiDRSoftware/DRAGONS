@@ -2,11 +2,12 @@ from Sink import Sink, SinkInfo
 from pyjamas import Window
 from pyjamas.ui.Tree import Tree
 from pyjamas.ui.TreeItem import TreeItem
+from pyjamas.ui.ScrollPanel import ScrollPanel
 from pyjamas.HTTPRequest import HTTPRequest
 from pyjamas.ui.HTML import HTML
+from pyjamas.ui.SimplePanel import SimplePanel
 from __pyjamas__ import JS
 from pyjamas.ui.DockPanel import DockPanel
-from pyjamas.ui.SimplePanel import SimplePanel
 from pyjamas.ui import HasAlignment
 from pyjamas.ui.HTMLPanel import HTMLPanel
 from pyjamas.ui.ListBox import ListBox
@@ -14,11 +15,14 @@ from pyjamas.ui.HorizontalPanel import HorizontalPanel
 from pyjamas.ui.VerticalPanel import VerticalPanel
 from pyjamas.ui.Label import Label
 from pyjamas.ui.Button import Button
-from pyjamas.ui.Frame import Frame
 
 from urllib import quote
-from DataDictTree import PanelIFACE
+
 from rccutil import create_xml_doc
+
+class PanelIFACE(Sink):
+    panel = None
+    pathdict = None # set by owner object
 
 class DirDictLoader:
     panel = None
@@ -28,7 +32,6 @@ class DirDictLoader:
     def onCompletion(self, txt):
         #JS('alert("This is the thing\n"+txt)')
         self.panel.fromXML(txt)
-        
 class RecipeListLoader:
     def __init__(self, panel):
         self.panel = panel
@@ -49,124 +52,35 @@ class RecipeListLoader:
             for r in rlist:
                 self.panel.recipeList.addItem(r)
 
-from DataDictTree import ADInfoLoader
-class ReduceOutputIFACE(PanelIFACE):
+class ADInfoLoader:
+    panel = None
+    
+    def __init__(self, panel):
+        self.panel = panel
+    
+    def onCompletion(self, txt):
+        self.panel.adInfo.setHTML(txt)
+        sp = self.panel.parent.tabIFACEs[self.panel.parent.tabIFACEdict["adgui"]]
+        sp.scroll(0)
+        
+class AdinfoIFACE(PanelIFACE):
     def __init__(self, parent = None):
         PanelIFACE.__init__(self, parent)
         
-        self.panel = SimplePanel()
-        rof = Frame("", Size=("100%", parent.getHeight()))
+        self.panel = ScrollPanel()
+        adinfo = HTML("", Size=("100%", parent.getHeight()))
+        self.panel.setSize("100%", parent.getHeight())
         
-        self.panel.add(rof)
-        self.roFrame = parent.roFrame = rof
+        self.panel.add(adinfo)
+        self.adInfo = parent.adInfo = adinfo
+        Window.addWindowResizeListener(self)
         return
         
-    def onWindowResized(self, width, height):
-        self.roFrame.setSize("100%", self.parent.getHeight())
-        
-class ReducePanelIFACE(PanelIFACE):
-    def __init__(self, parent = None):
-        
-        PanelIFACE.__init__(self, parent)
-        self.panel = VerticalPanel()
-        self.panel.setBorderWidth(1)
-        self.panel.setWidth("100%")
-        # prepare panel
-        self.prepareReduce = HTML("<tt> .. none yet .. </tt>", True, )
-
-        self.recipeList = ListBox()
-        self.recipeList.addChangeListener(getattr(self, "onRecipeSelected"))
-        self.recipeList.addItem("None")
-        HTTPRequest().asyncGet("recipes.xml",
-                                RecipeListLoader(self))
-
-        #EO prepare panel
-        self.reduceCLPanel = DockPanel(Spacing = 5)
-        self.reduceCLPanel.add(HTML("<i>Reduce Command Line</i>:"), DockPanel.NORTH)                        
-        self.reduceCLPanel.add(self.prepareReduce, DockPanel.NORTH)
-
-        self.reduceFilesPanel = DockPanel(Spacing = 5)
-        self.reduceFilesPanel.add(HTML("<b>Datasets</b>:"), DockPanel.WEST)
-
-        self.reduceFiles = ListBox()
-        self.reduceFiles.setVisibleItemCount(5)
-        self.reduceFilesPanel.add(self.reduceFiles, DockPanel.WEST)
-        self.clearReduceFilesButton = Button("<b>Clear List</b>", listener = getattr(self, "onClearReduceFiles"))
-        self.reduceFilesPanel.add(self.clearReduceFilesButton, DockPanel.SOUTH)
-
-        self.recipeListPanel = DockPanel(Spacing = 5)
-        self.recipeListPanel.add(HTML("<b>Recipes List</b>:"),DockPanel.WEST)
-        self.recipeListPanel.add(self.recipeList, DockPanel.WEST)
-
-        self.runReduceButton = Button("<b>RUN REDUCE</b>", listener = getattr(self, "onRunReduce"))
-
-        self.adInfo = HTML("file info...")
-        # major sub panels
-        self.panel.add(self.reduceCLPanel)
-        self.panel.add(self.reduceFilesPanel)
-        self.panel.add(self.recipeListPanel)
-        self.panel.add(self.runReduceButton)
-        self.panel.add(self.adInfo)
-    def onRecipeSelected(self, event):
-        self.updateReduceCL()
-    
-    def onClearReduceFiles(self, event):
-        self.reduceFiles.clear() 
-        self.adInfo.setHTML("file info...") 
-        self.updateReduceCL()
-        
-    def updateReduceCL(self):
-        recipe = self.recipeList.getItemText(self.recipeList.getSelectedIndex())
-        
-        if recipe=="None":
-            rstr = ""
-        else:
-            rstr = "-r "+recipe
-
-        rfiles = []            
-        for i in range(0, self.reduceFiles.getItemCount()):
-            fname = self.reduceFiles.getItemText(i)
-            rfiles.append(fname)
-        filesstr = " ".join(rfiles)
-        
-                
-        self.prepareReduce.setHTML('<b>reduce</b> %(recipe)s %(files)s' % 
-                                        { "recipe":rstr, 
-                                          "files":filesstr})
-    def onRunReduce(self):
-        recipe = self.recipeList.getItemText(self.recipeList.getSelectedIndex())
-        
-        if recipe=="None":
-            rstr = ""
-        else:
-            rstr = "p=-r"+recipe
-
-        rfiles = []            
-        for i in range(0, self.reduceFiles.getItemCount()):
-            fname = self.reduceFiles.getItemText(i)
-            rfiles.append(quote(self.pathdict[fname]["path"]))
-        filesstr = "&p=".join(rfiles)
-                
-        cl = "/runreduce?%s&p=%s" % (rstr, filesstr)
-        if False:
-            msg = repr(self.parent)+repr(dir(self.parent))
-            JS("alert(msg)")
-        if hasattr(self.parent, "roFrame"):
-            self.parent.roFrame.setUrl(cl)
-            self.parent.tabPanel.selectTab(self.parent.tabIFACEdict["rogui"])
-        else:
-            JS("window.open(cl)")
-
     def onTreeItemSelected(self, item):
         pathdict = self.pathdict
         
-        tfile = item.getText()
+        filename = item.getText()
         #check if already in
-
-        self.reduceFiles.addItem(tfile)
-        self.updateReduceCL()
-        
-        filename = tfile
         if filename in pathdict:
             if pathdict[filename]["filetype"] == "fileEntry":
                 url = "adinfo?filename=%s" % self.pathdict[item.getText()]["path"]
@@ -176,15 +90,18 @@ class ReducePanelIFACE(PanelIFACE):
             else:
                 self.adInfo.setHTML("""
                     <b style="font-size:200%%">%s</b>""" % pathdict[filename]["filetype"])
-        else:
-            self.adInfo.setHTML("unknown node")
-        return
-     
-
-    
-class Trees(Sink):
+        
+    def scroll(self, where):
+        self.panel.setScrollPosition(where)
+    def onWindowResized(self, width, height):
+        self.panel.setSize("100%", self.parent.getHeight())
+        self.adInfo.setSize("100%", self.parent.getHeight())
+                
+class DataDictTree(Sink):
     pathdict = {}
     reduceFiles = None
+    fTree = None
+    
     def __init__(self, parent = None):
         Sink.__init__(self, parent)
         self.reduceFiles = []
@@ -199,57 +116,27 @@ class Trees(Sink):
         self.fProto = []
 
         self.fTree = Tree()
-        self.prPanel = VerticalPanel(Size=("50%", ""))
-        self.treePanel = HorizontalPanel(Size=("50%", "100%"))
+        self.treePanel = ScrollPanel()
+        self.treePanel.setSize("100%", 
+                                str(
+                                 int(
+                                  Window.getClientHeight()*.75
+                                 )
+                                )+"px")
+        Window.addWindowResizeListener(self)
+        
         self.treePanel.add(self.fTree)
         dock.add(self.treePanel, DockPanel.WEST)
         
-        self.treePanel.setBorderWidth(1)
-        self.treePanel.setWidth("100%")
-        self.prPanel.setBorderWidth(1)
-        self.prPanel.setWidth("100%")
-        # prepare panel
-        self.prepareReduce = HTML("<tt> .. none yet .. </tt>", True, )
         
-        self.recipeList = ListBox()
-        self.recipeList.addChangeListener(getattr(self, "onRecipeSelected"))
-        self.recipeList.addItem("None")
-        HTTPRequest().asyncGet("recipes.xml",
-                                RecipeListLoader(self))
-
-        #EO prepare panel
-        self.reduceCLPanel = DockPanel(Spacing = 5)
-        self.reduceCLPanel.add(HTML("<i>Reduce Command Line</i>:"), DockPanel.NORTH)                        
-        self.reduceCLPanel.add(self.prepareReduce, DockPanel.NORTH)
-
-        self.reduceFilesPanel = DockPanel(Spacing = 5)
-        self.reduceFilesPanel.add(HTML("<b>Datasets</b>:"), DockPanel.WEST)
+        #self.treePanel.setBorderWidth(1)
+        #self.treePanel.setWidth("100%")
         
-        self.reduceFiles = ListBox()
-        self.reduceFiles.setVisibleItemCount(5)
-        self.reduceFilesPanel.add(self.reduceFiles, DockPanel.WEST)
-        self.clearReduceFilesButton = Button("<b>Clear List</b>", listener = getattr(self, "onClearReduceFiles"))
-        self.reduceFilesPanel.add(self.clearReduceFilesButton, DockPanel.SOUTH)
-
-        self.recipeListPanel = DockPanel(Spacing = 5)
-        self.recipeListPanel.add(HTML("<b>Recipes List</b>:"),DockPanel.WEST)
-        self.recipeListPanel.add(self.recipeList, DockPanel.WEST)
-        
-        self.runReduceButton = Button("<b>RUN REDUCE</b>", listener = getattr(self, "onRunReduce"))
-        
-        self.adInfo = HTML("file info...")
-        # major sub panels
-        self.prPanel.add(self.reduceCLPanel)
-        self.prPanel.add(self.reduceFilesPanel)
-        self.prPanel.add(self.recipeListPanel)
-        self.prPanel.add(self.runReduceButton)
-        self.prPanel.add(self.adInfo)
-       
-        
-        dock.add(self.prPanel,DockPanel.EAST)
+        prPanel = self.createRightPanel()
+        dock.add(prPanel,DockPanel.EAST)
         
         dock.setCellWidth(self.treePanel, "50%")
-        dock.setCellWidth(self.prPanel, "50%")
+        dock.setCellWidth(prPanel, "50%")
         for i in range(len(self.fProto)):
             self.createItem(self.fProto[i])
             self.fTree.addItem(self.fProto[i].item)
@@ -260,36 +147,13 @@ class Trees(Sink):
         if False: #self.parent.filexml != None:
             DirDictLoader(self).onCompletion(self.parent.filexml)
 
-    def onTreeItemSelected(self, item):
-        pathdict = self.pathdict
-        
-        tfile = item.getText()
-        #check if already in
-
-        for i in range(0, self.reduceFiles.getItemCount()):
-            fname = self.reduceFiles.getItemText(i)
-            if fname == tfile:
-                return
-        self.reduceFiles.addItem(tfile)
-        self.updateReduceCL()
-        
-        filename = tfile
-        if filename in pathdict:
-            if pathdict[filename]["filetype"] == "fileEntry":
-                HTTPRequest().asyncGet("adinfo?filename=%s" % self.pathdict[item.getText()]["path"], 
-                               ADInfoLoader(self),
-                              )
-            else:
-                self.adInfo.setHTML("""
-                    <b style="font-size:200%%">%s</b>""" % pathdict[filename]["filetype"])
-        else:
-            self.adInfo.setHTML("unknown node")
-        return
-        
-        # self.prepareReduce.setHTML('<a href="runreduce?p=-r&p=callen&p=%(fname)s">reduce -r callen %(fname)s</a>' %
-        #                            {"fname":item.getText()})
-        pass
- 
+    def onWindowResized(self, width, height):
+        self.treePanel.setSize("100%", 
+                                str(
+                                 int(
+                                  height *.75
+                                 )
+                                )+"px")
     def onRecipeSelected(self, event):
         self.updateReduceCL()
     
@@ -397,13 +261,16 @@ class Trees(Sink):
         
         return node
     
-    def createProto(self, node):
+    def createProto(self, node, parent=None):
             #if node.nodeType != node.ELEMENT_NODE:
             #    return
             pathdict = self.pathdict
             if not node.hasChildNodes():
                 if node.nodeType != 1:
                     return None
+                nname = node.getAttribute("name")
+                newproto = None
+
                 newproto = Proto(str(node.getAttribute("name")))
                 if node.tagName == "fileEntry":
                     pathdict.update({node.getAttribute("name"):
@@ -423,10 +290,22 @@ class Trees(Sink):
                 cprotos = []
                 for i in range(0, node.childNodes.length):
                     childnode = node.childNodes.item(i)
-                    ncproto = self.createProto(childnode)
+                    if hasattr(childnode,"getAttribute") and childnode.getAttribute("name") == "files":
+                        for j in range(0, childnode.childNodes.length):
+                            childnodej = childnode.childNodes.item(j)
+                            ncproto = self.createProto(childnodej)
+                            if ncproto != None:
+                                ncitem  = self.createItem(ncproto)
+                                cprotos.append(ncproto)
+                    else:
+                        ncproto = self.createProto(childnode)
+    
                     if ncproto != None:
                         ncitem  = self.createItem(ncproto)
                         cprotos.append(ncproto)
+                  
+                        
+                        
                 if len(cprotos)>0:
                     newproto = Proto(str(node.getAttribute("name")),cprotos)
                 else:
