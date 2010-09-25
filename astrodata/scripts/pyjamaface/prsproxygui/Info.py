@@ -7,7 +7,8 @@ class Info(Sink):
         Sink.__init__(self, parent)
 
         text="""
-            <div class='infoProse'>This is the PRSProxy Interface.  
+            <div class='infoProse'>
+             This is the reduce control center. This is the PRSProxy Interface.  
              <p>
              The prsproxy is an application which communicates with Pipeline 
              Resource Services for the recipe system within the Gemini astrodata
@@ -43,4 +44,4 @@ class Info(Sink):
 
 
 def init():
-    return SinkInfo("Info", "Introduction to the Kitchen Sink.", Info)
+    return SinkInfo("About", "About the AstroData Control Center", Info)
