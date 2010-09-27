@@ -147,65 +147,65 @@ class GeminiLogger(object):
             else:
                 self._debugDefaultCategory = category
         
-    def debug(self,msg,cat=None):  
-        if cat==None:
-            cat = self._debugDefaultCategory  
+    def debug(self,msg,category=None):  
+        if category==None:
+            category = self._debugDefaultCategory  
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.debug(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
+            self.logger.debug(category.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
             
-    def fullinfo(self,msg,cat=None):
-        if cat==None:
-            cat = self._fullinfoDefaultCategory
+    def fullinfo(self,msg,category=None):
+        if category==None:
+            category = self._fullinfoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.fullinfo(cat.ljust(10)+'-'+line)
+            self.logger.fullinfo(category.ljust(10)+'-'+line)
     
-    def info(self,msg,cat=None):
-        if cat==None:
-            cat = self._infoDefaultCategory
+    def info(self,msg,category=None):
+        if category==None:
+            category = self._infoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.info(cat.ljust(10)+'-'+line)
+            self.logger.info(category.ljust(10)+'-'+line)
             
-    def stdinfo(self,msg,cat =None ):
-        if cat==None:
-            cat = self._stdinfoDefaultCategory
+    def stdinfo(self,msg,category =None ):
+        if category==None:
+            category = self._stdinfoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.stdinfo(cat.ljust(10)+'-'+line)
+            self.logger.stdinfo(category.ljust(10)+'-'+line)
             
-    def status(self,msg,cat = None):
-        if cat==None:
-            cat = self._statusDefaultCategory
+    def status(self,msg,category = None):
+        if category==None:
+            category = self._statusDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.status(cat.ljust(10)+'-'+line)
+            self.logger.status(category.ljust(10)+'-'+line)
         
-    def critical(self,msg,cat=None):
-        if cat==None:
-            cat = self._criticalDefaultCategory
+    def critical(self,msg,category=None):
+        if category==None:
+            category = self._criticalDefaultCategory
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.critical(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
+            self.logger.critical(category.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
         
-    def warning(self,msg,cat=None):
-        if cat==None:
-            cat = self._warningDefaultCategory
+    def warning(self,msg,category=None):
+        if category==None:
+            category = self._warningDefaultCategory
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.warning(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
+            self.logger.warning(category.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
         
-    def error(self,msg,cat=None):
-        if cat==None:
-            cat = self._errorDefaultCategory
+    def error(self,msg,category=None):
+        if category==None:
+            category = self._errorDefaultCategory
         b=callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.error(cat.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
+            self.logger.error(category.ljust(10)+"-"+b[0].ljust(20)+" - "+b[2].ljust(20)+"-"+str(b[1]).ljust(3)+" - "+line)
     
 def getGeminiLog(logName=None ,verbose = 0, debug = False):
     global _geminiLogger
