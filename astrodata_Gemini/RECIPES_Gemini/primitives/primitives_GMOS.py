@@ -26,8 +26,8 @@ class GMOSException:
 
 class GMOSPrimitives(GEMINIPrimitives):
     ''' 
-    This is the class of all primitives for the GMOS level 
-    of the type hierarchy tree.  It inherits all the primitives to the level above
+    This is the class of all primitives for the GMOS level of the type 
+    hierarchy tree.  It inherits all the primitives to the level above
     , 'GEMINIPrimitives'.
     '''
     astrotype = 'GMOS'
@@ -45,7 +45,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gmost.valInstData for '+ad.filename)
                 gmost.valInstData(ad)
-                log.status('Completed validating instrument data for '+ad.filename)
+                log.status('Completed validating instrument data for '+\
+                           ad.filename)
                 
         except:
             log.critical('Problem preparing one of '+rc.inputsAsStr())
@@ -63,7 +64,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             for ad in rc.getInputs(style='AD'): 
                 log.debug('Calling gmost.stdInstHdrs for '+ad.filename) 
                 gmost.stdInstHdrs(ad) 
-                log.status('Completed standardizing instrument headers for '+ad.filename)
+                log.status('Completed standardizing instrument headers for '+\
+                           ad.filename)
                     
         except:
             log.critical('Problem preparing one of '+rc.inputsAsStr())
@@ -80,7 +82,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
-            log.status('*STARTING* to subtract the overscan from the input data')
+            log.status('*STARTING* to subtract the overscan from the inputs')
             # writing input files to disk with prefixes onto their file 
             # names so they can be deleted later easily 
             clm = gemt.CLManager(rc)
@@ -102,7 +104,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                'outpref'    :rc['outpref'],
                'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
                                }
-            # grabbing the default params dict and updating it with the two above dicts
+            # grabbing the default params dict and updating it with 
+            # the two above dicts
             clParamsDict=CLDefaultParamsDict('gireduce')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
@@ -111,9 +114,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             if not rc['biassec']=='':
                 nbiascontam=clm.nbiascontam()
                 clParamsDict.update({'nbiascontam':nbiascontam})
-                log.fullinfo('nbiascontam parameter was updated to = '+str(clParamsDict['nbiascontam']),'params')
+                log.fullinfo('nbiascontam parameter was updated to = '+\
+                             \str(clParamsDict['nbiascontam']),'params')
 
-            log.debug('calling the gireduce CL script for inputs '+clm.inputsAsStr())
+            log.debug('calling the gireduce CL script for inputs '+\
+                      clm.inputsAsStr())
             
             gemini.gmos.gireduce(**clParamsDict)
 
@@ -131,7 +136,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             i=0
             for ad in rc.getOutputs(style='AD'):
                 if ad.phuGetKeyValue('GIREDUCE'): # varifies gireduce was actually ran on the file
-                    log.fullinfo('file '+clm.preCLNames()[i]+' had its overscan subracted successfully')
+                    log.fullinfo('file '+clm.preCLNames()[i]+\
+                                 ' had its overscan subracted successfully')
                     log.fullinfo('new file name is: '+ad.filename)
                 i=i+1
                 # updating GEM-TLM time stamp
@@ -139,9 +145,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                 #$$$$$ should we also have a OVERSUB UT time same in the PHU???
                 
                 # updating logger with new GEM-TLM time stamp value
-                log.fullinfo('****************************************************', category='header')
+                log.fullinfo('************************************************'\
+                             , category='header')
                 log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                             , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut)+'\n', category='header' )
             
@@ -167,23 +175,33 @@ class GMOSPrimitives(GEMINIPrimitives):
                     datasecList=gemt.secStrToIntList(datasecStr) 
                     dsl=datasecList
                     # updating logger with the section being kept
-                    log.stdinfo('\nfor '+ad.filename+' extension '+str(sciExt.extver())+\
-                                                            ', keeping the data from the section '+datasecStr,'science')
+                    log.stdinfo('\nfor '+ad.filename+' extension '+\
+                                str(sciExt.extver())+\
+                                ', keeping the data from the section '+\
+                                datasecStr,'science')
                     # trimming the data section from input SCI array
                     sciExt.data=sciExt.data[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
                     # updating header keys to match new dimensions
                     sciExt.header['NAXIS1']=dsl[1]-dsl[0]+1
                     sciExt.header['NAXIS2']=dsl[3]-dsl[2]+1
-                    newDataSecStr='[1:'+str(dsl[1]-dsl[0]+1)+',1:'+str(dsl[3]-dsl[2]+1)+']' 
+                    newDataSecStr='[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
+                    str(dsl[3]-dsl[2]+1)+']' 
                     sciExt.header['DATASEC']=newDataSecStr
-                    sciExt.extSetKeyValue(('SCI',int(sciExt.header['EXTVER'])),'TRIMSEC', datasecStr, 'Data section prior to trimming')
+                    sciExt.extSetKeyValue(('SCI',int(sciExt.header['EXTVER'])),\
+                                          'TRIMSEC', datasecStr, \
+                                          'Data section prior to trimming')
                     ## updating logger with updated/added keywords to each SCI frame
-                    log.fullinfo('****************************************************', category='header')
+                    log.fullinfo('********************************************'\
+                                 , category='header')
                     log.fullinfo('file = '+ad.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', category='header')
-                    log.fullinfo('SCI extension number '+str(sciExt.extver())+' keywords updated/added:\n', 'header')
-                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']), category='header' )
-                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']), category='header' )
+                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                                 , category='header')
+                    log.fullinfo('SCI extension number '+str(sciExt.extver())+\
+                                 ' keywords updated/added:\n', 'header')
+                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),\
+                                category='header' )
+                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),\
+                                 category='header' )
                     log.fullinfo('DATASEC= '+newDataSecStr, category='header' )
                     log.fullinfo('TRIMSEC= '+datasecStr, category='header' )
                     
@@ -193,14 +211,18 @@ class GMOSPrimitives(GEMINIPrimitives):
                 #$$$$$ should we also have a OVERTRIM UT time same in the PHU???
                 
                 log.debug('calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename=gemt.fileNameUpdater(ad.filename,postpend=rc['outpref'], strip=False)
-                log.status('gemt.fileNameUpdater updated the file name to '+ad.filename)
+                ad.filename=gemt.fileNameUpdater(ad.filename,\
+                                                 postpend=rc['outpref'], \
+                                                 strip=False)
+                log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
                 
                 # updating logger with updated/added keywords to the PHU
-                log.fullinfo('****************************************************', category='header')
+                log.fullinfo('************************************************'\
+                             , category='header')
                 log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                             , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut)+'\n', category='header' ) 
                 
@@ -223,14 +245,19 @@ class GMOSPrimitives(GEMINIPrimitives):
             for ad in rc.getInputs(style='AD'):
                 log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                 
-                ad.filename=gemt.fileNameUpdater(ad.filename, postpend='_preparedBias', strip=True)
-                log.status('gemt.fileNameUpdater updated the file name to '+ad.filename)
+                ad.filename=gemt.fileNameUpdater(ad.filename, \
+                                                 postpend='_preparedBias', \
+                                                 strip=True)
+                log.status('File name updated to '+ad.filename)
                 
                 # adding a GBIAS time stamp
-                ad.historyMark(key='GBIAS',comment='fake key to trick CL that GBIAS was ran')
+                ad.historyMark(key='GBIAS',\
+                               comment='fake key to trick CL that GBIAS was ran')
                 
-                log.fullinfo('filename written to = '+rc['storedbiases']+'/'+ad.filename)
-                ad.write(os.path.join(rc['storedbiases'],ad.filename),clobber=rc['clob'])
+                log.fullinfo('filename written to = '+rc['storedbiases']+'/'+\
+                             ad.filename)
+                ad.write(os.path.join(rc['storedbiases'],ad.filename),\
+                         clobber=rc['clob'])
                 
             log.status('*FINISHED* storing the processed bias on disk')
         except:
@@ -251,10 +278,12 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                 
                 ad.filename=gemt.fileNameUpdater(ad.filename, postpend='_preparedFlat', strip=True)
-                log.status('gemt.fileNameUpdater updated the file name to '+ad.filename)
+                log.status('File name updated to '+ad.filename)
                 
-                log.fullinfo('filename written to = '+rc['storedflats']+'/'+ad.filename)
-                ad.write(os.path.join(rc['storedflats'],ad.filename),clobber=rc['clob'])
+                log.fullinfo('filename written to = '+rc['storedflats']+'/'\
+                             +ad.filename)
+                ad.write(os.path.join(rc['storedflats'],ad.filename),\
+                         clobber=rc['clob'])
                 
             log.status('*FINISHED* storing the processed flat on disk')
         except:
@@ -390,12 +419,14 @@ class GMOSPrimitives(GEMINIPrimitives):
                'fl_over'    :pyrafBoolean(rc['fl_over']),
                'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
                                }
-            # grabbing the default params dict and updating it with the two above dicts
+            # grabbing the default params dict and updating it 
+            # with the two above dicts
             clParamsDict=CLDefaultParamsDict('gireduce')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            log.debug('calling the gireduce CL script for inputs '+clm.inputsAsStr())
+            log.debug('calling the gireduce CL script for inputs '+\
+                      clm.inputsAsStr())
 
             gemini.gmos.gireduce(**clParamsDict)
             
@@ -403,7 +434,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                  log.critical('gireduce failed for '+rc.inputsAsStr())
                  raise GMOSException('gireduce failed')
             else:
-                 log.status('exited the gireduce CL script successfully')
+                 log.status('Exited the gireduce CL script successfully')
             
             # renaming CL outputs and loading them back into memory, and 
             # cleaning up the intermediate tmp files written to disk
@@ -413,22 +444,31 @@ class GMOSPrimitives(GEMINIPrimitives):
             # wrap up logging
             i=0
             for ad in rc.getOutputs(style='AD'):
-                if ad.phuGetKeyValue('GIREDUCE'): # varifies gireduce was actually ran on the file
-                    log.fullinfo('file '+clm.preCLNames()[i]+' was bias subracted successfully')
-                    log.fullinfo('new file name is: '+ad.filename)
+                # varifying gireduce was actually ran on the file
+                # then logging file names of successfully reduced files
+                if ad.phuGetKeyValue('GIREDUCE'): 
+                    log.fullinfo('File '+clm.preCLNames()[i]+\
+                                 ' was bias subracted successfully')
+                    log.fullinfo('New file name is: '+ad.filename)
                 i=i+1
                 # updating the GEM-TLM time stamp
                 ut = ad.historyMark()  
                 #$$$$$ should we also have a OVERSUB UT time stame in the PHU???
-                ad.phuSetKeyValue('BIASIM',os.path.basename(processedBias)) # reseting the value set by gireduce to just the filename for clarity
+                
+                # reseting the value set by gireduce to just the filename
+                # for clarity
+                ad.phuSetKeyValue('BIASIM',os.path.basename(processedBias)) 
                 
                 # updating log with new GEM-TLM value and BIASIM header keys
-                log.fullinfo('****************************************************', category='header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', category='header')
+                log.fullinfo('************************************************'\
+                             , category='header')
+                log.fullinfo('File = '+ad.filename, category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                             , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut), category='header' )
-                log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n', category='header' )
+                log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n', \
+                             category='header' )
                 
             log.warning('The CL script gireduce REPLACED the previously calculated DQ frames','warning')
             
@@ -482,7 +522,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            log.debug('calling the giflat CL script for inputs list '+clm.inputList())
+            log.debug('calling the giflat CL script for inputs list '+\
+                      clm.inputList())
             
             gemini.giflat(**clParamsDict)
             
@@ -505,13 +546,16 @@ class GMOSPrimitives(GEMINIPrimitives):
             ad.historyMark(key='GIFLAT',stomp=False)
             
             # updating log with new GEM-TLM and GIFLAT time stamps
-            log.fullinfo('****************************************************', category='header')
+            log.fullinfo('****************************************************'\
+                         , category='header')
             log.fullinfo('file = '+ad.filename, category='header')
-            log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', category='header')
+            log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                         , category='header')
             log.fullinfo('PHU keywords updated/added:\n', 'header')
             log.fullinfo('GEM-TLM = '+str(ut), category='header' )
             log.fullinfo('GIFLAT = '+str(ut), category='header' )
-            log.fullinfo('---------------------------------------------------', category='header')       
+            log.fullinfo('----------------------------------------------------'\
+                         , category='header')       
                 
             log.status('*FINISHED* combining and normalizing the input flats')
         except:
@@ -548,16 +592,19 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
                 log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                 adOut.filename=gemt.fileNameUpdater(ad.filename,postpend=rc['outpref'], strip=False)
-                log.status('gemt.fileNameUpdater updated the file name to '+ad.filename)
+                log.status('File name updated to '+ad.filename)
                 rc.reportOutput(adOut)   
                 
                 # updating logger with new GEM-TLM value
-                log.fullinfo('****************************************************', category='header')
+                log.fullinfo('************************************************'\
+                             , category='header')
                 log.fullinfo('file = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                             , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut), category='header' )
-                log.fullinfo('---------------------------------------------------', category='header')    
+                log.fullinfo('------------------------------------------------'\
+                             , category='header')    
 
             log.status('*FINISHED* flat correcting the inputs')  
         except:
@@ -580,7 +627,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clm = gemt.CLManager(rc)
             clm.LogCurParams() 
             
-            # determining if gmosaic should propigate the VAR and DQ frames or not
+            # determining if gmosaic should propigate the VAR and DQ frames 
             ad=rc.getInputs(style='AD')[0]
             if ad.countExts('VAR')==ad.countExts('DQ')==ad.countExts('SCI'):
                 fl_vardq=yes
@@ -603,12 +650,14 @@ class GMOSPrimitives(GEMINIPrimitives):
               'outimages'   :rc['outimages'],
               'geointer'    :rc['interp_function'],
                               }
-            # grabbing the default params dict and updating it with the two above dicts
+            # grabbing the default params dict and updating it with 
+            # the two above dicts
             clParamsDict=CLDefaultParamsDict('gmosaic')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            log.debug('calling the gmosaic CL script for inputs '+clm.inputsAsStr)
+            log.debug('calling the gmosaic CL script for inputs '+\
+                      clm.inputsAsStr)
             
             gemini.gmos.gmosaic(**clParamsDict)
             
@@ -618,15 +667,18 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                 log.fullinfo('exited the gmosaic CL script successfully')
             
-            # renaming CL outputs and loading them back into memory, and cleaning 
-            # up the intermediate tmp files written to disk
+            # renaming CL outputs and loading them back into memory, and  
+            # cleaning up the intermediate tmp files written to disk
             clm.finishCL()
             os.remove(clPrimParams['logfile'])
             # wrap up logging
             i=0
             for ad in rc.getOutputs(style='AD'):
-                if ad.phuGetKeyValue('GMOSAIC'): # varifies gireduce was actually ran on the file
-                    log.fullinfo('file '+clm.preCLNames()[i]+' mosaiced successfully')
+                # varifying gireduce was actually ran on the file
+                # then logging file names of successfully reduced files
+                if ad.phuGetKeyValue('GMOSAIC'): 
+                    log.fullinfo('file '+clm.preCLNames()[i]+\
+                                 ' mosaiced successfully')
                     log.fullinfo('new file name is: '+ad.filename)
                 i=i+1
                 #updating GEM-TLM time stamp
@@ -634,9 +686,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                 #$$$$$ should we also have a MOSAIC UT time stame in the PHU???
                 
                 # updating logger with new GEM-TLM value
-                log.fullinfo('****************************************************', category='header')
+                log.fullinfo('************************************************'\
+                             , category='header')
                 log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                             , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+str(ut), category='header' )
                 
