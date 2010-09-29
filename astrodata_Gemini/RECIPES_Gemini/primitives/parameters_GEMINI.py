@@ -66,9 +66,9 @@
                       'userOverride':False 
                     }     
                           },
-    "calculateVAR":{'outsuffix':
+    "addVAR":{'outsuffix':
                    {
-                    'default': '_vardq' , #value to be post pended to this primitives outputs
+                    'default': '_var' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
                       'type': 'str',
                       'userOverride':False 
@@ -88,9 +88,9 @@
                       'userOverride':True                                      
                      }
                     },
-    "calculateDQ":{'outsuffix':
+    "addDQ":{'outsuffix':
                    {
-                    'default': '_vardq' , #value to be post pended to this primitives outputs
+                    'default': '_dq' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
                       'type': 'str',
                       'userOverride':False 
@@ -139,6 +139,42 @@
                       'type': 'str',
                       'userOverride':True 
                        }
-                      }
+                      },
+    'writeOutputs':{'strip':
+                    {
+                     'default': False , 
+                      'recipeOverride': True,
+                      'type': 'bool',
+                      'userOverride':True 
+                     },
+                     'clobber':
+                    {
+                     'default': False , 
+                      'recipeOverride': True,
+                      'type': 'bool',
+                      'userOverride':True 
+                     },
+                     'postpend':
+                     {
+                     'default': '' , 
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':True 
+                     },
+                     'prepend':
+                     {
+                     'default': '' , 
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':True 
+                     },
+                    'outfilename':
+                     {
+                     'default': '' , 
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':True 
+                     },
+                    }
 }    
 
