@@ -7,6 +7,7 @@ import pyfits as pf
 import numpy as np
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
+import tempfile
 
 log=gemLog.getGeminiLog() 
 
@@ -185,13 +186,19 @@ def pyrafBoolean(pythonBool):
         " True or False, and thats just crazy talk :P"
 
 class CLManager(object):
-    _preCLcachestorenames = [] # the version of the names for input to the CL script
-    _preCLfilenames = [] # the original names of the files at the start of the 
-                         # primitive which called CLManager
+    '''This is a class that will take care of all the preparation and wrap-up 
+        tasks needed when writing a primitive that wraps a IRAF CL routine.
+    '''
+    # the version of the names for input to the CL script
+    _preCLcachestorenames = [] 
+    # the original names of the files at the start of the 
+    # primitive which called CLManager
+    _preCLfilenames = [] 
     rc = None
     prefix = None
     outpref = None
     listname = None
+    templog = None
     
     def __init__(self, rc, outpref = None):
         self.rc  = rc
@@ -202,13 +209,16 @@ class CLManager(object):
         self._preCLfilenames = []
         self.prefix = self.uniquePrefix()
         self.preCLwrites()
+        self.templog = tempfile.NamedTemporaryFile() # temp log file object
     
-    # perform all the finalizing steps after CL script is ran, 
-    # currently just an alias for postCLloads
     def finishCL(self,combine=False): 
+        ''' perform all the finalizing steps after CL script is ran, 
+         currently just an alias for postCLloads'''
         self.postCLloads(combine)    
     
     def preCLwrites(self):
+        ''' the function that writes the files in memory to disk with temporary 
+            names and saves the original names in a list.'''
         for ad in self.rc.getInputs(style="AD"):
             self._preCLfilenames.append(ad.filename)
             name = fileNameUpdater(ad.filename,prepend=self.prefix,strip=True)
@@ -216,73 +226,119 @@ class CLManager(object):
             log.fullinfo('Temporary file on disk for input to CL: '+name)
             ad.write(name, rename = False) 
     
-    # just a function to return the 'private' member variable 
-    # _preCLcachestorenames
+    
     def cacheStoreNames(self):
+        ''' just a function to return the 'private' member variable 
+         _preCLcachestorenames'''
         return self._preCLcachestorenames
-       
-    # A function to remove the filenames written to disk by setStackable 
+        
     def rmStackFiles(self):
+        '''A function to remove the filenames written to disk by 
+            setStackable '''
         for file in self._preCLfilenames:
             log.fullinfo('removing file '+file+' from disk')
             os.remove(file)
         
-    # just a function to return the 'private' member variable _preCLfilenames
     def preCLNames(self):
+        '''just a function to return the 'private' member 
+            variable _preCLfilenames'''
         return self._preCLfilenames
     
+    def logfile(self):
+        ''' a function to return the name of the unique temporary log file to 
+            be used by IRAF'''
+        return self.templog.name
+    
     def inputsAsStr(self):
+        ''' returns the list of temporary file names written to disk for the
+            input files in the form of a list joined by commas for passing
+            into IRAF'''
         return ",".join(self._preCLcachestorenames)
     
     def inputList(self):
+        ''' creates a list file of the inputs for use in combine type
+        primitives'''
         self.listname='List'+str(os.getpid())+self.rc.ro.curPrimName
         return self.rc.makeInlistFile(self.listname,self._preCLcachestorenames)
         
     def uniquePrefix(self):
+        ''' uses the primitive name and the process ID to create a unique
+            prefix for the files being temporarily written to disk'''
         return "tmp"+ str(os.getpid())+self.rc.ro.curPrimName
     
     def combineOutname(self):
+        ''' creates the output name for combine type IRAF tasks to write the
+            combined output file to'''
         #@@ REFERENCE IMAGE: for output name
         return self.outpref+self._preCLcachestorenames[0]
     
     def postCLloads(self,combine=False):
+        '''  This function takes care of loading the output files the IRAF
+            routine wrote to disk back into memory with the appropriate name.  
+            Then it will delete all the temporary files created by the 
+            CLManager'''
+        # do the appropriate wrapping up for combine type primitives
         if combine==True:
+            # the name that IRAF wrote the output to
             cloutname=self.outpref+self._preCLcachestorenames[0]
+            # the name we want the file to be
             finalname=fileNameUpdater(self._preCLfilenames[0], postpend= self.outpref, strip=False)
+            # renaming the IRAF written file to the name we want
             os.rename(cloutname, finalname )
+            # reporting the renamed file to the reduction context and thus
+            # bringing it into memory
             self.rc.reportOutput(finalname)
+            # deleting the renamed file from disk
             os.remove(finalname)
             #print 'g209: self.listname = ',self.listname
+            # removing the list file of the inputs 
             os.remove(self.listname)
+            # close, and thus delete, the temp log needed by IRAF
+            self.templog.close() 
+            # logging files that were affected during wrap-up
             log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n'+finalname)
             log.fullinfo(finalname+' was loaded into memory')
             log.fullinfo(finalname+' was deleted from disk')
             log.fullinfo(self.listname+' was deleted from disk')
-            
+            log.fullinfo(self.templog.name+' was deleted from disk')
+            # removing the temporary files on disk that were inputs to IRAF
             for i in range(0, len(self._preCLcachestorenames)):
-                storename = self._preCLcachestorenames[i]  # name of file written to disk for input to CL script
-                os.remove(storename) # clearing renamed file ouput by CL
+                # name of file written to disk for input to CL script
+                storename = self._preCLcachestorenames[i]  
+                # clearing renamed file ouput by CL
+                os.remove(storename) 
                 log.fullinfo(storename+' was deleted from disk')
                 
+        # do the appropriate wrapping up for non-combine type primitives        
         elif combine==False:
             for i in range(0, len(self._preCLcachestorenames)):
-                storename = self._preCLcachestorenames[i]  # name of file written to disk for input to CL script
-                cloutname = self.outpref + storename  # name of file CL wrote to disk
-                finalname = fileNameUpdater(self._preCLfilenames[i], postpend= self.outpref, strip=False)  # name i want the file to be
-                
+                # name of file written to disk for input to CL script
+                storename = self._preCLcachestorenames[i]  
+                # name of file CL wrote to disk
+                cloutname = self.outpref + storename  
+                # name i want the file to be
+                finalname = fileNameUpdater(self._preCLfilenames[i], postpend= self.outpref, strip=False)  
+                # renaming the IRAF written file to the name we want
                 os.rename(cloutname, finalname )
                 
-                # THIS LOADS THE FILE INTO MEMORY
+                # reporting the renamed file to the reduction context and thus
+                # bringing it into memory
                 self.rc.reportOutput(finalname)
-                
-                os.remove(finalname) # clearing file written for CL input
-                os.remove(storename) # clearing renamed file output by CL
+                # clearing file written for CL input
+                os.remove(finalname) 
+                # clearing renamed file output by CL
+                os.remove(storename) 
+                # close, and thus delete, the temp log needed by IRAF
+                self.templog.close()
+                # logging files that were affected during wrap-up
                 log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n '+finalname)
                 log.fullinfo(finalname+' was loaded into memory')
                 log.fullinfo(finalname+' was deleted from disk')
                 log.fullinfo(storename+' was deleted from disk')
         
     def LogCurParams(self):
+        ''' a function to log the parameters in the local paramters file 
+            and then global ones in the reduction context'''
         log.fullinfo('\ncurrent general parameters:', 'parameters')
         for key in self.rc:
             val=self.rc[key]
@@ -309,7 +365,9 @@ class CLManager(object):
         return retval
 
 class IrafStdout():
-
+    '''  this is a function to act as the standard output for the IRAF 
+        routines that instead of printing its messages to the screen,
+        it will print them to the gemlog.py logger that the primitives use'''
     def __init__(self):
         pass
     
