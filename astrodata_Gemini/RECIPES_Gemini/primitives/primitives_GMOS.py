@@ -78,46 +78,52 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
         '''
-        # loading and bringing the pyraf related modules into the name-space
+        # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
             log.status('*STARTING* to subtract the overscan from the inputs')
-            # writing input files to disk with prefixes onto their file 
+            # Writing input files to disk with prefixes onto their file 
             # names so they can be deleted later easily 
             clm = gemt.CLManager(rc)
             clm.LogCurParams()
             
-            # params set by the gemt.CLManager or the definition of the prim 
-            clPrimParams={
+            # Parameters set by the gemt.CLManager or the definition 
+            # of the primitive 
+            clPrimParams = {
               'inimages'    :clm.inputsAsStr(),
               'gp_outpref'  :clm.uniquePrefix(),
-              'logfile'     :clm.logfile(),     # this returns a unique/temp log file for IRAF 
+              # This returns a unique/temp log file for IRAF
+              'logfile'     :clm.logfile(),      
               'fl_over'     :yes, 
-              'Stdout'      :gemt.IrafStdout(), # this is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(), # this is actually in the default dict but wanted to show it again
-              'verbose'     :yes                # this is actually in the default dict but wanted to show it again
+              # This is actually in the default dict but wanted to show it again
+              'Stdout'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'Stderr'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'verbose'     :yes                
                           }
-            # params from the Parameter file that are adjustable by the user
-            clSoftcodedParams={
-               'fl_trim'    :pyrafBoolean(rc['fl_trim']),
+            # Parameters from the Parameter file that are adjustable by the user
+            clSoftcodedParams = {
+               # pyrafBoolean converts the python booleans to pyraf ones
+               'fl_trim'    :gemt.pyrafBoolean(rc['fl_trim']),
                'outpref'    :rc['outpref'],
-               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
+               'fl_vardq'   :gemt.pyrafBoolean(rc['fl_vardq'])
                                }
-            # grabbing the default params dict and updating it with 
+            # Grabbing the default params dict and updating it with 
             # the two above dicts
-            clParamsDict=CLDefaultParamsDict('gireduce')
+            clParamsDict = CLDefaultParamsDict('gireduce')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            # taking care of the biasec->nbiascontam param
-            if not rc['biassec']=='':
-                nbiascontam=clm.nbiascontam()
+            # Taking care of the biasec->nbiascontam param
+            if not rc['biassec'] == '':
+                nbiascontam = clm.nbiascontam()
                 clParamsDict.update({'nbiascontam':nbiascontam})
                 log.fullinfo('nbiascontam parameter was updated to = '+\
                              str(clParamsDict['nbiascontam']),'params')
 
-            log.debug('calling the gireduce CL script for inputs '+\
+            log.debug('Calling the gireduce CL script for inputs '+\
                       clm.inputsAsStr())
             
             gemini.gmos.gireduce(**clParamsDict)
@@ -126,35 +132,38 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.critical('gireduce failed for '+rc.inputsAsStr()) 
                 raise GMOSException('gireduce failed')
             else:
-                log.status('exited the gireduce CL script successfully')
+                log.status('Exited the gireduce CL script successfully')
          
-            # renaming CL outputs and loading them back into memory, and 
+            # Renaming CL outputs and loading them back into memory, and 
             # cleaning up the intermediate tmp files written to disk
             clm.finishCL()
-            os.remove(clPrimParams['logfile'])
-            # wrap up logging
+            # Wrap up logging
             i=0
             for ad in rc.getOutputs(style='AD'):
-                if ad.phuGetKeyValue('GIREDUCE'): # varifies gireduce was actually ran on the file
-                    log.fullinfo('file '+clm.preCLNames()[i]+\
+                # Verifying gireduce was actually ran on the file
+                if ad.phuGetKeyValue('GIREDUCE'): 
+                    # If gireduce was ran, then log the changes to the files 
+                    # it made
+                    log.fullinfo('File '+clm.preCLNames()[i]+\
                                  ' had its overscan subracted successfully')
-                    log.fullinfo('new file name is: '+ad.filename)
-                i=i+1
-                # updating GEM-TLM time stamp
+                    log.fullinfo('New file name is: '+ad.filename)
+                i = i+1
+                # Updating GEM-TLM time stamp
                 ut = ad.historyMark()  
                 #$$$$$ should we also have a OVERSUB UT time same in the PHU???
                 
-                # updating logger with new GEM-TLM time stamp value
+                # Updating logger with new GEM-TLM time stamp value
                 log.fullinfo('************************************************'\
                              , category='header')
-                log.fullinfo('file = '+ad.filename, category='header')
+                log.fullinfo('File = '+ad.filename, category='header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n',\
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n', \
                               category='header')
             
-            log.status('*FINISHED* subtracting the overscan from the input data')
+            log.status('*FINISHED* subtracting the overscan from the '+\
+                       'input data')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
             raise 
@@ -171,30 +180,31 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             for ad in rc.getInputs(style='AD'):
                 for sciExt in ad['SCI']:
-                    # converting data section string to an integer list
+                    # Converting data section string to an integer list
                     datasecStr=sciExt.data_section()
                     datasecList=gemt.secStrToIntList(datasecStr) 
                     dsl=datasecList
-                    # updating logger with the section being kept
+                    # Updating logger with the section being kept
                     log.stdinfo('\nfor '+ad.filename+' extension '+\
                                 str(sciExt.extver())+\
                                 ', keeping the data from the section '+\
                                 datasecStr,'science')
-                    # trimming the data section from input SCI array
+                    # Trimming the data section from input SCI array
+                    # and making it the new SCI data
                     sciExt.data=sciExt.data[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
-                    # updating header keys to match new dimensions
-                    sciExt.header['NAXIS1']=dsl[1]-dsl[0]+1
-                    sciExt.header['NAXIS2']=dsl[3]-dsl[2]+1
-                    newDataSecStr='[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
-                    str(dsl[3]-dsl[2]+1)+']' 
+                    # Updating header keys to match new dimensions
+                    sciExt.header['NAXIS1'] = dsl[1]-dsl[0]+1
+                    sciExt.header['NAXIS2'] = dsl[3]-dsl[2]+1
+                    newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
+                                    str(dsl[3]-dsl[2]+1)+']' 
                     sciExt.header['DATASEC']=newDataSecStr
-                    sciExt.extSetKeyValue(('SCI',int(sciExt.header['EXTVER'])),\
-                                          'TRIMSEC', datasecStr, \
-                                          'Data section prior to trimming')
-                    ## updating logger with updated/added keywords to each SCI frame
+                    sciExt.SetKeyValue(('SCI',sciExt.extver()),'TRIMSEC', \
+                                       datasecStr, \
+                                       'Data section prior to trimming')
+                    # Updating logger with updated/added keywords to each SCI frame
                     log.fullinfo('********************************************'\
                                  , category='header')
-                    log.fullinfo('file = '+ad.filename, category='header')
+                    log.fullinfo('File = '+ad.filename, category='header')
                     log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
                                  , category='header')
                     log.fullinfo('SCI extension number '+str(sciExt.extver())+\
@@ -207,19 +217,21 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.fullinfo('TRIMSEC= '+datasecStr, category='header')
                     
                 ad.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')    
-                # updating the GEM-TLM value and reporting the output to the RC    
+                # Updating the GEM-TLM value and reporting the output to the RC    
                 ut = ad.historyMark()
                 #$$$$$ should we also have a OVERTRIM UT time same in the PHU???
                 
-                # updating the file name with the postpend/outsuffix for this
+                # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename=gemt.fileNameUpdater(ad.filename, postpend=rc['outpref'], strip=False)
+                ad.filename = gemt.fileNameUpdater(ad.filename, \
+                                                   postpend=rc['outpref'], \
+                                                   strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
                 
-                # updating logger with updated/added keywords to the PHU
+                # Updating logger with updated/added keywords to the PHU
                 log.fullinfo('************************************************'\
                              , category='header')
                 log.fullinfo('file = '+ad.filename, category='header')
@@ -246,20 +258,22 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:  
             log.status('*STARTING* to store the processed bias by writing it to disk')
             for ad in rc.getInputs(style='AD'):
-                # updating the file name with the postpend/outsuffix for this
+                # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename=gemt.fileNameUpdater(ad.filename, postpend='_preparedBias', strip=True)
+                ad.filename = gemt.fileNameUpdater(ad.filename, \
+                                                   postpend='_preparedBias', \
+                                                   strip=True)
                 log.status('File name updated to '+ad.filename)
                 
-                # adding a GBIAS time stamp to the PHU
-                ad.historyMark(key='GBIAS',\
+                # Adding a GBIAS time stamp to the PHU
+                ad.historyMark(key='GBIAS', \
                                comment='fake key to trick CL that GBIAS was ran')
                 
                 log.fullinfo('File written to = '+rc['storedbiases']+'/'+\
                              ad.filename)
-                ad.write(os.path.join(rc['storedbiases'],ad.filename),\
+                ad.write(os.path.join(rc['storedbiases'],ad.filename), \
                          clobber=rc['clob'])
                 
             log.status('*FINISHED* storing the processed bias on disk')
@@ -278,11 +292,13 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:   
             log.status('*STARTING* to store the processed flat by writing it to disk')
             for ad in rc.getInputs(style='AD'):
-                # updating the file name with the postpend/outsuffix for this
+                # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename=gemt.fileNameUpdater(ad.filename, postpend='_preparedFlat', strip=True)
+                ad.filename = gemt.fileNameUpdater(ad.filename, \
+                                                   postpend='_preparedFlat', \
+                                                   strip=True)
                 log.status('File name updated to '+ad.filename)
                 
                 log.fullinfo('File written to = '+rc['storedflats']+'/'\
@@ -322,18 +338,23 @@ class GMOSPrimitives(GEMINIPrimitives):
         than my oversimplified checking the bining alone.
         '''
         try:
-            packagePath=sys.argv[0].split('gemini_python')[0]
-            calPath='gemini_python/test_data/test_cal_files/processed_biases/'
+            packagePath = sys.argv[0].split('gemini_python')[0]
+            calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
             
             for ad in rc.getInputs(style='AD'):
-                if ad.extGetKeyValue(1,'CCDSUM')=='1 1':
+                if ad.extGetKeyValue(1,'CCDSUM') == '1 1':
                     log.error('NO 1x1 PROCESSED BIAS YET TO USE')
                     raise 'error'
-                elif ad.extGetKeyValue(1,'CCDSUM')=='2 2':
+                elif ad.extGetKeyValue(1,'CCDSUM') == '2 2':
                     biasfilename = 'N20020214S022_preparedBias.fits'
-                    if not os.path.exists(os.path.join('.reducecache/storedcals/retrievedbiases',biasfilename)):
-                        shutil.copy(packagePath+calPath+biasfilename, '.reducecache/storedcals/retrievedbiases')
-                    rc.addCal(ad,'bias',os.path.join('.reducecache/storedcals/retrievedbiases',biasfilename))
+                    if not os.path.exists(os.path.join('.reducecache/'+\
+                                                       'storedcals/retrievd'+\
+                                                       'biases', biasfilename)):
+                        shutil.copy(packagePath+calPath+biasfilename, \
+                                    '.reducecache/storedcals/retrievedbiases')
+                    rc.addCal(ad,'bias', \
+                              os.path.join('.reducecache/storedcals/retrieve'+\
+                                           'dbiases',biasfilename))
                 else:
                     log.error('CCDSUM is not 1x1 or 2x2 for the input flat!!')
            
@@ -357,14 +378,19 @@ class GMOSPrimitives(GEMINIPrimitives):
             calPath='gemini_python/test_data/test_cal_files/processed_flats/'
             
             for ad in rc.getInputs(style='AD'):
-                if ad.extGetKeyValue(1,'CCDSUM')=='1 1':
+                if ad.extGetKeyValue(1,'CCDSUM') == '1 1':
                     log.error('NO 1x1 PROCESSED BIAS YET TO USE')
                     raise 'error'
-                elif ad.extGetKeyValue(1,'CCDSUM')=='2 2':
+                elif ad.extGetKeyValue(1,'CCDSUM') == '2 2':
                     flatfilename = 'N20020211S156_preparedFlat.fits'
-                    if not os.path.exists(os.path.join('.reducecache/storedcals/retrievedflats',flatfilename)):
-                        shutil.copy(packagePath+calPath+flatfilename, '.reducecache/storedcals/retrievedflats')
-                    rc.addCal(ad,'flat',os.path.join('.reducecache/storedcals/retrievedflats',flatfilename))
+                    if not os.path.exists(os.path.join('.reducecache/storedca'+\
+                                                       'ls/retrievedflats', \
+                                                       flatfilename)):
+                        shutil.copy(packagePath+calPath+flatfilename, \
+                                    '.reducecache/storedcals/retrievedflats')
+                    rc.addCal(ad,'flat', os.path.join('.reducecache/storedca'+\
+                                                      'ls/retrievedflats', \
+                                                      flatfilename))
                 else:
                     log.error('CCDSUM is not 1x1 or 2x2 for the input image!!')
            
@@ -373,7 +399,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise
         
         yield rc
-        
 
     def biasCorrect(self, rc):
         '''
@@ -385,48 +410,54 @@ class GMOSPrimitives(GEMINIPrimitives):
         in the future by replacing the use of the gireduce
         with a Python routine to do the bias subtraction.
         '''
-        # loading and bringing the pyraf related modules into the name-space
+        # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
             log.status('*STARTING* to subtract the bias from the input flats')
             
-            # writing input files to disk with prefixes onto their file 
+            # Writing input files to disk with prefixes onto their file 
             # names so they can be deleted later easily 
             clm = gemt.CLManager(rc)
             clm.LogCurParams()
             
-            # getting the bias file for the first file of the inputs and 
+            # Getting the bias file for the first file of the inputs and 
             # assuming it is the same for all the inputs. This should be 
             # corrected in the future to be more intelligent and get the 
             # correct bias for each input individually if they are not 
             # all the same. Then gireduce can be called in a loop with 
-            # one flat and one bias, this will work well with the gemt.CLManager
+            # one flat and one bias, this will work well with the CLManager
             # as that was how i wrote this prim originally.
-            ad=rc.getInputs(style='AD')[0]
-            processedBias=rc.getCal(ad,'bias')
+            ad = rc.getInputs(style='AD')[0]
+            processedBias = rc.getCal(ad,'bias')
             
-            # params set by the gemt.CLManager or the definition of the prim 
-            clPrimParams={
+            # Parameters set by the gemt.CLManager or the definition of the prim 
+            clPrimParams = {
               'inimages'    :clm.inputsAsStr(),
               'gp_outpref'  :clm.uniquePrefix(),
-              'logfile'     :clm.logfile(),     # this returns a unique/temp log file for IRAF 
+              # This returns a unique/temp log file for IRAF 
+              'logfile'     :clm.logfile(),     
               'fl_bias'     :yes,
-              'bias'        :processedBias,     # possibly add this to the params file so the user can override this input file
-              'Stdout'      :gemt.IrafStdout(), # this is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(), # this is actually in the default dict but wanted to show it again
-              'verbose'     :yes                # this is actually in the default dict but wanted to show it again
+              # Possibly add this to the params file so the user can override this input file
+              'bias'        :processedBias,   
+              # This is actually in the default dict but wanted to show it again  
+              'Stdout'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'Stderr'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'verbose'     :yes                
                           }
-            # params from the Parameter file adjustable by the user
-            clSoftcodedParams={
-               'fl_trim'    :pyrafBoolean(rc['fl_trim']),
+            # Parameters from the Parameter file adjustable by the user
+            clSoftcodedParams = {
+               # pyrafBoolean converts the python booleans to pyraf ones
+               'fl_trim'    :gemt.pyrafBoolean(rc['fl_trim']),
                'outpref'    :rc['outpref'],
-               'fl_over'    :pyrafBoolean(rc['fl_over']),
-               'fl_vardq'   :pyrafBoolean(rc['fl_vardq'])
+               'fl_over'    :gemt.pyrafBoolean(rc['fl_over']),
+               'fl_vardq'   :gemt.pyrafBoolean(rc['fl_vardq'])
                                }
-            # grabbing the default params dict and updating it 
+            # Grabbing the default params dict and updating it 
             # with the two above dicts
-            clParamsDict=CLDefaultParamsDict('gireduce')
+            clParamsDict = CLDefaultParamsDict('gireduce')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
@@ -441,30 +472,29 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                  log.status('Exited the gireduce CL script successfully')
             
-            # renaming CL outputs and loading them back into memory, and 
+            # Renaming CL outputs and loading them back into memory, and 
             # cleaning up the intermediate tmp files written to disk
             clm.finishCL()
-            os.remove(clPrimParams['logfile'])
             
-            # wrap up logging
+            # Wrap up logging
             i=0
             for ad in rc.getOutputs(style='AD'):
-                # varifying gireduce was actually ran on the file
+                # Varifying gireduce was actually ran on the file
                 # then logging file names of successfully reduced files
                 if ad.phuGetKeyValue('GIREDUCE'): 
                     log.fullinfo('File '+clm.preCLNames()[i]+\
                                  ' was bias subracted successfully')
                     log.fullinfo('New file name is: '+ad.filename)
                 i=i+1
-                # updating the GEM-TLM (automatic) time stamp in the PHU
+                # Updating the GEM-TLM (automatic) time stamp in the PHU
                 ut = ad.historyMark()  
                 #$$$$$ should we also have a OVERSUB UT time stame in the PHU???
                 
-                # reseting the value set by gireduce to just the filename
+                # Reseting the value set by gireduce to just the filename
                 # for clarity
-                ad.phuSetKeyValue('BIASIM',os.path.basename(processedBias)) 
+                ad.phuSetKeyValue('BIASIM', os.path.basename(processedBias)) 
                 
-                # updating log with new GEM-TLM value and BIASIM header keys
+                # Updating log with new GEM-TLM value and BIASIM header keys
                 log.fullinfo('************************************************'\
                              , category='header')
                 log.fullinfo('File = '+ad.filename, category='header')
@@ -476,7 +506,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n', \
                              category='header')
                 
-            log.warning('The CL script gireduce REPLACED the previously calculated DQ frames','warning')
+            log.warning('The CL script gireduce REPLACED the previously '+\
+                        'calculated DQ frames')
             
             log.status('*FINISHED* subtracting the bias from the input flats')
         except:
@@ -485,7 +516,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
         yield rc
 
-    def normalizeFlat(self,rc):
+    def normalizeFlat(self, rc):
         '''
         This primitive will combine the input flats and then normalize them 
         using the CL script giflat.
@@ -495,40 +526,47 @@ class GMOSPrimitives(GEMINIPrimitives):
         future by replacing giflat with a Python equivilent with more 
         appropriate options for the recipe system.
         '''
-        # loading and bringing the pyraf related modules into the name-space
+        # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
             
             log.status('*STARTING* to combine and normalize the input flats')
-            # writing input files to disk with prefixes onto their file names 
+            # Writing input files to disk with prefixes onto their file names 
             # so they can be deleted later easily 
             clm = gemt.CLManager(rc)
             clm.LogCurParams()
 
-            # params set by the gemt.CLManager or the definition of the prim 
-            clPrimParams={
+            # Creating a dictionary of the parameters set by the gemt.CLManager 
+            # or the definition of the prim 
+            clPrimParams = {
               'inflats'     :clm.inputList(),
-              'outflat'     :clm.combineOutname(),  # maybe allow the user to override this in the future
-              'logfile'     :clm.logfile(),         # this returns a unique/temp log file for IRAF 
-              'Stdout'      :gemt.IrafStdout(),     # this is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(),     # this is actually in the default dict but wanted to show it again
-              'verbose'     :yes                    # this is actually in the default dict but wanted to show it again
+              # Maybe allow the user to override this in the future
+              'outflat'     :clm.combineOutname(), 
+              # This returns a unique/temp log file for IRAF  
+              'logfile'     :clm.logfile(),         
+              # This is actually in the default dict but wanted to show it again
+              'Stdout'      :gemt.IrafStdout(),   
+              # This is actually in the default dict but wanted to show it again  
+              'Stderr'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again    
+              'verbose'     :yes                    
                           }
-            # params from the Parameter file adjustable by the user
-            clSoftcodedParams={
+            # Creating a dictionary of the parameters from the Parameter file 
+            # adjustable by the user
+            clSoftcodedParams = {
                'fl_bias'    :rc['fl_bias'],
                'fl_vardq'   :rc['fl_vardq'],
                'fl_over'    :rc['fl_over'],
                'fl_trim'    :rc['fl_trim']
                                }
-            # grabbing the default params dict and updating it 
+            # Grabbing the default params dict and updating it 
             # with the two above dicts
-            clParamsDict=CLDefaultParamsDict('giflat')
+            clParamsDict = CLDefaultParamsDict('giflat')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            log.debug('calling the giflat CL script for inputs list '+\
+            log.debug('Calling the giflat CL script for inputs list '+\
                       clm.inputList())
             
             gemini.giflat(**clParamsDict)
@@ -537,21 +575,19 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.critical('giflat failed for '+rc.inputsAsStr())
                 raise GMOSException('giflat failed')
             else:
-                log.status('exited the giflat CL script successfully')
+                log.status('Exited the giflat CL script successfully')
                 
-            # renaming CL outputs and loading them back into memory, and 
+            # Renaming CL outputs and loading them back into memory, and 
             # cleaning up the intermediate tmp files written to disk
             clm.finishCL(combine=True) 
-            os.remove(clPrimParams['logfile'])
             
+            # There is only one after above combination, so no need to perform a loop
             ad = rc.getOutputs(style='AD')[0] 
-            #^ there is only one after above combination, so no need to perform a loop
             
-            # adding GEM-TLM (automatic) and GIFLAT time stamps to the PHU
-            ut = ad.historyMark()
-            ad.historyMark(key='GIFLAT',stomp=False)
+            # Adding GEM-TLM (automatic) and GIFLAT time stamps to the PHU
+            ad.historyMark(key='GIFLAT', stomp=False)
             
-            # updating log with new GEM-TLM and GIFLAT time stamps
+            # Updating log with new GEM-TLM and GIFLAT time stamps
             log.fullinfo('****************************************************'\
                          , category='header')
             log.fullinfo('File = '+ad.filename, category='header')
@@ -583,9 +619,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             log.status('*STARTING* to flat correct the inputs')
             
-            # retrieving the appropriate flat for the first of the inputs
-            adOne=rc.getInputs(style='AD')[0]
-            processedFlat=AstroData(rc.getCal(adOne,'flat'))
+            # Retrieving the appropriate flat for the first of the inputs
+            adOne = rc.getInputs(style='AD')[0]
+            processedFlat = AstroData(rc.getCal(adOne,'flat'))
             
             for ad in rc.getInputs(style='AD'):
                 log.status('Input flat file being used for flat correction '\
@@ -595,18 +631,20 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adOut = ad.div(processedFlat)
                 log.status('ad.div successfully flat corrected '+ad.filename)
                 
-                # updating GEM-TLM (automatic) time stamp to the PHU
+                # Updating GEM-TLM (automatic) time stamp to the PHU
                 ut = adOut.historyMark()
                 
-                # updating the file name with the postpend/outsuffix for this
+                # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
-                log.debug('calling gemt.fileNameUpdater on '+ad.filename)
-                adOut.filename=gemt.fileNameUpdater(ad.filename,postpend=rc['outpref'], strip=False)
+                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
+                adOut.filename = gemt.fileNameUpdater(ad.filename, \
+                                                      postpend=rc['outpref'], \
+                                                      strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(adOut)   
                 
-                # updating logger with new GEM-TLM value
+                # Updating logger with new GEM-TLM value
                 log.fullinfo('************************************************'\
                              , category='header')
                 log.fullinfo('File = '+adOut.filename, category='header')
@@ -630,41 +668,48 @@ class GMOSPrimitives(GEMINIPrimitives):
         along with the VAR and DQ frames if they exist.  
         '''
         # loading and bringing the pyraf related modules into the name-space
-        pyraf,gemini, yes, no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
             log.status('*STARTING* to mosaic the input images SCI extensions together')
-            # writing input files to disk with prefixes onto their file names so 
+            # Writing input files to disk with prefixes onto their file names so 
             # they can be deleted later easily 
             clm = gemt.CLManager(rc)
             clm.LogCurParams() 
             
-            # determining if gmosaic should propigate the VAR and DQ frames 
+            # Determining if gmosaic should propigate the VAR and DQ frames 
             ad=rc.getInputs(style='AD')[0]
             if ad.countExts('VAR')==ad.countExts('DQ')==ad.countExts('SCI'):
                 fl_vardq=yes
             else:
                 fl_vardq=no
                 
-            # params set by the gemt.CLManager or the definition of the prim 
-            clPrimParams={
+            # Parameters set by the gemt.CLManager or the definition of the prim 
+            clPrimParams = {
+              # Retrieving the inputs as a string of filenames
               'inimages'    :clm.inputsAsStr(),
+              # Setting the value of FL_vardq set above
               'fl_vardq'    :fl_vardq,
-              'logfile'     :clm.logfile(),     # this returns a unique/temp log file for IRAF 
-              'Stdout'      :gemt.IrafStdout(), # this is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(), # this is actually in the default dict but wanted to show it again
-              'verbose'     :yes                # this is actually in the default dict but wanted to show it again
+              # This returns a unique/temp log file for IRAF 
+              'logfile'     :clm.logfile(),
+              # This is actually in the default dict but wanted to show it again     
+              'Stdout'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'Stderr'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'verbose'     :yes                
                           }
-            # params from the Parameter file adjustable by the user
-            clSoftcodedParams={
-              'fl_paste'    :pyrafBoolean(rc['fl_paste']),
+            # Parameters from the Parameter file adjustable by the user
+            clSoftcodedParams = {
+              # pyrafBoolean converts the python booleans to pyraf ones
+              'fl_paste'    :gemt.pyrafBoolean(rc['fl_paste']),
               'outpref'     :rc['outpref'],
               'outimages'   :rc['outimages'],
               'geointer'    :rc['interp_function'],
                               }
-            # grabbing the default params dict and updating it with 
+            # Grabbing the default params dict and updating it with 
             # the two above dicts
-            clParamsDict=CLDefaultParamsDict('gmosaic')
+            clParamsDict = CLDefaultParamsDict('gmosaic')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
@@ -679,25 +724,24 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                 log.fullinfo('exited the gmosaic CL script successfully')
             
-            # renaming CL outputs and loading them back into memory, and  
+            # Renaming CL outputs and loading them back into memory, and  
             # cleaning up the intermediate tmp files written to disk
             clm.finishCL()
-            os.remove(clPrimParams['logfile'])
-            # wrap up logging
+            # Wrap up logging
             i=0
             for ad in rc.getOutputs(style='AD'):
-                # varifying gireduce was actually ran on the file
+                # Varifying gireduce was actually ran on the file
                 # then logging file names of successfully reduced files
                 if ad.phuGetKeyValue('GMOSAIC'): 
                     log.fullinfo('file '+clm.preCLNames()[i]+\
                                  ' mosaiced successfully')
                     log.fullinfo('New file name is: '+ad.filename)
                 i=i+1
-                #updating GEM-TLM (automatic) time stamp to the PHU
+                # Updating GEM-TLM (automatic) time stamp to the PHU
                 ut = ad.historyMark()  
                 #$$$$$ should we also have a MOSAIC UT time stame in the PHU???
                 
-                # updating logger with new GEM-TLM value
+                # Updating logger with new GEM-TLM value
                 log.fullinfo('************************************************'\
                              , category='header')
                 log.fullinfo('File = '+ad.filename, category='header')
@@ -718,11 +762,20 @@ def CLDefaultParamsDict(CLscript):
     A function to return a dictionary full of all the 
     default parameters for each CL script used so far in the Recipe System.
     '''
-    # loading and bringing the pyraf related modules into the name-space
+    # Loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
     
-    if CLscript=='gireduce':
-        defaultParams={
+    # Ensuring that if a invalide CLscript was requested, that a critical
+    # log message be made and exception raised.
+    if (CLscript != 'gireduce') and (CLscript != 'giflat') and \
+    (CLscript != 'gmosaic') :
+        log.critical('The CLscript '+CLscript+' does not have a default'+\
+                     ' dictionary')
+        raise GEMINIException('The CLscript '+CLscript+\
+                              ' does not have a default'+' dictionary')
+    
+    if CLscript == 'gireduce':
+        defaultParams = {
             'inimages'   :'',                # Input GMOS images 
             'outpref'    :'DEFAULT',         # Prefix for output images
             'outimages'  :'',                # Output images
@@ -776,8 +829,8 @@ def CLDefaultParamsDict(CLscript):
             'Stdout'     :gemt.IrafStdout(),
             'Stderr'     :gemt.IrafStdout()
                            }
-    if CLscript=='giflat':
-        defaultParams={ 
+    if CLscript == 'giflat':
+        defaultParams = { 
             'inflats'    :'',            # Input flat field images
             'outflat'    :'',            # Output flat field image
             'normsec'    :'default',     # Image section to get the normalization.
@@ -830,8 +883,8 @@ def CLDefaultParamsDict(CLscript):
             'Stdout'      :gemt.IrafStdout(),
             'Stderr'      :gemt.IrafStdout()
                        }      
-    if CLscript=='gmosaic':
-        defaultParams={ 
+    if CLscript == 'gmosaic':
+        defaultParams = { 
             'inimages'   :'',                     # Input GMOS images 
             'outimages'  :'',                     # Output images
             'outpref'    :'DEFAULT',              # Prefix for output images
