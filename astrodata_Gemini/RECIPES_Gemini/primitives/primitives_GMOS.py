@@ -12,24 +12,24 @@ import shutil
 log=gemLog.getGeminiLog()
 
 class GMOSException:
-    ''' This is the general exception the classes and functions in the
+    """ This is the general exception the classes and functions in the
     Structures.py module raise.
-    '''
+    """
     def __init__(self, message='Exception Raised in Recipe System'):
-        '''This constructor takes a message to print to the user.'''
+        """This constructor takes a message to print to the user."""
         self.message = message
     def __str__(self):
-        '''This str conversion member returns the message given 
+        """This str conversion member returns the message given 
         by the user (or the default message)
-        when the exception is not caught.'''
+        when the exception is not caught."""
         return self.message
 
 class GMOSPrimitives(GEMINIPrimitives):
-    ''' 
+    """ 
     This is the class of all primitives for the GMOS level of the type 
     hierarchy tree.  It inherits all the primitives to the level above
     , 'GEMINIPrimitives'.
-    '''
+    """
     astrotype = 'GMOS'
     
     def init(self, rc):
@@ -37,10 +37,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         return rc
      
     def validateInstrumentData(self,rc):
-        '''
+        """
         This primitive is called by validateData to validate the instrument 
         specific data checks for all input files.
-        '''
+        """
         try:
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gmost.valInstData for '+ad.filename)
@@ -55,11 +55,11 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc       
         
     def standardizeInstrumentHeaders(self,rc):
-        '''
+        """
         This primitive is called by standardizeHeaders to makes the changes and 
         additions to the headers of the input files that are instrument 
         specific.
-        '''
+        """
         try:                                           
             for ad in rc.getInputs(style='AD'): 
                 log.debug('Calling gmost.stdInstHdrs for '+ad.filename) 
@@ -74,10 +74,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
         
     def overscanSubtract(self,rc):
-        '''
+        """
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
-        '''
+        """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
@@ -171,10 +171,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc    
   
     def overscanTrim(self,rc):
-        '''
+        """
         This primitive uses AstroData to trim the overscan region 
         from the input images and update their headers.
-        '''
+        """
         try:
             log.status('*STARTING* to trim the overscan region from the input data')
             
@@ -249,12 +249,12 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
    
     def storeProcessedBias(self,rc):
-        '''
+        """
         This should be a primitive that interacts with the calibration system 
         (MAYBE) but that isn't up and running yet. Thus, this will just strip 
         the extra postfixes to create the 'final' name for the 
         makeProcessedBias outputs and write them to disk in a storedcals folder.
-        '''
+        """
         try:  
             log.status('*STARTING* to store the processed bias by writing it to disk')
             for ad in rc.getInputs(style='AD'):
@@ -283,12 +283,12 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
    
     def storeProcessedFlat(self,rc):
-        '''
+        """
         This should be a primitive that interacts with the calibration 
         system (MAYBE) but that isn't up and running yet. Thus, this will 
         just strip the extra postfixes to create the 'final' name for the 
         makeProcessedFlat outputs and write them to disk in a storedcals folder.
-        '''
+        """
         try:   
             log.status('*STARTING* to store the processed flat by writing it to disk')
             for ad in rc.getInputs(style='AD'):
@@ -313,30 +313,30 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
 
     def NEWgetProcessedBias(self,rc):
-        '''
+        """
         A primitive to search and return the appropriate calibration bias from
         a server for the given inputs.
-        '''
+        """
         rc.rqCal('bias', rc.getInputs(style='AD'))
         yield rc
         
     def NEWgetProcessedFlat(self,rc):
-        '''
+        """
         A primitive to search and return the appropriate calibration flat from
         a server for the given inputs.
-        '''
+        """
         rc.rqCal('flat', rc.getInputs(style='AD'))
         yield rc
 
     def localGetProcessedBias(self,rc):
-        '''
+        """
         A prim that works with the calibration system (MAYBE), but as it isn't 
         written yet this simply copies the bias file from the stored processed 
         bias directory and reports its name to the reduction context. 
         This is the basic form that the calibration system will work as well 
         but with proper checking for what the correct bias file would be rather 
         than my oversimplified checking the bining alone.
-        '''
+        """
         try:
             packagePath = sys.argv[0].split('gemini_python')[0]
             calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
@@ -364,7 +364,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
    
     def localGetProcessedFlat(self,rc):
-        '''
+        """
         A prim that works with the calibration system (MAYBE), but as it 
         isn't written yet this simply copies the bias file from the stored 
         processed bias directory and reports its name to the reduction 
@@ -372,7 +372,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         as well but with proper checking for what the correct bias file would 
         be rather than my oversimplified checking
         the binning alone.
-        '''
+        """
         try:
             packagePath=sys.argv[0].split('gemini_python')[0]
             calPath='gemini_python/test_data/test_cal_files/processed_flats/'
@@ -401,7 +401,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
 
     def biasCorrect(self, rc):
-        '''
+        """
         This primitive will subtract the biases from the inputs using the 
         CL script gireduce.
         
@@ -409,7 +409,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         calculated DQ frames with its own versions.  This may be corrected 
         in the future by replacing the use of the gireduce
         with a Python routine to do the bias subtraction.
-        '''
+        """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
@@ -517,7 +517,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
 
     def normalizeFlat(self, rc):
-        '''
+        """
         This primitive will combine the input flats and then normalize them 
         using the CL script giflat.
         
@@ -525,7 +525,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         previously produced ones in calculateDQ. This may be fixed in the 
         future by replacing giflat with a Python equivilent with more 
         appropriate options for the recipe system.
-        '''
+        """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
@@ -609,13 +609,13 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
 
     def flatCorrect(self,rc):
-        '''
+        """
         This primitive performs a flat correction by dividing the inputs by a 
         processed flat similar to the way gireduce would perform this operation
         but written in pure python.  
         It is currently assumed that the same flat file may be applied to all
         input images.
-        '''
+        """
         try:
             log.status('*STARTING* to flat correct the inputs')
             
@@ -663,10 +663,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
        
     def mosaic(self,rc):
-        '''
+        """
         This primitive will mosaic the SCI frames of the input images, 
         along with the VAR and DQ frames if they exist.  
-        '''
+        """
         # loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
@@ -758,10 +758,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc    
 
 def CLDefaultParamsDict(CLscript):
-    '''
+    """
     A function to return a dictionary full of all the 
     default parameters for each CL script used so far in the Recipe System.
-    '''
+    """
     # Loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
     
