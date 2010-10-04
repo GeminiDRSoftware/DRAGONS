@@ -112,7 +112,6 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
                 ad.filename=fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
                 rc.reportOutput(ad)
                 
-                #addMDF(ad,mdf)     #$$ the call to the tool box function, currently not in use
                 log.status('finished adding the MDF','status')
         except:
             log.critical("Problem preparing the image.", 'critical')
