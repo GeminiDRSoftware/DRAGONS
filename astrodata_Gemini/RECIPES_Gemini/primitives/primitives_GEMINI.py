@@ -14,7 +14,7 @@ import shutil
 log = gemLog.getGeminiLog()
 
 def pyrafLoader(rc=None):
-    '''
+    """
     This function is to load the modules needed by primitives that use pyraf. 
     It will also ensure there are no additional prints to the console when 
     loading the Gemini pyraf package.
@@ -22,7 +22,7 @@ def pyrafLoader(rc=None):
     (pyraf, gemini, iraf.yes, iraf.no)
     to be added to the name-space of the primitive this function is called from.
     eg. (pyraf, gemini, yes, no)=pyrafLoader(rc)
-    '''
+    """
     import pyraf
     from pyraf import iraf
     from iraf import gemini
@@ -44,24 +44,24 @@ def pyrafLoader(rc=None):
     return (pyraf, gemini, iraf.yes, iraf.no)
 
 class GEMINIException:
-    ''' This is the general exception the classes and functions in the
+    """ This is the general exception the classes and functions in the
     Structures.py module raise.
-    '''
+    """
     def __init__(self, message='Exception Raised in Recipe System'):
-        '''This constructor takes a message to print to the user.'''
+        """This constructor takes a message to print to the user."""
         self.message = message
     def __str__(self):
-        '''This str conversion member returns the message given by the 
+        """This str conversion member returns the message given by the 
         user (or the default message)
-        when the exception is not caught.'''
+        when the exception is not caught."""
         return self.message
 
 class GEMINIPrimitives(PrimitiveSet):
-    ''' 
+    """ 
     This is the class of all primitives for the GEMINI astrotype of 
     the hierarchy tree.  It inherits all the primitives to the level above
     , 'PrimitiveSet'.
-    '''
+    """
     astrotype = 'GEMINI'
     
     def init(self, rc):
@@ -187,11 +187,11 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
 
     def getStackable(self, rc):
-        '''
+        """
         This primitive will check the files in the stack lists are on disk,
         if not write them to disk and then update the inputs list to include
         all members of the stack for stacking.
-        '''
+        """
         try:
             # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
             stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
@@ -207,12 +207,12 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc      
  
     def setStackable(self, rc):
-        '''
+        """
         This primitive will update the lists of files to be stacked
         that have the same observationID with the current inputs.
         This file is cached between calls to reduce, thus allowing
         for one-file-at-a-time processing.
-        '''
+        """
         try:
             stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
             log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), \
@@ -231,7 +231,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
     
     def validateData(self,rc):
-        '''
+        """
         This primitive will ensure the data is not corrupted or in an odd 
         format that will affect later steps in the reduction process.  
         It will call a function to take care of the general Gemini issues 
@@ -239,7 +239,7 @@ class GEMINIPrimitives(PrimitiveSet):
         with the data, the flag 'repair' can be used to turn on the feature to 
         repair it or not (eg. validateData(repair=True))
         (this feature is not coded yet).
-        '''
+        """
         
         try:
             if rc['repair'] is True:
@@ -276,7 +276,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
 
     def standardizeStructure(self,rc):
-        '''
+        """
         This primitive ensures the MEF structure is ready for further 
         processing, through adding the MDF if necessary and the needed 
         keywords to the headers.  First the MEF's will be checked for the 
@@ -284,7 +284,7 @@ class GEMINIPrimitives(PrimitiveSet):
         ones if needed. If the data requires a MDF to be attached, use the 
         'addMDF' flag to make this happen 
         (eg. standardizeStructure(addMDF=True)).
-        '''
+        """
         
         try:
             log.status('*STARTING* to standardize the structure of input data')
@@ -320,11 +320,11 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc
         
     def standardizeHeaders(self, rc):
-        '''
+        """
         This primitive updates and adds the important header keywords
         for the input MEFs. First the general headers for Gemini will 
         be update/created, followed by those that are instrument specific.
-        '''
+        """
         
         try:   
             log.status('*STARTING* to standardize the headers')
@@ -361,13 +361,13 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc 
 
     def addVAR(self,rc):
-        '''
+        """
         This primitive uses numpy to calculate the variance of each SCI frame
         in the input files and appends it as a VAR frame using AstroData.
         
         The calculation will follow the formula:
         variance = (read noise/gain)2 + max(data,0.0)/gain
-        '''
+        """
         try:
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
             
@@ -455,14 +455,14 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc 
 
     def addDQ(self,rc):
-        '''
+        """
         This primitive will create a numpy array for the data quality 
         of each SCI frame of the input data. This will then have a 
         header created and append to the input using AstroData as a DQ 
         frame. The value of a pixel will be the sum of the following: 
         (0=good, 1=bad pixel (found in bad pixel mask), 
         2=value is non linear, 4=pixel is saturated)
-        '''
+        """
         try:
             log.status('*STARTING* to add the DQ frame(s) to the input data')
             
@@ -601,14 +601,14 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc 
             
     def combine(self,rc):
-        '''
+        """
         This primitive will average and combine the SCI extensions of the 
         inputs. It takes all the inputs and creates a list of them and 
         then combines each of their SCI extensions together to create 
         average combination file. New VAR frames are made from these 
         combined SCI frames and the DQ frames are propagated through 
         to the final file.
-        '''
+        """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf,gemini,yes,no = pyrafLoader(rc)
         
@@ -700,8 +700,8 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc   
 
     def measureIQ(self,rc):
-        '''
-        '''
+        """
+        """
         #@@FIXME: Detecting sources is done here as well. This 
         # should eventually be split up into
         # separate primitives, i.e. detectSources and measureIQ.
@@ -742,10 +742,10 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc  
     
     def ADUtoElectrons(self,rc):
-        '''
+        """
         This primitive will convert the inputs from having pixel 
         units of ADU to electrons.
-        '''
+        """
         try:
             log.status('*STARTING* to convert the pixel values from '+\
                        'ADU to electrons')
@@ -835,7 +835,7 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc                    
 
     def writeOutputs(self,rc):
-        '''
+        """
         A primitive that may be called by a recipe at any stage to
         write the outputs to disk.
         If postpend is set during the call to writeOutputs, any previous 
@@ -844,7 +844,7 @@ class GEMINIPrimitives(PrimitiveSet):
         writeOutputs(postpend= '_string'), writeOutputs(prepend= '_string') 
         or if you have a full file name in mind for a SINGLE file being 
         ran through Reduce you may use writeOutputs(outfilename='name.fits').
-        '''
+        """
         try:
             log.status('*STARTING* to write the outputs')
             
@@ -903,10 +903,10 @@ class GEMINIPrimitives(PrimitiveSet):
         yield rc   
          
 def CLDefaultParamsDict(CLscript):
-    '''
+    """
     A function to return a dictionary full of all the default parameters 
     for each CL script used so far in the Recipe System.
-    '''
+    """
     # loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
     
