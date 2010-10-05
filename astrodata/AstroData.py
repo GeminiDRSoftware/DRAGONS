@@ -767,7 +767,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
             HDU members, name and _extver. STSCI has been informed of the issue and has made us a special HDU function for 
             performing the renaming.  When generally available, this new function will be used instead of manipulating the 
             HDU's properties directly."""
-        if forced != True and self.borrowedHDUList:
+        if force != True and self.borrowedHDUList:
             raise ADExcept("cannot setExtname on subdata")
         
         if type(name) == tuple:
