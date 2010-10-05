@@ -466,37 +466,27 @@ class GEMINIPrimitives(PrimitiveSet):
         try:
             log.status('*STARTING* to add the DQ frame(s) to the input data')
             
-            #$$$$$$$$$$$$$ GMOS IMAGE specific block, consider moving $$$$$$$$$
-            packagePath = sys.argv[0].split('gemini_python')[0]
-            calPath = 'gemini_python/test_data/test_cal_files/GMOS_BPM_files/'
-            BPM_11 = AstroData(packagePath+calPath+'GMOS_BPM_11.fits')
-            BPM_22 = AstroData(packagePath+calPath+'GMOS_BPM_22.fits')
-            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-            
+            # Calling addBPM primitive to add the appropriate Bad Pixel Mask
+            # to the inputs which will then be updated below to create data 
+            # quality frames from these new BPM extensions in the inputs.
+            log.debug('Calling addBPM primitive for '+rc.inputsAsStr())
+            rc.run('addBPM')
+            log.status('Returned from the addBPM primitive successfully')
+              
+            # Loop through the inputs to perform the non-linear and saturated
+            # pixel searches of the SCI frames to update the BPM frames into
+            # full DQ frames.       
             for ad in rc.getInputs(style='AD'):
                 # Check if DQ extensions all ready exist for this file
-                if ad['DQ']:
-                    for sciExt in ad['SCI']:
-                        #$$ GMOS IMAGE specific block, consider moving $$$$$$$$$
-                        if sciExt.getKeyValue('CCDSUM') == '1 1':
-                            BPMArray = BPM_11[('DQ',sciExt.extver())].data
-                            BPMfilename = 'GMOS_BPM_11.fits'
-                        elif sciExt.getKeyValue('CCDSUM') == '2 2':
-                            BPMArray = BPM_22[('DQ',sciExt.extver())].data
-                            BPMfilename = 'GMOS_BPM_22.fits'
-                        else:
-                            BPMArray = np.zeros(sciExt.data.shape, \
-                                                dtype=np.int16)
-                            log.error('CCDSUM is not 1x1 or 2x2, using'+\
-                                      ' zeros array for BPM')
-                            BPMfilename = 'None'
-                        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   
+                if not ad['DQ']:
+                    for sciExt in ad['SCI']: 
+                        print 'BPM ?? ',ad['BPM']
+                        # Extracting the BPM data array for this extension
+                        BPMArray = ad[('BPM',sciExt.extver())].data
                         
-                        # logging the BPM file being used for this SCI extension
-                        log.fullinfo('DQ extension number '+\
-                                     str(sciExt.extver())+', of file '+\
-                                     ad.filename+ ' is using BPM file '+\
-                                     BPMfilename)
+                        # Extracting the BPM header for this extension to be 
+                        # later converted to a DQ header
+                        dqheader = ad[('BPM',sciExt.extver())].header
                         
                         # Getting the data section from the header and 
                         # converting to an integer list
@@ -528,46 +518,24 @@ class GEMINIPrimitives(PrimitiveSet):
                                       sciExt.extver()+' of '+ad.filename)
                             saturatedArray = np.where(sciExt.data>saturated,4,0)
                             log.status('Done calculating array of saturated'+\
-                                       ' pixels')
-                        
-                        # BPM file has had its overscan region trimmed all ready
-                        # so must trim the overscan section from the nonLin and 
-                        # saturated arrays to match
-                        nonLinArrayTrimmed = nonLinArray[dsl[2]-1:dsl[3],\
-                                                         dsl[0]-1:dsl[1]]
-                        saturatedArrayTrimmed = saturatedArray[dsl[2]-1:dsl[3],\
-                                                               dsl[0]-1:dsl[1]]  
+                                       ' pixels') 
                         
                         # Creating one DQ array from the three
                         dqArray=np.add(BPMArray, nonLinArrayTrimmed, \
                                        saturatedArrayTrimmed) 
+                        # Updating data array for the BPM array to be the 
+                        # newly calculated DQ array
+                        ad[('BPM',sciExt.extver())].data = dqArray
                         
-                        # Creating a header for the DQ array and updating it
-                        dqheader = pf.Header()
-                        dqheader.update('BITPIX', 16, \
-                                        'number of bits per data pixel')
-                        dqheader.update('NAXIS', 2)
-                        dqheader.update('PCOUNT', 0, \
-                                        'required keyword; must = 0')
-                        dqheader.update('GCOUNT', 1, \
-                                        'required keyword; must = 1')
-                        dqheader.update('BUNIT', 'bit', 'Physical units')
-                        dqheader.update('BPMFILE', BPMfilename, \
-                                        'Bad Pixel Mask file name')
+                        # Renaming the extension to DQ from BPM
                         dqheader.update('EXTNAME', 'DQ', 'Extension Name')
-                        dqheader.update('EXTVER', sciExt.extver(), \
-                                        'Extension Version')
                         
-                        # Creating an astrodata instance from the 
-                        # DQ array and header
-                        dqAD = AstroData( header = dqheader, data = dqArray )
+                        # Logging that the name of the BPM extension was changed
+                        log.fullinfo('BPM Extension '+str(sciExt.extver())+\
+                                     ' of'+ad.filename+' had its EXTVER '+\
+                                     'changed to '+\
+                                     ad[('DQ',sciExt.extver())].header['EXTNAME'])
                         
-                        # Appending data quality astrodata instance to the input one
-                        log.debug('Appending new DQ HDU onto the file '+ \
-                                  ad.filename)
-                        ad.append(dqAD)
-                        log.status('Appending DQ complete for '+ ad.filename)
-                    
                 # If DQ frames exist, send a critical message to the logger
                 else:
                     log.critical('DQ frames all ready exist for '+ad.filename+\
@@ -594,6 +562,8 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)        
             
+                print ad.info()
+                
             log.status('*FINISHED* adding the DQ frame(s) to the input data')
         except:
             log.critical('Problem adding the DQ to one of '+rc.inputsAsStr())
