@@ -759,7 +759,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
                             return i
         return None
     
-    def renameExt(self, name, ver = None):
+    def renameExt(self, name, ver = None, force = False):
         """The renameExt() function is needed in order to give an HDU an new EXTNAME and EXTVER based identifier.  Merely changing
         the values in the extensions header are not sufficient, as there are in-memory properties of the HDU that are not changes when
         the header changes.
@@ -767,7 +767,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
             HDU members, name and _extver. STSCI has been informed of the issue and has made us a special HDU function for 
             performing the renaming.  When generally available, this new function will be used instead of manipulating the 
             HDU's properties directly."""
-        if self.borrowedHDUList:
+        if forced != True and self.borrowedHDUList:
             raise ADExcept("cannot setExtname on subdata")
         
         if type(name) == tuple:
@@ -1331,6 +1331,9 @@ lse, the return value is a list which is in fact
         HDUList."""
         self.hdulist.info()
         
+    def displayID(self):
+        import IDFactory
+        return IDFactory.generateStackableID(self)
  
     def write(self, filename = None, clobber = False, rename=True):
         """
