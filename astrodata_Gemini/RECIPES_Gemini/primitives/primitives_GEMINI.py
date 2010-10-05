@@ -480,13 +480,15 @@ class GEMINIPrimitives(PrimitiveSet):
                 # Check if DQ extensions all ready exist for this file
                 if not ad['DQ']:
                     for sciExt in ad['SCI']: 
-                        print 'BPM ?? ',ad['BPM']
+                        # Retrieving BPM extension 
+                        bpmAD = ad[('BPM',sciExt.extver())]
+                        
                         # Extracting the BPM data array for this extension
-                        BPMArray = ad[('BPM',sciExt.extver())].data
+                        BPMArray = bpmAD.data
                         
                         # Extracting the BPM header for this extension to be 
                         # later converted to a DQ header
-                        dqheader = ad[('BPM',sciExt.extver())].header
+                        dqheader = bpmAD.header
                         
                         # Getting the data section from the header and 
                         # converting to an integer list
@@ -507,7 +509,7 @@ class GEMINIPrimitives(PrimitiveSet):
                         (rc['fl_nonlinear'] is True): 
                             log.debug('Performing an np.where to find '+\
                                       'non-linear pixels for extension '+\
-                                      sciExt.extver()+' of '+ad.filename)
+                                      str(sciExt.extver())+' of '+ad.filename)
                             nonLinArray = np.where(sciExt.data>linear,2,0)
                             log.status('Done calculating array of non-linear'+\
                                        ' pixels')
@@ -515,14 +517,14 @@ class GEMINIPrimitives(PrimitiveSet):
                         (rc['fl_saturated'] is True):
                             log.debug('Performing an np.where to find '+\
                                       'saturated pixels for extension '+\
-                                      sciExt.extver()+' of '+ad.filename)
+                                      str(sciExt.extver())+' of '+ad.filename)
                             saturatedArray = np.where(sciExt.data>saturated,4,0)
                             log.status('Done calculating array of saturated'+\
                                        ' pixels') 
                         
                         # Creating one DQ array from the three
-                        dqArray=np.add(BPMArray, nonLinArrayTrimmed, \
-                                       saturatedArrayTrimmed) 
+                        dqArray=np.add(BPMArray, nonLinArray, \
+                                       saturatedArray) 
                         # Updating data array for the BPM array to be the 
                         # newly calculated DQ array
                         ad[('BPM',sciExt.extver())].data = dqArray
@@ -530,6 +532,11 @@ class GEMINIPrimitives(PrimitiveSet):
                         # Renaming the extension to DQ from BPM
                         dqheader.update('EXTNAME', 'DQ', 'Extension Name')
                         
+                        
+                        # Using renameExt to correctly set the EXTVer and 
+                        # EXTNAME values in the header   
+                        bpmAD.renameExt('DQ', ver=sciExt.extver(), force=True)
+
                         # Logging that the name of the BPM extension was changed
                         log.fullinfo('BPM Extension '+str(sciExt.extver())+\
                                      ' of'+ad.filename+' had its EXTVER '+\
@@ -561,8 +568,6 @@ class GEMINIPrimitives(PrimitiveSet):
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)        
-            
-                print ad.info()
                 
             log.status('*FINISHED* adding the DQ frame(s) to the input data')
         except:
