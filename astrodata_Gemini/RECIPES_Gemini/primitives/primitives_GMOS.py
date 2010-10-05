@@ -783,7 +783,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             for ad in rc.getInputs(style='AD'):
-                print ad.info()
                 # Check if BPM extensions all ready exist for this file
                 if not  ad['BPM']:
                     for sciExt in ad['SCI']:
@@ -854,6 +853,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                         # DQ array and header
                         bpmAD = AstroData(header=BPMheader, data=BPMArrayOut)
                         
+                        # Using renameExt to correctly set the EXTVer and 
+                        # EXTNAME values in the header   
+                        bpmAD.renameExt('BPM', ver=sciExt.extver())
+                        
                         # Appending BPM astrodata instance to the input one
                         log.debug('Appending new BPM HDU onto the file '+ \
                                   ad.filename)
@@ -864,9 +867,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 else:
                     log.critical('BPM frames all ready exist for '+ad.filename+\
                                  ', so addBPM will add new ones') 
-                print '# BPM exts =',ad.countExts('BPM')   
-                for ext in ad['BPM']:
-                    print ext.extver()
+
                 # Updating GEM-TLM (automatic) time stamp in the PHU
                 ad.historyMark() 
                 # Updating logger with updated/added time stamps
@@ -879,8 +880,6 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
                 # Reporting the updated file to the reduction context
                 rc.reportOutput(ad)   
-                
-                print ad.info()
                 
             log.status('*FINISHED* adding the BPM to the inputs') 
         except:
