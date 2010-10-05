@@ -126,6 +126,10 @@ level#, verbose,  level,          includes (current rough outline)
          If category = None, then the current value will be returned.
          Else, the default value will be replaced with the newly provided 
          category string.
+         For the case where the user would like ALL the levels to have the 
+         same default category, then set level = 'ALL' in the call to 
+         defaultCategory. 
+         ie log.defaultCategory(level='ALL', category='tulips')
          
          @param level: level to edit the default category for. 
                        eg. fullinfo, stdinfo, status...
@@ -134,6 +138,16 @@ level#, verbose,  level,          includes (current rough outline)
          @param level: new default value for the levels category
          @type level: string
         '''
+        if level == 'ALL':
+            self._criticalDefaultCategory = category
+            self._errorDefaultCategory = category
+            self._warningDefaultCategory = category
+            self._statusDefaultCategory = category
+            self._stdinfoDefaultCategory = category
+            self._infoDefaultCategory = category
+            self._fullinfoDefaultCategory = category
+            self._debugDefaultCategory = category
+            
         if level == 'critical':
             # If no category value was passed in for this level then 
             # just return the current value, else set the default category
