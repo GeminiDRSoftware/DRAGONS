@@ -45,6 +45,7 @@ def div(numerator, denominator):
                         {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
                         of the SCI extensions and ## are the corresponding 
                         float values to divide that extension by.
+                        
     """
     # Rename inputs to shorter names to save typing
     num = numerator
@@ -53,8 +54,8 @@ def div(numerator, denominator):
     out = AstroData.prepOutput(inputAry=num, clobber=False) 
     
     # Check to see if the denominator is of type AstroData
-    if (type(den) == astrodata.AstroData) or \
-    (type(den) == astrodata.AstroData.AstroData):
+    if isinstance(den,astrodata.AstroData) or \
+    isinstance(den,astrodata.AstroData.AstroData):
         # Loop through the SCI extensions 
         for sci in num['SCI']:
             # Retrieving the version of this extension
@@ -69,7 +70,7 @@ def div(numerator, denominator):
                 den[('SCI', extver)].data.shape: 
                     # Dividing the numerator SCI frames by those of the 
                     # denominator
-                    outsci.data = np.divide(num[('SCI', extver)].data, \
+                    outsci.data = np.divide(num[('SCI', extver)].data, 
                                           den[('SCI', extver)].data)
                     # Appending the updated SCI frame to the output
                     out.append(outsci)
@@ -86,20 +87,20 @@ def div(numerator, denominator):
                         
                         # Making empty sciOutSqured array and squaring 
                         # the sciOut frame to load it up 
-                        sciOutSquared = np.multiply(out[('SCI', extver)].data, \
+                        sciOutSquared = np.multiply(out[('SCI', extver)].data, 
                                                   out[('SCI', extver)].data)
                         # Ditto for sciA and sciB 
-                        sciASquared = np.multiply(num[('SCI', extver)].data, \
+                        sciASquared = np.multiply(num[('SCI', extver)].data, 
                                                 num[('SCI', extver)].data)
-                        sciBSquared = np.multiply(den[('SCI', extver)].data, \
+                        sciBSquared = np.multiply(den[('SCI', extver)].data, 
                                                 den[('SCI', extver)].data)
                         # Now var_A/sciASquared and var_B/sciBSquared
-                        varAoverSciASquared = np.divide(num[('VAR', extver)].data,\
+                        varAoverSciASquared = np.divide(num[('VAR', extver)].data,
                                                       sciASquared)
-                        varBoverSciBSquared = np.divide(den[('VAR', extver)].data,\
+                        varBoverSciBSquared = np.divide(den[('VAR', extver)].data,
                                                       sciBSquared)
                         # Now varAoverSciASquared + varBoverSciBSquared
-                        varOverAplusB = np.add(varAoverSciASquared, \
+                        varOverAplusB = np.add(varAoverSciASquared, 
                                              varBoverSciBSquared)
                         # Put it all together 
                         # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
@@ -114,7 +115,7 @@ def div(numerator, denominator):
                         outdq = deepcopy(num[('DQ', extver)])
                                                                   
                         # Perform a bitwise-or 'adding'  on DQ frames 
-                        outdq.data = np.bitwise_or(num[('DQ', extver)].data, \
+                        outdq.data = np.bitwise_or(num[('DQ', extver)].data, 
                                                  den[('DQ', extver)].data)
                         # Append the updated out DQ frame to the output
                         out.append(outdq)
@@ -122,15 +123,16 @@ def div(numerator, denominator):
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI extension'\
-                                 +str(extver)+' of the input '\
+                    log.critical('Arrays are different sizes for SCI extension'
+                                 +str(extver)+' of the input '
                                  +num.filename+' and '+den.filename)
-                    raise ArithExcept('An error occurred while performing '+\
+                    raise ArithExcept('An error occurred while performing '+
                                       'the div task')
             except:
                 raise 
 
-    elif type(den) == dict or type(den) == list or type(den) == float:
+    elif isinstance(den, dict) or isinstance(den, list) or \
+    isinstance(den, float):
         """ Creating the dictionary if input is a float or float list 
             Dictionary format will follow:
             {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
@@ -139,7 +141,7 @@ def div(numerator, denominator):
             
         # Create a dictionary of identical values for each extension if the 
         # input is a single float
-        if type(den) == float: 
+        if isinstance(den, float): 
             denDict = {}
             for ext in num['SCI']:
                 # Retrieve the EXTVER for this extension
@@ -148,14 +150,14 @@ def div(numerator, denominator):
                 denDict[('SCI', extver)] = den
                 print repr(denDict)
         # Create a dictionary if the input is a list of floats 
-        if type(den) == list:    
+        if isinstance(den, list):    
             denDict = {}
             for ext in num['SCI']:
                 extver = ext.extver()
                 denDict[('SCI', extver)] = den[extver-1]
                 print repr(denDict)
         # Just rename the variable if denominator is all ready a dictionary
-        if type(den) == dict:
+        if isinstance(den, dict):
             denDict = den
         
         # Perform the calculations for when the denominator is a dictionary
@@ -192,7 +194,7 @@ def div(numerator, denominator):
     # If the input was not of type astrodata, float, float list or dictionary
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.div() only accepts inputB of types AstroData, '+\
+        log.critical('arith.div() only accepts inputB of types AstroData, '+
                      'list, float or dict, '+str(type(den))+' passed in')    
         raise ArithExcept('An error occurred while performing the div task')  
     # Return the fully updated output astrodata object          
@@ -223,6 +225,7 @@ def mult(inputA, inputB):
                     where # are the EXTVERs of the SCI extensions 
                     and ## are the corresponding float values 
                     to multiply that extension by.   
+                    
     """
     # Rename inputs to shorter names to save typing
     inA = inputA
@@ -231,8 +234,8 @@ def mult(inputA, inputB):
     out = AstroData.prepOutput(inputAry=inA, clobber=False)
     
     # Check to see if the denominator is of type AstroData
-    if (type(inB) == astrodata.AstroData) or \
-    (type(inB) == astrodata.AstroData.AstroData):
+    if isinstance(inB, astrodata.AstroData) or \
+    isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -246,7 +249,7 @@ def mult(inputA, inputB):
                 if inA[('SCI', extver)].data.shape == \
                 inB[('SCI', extver)].data.shape: 
                     #  Multiplying the SCI frames of the inputs
-                    outsci.data = np.multiply(inA[('SCI', extver)].data, \
+                    outsci.data = np.multiply(inA[('SCI', extver)].data, 
                                             inB[('SCI', extver)].data)
                     # Appending the updated SCI frame to the output
                     out.append(outsci)
@@ -263,20 +266,20 @@ def mult(inputA, inputB):
                         
                         # Making empty sciOutSqured array and squaring 
                         # the sciOut frame to load it up 
-                        sciOutSquared = np.multiply(out[('SCI', extver)].data, \
+                        sciOutSquared = np.multiply(out[('SCI', extver)].data, 
                                                   out[('SCI', extver)].data)
                         # Ditto for sciA and sciB 
-                        sciASquared = np.multiply(inA[('SCI', extver)].data, \
+                        sciASquared = np.multiply(inA[('SCI', extver)].data, 
                                                 inA[('SCI', extver)].data)
-                        sciBSquared = np.multiply(inB[('SCI', extver)].data, \
+                        sciBSquared = np.multiply(inB[('SCI', extver)].data, 
                                                 inB[('SCI', extver)].data)
                         # Now var_A/sciASquared and var_B/sciBSquared
-                        varAoverSciASquared = np.divide(inA[('VAR', extver)].data,\
+                        varAoverSciASquared = np.divide(inA[('VAR', extver)].data,
                                                         sciASquared)
-                        varBoverSciBSquared = np.divide(inB[('VAR', extver)].data,\
+                        varBoverSciBSquared = np.divide(inB[('VAR', extver)].data,
                                                         sciBSquared)
                         # Now varAoverSciASquared + varBoverSciBSquared
-                        varOverAplusB = np.add(varAoverSciASquared, \
+                        varOverAplusB = np.add(varAoverSciASquared, 
                                              varBoverSciBSquared)
                         # Put it all together 
                         # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
@@ -289,31 +292,32 @@ def mult(inputA, inputB):
                     inA.countExts('SCI'):   
                         outdq = deepcopy(inA[('DQ', extver)])    
                         # Perform bitwise-or 'adding' DQ frames 
-                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, \
-                                                 inB[('DQ', extver)].data)
+                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, 
+                                                   inB[('DQ', extver)].data)
                         # Append the updated out DQ frame to the output 
                         out.append(outdq)
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI '+\
-                                 'extension '+i+' of the input '\
+                    log.critical('Arrays are different sizes for SCI '+
+                                 'extension '+i+' of the input '
                                  +inA.filename+' and '+inB.filename)
-                    raise ArithExcept('An error occurred while performing an'+\
+                    raise ArithExcept('An error occurred while performing an'+
                                       ' mult task')
             except:
                 raise 
 
-    elif type(inB) == dict or type(inB) == list or type(inB) == float:
+    elif isinstance(inB, dict) or isinstance(inB, list) or \
+    isinstance(inB, float):
         """ Creating the dictionary if input is a float or float list 
             Dictionary format will follow:
             {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
             of the SCI extensions and ## are the corresponding 
-            float values to divide that extension by"""
+            float values to divide that extension by. """
             
         # Create a dictionary of identical values for each extension if the 
         # input is a single float
-        if type(inB) == float: 
+        if isinstance(inB, float): 
             inBDict = {}
             for ext in inA['SCI']:
                  # Retrieve the EXTVER for this extension
@@ -321,13 +325,13 @@ def mult(inputA, inputB):
                 # Add element to the dictionary for this extension
                 inBDict[('SCI', extver)] = inB
         # Create a dictionary if the input is a list of floats        
-        if type(inB) == list:    
+        if isinstance(inB, list):    
             inBDict = {}
             for ext in inA['SCI']:
                 extver = ext.extver()
                 inBDict[('SCI', extver)] = inB[extver-1]
         # Just rename the variable if denominator is all ready a dictionary
-        if type(inB) == dict:
+        if isinstance(inB, dict):
             inBDict = inB
         
         # Perform the calculations for when the denominator is a dictionary
@@ -348,7 +352,7 @@ def mult(inputA, inputB):
                     # Start with the out VAR HDU being the current 
                     outvar = deepcopy(inA[('VAR', extver)])
                     # Multiplying the VAR frames by the float^2
-                    outvar.data = np.multiply(inA[('VAR', extver)].data, \
+                    outvar.data = np.multiply(inA[('VAR', extver)].data, 
                                               val*val)
                     # Append the updated VAR frame to the output
                     out.append(outvar)
@@ -364,7 +368,7 @@ def mult(inputA, inputB):
     # If the input was not of type astrodata, float, float list or dictionary
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.mult() only accepts inputB of types AstroData, '+\
+        log.critical('arith.mult() only accepts inputB of types AstroData, '+
                      'list and float, '+str(type(inB))+' passed in')    
         raise ArithExcept('An error occurred while performing the mult task')      
     # Return the fully updated output astrodata object 
@@ -391,7 +395,8 @@ def add(inputA, inputB):
     @param inputB: inputB to add to the inputA 
     @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData 
                   instance or a float integer 
-    #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO??? 
+    #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO???
+     
     """
     # Rename inputs to shorter names to save typing
     inA = inputA
@@ -400,8 +405,8 @@ def add(inputA, inputB):
     out = AstroData.prepOutput(inputAry=inA, clobber=False)
     
     # Check to see if the denominator is of type AstroData
-    if (type(inB) == astrodata.AstroData) or \
-    (type(inB) == astrodata.AstroData.AstroData):
+    if isinstance(inB, astrodata.AstroData) or \
+    isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -415,7 +420,7 @@ def add(inputA, inputB):
                 if inA[('SCI', extver)].data.shape == \
                 inB[('SCI', extver)].data.shape: 
                     #  Adding the SCI frames of the inputs
-                    outsci.data = np.add(inA[('SCI', extver)].data, \
+                    outsci.data = np.add(inA[('SCI', extver)].data, 
                                          inB[('SCI', extver)].data)
                     # Appending the updated SCI frame to the output
                     out.append(outsci)
@@ -429,7 +434,7 @@ def add(inputA, inputB):
                         
                         # Creating the output VAR frame following 
                         # varOut= varA + varB
-                        outvar.data = np.add(inA[('VAR', extver)].data, \
+                        outvar.data = np.add(inA[('VAR', extver)].data, 
                                            inB[('VAR', extver)].data)
                         # Append the updated out VAR frame to the output
                         out.append(outvar)
@@ -439,7 +444,7 @@ def add(inputA, inputB):
                     inA.countExts('SCI'):  
                         outdq = deepcopy(inA[('DQ', extver)])   
                         # Performing bitwise-or 'adding' DQ frames 
-                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, \
+                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, 
                                                    inB[('DQ', extver)].data)
                         # Append the updated out DQ frame to the output  
                         out.append(outdq)
@@ -447,16 +452,16 @@ def add(inputA, inputB):
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI '+\
-                                 'extension '+i+' of the input '\
+                    log.critical('Arrays are different sizes for SCI '+
+                                 'extension '+i+' of the input '
                                  +inA.filename+' and '+inB.filename)
-                    raise ArithExcept('An error occurred while performing '+\
+                    raise ArithExcept('An error occurred while performing '+
                                       'the add task')
             except:
                 raise 
     # Check if inputB is of type float, if so, perform the float specific
     # addition calculations     
-    elif type(inB) == float:
+    elif isinstance(inB, float):
         # Loop through the SCI extensions of InputA
         for sci in inA['SCI']:
             # Retrieve the EXTVER for this extension
@@ -490,7 +495,7 @@ def add(inputA, inputB):
     # If the input was not of type astrodata or float,
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.add() only accepts inputB of types AstroData '+\
+        log.critical('arith.add() only accepts inputB of types AstroData '+
                      'and float, '+str(type(inB))+' passed in')    
         raise ArithExcept('An error occurred while performing an arith task')            
     # Return the fully updated output astrodata object 
@@ -519,6 +524,7 @@ def sub(inputA, inputB):
     @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData 
                   instance or a float int 
     #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO???
+    
     """
     # Rename inputs to shorter names to save typing
     inA = inputA
@@ -527,8 +533,8 @@ def sub(inputA, inputB):
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
     
     # Check to see if the denominator is of type AstroData
-    if (type(inB) == astrodata.AstroData) or \
-    (type(inB) == astrodata.AstroData.AstroData):
+    if isinstance(inB, astrodata.AstroData) or \
+    isinstance(inB,astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -542,7 +548,7 @@ def sub(inputA, inputB):
                 if inA[('SCI', extver)].data.shape == \
                 inB[('SCI', extver)].data.shape: 
                     #  Subtracting the SCI frames
-                    outsci.data = np.subtract(inA[('SCI', extver)].data, \
+                    outsci.data = np.subtract(inA[('SCI', extver)].data, 
                                               inB[('SCI', extver)].data)
                     out.append(outsci)
                     
@@ -554,7 +560,7 @@ def sub(inputA, inputB):
                         outvar = deepcopy(inA[('VAR', extver)])
                         # Creating the output VAR frame following
                         # varOut= varA + varB
-                        outvar.data = np.add(inA[('VAR', extver)].data, \
+                        outvar.data = np.add(inA[('VAR', extver)].data, 
                                            inB[('VAR', extver)].data)
                         # Append the updated out VAR frame to the output
                         out.append(outvar)
@@ -564,7 +570,7 @@ def sub(inputA, inputB):
                         # Start with the out DQ HDU being the current
                         outdq = deepcopy(inA[('DQ', extver)])       
                         # Performing bitwise-or 'adding' DQ frames 
-                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, \
+                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, 
                                                  inB[('DQ', extver)].data)
                         # Append the updated out DQ frame to the output 
                         out.append(outdq)
@@ -572,16 +578,16 @@ def sub(inputA, inputB):
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI '+\
-                                 'extension '+i+' of the input '\
+                    log.critical('Arrays are different sizes for SCI '+
+                                 'extension '+i+' of the input '
                                  +inA.filename+' and '+inB.filename)
-                    raise ArithExcept('An error occurred while performing '+\
+                    raise ArithExcept('An error occurred while performing '+
                                       'the sub task')
             except:
                 raise 
     # Check if inputB is of type float, if so, perform the float specific
     # addition calculations
-    elif type(inB) == float:
+    elif isinstance(inB, float):
         # Loop through the SCI extensions of InputA
         for sci in inA['SCI']:
             # Retrieve the EXTVER for this extension
@@ -616,7 +622,7 @@ def sub(inputA, inputB):
     # If the input was not of type astrodata or float,
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.sub() only accepts inputB of types AstroData '+\
+        log.critical('arith.sub() only accepts inputB of types AstroData '+
                      'and float, '+str(type(inB))+' passed in')    
         raise ArithExcept('An error occurred while performing an arith task')            
     # Return the fully updated output astrodata object 
