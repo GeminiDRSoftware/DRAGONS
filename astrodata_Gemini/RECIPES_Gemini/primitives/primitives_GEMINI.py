@@ -22,6 +22,7 @@ def pyrafLoader(rc=None):
     (pyraf, gemini, iraf.yes, iraf.no)
     to be added to the name-space of the primitive this function is called from.
     eg. (pyraf, gemini, yes, no)=pyrafLoader(rc)
+    
     """
     import pyraf
     from pyraf import iraf
@@ -46,6 +47,7 @@ def pyrafLoader(rc=None):
 class GEMINIException:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
+    
     """
     def __init__(self, message='Exception Raised in Recipe System'):
         """This constructor takes a message to print to the user."""
@@ -61,6 +63,7 @@ class GEMINIPrimitives(PrimitiveSet):
     This is the class of all primitives for the GEMINI astrotype of 
     the hierarchy tree.  It inherits all the primitives to the level above
     , 'PrimitiveSet'.
+    
     """
     astrotype = 'GEMINI'
     
@@ -108,7 +111,7 @@ class GEMINIPrimitives(PrimitiveSet):
             toshows = rc['show'].split(':')
             for toshow in toshows:
                 if toshow in rcparams:
-                    log.fullinfo(toshow+' = '+repr(rc[toshow]), \
+                    log.fullinfo(toshow+' = '+repr(rc[toshow]), 
                                  category='parameters')
                 else:
                     log.fullinfo(toshow+' is not set', category='parameters')
@@ -156,7 +159,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 for calkey in rc.calibrations:
                     if sid in calkey :
                         num += 1
-                        log.fullinfo(rc.calibrations[calkey], \
+                        log.fullinfo(rc.calibrations[calkey], 
                                      category='calibrations')
             if (num == 0):
                 log.warning('There are no calibrations in the cache.')
@@ -191,6 +194,7 @@ class GEMINIPrimitives(PrimitiveSet):
         This primitive will check the files in the stack lists are on disk,
         if not write them to disk and then update the inputs list to include
         all members of the stack for stacking.
+        
         """
         try:
             # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
@@ -212,10 +216,11 @@ class GEMINIPrimitives(PrimitiveSet):
         that have the same observationID with the current inputs.
         This file is cached between calls to reduce, thus allowing
         for one-file-at-a-time processing.
+        
         """
         try:
             stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), \
+            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), 
                          category='stack')
             rc.rqStackUpdate()
             # Writing the files in the stack to disk if not all ready there
@@ -225,7 +230,7 @@ class GEMINIPrimitives(PrimitiveSet):
                                  ' to disk', category='stack')
                     ad.write(ad.filename)
         except:
-            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),\
+            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),
                          category='stack')
             raise
         yield rc
@@ -239,6 +244,7 @@ class GEMINIPrimitives(PrimitiveSet):
         with the data, the flag 'repair' can be used to turn on the feature to 
         repair it or not (eg. validateData(repair=True))
         (this feature is not coded yet).
+        
         """
         
         try:
@@ -246,7 +252,7 @@ class GEMINIPrimitives(PrimitiveSet):
                # This should repair the file if it is broken, but this function
                # isn't coded yet and would require some sort of flag set while 
                # checking the data to tell this to perform the corrections
-               log.critical('Sorry, but the repair feature of validateData' +\
+               log.critical('Sorry, but the repair feature of validateData' +
                             ' is not available yet')
                pass
             
@@ -255,7 +261,7 @@ class GEMINIPrimitives(PrimitiveSet):
             log.debug('Calling validateInstrumentData primitive')
             # Calling the validateInstrumentData primitive 
             rc.run('validateInstrumentData')
-            log.status('Successfully returned to validateData'+\
+            log.status('Successfully returned to validateData'+
                        ' from the validateInstrumentData primitive') 
             
             # Updating the file name with the postpend/outsuffix for this
@@ -263,8 +269,8 @@ class GEMINIPrimitives(PrimitiveSet):
             # context
             for ad in rc.getInputs(style='AD'):
                 log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend='_validated', \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend='_validated', 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad) 
@@ -284,6 +290,7 @@ class GEMINIPrimitives(PrimitiveSet):
         ones if needed. If the data requires a MDF to be attached, use the 
         'addMDF' flag to make this happen 
         (eg. standardizeStructure(addMDF=True)).
+        
         """
         
         try:
@@ -294,21 +301,21 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.debug('Calling attachMDF primitive')
                 # Calling the attachMDF primitive
                 rc.run('attachMDF')
-                log.status('Successfully returned to '+\
+                log.status('Successfully returned to '+
                            'standardizeStructure from the attachMDF primitive')
 
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gemt.stdObsStruct on '+ad.filename)
                 gemt.stdObsStruct(ad)
-                log.status('Completed standardizing the structure for '+\
+                log.status('Completed standardizing the structure for '+
                            ad.filename)
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend=rc['outsuffix'], \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
@@ -324,6 +331,7 @@ class GEMINIPrimitives(PrimitiveSet):
         This primitive updates and adds the important header keywords
         for the input MEFs. First the general headers for Gemini will 
         be update/created, followed by those that are instrument specific.
+        
         """
         
         try:   
@@ -332,7 +340,7 @@ class GEMINIPrimitives(PrimitiveSet):
             for ad in rc.getInputs(style='AD'):
                 log.debug('calling gemt.stdObsHdrs for '+ad.filename)
                 gemt.stdObsHdrs(ad)
-                log.status('Completed standardizing the headers for '+\
+                log.status('Completed standardizing the headers for '+
                            ad.filename)
    
             log.status('Observatory headers fixed')
@@ -348,8 +356,8 @@ class GEMINIPrimitives(PrimitiveSet):
             # context 
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend=rc['outsuffix'], \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
                                                    strip=True)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
@@ -367,6 +375,7 @@ class GEMINIPrimitives(PrimitiveSet):
         
         The calculation will follow the formula:
         variance = (read noise/gain)2 + max(data,0.0)/gain
+        
         """
         try:
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
@@ -396,15 +405,15 @@ class GEMINIPrimitives(PrimitiveSet):
                         # Creating the variance frame's header and updating it     
                         varheader = pf.Header()
                         varheader.update('NAXIS', 2)
-                        varheader.update('PCOUNT', 0, \
+                        varheader.update('PCOUNT', 0, 
                                          'required keyword; must = 0 ')
-                        varheader.update('GCOUNT', 1, \
+                        varheader.update('GCOUNT', 1, 
                                          'required keyword; must = 1')
-                        varheader.update('EXTNAME', 'VAR', \
+                        varheader.update('EXTNAME', 'VAR', 
                                          'Extension Name')
-                        varheader.update('EXTVER', sciExt.extver(), \
+                        varheader.update('EXTVER', sciExt.extver(), 
                                          'Extension Version')
-                        varheader.update('BITPIX', -32, \
+                        varheader.update('BITPIX', -32, 
                                          'number of bits per data pixel')
                         
                         # Turning individual variance header and data 
@@ -412,7 +421,7 @@ class GEMINIPrimitives(PrimitiveSet):
                         varAD = AstroData(header=varheader, data=varArray)
                         
                         # Appending variance astrodata instance onto input one
-                        log.debug('Appending new VAR HDU onto the file '\
+                        log.debug('Appending new VAR HDU onto the file '
                                      +ad.filename)
                         ad.append(varAD)
                         log.status('appending VAR complete for '+ad.filename)
@@ -420,30 +429,30 @@ class GEMINIPrimitives(PrimitiveSet):
                 # If VAR frames all ready existed, 
                 # make a critical message in the logger
                 else:
-                    log.critical('VAR frames all ready exist for '+ad.filename+\
+                    log.critical('VAR frames all ready exist for '+ad.filename+
                                  ', so addVAR will not calculate new ones')
                 
                 # Adding GEM-TLM(automatic) and ADDVAR time stamps to the PHU     
                 ad.historyMark(key='ADDVAR', stomp=False)    
                 
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              ,'header')
                 log.fullinfo('file = '+ad.filename, 'header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              ,'header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
                              'header')
                 log.fullinfo('ADDVAR = '+ad.phuGetKeyValue('ADDVAR'), 'header')
-                log.fullinfo('------------------------------------------------'\
+                log.fullinfo('------------------------------------------------'
                              ,'header')
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend=rc['outsuffix'], \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)        
@@ -462,6 +471,7 @@ class GEMINIPrimitives(PrimitiveSet):
         frame. The value of a pixel will be the sum of the following: 
         (0=good, 1=bad pixel (found in bad pixel mask), 
         2=value is non linear, 4=pixel is saturated)
+        
         """
         try:
             log.status('*STARTING* to add the DQ frame(s) to the input data')
@@ -498,32 +508,32 @@ class GEMINIPrimitives(PrimitiveSet):
                         
                         # Preparing the non linear and saturated pixel arrays
                         # and their respective constants
-                        nonLinArray = np.zeros(sciExt.data.shape, \
+                        nonLinArray = np.zeros(sciExt.data.shape, 
                                                dtype=np.int16)
-                        saturatedArray = np.zeros(sciExt.data.shape, \
+                        saturatedArray = np.zeros(sciExt.data.shape, 
                                                   dtype=np.int16)
                         linear = sciExt.non_linear_level()
                         saturated = sciExt.saturation_level()
     
                         if (linear is not None) and \
                         (rc['fl_nonlinear'] is True): 
-                            log.debug('Performing an np.where to find '+\
-                                      'non-linear pixels for extension '+\
+                            log.debug('Performing an np.where to find '+
+                                      'non-linear pixels for extension '+
                                       str(sciExt.extver())+' of '+ad.filename)
                             nonLinArray = np.where(sciExt.data>linear,2,0)
-                            log.status('Done calculating array of non-linear'+\
+                            log.status('Done calculating array of non-linear'+
                                        ' pixels')
                         if (saturated is not None) and \
                         (rc['fl_saturated'] is True):
-                            log.debug('Performing an np.where to find '+\
-                                      'saturated pixels for extension '+\
+                            log.debug('Performing an np.where to find '+
+                                      'saturated pixels for extension '+
                                       str(sciExt.extver())+' of '+ad.filename)
                             saturatedArray = np.where(sciExt.data>saturated,4,0)
-                            log.status('Done calculating array of saturated'+\
+                            log.status('Done calculating array of saturated'+
                                        ' pixels') 
                         
                         # Creating one DQ array from the three
-                        dqArray=np.add(BPMArray, nonLinArray, \
+                        dqArray=np.add(BPMArray, nonLinArray, 
                                        saturatedArray) 
                         # Updating data array for the BPM array to be the 
                         # newly calculated DQ array
@@ -538,33 +548,33 @@ class GEMINIPrimitives(PrimitiveSet):
                         bpmAD.renameExt('DQ', ver=sciExt.extver(), force=True)
 
                         # Logging that the name of the BPM extension was changed
-                        log.fullinfo('BPM Extension '+str(sciExt.extver())+\
-                                     ' of'+ad.filename+' had its EXTVER '+\
-                                     'changed to '+\
+                        log.fullinfo('BPM Extension '+str(sciExt.extver())+
+                                     ' of'+ad.filename+' had its EXTVER '+
+                                     'changed to '+
                                      ad[('DQ',sciExt.extver())].header['EXTNAME'])
                         
                 # If DQ frames exist, send a critical message to the logger
                 else:
-                    log.critical('DQ frames all ready exist for '+ad.filename+\
+                    log.critical('DQ frames all ready exist for '+ad.filename+
                                  ', so addDQ will not calculate new ones')
                     
                 # Adding GEM-TLM (automatic) and ADDVARDQ time stamp to the PHU
                 ad.historyMark(key='ADDDQ', stomp=False) 
                 # updating logger with updated/added time stamps
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              ,'header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'),'header')
                 log.fullinfo('ADDDQ = '+ad.phuGetKeyValue('ADDDQ'),'header')
-                log.fullinfo('------------------------------------------------'\
+                log.fullinfo('------------------------------------------------'
                              , 'header')
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend=rc['outsuffix'], \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)        
@@ -583,6 +593,7 @@ class GEMINIPrimitives(PrimitiveSet):
         average combination file. New VAR frames are made from these 
         combined SCI frames and the DQ frames are propagated through 
         to the final file.
+        
         """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf,gemini,yes,no = pyrafLoader(rc)
@@ -630,13 +641,13 @@ class GEMINIPrimitives(PrimitiveSet):
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
                  
-                log.debug('Calling the gemcombine CL script for input list '+\
+                log.debug('Calling the gemcombine CL script for input list '+
                           clm.inputList())
                 
                 gemini.gemcombine(**clParamsDict)
                 
                 if gemini.gemcombine.status:
-                    log.critical('gemcombine failed for inputs '+\
+                    log.critical('gemcombine failed for inputs '+
                                  rc.inputsAsStr())
                     raise GEMINIException('gemcombine failed')
                 else:
@@ -655,17 +666,17 @@ class GEMINIPrimitives(PrimitiveSet):
                 # to the PHU
                 ad.historyMark(key='COMBINE',stomp=False)
                 # Updating logger with updated/added time stamps
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              ,'header')
                 log.fullinfo('file = '+ad.filename, 'header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , 'header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                              'header')
-                log.fullinfo('COMBINE = '+ad.phuGetKeyValue('COMBINE'), \
+                log.fullinfo('COMBINE = '+ad.phuGetKeyValue('COMBINE'), 
                              'header')
-                log.fullinfo('------------------------------------------------'\
+                log.fullinfo('------------------------------------------------'
                              , 'header')    
                 
                 log.status('*FINISHED* combining the images of the input data')
@@ -681,11 +692,11 @@ class GEMINIPrimitives(PrimitiveSet):
         # should eventually be split up into
         # separate primitives, i.e. detectSources and measureIQ.
         try:
-            log.status('*STARTING* to detect the sources'+\
+            log.status('*STARTING* to detect the sources'+
                        ' and measure the IQ of the inputs')
             for ad in rc.getInputs(style='AD'):
                 if os.path.dirname(ad.filename) != '':
-                    log.critical('The inputs to measureIQ must be in the'+\
+                    log.critical('The inputs to measureIQ must be in the'+
                                  ' pwd for it to work correctly')
                     raise GEMINIException('inputs to measureIQ were not in pwd')
                 print ad.info()    
@@ -698,14 +709,14 @@ class GEMINIPrimitives(PrimitiveSet):
                 
                 st = time.time()
                 from iqtool.iq import getiq
-                iqdata = getiq.gemiq( ad.filename, function='moffat', \
+                iqdata = getiq.gemiq( ad.filename, function='moffat', 
                                       display=True, mosaic=True, qa=True)
                 et = time.time()
                 log.stdinfo('MeasureIQ time: '+repr(et - st))
                 # iqdata is list of tuples with image quality metrics
                 # (ellMean, ellSig, fwhmMean, fwhmSig)
                 if len(iqdata) == 0:
-                    log.warning('Problem Measuring IQ Statistics, '+\
+                    log.warning('Problem Measuring IQ Statistics, '+
                                 'none reported')
                 else:
                     rc.rqIQ( ad, *iqdata[0] )
@@ -720,9 +731,10 @@ class GEMINIPrimitives(PrimitiveSet):
         """
         This primitive will convert the inputs from having pixel 
         units of ADU to electrons.
+        
         """
         try:
-            log.status('*STARTING* to convert the pixel values from '+\
+            log.status('*STARTING* to convert the pixel values from '+
                        'ADU to electrons')
             for ad in rc.getInputs(style='AD'):
                 log.fullinfo('calling ad.mult on '+ad.filename)
@@ -730,10 +742,10 @@ class GEMINIPrimitives(PrimitiveSet):
                 # mult in this primitive will multiply the SCI frames by the
                 # frame's gain, VAR frames by gain^2 (if they exist) and leave
                 # the DQ frames alone (if they exist).
-                log.debug('Calling ad.mult to convert pixel units from '+\
+                log.debug('Calling ad.mult to convert pixel units from '+
                           'ADU to electrons')
                 adOut = ad.mult(ad['SCI'].gain(asDict=True))  
-                log.status('ad.mult completed converting the pixel units'+\
+                log.status('ad.mult completed converting the pixel units'+
                            ' to electrons')              
 
                 # Updating SCI headers
@@ -741,18 +753,18 @@ class GEMINIPrimitives(PrimitiveSet):
                     # Retrieving this SCI extension's gain
                     gainorig = ext.gain()
                     # Updating this SCI extension's header keys
-                    ext.SetKeyValue('GAINORIG', gainorig, \
+                    ext.SetKeyValue('GAINORIG', gainorig, 
                                        'Gain prior to unit conversion (e-/ADU)')
                     ext.SetKeyValue('GAIN', 1.0, 'Physical units is electrons') 
                     ext.SetKeyValue('BUNIT','electrons' , 'Physical units')
                     # Logging the changes to the header keys
-                    log.fullinfo('SCI extension number '+\
-                                 str(ext.extver())+\
+                    log.fullinfo('SCI extension number '+
+                                 str(ext.extver())+
                                  ' keywords updated/added:\n', 'header')
                     log.fullinfo('GAINORIG = '+str(gainorig),'header' )
                     log.fullinfo('GAIN = '+str(1.0),'header' )
                     log.fullinfo('BUNIT = '+'electrons','header' )
-                    log.fullinfo('--------------------------------------------'\
+                    log.fullinfo('--------------------------------------------'
                                  ,'header')
                 # Updating VAR headers if they exist (not updating any 
                 # DQ headers as no changes were made to them here)  
@@ -765,46 +777,46 @@ class GEMINIPrimitives(PrimitiveSet):
                     
                     # Updating then logging the change to the BUNIT 
                     # key in the VAR header
-                    ext.SetKeyValue('BUNIT','electrons squared' , \
+                    ext.SetKeyValue('BUNIT','electrons squared' , 
                                        'Physical units')
                     # Logging the changes to the VAR extensions header keys
-                    log.fullinfo('VAR extension number '+\
+                    log.fullinfo('VAR extension number '+
                                  str(ext.extver())+\
                                  ' keywords updated/added:\n', 'header')
                     log.fullinfo('BUNIT = '+'electrons squared','header' )
-                    log.fullinfo('--------------------------------------------'\
+                    log.fullinfo('--------------------------------------------'
                                  ,'header')
                 
                 # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
                 adOut.historyMark('ADU2ELEC', stomp=False)
                 
                 # Updating logger with time stamps
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              ,'header')
                 log.fullinfo('ile = '+adOut.filename, 'header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              ,'header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                              'header')
-                log.fullinfo('ADU2ELEC = '+ad.phuGetKeyValue('ADU2ELEC'), \
+                log.fullinfo('ADU2ELEC = '+ad.phuGetKeyValue('ADU2ELEC'), 
                              'header')
-                log.fullinfo('------------------------------------------------'\
+                log.fullinfo('------------------------------------------------'
                              , 'header')
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context.
                 log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                adOut.filename=gemt.fileNameUpdater(adOut.filename, \
-                                                    postpend=rc['outpref'], \
+                adOut.filename=gemt.fileNameUpdater(adOut.filename, 
+                                                    postpend=rc['outpref'], 
                                                     strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(adOut)   
                 
             log.status('*FINISHED* converting the pixel units to electrons')
         except:
-            log.critical('Problem converting the pixel units of one of '+\
+            log.critical('Problem converting the pixel units of one of '+
                          rc.inputsAsStr())
             raise
         yield rc                    
@@ -819,6 +831,7 @@ class GEMINIPrimitives(PrimitiveSet):
         writeOutputs(postpend= '_string'), writeOutputs(prepend= '_string') 
         or if you have a full file name in mind for a SINGLE file being 
         ran through Reduce you may use writeOutputs(outfilename='name.fits').
+        
         """
         try:
             log.status('*STARTING* to write the outputs')
@@ -832,7 +845,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # to be written to disk to be postpended by it
                 if rc['postpend']:
                     log.debug('calling gemt.fileNameUpdater on '+ad.filename)
-                    ad.filename = gemt.fileNameUpdater(ad.filename, \
+                    ad.filename = gemt.fileNameUpdater(ad.filename, 
                                         postpend=rc['postpend'], strip=True)
                     log.status('File name updated to '+ad.filename)
                     outfilename = os.path.basename(ad.filename)
@@ -849,11 +862,11 @@ class GEMINIPrimitives(PrimitiveSet):
                     # Check that there is not more than one file to be written
                     # to this file name, if so throw exception
                     if len(rc.getInputs(style='AD'))>1:
-                        log.critical('More than one file was requested to be'+\
-                                     'written to the same name '+\
+                        log.critical('More than one file was requested to be'+
+                                     'written to the same name '+
                                      rc['outfilename'])
-                        raise GEMINIException('More than one file was '+\
-                                     'requested to be written to the same'+\
+                        raise GEMINIException('More than one file was '+
+                                     'requested to be written to the same'+
                                      'name'+rc['outfilename'])
                     else:
                         outfilename = rc['outfilename']   
@@ -861,7 +874,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # to their current file names
                 else:
                     outfilename = os.path.basename(ad.filename) 
-                    log.status('not changing the file name to be written'+\
+                    log.status('not changing the file name to be written'+
                     ' from its current name') 
                     
                 # Finally, write the file to the name that was decided 
@@ -881,6 +894,7 @@ def CLDefaultParamsDict(CLscript):
     """
     A function to return a dictionary full of all the default parameters 
     for each CL script used so far in the Recipe System.
+    
     """
     # loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
@@ -888,9 +902,9 @@ def CLDefaultParamsDict(CLscript):
     # Ensuring that if a invalide CLscript was requested, that a critical
     # log message be made and exception raised.
     if CLscript != 'gemcombine':
-        log.critical('The CLscript '+CLscript+' does not have a default'+\
+        log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
-        raise GEMINIException('The CLscript '+CLscript+\
+        raise GEMINIException('The CLscript '+CLscript+
                               ' does not have a default'+' dictionary')
         
     if CLscript == 'gemcombine':
