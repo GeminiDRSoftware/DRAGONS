@@ -23,16 +23,17 @@ def stdObsHdrs(ad):
         
         @param ad: astrodata instance to perform header key updates on
         @type ad: an AstroData instance
-        """
+    
+    """
     # Keywords that are updated/added for all Gemini PHUs 
-    ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), \
+    ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
                       'Number of science extensions')
-    ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale(), \
+    ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale(), 
                       'Pixel scale in Y in arcsec/pixel')
     ad.phuSetKeyValue('NEXTEND', len(ad) , 'Number of extensions')
-    ad.phuSetKeyValue('OBSMODE', ad.observation_mode() , \
+    ad.phuSetKeyValue('OBSMODE', ad.observation_mode() , 
                       'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
-    ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , \
+    ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , 
                       'Exposure time for each coadd frame')
     # Retrieving the number of coadds using the coadds descriptor 
     numcoadds = ad.coadds()
@@ -50,10 +51,10 @@ def stdObsHdrs(ad):
     ad.historyMark(key='GPREPARE',stomp=False) 
        
     # Updating logger with updated/added keywords
-    log.fullinfo('****************************************************', \
+    log.fullinfo('****************************************************', 
                  'header')
     log.fullinfo('file = '+ad.filename,'header')
-    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', \
+    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
                  'header')
     log.fullinfo('PHU keywords updated/added:\n', 'header')
     log.fullinfo('NSCIEXT = '+str(ad.countExts('SCI')),'header' )
@@ -67,11 +68,11 @@ def stdObsHdrs(ad):
          
     # A loop to add the missing/needed keywords in the SCI extensions
     for ext in ad['SCI']:
-        ext.SetKeyValue('GAIN', ext.gain(), \
+        ext.SetKeyValue('GAIN', ext.gain(), 
                            'Gain (e-/ADU)')
-        ext.SetKeyValue('PIXSCALE', ext.pixel_scale(), \
+        ext.SetKeyValue('PIXSCALE', ext.pixel_scale(), 
                            'Pixel scale in Y in arcsec/pixel')
-        ext.SetKeyValue('RDNOISE', ext.read_noise() , \
+        ext.SetKeyValue('RDNOISE', ext.read_noise() , 
                            'readout noise in e-')
         ext.SetKeyValue('BUNIT','adu' , \
                            'Physical units')
@@ -83,11 +84,11 @@ def stdObsHdrs(ad):
         if not nonlin:
             nonlin = 'None'     
         ext.SetKeyValue( 'NONLINEA', nonlin , 'Non-linear regime level in ADU')
-        ext.SetKeyValue( 'SATLEVEL', \
+        ext.SetKeyValue( 'SATLEVEL', 
                            ext.saturation_level(), 'Saturation level in ADU')
         ext.SetKeyValue( 'EXPTIME', effExpTime , 'Effective exposure time')
         
-        log.fullinfo('SCI extension number '+str(ext.extver())+\
+        log.fullinfo('SCI extension number '+str(ext.extver())+
                      ' keywords updated/added:\n', 'header')
         log.fullinfo('GAIN = '+str(ext.gain()), 'header' )
         log.fullinfo('PIXSCALE = '+str(ext.pixel_scale()), 'header' )
@@ -96,7 +97,7 @@ def stdObsHdrs(ad):
         log.fullinfo('NONLINEA = '+str(nonlin), 'header' )
         log.fullinfo('SATLEVEL = '+str(ext.saturation_level()),'header' )
         log.fullinfo('EXPTIME = '+str(effExpTime), 'header' )
-        log.fullinfo('---------------------------------------------------', \
+        log.fullinfo('---------------------------------------------------', 
                      'header')
 
 def stdObsStruct(ad):
@@ -107,13 +108,14 @@ def stdObsStruct(ad):
         
         @param ad: astrodata instance to perform header key updates on
         @type ad: an AstroData instance
-        """
+    
+    """
         
     # Formatting so logger looks organized for these messages
-    log.fullinfo('****************************************************', \
+    log.fullinfo('****************************************************', 
                  'header') 
     log.fullinfo('file = '+ad.filename, 'header')
-    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', \
+    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
                  'header')
     # A loop to add the missing/needed keywords in the SCI extensions
     for ext in ad['SCI']:
@@ -121,11 +123,11 @@ def stdObsStruct(ad):
         ext.SetKeyValue( 'EXTNAME', 'SCI', 'Extension name')        
         ext.SetKeyValue( 'EXTVER', ext.extver(), 'Extension version') 
         # Updating logger with new header key values
-        log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+\
+        log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
                      ' keywords updated/added:\n', 'header')       
         log.fullinfo('EXTNAME = '+'SCI', 'header' )
         log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), 'header' )
-        log.fullinfo('---------------------------------------------------', \
+        log.fullinfo('---------------------------------------------------', 
                      'header')
         
 def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
@@ -148,7 +150,8 @@ def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
     ex. fileNameUpdater('N20020214S022_prepared_vardq_oversubed_overtrimd.fits',
                         postpend='_prepared', strip=True)
         result: 'N20020214S022_prepared.fits'
-                    """
+    
+    """
     # Strip off any path that the input file name might have
     infilename = os.path.basename(origfilename)
     
@@ -173,7 +176,9 @@ def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
 def stripPostfix(filename):
     """ This function is used by fileNameUpdater to strip all the original
         postfixes of a input string, separated from the base filename by
-        '_'. """
+        '_'. 
+    
+    """
     # Saving the path of the input file
     dirname = os.path.dirname(filename)
     # Saving the filename without its path
@@ -195,7 +200,9 @@ def secStrToIntList(string):
         @param string: string to be converted
         @type string: string of format '[#1:#2,#3:#4]'
         
-        returns list of ints [#1,#2,#3,#4]"""
+        returns list of ints [#1,#2,#3,#4]
+    
+    """
     # Strip off the brackets and then split up into a string list 
     # using the ',' delimiter
     coords = string.strip('[').strip(']').split(',')
@@ -223,6 +230,7 @@ def biassecStrTonbiascontam(biassec, ad):
     
     @param ad: AstroData instance to calculate the bias contamination for
     @type ad: AstroData instance
+    
     """
     try:
         # Split up the input triple list into three separate ones
@@ -258,8 +266,8 @@ def biassecStrTonbiascontam(biassec, ad):
                     # If left X coords of biassec's don't match, set number of 
                     # contaminating columns to 4 and make a error log message
                     else:
-                        log.error('left horizontal components of biassec and'+\
-                                  ' BIASSEC did not match, so using default'+\
+                        log.error('left horizontal components of biassec and'+
+                                  ' BIASSEC did not match, so using default'+
                                   ' nbiascontam=4')
                         nbiascontam = 4
                 # If overscan/bias section is on the right side of chip
@@ -267,15 +275,15 @@ def biassecStrTonbiascontam(biassec, ad):
                     if biasseclist[1] == BIASSEClist[1]: 
                         nbiascontam = BIASSEClist[0]-biasseclist[0]
                     else:
-                        log.error('right horizontal components of biassec'+\
-                                  ' and BIASSEC did not match, so using '+\
+                        log.error('right horizontal components of biassec'+
+                                  ' and BIASSEC did not match, so using '+
                                   'default nbiascontam=4') 
                         nbiascontam = 4
             # Overscan/bias section is not on left or right side of chip, so 
             # set to number of contaminated columns to 4 and log error message
             else:
-                log.error('vertical components of biassec and BIASSEC '+\
-                          'parameters did not match, so using default '+\
+                log.error('vertical components of biassec and BIASSEC '+
+                          'parameters did not match, so using default '+
                           'nbiascontam=4')
                 nbiascontam = 4
             # Find the largest nbiascontam value throughout all chips and 
@@ -288,7 +296,7 @@ def biassecStrTonbiascontam(biassec, ad):
     # If all the above checks and attempts to calculate a new nbiascontam fail,
     # make a error log message and return the value 4. so exiting 'gracefully'.        
     except:
-        log.error('An error occurred while trying to calculate the '+\
+        log.error('An error occurred while trying to calculate the '+
                   'nbiascontam, so using default value = 4')
         return 4 
         
@@ -297,6 +305,7 @@ def pyrafBoolean(pythonBool):
     """
     A very basic function to reduce code repetition that simply 'casts' any 
     given Python boolean into a pyraf/IRAF one for use in the CL scripts.
+    
     """
     import pyraf
     
@@ -306,12 +315,13 @@ def pyrafBoolean(pythonBool):
     elif  not pythonBool:
         return pyraf.iraf.no
     else:
-        log.critical('DANGER DANGER Will Robinson, pythonBool passed in was '+\
+        log.critical('DANGER DANGER Will Robinson, pythonBool passed in was '+
         'not True or False, and thats just crazy talk :P')
 
 class CLManager(object):
     """This is a class that will take care of all the preparation and wrap-up 
         tasks needed when writing a primitive that wraps a IRAF CL routine.
+        
     """
     # The version of the names for input to the CL script
     _preCLcachestorenames = [] 
@@ -344,12 +354,16 @@ class CLManager(object):
     def finishCL(self, combine=False): 
         """ Performs all the finalizing steps after CL script is ran. 
          This is currently just an alias for postCLloads and might have 
-         more functionality in the future."""
+         more functionality in the future.
+         
+         """
         self.postCLloads(combine)    
     
     def preCLwrites(self):
         """ The function that writes the files in memory to disk with temporary 
-            names and saves the original names in a list."""
+            names and saves the original names in a list.
+        
+        """
         for ad in self.rc.getInputs(style='AD'):
             # Load up the preCLfilenames list with the input's filename
             self._preCLfilenames.append(ad.filename)
@@ -364,47 +378,63 @@ class CLManager(object):
     
     def cacheStoreNames(self):
         """ Just a function to return the 'private' member variable 
-         _preCLcachestorenames."""
+         _preCLcachestorenames.
+        
+        """
         return self._preCLcachestorenames
         
     def rmStackFiles(self):
         """A function to remove the filenames written to disk by 
-            setStackable."""
+            setStackable.
+        
+        """
         for file in self._preCLfilenames:
             log.fullinfo('Removing file '+file+' from disk')
             os.remove(file)
         
     def preCLNames(self):
         """Just a function to return the 'private' member 
-            variable _preCLfilenames."""
+            variable _preCLfilenames.
+        
+        """
         return self._preCLfilenames
     
     def logfile(self):
         """ A function to return the name of the unique temporary log file to 
-            be used by IRAF."""
+            be used by IRAF.
+        
+        """
         return self.templog.name
     
     def inputsAsStr(self):
         """ This returns the list of temporary file names written to disk for 
             the input files in the form of a list joined by commas for passing
-            into IRAF."""
+            into IRAF.
+        
+        """
         return ','.join(self._preCLcachestorenames)
     
     def inputList(self):
         """ This creates a list file of the inputs for use in combine type
-        primitives."""
+        primitives.
+        
+        """
         # Create a unique name for the list file
         self.listname = 'List'+str(os.getpid())+self.rc.ro.curPrimName
         return self.rc.makeInlistFile(self.listname, self._preCLcachestorenames)
         
     def uniquePrefix(self):
         """ uses the primitive name and the process ID to create a unique
-            prefix for the files being temporarily written to disk."""
+            prefix for the files being temporarily written to disk.
+        
+        """
         return 'tmp'+ str(os.getpid())+self.rc.ro.curPrimName
     
     def combineOutname(self):
         """ This creates the output name for combine type IRAF tasks to write 
-            the combined output file to"""
+            the combined output file to.
+        
+        """
         #@@ REFERENCE IMAGE: for output name
         return self.outpref+self._preCLcachestorenames[0]
     
@@ -412,13 +442,15 @@ class CLManager(object):
         """  This function takes care of loading the output files the IRAF
             routine wrote to disk back into memory with the appropriate name.  
             Then it will delete all the temporary files created by the 
-            CLManager."""
+            CLManager.
+        
+        """
         # Do the appropriate wrapping up for combine type primitives
         if combine is True:
             # The name that IRAF wrote the output to
             cloutname = self.outpref+self._preCLcachestorenames[0]
             # The name we want the file to be
-            finalname = fileNameUpdater(self._preCLfilenames[0], \
+            finalname = fileNameUpdater(self._preCLfilenames[0], 
                                       postpend= self.outpref, strip=False)
             # Renaming the IRAF written file to the name we want
             os.rename(cloutname, finalname )
@@ -432,7 +464,7 @@ class CLManager(object):
             # Close, and thus delete, the temporary log object needed by IRAF
             self.templog.close() 
             # Logging files that were affected during wrap-up
-            log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n'+\
+            log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n'+
                          finalname)
             log.fullinfo(finalname+' was loaded into memory')
             log.fullinfo(finalname+' was deleted from disk')
@@ -454,7 +486,7 @@ class CLManager(object):
                 # Name of file CL wrote to disk
                 cloutname = self.outpref + storename  
                 # Name I want the file to be
-                finalname = fileNameUpdater(self._preCLfilenames[i], \
+                finalname = fileNameUpdater(self._preCLfilenames[i], 
                                             postpend= self.outpref, strip=False)  
                 # Renaming the IRAF written file to the name we want
                 os.rename(cloutname, finalname )
@@ -469,7 +501,7 @@ class CLManager(object):
                 # Close, and thus delete, the temporary log needed by IRAF
                 self.templog.close()
                 # Logging files that were affected during wrap-up
-                log.fullinfo('CL outputs '+cloutname+\
+                log.fullinfo('CL outputs '+cloutname+
                              ' was renamed on disk to:\n '+finalname)
                 log.fullinfo(finalname+' was loaded into memory')
                 log.fullinfo(finalname+' was deleted from disk')
@@ -477,7 +509,8 @@ class CLManager(object):
         
     def LogCurParams(self):
         """ A function to log the parameters in the local parameters file 
-            and then global ones in the reduction context"""
+            and then global ones in the reduction context
+        """
         log.fullinfo('\ncurrent general parameters:', 'parameters')
         # Loop through the parameters in the general dictionary
         # of the reduction context and log them
@@ -497,7 +530,9 @@ class CLManager(object):
         component of every BIASSEC value and those of the biassec parameter. 
         The returned value will be that difference as an integer and it will be
         used as the value for the nbiascontam parameter used in the gireduce 
-        call of the overscanSubtract primitive."""
+        call of the overscanSubtract primitive.
+        
+        """
         
         # Prepare a stored value to be compared between the inputs
         retval=0
@@ -516,7 +551,9 @@ class CLManager(object):
 class IrafStdout():
     """  This is a class to act as the standard output for the IRAF 
         routines that instead of printing its messages to the screen,
-        it will print them to the gemlog.py logger that the primitives use"""
+        it will print them to the gemlog.py logger that the primitives use
+        
+    """
     def __init__(self):
         """ A function that is needed IRAF but not used in our wrapping its
         scripts"""
@@ -525,7 +562,9 @@ class IrafStdout():
     def write(self, out):
         """ This function converts the IRAF console prints to logger calls.
             If the print has 'PANIC' in it, then it becomes a error log message,
-            else it becomes a fullinfo message."""
+            else it becomes a fullinfo message.
+            
+        """
         if 'PANIC' in out or 'ERROR' in out:
             log.error(out, 'clError')
         elif len(out) > 1:
