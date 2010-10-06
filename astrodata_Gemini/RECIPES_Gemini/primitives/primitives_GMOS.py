@@ -15,6 +15,7 @@ log=gemLog.getGeminiLog()
 class GMOSException:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
+    
     """
     def __init__(self, message='Exception Raised in Recipe System'):
         """This constructor takes a message to print to the user."""
@@ -30,6 +31,7 @@ class GMOSPrimitives(GEMINIPrimitives):
     This is the class of all primitives for the GMOS level of the type 
     hierarchy tree.  It inherits all the primitives to the level above
     , 'GEMINIPrimitives'.
+    
     """
     astrotype = 'GMOS'
     
@@ -41,12 +43,13 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         This primitive is called by validateData to validate the instrument 
         specific data checks for all input files.
+        
         """
         try:
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gmost.valInstData for '+ad.filename)
                 gmost.valInstData(ad)
-                log.status('Completed validating instrument data for '+\
+                log.status('Completed validating instrument data for '+
                            ad.filename)
                 
         except:
@@ -60,12 +63,13 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive is called by standardizeHeaders to makes the changes and 
         additions to the headers of the input files that are instrument 
         specific.
+        
         """
         try:                                           
             for ad in rc.getInputs(style='AD'): 
                 log.debug('Calling gmost.stdInstHdrs for '+ad.filename) 
                 gmost.stdInstHdrs(ad) 
-                log.status('Completed standardizing instrument headers for '+\
+                log.status('Completed standardizing instrument headers for '+
                            ad.filename)
                     
         except:
@@ -78,6 +82,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
+        
         """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
@@ -121,10 +126,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             if not rc['biassec'] == '':
                 nbiascontam = clm.nbiascontam()
                 clParamsDict.update({'nbiascontam':nbiascontam})
-                log.fullinfo('nbiascontam parameter was updated to = '+\
+                log.fullinfo('nbiascontam parameter was updated to = '+
                              str(clParamsDict['nbiascontam']),'params')
 
-            log.debug('Calling the gireduce CL script for inputs '+\
+            log.debug('Calling the gireduce CL script for inputs '+
                       clm.inputsAsStr())
             
             gemini.gmos.gireduce(**clParamsDict)
@@ -145,7 +150,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 if ad.phuGetKeyValue('GIREDUCE'): 
                     # If gireduce was ran, then log the changes to the files 
                     # it made
-                    log.fullinfo('File '+clm.preCLNames()[i]+\
+                    log.fullinfo('File '+clm.preCLNames()[i]+
                                  ' had its overscan subracted successfully')
                     log.fullinfo('New file name is: '+ad.filename)
                 i = i+1
@@ -154,16 +159,16 @@ class GMOSPrimitives(GEMINIPrimitives):
                 #$$$$$ should we also have a OVERSUB UT time same in the PHU???
                 
                 # Updating logger with new GEM-TLM time stamp value
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              , category='header')
                 log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n', \
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n', 
                               category='header')
             
-            log.status('*FINISHED* subtracting the overscan from the '+\
+            log.status('*FINISHED* subtracting the overscan from the '+
                        'input data')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
@@ -175,6 +180,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         This primitive uses AstroData to trim the overscan region 
         from the input images and update their headers.
+        
         """
         try:
             log.status('*STARTING* to trim the overscan region from the input data')
@@ -186,9 +192,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                     datasecList=gemt.secStrToIntList(datasecStr) 
                     dsl=datasecList
                     # Updating logger with the section being kept
-                    log.stdinfo('\nfor '+ad.filename+' extension '+\
-                                str(sciExt.extver())+\
-                                ', keeping the data from the section '+\
+                    log.stdinfo('\nfor '+ad.filename+' extension '+
+                                str(sciExt.extver())+
+                                ', keeping the data from the section '+
                                 datasecStr,'science')
                     # Trimming the data section from input SCI array
                     # and making it the new SCI data
@@ -199,20 +205,20 @@ class GMOSPrimitives(GEMINIPrimitives):
                     newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
                                     str(dsl[3]-dsl[2]+1)+']' 
                     sciExt.header['DATASEC']=newDataSecStr
-                    sciExt.SetKeyValue(('SCI',sciExt.extver()),'TRIMSEC', \
-                                       datasecStr, \
+                    sciExt.SetKeyValue(('SCI',sciExt.extver()),'TRIMSEC', 
+                                       datasecStr, 
                                        'Data section prior to trimming')
                     # Updating logger with updated/added keywords to each SCI frame
-                    log.fullinfo('********************************************'\
+                    log.fullinfo('********************************************'
                                  , category='header')
                     log.fullinfo('File = '+ad.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                                  , category='header')
-                    log.fullinfo('SCI extension number '+str(sciExt.extver())+\
+                    log.fullinfo('SCI extension number '+str(sciExt.extver())+
                                  ' keywords updated/added:\n', 'header')
-                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),\
+                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
                                 category='header')
-                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),\
+                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),
                                  category='header')
                     log.fullinfo('DATASEC= '+newDataSecStr, category='header')
                     log.fullinfo('TRIMSEC= '+datasecStr, category='header')
@@ -226,20 +232,20 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend=rc['outpref'], \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outpref'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
                 
                 # Updating logger with updated/added keywords to the PHU
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              , category='header')
                 log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n', \
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n', 
                              category='header') 
                 
             log.status('*FINISHED* trimming the overscan region from the input data')
@@ -255,26 +261,28 @@ class GMOSPrimitives(GEMINIPrimitives):
         (MAYBE) but that isn't up and running yet. Thus, this will just strip 
         the extra postfixes to create the 'final' name for the 
         makeProcessedBias outputs and write them to disk in a storedcals folder.
+        
         """
         try:  
-            log.status('*STARTING* to store the processed bias by writing it to disk')
+            log.status('*STARTING* to store the processed bias by writing '+
+                       'it to disk')
             for ad in rc.getInputs(style='AD'):
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend='_preparedBias', \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend='_preparedBias', 
                                                    strip=True)
                 log.status('File name updated to '+ad.filename)
                 
                 # Adding a GBIAS time stamp to the PHU
-                ad.historyMark(key='GBIAS', \
-                               comment='fake key to trick CL that GBIAS was ran')
+                ad.historyMark(key='GBIAS', 
+                              comment='fake key to trick CL that GBIAS was ran')
                 
-                log.fullinfo('File written to = '+rc['storedbiases']+'/'+\
+                log.fullinfo('File written to = '+rc['storedbiases']+'/'+
                              ad.filename)
-                ad.write(os.path.join(rc['storedbiases'],ad.filename), \
+                ad.write(os.path.join(rc['storedbiases'],ad.filename), 
                          clobber=rc['clob'])
                 
             log.status('*FINISHED* storing the processed bias on disk')
@@ -289,6 +297,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         system (MAYBE) but that isn't up and running yet. Thus, this will 
         just strip the extra postfixes to create the 'final' name for the 
         makeProcessedFlat outputs and write them to disk in a storedcals folder.
+        
         """
         try:   
             log.status('*STARTING* to store the processed flat by writing it to disk')
@@ -297,14 +306,14 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, \
-                                                   postpend='_preparedFlat', \
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend='_preparedFlat', 
                                                    strip=True)
                 log.status('File name updated to '+ad.filename)
                 
-                log.fullinfo('File written to = '+rc['storedflats']+'/'\
+                log.fullinfo('File written to = '+rc['storedflats']+'/'
                              +ad.filename)
-                ad.write(os.path.join(rc['storedflats'],ad.filename),\
+                ad.write(os.path.join(rc['storedflats'],ad.filename),
                          clobber=rc['clob'])
                 
             log.status('*FINISHED* storing the processed flat on disk')
@@ -317,6 +326,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         A primitive to search and return the appropriate calibration bias from
         a server for the given inputs.
+        
         """
         rc.rqCal('bias', rc.getInputs(style='AD'))
         yield rc
@@ -325,6 +335,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         A primitive to search and return the appropriate calibration flat from
         a server for the given inputs.
+        
         """
         rc.rqCal('flat', rc.getInputs(style='AD'))
         yield rc
@@ -337,6 +348,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         This is the basic form that the calibration system will work as well 
         but with proper checking for what the correct bias file would be rather 
         than my oversimplified checking the bining alone.
+        
         """
         try:
             packagePath = sys.argv[0].split('gemini_python')[0]
@@ -348,13 +360,13 @@ class GMOSPrimitives(GEMINIPrimitives):
                     raise 'error'
                 elif ad.extGetKeyValue(1,'CCDSUM') == '2 2':
                     biasfilename = 'N20020214S022_preparedBias.fits'
-                    if not os.path.exists(os.path.join('.reducecache/'+\
-                                                       'storedcals/retrievd'+\
+                    if not os.path.exists(os.path.join('.reducecache/'+
+                                                       'storedcals/retrievd'+
                                                        'biases', biasfilename)):
-                        shutil.copy(packagePath+calPath+biasfilename, \
+                        shutil.copy(packagePath+calPath+biasfilename, 
                                     '.reducecache/storedcals/retrievedbiases')
-                    rc.addCal(ad,'bias', \
-                              os.path.join('.reducecache/storedcals/retrieve'+\
+                    rc.addCal(ad,'bias', 
+                              os.path.join('.reducecache/storedcals/retrieve'+
                                            'dbiases',biasfilename))
                 else:
                     log.error('CCDSUM is not 1x1 or 2x2 for the input flat!!')
@@ -373,6 +385,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         as well but with proper checking for what the correct bias file would 
         be rather than my oversimplified checking
         the binning alone.
+        
         """
         try:
             packagePath=sys.argv[0].split('gemini_python')[0]
@@ -384,13 +397,13 @@ class GMOSPrimitives(GEMINIPrimitives):
                     raise 'error'
                 elif ad.extGetKeyValue(1,'CCDSUM') == '2 2':
                     flatfilename = 'N20020211S156_preparedFlat.fits'
-                    if not os.path.exists(os.path.join('.reducecache/storedca'+\
-                                                       'ls/retrievedflats', \
+                    if not os.path.exists(os.path.join('.reducecache/storedca'+
+                                                       'ls/retrievedflats', 
                                                        flatfilename)):
-                        shutil.copy(packagePath+calPath+flatfilename, \
+                        shutil.copy(packagePath+calPath+flatfilename, 
                                     '.reducecache/storedcals/retrievedflats')
-                    rc.addCal(ad,'flat', os.path.join('.reducecache/storedca'+\
-                                                      'ls/retrievedflats', \
+                    rc.addCal(ad,'flat', os.path.join('.reducecache/storedca'+
+                                                      'ls/retrievedflats', 
                                                       flatfilename))
                 else:
                     log.error('CCDSUM is not 1x1 or 2x2 for the input image!!')
@@ -410,6 +423,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         calculated DQ frames with its own versions.  This may be corrected 
         in the future by replacing the use of the gireduce
         with a Python routine to do the bias subtraction.
+        
         """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
@@ -439,7 +453,8 @@ class GMOSPrimitives(GEMINIPrimitives):
               # This returns a unique/temp log file for IRAF 
               'logfile'     :clm.logfile(),     
               'fl_bias'     :yes,
-              # Possibly add this to the params file so the user can override this input file
+              # Possibly add this to the params file so the user can override
+              # this input file
               'bias'        :processedBias,   
               # This is actually in the default dict but wanted to show it again  
               'Stdout'      :gemt.IrafStdout(), 
@@ -462,7 +477,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            log.debug('calling the gireduce CL script for inputs '+\
+            log.debug('calling the gireduce CL script for inputs '+
                       clm.inputsAsStr())
 
             gemini.gmos.gireduce(**clParamsDict)
@@ -483,7 +498,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # Varifying gireduce was actually ran on the file
                 # then logging file names of successfully reduced files
                 if ad.phuGetKeyValue('GIREDUCE'): 
-                    log.fullinfo('File '+clm.preCLNames()[i]+\
+                    log.fullinfo('File '+clm.preCLNames()[i]+
                                  ' was bias subracted successfully')
                     log.fullinfo('New file name is: '+ad.filename)
                 i=i+1
@@ -496,18 +511,18 @@ class GMOSPrimitives(GEMINIPrimitives):
                 ad.phuSetKeyValue('BIASIM', os.path.basename(processedBias)) 
                 
                 # Updating log with new GEM-TLM value and BIASIM header keys
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              , category='header')
                 log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                              category='header')
-                log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n', \
+                log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n', 
                              category='header')
                 
-            log.warning('The CL script gireduce REPLACED the previously '+\
+            log.warning('The CL script gireduce REPLACED the previously '+
                         'calculated DQ frames')
             
             log.status('*FINISHED* subtracting the bias from the input flats')
@@ -526,6 +541,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         previously produced ones in calculateDQ. This may be fixed in the 
         future by replacing giflat with a Python equivilent with more 
         appropriate options for the recipe system.
+        
         """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
@@ -567,7 +583,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            log.debug('Calling the giflat CL script for inputs list '+\
+            log.debug('Calling the giflat CL script for inputs list '+
                       clm.inputList())
             
             gemini.giflat(**clParamsDict)
@@ -589,17 +605,17 @@ class GMOSPrimitives(GEMINIPrimitives):
             ad.historyMark(key='GIFLAT', stomp=False)
             
             # Updating log with new GEM-TLM and GIFLAT time stamps
-            log.fullinfo('****************************************************'\
+            log.fullinfo('****************************************************'
                          , category='header')
             log.fullinfo('File = '+ad.filename, category='header')
-            log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+            log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                          , category='header')
             log.fullinfo('PHU keywords updated/added:\n', 'header')
-            log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
+            log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                          category='header')
-            log.fullinfo('GIFLAT = '+ad.phuGetKeyValue('GIFLAT'), \
+            log.fullinfo('GIFLAT = '+ad.phuGetKeyValue('GIFLAT'), 
                          category='header')
-            log.fullinfo('----------------------------------------------------'\
+            log.fullinfo('----------------------------------------------------'
                          , category='header')       
                 
             log.status('*FINISHED* combining and normalizing the input flats')
@@ -616,6 +632,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         but written in pure python.  
         It is currently assumed that the same flat file may be applied to all
         input images.
+        
         """
         try:
             log.status('*STARTING* to flat correct the inputs')
@@ -625,7 +642,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             processedFlat = AstroData(rc.getCal(adOne,'flat'))
             
             for ad in rc.getInputs(style='AD'):
-                log.status('Input flat file being used for flat correction '\
+                log.status('Input flat file being used for flat correction '
                            +processedFlat.filename)
                 log.debug('Calling ad.div on '+ad.filename)
                 
@@ -639,22 +656,22 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                adOut.filename = gemt.fileNameUpdater(ad.filename, \
-                                                      postpend=rc['outpref'], \
+                adOut.filename = gemt.fileNameUpdater(ad.filename, 
+                                                      postpend=rc['outpref'], 
                                                       strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(adOut)   
                 
                 # Updating logger with new GEM-TLM value
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              , category='header')
                 log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'\
+                log.fullinfo('------------------------------------------------'
                              , category='header')    
 
             log.status('*FINISHED* flat correcting the inputs')  
@@ -667,12 +684,14 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         This primitive will mosaic the SCI frames of the input images, 
         along with the VAR and DQ frames if they exist.  
+        
         """
         # loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
-            log.status('*STARTING* to mosaic the input images SCI extensions together')
+            log.status('*STARTING* to mosaic the input images SCI extensions'+
+                       ' together')
             # Writing input files to disk with prefixes onto their file names so 
             # they can be deleted later easily 
             clm = gemt.CLManager(rc)
@@ -743,13 +762,13 @@ class GMOSPrimitives(GEMINIPrimitives):
                 #$$$$$ should we also have a MOSAIC UT time stame in the PHU???
                 
                 # Updating logger with new GEM-TLM value
-                log.fullinfo('************************************************'\
+                log.fullinfo('************************************************'
                              , category='header')
                 log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                              category='header')
                 
             log.status('*FINISHED* mosaicing the input images')
@@ -769,6 +788,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         Using this approach, rather than appending the BPM in the addDQ allows
         for specialized BPM processing to be done in the instrument specific
         primitive sets where it belongs.
+        
         """
         
         try:
@@ -794,17 +814,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                             BPMArrayIn = BPM_22[('DQ', sciExt.extver())].data
                             BPMfilename = 'GMOS_BPM_22.fits'
                         else:
-                            BPMArrayIn = np.zeros(sciExt.data.shape, \
+                            BPMArrayIn = np.zeros(sciExt.data.shape, 
                                                   dtype=np.int16)
-                            log.error('CCDSUM is not 1x1 or 2x2, using'+\
+                            log.error('CCDSUM is not 1x1 or 2x2, using'+
                                       ' zeros array for BPM')
                             BPMfilename = 'None'
                         #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   
                         
                         # logging the BPM file being used for this SCI extension
-                        log.fullinfo('SCI extension number '+\
-                                     str(sciExt.extver())+', of file '+\
-                                     ad.filename+ ' is matched to BPM file '+\
+                        log.fullinfo('SCI extension number '+
+                                     str(sciExt.extver())+', of file '+
+                                     ad.filename+ ' is matched to BPM file '+
                                      BPMfilename)
                         
                         # Getting the data section from the header and 
@@ -816,7 +836,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         
                         # Creating a zeros array the same size as SCI array
                         # for this extension
-                        BPMArrayOut = np.zeros(sciExt.data.shape, \
+                        BPMArrayOut = np.zeros(sciExt.data.shape, 
                                                dtype=np.int16)
     
                         # Loading up zeros array with data from BPM array
@@ -834,17 +854,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                         # further updating to this header will take place in 
                         # addDQ primitive
                         BPMheader = pf.Header() 
-                        BPMheader.update('BITPIX', 16, \
+                        BPMheader.update('BITPIX', 16, 
                                         'number of bits per data pixel')
                         BPMheader.update('NAXIS', 2)
-                        BPMheader.update('PCOUNT', 0, \
+                        BPMheader.update('PCOUNT', 0, 
                                         'required keyword; must = 0')
-                        BPMheader.update('GCOUNT', 1, \
+                        BPMheader.update('GCOUNT', 1, 
                                         'required keyword; must = 1')
                         BPMheader.update('BUNIT', 'bit', 'Physical units')
-                        BPMheader.update('BPMFILE', BPMfilename, \
+                        BPMheader.update('BPMFILE', BPMfilename, 
                                             'Bad Pixel Mask file name')
-                        BPMheader.update('EXTVER', sciExt.extver(), \
+                        BPMheader.update('EXTVER', sciExt.extver(), 
                                             'Extension Version')
                         # This extension will be renamed DQ in addDQ
                         BPMheader.update('EXTNAME', 'BPM', 'Extension Name')
@@ -858,24 +878,24 @@ class GMOSPrimitives(GEMINIPrimitives):
                         bpmAD.renameExt('BPM', ver=sciExt.extver())
                         
                         # Appending BPM astrodata instance to the input one
-                        log.debug('Appending new BPM HDU onto the file '+ \
+                        log.debug('Appending new BPM HDU onto the file '+ 
                                   ad.filename)
                         ad.append(bpmAD)
                         log.status('Appending BPM complete for '+ ad.filename)
                         
                # If BPM frames exist, send a critical message to the logger
                 else:
-                    log.critical('BPM frames all ready exist for '+ad.filename+\
+                    log.critical('BPM frames all ready exist for '+ad.filename+
                                  ', so addBPM will add new ones') 
 
                 # Updating GEM-TLM (automatic) time stamp in the PHU
                 ad.historyMark() 
                 # Updating logger with updated/added time stamps
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'\
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              ,'header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'),'header')
-                log.fullinfo('------------------------------------------------'\
+                log.fullinfo('------------------------------------------------'
                              , 'header')
                 
                 # Reporting the updated file to the reduction context
@@ -896,6 +916,7 @@ def CLDefaultParamsDict(CLscript):
     """
     A function to return a dictionary full of all the 
     default parameters for each CL script used so far in the Recipe System.
+    
     """
     # Loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
@@ -904,9 +925,9 @@ def CLDefaultParamsDict(CLscript):
     # log message be made and exception raised.
     if (CLscript != 'gireduce') and (CLscript != 'giflat') and \
     (CLscript != 'gmosaic') :
-        log.critical('The CLscript '+CLscript+' does not have a default'+\
+        log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
-        raise GEMINIException('The CLscript '+CLscript+\
+        raise GEMINIException('The CLscript '+CLscript+
                               ' does not have a default'+' dictionary')
     
     if CLscript == 'gireduce':
