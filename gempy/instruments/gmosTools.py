@@ -9,40 +9,44 @@ log=gemLog.getGeminiLog()
 def stdInstHdrs(ad):  
     """ A function used by StandardizeInstrumentHeaders in primitives_GMOS.
         
-        It currently just adds the DISPAXIS header key to the SCI extensions."""
+        It currently just adds the DISPAXIS header key to the SCI extensions.
+    
+    """
     # Adding the missing/needed keywords into the headers
     if not ad.isType('GMOS_IMAGE'):
     # Do the stuff to the headers that is for the MOS, those for IMAGE are 
     # taken care of with stdObsHdrs all ready 
     
         # Formatting so logger looks organized for these messages
-        log.fullinfo('****************************************************', \
+        log.fullinfo('****************************************************', 
                      'header') 
         log.fullinfo('file = '+ad.filename, 'header')
-        log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', \
+        log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
                      'header')
         for ext in ad['SCI']:
             ext.SetKeyValue(('SCI',ext.extver()),'DISPAXIS', \
                             ext.dispersion_axis() , 'Dispersion axis')
             # Updating logger with new header key values
-            log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+\
+            log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
                          ' keywords updated/added:\n', 'header')       
             log.fullinfo('DISPAXIS = '+str(ext.header['DISPAXIS']), 'header' )
-            log.fullinfo('---------------------------------------------------',\
+            log.fullinfo('---------------------------------------------------',
                          'header')
 
 def valInstData(ad):
     """A function used by validateInstrumentData in primitives_GMOS.
     
         It currently just checks if there are 1, 3, 6 or 12 SCI extensions 
-        in the input. """
+        in the input. 
+    
+    """
     length=ad.countExts('SCI')
     # If there are 1, 3, 6, or 12 extensions, all good, if not log a critical 
     # message and raise an exception
     if length==1 or length==3 or length==6 or length==12:
         pass
     else: 
-        log.critical('There are NOT 1, 3, 6 or 12 extensions in file = '+\
+        log.critical('There are NOT 1, 3, 6 or 12 extensions in file = '+
                      ad.filename)
         raise 'Error occurred in valInstData for input '+ad.filename
   
