@@ -7,7 +7,7 @@ import traceback as tb
 _geminiLogger = None
 
 class GeminiLogger(object):
-    '''
+    """
     This is a logger object for use in the Gemini recipe system.  
     It is based on the Python logging object.
     
@@ -26,7 +26,8 @@ level#, verbose,  level,          includes (current rough outline)
           0       (quiet)
     note: level 'info' exists, but it is not being used in the
     Recipe Systems logging standards
-    '''
+    
+    """
     logger = None
     def __init__(self, logName=None, verbose=1, debug=False):
         # Set the file name for the log, default is currently 'gemini.log'
@@ -52,11 +53,11 @@ level#, verbose,  level,          includes (current rough outline)
         self.logger = logging.getLogger(self._logName)
         self.logger.setLevel(logging.DEBUG)
     
-        setattr(self.logger, 'stdinfo', \
+        setattr(self.logger, 'stdinfo', 
                 lambda *args: self.logger.log(STDINFO, *args))
-        setattr(self.logger, 'status', \
+        setattr(self.logger, 'status', 
                 lambda *args: self.logger.log(STATUS, *args))
-        setattr(self.logger, 'fullinfo', \
+        setattr(self.logger, 'fullinfo', 
                 lambda *args: self.logger.log(FULLINFO, *args))
 
         # Create console and file handlers
@@ -69,6 +70,7 @@ level#, verbose,  level,          includes (current rough outline)
         if debug:
             ch.setLevel(FULLINFO)
             fh.setLevel(logging.DEBUG)
+            
         # Set console handler depending on value provided on verbose value
         else:
             if (verbose == 6):
@@ -88,9 +90,9 @@ level#, verbose,  level,          includes (current rough outline)
                 fh.setLevel(FULLINFO)
                 
         # Create formatters for console and file messages
-        ch_formatter = logging.Formatter('%(levelname)-8s '+\
+        ch_formatter = logging.Formatter('%(levelname)-8s '+
                                         '%(levelno)d- %(message)s')
-        fh_formatter = logging.Formatter('%(asctime)s %(levelname)-8s '+\
+        fh_formatter = logging.Formatter('%(asctime)s %(levelname)-8s '+
                                          '%(levelno)d- %(message)s')
         
         # Add formatters to the handlers
@@ -116,12 +118,14 @@ level#, verbose,  level,          includes (current rough outline)
         self._debugDefaultCategory = 'debug'
         
     def logname(self):
-        '''Just a function to return the 'private' member variable _logName
-        to allow checking if logger with the same file name exists all ready'''
+        """Just a function to return the 'private' member variable _logName
+        to allow checking if logger with the same file name exists all ready
+        
+        """
         return self._logName
      
     def defaultCategory(self, level=None, category=None):
-        '''
+        """
          A function to access and set the 'private' default category variables.
          If category = None, then the current value will be returned.
          Else, the default value will be replaced with the newly provided 
@@ -137,7 +141,8 @@ level#, verbose,  level,          includes (current rough outline)
          
          @param level: new default value for the levels category
          @type level: string
-        '''
+         
+        """
         if level == 'ALL':
             self._criticalDefaultCategory = category
             self._errorDefaultCategory = category
@@ -200,6 +205,7 @@ level#, verbose,  level,          includes (current rough outline)
                 self._debugDefaultCategory = category
             
     def fullinfo(self, msg, category=None):
+        """ The function to call for making 'fullinfo' level log messages"""
         # Check if a category string was passed in, else set to default value
         if category is None:
             category = self._fullinfoDefaultCategory
@@ -212,6 +218,7 @@ level#, verbose,  level,          includes (current rough outline)
     
     # Comments for this function are the same as that of fullinfo function above
     def info(self, msg, category=None):
+        """ The function to call for making 'info' level log messages"""
         if category is None:
             category = self._infoDefaultCategory
         msgs = str(msg).split('\n')
@@ -220,6 +227,7 @@ level#, verbose,  level,          includes (current rough outline)
      
      # Comments for this function are the same as that of fullinfo function above       
     def stdinfo(self, msg, category=None ):
+        """ The function to call for making 'stdinfo' level log messages"""
         if category is None:
             category = self._stdinfoDefaultCategory
         msgs = str(msg).split('\n')
@@ -228,6 +236,7 @@ level#, verbose,  level,          includes (current rough outline)
     
     # Comments for this function are the same as that of fullinfo function above        
     def status(self, msg, category=None):
+        """ The function to call for making 'status' level log messages"""
         if category is None:
             category = self._statusDefaultCategory
         msgs = str(msg).split('\n')
@@ -235,6 +244,7 @@ level#, verbose,  level,          includes (current rough outline)
             self.logger.status(category.ljust(10)+'-'+line)
     
     def debug(self, msg, category=None): 
+        """ The function to call for making 'debug' level log messages"""
         # Check if a category string was passed in, else set to default value 
         if category is None:
             category = self._debugDefaultCategory  
@@ -246,42 +256,51 @@ level#, verbose,  level,          includes (current rough outline)
         for line in msgs:
             # Log the message with a modified format to match recipe system 
             # standards
-            self.logger.debug(category.ljust(10)+'-'+b[0].ljust(20)+' - '+\
+            self.logger.debug(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
                               b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+line)
     
     # Comments for this function are the same as that of debug function above
     def critical(self, msg, category=None):
+        """ The function to call for making 'critical' level log messages"""
         if category is None:
             category = self._criticalDefaultCategory
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.critical(category.ljust(10)+'-'+b[0].ljust(20)+' - '+\
-                                 b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+\
+            self.logger.critical(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
+                                 b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+
                                  line)
             
     # Comments for this function are the same as that of debug function above    
     def warning(self, msg, category=None):
+        """ The function to call for making 'warning' level log messages"""
         if category is None:
             category = self._warningDefaultCategory
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.warning(category.ljust(10)+'-'+b[0].ljust(20)+' - '+\
-                                b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+\
+            self.logger.warning(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
+                                b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+
                                 line)
             
     # Comments for this function are the same as that of debug function above    
     def error(self, msg, category=None):
+        """ The function to call for making 'error' level log messages"""
         if category is None:
             category = self._errorDefaultCategory
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.error(category.ljust(10)+'-'+b[0].ljust(20)+' - '+\
+            self.logger.error(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
                               b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+line)
     
 def getGeminiLog(logName=None , verbose = 0, debug = False):
+    """ The function called to retrieve the desired logger object.
+        This can be a new one, and thus getGeminiLog will create one to be 
+        returned, else it will return the requested one based on the 
+        parameter 'logName' in the call.
+        
+        """
     # Retrieve the latest logger object
     global _geminiLogger
     
@@ -306,12 +325,13 @@ def getGeminiLog(logName=None , verbose = 0, debug = False):
     else:
         return _geminiLogger
     
-def checkHandlers(log, remove=True ):
-    '''
+def checkHandlers(log, remove=True):
+    """
     This function is to close the handlers of the log to 
     avoid multiple handlers sending messages to same console and or file 
     when the logger is used outside of the Recipe System.
-    '''
+    
+    """
     handlers = log.logger.handlers
     # If there are handlers in handlers the loop through them, otherwise
     # return the log as it doesn't have any handlers to remove or False
@@ -344,7 +364,7 @@ def checkHandlers(log, remove=True ):
             return False    
 
 def callInfo():
-    ''' A function used by log levels debug, critical, warning and error 
+    """ A function used by log levels debug, critical, warning and error 
         to allow for adding information about the call stack in the
         log messages. 
         
@@ -352,7 +372,8 @@ def callInfo():
         
         The information is returned in the format of a list of strings following
         [module name, line number, function]
-        '''
+        
+        """
     st = tb.extract_stack()
     #ran = range(len(st))
     #ran.reverse()
