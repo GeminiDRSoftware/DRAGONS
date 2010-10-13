@@ -1,0 +1,26 @@
+# Recipe for the prototype presentation
+
+dgetProcessedBias
+dgetProcessedFlat
+
+showCals
+
+
+dprepare
+
+doverscanTrim
+
+dbiasCorrect
+flatfieldCorrect
+mosaicChips
+
+display(displayID = single)
+shift
+
+dmeasureIQ
+
+dsetStackable
+
+daverageCombine
+display(displayID = combined)
+dmeasureIQ

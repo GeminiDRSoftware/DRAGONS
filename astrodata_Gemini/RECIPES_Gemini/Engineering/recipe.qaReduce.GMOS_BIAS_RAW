@@ -1,0 +1,6 @@
+# Have not tested this, but this is taken from the GMOSImgQAWalkthrough
+
+prepare
+overscanCorrect
+setStackable
+averageCombine
