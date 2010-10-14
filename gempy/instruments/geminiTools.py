@@ -11,213 +11,6 @@ import tempfile
 
 log=gemLog.getGeminiLog() 
 
-def stdObsHdrs(ad):
-    """ This function is used by standardizeHeaders in primitives_GEMINI.
-        
-        It will update the PHU header keys NSCIEXT, PIXSCALE
-        NEXTEND, OBSMODE, COADDEXP, EXPTIME and NCOADD plus it will add 
-        a time stamp for GPREPARE to indicate that the file has be prepared.
-        
-        In the SCI extensions the header keys GAIN, PIXSCALE, RDNOISE, BUNIT,
-        NONLINEA, SATLEVEL and EXPTIME will be updated.
-        
-        @param ad: astrodata instance to perform header key updates on
-        @type ad: an AstroData instance
-    
-    """
-    # Keywords that are updated/added for all Gemini PHUs 
-    ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
-                      'Number of science extensions')
-    ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale(), 
-                      'Pixel scale in Y in arcsec/pixel')
-    ad.phuSetKeyValue('NEXTEND', len(ad) , 'Number of extensions')
-    ad.phuSetKeyValue('OBSMODE', ad.observation_mode() , 
-                      'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
-    ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , 
-                      'Exposure time for each coadd frame')
-    # Retrieving the number of coadds using the coadds descriptor 
-    numcoadds = ad.coadds()
-    # If the value the coadds descriptor returned was None (or zero) set to 1
-    if not numcoadds:  
-        numcoadds = 1      
-    # Calculate the effective exposure time  
-    # = (current EXPTIME value) X (# of coadds)
-    effExpTime = ad.phuValue('EXPTIME')*numcoadds  
-    # Set the effective exposure time and number of coadds in the header  
-    ad.phuSetKeyValue('EXPTIME', effExpTime , 'Effective exposure time') 
-    ad.phuSetKeyValue('NCOADD', str(numcoadds) , 'Number of coadds')
-    
-    # Adding/updating the GEM-TLM (automatic) and GPREPARE time stamps
-    ad.historyMark(key='GPREPARE',stomp=False) 
-       
-    # Updating logger with updated/added keywords
-    log.fullinfo('****************************************************', 
-                 'header')
-    log.fullinfo('file = '+ad.filename,'header')
-    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
-                 'header')
-    log.fullinfo('PHU keywords updated/added:\n', 'header')
-    log.fullinfo('NSCIEXT = '+str(ad.countExts('SCI')),'header' )
-    log.fullinfo('PIXSCALE = '+str(ad.pixel_scale()),'header' )
-    log.fullinfo('NEXTEND = '+str(len(ad)),'header' )
-    log.fullinfo('OBSMODE = '+str(ad.observation_mode()),'header' )
-    log.fullinfo('COADDEXP = '+str(ad.phuValue('EXPTIME')),'header' )
-    log.fullinfo('EXPTIME = '+str(effExpTime),'header' )
-    log.fullinfo('GEM-TLM = '+str(ut),'header' )
-    log.fullinfo('---------------------------------------------------','header')
-         
-    # A loop to add the missing/needed keywords in the SCI extensions
-    for ext in ad['SCI']:
-        ext.SetKeyValue('GAIN', ext.gain(), 
-                           'Gain (e-/ADU)')
-        ext.SetKeyValue('PIXSCALE', ext.pixel_scale(), 
-                           'Pixel scale in Y in arcsec/pixel')
-        ext.SetKeyValue('RDNOISE', ext.read_noise() , 
-                           'readout noise in e-')
-        ext.SetKeyValue('BUNIT','adu' , \
-                           'Physical units')
-        
-        # Retrieving the value for the non-linear value of the pixels using the
-        # non_linear_level descriptor, if it returns nothing, 
-        # set it to the string None.
-        nonlin = ext.non_linear_level()
-        if not nonlin:
-            nonlin = 'None'     
-        ext.SetKeyValue( 'NONLINEA', nonlin , 'Non-linear regime level in ADU')
-        ext.SetKeyValue( 'SATLEVEL', 
-                           ext.saturation_level(), 'Saturation level in ADU')
-        ext.SetKeyValue( 'EXPTIME', effExpTime , 'Effective exposure time')
-        
-        log.fullinfo('SCI extension number '+str(ext.extver())+
-                     ' keywords updated/added:\n', 'header')
-        log.fullinfo('GAIN = '+str(ext.gain()), 'header' )
-        log.fullinfo('PIXSCALE = '+str(ext.pixel_scale()), 'header' )
-        log.fullinfo('RDNOISE = '+str(ext.read_noise()), 'header' )
-        log.fullinfo('BUNIT = '+'adu', 'header' )
-        log.fullinfo('NONLINEA = '+str(nonlin), 'header' )
-        log.fullinfo('SATLEVEL = '+str(ext.saturation_level()),'header' )
-        log.fullinfo('EXPTIME = '+str(effExpTime), 'header' )
-        log.fullinfo('---------------------------------------------------', 
-                     'header')
-
-def stdObsStruct(ad):
-    """ This function is used by standardizeStructure in primitives_GEMINI.
-    
-        It currently checks that the SCI extensions header key EXTNAME = 'SCI' 
-        and EXTVER matches that of descriptor values 
-        
-        @param ad: astrodata instance to perform header key updates on
-        @type ad: an AstroData instance
-    
-    """
-        
-    # Formatting so logger looks organized for these messages
-    log.fullinfo('****************************************************', 
-                 'header') 
-    log.fullinfo('file = '+ad.filename, 'header')
-    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
-                 'header')
-    # A loop to add the missing/needed keywords in the SCI extensions
-    for ext in ad['SCI']:
-        # Setting EXTNAME = 'SCI' and EXTVER = descriptor value
-        ext.SetKeyValue( 'EXTNAME', 'SCI', 'Extension name')        
-        ext.SetKeyValue( 'EXTVER', ext.extver(), 'Extension version') 
-        # Updating logger with new header key values
-        log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
-                     ' keywords updated/added:\n', 'header')       
-        log.fullinfo('EXTNAME = '+'SCI', 'header' )
-        log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), 'header' )
-        log.fullinfo('---------------------------------------------------', 
-                     'header')
-        
-def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
-    """ This function is for updating the file names.
-    
-    Note: if the input filename has a path, the returned value will have
-          path stripped off of it.
-    
-    @param postpend: string to put between end of current filename and the 
-                    extension 
-    @type postpend: string
-    
-    @param prepend: string to put at the beginning of a filename
-    @type prepend: string
-    
-    @param strip: Boolean to signal if the original postpends should be 
-                  removed prior to adding the new one (if one exists).
-    @type strip: Boolean
-    
-    ex. fileNameUpdater('N20020214S022_prepared_vardq_oversubed_overtrimd.fits',
-                        postpend='_prepared', strip=True)
-        result: 'N20020214S022_prepared.fits'
-    
-    """
-    # Strip off any path that the input file name might have
-    infilename = os.path.basename(origfilename)
-    
-    # If a value for postpend was passed in
-    if postpend != '':
-        # if stripping was requested, then do so using stripPostfix function
-        if strip:
-            infilename = stripPostfix(infilename)
-        # Split up the filename and the file type ie. the extension
-        (name,filetype) = os.path.splitext(infilename)
-        # Create output filename
-        outFileName = name+postpend+filetype
-        
-    elif prepend !='':
-        if strip:
-            infilename = stripPostfix(infilename)
-        (name,filetype) = os.path.splitext(infilename)
-        outFileName = prepend+name+filetype
-        
-    return outFileName
-
-def stripPostfix(filename):
-    """ This function is used by fileNameUpdater to strip all the original
-        postfixes of a input string, separated from the base filename by
-        '_'. 
-    
-    """
-    # Saving the path of the input file
-    dirname = os.path.dirname(filename)
-    # Saving the filename without its path
-    basename = os.path.basename(filename)
-    # Split up the filename and the file type ie. the extension 
-    (name, filetype) = os.path.splitext(basename)
-    # Splitting up file name into a list by the '_' delimiter 
-    a = name.split('_')
-    # The file name without the postfixes is the first element of the list
-    name = a[0]
-    # Re-attaching the path and file type to the cleaned file name 
-    retname = os.path.join(dirname, name+filetype)
-    return retname    
-
-def secStrToIntList(string):
-    """ A function to convert a string representing a list of integers to 
-        an actual list of integers.
-        
-        @param string: string to be converted
-        @type string: string of format '[#1:#2,#3:#4]'
-        
-        returns list of ints [#1,#2,#3,#4]
-    
-    """
-    # Strip off the brackets and then split up into a string list 
-    # using the ',' delimiter
-    coords = string.strip('[').strip(']').split(',')
-    # Split up strings into X and Y components using ':' delimiter
-    Ys = coords[0].split(':')
-    Xs = coords[1].split(':')
-    # Prepare the list and then fill it with the string coordinates 
-    # converted to integers
-    retl = []
-    retl.append(int(Ys[0]))
-    retl.append(int(Ys[1]))
-    retl.append(int(Xs[0]))
-    retl.append(int(Xs[1]))
-    return retl
-    
 def biassecStrTonbiascontam(biassec, ad):
     """ 
     This function works with nbiascontam() of the CLManager. 
@@ -299,8 +92,50 @@ def biassecStrTonbiascontam(biassec, ad):
         log.error('An error occurred while trying to calculate the '+
                   'nbiascontam, so using default value = 4')
         return 4 
+
+def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
+    """ This function is for updating the file names.
+    
+    Note: if the input filename has a path, the returned value will have
+          path stripped off of it.
+    
+    @param postpend: string to put between end of current filename and the 
+                    extension 
+    @type postpend: string
+    
+    @param prepend: string to put at the beginning of a filename
+    @type prepend: string
+    
+    @param strip: Boolean to signal if the original postpends should be 
+                  removed prior to adding the new one (if one exists).
+    @type strip: Boolean
+    
+    ex. fileNameUpdater('N20020214S022_prepared_vardq_oversubed_overtrimd.fits',
+                        postpend='_prepared', strip=True)
+        result: 'N20020214S022_prepared.fits'
+    
+    """
+    # Strip off any path that the input file name might have
+    infilename = os.path.basename(origfilename)
+    
+    # If a value for postpend was passed in
+    if postpend != '':
+        # if stripping was requested, then do so using stripPostfix function
+        if strip:
+            infilename = stripPostfix(infilename)
+        # Split up the filename and the file type ie. the extension
+        (name,filetype) = os.path.splitext(infilename)
+        # Create output filename
+        outFileName = name+postpend+filetype
         
+    elif prepend !='':
+        if strip:
+            infilename = stripPostfix(infilename)
+        (name,filetype) = os.path.splitext(infilename)
+        outFileName = prepend+name+filetype
         
+    return outFileName
+
 def pyrafBoolean(pythonBool):
     """
     A very basic function to reduce code repetition that simply 'casts' any 
@@ -317,6 +152,171 @@ def pyrafBoolean(pythonBool):
     else:
         log.critical('DANGER DANGER Will Robinson, pythonBool passed in was '+
         'not True or False, and thats just crazy talk :P')
+
+def secStrToIntList(string):
+    """ A function to convert a string representing a list of integers to 
+        an actual list of integers.
+        
+        @param string: string to be converted
+        @type string: string of format '[#1:#2,#3:#4]'
+        
+        returns list of ints [#1,#2,#3,#4]
+    
+    """
+    # Strip off the brackets and then split up into a string list 
+    # using the ',' delimiter
+    coords = string.strip('[').strip(']').split(',')
+    # Split up strings into X and Y components using ':' delimiter
+    Ys = coords[0].split(':')
+    Xs = coords[1].split(':')
+    # Prepare the list and then fill it with the string coordinates 
+    # converted to integers
+    retl = []
+    retl.append(int(Ys[0]))
+    retl.append(int(Ys[1]))
+    retl.append(int(Xs[0]))
+    retl.append(int(Xs[1]))
+    return retl
+
+def stdObsHdrs(ad):
+    """ This function is used by standardizeHeaders in primitives_GEMINI.
+        
+        It will update the PHU header keys NSCIEXT, PIXSCALE
+        NEXTEND, OBSMODE, COADDEXP, EXPTIME and NCOADD plus it will add 
+        a time stamp for GPREPARE to indicate that the file has be prepared.
+        
+        In the SCI extensions the header keys GAIN, PIXSCALE, RDNOISE, BUNIT,
+        NONLINEA, SATLEVEL and EXPTIME will be updated.
+        
+        @param ad: astrodata instance to perform header key updates on
+        @type ad: an AstroData instance
+    
+    """
+    # Keywords that are updated/added for all Gemini PHUs 
+    ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
+                      'Number of science extensions')
+    ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale(), 
+                      'Pixel scale in Y in arcsec/pixel')
+    ad.phuSetKeyValue('NEXTEND', len(ad) , 'Number of extensions')
+    ad.phuSetKeyValue('OBSMODE', ad.observation_mode() , 
+                      'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
+    ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , 
+                      'Exposure time for each coadd frame')
+    # Retrieving the number of coadds using the coadds descriptor 
+    numcoadds = ad.coadds()
+    # If the value the coadds descriptor returned was None (or zero) set to 1
+    if not numcoadds:  
+        numcoadds = 1      
+    # Calculate the effective exposure time  
+    # = (current EXPTIME value) X (# of coadds)
+    effExpTime = ad.phuValue('EXPTIME')*numcoadds  
+    # Set the effective exposure time and number of coadds in the header  
+    ad.phuSetKeyValue('EXPTIME', effExpTime , 'Effective exposure time') 
+    ad.phuSetKeyValue('NCOADD', str(numcoadds) , 'Number of coadds')
+    
+    # Adding/updating the GEM-TLM (automatic) and GPREPARE time stamps
+    ut = ad.historyMark(key='GPREPARE',stomp=False) 
+       
+    # Updating logger with updated/added keywords
+    log.fullinfo('****************************************************', 
+                 'header')
+    log.fullinfo('file = '+ad.filename,'header')
+    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
+                 'header')
+    log.fullinfo('PHU keywords updated/added:\n', 'header')
+    log.fullinfo('NSCIEXT = '+str(ad.countExts('SCI')),'header' )
+    log.fullinfo('PIXSCALE = '+str(ad.pixel_scale()),'header' )
+    log.fullinfo('NEXTEND = '+str(len(ad)),'header' )
+    log.fullinfo('OBSMODE = '+str(ad.observation_mode()),'header' )
+    log.fullinfo('COADDEXP = '+str(ad.phuValue('EXPTIME')),'header' )
+    log.fullinfo('EXPTIME = '+str(effExpTime),'header' )
+    log.fullinfo('GEM-TLM = '+str(ut),'header' )
+    log.fullinfo('---------------------------------------------------','header')
+         
+    # A loop to add the missing/needed keywords in the SCI extensions
+    for ext in ad['SCI']:
+        ext.header.update('GAIN', ext.gain(), 
+                           'Gain (e-/ADU)')
+        ext.header.update('PIXSCALE', ext.pixel_scale(), 
+                           'Pixel scale in Y in arcsec/pixel')
+        ext.header.update('RDNOISE', ext.read_noise() , 
+                           'readout noise in e-')
+        ext.header.update('BUNIT','adu' , \
+                           'Physical units')
+        
+        # Retrieving the value for the non-linear value of the pixels using the
+        # non_linear_level descriptor, if it returns nothing, 
+        # set it to the string None.
+        nonlin = ext.non_linear_level()
+        if not nonlin:
+            nonlin = 'None'     
+        ext.header.update( 'NONLINEA', nonlin , 
+                           'Non-linear regime level in ADU')
+        ext.header.update( 'SATLEVEL', 
+                           ext.saturation_level(), 'Saturation level in ADU')
+        ext.header.update( 'EXPTIME', effExpTime , 'Effective exposure time')
+        
+        log.fullinfo('SCI extension number '+str(ext.extver())+
+                     ' keywords updated/added:\n', 'header')
+        log.fullinfo('GAIN = '+str(ext.gain()), 'header' )
+        log.fullinfo('PIXSCALE = '+str(ext.pixel_scale()), 'header' )
+        log.fullinfo('RDNOISE = '+str(ext.read_noise()), 'header' )
+        log.fullinfo('BUNIT = '+'adu', 'header' )
+        log.fullinfo('NONLINEA = '+str(nonlin), 'header' )
+        log.fullinfo('SATLEVEL = '+str(ext.saturation_level()),'header' )
+        log.fullinfo('EXPTIME = '+str(effExpTime), 'header' )
+        log.fullinfo('---------------------------------------------------', 
+                     'header')
+
+def stdObsStruct(ad):
+    """ This function is used by standardizeStructure in primitives_GEMINI.
+    
+        It currently checks that the SCI extensions header key EXTNAME = 'SCI' 
+        and EXTVER matches that of descriptor values 
+        
+        @param ad: astrodata instance to perform header key updates on
+        @type ad: an AstroData instance
+    
+    """
+        
+    # Formatting so logger looks organized for these messages
+    log.fullinfo('****************************************************', 
+                 'header') 
+    log.fullinfo('file = '+ad.filename, 'header')
+    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
+                 'header')
+    # A loop to add the missing/needed keywords in the SCI extensions
+    for ext in ad['SCI']:
+        # Setting EXTNAME = 'SCI' and EXTVER = descriptor value
+        ext.header.update( 'EXTNAME', 'SCI', 'Extension name')        
+        ext.header.update( 'EXTVER', ext.extver(), 'Extension version') 
+        # Updating logger with new header key values
+        log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
+                     ' keywords updated/added:\n', 'header')       
+        log.fullinfo('EXTNAME = '+'SCI', 'header' )
+        log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), 'header' )
+        log.fullinfo('---------------------------------------------------', 
+                     'header')
+        
+def stripPostfix(filename):
+    """ This function is used by fileNameUpdater to strip all the original
+        postfixes of a input string, separated from the base filename by
+        '_'. 
+    
+    """
+    # Saving the path of the input file
+    dirname = os.path.dirname(filename)
+    # Saving the filename without its path
+    basename = os.path.basename(filename)
+    # Split up the filename and the file type ie. the extension 
+    (name, filetype) = os.path.splitext(basename)
+    # Splitting up file name into a list by the '_' delimiter 
+    a = name.split('_')
+    # The file name without the postfixes is the first element of the list
+    name = a[0]
+    # Re-attaching the path and file type to the cleaned file name 
+    retname = os.path.join(dirname, name+filetype)
+    return retname    
 
 class CLManager(object):
     """This is a class that will take care of all the preparation and wrap-up 
@@ -436,6 +436,7 @@ class CLManager(object):
         
         """
         #@@ REFERENCE IMAGE: for output name
+
         return self.outpref+self._preCLcachestorenames[0]
     
     def postCLloads(self,combine=False):
@@ -575,4 +576,3 @@ class IrafStdout():
         scripts"""
         pass
  
-        
