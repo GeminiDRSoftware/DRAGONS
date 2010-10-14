@@ -24,7 +24,7 @@ def stdInstHdrs(ad):
         log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
                      'header')
         for ext in ad['SCI']:
-            ext.SetKeyValue(('SCI',ext.extver()),'DISPAXIS', \
+            ext.header.update(('SCI',ext.extver()),'DISPAXIS', \
                             ext.dispersion_axis() , 'Dispersion axis')
             # Updating logger with new header key values
             log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
