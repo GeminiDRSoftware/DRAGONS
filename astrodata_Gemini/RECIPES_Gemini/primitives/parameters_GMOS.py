@@ -82,7 +82,7 @@
                           'userOverride':False    
                            }
                           },
-            "makeNormalizedFlat":{
+            "normalizeFlat":{
                         "fl_over":
                         {
                           'default': False , 
