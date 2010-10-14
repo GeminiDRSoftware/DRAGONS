@@ -294,36 +294,31 @@ level#, verbose,  level,          includes (current rough outline)
             self.logger.error(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
                               b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+line)
     
-def getGeminiLog(logName=None , verbose = 0, debug = False):
-    """ The function called to retrieve the desired logger object.
-        This can be a new one, and thus getGeminiLog will create one to be 
-        returned, else it will return the requested one based on the 
-        parameter 'logName' in the call.
+def callInfo():
+    """ A function used by log levels debug, critical, warning and error 
+        to allow for adding information about the call stack in the
+        log messages. 
+        
+        ie. The module, function with in it and the line number of the log call
+        
+        The information is returned in the format of a list of strings following
+        [module name, line number, function]
         
         """
-    # Retrieve the latest logger object
-    global _geminiLogger
-    
-    # No logger exists, so create one
-    if not _geminiLogger:
-        _geminiLogger = GeminiLogger(logName, verbose, debug)
-        return _geminiLogger
-    
-    # You want a non-default logger, but there is a different one already
-    # , so create new non-default logger
-    elif _geminiLogger and (_geminiLogger.logname() != logName) and \
-    (logName is not None):
-        _geminiLogger = GeminiLogger(logName, verbose, debug)
-        return _geminiLogger
-    
-    # A non-default logger exists, but you want a default one, so create it
-    elif _geminiLogger and (logName is not None):
-        _geminiLogger = GeminiLogger(logName, verbose, debug)
-        return _geminiLogger
-    
-    # Otherwise return the previous logger object
-    else:
-        return _geminiLogger
+    st = tb.extract_stack()
+    #ran = range(len(st))
+    #ran.reverse()
+    #for i in ran:
+    #    print i
+    #    filenam=os.path.basename(st[i][0])
+    #    print filenam
+    #    linenum=st[i][1]
+    #    print linenum
+    #    funcnam=st[i][2]
+    #    print funcnam
+    #    print '------------------'
+    #print 'callInfo using ('+os.path.basename(st[-3][0])+','+str(st[-3][1])+','+st[-3][2]+')'
+    return [os.path.basename(st[-3][0]), st[-3][1], st[-3][2]] 
     
 def checkHandlers(log, remove=True):
     """
@@ -363,30 +358,35 @@ def checkHandlers(log, remove=True):
         else:
             return False    
 
-def callInfo():
-    """ A function used by log levels debug, critical, warning and error 
-        to allow for adding information about the call stack in the
-        log messages. 
-        
-        ie. The module, function with in it and the line number of the log call
-        
-        The information is returned in the format of a list of strings following
-        [module name, line number, function]
+def getGeminiLog(logName=None , verbose = 0, debug = False):
+    """ The function called to retrieve the desired logger object.
+        This can be a new one, and thus getGeminiLog will create one to be 
+        returned, else it will return the requested one based on the 
+        parameter 'logName' in the call.
         
         """
-    st = tb.extract_stack()
-    #ran = range(len(st))
-    #ran.reverse()
-    #for i in ran:
-    #    print i
-    #    filenam=os.path.basename(st[i][0])
-    #    print filenam
-    #    linenum=st[i][1]
-    #    print linenum
-    #    funcnam=st[i][2]
-    #    print funcnam
-    #    print '------------------'
-    #print 'callInfo using ('+os.path.basename(st[-3][0])+','+str(st[-3][1])+','+st[-3][2]+')'
-    return [os.path.basename(st[-3][0]), st[-3][1], st[-3][2]]
+    # Retrieve the latest logger object
+    global _geminiLogger
+    
+    # No logger exists, so create one
+    if not _geminiLogger:
+        _geminiLogger = GeminiLogger(logName, verbose, debug)
+        return _geminiLogger
+    
+    # You want a non-default logger, but there is a different one already
+    # , so create new non-default logger
+    elif _geminiLogger and (_geminiLogger.logname() != logName) and \
+    (logName is not None):
+        _geminiLogger = GeminiLogger(logName, verbose, debug)
+        return _geminiLogger
+    
+    # A non-default logger exists, but you want a default one, so create it
+    elif _geminiLogger and (logName is not None):
+        _geminiLogger = GeminiLogger(logName, verbose, debug)
+        return _geminiLogger
+    
+    # Otherwise return the previous logger object
+    else:
+        return _geminiLogger
 
     
