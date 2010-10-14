@@ -27,6 +27,7 @@ def pyrafLoader(rc=None):
     import pyraf
     from pyraf import iraf
     from iraf import gemini
+    from iraf import gmos
     import StringIO
     
     # Changing the standard output so the excess prints while loading IRAF
@@ -41,7 +42,8 @@ def pyrafLoader(rc=None):
     
     # This will load the gemini pyraf package    
     gemini() 
-        
+    gmos()    
+    
     return (pyraf, gemini, iraf.yes, iraf.no)
 
 class GEMINIException:
@@ -71,398 +73,6 @@ class GEMINIPrimitives(PrimitiveSet):
         return 
     init.pt_hide = True
     
-    def pause(self, rc):
-        rc.requestPause()
-        yield rc 
-
-    def crashReduce(self, rc):
-        raise 'Crashing'
-        yield rc
-        
-    def clearCalCache(self, rc):
-        # print 'pG61:', rc.calindfile
-        rc.persistCalIndex(rc.calindfile, newindex={})
-        scals = rc['storedcals']
-        if scals:
-            if os.path.exists(scals):
-                shutil.rmtree(scals)
-            cachedict = rc['cachedict']
-            for cachename in cachedict:
-                cachedir = cachedict[cachename]
-                if not os.path.exists(cachedir):                        
-                    os.mkdir(cachedir)                
-        yield rc
-        
-    def display(self, rc):
-        try:
-            rc.rqDisplay(displayID=rc['displayID'])           
-        except:
-            log.critical('Problem displaying output')
-            raise 
-        yield rc
- 
-    def setContext(self, rc):
-        rc.update(rc.localparms)
-        yield rc
-
-    def showParameters(self, rc):
-        rcparams = rc.paramNames()
-        if (rc['show']):
-            toshows = rc['show'].split(':')
-            for toshow in toshows:
-                if toshow in rcparams:
-                    log.fullinfo(toshow+' = '+repr(rc[toshow]), 
-                                 category='parameters')
-                else:
-                    log.fullinfo(toshow+' is not set', category='parameters')
-        else:
-            for param in rcparams:
-                log.fullinfo(param+' = '+repr(rc[param]), category='parameters')
-        
-        # print 'all',repr(rc.parmDictByTag('showParams', 'all'))
-        # print 'iraf',repr(rc.parmDictByTag('showParams', 'iraf'))
-        # print 'test',repr(rc.parmDictByTag('showParams', 'test'))
-        # print 'sdf',repr(rc.parmDictByTag('showParams', 'sdf'))
-
-        # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
-        yield rc  
-            
-    def sleep(self, rc):
-        if rc['duration']:
-            dur = float(rc['duration'])
-        else:
-            dur = 5.
-        log.status('Sleeping for %f seconds' % dur)
-        time.sleep(dur)
-        yield rc
-                      
-    def showInputs(self, rc):
-        log.fullinfo('Inputs:',category='inputs')
-        for inf in rc.inputs:
-            log.fullinfo('  '+inf.filename, category='inputs')  
-        yield rc  
-    showFiles = showInputs
-    
-    def showCals(self, rc):
-        if str(rc['showcals']).lower() == 'all':
-            num = 0
-            # print 'pG256: showcals=all', repr (rc.calibrations)
-            for calkey in rc.calibrations:
-                num += 1
-                log.fullinfo(rc.calibrations[calkey], category='calibrations')
-            if (num == 0):
-                log.warning('There are no calibrations in the cache.')
-        else:
-            for adr in rc.inputs:
-                sid = IDFactory.generateAstroDataID(adr.ad)
-                num = 0
-                for calkey in rc.calibrations:
-                    if sid in calkey :
-                        num += 1
-                        log.fullinfo(rc.calibrations[calkey], 
-                                     category='calibrations')
-            if (num == 0):
-                log.warning('There are no calibrations in the cache.')
-        yield rc
-    ptusage_showCals='Used to show calibrations currently in cache for inputs.'
-
-    def showStackable(self, rc):
-        sidset = set()
-        for inp in rc.inputs:
-            sidset.add(IDFactory.generateStackableID(inp.ad))
-        for sid in sidset:
-            stacklist = rc.getStack(sid).filelist
-            log.status('Stack for stack id=%s' % sid)
-            for f in stacklist:
-                log.status('   '+os.path.basename(f))
-        yield rc
-                 
-    def time(self, rc):
-        cur = datetime.now()
-        
-        elap = ''
-        if rc['lastTime'] and not rc['start']:
-            td = cur - rc['lastTime']
-            elap = ' (%s)' %str(td)
-        log.fullinfo('Time:'+' '+str(datetime.now())+' '+elap)
-        
-        rc.update({'lastTime':cur})
-        yield rc
-
-    def getStackable(self, rc):
-        """
-        This primitive will check the files in the stack lists are on disk,
-        if not write them to disk and then update the inputs list to include
-        all members of the stack for stacking.
-        
-        """
-        try:
-            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
-            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            log.fullinfo('getting stack '+stackid,'stack')
-            rc.rqStackGet()
-            yield rc
-            stack = rc.getStack(stackid).filelist
-            #print 'prim_G366: ',repr(stack)
-            rc.reportOutput(stack)
-        except:
-            log.critical('Problem getting stack '+stackid, 'stack')
-            raise 
-        yield rc      
- 
-    def setStackable(self, rc):
-        """
-        This primitive will update the lists of files to be stacked
-        that have the same observationID with the current inputs.
-        This file is cached between calls to reduce, thus allowing
-        for one-file-at-a-time processing.
-        
-        """
-        try:
-            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), 
-                         category='stack')
-            rc.rqStackUpdate()
-            # Writing the files in the stack to disk if not all ready there
-            for ad in rc.getInputs(style='AD'):
-                if not os.path.exists(ad.filename):
-                    log.fullinfo('temporarily writing '+ad.filename+\
-                                 ' to disk', category='stack')
-                    ad.write(ad.filename)
-        except:
-            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),
-                         category='stack')
-            raise
-        yield rc
-    
-    def validateData(self,rc):
-        """
-        This primitive will ensure the data is not corrupted or in an odd 
-        format that will affect later steps in the reduction process.  
-        It will call a function to take care of the general Gemini issues 
-        and then one for the instrument specific ones. If there are issues 
-        with the data, the flag 'repair' can be used to turn on the feature to 
-        repair it or not (eg. validateData(repair=True))
-        (this feature is not coded yet).
-        
-        """
-        
-        try:
-            if rc['repair'] is True:
-               # This should repair the file if it is broken, but this function
-               # isn't coded yet and would require some sort of flag set while 
-               # checking the data to tell this to perform the corrections
-               log.critical('Sorry, but the repair feature of validateData' +
-                            ' is not available yet')
-               pass
-            
-            log.status('*STARTING* to validate the input data')
-            
-            log.debug('Calling validateInstrumentData primitive')
-            # Calling the validateInstrumentData primitive 
-            rc.run('validateInstrumentData')
-            log.status('Successfully returned to validateData'+
-                       ' from the validateInstrumentData primitive') 
-            
-            # Updating the file name with the postpend/outsuffix for this
-            # primitive and then reporting the new file to the reduction 
-            # context
-            for ad in rc.getInputs(style='AD'):
-                log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend='_validated', 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(ad) 
-                        
-            log.status('*FINISHED* validating input data')                
-        except:
-            log.critical('Problem preparing one of  '+rc.inputsAsStr())
-            raise 
-        yield rc
-
-    def standardizeStructure(self,rc):
-        """
-        This primitive ensures the MEF structure is ready for further 
-        processing, through adding the MDF if necessary and the needed 
-        keywords to the headers.  First the MEF's will be checked for the 
-        general Gemini structure requirements and then the instrument specific
-        ones if needed. If the data requires a MDF to be attached, use the 
-        'addMDF' flag to make this happen 
-        (eg. standardizeStructure(addMDF=True)).
-        
-        """
-        
-        try:
-            log.status('*STARTING* to standardize the structure of input data')
-            
-            # Add the MDF if not set to false
-            if rc['addMDF'] is True:
-                log.debug('Calling attachMDF primitive')
-                # Calling the attachMDF primitive
-                rc.run('attachMDF')
-                log.status('Successfully returned to '+
-                           'standardizeStructure from the attachMDF primitive')
-
-            for ad in rc.getInputs(style='AD'):
-                log.debug('Calling gemt.stdObsStruct on '+ad.filename)
-                gemt.stdObsStruct(ad)
-                log.status('Completed standardizing the structure for '+
-                           ad.filename)
-                
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outsuffix'], 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(ad)
-            
-            log.status('*FINISHED* standardizing the structure of input data')
-        except:
-            log.critical('Problem preparing one of '+rc.inputsAsStr())
-            raise 
-        yield rc
-        
-    def standardizeHeaders(self, rc):
-        """
-        This primitive updates and adds the important header keywords
-        for the input MEFs. First the general headers for Gemini will 
-        be update/created, followed by those that are instrument specific.
-        
-        """
-        
-        try:   
-            log.status('*STARTING* to standardize the headers')
-            log.status('Standardizing observatory general headers')            
-            for ad in rc.getInputs(style='AD'):
-                log.debug('calling gemt.stdObsHdrs for '+ad.filename)
-                gemt.stdObsHdrs(ad)
-                log.status('Completed standardizing the headers for '+
-                           ad.filename)
-   
-            log.status('Observatory headers fixed')
-            log.debug('Salling standardizeInstrumentHeaders primitive')
-            log.status('Standardizing instrument specific headers')
-            
-            # Calling standarizeInstrumentHeaders primitive
-            rc.run('standardizeInstrumentHeaders') 
-            log.status('Instrument specific headers fixed')
-            
-            # Updating the file name with the postpend/outsuffix for this
-            # primitive and then reporting the new file to the reduction 
-            # context 
-            for ad in rc.getInputs(style='AD'):
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outsuffix'], 
-                                                   strip=True)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(ad)
-                
-            log.status('*FINISHED* standardizing the headers')
-        except:
-            log.critical('Problem preparing one of '+rc.inputsAsStr())
-            raise 
-        yield rc 
-
-    def addVAR(self,rc):
-        """
-        This primitive uses numpy to calculate the variance of each SCI frame
-        in the input files and appends it as a VAR frame using AstroData.
-        
-        The calculation will follow the formula:
-        variance = (read noise/gain)2 + max(data,0.0)/gain
-        
-        """
-        try:
-            log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
-            
-            for ad in rc.getInputs(style='AD'):
-                print ad.info()
-                # Check if there VAR frames all ready exist
-                if ad['VAR']:
-                    # If VAR frames don't exist, loop through the SCI extensions 
-                    # and calculate a corresponding VAR frame for it, then 
-                    # append it
-                    for sciExt in ad['SCI']:
-                        # var = (read noise/gain)2 + max(data,0.0)/gain
-                        
-                        # Retrieving necessary values (read noise, gain)
-                        readNoise=sciExt.read_noise()
-                        gain=sciExt.gain()
-                        # Creating (read noise/gain) constant
-                        rnOverG=readNoise/gain
-                        # Convert negative numbers (if they exist) to zeros
-                        maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
-                        # Creating max(data,0.0)/gain array
-                        maxOverGain=np.divide(maxArray,gain)
-                        # Putting it all together
-                        varArray=np.add(maxOverGain,rnOverG*rnOverG)
-                         
-                        # Creating the variance frame's header and updating it     
-                        varheader = pf.Header()
-                        varheader.update('NAXIS', 2)
-                        varheader.update('PCOUNT', 0, 
-                                         'required keyword; must = 0 ')
-                        varheader.update('GCOUNT', 1, 
-                                         'required keyword; must = 1')
-                        varheader.update('EXTNAME', 'VAR', 
-                                         'Extension Name')
-                        varheader.update('EXTVER', sciExt.extver(), 
-                                         'Extension Version')
-                        varheader.update('BITPIX', -32, 
-                                         'number of bits per data pixel')
-                        
-                        # Turning individual variance header and data 
-                        # into one astrodata instance
-                        varAD = AstroData(header=varheader, data=varArray)
-                        
-                        # Appending variance astrodata instance onto input one
-                        log.debug('Appending new VAR HDU onto the file '
-                                     +ad.filename)
-                        ad.append(varAD)
-                        log.status('appending VAR complete for '+ad.filename)
-                        
-                # If VAR frames all ready existed, 
-                # make a critical message in the logger
-                else:
-                    log.critical('VAR frames all ready exist for '+ad.filename+
-                                 ', so addVAR will not calculate new ones')
-                
-                # Adding GEM-TLM(automatic) and ADDVAR time stamps to the PHU     
-                ad.historyMark(key='ADDVAR', stomp=False)    
-                
-                log.fullinfo('************************************************'
-                             ,'header')
-                log.fullinfo('file = '+ad.filename, 'header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             ,'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
-                             'header')
-                log.fullinfo('ADDVAR = '+ad.phuGetKeyValue('ADDVAR'), 'header')
-                log.fullinfo('------------------------------------------------'
-                             ,'header')
-                
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outsuffix'], 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(ad)        
-                
-            log.status('*FINISHED* adding the VAR frame(s) to the input data')
-        except:
-            log.critical('Problem adding the VAR to one of '+rc.inputsAsStr())
-            raise 
-        yield rc 
-
     def addDQ(self,rc):
         """
         This primitive will create a numpy array for the data quality 
@@ -583,7 +193,196 @@ class GEMINIPrimitives(PrimitiveSet):
         except:
             log.critical('Problem adding the DQ to one of '+rc.inputsAsStr())
             raise 
+        yield rc
+    
+    def addVAR(self,rc):
+        """
+        This primitive uses numpy to calculate the variance of each SCI frame
+        in the input files and appends it as a VAR frame using AstroData.
+        
+        The calculation will follow the formula:
+        variance = (read noise/gain)2 + max(data,0.0)/gain
+        
+        """
+        try:
+            log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
+            
+            for ad in rc.getInputs(style='AD'):
+                print ad.info()
+                # Check if there VAR frames all ready exist
+                if ad['VAR']:
+                    # If VAR frames don't exist, loop through the SCI extensions 
+                    # and calculate a corresponding VAR frame for it, then 
+                    # append it
+                    for sciExt in ad['SCI']:
+                        # var = (read noise/gain)2 + max(data,0.0)/gain
+                        
+                        # Retrieving necessary values (read noise, gain)
+                        readNoise=sciExt.read_noise()
+                        gain=sciExt.gain()
+                        # Creating (read noise/gain) constant
+                        rnOverG=readNoise/gain
+                        # Convert negative numbers (if they exist) to zeros
+                        maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
+                        # Creating max(data,0.0)/gain array
+                        maxOverGain=np.divide(maxArray,gain)
+                        # Putting it all together
+                        varArray=np.add(maxOverGain,rnOverG*rnOverG)
+                         
+                        # Creating the variance frame's header and updating it     
+                        varheader = pf.Header()
+                        varheader.update('NAXIS', 2)
+                        varheader.update('PCOUNT', 0, 
+                                         'required keyword; must = 0 ')
+                        varheader.update('GCOUNT', 1, 
+                                         'required keyword; must = 1')
+                        varheader.update('EXTNAME', 'VAR', 
+                                         'Extension Name')
+                        varheader.update('EXTVER', sciExt.extver(), 
+                                         'Extension Version')
+                        varheader.update('BITPIX', -32, 
+                                         'number of bits per data pixel')
+                        
+                        # Turning individual variance header and data 
+                        # into one astrodata instance
+                        varAD = AstroData(header=varheader, data=varArray)
+                        
+                        # Appending variance astrodata instance onto input one
+                        log.debug('Appending new VAR HDU onto the file '
+                                     +ad.filename)
+                        ad.append(varAD)
+                        log.status('appending VAR complete for '+ad.filename)
+                        
+                # If VAR frames all ready existed, 
+                # make a critical message in the logger
+                else:
+                    log.critical('VAR frames all ready exist for '+ad.filename+
+                                 ', so addVAR will not calculate new ones')
+                
+                # Adding GEM-TLM(automatic) and ADDVAR time stamps to the PHU     
+                ad.historyMark(key='ADDVAR', stomp=False)    
+                
+                log.fullinfo('************************************************'
+                             ,'header')
+                log.fullinfo('file = '+ad.filename, 'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                             ,'header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
+                             'header')
+                log.fullinfo('ADDVAR = '+ad.phuGetKeyValue('ADDVAR'), 'header')
+                log.fullinfo('------------------------------------------------'
+                             ,'header')
+                
+                # Updating the file name with the postpend/outsuffix for this
+                # primitive and then reporting the new file to the reduction 
+                # context
+                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
+                                                   strip=False)
+                log.status('File name updated to '+ad.filename)
+                rc.reportOutput(ad)        
+                
+            log.status('*FINISHED* adding the VAR frame(s) to the input data')
+        except:
+            log.critical('Problem adding the VAR to one of '+rc.inputsAsStr())
+            raise 
         yield rc 
+    
+    def ADUtoElectrons(self,rc):
+        """
+        This primitive will convert the inputs from having pixel 
+        units of ADU to electrons.
+        
+        """
+        try:
+            log.status('*STARTING* to convert the pixel values from '+
+                       'ADU to electrons')
+            for ad in rc.getInputs(style='AD'):
+                log.fullinfo('calling ad.mult on '+ad.filename)
+                
+                # mult in this primitive will multiply the SCI frames by the
+                # frame's gain, VAR frames by gain^2 (if they exist) and leave
+                # the DQ frames alone (if they exist).
+                log.debug('Calling ad.mult to convert pixel units from '+
+                          'ADU to electrons')
+                adOut = ad.mult(ad['SCI'].gain(asDict=True))  
+                log.status('ad.mult completed converting the pixel units'+
+                           ' to electrons')              
+
+                # Updating SCI headers
+                for ext in adOut['SCI']:
+                    # Retrieving this SCI extension's gain
+                    gainorig = ext.gain()
+                    # Updating this SCI extension's header keys
+                    ext.SetKeyValue('GAINORIG', gainorig, 
+                                       'Gain prior to unit conversion (e-/ADU)')
+                    ext.SetKeyValue('GAIN', 1.0, 'Physical units is electrons') 
+                    ext.SetKeyValue('BUNIT','electrons' , 'Physical units')
+                    # Logging the changes to the header keys
+                    log.fullinfo('SCI extension number '+
+                                 str(ext.extver())+
+                                 ' keywords updated/added:\n', 'header')
+                    log.fullinfo('GAINORIG = '+str(gainorig),'header' )
+                    log.fullinfo('GAIN = '+str(1.0),'header' )
+                    log.fullinfo('BUNIT = '+'electrons','header' )
+                    log.fullinfo('--------------------------------------------'
+                                 ,'header')
+                # Updating VAR headers if they exist (not updating any 
+                # DQ headers as no changes were made to them here)  
+                for ext in adOut['VAR']:
+                    # Ensure there are no GAIN and GAINORIG header keys for 
+                    # the VAR extension. No errors are thrown if they aren't 
+                    # there initially, so all good not to check ahead. 
+                    del ext.header['GAINORIG']
+                    del ext.header['GAIN']
+                    
+                    # Updating then logging the change to the BUNIT 
+                    # key in the VAR header
+                    ext.SetKeyValue('BUNIT','electrons squared' , 
+                                       'Physical units')
+                    # Logging the changes to the VAR extensions header keys
+                    log.fullinfo('VAR extension number '+
+                                 str(ext.extver())+\
+                                 ' keywords updated/added:\n', 'header')
+                    log.fullinfo('BUNIT = '+'electrons squared','header' )
+                    log.fullinfo('--------------------------------------------'
+                                 ,'header')
+                
+                # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
+                adOut.historyMark('ADU2ELEC', stomp=False)
+                
+                # Updating logger with time stamps
+                log.fullinfo('************************************************'
+                             ,'header')
+                log.fullinfo('ile = '+adOut.filename, 'header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                             ,'header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             'header')
+                log.fullinfo('ADU2ELEC = '+ad.phuGetKeyValue('ADU2ELEC'), 
+                             'header')
+                log.fullinfo('------------------------------------------------'
+                             , 'header')
+                
+                # Updating the file name with the postpend/outsuffix for this
+                # primitive and then reporting the new file to the reduction 
+                # context.
+                log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
+                adOut.filename=gemt.fileNameUpdater(adOut.filename, 
+                                                    postpend=rc['outpref'], 
+                                                    strip=False)
+                log.status('File name updated to '+ad.filename)
+                rc.reportOutput(adOut)   
+                
+            log.status('*FINISHED* converting the pixel units to electrons')
+        except:
+            log.critical('Problem converting the pixel units of one of '+
+                         rc.inputsAsStr())
+            raise
+        yield rc
             
     def combine(self,rc):
         """
@@ -683,8 +482,55 @@ class GEMINIPrimitives(PrimitiveSet):
         except:
             log.critical('There was a problem combining '+rc.inputsAsStr())
             raise 
-        yield rc   
+        yield rc
 
+    def crashReduce(self, rc):
+        raise 'Crashing'
+        yield rc
+        
+    def clearCalCache(self, rc):
+        # print 'pG61:', rc.calindfile
+        rc.persistCalIndex(rc.calindfile, newindex={})
+        scals = rc['storedcals']
+        if scals:
+            if os.path.exists(scals):
+                shutil.rmtree(scals)
+            cachedict = rc['cachedict']
+            for cachename in cachedict:
+                cachedir = cachedict[cachename]
+                if not os.path.exists(cachedir):                        
+                    os.mkdir(cachedir)                
+        yield rc
+        
+    def display(self, rc):
+        try:
+            rc.rqDisplay(displayID=rc['displayID'])           
+        except:
+            log.critical('Problem displaying output')
+            raise 
+        yield rc
+ 
+    def getStackable(self, rc):
+        """
+        This primitive will check the files in the stack lists are on disk,
+        if not write them to disk and then update the inputs list to include
+        all members of the stack for stacking.
+        
+        """
+        try:
+            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
+            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
+            log.fullinfo('getting stack '+stackid,'stack')
+            rc.rqStackGet()
+            yield rc
+            stack = rc.getStack(stackid).filelist
+            #print 'prim_G366: ',repr(stack)
+            rc.reportOutput(stack)
+        except:
+            log.critical('Problem getting stack '+stackid, 'stack')
+            raise 
+        yield rc
+ 
     def measureIQ(self,rc):
         """
         """
@@ -725,101 +571,257 @@ class GEMINIPrimitives(PrimitiveSet):
         except:
             log.critical('There was a problem combining '+rc.inputsAsStr())
             raise 
-        yield rc  
+        yield rc
+ 
+    def pause(self, rc):
+        rc.requestPause()
+        yield rc
+ 
+    def setContext(self, rc):
+        rc.update(rc.localparms)
+        yield rc
     
-    def ADUtoElectrons(self,rc):
+    def setStackable(self, rc):
         """
-        This primitive will convert the inputs from having pixel 
-        units of ADU to electrons.
+        This primitive will update the lists of files to be stacked
+        that have the same observationID with the current inputs.
+        This file is cached between calls to reduce, thus allowing
+        for one-file-at-a-time processing.
         
         """
         try:
-            log.status('*STARTING* to convert the pixel values from '+
-                       'ADU to electrons')
+            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
+            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), 
+                         category='stack')
+            rc.rqStackUpdate()
+            # Writing the files in the stack to disk if not all ready there
             for ad in rc.getInputs(style='AD'):
-                log.fullinfo('calling ad.mult on '+ad.filename)
-                
-                # mult in this primitive will multiply the SCI frames by the
-                # frame's gain, VAR frames by gain^2 (if they exist) and leave
-                # the DQ frames alone (if they exist).
-                log.debug('Calling ad.mult to convert pixel units from '+
-                          'ADU to electrons')
-                adOut = ad.mult(ad['SCI'].gain(asDict=True))  
-                log.status('ad.mult completed converting the pixel units'+
-                           ' to electrons')              
+                if not os.path.exists(ad.filename):
+                    log.fullinfo('temporarily writing '+ad.filename+\
+                                 ' to disk', category='stack')
+                    ad.write(ad.filename)
+        except:
+            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),
+                         category='stack')
+            raise
+        yield rc
+    
+    def showCals(self, rc):
+        if str(rc['showcals']).lower() == 'all':
+            num = 0
+            # print 'pG256: showcals=all', repr (rc.calibrations)
+            for calkey in rc.calibrations:
+                num += 1
+                log.fullinfo(rc.calibrations[calkey], category='calibrations')
+            if (num == 0):
+                log.warning('There are no calibrations in the cache.')
+        else:
+            for adr in rc.inputs:
+                sid = IDFactory.generateAstroDataID(adr.ad)
+                num = 0
+                for calkey in rc.calibrations:
+                    if sid in calkey :
+                        num += 1
+                        log.fullinfo(rc.calibrations[calkey], 
+                                     category='calibrations')
+            if (num == 0):
+                log.warning('There are no calibrations in the cache.')
+        yield rc
+    ptusage_showCals='Used to show calibrations currently in cache for inputs.'
 
-                # Updating SCI headers
-                for ext in adOut['SCI']:
-                    # Retrieving this SCI extension's gain
-                    gainorig = ext.gain()
-                    # Updating this SCI extension's header keys
-                    ext.SetKeyValue('GAINORIG', gainorig, 
-                                       'Gain prior to unit conversion (e-/ADU)')
-                    ext.SetKeyValue('GAIN', 1.0, 'Physical units is electrons') 
-                    ext.SetKeyValue('BUNIT','electrons' , 'Physical units')
-                    # Logging the changes to the header keys
-                    log.fullinfo('SCI extension number '+
-                                 str(ext.extver())+
-                                 ' keywords updated/added:\n', 'header')
-                    log.fullinfo('GAINORIG = '+str(gainorig),'header' )
-                    log.fullinfo('GAIN = '+str(1.0),'header' )
-                    log.fullinfo('BUNIT = '+'electrons','header' )
-                    log.fullinfo('--------------------------------------------'
-                                 ,'header')
-                # Updating VAR headers if they exist (not updating any 
-                # DQ headers as no changes were made to them here)  
-                for ext in adOut['VAR']:
-                    # Ensure there are no GAIN and GAINORIG header keys for 
-                    # the VAR extension. No errors are thrown if they aren't 
-                    # there initially, so all good not to check ahead. 
-                    del ext.header['GAINORIG']
-                    del ext.header['GAIN']
-                    
-                    # Updating then logging the change to the BUNIT 
-                    # key in the VAR header
-                    ext.SetKeyValue('BUNIT','electrons squared' , 
-                                       'Physical units')
-                    # Logging the changes to the VAR extensions header keys
-                    log.fullinfo('VAR extension number '+
-                                 str(ext.extver())+\
-                                 ' keywords updated/added:\n', 'header')
-                    log.fullinfo('BUNIT = '+'electrons squared','header' )
-                    log.fullinfo('--------------------------------------------'
-                                 ,'header')
+    def showInputs(self, rc):
+        log.fullinfo('Inputs:',category='inputs')
+        for inf in rc.inputs:
+            log.fullinfo('  '+inf.filename, category='inputs')  
+        yield rc  
+    showFiles = showInputs
+
+    def showParameters(self, rc):
+        rcparams = rc.paramNames()
+        if (rc['show']):
+            toshows = rc['show'].split(':')
+            for toshow in toshows:
+                if toshow in rcparams:
+                    log.fullinfo(toshow+' = '+repr(rc[toshow]), 
+                                 category='parameters')
+                else:
+                    log.fullinfo(toshow+' is not set', category='parameters')
+        else:
+            for param in rcparams:
+                log.fullinfo(param+' = '+repr(rc[param]), category='parameters')
+        
+        # print 'all',repr(rc.parmDictByTag('showParams', 'all'))
+        # print 'iraf',repr(rc.parmDictByTag('showParams', 'iraf'))
+        # print 'test',repr(rc.parmDictByTag('showParams', 'test'))
+        # print 'sdf',repr(rc.parmDictByTag('showParams', 'sdf'))
+
+        # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
+        yield rc  
+         
+    def showStackable(self, rc):
+        sidset = set()
+        for inp in rc.inputs:
+            sidset.add(IDFactory.generateStackableID(inp.ad))
+        for sid in sidset:
+            stacklist = rc.getStack(sid).filelist
+            log.status('Stack for stack id=%s' % sid)
+            for f in stacklist:
+                log.status('   '+os.path.basename(f))
+        yield rc
+            
+    def sleep(self, rc):
+        if rc['duration']:
+            dur = float(rc['duration'])
+        else:
+            dur = 5.
+        log.status('Sleeping for %f seconds' % dur)
+        time.sleep(dur)
+        yield rc
+             
+    def standardizeHeaders(self, rc):
+        """
+        This primitive updates and adds the important header keywords
+        for the input MEFs. First the general headers for Gemini will 
+        be update/created, followed by those that are instrument specific.
+        
+        """
+        
+        try:   
+            log.status('*STARTING* to standardize the headers')
+            log.status('Standardizing observatory general headers')            
+            for ad in rc.getInputs(style='AD'):
+                log.debug('calling gemt.stdObsHdrs for '+ad.filename)
+                gemt.stdObsHdrs(ad)
+                log.status('Completed standardizing the headers for '+
+                           ad.filename)
+   
+            log.status('Observatory headers fixed')
+            log.debug('Salling standardizeInstrumentHeaders primitive')
+            log.status('Standardizing instrument specific headers')
+            
+            # Calling standarizeInstrumentHeaders primitive
+            rc.run('standardizeInstrumentHeaders') 
+            log.status('Instrument specific headers fixed')
+            
+            # Updating the file name with the postpend/outsuffix for this
+            # primitive and then reporting the new file to the reduction 
+            # context 
+            for ad in rc.getInputs(style='AD'):
+                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
+                                                   strip=True)
+                log.status('File name updated to '+ad.filename)
+                rc.reportOutput(ad)
                 
-                # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
-                adOut.historyMark('ADU2ELEC', stomp=False)
-                
-                # Updating logger with time stamps
-                log.fullinfo('************************************************'
-                             ,'header')
-                log.fullinfo('ile = '+adOut.filename, 'header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             ,'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             'header')
-                log.fullinfo('ADU2ELEC = '+ad.phuGetKeyValue('ADU2ELEC'), 
-                             'header')
-                log.fullinfo('------------------------------------------------'
-                             , 'header')
+            log.status('*FINISHED* standardizing the headers')
+        except:
+            log.critical('Problem preparing one of '+rc.inputsAsStr())
+            raise 
+        yield rc
+                                 
+    def standardizeStructure(self,rc):
+        """
+        This primitive ensures the MEF structure is ready for further 
+        processing, through adding the MDF if necessary and the needed 
+        keywords to the headers.  First the MEF's will be checked for the 
+        general Gemini structure requirements and then the instrument specific
+        ones if needed. If the data requires a MDF to be attached, use the 
+        'addMDF' flag to make this happen 
+        (eg. standardizeStructure(addMDF=True)).
+        
+        """
+        
+        try:
+            log.status('*STARTING* to standardize the structure of input data')
+            
+            # Add the MDF if not set to false
+            if rc['addMDF'] is True:
+                log.debug('Calling attachMDF primitive')
+                # Calling the attachMDF primitive
+                rc.run('attachMDF')
+                log.status('Successfully returned to '+
+                           'standardizeStructure from the attachMDF primitive')
+
+            for ad in rc.getInputs(style='AD'):
+                log.debug('Calling gemt.stdObsStruct on '+ad.filename)
+                gemt.stdObsStruct(ad)
+                log.status('Completed standardizing the structure for '+
+                           ad.filename)
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
-                # context.
-                log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                adOut.filename=gemt.fileNameUpdater(adOut.filename, 
-                                                    postpend=rc['outpref'], 
-                                                    strip=False)
+                # context
+                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
+                                                   strip=False)
                 log.status('File name updated to '+ad.filename)
-                rc.reportOutput(adOut)   
-                
-            log.status('*FINISHED* converting the pixel units to electrons')
+                rc.reportOutput(ad)
+            
+            log.status('*FINISHED* standardizing the structure of input data')
         except:
-            log.critical('Problem converting the pixel units of one of '+
-                         rc.inputsAsStr())
-            raise
-        yield rc                    
+            log.critical('Problem preparing one of '+rc.inputsAsStr())
+            raise 
+        yield rc
+        
+    def time(self, rc):
+        cur = datetime.now()
+        
+        elap = ''
+        if rc['lastTime'] and not rc['start']:
+            td = cur - rc['lastTime']
+            elap = ' (%s)' %str(td)
+        log.fullinfo('Time:'+' '+str(datetime.now())+' '+elap)
+        
+        rc.update({'lastTime':cur})
+        yield rc
+
+    def validateData(self,rc):
+        """
+        This primitive will ensure the data is not corrupted or in an odd 
+        format that will affect later steps in the reduction process.  
+        It will call a function to take care of the general Gemini issues 
+        and then one for the instrument specific ones. If there are issues 
+        with the data, the flag 'repair' can be used to turn on the feature to 
+        repair it or not (eg. validateData(repair=True))
+        (this feature is not coded yet).
+        
+        """
+        
+        try:
+            if rc['repair'] is True:
+               # This should repair the file if it is broken, but this function
+               # isn't coded yet and would require some sort of flag set while 
+               # checking the data to tell this to perform the corrections
+               log.critical('Sorry, but the repair feature of validateData' +
+                            ' is not available yet')
+               pass
+            
+            log.status('*STARTING* to validate the input data')
+            
+            log.debug('Calling validateInstrumentData primitive')
+            # Calling the validateInstrumentData primitive 
+            rc.run('validateInstrumentData')
+            log.status('Successfully returned to validateData'+
+                       ' from the validateInstrumentData primitive') 
+            
+            # Updating the file name with the postpend/outsuffix for this
+            # primitive and then reporting the new file to the reduction 
+            # context
+            for ad in rc.getInputs(style='AD'):
+                log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend='_validated', 
+                                                   strip=False)
+                log.status('File name updated to '+ad.filename)
+                rc.reportOutput(ad) 
+                        
+            log.status('*FINISHED* validating input data')                
+        except:
+            log.critical('Problem preparing one of  '+rc.inputsAsStr())
+            raise 
+        yield rc
 
     def writeOutputs(self,rc):
         """
