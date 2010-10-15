@@ -1,4 +1,4 @@
-validateData(repair=True)
+validateData(repair=False)
 standardizeStructure(addMDF=False)
 standardizeHeaders
 #validateWCS(repair=False)
