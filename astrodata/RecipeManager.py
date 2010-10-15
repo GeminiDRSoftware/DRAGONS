@@ -23,8 +23,8 @@ from ReductionObjects import ReductionObject
 from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, \
     ImageQualityRequest
 from StackKeeper import StackKeeper, FringeKeeper
-from copy import copy,deepcopy
-
+from copy import copy, deepcopy
+from astrodata.adutils import gemLog
 #------------------------------------------------------------------------------ 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
@@ -32,6 +32,8 @@ centralReductionMap = {}
 centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
+
+log=gemLog.getGeminiLog()
 #------------------------------------------------------------------------------ 
 
 class RecipeExcept:
@@ -464,7 +466,7 @@ class ReductionContext(dict):
         @return: The URI of the currently stored calibration or None.
         @rtype: str or None 
         '''
-        #print "RM551:", data, type( data )
+        #"RM467:"+ repr(data)+repr( type( data ))
         adID = idFac.generateAstroDataID(data)
         #filename = os.path.abspath(filename)
         key = (adID, caltype)
