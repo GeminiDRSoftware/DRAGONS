@@ -1,16 +1,11 @@
-if False:
-    # ONLY IMPORT THESE WHEN ACTUALLY RUNNING THEM... because
-    # iraf takes a second or ten to import...
-    from pyraf import iraf
-    from iraf import gemini
-    from iraf import gemlocal
+import os
 
 import mefutil
 #reload(mefutil)
 import strutil
 import time
-
-
+import datetime
+import pyfits as pf
 
 
 """This file contains the following utilities:
@@ -63,7 +58,6 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
     @return: image name string with .fits
     @rtype: string
     """
-    import iraf
     #
     #  Make sure rawpath and mdfdir have a trailing "/"
     #
@@ -83,37 +77,51 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
         else:
             print "# ERROR:   unknown observatory:", observatory
             bye()
-        iraf.getfakeUT()
-        utdate = iraf.getfakeUT.fakeUT
+        # Creating a UT version of todays date following YYYYMMDD 
+        today = datetime.date.today() 
+        y = str(today.year)
+        m = today.month
+        if m<10:
+            m ='0'+str(m)
+        else:
+            m = str(m)
+        d = str(today.day)
+        utdate=y+m+d
+        # Creating prefix following 'N20101228S' if date was 2010/12/28 and it 
+        # was a gemini-north image
         prefix = siteprefix + utdate + "S" 
 
-
     #----------------------------------------------------------
-    # Construct image name
-
-    iraf.gemisnumber (image, "integer", verbose=iraf.no)
-    if iraf.gemisnumber.fl_istype:
-        if verbose: print "# IMAGENAME - Constructing image name based on today's UT date..."
-        imstring = "%04d"%(int(image))
-        image = prefix + imstring + ".fits"
-
-    imagenorawpath = image
-
+    # Construct image name following one of three options
+    
+    # If input variable image is an integer
+    # output image name will follow prefix(from above)+image+'.fits'
+    if isinstance(image, int):
+        imagenorawpath = prefix+str(int)+'.fits'
+        freshFile = True
+    else:
+        if isinstance(image, str):
+            freshFile = False
+            if image.find('.fits')<0:
+                image = image+'.fits'
+        imagenorawpath = os.path.basename(image)
+    
     # is there a directory name
-    iraf.fparse(image)
-    if iraf.fparse.directory == "":
-        iraf.gimverify(image)
-        if iraf.gimverify.status != 0:
-            iraf.gimverify(rawpath+image)
-        if iraf.gimverify.status == 1:
-            print "# ERROR: Cannot access image", image
+    if (os.path.exists(os.path.join(rawpath,imagenorawpath)) is False) and \
+                                                        (freshFile is False):
+        print "# ERROR: Cannot access image", image
             #raise SystemExit
-        elif iraf.gimverify.status != 0:
+    elif os.path.exists(os.path.join(rawpath, imagenorawpath)) is True:
+        try:
+            f = pf.open(os.path.join(rawpath, imagenorawpath))
+            if len(f)<2:
+                print 'Image is only a single extension fits file'
+                #raise SystemExit
+        except:
             print "# ERROR: Image %s is not a MEF file" % (l_image,)
             #raise SystemExit
 
-    image = iraf.gimverify.outname
-    fitsimage = image + ".fits"
+    fitsimage = os.path.join(rawpath, imagenorawpath) 
         
     observer = mefutil.getkey ("observer", fitsimage)
     if verbose: print "# IMAGENAME - Observer ", observer
