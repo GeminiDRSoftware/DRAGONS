@@ -1,12 +1,15 @@
 import os
 
+from pyraf import iraf
+from iraf import gemini
+from iraf import gemlocal
 import mefutil
-#reload(mefutil)
 import strutil
 import time
-import datetime
-import pyfits as pf
 
+from astrodata.adutils import gemLog
+
+log = gemLog.getGeminiLog()
 
 """This file contains the following utilities:
     imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
@@ -14,7 +17,7 @@ import pyfits as pf
     appendSuffix (filename, suffix)
     replaceSuffix (filename, suffix)
     gemdate (zone='UT')
-    gemhedit (filename=None, extension=0, keyword="", value="", comment="")
+    gemhedit (filename=None, extension=0, keyword='', value='', comment='')
     gimverify (image, sci_ext='SCI', dq_ext='DQ')
     printlog (text, logfile=None, verbose=True)
     removeExtension (images)
@@ -25,7 +28,7 @@ import pyfits as pf
     
 # This is used by removeExtension(), appendSuffix(), and replaceSuffix(),
 # which are defined in this file.
-extensions = [".fits", ".fit", ".pl", ".imh", ".hhh", ".tab", ".dat"]
+extensions = ['.fits', '.fit', '.pl', '.imh', '.hhh', '.tab', '.dat']
 
 gimverify_does_not_exist = 0    # does not exist
 gimverify_MEF = 1               # exists and is a MEF file
@@ -59,36 +62,28 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
     @rtype: string
     """
     #
-    #  Make sure rawpath and mdfdir have a trailing "/"
+    #  Make sure rawpath and mdfdir have a trailing '/'
     #
-    if ((rawpath != "") and (rawpath[-1] != "/") and (rawpath[-1] != "$")):
-        rawpath = rawpath + "/"
+    if ((rawpath != '') and (rawpath[-1] != '/') and (rawpath[-1] != '$')):
+        rawpath = rawpath + '/'
         #self.rawpath = rawpath
         #self.mdfdir = mdfdir
     #---------------------------------------------------------
     # Build file prefix for future use
 
-    if prefix == "auto":
+    if prefix == 'auto':
         observatory = observatory.lower()
-        if observatory == "gemini-north":
-            siteprefix = "N"
-        elif observatory == "gemini-south":
-            siteprefix = "S"
+        if observatory == 'gemini-north':
+            siteprefix = 'N'
+        elif observatory == 'gemini-south':
+            siteprefix = 'S'
         else:
-            print "# ERROR:   unknown observatory:", observatory
+            log.error('Observatory name passed in not gemini-north or '+
+                      'gemini-south, it was '+ observatory, category='IQ')
             bye()
         # Creating a UT version of todays date following YYYYMMDD 
-        today = datetime.date.today() 
-        y = str(today.year)
-        m = today.month
-        if m<10:
-            m ='0'+str(m)
-        else:
-            m = str(m)
-        d = str(today.day)
-        utdate=y+m+d
-        # Creating prefix following 'N20101228S' if date was 2010/12/28 and it 
-        # was a gemini-north image
+        iraf.getfakeUT()
+        utdate = iraf.getfakeUT.fakeUT
         prefix = siteprefix + utdate + "S" 
 
     #----------------------------------------------------------
@@ -96,37 +91,35 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
     
     # If input variable image is an integer
     # output image name will follow prefix(from above)+image+'.fits'
-    if isinstance(image, int):
-        imagenorawpath = prefix+str(int)+'.fits'
-        freshFile = True
-    else:
-        if isinstance(image, str):
-            freshFile = False
-            if image.find('.fits')<0:
-                image = image+'.fits'
-        imagenorawpath = os.path.basename(image)
     
+    iraf.gemisnumber (image, "integer", verbose=iraf.no)
+    if iraf.gemisnumber.fl_istype:
+        if verbose: print "# IMAGENAME - Constructing image name based on today's UT date..."
+        imstring = "%04d"%(int(image))
+        image = prefix + imstring + ".fits"
+
+    imagenorawpath = image
+
     # is there a directory name
-    if (os.path.exists(os.path.join(rawpath,imagenorawpath)) is False) and \
-                                                        (freshFile is False):
-        print "# ERROR: Cannot access image", image
+    iraf.fparse(image)
+    if iraf.fparse.directory == "":
+        iraf.gimverify(image)
+        if iraf.gimverify.status != 0:
+            iraf.gimverify(rawpath+image)
+        if iraf.gimverify.status == 1:
+            print "# ERROR: Cannot access image", image
             #raise SystemExit
-    elif os.path.exists(os.path.join(rawpath, imagenorawpath)) is True:
-        try:
-            f = pf.open(os.path.join(rawpath, imagenorawpath))
-            if len(f)<2:
-                print 'Image is only a single extension fits file'
-                #raise SystemExit
-        except:
+        elif iraf.gimverify.status != 0:
             print "# ERROR: Image %s is not a MEF file" % (l_image,)
             #raise SystemExit
 
-    fitsimage = os.path.join(rawpath, imagenorawpath) 
-        
-    observer = mefutil.getkey ("observer", fitsimage)
-    if verbose: print "# IMAGENAME - Observer ", observer
-
-    if verbose: print "# IMAGENAME - Using image", image
+    image = iraf.gimverify.outname
+    fitsimage = image + ".fits"
+       
+    observer = mefutil.getkey ('observer', fitsimage)
+    if verbose: 
+        log.fullinfo('Observer of image '+imagenorawpath+
+                             ' was found to be '+observer, category='IQ')
 
     return fitsimage, imagenorawpath        
 
@@ -147,7 +140,7 @@ def appendSuffix (filename, suffix):
     @param filename: a file name
     @type filename: string
 
-    @param suffix: the suffix (e.g. "_flt") to append
+    @param suffix: the suffix (e.g. '_flt') to append
     @type suffix: string
 
     @return: the input file name with the suffix included
@@ -173,7 +166,7 @@ def appendSuffix (filename, suffix):
 def replaceSuffix (filename, suffix):
     """Replace the suffix in the file name.
 
-    If filename includes an underscore ("_") character, the slice
+    If filename includes an underscore ('_') character, the slice
     between that point (the rightmost underscore) and the extension will
     be replaced with the specified suffix.  If there is no underscore,
     the suffix will be inserted before the extension.
@@ -206,7 +199,7 @@ def replaceSuffix (filename, suffix):
     # extensions is a list of recognized filename extensions.
     for extn in extensions:
         if filename.endswith (extn):
-            j = filename.rfind ("_")
+            j = filename.rfind ('_')
             if j >= 0:
                 newname = filename[:j] + suffix + extn
             else:
@@ -216,7 +209,7 @@ def replaceSuffix (filename, suffix):
             break
 
     if not found:
-        j = filename.rfind ("_")
+        j = filename.rfind ('_')
         if j >= 0:
             newname = filename[:j] + suffix
         else:
@@ -225,33 +218,33 @@ def replaceSuffix (filename, suffix):
     return newname
 
 #---------------------------------------------------------------------------
-def gemdate (zone="UT", timestamp = None):
+def gemdate (zone='UT', timestamp = None):
     
     """Get the current date and time.
 
-    @param zone: "UT" or "local", to indicate whether the time should be
+    @param zone: 'UT' or 'local', to indicate whether the time should be
         UTC (always standard time) or local time (which can be either
         standard or daylight saving time)
     @type zone: string
 
-    @return: date and time formatted as "yyyy-mm-ddThh:mm:ss";
+    @return: date and time formatted as 'yyyy-mm-ddThh:mm:ss';
         every value is an integer
     @rtype: string    
     """
 
     if timestamp == None:
-        if zone == "UT":        
-            t = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        elif zone == "local":
-            t = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+        if zone == 'UT':        
+            t = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
+        elif zone == 'local':
+            t = time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime())
         else:
-            raise ValueError, "Invalid time zone = %s" % zone
+            raise ValueError, 'Invalid time zone = %s' % zone
     else:
-        t = timestamp.strftime("%Y-%m-%dT%H:%M:%S")
+        t = timestamp.strftime('%Y-%m-%dT%H:%M:%S')
     return t
 
 #---------------------------------------------------------------------------
-def gemhedit (filename=None, extension=0, keyword="", value="", comment="",
+def gemhedit (filename=None, extension=0, keyword='', value='', comment='',
               delete=False):
     """Modify or delete an existing keyword or add a new keyword to a header.
 
@@ -277,7 +270,7 @@ def gemhedit (filename=None, extension=0, keyword="", value="", comment="",
     @type delete: boolean
     """
 
-    fd = pyfits.open (filename, mode="update")
+    fd = pyfits.open(filename, mode='update')
     header = fd[extension].header
 
     if delete:
@@ -293,7 +286,7 @@ def gemhedit (filename=None, extension=0, keyword="", value="", comment="",
     fd.close()
 
 #---------------------------------------------------------------------------
-def gimverify (image, sci_ext="SCI", dq_ext="DQ"):
+def gimverify (image, sci_ext='SCI', dq_ext='DQ'):
     """Check whether the specified image exists, and if so, get the type.
 
     @param image: name of an image; the name must not use wildcard characters
@@ -338,24 +331,24 @@ def gimverify (image, sci_ext="SCI", dq_ext="DQ"):
     if len (words) > 1:
         extension = words[-1]
     else:
-        extension = ""
+        extension = ''
 
-    if extension == "pl":
+    if extension == 'pl':
         type = gimverify_pl
-    elif extension == "imh":
+    elif extension == 'imh':
         type = gimverify_imh
-    elif extension == "hhh":
+    elif extension == 'hhh':
         type = gimverify_hhh
-    elif extension == "fits" or extension == "fit":
+    elif extension == 'fits' or extension == 'fit':
         # Find out what type of FITS file this is.
         fd = pyfits.open (image)
         if len (fd) > 1:
             type = gimverify_other      # may be reset below
             try:
-                if fd[sci_ext].header["xtension"] == "IMAGE":
+                if fd[sci_ext].header['xtension'] == 'IMAGE':
                     type = gimverify_MEF
                     try:
-                        if fd[dq_ext].header["xtension"] == "IMAGE":
+                        if fd[dq_ext].header['xtension'] == 'IMAGE':
                             has_dq = True
                     except:
                         has_dq = False
@@ -385,16 +378,16 @@ def printlog (text, logfile=None, verbose=True):
     @type verbose: boolean
     """
 
-    if logfile == "STDOUT":
+    if logfile == 'STDOUT':
         logfile = None
         verbose = True
 
-    if text[0:5] == "ERROR" or text[0:7] == "WARNING":
+    if text[0:5] == 'ERROR' or text[0:7] == 'WARNING':
         verbose = True
 
     if logfile is not None:
-        fd = open (logfile, mode="a")
-        fd.write (text + "\n")
+        fd = open (logfile, mode='a')
+        fd.write (text + '\n')
         fd.close()
 
     if verbose:
@@ -449,7 +442,7 @@ def appendFits (images):
     !!!NOTE!!! This function calls the appendFits in strutil. Thus, if you want to use appendFits,
     use the one in there. This remains for backwards compatibility.
     
-    Append ".fits" to each name in 'images' that lacks an extension.
+    Append '.fits' to each name in 'images' that lacks an extension.
 
     >>> print appendFits ('abc')
     abc.fits
@@ -461,7 +454,7 @@ def appendFits (images):
     @param images: a file name or a list of file names
     @type images: a string or a list of strings
 
-    @return: the input file names with ".fits" appended to each, unless
+    @return: the input file names with '.fits' appended to each, unless
         the name already ended in a recognized extension.
     @rtype: list of strings
     """
