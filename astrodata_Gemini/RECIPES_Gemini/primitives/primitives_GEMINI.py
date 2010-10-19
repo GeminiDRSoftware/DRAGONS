@@ -395,7 +395,7 @@ class GEMINIPrimitives(PrimitiveSet):
         
         """
         # Loading and bringing the pyraf related modules into the name-space
-        pyraf,gemini,yes,no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
             if len(rc.getInputs())>1:
@@ -540,12 +540,13 @@ class GEMINIPrimitives(PrimitiveSet):
         try:
             log.status('*STARTING* to detect the sources'+
                        ' and measure the IQ of the inputs')
+            from iqtool.iq import getiq
             for ad in rc.getInputs(style='AD'):
                 if os.path.dirname(ad.filename) != '':
                     log.critical('The inputs to measureIQ must be in the'+
                                  ' pwd for it to work correctly')
                     raise GEMINIException('inputs to measureIQ were not in pwd')
-                print ad.info()    
+                    
                # if 'GEMINI_NORTH' in inp.ad.getTypes():
                #     observ = 'gemini-north'
                # elif 'GEMINI_SOUTH' in inp.ad.getTypes():
@@ -553,12 +554,22 @@ class GEMINIPrimitives(PrimitiveSet):
                # else:
                #     observ = 'gemini-north'
                 
+                # Start time for measuring IQ of current file
                 st = time.time()
-                from iqtool.iq import getiq
+                
+                log.debug('Calling getiq.gemiq for input '+ad.filename)
+                
+                # Calling the gemiq function to detect the sources and then
+                # measure the IQ of the current image 
                 iqdata = getiq.gemiq( ad.filename, function='moffat', 
-                                      display=True, mosaic=True, qa=True)
+                                      display=True, mosaic=False, qa=True)
+                
+                # End time for measuring IQ of current file
                 et = time.time()
-                log.stdinfo('MeasureIQ time: '+repr(et - st))
+                
+                # Logging the amount of time spent measuring the IQ 
+                log.stdinfo('MeasureIQ time: '+repr(et - st), category='IQ')
+                
                 # iqdata is list of tuples with image quality metrics
                 # (ellMean, ellSig, fwhmMean, fwhmSig)
                 if len(iqdata) == 0:
@@ -796,7 +807,6 @@ class GEMINIPrimitives(PrimitiveSet):
                # checking the data to tell this to perform the corrections
                log.critical('Sorry, but the repair feature of validateData' +
                             ' is not available yet')
-               pass
             
             log.status('*STARTING* to validate the input data')
             
