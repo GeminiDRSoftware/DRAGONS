@@ -533,6 +533,10 @@ class GEMINIPrimitives(PrimitiveSet):
  
     def measureIQ(self,rc):
         """
+        This primitive will detect the sources in the input images and fit
+        both Gaussian and Moffat models to their profiles and calculate the 
+        Image Quality and seeing from this.
+        
         """
         #@@FIXME: Detecting sources is done here as well. This 
         # should eventually be split up into
@@ -540,20 +544,18 @@ class GEMINIPrimitives(PrimitiveSet):
         try:
             log.status('*STARTING* to detect the sources'+
                        ' and measure the IQ of the inputs')
+            # Importing getiq module to perform the source detection and IQ
+            # measurements of the inputs
             from iqtool.iq import getiq
+            
             for ad in rc.getInputs(style='AD'):
+                # Check that the files being processed are in the current 
+                # working directory, as that is a requirement for getiq to work
                 if os.path.dirname(ad.filename) != '':
                     log.critical('The inputs to measureIQ must be in the'+
                                  ' pwd for it to work correctly')
                     raise GEMINIException('inputs to measureIQ were not in pwd')
                     
-               # if 'GEMINI_NORTH' in inp.ad.getTypes():
-               #     observ = 'gemini-north'
-               # elif 'GEMINI_SOUTH' in inp.ad.getTypes():
-               #     observ = 'gemini-south'
-               # else:
-               #     observ = 'gemini-north'
-                
                 # Start time for measuring IQ of current file
                 st = time.time()
                 
