@@ -351,31 +351,6 @@ class CLManager(object):
         # Create a temporary log file object
         self.templog = tempfile.NamedTemporaryFile() 
     
-    def finishCL(self, combine=False): 
-        """ Performs all the finalizing steps after CL script is ran. 
-         This is currently just an alias for postCLloads and might have 
-         more functionality in the future.
-         
-         """
-        self.postCLloads(combine)    
-    
-    def preCLwrites(self):
-        """ The function that writes the files in memory to disk with temporary 
-            names and saves the original names in a list.
-        
-        """
-        for ad in self.rc.getInputs(style='AD'):
-            # Load up the preCLfilenames list with the input's filename
-            self._preCLfilenames.append(ad.filename)
-            # Strip off all postfixes and prepend filename with a unique prefix
-            name = fileNameUpdater(ad.filename, prepend=self.prefix, strip=True)
-            # store the unique name in preCLcachestorenames for later reference
-            self._preCLcachestorenames.append(name)
-            # Log the name of this temporary file being written to disk
-            log.fullinfo('Temporary file on disk for input to CL: '+name)
-            # Write this file to disk with its unique filename 
-            ad.write(name, rename=False) 
-    
     def cacheStoreNames(self):
         """ Just a function to return the 'private' member variable 
          _preCLcachestorenames.
@@ -383,29 +358,23 @@ class CLManager(object):
         """
         return self._preCLcachestorenames
         
-    def rmStackFiles(self):
-        """A function to remove the filenames written to disk by 
-            setStackable.
+    def combineOutname(self):
+        """ This creates the output name for combine type IRAF tasks to write 
+            the combined output file to.
         
         """
-        for file in self._preCLfilenames:
-            log.fullinfo('Removing file '+file+' from disk')
-            os.remove(file)
-        
-    def preCLNames(self):
-        """Just a function to return the 'private' member 
-            variable _preCLfilenames.
-        
-        """
-        return self._preCLfilenames
-    
-    def logfile(self):
-        """ A function to return the name of the unique temporary log file to 
-            be used by IRAF.
-        
-        """
-        return self.templog.name
-    
+        #@@ REFERENCE IMAGE: for output name
+
+        return self.outpref+self._preCLcachestorenames[0]
+         
+    def finishCL(self, combine=False): 
+        """ Performs all the finalizing steps after CL script is ran. 
+         This is currently just an alias for postCLloads and might have 
+         more functionality in the future.
+         
+         """
+        self.postCLloads(combine)    
+          
     def inputsAsStr(self):
         """ This returns the list of temporary file names written to disk for 
             the input files in the form of a list joined by commas for passing
@@ -422,23 +391,79 @@ class CLManager(object):
         # Create a unique name for the list file
         self.listname = 'List'+str(os.getpid())+self.rc.ro.curPrimName
         return self.rc.makeInlistFile(self.listname, self._preCLcachestorenames)
-        
-    def uniquePrefix(self):
-        """ uses the primitive name and the process ID to create a unique
-            prefix for the files being temporarily written to disk.
+           
+    def logfile(self):
+        """ A function to return the name of the unique temporary log file to 
+            be used by IRAF.
         
         """
-        return 'tmp'+ str(os.getpid())+self.rc.ro.curPrimName
+        return self.templog.name
     
-    def combineOutname(self):
-        """ This creates the output name for combine type IRAF tasks to write 
-            the combined output file to.
-        
+    def LogCurParams(self):
+        """ A function to log the parameters in the local parameters file 
+            and then global ones in the reduction context
         """
-        #@@ REFERENCE IMAGE: for output name
+        log.fullinfo('\ncurrent general parameters:', 'parameters')
+        # Loop through the parameters in the general dictionary
+        # of the reduction context and log them
+        for key in self.rc:
+            val = self.rc[key]
+            log.fullinfo(repr(key)+' = '+repr(val), 'parameters')
 
-        return self.outpref+self._preCLcachestorenames[0]
+        log.fullinfo('\ncurrent primitive specific parameters:', 'parameters')
+        # Loop through the parameters in the local dictionary for the primitive
+        # the CLManager was called from of the reduction context and log them
+        for key in self.rc.localparms:
+            val = self.rc.localparms[key]
+            log.fullinfo(repr(key)+' = '+repr(val), 'parameters')
     
+    def nbiascontam(self):
+        """This function will find the largest difference between the horizontal 
+        component of every BIASSEC value and those of the biassec parameter. 
+        The returned value will be that difference as an integer and it will be
+        used as the value for the nbiascontam parameter used in the gireduce 
+        call of the overscanSubtract primitive.
+        
+        """
+        
+        # Prepare a stored value to be compared between the inputs
+        retval=0
+        # Loop through the inputs
+        for ad in self.rc.getInputs(style='AD'):
+            # Retrieve the biassec value in the parameters file
+            biassec = self.rc['biassec']
+            # Pass the retrieved value to biassecStrToBiasContam function
+            # to do the work in finding the difference of the biassec's
+            val = biassecStrTonbiascontam(biassec, ad)
+            # Check if value returned for this input is larger. Keep the largest
+            if val > retval:
+                retval = val
+        return retval
+    
+    def preCLNames(self):
+        """Just a function to return the 'private' member 
+            variable _preCLfilenames.
+        
+        """
+        return self._preCLfilenames
+   
+    def preCLwrites(self):
+        """ The function that writes the files in memory to disk with temporary 
+            names and saves the original names in a list.
+        
+        """
+        for ad in self.rc.getInputs(style='AD'):
+            # Load up the preCLfilenames list with the input's filename
+            self._preCLfilenames.append(ad.filename)
+            # Strip off all postfixes and prepend filename with a unique prefix
+            name = fileNameUpdater(ad.filename, prepend=self.prefix, strip=True)
+            # store the unique name in preCLcachestorenames for later reference
+            self._preCLcachestorenames.append(name)
+            # Log the name of this temporary file being written to disk
+            log.fullinfo('Temporary file on disk for input to CL: '+name)
+            # Write this file to disk with its unique filename 
+            ad.write(name, rename=False)
+                     
     def postCLloads(self,combine=False):
         """  This function takes care of loading the output files the IRAF
             routine wrote to disk back into memory with the appropriate name.  
@@ -507,48 +532,23 @@ class CLManager(object):
                 log.fullinfo(finalname+' was loaded into memory')
                 log.fullinfo(finalname+' was deleted from disk')
                 log.fullinfo(storename+' was deleted from disk')
+         
+    def rmStackFiles(self):
+        """A function to remove the filenames written to disk by 
+            setStackable.
         
-    def LogCurParams(self):
-        """ A function to log the parameters in the local parameters file 
-            and then global ones in the reduction context
         """
-        log.fullinfo('\ncurrent general parameters:', 'parameters')
-        # Loop through the parameters in the general dictionary
-        # of the reduction context and log them
-        for key in self.rc:
-            val = self.rc[key]
-            log.fullinfo(repr(key)+' = '+repr(val), 'parameters')
-
-        log.fullinfo('\ncurrent primitive specific parameters:', 'parameters')
-        # Loop through the parameters in the local dictionary for the primitive
-        # the CLManager was called from of the reduction context and log them
-        for key in self.rc.localparms:
-            val = self.rc.localparms[key]
-            log.fullinfo(repr(key)+' = '+repr(val), 'parameters')
+        for file in self._preCLfilenames:
+            log.fullinfo('Removing file '+file+' from disk')
+            os.remove(file)
             
-    def nbiascontam(self):
-        """This function will find the largest difference between the horizontal 
-        component of every BIASSEC value and those of the biassec parameter. 
-        The returned value will be that difference as an integer and it will be
-        used as the value for the nbiascontam parameter used in the gireduce 
-        call of the overscanSubtract primitive.
+    def uniquePrefix(self):
+        """ uses the primitive name and the process ID to create a unique
+            prefix for the files being temporarily written to disk.
         
         """
-        
-        # Prepare a stored value to be compared between the inputs
-        retval=0
-        # Loop through the inputs
-        for ad in self.rc.getInputs(style='AD'):
-            # Retrieve the biassec value in the parameters file
-            biassec = self.rc['biassec']
-            # Pass the retrieved value to biassecStrToBiasContam function
-            # to do the work in finding the difference of the biassec's
-            val = biassecStrTonbiascontam(biassec, ad)
-            # Check if value returned for this input is larger. Keep the largest
-            if val > retval:
-                retval = val
-        return retval
-
+        return 'tmp'+ str(os.getpid())+self.rc.ro.curPrimNam
+    
 class IrafStdout():
     """  This is a class to act as the standard output for the IRAF 
         routines that instead of printing its messages to the screen,
