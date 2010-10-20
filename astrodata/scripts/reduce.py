@@ -536,7 +536,12 @@ def commandClause(ro, coi):
                         raise 
         elif rqTyp == ImageQualityRequest:
             #print 'RED394:'
-            filteredstdout.write(str(rq)+"\n", forceprefix = ("${NORMAL}${RED}","IQ reported: ", "${NORMAL}"))
+            #$$ next line is commented out as it has been converted to a log call below
+            #filteredstdout.write(str(rq)+"\n", forceprefix = ("${NORMAL}${RED}","IQ reported: ", "${NORMAL}"))
+            
+            # Logging returned Image Quality statistics
+            log.stdinfo(str(rq), category='IQ')
+            
             #@@FIXME: All of this is kluge and will not remotely reflect how the 
             # RecipeProcessor will deal with ImageQualityRequests.
             if True:
@@ -558,9 +563,12 @@ def commandClause(ro, coi):
                     cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
                     cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
                     cw.iqLog('', '-'*14, timestr)
-                elif ds.ds9 is not None:
-                    dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
-                    ds.markText( 0, 2200, dispText )
+               
+               # $$$ next three lines are commented out as the display server
+               # $$$ is not in use anymore.
+               # elif ds.ds9 is not None:
+               #     dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
+               #     ds.markText( 0, 2200, dispText )
 
 
                 else:    
@@ -572,7 +580,8 @@ def commandClause(ro, coi):
                                                                      'ell':str(rq.ellMean)}
                     tmpFile.write( coords )
                     tmpFile.close()
-                    print 'r165: importing iraf again'
+                    #print 'r165: importing iraf again'
+                    import pyraf
                     from pyraf import iraf  
                     iraf.tvmark( frame=dispFrame,coords=tmpFilename,
                     pointsize=0, color=204, label=pyraf.iraf.yes )
