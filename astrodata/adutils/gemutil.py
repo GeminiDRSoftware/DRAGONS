@@ -38,7 +38,7 @@ gimverify_imh = 4               # exists and is an imh image
 gimverify_hhh = 5               # exists and is an hhh image
 gimverify_other = 6             # exists but is not one of the above types
 #---------------------------------------------------------------------------
-def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
+def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
                verbose=True):
     """Convert an image number to a filename using UT date. If image is already a string simply
        check image's existence and MEFness.
@@ -66,11 +66,8 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
     #
     if ((rawpath != '') and (rawpath[-1] != '/') and (rawpath[-1] != '$')):
         rawpath = rawpath + '/'
-        #self.rawpath = rawpath
-        #self.mdfdir = mdfdir
-    #---------------------------------------------------------
+    
     # Build file prefix for future use
-
     if prefix == 'auto':
         observatory = observatory.lower()
         if observatory == 'gemini-north':
@@ -86,13 +83,11 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
         utdate = iraf.getfakeUT.fakeUT
         prefix = siteprefix + utdate + "S" 
 
-    #----------------------------------------------------------
     # Construct image name following one of three options
     
     # If input variable image is an integer
     # output image name will follow prefix(from above)+image+'.fits'
-    
-    iraf.gemisnumber (image, "integer", verbose=iraf.no)
+    iraf.gemisnumber(image, "integer", verbose=iraf.no)
     if iraf.gemisnumber.fl_istype:
         if verbose: print "# IMAGENAME - Constructing image name based on today's UT date..."
         imstring = "%04d"%(int(image))
@@ -100,23 +95,23 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
 
     imagenorawpath = image
 
-    # is there a directory name
+    # Is there a directory name
     iraf.fparse(image)
     if iraf.fparse.directory == "":
         iraf.gimverify(image)
         if iraf.gimverify.status != 0:
             iraf.gimverify(rawpath+image)
         if iraf.gimverify.status == 1:
-            print "# ERROR: Cannot access image", image
+            log.error("Cannot access image"+image, category='IQ')
             #raise SystemExit
         elif iraf.gimverify.status != 0:
-            print "# ERROR: Image %s is not a MEF file" % (l_image,)
+            log.error("Image %s is not a MEF file"% (l_image), category='IQ')
             #raise SystemExit
 
     image = iraf.gimverify.outname
     fitsimage = image + ".fits"
        
-    observer = mefutil.getkey ('observer', fitsimage)
+    observer = mefutil.getkey('observer', fitsimage)
     if verbose: 
         log.fullinfo('Observer of image '+imagenorawpath+
                              ' was found to be '+observer, category='IQ')
@@ -124,7 +119,7 @@ def imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
     return fitsimage, imagenorawpath        
 
 #---------------------------------------------------------------------------
-def appendSuffix (filename, suffix):
+def appendSuffix(filename, suffix):
     """Append a suffix to the root of the file name.
 
     If filename does not end with one of the recognized extensions,
@@ -149,21 +144,22 @@ def appendSuffix (filename, suffix):
     """
 
     found = False
-    # extensions is a list of recognized filename extensions.
+    # Extensions is a list of recognized filename extensions.
     for extn in extensions:
-        if filename.endswith (extn):
-            k = filename.rfind (extn)
+        if filename.endswith(extn):
+            k = filename.rfind(extn)
             newname = filename[:k] + suffix + extn
             found = True
             break
 
     if not found:
         newname = filename + suffix
-
+    log.status('appendSuffix changed the filename from '+filename+' to '+
+               newname, category='IQ')
     return newname
 
 #---------------------------------------------------------------------------
-def replaceSuffix (filename, suffix):
+def replaceSuffix(filename, suffix):
     """Replace the suffix in the file name.
 
     If filename includes an underscore ('_') character, the slice
@@ -196,29 +192,31 @@ def replaceSuffix (filename, suffix):
     """
 
     found = False
-    # extensions is a list of recognized filename extensions.
+    # Extensions is a list of recognized filename extensions.
     for extn in extensions:
-        if filename.endswith (extn):
-            j = filename.rfind ('_')
+        if filename.endswith(extn):
+            j = filename.rfind('_')
             if j >= 0:
                 newname = filename[:j] + suffix + extn
             else:
-                k = filename.rfind (extn)
+                k = filename.rfind(extn)
                 newname = filename[:k] + suffix + extn
             found = True
             break
 
     if not found:
-        j = filename.rfind ('_')
+        j = filename.rfind('_')
         if j >= 0:
             newname = filename[:j] + suffix
         else:
             newname = filename + suffix
-
+    
+    log.status('replaceSuffix changed the filename from '+filename+' to '+
+               newname, category='IQ')
     return newname
 
 #---------------------------------------------------------------------------
-def gemdate (zone='UT', timestamp = None):
+def gemdate(zone='UT', timestamp = None):
     
     """Get the current date and time.
 
@@ -244,7 +242,7 @@ def gemdate (zone='UT', timestamp = None):
     return t
 
 #---------------------------------------------------------------------------
-def gemhedit (filename=None, extension=0, keyword='', value='', comment='',
+def gemhedit(filename=None, extension=0, keyword='', value='', comment='',
               delete=False):
     """Modify or delete an existing keyword or add a new keyword to a header.
 
@@ -281,12 +279,12 @@ def gemhedit (filename=None, extension=0, keyword='', value='', comment='',
         if header.has_key (keyword.upper()):
             header[keyword] = value
         else:
-            header.update (keyword, value=value, comment=comment)
+            header.update(keyword, value=value, comment=comment)
 
     fd.close()
 
 #---------------------------------------------------------------------------
-def gimverify (image, sci_ext='SCI', dq_ext='DQ'):
+def gimverify(image, sci_ext='SCI', dq_ext='DQ'):
     """Check whether the specified image exists, and if so, get the type.
 
     @param image: name of an image; the name must not use wildcard characters
@@ -319,20 +317,29 @@ def gimverify (image, sci_ext='SCI', dq_ext='DQ'):
     # hhh format), strip it off.  Note that if the name includes a wildcard
     # using brackets, this will fail because part of the file name will be
     # chopped off.
-    words = image.split ('[')
-    if len (words) > 1:
+    
+    # image at this point would be something like 'blablabla.fits[blabla]'
+    words = image.split('[')
+    if len(words) > 1:
+        # Selecting the far left (zeroth) string found by the split function 
+        # as the image name
         image = words[0]
 
     has_dq = False      # this is an initial value than can be reset below
-    if not os.access (image, os.R_OK):
+    if not os.access(image, os.R_OK):
+        # Note: all gimverify codes are initialized at the top of this module
         return (gimverify_does_not_exist, has_dq)
 
-    words = image.split ('.')
+    # image at this point would be something like 'blablabla.fits'
+    words = image.split('.')
     if len (words) > 1:
+        # Selecting the far right string found by the split function as the 
+        # file extension
         extension = words[-1]
     else:
         extension = ''
-
+        
+    # Setting the type to be returned based on what the file extensions is
     if extension == 'pl':
         type = gimverify_pl
     elif extension == 'imh':
@@ -342,7 +349,7 @@ def gimverify (image, sci_ext='SCI', dq_ext='DQ'):
     elif extension == 'fits' or extension == 'fit':
         # Find out what type of FITS file this is.
         fd = pyfits.open (image)
-        if len (fd) > 1:
+        if len(fd) > 1:
             type = gimverify_other      # may be reset below
             try:
                 if fd[sci_ext].header['xtension'] == 'IMAGE':
@@ -365,7 +372,7 @@ def gimverify (image, sci_ext='SCI', dq_ext='DQ'):
     return (type, has_dq)
 
 #---------------------------------------------------------------------------
-def printlog (text, logfile=None, verbose=True):
+def printlog(text, logfile=None, verbose=True):
     """Append text to the log file.
 
     @param text: text string to log
@@ -382,19 +389,19 @@ def printlog (text, logfile=None, verbose=True):
         logfile = None
         verbose = True
 
-    if text[0:5] == 'ERROR' or text[0:7] == 'WARNING':
+    if (text[0:5] == 'ERROR') or (text[0:7] == 'WARNING'):
         verbose = True
 
     if logfile is not None:
-        fd = open (logfile, mode='a')
-        fd.write (text + '\n')
+        fd = open(logfile, mode='a')
+        fd.write(text + '\n')
         fd.close()
 
     if verbose:
-        print text
+        log.fullinfo(text, category='IQ')
 
 #---------------------------------------------------------------------------
-def removeExtension (images):
+def removeExtension(images):
     """Remove the extension from each file name in the list.
 
     If a file name does not end with one of the recognized extensions
@@ -413,7 +420,7 @@ def removeExtension (images):
     @rtype: list of strings
     """
 
-    if isinstance (images, str):
+    if isinstance(images, str):
         is_a_list = False
         images = [images]
     else:
@@ -423,13 +430,13 @@ def removeExtension (images):
         found = False
         # extensions is a list of recognized filename extensions.
         for extn in extensions:
-            if image.endswith (extn):
-                k = image.rfind (extn)
-                modified.append (image[:k])
+            if image.endswith(extn):
+                k = image.rfind(extn)
+                modified.append(image[:k])
                 found = True
                 break
         if not found:
-            modified.append (image)
+            modified.append(image)
 
     if is_a_list:
         return modified
@@ -437,7 +444,7 @@ def removeExtension (images):
         return modified[0]
 
 #---------------------------------------------------------------------------
-def appendFits (images):
+def appendFits(images):
     """
     !!!NOTE!!! This function calls the appendFits in strutil. Thus, if you want to use appendFits,
     use the one in there. This remains for backwards compatibility.
@@ -459,7 +466,7 @@ def appendFits (images):
     @rtype: list of strings
     """
 
-    return strutil.appendFits( images )
+    return strutil.appendFits(images)
 #---------------------------------------------------------------------------
 
 def chomp(line):
@@ -476,5 +483,5 @@ def chomp(line):
     @rtype: str
     """
     
-    return strutil.chomp( line )
+    return strutil.chomp(line)
     
