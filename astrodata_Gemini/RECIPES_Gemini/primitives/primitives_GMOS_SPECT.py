@@ -9,8 +9,8 @@ from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
 
-from gempy.instruments.gemini import *
-from gempy.instruments.gmos import *
+from gempy.instruments import geminiTools  as gemt
+from gempy.instruments import gmosTools  as gmost
 
 log=gemLog.getGeminiLog()
 
@@ -73,7 +73,7 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         try: 
             for ad in rc.getInputs(style="AD"): 
                 log.status('calling stdInstHdrs','status')
-                stdInstHdrs(ad) 
+                gmost.stdInstHdrs(ad) 
                 
                 log.status('instrument headers fixed','status') 
                 
@@ -109,7 +109,7 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
                 ad.append(moredata=admdf)  
                 log.status(ad.info(),'status')
                 
-                ad.filename=fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
+                ad.filename=gemt.fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
                 rc.reportOutput(ad)
                 
                 log.status('finished adding the MDF','status')
@@ -125,7 +125,7 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         try:        
             for ad in rc.getInputs(style="AD"):
                 log.status('validating data for file = '+ad.filename,'status')
-                valInstData(ad)
+                gmost.valInstData(ad)
                 log.status('data validated for file = '+ad.filename,'status')
                 
         except:
