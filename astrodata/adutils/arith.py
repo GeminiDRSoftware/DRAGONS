@@ -148,14 +148,14 @@ def div(numerator, denominator):
                 extver = ext.extver()
                 # Add element to the dictionary for this extension
                 denDict[('SCI', extver)] = den
-                print repr(denDict)
+                #print repr(denDict)
         # Create a dictionary if the input is a list of floats 
         if isinstance(den, list):    
             denDict = {}
             for ext in num['SCI']:
                 extver = ext.extver()
                 denDict[('SCI', extver)] = den[extver-1]
-                print repr(denDict)
+                #print repr(denDict)
         # Just rename the variable if denominator is all ready a dictionary
         if isinstance(den, dict):
             denDict = den
