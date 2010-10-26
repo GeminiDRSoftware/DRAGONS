@@ -53,7 +53,10 @@ def parsepath(path):
     
     return rparms
   
-from GeminiMetadataUtils import *
+try:
+    from GeminiMetadataUtils import *
+except:
+    print "Cannot import GeminiMetadataUtils from FITSSTORE"
   
 def getselection(things):
   
@@ -128,6 +131,7 @@ def getselection(things):
 class PPWState(object):
     dataSpider = None
     dirdict = None
+    displayCmdHistory = None
     
 ppwstate = PPWState()
     
@@ -186,6 +190,64 @@ class MyHandler(BaseHTTPRequestHandler):
                 </html>""" % {"numinsts":rim.numinsts}
                 self.wfile.write(page)
                 return
+            if parms["path"].startswith("/cmdqueue.xml"):
+                self.send_response(200)
+                self.send_header('Content-type','text/xml')
+                self.end_headers()
+                
+                if "lastcmd" in parms:
+                    start = int(parms["lastcmd"][0])+1
+                else:
+                    start = 0   
+                elist = self.state.rim.displayCmdHistory.peekSince(cmdNum=start)
+                print "prsw 200:", repr(elist)
+                xml = '<commandQueue lastCmd="%d">' % (start-1)
+                for cmd in elist:
+                    # this is because there should be only one top key
+                    #   in the cmd dict
+                    cmdname = cmd.keys()[0] 
+                                            
+                    cmdbody = cmd[cmdname]
+                    xml += '<command name="%s">' % cmdname
+                    
+                    if "files" in cmdbody:
+                    
+                        basenames = cmdbody["files"].keys()
+                        for basename in basenames:
+                            fileitem = cmdbody["files"][basename]
+                            if "url" not in fileitem or fileitem["url"] == None:
+                                url = "None"
+                            else:
+                                url = fileitem["url"]
+                            xml += """<file basename="%(basename)s"
+                                        url = "%(url)s"
+                                        cmdnum = "%(cn)d"/>""" % {
+                                            "basename": basename,
+                                            "url": "" if "file" not in fileitem else fileitem["url"],
+                                            "cn":int(cmdbody["cmdNum"])}
+                                            
+                            # now any extension in the extdict
+                            if "extdict" in fileitem:
+                                extdict = fileitem["extdict"]
+                                for name in extdict.keys():
+                                    xml += """\n<file basename="%(basename)s"
+                                             url="%(url)s"
+                                             ext="%(ext)s"
+                                             cmdnum="%(cn)d"/>""" % {
+                                            "basename": basename,
+                                            "ext": name,
+                                            "url": extdict[name],
+                                            "cn":int(cmdbody["cmdNum"])}
+ 
+                    xml += '</command>'
+                xml += "</commandQueue>"
+                self.wfile.write(xml)
+                # qwe would use peekHistory to do this safely
+                # which will be obivous if you uncomment and find cmdHistoy is no longer a 
+                # member of this class, it is instead the displayCmdHistory, a TSCmdQueue
+                # instance.
+                #self.wfile.write("\n".join(repr(self.state.rim.cmdHistory[start:]).split(" ")))        
+                return 
                 
             if parms["path"] == "/recipeindex.xml":
                 self.send_response(200)
@@ -298,9 +360,9 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-type',	'text/html')
                 self.end_headers()
-                
+                from astrodata.RecipeManager import RecipeLibrary
                 if "filename" not in parms:
-                    parms.update({"filename" : "set001/N20090902S0099.fits" })
+                    return "Error: Need Filename Parameter"
                 if "filename" in parms:
                     try:
                         ad = AstroData(parms["filename"][0])
@@ -314,6 +376,13 @@ class MyHandler(BaseHTTPRequestHandler):
                         self.wfile.write("<b>Name</b>: %s \n" % os.path.basename(ad.filename))
                         self.wfile.write("<br/><b>Path</b>: %s \n" % os.path.abspath(ad.filename))
                         self.wfile.write("<br/><b>Types</b>: %s\n" % ", ".join(ad.types))
+                        recdict = rl.getApplicableRecipes(ad, collate = True)
+                        keys = recdict.keys()
+                        keys.sort()
+                        for key in keys:
+                            recname = recdict[key]                        
+                            self.wfile.write("<br/><b>Default Recipe(s)</b>:%s (<i>due to type</i>: %s)"
+                                                % (recname, key))
                         alldesc = ad.allDescriptors()
                         self.wfile.write("<br/><b>Descriptors</b>:\n")
                         self.wfile.write('<table style="margin-left:4em">\n')
@@ -500,6 +569,31 @@ class MyHandler(BaseHTTPRequestHandler):
                 webserverdone = True
                 return
             
+            if self.path.startswith("/displaycache"):
+                from CacheManager import get_cache_dir, get_cache_file
+                
+                path = os.path.split(self.path)
+                print "prsw 569:", self.path
+                if len (path)>1:
+                    slot = path[-1]
+                    tfile = get_cache_file(slot)
+                    
+                    try:
+                        f = open(tfile)
+                    except:
+                        return
+                    self.send_response(200)
+                    self.send_header('Content-type',	'image/png')
+                    self.end_headers()
+
+                    while True:
+                        t = f.read(102400)
+                        if t == "":
+                            self.wfile.flush()
+                            break
+                        self.wfile.write(t)
+                
+                return
             if self.path.startswith("/fullheader"):
                 realpath = self.path.split('/')
                 realpath = realpath[1:]
@@ -639,6 +733,8 @@ def startInterfaceServer(port = 8777, **informers):
             ppwstate.dirdict    = informers["dirdict"]
         if "dataSpider" in informers:
             ppwstate.dataSpider = informers["dataSpider"]
+        if "rim" in informers:
+            ppwstate.rim = informers["rim"]
         # e.g. below by the HTTPServer class
         server = MTHTTPServer(('', port), MyHandler)
         print "started"
