@@ -19,8 +19,11 @@ from CmdQueue import TSCmdQueue
 from astrodata.StackKeeper import StackKeeper
 
 # @@DEPEND: PIL
-import PIL
-from PIL import Image
+try:
+    import PIL
+    from PIL import Image
+except:
+    print "Cannot import PIL"
 # @@ main dependencies
 import numpy
 import numpy as np
