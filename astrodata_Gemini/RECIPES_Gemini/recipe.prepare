@@ -2,4 +2,4 @@ validateData(repair=False)
 standardizeStructure(addMDF=False)
 standardizeHeaders
 #validateWCS(repair=False)
-writeOutputs(postpend='_Prepared')
+writeOutputs(postpend='_prepared')
