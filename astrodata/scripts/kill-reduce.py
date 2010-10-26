@@ -22,7 +22,7 @@ cmd:", proginfo[8], "\n\
     Parent process ID: ", proginfo[2], "\n\
          Time started: ", proginfo[4]
             os.kill(int(proginfo[1]), signal.SIGHUP)
-        if "adcc" in proginfo[8]:
+        if "adcc" in proginfo[8] or "prsproxy" in proginfo[8]:
             print "\n\
 cmd", proginfo[8], "\n\
                 Owner: ", proginfo[0], "\n\
