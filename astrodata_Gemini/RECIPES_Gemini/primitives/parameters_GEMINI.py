@@ -131,6 +131,13 @@
                       'type': 'bool',
                       'userOverride':True 
                     },   
+                    'method':
+                   {
+                   'default': 'average' , 
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False  
+                    },   
                           },
     'ADUtoElectrons':{'outpref':
                       {
