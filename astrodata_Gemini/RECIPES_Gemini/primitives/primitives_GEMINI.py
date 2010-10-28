@@ -208,7 +208,7 @@ class GEMINIPrimitives(PrimitiveSet):
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
             
             for ad in rc.getInputs(style='AD'):
-                print ad.info()
+                #print ad.info()
                 # Check if there VAR frames all ready exist
                 if ad['VAR']:
                     # If VAR frames don't exist, loop through the SCI extensions 
@@ -218,16 +218,16 @@ class GEMINIPrimitives(PrimitiveSet):
                         # var = (read noise/gain)2 + max(data,0.0)/gain
                         
                         # Retrieving necessary values (read noise, gain)
-                        readNoise=sciExt.read_noise()
-                        gain=sciExt.gain()
+                        readNoise = sciExt.read_noise()
+                        gain = sciExt.gain()
                         # Creating (read noise/gain) constant
-                        rnOverG=readNoise/gain
+                        rnOverG = readNoise/gain
                         # Convert negative numbers (if they exist) to zeros
-                        maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
+                        maxArray = np.where(sciExt.data>0.0,0,sciExt.data)
                         # Creating max(data,0.0)/gain array
-                        maxOverGain=np.divide(maxArray,gain)
+                        maxOverGain = np.divide(maxArray,gain)
                         # Putting it all together
-                        varArray=np.add(maxOverGain,rnOverG*rnOverG)
+                        varArray = np.add(maxOverGain,rnOverG*rnOverG)
                          
                         # Creating the variance frame's header and updating it     
                         varheader = pf.Header()
@@ -428,7 +428,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # Creating a dictionary of the parameters from the Parameter 
                 # file adjustable by the user
                 clSoftcodedParams = {
-                    'fl_vardq'      :rc['fl_vardq'],
+                    'fl_vardq'      :gemt.pyrafBoolean(rc['fl_vardq']),
                     # pyrafBoolean converts the python booleans to pyraf ones
                     'fl_dqprop'     :gemt.pyrafBoolean(rc['fl_dqprop']),
                     'combine'       :rc['method'],
@@ -518,19 +518,27 @@ class GEMINIPrimitives(PrimitiveSet):
         
         """
         try:
+            log.status('*STARTING* to prepare stack for stacking')
             # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
             stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            log.fullinfo('getting stack '+stackid,'stack')
+            log.fullinfo('getting stack '+stackid, category='stack')
+            # Getting the reduction context to update the appropriate cache 
+            # files with the current inputs
             rc.rqStackGet()
+            # Yielding the reduction context so it can perform the requested updates
             yield rc
+            # Retrieving the updated stack list
             stack = rc.getStack(stackid).filelist
-            #print 'prim_G366: ',repr(stack)
+            print 'prim_G366: ',repr(stack)
+            # Loading the file in the stack into memory
             rc.reportOutput(stack)
+            
+            log.status('*FINISHED* preparing the stack for stacking')
         except:
-            log.critical('Problem getting stack '+stackid, 'stack')
+            log.critical('Problem getting stack '+stackid, category='stack')
             raise 
         yield rc
- 
+    
     def measureIQ(self,rc):
         """
         This primitive will detect the sources in the input images and fit
@@ -592,7 +600,7 @@ class GEMINIPrimitives(PrimitiveSet):
  
     def setContext(self, rc):
         rc.update(rc.localparms)
-        yield rc
+        yield rc   
     
     def setStackable(self, rc):
         """
@@ -603,16 +611,25 @@ class GEMINIPrimitives(PrimitiveSet):
         
         """
         try:
+            log.status('*STARTING* to update/create the stack')
+            # Getting specific stack ID based on the observationID of the 
+            # first file in the input list.
             stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
+            # Logging the stackid returned
             log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), 
                          category='stack')
+            # Requesting for the reduction context to perform an update
+            # to the stack cache file (or create it) with the current inputs.
             rc.rqStackUpdate()
+            print 'prim_GEM648: ',rc.inputsAsStr()
             # Writing the files in the stack to disk if not all ready there
             for ad in rc.getInputs(style='AD'):
                 if not os.path.exists(ad.filename):
                     log.fullinfo('temporarily writing '+ad.filename+\
                                  ' to disk', category='stack')
                     ad.write(ad.filename)
+                    
+            log.status('*FINISHED* updating/creating the stack')
         except:
             log.critical('Problem preparing stack for files '+rc.inputsAsStr(),
                          category='stack')
