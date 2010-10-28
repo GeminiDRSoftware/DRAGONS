@@ -547,7 +547,7 @@ class CLManager(object):
             prefix for the files being temporarily written to disk.
         
         """
-        return 'tmp'+ str(os.getpid())+self.rc.ro.curPrimNam
+        return 'tmp'+ str(os.getpid())+self.rc.ro.curPrimName
     
 class IrafStdout():
     """  This is a class to act as the standard output for the IRAF 
