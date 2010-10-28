@@ -52,9 +52,70 @@ def div(numerator, denominator):
     den = denominator 
     # Preparing the output astrodata instance
     out = AstroData.prepOutput(inputAry=num, clobber=False) 
-    
+
+    # Check to see if the denominator is of type dict, list or float
+    if isinstance(den, dict) or isinstance(den, list) or \
+    isinstance(den, float):
+        """ Creating the dictionary if input is a float or float list 
+            Dictionary format will follow:
+            {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
+            of the SCI extensions and ## are the corresponding 
+            float values to divide that extension by"""
+            
+        # Create a dictionary of identical values for each extension if the 
+        # input is a single float
+        if isinstance(den, float): 
+            denDict = {}
+            for ext in num['SCI']:
+                # Retrieve the EXTVER for this extension
+                extver = ext.extver()
+                # Add element to the dictionary for this extension
+                denDict[('SCI', extver)] = den
+                #print repr(denDict)
+        # Create a dictionary if the input is a list of floats 
+        if isinstance(den, list):    
+            denDict = {}
+            for ext in num['SCI']:
+                extver = ext.extver()
+                denDict[('SCI', extver)] = den[extver-1]
+                #print repr(denDict)
+        # Just rename the variable if denominator is all ready a dictionary
+        if isinstance(den, dict):
+            denDict = den
+        
+        # Perform the calculations for when the denominator is a dictionary
+        for sci in num['SCI']:
+            # Retrieve the extension version for this extension
+            extver = sci.extver()
+            # Retrieving the float value for this extension from the dictionary
+            val = denDict[('SCI', extver)]
+            # Start with the out SCI HDU being the current 
+            outsci = deepcopy(num[('SCI', extver)]) 
+            try:
+                # Divide SCI data array by this extensions float value
+                outsci.data = np.divide(num[('SCI', extver)].data, val)  
+                # Append updated SCI extension to the output
+                out.append(outsci)
+                # Check there are VAR frames to operate on
+                if num.countExts('VAR') == num.countExts('SCI'): 
+                    # Start with the out VAR HDU being the current 
+                    outvar = deepcopy(num[('VAR', extver)])
+                    # Multiplying the VAR frames by the float^2
+                    outvar.data = np.multiply(num[('VAR', extver)].data, val*val)
+                    # Append the updated VAR frame to the output
+                    out.append(outvar)
+                # Check there are DQ frames to operate on
+                if num.countExts('DQ') == num.countExts('SCI'):  
+                    # Start with the out DQ HDU being the current 
+                    outdq = deepcopy(num[('DQ', extver)])
+                    # Not changing anything in the DQ frame's data, 
+                    # just propagate it to the output
+                    out.append(outdq) 
+            except:
+                raise
+            
     # Check to see if the denominator is of type AstroData
-    if isinstance(den,astrodata.AstroData) or \
+    elif isinstance(den,astrodata.AstroData) or \
     isinstance(den,astrodata.AstroData.AstroData):
         # Loop through the SCI extensions 
         for sci in num['SCI']:
@@ -131,73 +192,13 @@ def div(numerator, denominator):
             except:
                 raise 
 
-    elif isinstance(den, dict) or isinstance(den, list) or \
-    isinstance(den, float):
-        """ Creating the dictionary if input is a float or float list 
-            Dictionary format will follow:
-            {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-            of the SCI extensions and ## are the corresponding 
-            float values to divide that extension by"""
-            
-        # Create a dictionary of identical values for each extension if the 
-        # input is a single float
-        if isinstance(den, float): 
-            denDict = {}
-            for ext in num['SCI']:
-                # Retrieve the EXTVER for this extension
-                extver = ext.extver()
-                # Add element to the dictionary for this extension
-                denDict[('SCI', extver)] = den
-                #print repr(denDict)
-        # Create a dictionary if the input is a list of floats 
-        if isinstance(den, list):    
-            denDict = {}
-            for ext in num['SCI']:
-                extver = ext.extver()
-                denDict[('SCI', extver)] = den[extver-1]
-                #print repr(denDict)
-        # Just rename the variable if denominator is all ready a dictionary
-        if isinstance(den, dict):
-            denDict = den
-        
-        # Perform the calculations for when the denominator is a dictionary
-        for sci in num['SCI']:
-            # Retrieve the extension version for this extension
-            extver = sci.extver()
-            # Retrieving the float value for this extension from the dictionary
-            val = denDict[('SCI', extver)]
-            # Start with the out SCI HDU being the current 
-            outsci = deepcopy(num[('SCI', extver)]) 
-            try:
-                # Divide SCI data array by this extensions float value
-                outsci.data = np.divide(num[('SCI', extver)].data, val)  
-                # Append updated SCI extension to the output
-                out.append(outsci)
-                # Check there are VAR frames to operate on
-                if num.countExts('VAR') == num.countExts('SCI'): 
-                    # Start with the out VAR HDU being the current 
-                    outvar = deepcopy(num[('VAR', extver)])
-                    # Multiplying the VAR frames by the float^2
-                    outvar.data = np.multiply(num[('VAR', extver)].data, val*val)
-                    # Append the updated VAR frame to the output
-                    out.append(outvar)
-                # Check there are DQ frames to operate on
-                if num.countExts('DQ') == num.countExts('SCI'):  
-                    # Start with the out DQ HDU being the current 
-                    outdq = deepcopy(num[('DQ', extver)])
-                    # Not changing anything in the DQ frame's data, 
-                    # just propagate it to the output
-                    out.append(outdq) 
-            except:
-                raise 
-        
     # If the input was not of type astrodata, float, float list or dictionary
     # issue a critical log message and raise and exception
     else:
         log.critical('arith.div() only accepts inputB of types AstroData, '+
                      'list, float or dict, '+str(type(den))+' passed in')    
         raise ArithExcept('An error occurred while performing the div task')  
-    # Return the fully updated output astrodata object          
+    # Return the fully updated output astrodata object      
     return out       
                 
 def mult(inputA, inputB):
@@ -232,9 +233,69 @@ def mult(inputA, inputB):
     inB = inputB 
     # Preparing the output astrodata instance
     out = AstroData.prepOutput(inputAry=inA, clobber=False)
+
+    # Check to see if the denominator is of type dict, list or float
+    if isinstance(inB, dict) or isinstance(inB, list) or \
+    isinstance(inB, float):
+        """ Creating the dictionary if input is a float or float list 
+            Dictionary format will follow:
+            {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
+            of the SCI extensions and ## are the corresponding 
+            float values to divide that extension by. """
+            
+        # Create a dictionary of identical values for each extension if the 
+        # input is a single float
+        if isinstance(inB, float): 
+            inBDict = {}
+            for ext in inA['SCI']:
+                 # Retrieve the EXTVER for this extension
+                extver = ext.extver()
+                # Add element to the dictionary for this extension
+                inBDict[('SCI', extver)] = inB
+        # Create a dictionary if the input is a list of floats        
+        if isinstance(inB, list):    
+            inBDict = {}
+            for ext in inA['SCI']:
+                extver = ext.extver()
+                inBDict[('SCI', extver)] = inB[extver-1]
+        # Just rename the variable if denominator is all ready a dictionary
+        if isinstance(inB, dict):
+            inBDict = inB
+        
+        # Perform the calculations for when the denominator is a dictionary
+        for sci in inA['SCI']:
+            # Retrieve the extension version for this extension
+            extver = sci.extver()
+            # Retrieving the float value for this extension from the dictionary
+            val = inBDict[('SCI', extver)]
+            # Start with the out SCI HDU being the current 
+            outsci = deepcopy(inA[('SCI', extver)]) 
+            try:
+                # Multiply SCI data array by this extensions float value
+                outsci.data=np.multiply(inA[('SCI', extver)].data, val)
+                # Append updated SCI extension to the output  
+                out.append(outsci)
+                # Check there are VAR frames to operate on
+                if inA.countExts('VAR') == inA.countExts('SCI'): 
+                    # Start with the out VAR HDU being the current 
+                    outvar = deepcopy(inA[('VAR', extver)])
+                    # Multiplying the VAR frames by the float^2
+                    outvar.data = np.multiply(inA[('VAR', extver)].data, 
+                                              val*val)
+                    # Append the updated VAR frame to the output
+                    out.append(outvar)
+                # Check there are DQ frames to operate on
+                if inA.countExts('DQ') == inA.countExts('SCI'):   
+                    # Start with the out DQ HDU being the current  
+                    outdq = deepcopy(inA[('DQ', extver)])
+                    # Not changing anything in the DQ frame's data, 
+                    # just propagate it to the output
+                    out.append(outdq) 
+            except:
+                raise 
     
     # Check to see if the denominator is of type AstroData
-    if isinstance(inB, astrodata.AstroData) or \
+    elif isinstance(inB, astrodata.AstroData) or \
     isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
@@ -307,64 +368,6 @@ def mult(inputA, inputB):
             except:
                 raise 
 
-    elif isinstance(inB, dict) or isinstance(inB, list) or \
-    isinstance(inB, float):
-        """ Creating the dictionary if input is a float or float list 
-            Dictionary format will follow:
-            {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-            of the SCI extensions and ## are the corresponding 
-            float values to divide that extension by. """
-            
-        # Create a dictionary of identical values for each extension if the 
-        # input is a single float
-        if isinstance(inB, float): 
-            inBDict = {}
-            for ext in inA['SCI']:
-                 # Retrieve the EXTVER for this extension
-                extver = ext.extver()
-                # Add element to the dictionary for this extension
-                inBDict[('SCI', extver)] = inB
-        # Create a dictionary if the input is a list of floats        
-        if isinstance(inB, list):    
-            inBDict = {}
-            for ext in inA['SCI']:
-                extver = ext.extver()
-                inBDict[('SCI', extver)] = inB[extver-1]
-        # Just rename the variable if denominator is all ready a dictionary
-        if isinstance(inB, dict):
-            inBDict = inB
-        
-        # Perform the calculations for when the denominator is a dictionary
-        for sci in num['SCI']:
-            # Retrieve the extension version for this extension
-            extver = sci.extver()
-            # Retrieving the float value for this extension from the dictionary
-            val = inBDict[('SCI', extver)]
-            # Start with the out SCI HDU being the current 
-            outsci = deepcopy(inA[('SCI', extver)]) 
-            try:
-                # Multiply SCI data array by this extensions float value
-                outsci.data=np.multiply(inA[('SCI', extver)].data, val)
-                # Append updated SCI extension to the output  
-                out.append(outsci)
-                # Check there are VAR frames to operate on
-                if inA.countExts('VAR') == inA.countExts('SCI'): 
-                    # Start with the out VAR HDU being the current 
-                    outvar = deepcopy(inA[('VAR', extver)])
-                    # Multiplying the VAR frames by the float^2
-                    outvar.data = np.multiply(inA[('VAR', extver)].data, 
-                                              val*val)
-                    # Append the updated VAR frame to the output
-                    out.append(outvar)
-                # Check there are DQ frames to operate on
-                if inA.countExts('DQ') == inA.countExts('SCI'):   
-                    # Start with the out DQ HDU being the current  
-                    outdq = deepcopy(inA[('DQ', extver)])
-                    # Not changing anything in the DQ frame's data, 
-                    # just propagate it to the output
-                    out.append(outdq) 
-            except:
-                raise 
     # If the input was not of type astrodata, float, float list or dictionary
     # issue a critical log message and raise and exception
     else:
@@ -404,8 +407,41 @@ def add(inputA, inputB):
     # Preparing the output astrodata instance
     out = AstroData.prepOutput(inputAry=inA, clobber=False)
     
+    # Check if inputB is of type float, if so, perform the float specific
+    # addition calculations     
+    if isinstance(inB, float):
+        # Loop through the SCI extensions of InputA
+        for sci in inA['SCI']:
+            # Retrieve the EXTVER for this extension
+            extver = sci.extver()
+            # Start with the out SCI HDU being the current 
+            # we assume there are at least SCI extensions in the input
+            outsci = deepcopy(inA[('SCI', extver)]) 
+            
+            try:
+                # Adding the SCI frames by the constant
+                outsci.data = np.add(inA[('SCI', extver)].data,inB)
+                # Append updated SCI extension to the output 
+                out.append(outsci)
+                # Appending the inputA VAR and DQ frames un-edited to the output
+                # ie no change, just propagate the frames
+                
+                # Check there are VAR frames to propagate
+                if inA.countExts('VAR') == inA.countExts('SCI'): 
+                    # Start with the out VAR HDU being the current
+                    outvar = deepcopy(inA[('VAR', extver)])
+                    # Just propagate VAR frames to the output
+                    out.append(outvar) 
+                # Check there are DQ frames to propagate   
+                if inA.countExts('DQ') == inA.countExts('SCI'): 
+                    # Start with the out DQ HDU being the current 
+                    outdq = deepcopy(inA[('DQ', extver)])   
+                    # Just propagate DQ frames to the output
+                    out.append(outdq) 
+            except:
+                raise
     # Check to see if the denominator is of type AstroData
-    if isinstance(inB, astrodata.AstroData) or \
+    elif isinstance(inB, astrodata.AstroData) or \
     isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
@@ -459,39 +495,7 @@ def add(inputA, inputB):
                                       'the add task')
             except:
                 raise 
-    # Check if inputB is of type float, if so, perform the float specific
-    # addition calculations     
-    elif isinstance(inB, float):
-        # Loop through the SCI extensions of InputA
-        for sci in inA['SCI']:
-            # Retrieve the EXTVER for this extension
-            extver = sci.extver()
-            # Start with the out SCI HDU being the current 
-            # we assume there are at least SCI extensions in the input
-            outsci = deepcopy(inA[('SCI', extver)]) 
-            
-            try:
-                # Adding the SCI frames by the constant
-                outsci.data = np.add(inA[('SCI', extver)].data,inB)
-                # Append updated SCI extension to the output 
-                out.append(outsci)
-                # Appending the inputA VAR and DQ frames un-edited to the output
-                # ie no change, just propagate the frames
-                
-                # Check there are VAR frames to propagate
-                if inA.countExts('VAR') == inA.countExts('SCI'): 
-                    # Start with the out VAR HDU being the current
-                    outvar = deepcopy(inA[('VAR', extver)])
-                    # Just propagate VAR frames to the output
-                    out.append(outvar) 
-                # Check there are DQ frames to propagate   
-                if inA.countExts('DQ') == inA.countExts('SCI'): 
-                    # Start with the out DQ HDU being the current 
-                    outdq = deepcopy(inA[('DQ', extver)])   
-                    # Just propagate DQ frames to the output
-                    out.append(outdq) 
-            except:
-                raise 
+     
     # If the input was not of type astrodata or float,
     # issue a critical log message and raise and exception
     else:
@@ -532,8 +536,43 @@ def sub(inputA, inputB):
     # Preparing the output astrodata instance
     out=AstroData.prepOutput(inputAry = inA, clobber = False)
     
+    # Check if inputB is of type float, if so, perform the float specific
+    # addition calculations
+    if isinstance(inB, float):
+        # Loop through the SCI extensions of InputA
+        for sci in inA['SCI']:
+            # Retrieve the EXTVER for this extension
+            extver = sci.extver()
+            # Start with the out SCI HDU being the current 
+            # we assume there are at least SCI extensions in the input
+            outsci = deepcopy(inA[('SCI', extver)]) 
+            
+            try:
+                # Subtracting the SCI frames by the constant
+                outsci.data = np.subtract(inA[('SCI', extver)].data, inB)
+                # Append updated SCI extension to the output 
+                out.append(outsci)
+                
+                # Appending the inputA VAR and DQ frames un-edited to the output
+                # ie no change, just propagate the frames
+                
+                # Check there are VAR frames to propagate
+                if inA.countExts('VAR') == inA.countExts('SCI'): 
+                    # Start with the out VAR HDU being the current
+                    outvar = deepcopy(inA[('VAR', extver)])
+                    # Just propagate VAR frames to the output
+                    out.append(outvar) 
+                    # ie there are DQ frames to operate on 
+                if inA.countExts('DQ') == inA.countExts('SCI'): 
+                    # Start with the out DQ HDU being the current 
+                    outdq = deepcopy(inA[('DQ', extver)]) 
+                    # Just propagate DQ frames to the output  
+                    out.append(outdq) 
+            except:
+                raise
+            
     # Check to see if the denominator is of type AstroData
-    if isinstance(inB, astrodata.AstroData) or \
+    elif isinstance(inB, astrodata.AstroData) or \
     isinstance(inB,astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
@@ -585,40 +624,7 @@ def sub(inputA, inputB):
                                       'the sub task')
             except:
                 raise 
-    # Check if inputB is of type float, if so, perform the float specific
-    # addition calculations
-    elif isinstance(inB, float):
-        # Loop through the SCI extensions of InputA
-        for sci in inA['SCI']:
-            # Retrieve the EXTVER for this extension
-            extver = sci.extver()
-            # Start with the out SCI HDU being the current 
-            # we assume there are at least SCI extensions in the input
-            outsci = deepcopy(inA[('SCI', extver)]) 
-            
-            try:
-                # Subtracting the SCI frames by the constant
-                outsci.data = np.subtract(inA[('SCI', extver)].data, inB)
-                # Append updated SCI extension to the output 
-                out.append(outsci)
-                
-                # Appending the inputA VAR and DQ frames un-edited to the output
-                # ie no change, just propagate the frames
-                
-                # Check there are VAR frames to propagate
-                if inA.countExts('VAR') == inA.countExts('SCI'): 
-                    # Start with the out VAR HDU being the current
-                    outvar = deepcopy(inA[('VAR', extver)])
-                    # Just propagate VAR frames to the output
-                    out.append(outvar) 
-                    # ie there are DQ frames to operate on 
-                if inA.countExts('DQ') == inA.countExts('SCI'): 
-                    # Start with the out DQ HDU being the current 
-                    outdq = deepcopy(inA[('DQ', extver)]) 
-                    # Just propagate DQ frames to the output  
-                    out.append(outdq) 
-            except:
-                raise 
+     
     # If the input was not of type astrodata or float,
     # issue a critical log message and raise and exception
     else:
