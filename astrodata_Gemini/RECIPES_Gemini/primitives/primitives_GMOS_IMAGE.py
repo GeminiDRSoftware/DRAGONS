@@ -118,12 +118,12 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def display(self, rc):
         from astrodata.adutils.future import gemDisplay
-        pyraf,gemini, yes, no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader(rc)
         pyraf.iraf.set(stdimage='imtgmos')
         ds = gemDisplay.getDisplayService()
         for i in range(0, len(rc.inputs)):   
             inputRecord = rc.inputs[i]
-            gemini.gmos.gdisplay( inputRecord.filename, i+1, fl_imexam=iraf.no,
+            gemini.gmos.gdisplay( inputRecord.filename, i+1, fl_imexam=pyraf.iraf.no,
                 Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
             # this version had the display id conversion code which we'll need to redo
             # code above just uses the loop index as frame number
