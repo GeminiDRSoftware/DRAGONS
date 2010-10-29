@@ -146,7 +146,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
        yield rc
    
-    def flatCreate(self, rc):
+    def dflatCreate(self, rc):
 
         # FLAT made with giflat
         try:
@@ -162,7 +162,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
 
-    def flatfieldCorrect(self, rc):
+    def dflatfieldCorrect(self, rc):
         try:
             pyraf,gemini, yes, no = pyrafLoader(rc)
             print "Flat field correcting"
