@@ -342,6 +342,24 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.critical('Problem processing one of '+rc.inputsAsStr())
             raise  
         yield rc
+        
+    def getProcessedBias(self,rc):
+        """
+        A primitive to search and return the appropriate calibration bias from
+        a server for the given inputs.
+        
+        """
+        rc.rqCal('bias', rc.getInputs(style='AD'))
+        yield rc
+        
+    def getProcessedFlat(self,rc):
+        """
+        A primitive to search and return the appropriate calibration flat from
+        a server for the given inputs.
+        
+        """
+        rc.rqCal('flat', rc.getInputs(style='AD'))
+        yield rc
 
     def localGetProcessedBias(self,rc):
         """
@@ -512,24 +530,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
             raise   
-        yield rc
-
-    def getProcessedBias(self,rc):
-        """
-        A primitive to search and return the appropriate calibration bias from
-        a server for the given inputs.
-        
-        """
-        rc.rqCal('bias', rc.getInputs(style='AD'))
-        yield rc
-        
-    def getProcessedFlat(self,rc):
-        """
-        A primitive to search and return the appropriate calibration flat from
-        a server for the given inputs.
-        
-        """
-        rc.rqCal('flat', rc.getInputs(style='AD'))
         yield rc
 
     def normalizeFlat(self, rc):
