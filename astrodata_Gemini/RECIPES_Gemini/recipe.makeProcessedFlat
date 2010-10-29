@@ -3,7 +3,7 @@ prepare
 overscanCorrect
 addVARDQ
 #writeOutputs
-NEWgetProcessedBias
+getProcessedBias
 #localGetProcessedBias
 biasCorrect
 
