@@ -417,7 +417,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
 
-    def mosaic(self,rc):
+    def mosaicDetectors(self,rc):
         """
         This primitive will mosaic the SCI frames of the input images, 
         along with the VAR and DQ frames if they exist.  
@@ -514,7 +514,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise   
         yield rc
 
-    def NEWgetProcessedBias(self,rc):
+    def getProcessedBias(self,rc):
         """
         A primitive to search and return the appropriate calibration bias from
         a server for the given inputs.
@@ -523,7 +523,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         rc.rqCal('bias', rc.getInputs(style='AD'))
         yield rc
         
-    def NEWgetProcessedFlat(self,rc):
+    def getProcessedFlat(self,rc):
         """
         A primitive to search and return the appropriate calibration flat from
         a server for the given inputs.
