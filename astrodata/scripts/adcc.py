@@ -143,6 +143,7 @@ class ReduceInstanceManager(object):
     
     def stackGet(self, ID, cachefile = None):
         retval = self.stackKeeper.get(ID, cachefile)
+        print "adcc147:", repr(retval)
         return retval
         
     def displayRequest(self, rq):

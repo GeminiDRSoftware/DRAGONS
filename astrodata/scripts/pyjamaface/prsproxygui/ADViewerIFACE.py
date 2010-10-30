@@ -208,7 +208,7 @@ class ADViewerIFACE(DataDictTree):
     def createRightPanel(self):
         span = self.stabPanel = SimplePanel(Height="100%")
         
-        tabs = self.tabPanel = TabPanel(Width="100%", Height="100%")
+        tabs = self.tabPanel = TabPanel(Width="100%", Border=1,Height="100%")
         
         
         adgui = self.adinfoPanel = AdinfoIFACE(self)
@@ -247,7 +247,23 @@ class ADViewerIFACE(DataDictTree):
     def getHeight(self):
         
         return rccutil.getHeight()
+    def onRunReduce(self):
+        recipe = self.recipeList.getItemText(self.recipeList.getSelectedIndex())
         
+        if recipe=="None":
+            rstr = ""
+        else:
+            rstr = "p=-r"+recipe
+
+        rfiles = []            
+        for i in range(0, self.reduceFiles.getItemCount()):
+            fname = self.reduceFiles.getItemText(i)
+            rfiles.append(quote(self.pathdict[fname]["path"]))
+        filesstr = "&p=".join(rfiles)
+                
+        cl = "/runreduce?%s&p=%s" % (rstr, filesstr)
+        JS("window.open(cl)")
+
     def onTabSelected(self, sender, tabIndex):
         self.curTabIFACE = self.tabIFACEs[tabIndex]
     def onBeforeTabSelected(self, sender, tabIndex):

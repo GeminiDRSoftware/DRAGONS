@@ -2,6 +2,7 @@
 from copy import deepcopy, copy
 from datetime import datetime
 import new
+import os
 import inspect
 import pickle # for persisting the calibration index
 import socket # to get host name for local statistics
@@ -123,16 +124,20 @@ class ReductionContext(dict):
     irafstderr = None
     callbacks = None
     arguments = None
+    cacheFiles = None
     _localparms = None # dictionary with local args (given in recipe as args, generally)
     userParams = None # meant to be UserParams instance
     proxyID = 1 # used to ensure uniqueness
     ro = None
     #------------------------------------------------------------------------------ 
- 
+    cmdHistory = None
+    cmdIndex = None
      
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and lists, members set to
         None in the class."""
+        self.cmdHistory = []
+        self.cmdIndex = {}
         self.inputs = []
         self.callbacks = {}
         self.inputsHistory = []
@@ -143,6 +148,7 @@ class ReductionContext(dict):
         self.hostname = socket.gethostname()
         self.displayName = None
         self.arguments = []
+        self.cacheFiles = {}
         # TESTING
         self.cdl = CalibrationDefinitionLibrary()
         # undeclared
@@ -150,7 +156,8 @@ class ReductionContext(dict):
         
         # Stack Keep is a resource for all RecipeManager functions... one shared StackKeeper to simulate the shared ObservationServie
         # used in PRS mode.
-        self.stackeep = StackKeeper()
+        self.stackeep = StackKeeper(local=False)
+        self.stackKeeper = self.stackeep # "stackeep" is not a good name
         self.fringes = FringeKeeper()
         
     def __getitem__(self, arg):
@@ -166,7 +173,7 @@ class ReductionContext(dict):
         
         retval = self.convertParmToVal(arg, value)
         return retval
-        
+       
     def convertParmToVal(self, parmname, value):
         legalvartypes = ["bool", 
                         "int",
@@ -553,7 +560,11 @@ class ReductionContext(dict):
         return self.inputs[0].ad
     
     def getStack(self, ID):
-        return self.stackeep.get(ID)
+        cachefile = self.getCacheFile("stackIndexFile")
+        print "RM563:", cachefile
+        retval = self.stackeep.get(ID, cachefile )
+        print "RM565:", repr(retval)
+        return retval
  
     def inputsAsStr(self, strippath=True):
         if self.inputs == None:
@@ -794,16 +805,16 @@ class ReductionContext(dict):
         try:
             pickle.dump(self.fringes.stackLists, open(filename, "w"))
         except:
-            print 'Could not persist the fringe cache.'
-            raise
+            raise 'Could not persist the fringe cache.'
             
     def persistStkIndex(self, filename):
-        try:
-            #print "RM80:", self.stackeep
-            pickle.dump(self.stackeep.stackLists, open(filename, "w"))
-        except:
-            print "Could not persist the stackable cache."
-            raise
+        self.stackKeeper.persist(filename)
+        #try:
+        #    #print "RM80:", self.stackeep
+        #    pickle.dump(self.stackeep.stackLists, open(filename, "w"))
+        #except:
+        #    print "Could not persist the stackable cache."
+        #    raise
     
     def prependNames(self, prepend, currentDir=True, filepaths=None):
         '''
@@ -1028,12 +1039,14 @@ class ReductionContext(dict):
                             
     def restoreStkIndex(self, filename):
         '''
-        
+        Get the stack list from 
         '''
-        if os.path.exists(filename):
-            self.stackeep.stackLists = pickle.load(open(filename, 'r'))
-        else:
-            pickle.dump({}, open(filename, 'w'))
+        
+        if False:
+            if os.path.exists(filename):
+                self.stackeep.stackLists = pickle.load(open(filename, 'r'))
+            else:
+                pickle.dump({}, open(filename, 'w'))
     
     def rmCal(self, data, caltype):
         '''
@@ -1071,7 +1084,10 @@ class ReductionContext(dict):
             addToCmdQueue = self.cdl.getCalReq(inputs, caltype)
         for re in addToCmdQueue:
             self.addRq(re)
-    
+    def saveCmdHistory(self):
+        print "RM1076:", repr(self.rorqs)
+        
+        
     def rqDisplay(self, displayID=None):
         '''
         self, filename = None
@@ -1092,6 +1108,7 @@ class ReductionContext(dict):
     def rqIQ(self, ad, eM, eS, fM, fS):
         iqReq = ImageQualityRequest(ad, eM, eS, fM, fS)
         self.addRq(iqReq)
+    rqIQput = rqIQ
         
     def rqStackGet(self):
         ver = "1_0"
@@ -1104,7 +1121,7 @@ class ReductionContext(dict):
                 
     def rqStackUpdate(self):
         '''
-        Create requests to update a stack list.
+        This function creates requests to update a stack list.
         '''
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
@@ -1114,7 +1131,20 @@ class ReductionContext(dict):
             stackUEv.stkID = Sid
             stackUEv.stkList = inp.filename
             self.addRq(stackUEv)
-                       
+    #better name?
+    rqStackPut = rqStackUpdate
+    
+    def setCacheFile(self, key, filename):
+        filename = os.path.abspath(filename)
+        print "RM1135:", filename
+        self.cacheFiles.update({key:filename})
+        
+    def getCacheFile(self, key):
+        if key in self.cacheFiles:
+            return self.cacheFiles[key]
+        else:
+            return None
+            
     def setIrafStderr(self, so):
         self.irafstderr = so
         return
@@ -1123,8 +1153,8 @@ class ReductionContext(dict):
         self.irafstdout = so
         return
     
-    def stackAppend(self, ID, files):
-        self.stackeep.add(ID, files)
+    def stackAppend(self, ID, files, cachefile = None):
+        self.stackeep.add(ID, files, cachefile)
         
     def stack_inputsAsStr(self, ID):        
         #pass back the stack files as strings

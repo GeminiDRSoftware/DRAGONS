@@ -171,7 +171,8 @@ parser.add_option("--invoked", dest="invoked", default=False, action="store_true
 (options,  args) = parser.parse_args()
 
 if options.invoked:
-    opener = "REDUCE STARTED BY PRSPROXY"
+    opener = "reduce started in adcc mode (--invoked)"
+    print "."*len(opener)
     print opener
     print "."*len(opener)
     sys.stdout.flush()
@@ -426,8 +427,13 @@ def command_line():
 from astrodata import Proxies
 reduceServer = Proxies.ReduceServer()
 
+# I think it best to start the adcc always, since it wants the reduceServer I prefer not
+# to provide to every component that wants to use the adcc as an active-library
 
-prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
+#prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
+print "r434:create prs proxy"
+prs = Proxies.PRSProxy.getPRSProxy(reduceServer=reduceServer)
+
 usePRS = True
 
 # print "r395: usePRS=", usePRS
@@ -442,7 +448,7 @@ def commandClause(ro, coi):
         time.sleep(.100)
     if co.finished:
         return
-
+    
     #process calibration requests
     for rq in coi.rorqs:
         rqTyp = type(rq)
@@ -493,7 +499,7 @@ def commandClause(ro, coi):
             #print '-'*30
 
         elif rqTyp == UpdateStackableRequest:
-            coi.stackAppend(rq.stkID, rq.stkList)
+            coi.stackAppend(rq.stkID, rq.stkList, stkindfile)
             coi.persistStkIndex( stkindfile )
         elif rqTyp == GetStackableRequest:
             pass
@@ -502,38 +508,15 @@ def commandClause(ro, coi):
             # cache.
             #print "RD172: GET STACKABLE REQS:", rq
         elif rqTyp == DisplayRequest:
-            print "${RED}DISPLAY REQUESTS NOT SUPPORTED AT THIS TIME.\nCall instrument specific display function in display primitive.${NORMAL}"
-            raise "DISPLAY REQUESTS NOT SUPPORTED AT THIS TIME. Call instrument specific display function in display primitive."
-            from pyraf import iraf
-            from pyraf.iraf import gemini
-            gemini()
-            gemini.gmos()
-            if ds.ds9 is None:
-                ds.setupDS9()
-
-            ##@@FIXME: This os.system way, is very kluged and should be changed.
-            if   (commands.getstatusoutput('ps -ef | grep -v grep | grep ds9' )[0] > 0) \
-                 and (commands.getstatusoutput('ps -eA > .tmp; grep -q ds9 .tmp')[0] > 0):
-                print "CANNOT DISPLAY: No ds9 running."
-            else:
-                iraf.set(stdimage='imtgmos')
-                for tmpImage in rq.disList:
-                    if type(tmpImage) != str:
-                        #print "RED329:", tmpImage.filename
-                        tmpImage = tmpImage.filename
-
-                    # tmpImage should be a string at this point.
-                    #print "RED
-                    try:
-                        # print "r420:", rq.disID, ds.displayID2frame(rq.disID)
-                        raise "CANNOT DO DISPLAY REQUESTS AT THIS TIME. Call instrument specific display function in display primitive."
-#                        gemini.gmos.gdisplay( tmpImage, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
-#                            Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
-#                                        ds.display( tmpImage )
-#                                        print ds.ds9.frames()  
-                    except:
-                        print "CANNOT DISPLAY"
-                        raise 
+            # process display request
+            nd = rq.toNestedDicts()
+            #print "r508:", repr(nd)
+            if usePRS and prs == None:
+                # print "r454: getting prs"
+                prs = Proxies.PRSProxy.getPRSProxy(reduceServer = reduceServer)
+            prs.displayRequest(nd)
+                
+                   
         elif rqTyp == ImageQualityRequest:
             #print 'RED394:'
             #$$ next line is commented out as it has been converted to a log call below
@@ -588,7 +571,7 @@ def commandClause(ro, coi):
                 et = time.time()
                 #print 'RED422:', (et - st)
 
-
+    
     coi.clearRqs()      
 
 
@@ -605,7 +588,8 @@ def commandClause(ro, coi):
         #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
         # CLEAR THE REQUEST LEAGUE
     if primfilter == None:
-        raise "holy hell what's going on?"
+        raise "This is an error that should never happen, primfilter = None"
+
 
 
 ######################
@@ -752,6 +736,9 @@ for infiles in allinputs: #for dealing with multiple files.
             # create fresh context object
             # @@TODO:possible: see if deepcopy can do this better 
             co = ReductionContext()
+            print "r739:stack index file", stkindfile
+            # @@NAME: stackIndexFile, location for persistent stack list cache
+            co.setCacheFile("stackIndexFile", stkindfile)
             co.ro = ro
             # @@DOC: put cachedirs in context
             for cachename in cachedict:
@@ -760,7 +747,7 @@ for infiles in allinputs: #for dealing with multiple files.
             # rc.["storedcals"] will be the proper directory
             
             co.restoreCalIndex(calindfile)
-            co.restoreStkIndex( stkindfile )
+            # old local stack stuff co.restoreStkIndex( stkindfile )
             
             # add input files
             co.addInput(infiles)
@@ -863,6 +850,7 @@ for infiles in allinputs: #for dealing with multiple files.
         except:
             print "CONTEXT AFTER FATAL ERROR"
             print "--------------------------"
+            raise
             if reduceServer:
                 reduceServer.finished=True
             co.persistCalIndex(calindfile)

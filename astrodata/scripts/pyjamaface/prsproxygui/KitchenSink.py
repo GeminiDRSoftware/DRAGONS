@@ -27,6 +27,7 @@ import RecipeSystemIFACE
 import RecipeViewer
 import ADViewerIFACE
 import FITSStoreFACE
+import DisplayIFACE
 from Logger import Logger
 from pyjamas import log
 
@@ -70,7 +71,7 @@ class KitchenSink:
 
         History.addHistoryListener(self)
         RootPanel().add(self.panel)
-        # RootPanel().add(Logger())
+        RootPanel().add(Logger())
 
         #Show the initial screen.
         initToken = History.getToken()
@@ -111,6 +112,7 @@ class KitchenSink:
         self.sink_list.addSink(ADViewerIFACE.init())
         self.sink_list.addSink(RecipeViewer.init())
         self.sink_list.addSink(FITSStoreFACE.init())
+        self.sink_list.addSink(DisplayIFACE.init())
         self.sink_list.addSink(Info.init())
         if False:
             self.sink_list.addSink(Buttons.init())

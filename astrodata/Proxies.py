@@ -6,7 +6,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 import select
 import socket
 
-PDEB = False
+PDEB = True
 
 class ReduceCommands(object):
     prsready = False
@@ -69,6 +69,8 @@ class ReduceServer(object):
     
 
 class PRSProxy(object):
+    # the xmlrpc interface is saved
+    _class_prs = None
     prs = None
     found = False
     version = None
@@ -80,10 +82,11 @@ class PRSProxy(object):
     reduceServer = None
             
     def __init__(self, reduceServer = None):
-        # print ("P83: created PROXY")
-        self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
-        self.reduceServer = reduceServer
+        print ("P83: created PROXY")
         try:
+            self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
+            self.reduceServer = reduceServer
+            PRSProxy._class_prs = self.prs
             self.found = True
         except socket.error:
             self.found = False
@@ -91,12 +94,18 @@ class PRSProxy(object):
         
     @classmethod
     def getPRSProxy(cls, start = True, proxy = None, reduceServer = None):
-        
+        if  type(cls._class_prs) != type(None):
+            proxy = cls._class_prs
+            start = False
+            return cls._class_prs
+                    
         newProxy = None
 
         found = False
         try:
             if proxy == None:
+                
+                    
                 newProxy = PRSProxy(reduceServer = reduceServer)
                 newProxy.version = newProxy.get_version()
             
@@ -104,7 +113,9 @@ class PRSProxy(object):
                     print "P102: newProxy id", id(newProxy), newProxy.found
                     print "P100: checking for proxy up"
             else:
-                proxy.reduceServer = reduceServer
+                if reduceServer:
+                    proxy.reduceServer = reduceServer
+                
                 newProxy = proxy
                 newProxy.version = newProxy.get_version()
                 
@@ -129,9 +140,9 @@ class PRSProxy(object):
             if start:
                 if (PDEB):
                     print "P132: newProxy id", id(newProxy)
-                    print "P125: starting prsproxy.py"
-                prsout = open("prsproxylog-reduce%d" % os.getpid(), "w")
-                pid = subprocess.Popen(["prsproxy.py", "--invoked"], stdout = prsout, stderr=prsout).pid
+                    print "P125: starting adcc.py"
+                prsout = open("adcc-reducelog-%d" % os.getpid(), "w")
+                pid = subprocess.Popen(["adcc.py", "--invoked"], stdout = prsout, stderr=prsout).pid
                 if (PDEB):
                     print "P128: pid =", pid
                 notfound = True
@@ -184,5 +195,9 @@ class PRSProxy(object):
     def get_version(self):
         self.version = self.prs.get_version()
         return self.version
+        
+    def displayRequest(self, rq):
+        self.prs.displayRequest(rq)
+        return 
             
 

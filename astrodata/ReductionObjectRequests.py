@@ -1,5 +1,6 @@
-from datetime import datetime
+import os
 
+from datetime import datetime
 from astrodata import Descriptors
 #------------------------------------------------------------------------------ 
 class ReductionObjectRequest( object ):
@@ -84,6 +85,21 @@ class DisplayRequest( ReductionObjectRequest ):
                     "DISPLAY LIST: " + str( self.disList )
         
         return tempStr
+        
+    def toNestedDicts(self):
+        d = {} # overall dict, single elements keyed with display
+                # the command level
+        f = {} # filename based dict
+        tdis = {"files":f,
+                "type":"main"} # this display event level
+        
+        d.update({"display":tdis})
+        for i in self.disList:
+            filedict = {}
+            f.update({os.path.basename(i.filename): filedict })
+            filedict.update({"filename":i.filename})
+            filedict.update({"displayID":i.ad.displayID()})
+        return d
 
 class GetStackableRequest( ReductionObjectRequest ):
     '''

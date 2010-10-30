@@ -6,7 +6,7 @@ class Logger(Grid):
     def __init__(self):
         Logger.instances.append(self)
 
-        Grid.__init__(self)
+        Grid.__init__(self, Visible=False)
 
         self.targets=[]
         self.targets.append("app")

@@ -22,5 +22,5 @@ class FITSStore(Sink):
 
 def init():
     return SinkInfo("Local FITS Store", 
-                    "Introduction to the Kitchen Sink.", 
+                    "Interface to LocalFITSSTORE", 
                     FITSStore)

@@ -93,6 +93,7 @@ class AdinfoIFACE(PanelIFACE):
         
     def scroll(self, where):
         self.panel.setScrollPosition(where)
+        
     def onWindowResized(self, width, height):
         self.panel.setSize("100%", self.parent.getHeight())
         self.adInfo.setSize("100%", self.parent.getHeight())
@@ -180,24 +181,7 @@ class DataDictTree(Sink):
         self.prepareReduce.setHTML('<b>reduce</b> %(recipe)s %(files)s' % 
                                         { "recipe":rstr, 
                                           "files":filesstr})
-    def onRunReduce(self):
-        recipe = self.recipeList.getItemText(self.recipeList.getSelectedIndex())
-        
-        if recipe=="None":
-            rstr = ""
-        else:
-            rstr = "p=-r"+recipe
 
-        rfiles = []            
-        for i in range(0, self.reduceFiles.getItemCount()):
-            fname = self.reduceFiles.getItemText(i)
-            rfiles.append(quote(self.pathdict[fname]["path"]))
-        filesstr = "&p=".join(rfiles)
-                
-        cl = "/runreduce?%s&p=%s" % (rstr, filesstr)
-        JS("window.open(cl)")
-
-        
     def onTreeItemSelected(self, item):
         pathdict = self.pathdict
         

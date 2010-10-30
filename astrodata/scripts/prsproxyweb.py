@@ -52,7 +52,7 @@ def parsepath(path):
         rparms.update({"query":""})
     
     return rparms
-  
+
 try:
     from GeminiMetadataUtils import *
 except:
