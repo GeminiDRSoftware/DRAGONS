@@ -115,7 +115,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             raise
             
         yield rc
-    
     def display(self, rc):
         from astrodata.adutils.future import gemDisplay
         pyraf, gemini, yes, no = pyrafLoader(rc)

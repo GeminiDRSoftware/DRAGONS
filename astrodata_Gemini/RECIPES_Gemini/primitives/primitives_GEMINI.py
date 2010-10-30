@@ -83,8 +83,174 @@ class GEMINIPrimitives(PrimitiveSet):
         2=value is non linear, 4=pixel is saturated)
         
         """
+    def clearCalCache(self, rc):
+        # print 'pG61:', rc.calindfile
+        rc.persistCalIndex(rc.calindfile, newindex={})
+        scals = rc['storedcals']
+        if scals:
+            if os.path.exists(scals):
+                shutil.rmtree(scals)
+            cachedict = rc['cachedict']
+            for cachename in cachedict:
+                cachedir = cachedict[cachename]
+                if not os.path.exists(cachedir):                        
+                    os.mkdir(cachedir)                
+        yield rc
+        
+    def display(self, rc):
         try:
-            log.status('*STARTING* to add the DQ frame(s) to the input data')
+            rc.rqDisplay(displayID=rc["displayID"])           
+        except:
+            log.critical('Problem displaying output')
+            raise 
+        yield rc
+ 
+    def setContext(self, rc):
+        rc.update(rc.localparms)
+        yield rc
+
+    def showParameters(self, rc):
+        rcparams = rc.paramNames()
+        if (rc['show']):
+            toshows = rc['show'].split(':')
+            for toshow in toshows:
+                if toshow in rcparams:
+                    log.fullinfo(toshow+' = '+repr(rc[toshow]), \
+                                 category='parameters')
+                else:
+                    log.fullinfo(toshow+' is not set', category='parameters')
+        else:
+            for param in rcparams:
+                log.fullinfo(param+' = '+repr(rc[param]), category='parameters')
+        
+        # print 'all',repr(rc.parmDictByTag('showParams', 'all'))
+        # print 'iraf',repr(rc.parmDictByTag('showParams', 'iraf'))
+        # print 'test',repr(rc.parmDictByTag('showParams', 'test'))
+        # print 'sdf',repr(rc.parmDictByTag('showParams', 'sdf'))
+
+        # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
+        yield rc  
+            
+    def sleep(self, rc):
+        if rc['duration']:
+            dur = float(rc['duration'])
+        else:
+            dur = 5.
+        log.status('Sleeping for %f seconds' % dur)
+        time.sleep(dur)
+        yield rc
+                      
+    def showInputs(self, rc):
+        log.fullinfo('Inputs:',category='inputs')
+        for inf in rc.inputs:
+            log.fullinfo('  '+inf.filename, category='inputs')  
+        yield rc  
+    showFiles = showInputs
+    
+    def showCals(self, rc):
+        if str(rc['showcals']).lower() == 'all':
+            num = 0
+            # print 'pG256: showcals=all', repr (rc.calibrations)
+            for calkey in rc.calibrations:
+                num += 1
+                log.fullinfo(rc.calibrations[calkey], category='calibrations')
+            if (num == 0):
+                log.warning('There are no calibrations in the cache.')
+        else:
+            for adr in rc.inputs:
+                sid = IDFactory.generateAstroDataID(adr.ad)
+                num = 0
+                for calkey in rc.calibrations:
+                    if sid in calkey :
+                        num += 1
+                        log.fullinfo(rc.calibrations[calkey], \
+                                     category='calibrations')
+            if (num == 0):
+                log.warning('There are no calibrations in the cache.')
+        yield rc
+    ptusage_showCals='Used to show calibrations currently in cache for inputs.'
+
+    def showStackable(self, rc):
+        sidset = set()
+        for inp in rc.inputs:
+            sidset.add(IDFactory.generateStackableID(inp.ad))
+        for sid in sidset:
+            stacklist = rc.getStack(sid) #.filelist
+            log.status('Stack for stack id=%s' % sid)
+            for f in stacklist:
+                log.status('   '+os.path.basename(f))
+        yield rc
+                 
+    def time(self, rc):
+        cur = datetime.now()
+        
+        elap = ''
+        if rc['lastTime'] and not rc['start']:
+            td = cur - rc['lastTime']
+            elap = ' (%s)' %str(td)
+        log.fullinfo('Time:'+' '+str(datetime.now())+' '+elap)
+        
+        rc.update({'lastTime':cur})
+        yield rc
+
+    def getStackable(self, rc):
+        try:
+            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
+            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
+            log.fullinfo('getting stack '+stackid,'stack')
+            rc.rqStackGet()
+            yield rc
+            stack = rc.getStack(stackid) #.filelist
+            #print 'prim_G366: ',repr(stack)
+            rc.reportOutput(stack)
+        except:
+            log.critical('Problem getting stack '+stackid, 'stack')
+            raise 
+        yield rc      
+ 
+    def setStackable(self, rc):
+        """
+        This primitive will update the lists of files to be stacked
+        that have the same observationID with the current inputs.
+        This file is cached between calls to reduce, thus allowing
+        for one-file-at-a-time processing.
+        """
+        try:
+            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
+            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), \
+                         category='stack')
+            rc.rqStackUpdate()
+            # Writing the files in the stack to disk if not all ready there
+            for ad in rc.getInputs(style='AD'):
+                if not os.path.exists(ad.filename):
+                    log.fullinfo('temporarily writing '+ad.filename+\
+                                 ' to disk', category='stack')
+                    ad.write(ad.filename)
+        except:
+            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),\
+                         category='stack')
+            raise
+        yield rc
+    
+    def validateData(self,rc):
+        """
+        This primitive will ensure the data is not corrupted or in an odd 
+        format that will affect later steps in the reduction process.  
+        It will call a function to take care of the general Gemini issues 
+        and then one for the instrument specific ones. If there are issues 
+        with the data, the flag 'repair' can be used to turn on the feature to 
+        repair it or not (eg. validateData(repair=True))
+        (this feature is not coded yet).
+        """
+        
+        try:
+            if rc['repair'] is True:
+               # This should repair the file if it is broken, but this function
+               # isn't coded yet and would require some sort of flag set while 
+               # checking the data to tell this to perform the corrections
+               log.critical('Sorry, but the repair feature of validateData' +\
+                            ' is not available yet')
+               pass
             
             # Calling addBPM primitive to add the appropriate Bad Pixel Mask
             # to the inputs which will then be updated below to create data 
