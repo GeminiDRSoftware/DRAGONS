@@ -1,4 +1,7 @@
-{    "overscanSubtract":{"fl_trim":
+{    
+
+
+        "overscanSubtract":{"fl_trim":
                          {
                           'default': False , 
                           'recipeOverride': False,
@@ -12,7 +15,7 @@
                           'type': 'bool',
                           'userOverride':True    
                            },
-                          "outpref":
+                          "postpend":
                           {
                            'default': '_oversubed' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
@@ -27,7 +30,7 @@
                             'userOverride':True
                             }
                         },
-        "overscanTrim":{"outpref":
+        "overscanTrim":{"postpend":
                           {
                            'default': '_overtrimd' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
@@ -44,7 +47,7 @@
                                }
                               
                               } ,
-            'storeProcessedFlat':{'clob':
+        'storeProcessedFlat':{'clob':
                               {
                                 'default': False,
                                 'recipeOverride': True,
@@ -53,7 +56,7 @@
                                }
                               
                               } ,
-             "biasCorrect":{"fl_over":
+        "biasCorrect":{"fl_over":
                         {
                           'default': False , 
                           'recipeOverride': True,
@@ -74,7 +77,7 @@
                           'type': 'bool',
                           'userOverride':True    
                            },
-                          "outpref":
+                          "postpend":
                           {
                            'default': '_biassub' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
@@ -108,7 +111,7 @@
                           'userOverride':True,  
                           'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            },
-                          "outpref":
+                          "postpend":
                           {
                            'default': '_normalized' , #value to be post pended to this primitives outputs (used by CLManager not CL directly for this prim)
                           'recipeOverride': True,
@@ -125,7 +128,7 @@
                            }
                           },
         'flatCorrect':{
-                       'outpref':
+                       'postpend':
                        {
                         'default': '_FlatCorrected' , 
                           'recipeOverride': True,
@@ -143,7 +146,7 @@
                           'userOverride':True,  
                           'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            },
-                  'outpref':
+                  'postpend':
                        {
                         'default': '_mosaic' , 
                           'recipeOverride': True,
