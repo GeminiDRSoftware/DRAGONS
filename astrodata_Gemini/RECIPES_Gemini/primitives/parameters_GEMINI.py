@@ -3,7 +3,7 @@
                     'default': '_dq' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
                       'type': 'str',
-                      'userOverride':False 
+                      'userOverride':True 
                     },
                     'fl_saturated':
                     {
@@ -82,7 +82,7 @@
                     },
     'measureIQ':{'function':
                  {
-                  'default': 'moffat' , 
+                  'default': 'both' , # can be moffat/gauss/both
                   'recipeOverride': True,
                   'type': 'str',
                   'userOverride':False
@@ -117,7 +117,7 @@
                'note2':"pause doesn't need a 'message' parameter"
                }
               },      
-    'showParams': {'test': 
+    'showParameters': {'test': 
                    {
                     'default': True,
                     'recipeOverride': False,
@@ -141,7 +141,7 @@
                 },
     'standardizeHeaders':{'postpend':
                    {
-                    'default': '_prepared' , #value to be post pended to this primitives outputs
+                    'default': '_headers' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
                       'type': 'str',
                       'userOverride':False 
