@@ -223,7 +223,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clSoftcodedParams = {
                # pyrafBoolean converts the python booleans to pyraf ones
                'fl_trim'    :gemt.pyrafBoolean(rc['fl_trim']),
-               'outpref'    :rc['outpref'],
+               'outpref'    :rc['postpend'],
                'fl_over'    :gemt.pyrafBoolean(rc['fl_over']),
                'fl_vardq'   :gemt.pyrafBoolean(rc['fl_vardq'])
                                }
@@ -320,7 +320,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 adOut.filename = gemt.fileNameUpdater(ad.filename, 
-                                                      postpend=rc['outpref'], 
+                                                      postpend=rc['postpend'], 
                                                       strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(adOut)   
@@ -478,7 +478,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clSoftcodedParams = {
               # pyrafBoolean converts the python booleans to pyraf ones
               'fl_paste'    :gemt.pyrafBoolean(rc['fl_paste']),
-              'outpref'     :rc['outpref'],
+              'outpref'     :rc['postpend'],
               'outimages'   :rc['outimages'],
               'geointer'    :rc['interp_function'],
                               }
@@ -660,7 +660,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clSoftcodedParams = {
                # pyrafBoolean converts the python booleans to pyraf ones
                'fl_trim'    :gemt.pyrafBoolean(rc['fl_trim']),
-               'outpref'    :rc['outpref'],
+               'outpref'    :rc['postpend'],
                'fl_vardq'   :gemt.pyrafBoolean(rc['fl_vardq'])
                                }
             # Grabbing the default params dict and updating it with 
@@ -779,7 +779,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # context
                 log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outpref'], 
+                                                   postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
@@ -838,7 +838,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend='_preparedBias', 
+                                                   postpend='_preparedbias', 
                                                    strip=True)
                 log.status('File name updated to '+ad.filename)
                 
@@ -873,7 +873,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend='_preparedFlat', 
+                                                   postpend='_preparedflat', 
                                                    strip=True)
                 log.status('File name updated to '+ad.filename)
                 
