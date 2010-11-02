@@ -331,19 +331,19 @@ class CLManager(object):
     # Preparing 'global' objects to be accessed throughout this class
     rc = None
     prefix = None
-    outpref = None
+    postpend = None
     listname = None
     templog = None
     
      
-    def __init__(self, rc, outpref = None):
+    def __init__(self, rc, postpend = None):
         """This instantiates all the globally accessible variables"""
         self.rc  = rc
-        if outpref is None:
-            # If no outpref passed in retrieve the outpref value from the 
+        if postpend is None:
+            # If no postpend passed in retrieve the postpend value from the 
             # local parameters in the reduction context
-            outpref = rc['outpref']
-        self.outpref = outpref
+            postpend = rc['postpend']
+        self.postpend = postpend
         self._preCLcachestorenames = []
         self._preCLfilenames = []
         self.prefix = self.uniquePrefix()
@@ -365,7 +365,7 @@ class CLManager(object):
         """
         #@@ REFERENCE IMAGE: for output name
 
-        return self.outpref+self._preCLcachestorenames[0]
+        return self.postpend+self._preCLcachestorenames[0]
          
     def finishCL(self, combine=False): 
         """ Performs all the finalizing steps after CL script is ran. 
@@ -474,10 +474,10 @@ class CLManager(object):
         # Do the appropriate wrapping up for combine type primitives
         if combine is True:
             # The name that IRAF wrote the output to
-            cloutname = self.outpref+self._preCLcachestorenames[0]
+            cloutname = self.postpend+self._preCLcachestorenames[0]
             # The name we want the file to be
             finalname = fileNameUpdater(self._preCLfilenames[0], 
-                                      postpend= self.outpref, strip=False)
+                                      postpend= self.postpend, strip=False)
             # Renaming the IRAF written file to the name we want
             os.rename(cloutname, finalname )
             # Reporting the renamed file to the reduction context and thus
@@ -510,10 +510,10 @@ class CLManager(object):
                 # Name of file written to disk for input to CL script
                 storename = self._preCLcachestorenames[i]  
                 # Name of file CL wrote to disk
-                cloutname = self.outpref + storename  
+                cloutname = self.postpend + storename  
                 # Name I want the file to be
                 finalname = fileNameUpdater(self._preCLfilenames[i], 
-                                            postpend= self.outpref, strip=False)  
+                                            postpend= self.postpend, strip=False)  
                 # Renaming the IRAF written file to the name we want
                 os.rename(cloutname, finalname )
                 
