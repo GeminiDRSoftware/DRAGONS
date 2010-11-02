@@ -1,2 +1,7 @@
+# This mini-recipe will retrieve the current stack for the input and then 
+# use it to produce a single stacked and normalized flat calibration file.
+# Must have the stack list prepared by use of the setStackable primitive before
+# calling makeNormalizedFlat.
+
 getStackable
 normalizeFlat
