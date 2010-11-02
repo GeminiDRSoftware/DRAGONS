@@ -1,3 +1,8 @@
+# This recipe will perform validation and standardization
+# to the inputs to ensure they are ready for further processing.
+# After all the checks are complete, the data is written to 
+# disk with the postfix '_prepared.fits'.
+
 validateData(repair=False)
 standardizeStructure(addMDF=False)
 standardizeHeaders
