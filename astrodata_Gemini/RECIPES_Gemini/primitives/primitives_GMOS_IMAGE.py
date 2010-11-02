@@ -115,6 +115,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             raise
             
         yield rc
+    
     def display(self, rc):
         from astrodata.adutils.future import gemDisplay
         pyraf, gemini, yes, no = pyrafLoader(rc)
@@ -144,45 +145,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
            raise
 
        yield rc
-   
-    def dflatCreate(self, rc):
-
-        # FLAT made with giflat
-        try:
-            pyraf,gemini, yes, no = pyrafLoader(rc)
-            print 'combining and normalizing best 20 twilight flats'
-            gemini.giflat(rc.inputsAsStr(), outflat=rc["outflat"],
-                bias=rc.calName("REDUCED_BIAS"),rawpath=rc["caldir"],
-                fl_over=rc["fl_over"], fl_trim=rc["fl_trim"], 
-                fl_vardq=rc["fl_vardq"],Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-        except:
-            print "Problem combining imaging flats with giflat"
-            raise 
-        
-        yield rc
-
-    def dflatfieldCorrect(self, rc):
-        try:
-            pyraf,gemini, yes, no = pyrafLoader(rc)
-            print "Flat field correcting"
-            
-            cals = rc.calFilename( 'twilight' )
-            for cal in cals:
-                # see Bias correct, used to have strange join from cal structures
-                # instead of rc.inputsAsStr() below.
-                gemini.gmos.gireduce(rc.inputsAsStr(), fl_over=no,fl_trim=no,
-                    fl_bias=no, flat1=cal, fl_flat=yes, outpref="flatdiv_",
-                    Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-            
-            if gemini.gmos.gireduce.status:
-                raise GMOS_IMAGEException('gireduce failed')
-            
-            rc.reportOutput(rc.prependNames("flatdiv_"))   
-        except:
-            print 'Problem dividing by normalized flat'
-            raise 
-
-        yield rc
     
     def dfringeCorrect(self, rc):
         try:
@@ -446,23 +408,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
         yield rc 
 
-    def mosaicChips(self, rc):
-       try:
-          pyraf,gemini, yes, no = pyrafLoader(rc)
-          print "producing image mosaic"
-          gemini.gmosaic( rc.inputsAsStr(), outpref="mo_",
-            Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
-          
-          if gemini.gmosaic.status:
-              raise GMOS_IMAGEException('gmosaic failed')
-          
-          rc.reportOutput(rc.prependNames("mo_", currentDir = True))
-       except:
-           print "Problem producing image mosaic"
-           raise 
-
-       yield rc
-
     def doverscanCorrect(self, rc):
         print "Performing Overscan Correct (overSub, overTrim)"
         try:
@@ -519,6 +464,28 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             
         yield rc
     
+    def dprepare(self, rc):
+        try:
+            pyraf,gemini, yes, no = pyrafLoader(rc)
+            print 'preparing'
+            print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
+            print "Updating GAIN keyword by calling GGAIN"
+            
+            print "pGI391:",repr(rc)
+            gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath=rc['iraf']['adata'],
+                                 Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
+            #
+            if gemini.gmos.gprepare.status:
+                raise GMOS_IMAGEException( 'gprepare failed')
+            
+            rc.reportOutput(rc.prependNames("g", currentDir = True))
+            
+        except:
+            print "Problem preparing the image."
+            raise 
+        
+        yield rc
+        
     def setForFringe(self, rc):
         """ 
         This primitive will update the list of files with the same observationID
@@ -629,28 +596,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             print 'Problem shifting image'
             raise 
 
-        yield rc
-   
-    def dprepare(self, rc):
-        try:
-            pyraf,gemini, yes, no = pyrafLoader(rc)
-            print 'preparing'
-            print "Updating keywords PIXSCALE, NEXTEND, OBSMODE, GEM-TLM, GPREPARE"
-            print "Updating GAIN keyword by calling GGAIN"
-            
-            print "pGI391:",repr(rc)
-            gemini.gmos.gprepare(rc.inputsAsStr(strippath = True), rawpath=rc['iraf']['adata'],
-                                 Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-            #
-            if gemini.gmos.gprepare.status:
-                raise GMOS_IMAGEException( 'gprepare failed')
-            
-            rc.reportOutput(rc.prependNames("g", currentDir = True))
-            
-        except:
-            print "Problem preparing the image."
-            raise 
-        
         yield rc    
 
 def CLDefaultParamsDict(CLscript):
