@@ -185,6 +185,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                              'fl_statscale'   :rc['fl_statscale'],
                              'statsec'        :rc['statsec'],
                              'scale'          :rc['scale'],
+                             'outpref'        :rc['postpend'],
                              }
                 
                 # Calling the girmfringe function to perform the fringe 
@@ -213,7 +214,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 adOut.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outpref'], 
+                                                   postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+adOut.filename)
                 rc.reportOutput(adOut)        
@@ -318,7 +319,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 clSoftcodedParams = {
                     'fl_vardq'      :gemt.pyrafBoolean(rc['fl_vardq']),
                     'combine'       :rc['method'],
-                    'reject'        :'none'
+                    'reject'        :'none',
+                    'outpref'       :rc['postpend'],
                                     }
                 # Grabbing the default parameters dictionary and updating 
                 # it with the two above dictionaries
