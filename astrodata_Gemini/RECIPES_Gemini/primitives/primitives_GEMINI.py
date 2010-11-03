@@ -83,174 +83,8 @@ class GEMINIPrimitives(PrimitiveSet):
         2=value is non linear, 4=pixel is saturated)
         
         """
-    def clearCalCache(self, rc):
-        # print 'pG61:', rc.calindfile
-        rc.persistCalIndex(rc.calindfile, newindex={})
-        scals = rc['storedcals']
-        if scals:
-            if os.path.exists(scals):
-                shutil.rmtree(scals)
-            cachedict = rc['cachedict']
-            for cachename in cachedict:
-                cachedir = cachedict[cachename]
-                if not os.path.exists(cachedir):                        
-                    os.mkdir(cachedir)                
-        yield rc
-        
-    def display(self, rc):
         try:
-            rc.rqDisplay(displayID=rc["displayID"])           
-        except:
-            log.critical('Problem displaying output')
-            raise 
-        yield rc
- 
-    def setContext(self, rc):
-        rc.update(rc.localparms)
-        yield rc
-
-    def showParameters(self, rc):
-        rcparams = rc.paramNames()
-        if (rc['show']):
-            toshows = rc['show'].split(':')
-            for toshow in toshows:
-                if toshow in rcparams:
-                    log.fullinfo(toshow+' = '+repr(rc[toshow]), \
-                                 category='parameters')
-                else:
-                    log.fullinfo(toshow+' is not set', category='parameters')
-        else:
-            for param in rcparams:
-                log.fullinfo(param+' = '+repr(rc[param]), category='parameters')
-        
-        # print 'all',repr(rc.parmDictByTag('showParams', 'all'))
-        # print 'iraf',repr(rc.parmDictByTag('showParams', 'iraf'))
-        # print 'test',repr(rc.parmDictByTag('showParams', 'test'))
-        # print 'sdf',repr(rc.parmDictByTag('showParams', 'sdf'))
-
-        # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
-        yield rc  
-            
-    def sleep(self, rc):
-        if rc['duration']:
-            dur = float(rc['duration'])
-        else:
-            dur = 5.
-        log.status('Sleeping for %f seconds' % dur)
-        time.sleep(dur)
-        yield rc
-                      
-    def showInputs(self, rc):
-        log.fullinfo('Inputs:',category='inputs')
-        for inf in rc.inputs:
-            log.fullinfo('  '+inf.filename, category='inputs')  
-        yield rc  
-    showFiles = showInputs
-    
-    def showCals(self, rc):
-        if str(rc['showcals']).lower() == 'all':
-            num = 0
-            # print 'pG256: showcals=all', repr (rc.calibrations)
-            for calkey in rc.calibrations:
-                num += 1
-                log.fullinfo(rc.calibrations[calkey], category='calibrations')
-            if (num == 0):
-                log.warning('There are no calibrations in the cache.')
-        else:
-            for adr in rc.inputs:
-                sid = IDFactory.generateAstroDataID(adr.ad)
-                num = 0
-                for calkey in rc.calibrations:
-                    if sid in calkey :
-                        num += 1
-                        log.fullinfo(rc.calibrations[calkey], \
-                                     category='calibrations')
-            if (num == 0):
-                log.warning('There are no calibrations in the cache.')
-        yield rc
-    ptusage_showCals='Used to show calibrations currently in cache for inputs.'
-
-    def showStackable(self, rc):
-        sidset = set()
-        for inp in rc.inputs:
-            sidset.add(IDFactory.generateStackableID(inp.ad))
-        for sid in sidset:
-            stacklist = rc.getStack(sid) #.filelist
-            log.status('Stack for stack id=%s' % sid)
-            for f in stacklist:
-                log.status('   '+os.path.basename(f))
-        yield rc
-                 
-    def time(self, rc):
-        cur = datetime.now()
-        
-        elap = ''
-        if rc['lastTime'] and not rc['start']:
-            td = cur - rc['lastTime']
-            elap = ' (%s)' %str(td)
-        log.fullinfo('Time:'+' '+str(datetime.now())+' '+elap)
-        
-        rc.update({'lastTime':cur})
-        yield rc
-
-    def getStackable(self, rc):
-        try:
-            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
-            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            log.fullinfo('getting stack '+stackid,'stack')
-            rc.rqStackGet()
-            yield rc
-            stack = rc.getStack(stackid) #.filelist
-            #print 'prim_G366: ',repr(stack)
-            rc.reportOutput(stack)
-        except:
-            log.critical('Problem getting stack '+stackid, 'stack')
-            raise 
-        yield rc      
- 
-    def setStackable(self, rc):
-        """
-        This primitive will update the lists of files to be stacked
-        that have the same observationID with the current inputs.
-        This file is cached between calls to reduce, thus allowing
-        for one-file-at-a-time processing.
-        """
-        try:
-            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), \
-                         category='stack')
-            rc.rqStackUpdate()
-            # Writing the files in the stack to disk if not all ready there
-            for ad in rc.getInputs(style='AD'):
-                if not os.path.exists(ad.filename):
-                    log.fullinfo('temporarily writing '+ad.filename+\
-                                 ' to disk', category='stack')
-                    ad.write(ad.filename)
-        except:
-            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),\
-                         category='stack')
-            raise
-        yield rc
-    
-    def validateData(self,rc):
-        """
-        This primitive will ensure the data is not corrupted or in an odd 
-        format that will affect later steps in the reduction process.  
-        It will call a function to take care of the general Gemini issues 
-        and then one for the instrument specific ones. If there are issues 
-        with the data, the flag 'repair' can be used to turn on the feature to 
-        repair it or not (eg. validateData(repair=True))
-        (this feature is not coded yet).
-        """
-        
-        try:
-            if rc['repair'] is True:
-               # This should repair the file if it is broken, but this function
-               # isn't coded yet and would require some sort of flag set while 
-               # checking the data to tell this to perform the corrections
-               log.critical('Sorry, but the repair feature of validateData' +\
-                            ' is not available yet')
-               pass
+            log.status('*STARTING* to add the DQ frame(s) to the input data')
             
             # Calling addBPM primitive to add the appropriate Bad Pixel Mask
             # to the inputs which will then be updated below to create data 
@@ -374,7 +208,7 @@ class GEMINIPrimitives(PrimitiveSet):
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
             
             for ad in rc.getInputs(style='AD'):
-                #print ad.info()
+                print ad.info()
                 # Check if there VAR frames all ready exist
                 if ad['VAR']:
                     # If VAR frames don't exist, loop through the SCI extensions 
@@ -384,16 +218,16 @@ class GEMINIPrimitives(PrimitiveSet):
                         # var = (read noise/gain)2 + max(data,0.0)/gain
                         
                         # Retrieving necessary values (read noise, gain)
-                        readNoise = sciExt.read_noise()
-                        gain = sciExt.gain()
+                        readNoise=sciExt.read_noise()
+                        gain=sciExt.gain()
                         # Creating (read noise/gain) constant
-                        rnOverG = readNoise/gain
+                        rnOverG=readNoise/gain
                         # Convert negative numbers (if they exist) to zeros
-                        maxArray = np.where(sciExt.data>0.0,0,sciExt.data)
+                        maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
                         # Creating max(data,0.0)/gain array
-                        maxOverGain = np.divide(maxArray,gain)
+                        maxOverGain=np.divide(maxArray,gain)
                         # Putting it all together
-                        varArray = np.add(maxOverGain,rnOverG*rnOverG)
+                        varArray=np.add(maxOverGain,rnOverG*rnOverG)
                          
                         # Creating the variance frame's header and updating it     
                         varheader = pf.Header()
@@ -594,7 +428,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # Creating a dictionary of the parameters from the Parameter 
                 # file adjustable by the user
                 clSoftcodedParams = {
-                    'fl_vardq'      :gemt.pyrafBoolean(rc['fl_vardq']),
+                    'fl_vardq'      :rc['fl_vardq'],
                     # pyrafBoolean converts the python booleans to pyraf ones
                     'fl_dqprop'     :gemt.pyrafBoolean(rc['fl_dqprop']),
                     'combine'       :rc['method'],
@@ -652,6 +486,363 @@ class GEMINIPrimitives(PrimitiveSet):
 
     def crashReduce(self, rc):
         raise 'Crashing'
+        yield rc
+        
+    def clearCalCache(self, rc):
+        # print 'pG61:', rc.calindfile
+        rc.persistCalIndex(rc.calindfile, newindex={})
+        scals = rc['storedcals']
+        if scals:
+            if os.path.exists(scals):
+                shutil.rmtree(scals)
+            cachedict = rc['cachedict']
+            for cachename in cachedict:
+                cachedir = cachedict[cachename]
+                if not os.path.exists(cachedir):                        
+                    os.mkdir(cachedir)                
+        yield rc
+        
+    def display(self, rc):
+        try:
+            rc.rqDisplay(displayID=rc['displayID'])           
+        except:
+            log.critical('Problem displaying output')
+            raise 
+        yield rc
+ 
+    def getStackable(self, rc):
+        """
+        This primitive will check the files in the stack lists are on disk,
+        if not write them to disk and then update the inputs list to include
+        all members of the stack for stacking.
+        
+        """
+        try:
+            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
+            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
+            log.fullinfo('getting stack '+stackid,'stack')
+            rc.rqStackGet()
+            yield rc
+            stack = rc.getStack(stackid).filelist
+            #print 'prim_G366: ',repr(stack)
+            rc.reportOutput(stack)
+            print 'p_GEM529: stack', stack
+        except:
+            log.critical('Problem getting stack '+stackid, 'stack')
+            raise 
+        yield rc
+    
+    def measureIQ(self,rc):
+        """
+        This primitive will detect the sources in the input images and fit
+        both Gaussian and Moffat models to their profiles and calculate the 
+        Image Quality and seeing from this.
+        
+        """
+        #@@FIXME: Detecting sources is done here as well. This 
+        # should eventually be split up into
+        # separate primitives, i.e. detectSources and measureIQ.
+        try:
+            log.status('*STARTING* to detect the sources'+
+                       ' and measure the IQ of the inputs')
+            # Importing getiq module to perform the source detection and IQ
+            # measurements of the inputs
+            from iqtool.iq import getiq
+            
+            for ad in rc.getInputs(style='AD'):
+                # Check that the files being processed are in the current 
+                # working directory, as that is a requirement for getiq to work
+                if os.path.dirname(ad.filename) != '':
+                    log.critical('The inputs to measureIQ must be in the'+
+                                 ' pwd for it to work correctly')
+                    raise GEMINIException('inputs to measureIQ were not in pwd')
+                    
+                # Start time for measuring IQ of current file
+                st = time.time()
+                
+                log.debug('Calling getiq.gemiq for input '+ad.filename)
+                
+                # Calling the gemiq function to detect the sources and then
+                # measure the IQ of the current image 
+                iqdata = getiq.gemiq( ad.filename, function='moffat', 
+                                      display=True, mosaic=False, qa=True)
+                
+                # End time for measuring IQ of current file
+                et = time.time()
+                
+                # Logging the amount of time spent measuring the IQ 
+                log.stdinfo('MeasureIQ time: '+repr(et - st), category='IQ')
+                
+                # iqdata is list of tuples with image quality metrics
+                # (ellMean, ellSig, fwhmMean, fwhmSig)
+                if len(iqdata) == 0:
+                    log.warning('Problem Measuring IQ Statistics, '+
+                                'none reported')
+                else:
+                    rc.rqIQ( ad, *iqdata[0] )
+            
+            log.status('*FINISHED* measuring the IQ of the inputs')
+        except:
+            log.critical('There was a problem combining '+rc.inputsAsStr())
+            raise 
+        yield rc
+ 
+    def pause(self, rc):
+        rc.requestPause()
+        yield rc
+ 
+    def setContext(self, rc):
+        rc.update(rc.localparms)
+        yield rc   
+    
+    def setStackable(self, rc):
+        """
+        This primitive will update the lists of files to be stacked
+        that have the same observationID with the current inputs.
+        This file is cached between calls to reduce, thus allowing
+        for one-file-at-a-time processing.
+        
+        """
+        try:
+            log.status('*STARTING* to update/create the stack')
+            # Getting specific stack ID based on the observationID of the 
+            # first file in the input list.
+            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
+            # Logging the stackid returned
+            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), 
+                         category='stack')
+            # Requesting for the reduction context to perform an update
+            # to the stack cache file (or create it) with the current inputs.
+            rc.rqStackUpdate()
+            print 'prim_GEM648: ',rc.inputsAsStr()
+            # Writing the files in the stack to disk if not all ready there
+            for ad in rc.getInputs(style='AD'):
+                if not os.path.exists(ad.filename):
+                    log.fullinfo('temporarily writing '+ad.filename+\
+                                 ' to disk', category='stack')
+                    ad.write(ad.filename)
+                    
+            log.status('*FINISHED* updating/creating the stack')
+        except:
+            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),
+                         category='stack')
+            raise
+        yield rc
+    
+    def showCals(self, rc):
+        if str(rc['showcals']).lower() == 'all':
+            num = 0
+            # print 'pG256: showcals=all', repr (rc.calibrations)
+            for calkey in rc.calibrations:
+                num += 1
+                log.fullinfo(rc.calibrations[calkey], category='calibrations')
+            if (num == 0):
+                log.warning('There are no calibrations in the cache.')
+        else:
+            for adr in rc.inputs:
+                sid = IDFactory.generateAstroDataID(adr.ad)
+                num = 0
+                for calkey in rc.calibrations:
+                    if sid in calkey :
+                        num += 1
+                        log.fullinfo(rc.calibrations[calkey], 
+                                     category='calibrations')
+            if (num == 0):
+                log.warning('There are no calibrations in the cache.')
+        yield rc
+    ptusage_showCals='Used to show calibrations currently in cache for inputs.'
+
+    def showInputs(self, rc):
+        log.fullinfo('Inputs:',category='inputs')
+        for inf in rc.inputs:
+            log.fullinfo('  '+inf.filename, category='inputs')  
+        yield rc  
+    showFiles = showInputs
+
+    def showParameters(self, rc):
+        rcparams = rc.paramNames()
+        if (rc['show']):
+            toshows = rc['show'].split(':')
+            for toshow in toshows:
+                if toshow in rcparams:
+                    log.fullinfo(toshow+' = '+repr(rc[toshow]), 
+                                 category='parameters')
+                else:
+                    log.fullinfo(toshow+' is not set', category='parameters')
+        else:
+            for param in rcparams:
+                log.fullinfo(param+' = '+repr(rc[param]), category='parameters')
+        
+        # print 'all',repr(rc.parmDictByTag('showParams', 'all'))
+        # print 'iraf',repr(rc.parmDictByTag('showParams', 'iraf'))
+        # print 'test',repr(rc.parmDictByTag('showParams', 'test'))
+        # print 'sdf',repr(rc.parmDictByTag('showParams', 'sdf'))
+
+        # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
+        yield rc  
+         
+    def showStackable(self, rc):
+        sidset = set()
+        for inp in rc.inputs:
+            sidset.add(IDFactory.generateStackableID(inp.ad))
+        for sid in sidset:
+            stacklist = rc.getStack(sid).filelist
+            log.status('Stack for stack id=%s' % sid)
+            for f in stacklist:
+                log.status('   '+os.path.basename(f))
+        yield rc
+            
+    def sleep(self, rc):
+        if rc['duration']:
+            dur = float(rc['duration'])
+        else:
+            dur = 5.
+        log.status('Sleeping for %f seconds' % dur)
+        time.sleep(dur)
+        yield rc
+             
+    def standardizeHeaders(self, rc):
+        """
+        This primitive updates and adds the important header keywords
+        for the input MEFs. First the general headers for Gemini will 
+        be update/created, followed by those that are instrument specific.
+        
+        """
+        
+        try:   
+            log.status('*STARTING* to standardize the headers')
+            log.status('Standardizing observatory general headers')            
+            for ad in rc.getInputs(style='AD'):
+                log.debug('calling gemt.stdObsHdrs for '+ad.filename)
+                gemt.stdObsHdrs(ad)
+                log.status('Completed standardizing the headers for '+
+                           ad.filename)
+   
+            log.status('Observatory headers fixed')
+            log.debug('Salling standardizeInstrumentHeaders primitive')
+            log.status('Standardizing instrument specific headers')
+            
+            # Calling standarizeInstrumentHeaders primitive
+            rc.run('standardizeInstrumentHeaders') 
+            log.status('Instrument specific headers fixed')
+            
+            # Updating the file name with the postpend/outsuffix for this
+            # primitive and then reporting the new file to the reduction 
+            # context 
+            for ad in rc.getInputs(style='AD'):
+                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
+                                                   strip=True)
+                log.status('File name updated to '+ad.filename)
+                rc.reportOutput(ad)
+                
+            log.status('*FINISHED* standardizing the headers')
+        except:
+            log.critical('Problem preparing one of '+rc.inputsAsStr())
+            raise 
+        yield rc
+                                 
+    def standardizeStructure(self,rc):
+        """
+        This primitive ensures the MEF structure is ready for further 
+        processing, through adding the MDF if necessary and the needed 
+        keywords to the headers.  First the MEF's will be checked for the 
+        general Gemini structure requirements and then the instrument specific
+        ones if needed. If the data requires a MDF to be attached, use the 
+        'addMDF' flag to make this happen 
+        (eg. standardizeStructure(addMDF=True)).
+        
+        """
+        
+        try:
+            log.status('*STARTING* to standardize the structure of input data')
+            
+            # Add the MDF if not set to false
+            if rc['addMDF'] is True:
+                log.debug('Calling attachMDF primitive')
+                # Calling the attachMDF primitive
+                rc.run('attachMDF')
+                log.status('Successfully returned to '+
+                           'standardizeStructure from the attachMDF primitive')
+
+            for ad in rc.getInputs(style='AD'):
+                log.debug('Calling gemt.stdObsStruct on '+ad.filename)
+                gemt.stdObsStruct(ad)
+                log.status('Completed standardizing the structure for '+
+                           ad.filename)
+                
+                # Updating the file name with the postpend/outsuffix for this
+                # primitive and then reporting the new file to the reduction 
+                # context
+                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend=rc['outsuffix'], 
+                                                   strip=False)
+                log.status('File name updated to '+ad.filename)
+                rc.reportOutput(ad)
+            
+            log.status('*FINISHED* standardizing the structure of input data')
+        except:
+            log.critical('Problem preparing one of '+rc.inputsAsStr())
+            raise 
+        yield rc
+        
+    def time(self, rc):
+        cur = datetime.now()
+        
+        elap = ''
+        if rc['lastTime'] and not rc['start']:
+            td = cur - rc['lastTime']
+            elap = ' (%s)' %str(td)
+        log.fullinfo('Time:'+' '+str(datetime.now())+' '+elap)
+        
+        rc.update({'lastTime':cur})
+        yield rc
+
+    def validateData(self,rc):
+        """
+        This primitive will ensure the data is not corrupted or in an odd 
+        format that will affect later steps in the reduction process.  
+        It will call a function to take care of the general Gemini issues 
+        and then one for the instrument specific ones. If there are issues 
+        with the data, the flag 'repair' can be used to turn on the feature to 
+        repair it or not (eg. validateData(repair=True))
+        (this feature is not coded yet).
+        
+        """
+        
+        try:
+            if rc['repair'] is True:
+               # This should repair the file if it is broken, but this function
+               # isn't coded yet and would require some sort of flag set while 
+               # checking the data to tell this to perform the corrections
+               log.critical('Sorry, but the repair feature of validateData' +
+                            ' is not available yet')
+            
+            log.status('*STARTING* to validate the input data')
+            
+            log.debug('Calling validateInstrumentData primitive')
+            # Calling the validateInstrumentData primitive 
+            rc.run('validateInstrumentData')
+            log.status('Successfully returned to validateData'+
+                       ' from the validateInstrumentData primitive') 
+            
+            # Updating the file name with the postpend/outsuffix for this
+            # primitive and then reporting the new file to the reduction 
+            # context
+            for ad in rc.getInputs(style='AD'):
+                log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
+                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                                                   postpend='_validated', 
+                                                   strip=False)
+                log.status('File name updated to '+ad.filename)
+                rc.reportOutput(ad) 
+                        
+            log.status('*FINISHED* validating input data')                
+        except:
+            log.critical('Problem preparing one of  '+rc.inputsAsStr())
+            raise 
         yield rc
 
     def writeOutputs(self,rc):
