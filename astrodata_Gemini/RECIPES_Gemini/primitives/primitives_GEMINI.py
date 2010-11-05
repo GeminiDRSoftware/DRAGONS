@@ -523,7 +523,7 @@ class GEMINIPrimitives(PrimitiveSet):
             log.fullinfo('getting stack '+stackid,'stack')
             rc.rqStackGet()
             yield rc
-            stack = rc.getStack(stackid).filelist
+            stack = rc.getStack(stackid) #.filelist
             #print 'prim_G366: ',repr(stack)
             rc.reportOutput(stack)
             print 'p_GEM529: stack', stack
@@ -686,7 +686,7 @@ class GEMINIPrimitives(PrimitiveSet):
         for inp in rc.inputs:
             sidset.add(IDFactory.generateStackableID(inp.ad))
         for sid in sidset:
-            stacklist = rc.getStack(sid).filelist
+            stacklist = rc.getStack(sid) #.filelist
             log.status('Stack for stack id=%s' % sid)
             for f in stacklist:
                 log.status('   '+os.path.basename(f))
