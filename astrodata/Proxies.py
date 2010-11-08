@@ -144,20 +144,21 @@ class PRSProxy(object):
                 prsout = open("adcc-reducelog-%d" % os.getpid(), "w")
                 pid = subprocess.Popen(["adcc.py", "--invoked"], stdout = prsout, stderr=prsout).pid
                 if (PDEB):
-                    print "P128: pid =", pid
+                    print "P147: pid =", pid
                 notfound = True
                 if (PDEB):
-                    print "P130: waiting"
+                    print "P150: waiting"
                 # After this version call, we know it's up, we keep this
                 # proxy, and start listening for commands
                 while reduceServer.prsready == False:
                     if (PDEB):
-                        print "sleeping .1"
+                        print "P155: sleeping .1"
                     sleep(.1)
                 
-                newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduceServer = reduceServer)
+                # newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduceServer = reduceServer)
                 if (PDEB):
-                    print "P143:", newProxy.found, newProxy.version, newProxy.finished, newProxy.reduceServer
+                    print "P160:", type(newProxy.found)
+                    print "P161:", newProxy.version, newProxy.finished, newProxy.reduceServer
                 
                 if newProxy.found:
                     notfound = False
