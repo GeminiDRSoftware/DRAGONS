@@ -159,7 +159,7 @@ class GEMINIPrimitives(PrimitiveSet):
 
                         # Logging that the name of the BPM extension was changed
                         log.fullinfo('BPM Extension '+str(sciExt.extver())+
-                                     ' of'+ad.filename+' had its EXTVER '+
+                                     ' of '+ad.filename+' had its EXTVER '+
                                      'changed to '+
                                      ad[('DQ',sciExt.extver())].header['EXTNAME'])
                         
@@ -184,7 +184,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outsuffix'], 
+                                                   postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)        
@@ -279,7 +279,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outsuffix'], 
+                                                   postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)        
@@ -372,7 +372,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # context.
                 log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                 adOut.filename=gemt.fileNameUpdater(adOut.filename, 
-                                                    postpend=rc['outpref'], 
+                                                    postpend=rc['postpend'], 
                                                     strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(adOut)   
@@ -732,7 +732,7 @@ class GEMINIPrimitives(PrimitiveSet):
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outsuffix'], 
+                                                   postpend=rc['postpend'], 
                                                    strip=True)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
@@ -777,7 +777,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                                   postpend=rc['outsuffix'], 
+                                                   postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
