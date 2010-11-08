@@ -185,7 +185,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         pyraf, gemini, yes, no = pyrafLoader(rc)
         
         try:
-            log.status('*STARTING* to subtract the bias from the input flats')
+            log.status('*STARTING* to subtract the bias from the inputs')
             
             # Writing input files to disk with prefixes onto their file 
             # names so they can be deleted later easily 
@@ -201,6 +201,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # as that was how i wrote this prim originally.
             ad = rc.getInputs(style='AD')[0]
             processedBias = rc.getCal(ad,'bias')
+            log.status('Using bias '+processedBias+' to correct the inputs')
             
             # Parameters set by the gemt.CLManager or the definition of the prim 
             clPrimParams = {
