@@ -35,7 +35,7 @@ class StackKeeper(object):
     stackLists = None
     cacheIndex = None
     def __init__(self, local = False):
-        print "SK34:", repr(local)
+        # print "SK34:", repr(local)
         shared = (not local)
         self.lock = RLock()
         self.stackLists = {}
@@ -44,7 +44,7 @@ class StackKeeper(object):
         if local != True:
             self.local = local
             self.adcc = Proxies.PRSProxy.getPRSProxy(start = False)
-            print "SK43:", repr(self.adcc)
+            # print "SK43:", repr(self.adcc)
 
         self.local = local
         self.shared = shared
@@ -59,7 +59,7 @@ class StackKeeper(object):
         @param addtostack: A list of files for stacking or a StackableRecord instance.
         @type addtostack: list or StackableRecord  
         '''
-        print "SK62: entering add"
+        #print "SK62: entering add"
         cachefile = os.path.abspath(cachefile)
         self.lock.acquire()
         if cachefile == None:
@@ -78,17 +78,17 @@ class StackKeeper(object):
             
         # this is the local storage, in general use this is the instance
         # used by the adcc
-        print "SK79: about to add to:", cachefile, repr(self.cacheIndex)
+        # print "79: about to add to:", cachefile, repr(self.cacheIndex)
         if cachefile not in self.cacheIndex:
             stacksDict  = {}
             self.cacheIndex.update({cachefile:stacksDict})
-        print "SK83:"
+        #print "SK83:"
         stacksDict = self.cacheIndex[cachefile]
 
         if ID not in stacksDict:
             stacksDict.update( {ID:StackableRecord(ID,[])} )
 
-        print "SK89:"   
+        # print "SK89:"   
 
         stacksDict[ID].filelist.extend(addtostack)
         
@@ -132,14 +132,14 @@ class StackKeeper(object):
         if cachefile not in self.cacheIndex:
             return # nothing to persist
         pfile = open(cachefile, "w")
-        print "SK131:", cachefile
+        # print "SK131:", cachefile
         stacksDict = self.cacheIndex[cachefile]
-        print "SK134:", repr(stacksDict)
+        # print "SK134:", repr(stacksDict)
         
         pickle.dump(stacksDict, pfile)
         pfile.close()
         
-        print "SK137: about to release SK lock in persist(..)"
+        # print "SK137: about to release SK lock in persist(..)"
         self.lock.release()
         
     def __str__(self):

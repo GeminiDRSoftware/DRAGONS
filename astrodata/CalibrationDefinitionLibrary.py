@@ -8,7 +8,30 @@ import Descriptors
 import gdpgutil
 from ReductionObjectRequests import CalibrationRequest
 #------------------------------------------------------------------------------ 
+from astrodata.adutils import gemLog
+log = gemLog.getGeminiLog()
+
+class CDLExcept:
+    """This class is an exception class for the Calculator module"""
+    
+    def __init__(self, msg="Exception Raised in CalibrationDefinitionLibarary"):
+        """This constructor accepts a string C{msg} argument
+        which will be printed out by the default exception 
+        handling system, or which is otherwise available to whatever code
+        does catch the exception raised.
         
+        :param: msg: a string description about why this exception was thrown
+        
+        :type: msg: string
+        """
+        self.message = msg
+    def __str__(self):
+        """This string operator allows the default exception handling to
+        print the message associated with this exception.
+        :returns: string representation of this exception, the self.message member
+        :rtype: string"""
+        return self.message
+               
 class CalibrationDefinitionLibrary( object ):
     '''
     This class deals with obtaining request data from XML calibration files and generating 
@@ -36,12 +59,12 @@ class CalibrationDefinitionLibrary( object ):
         except:
             raise "Could not load XML Index."
        
-    def getCalReq(self, inputs, caltype):
+    def getCalReq(self, inputs, caltype, writeInput = True):
         """
         For each input finds astrodata type to find corresponding xml file,
         loads the file.         
         
-        @param inputs: list of input fits URIs
+        @param inputs: list of input fits AstroData instances
         @type inputs: list
         
         @param caltype: Calibration, ie bias, flat, dark, etc.
@@ -55,8 +78,23 @@ class CalibrationDefinitionLibrary( object ):
         for inp in inputs:
             cr = CalibrationRequest()
             # print "CDL56:", repr(inp), inp.filename, str(inp)
+            if writeInput == True:
+                if os.path.exists(inp.filename):
+                    # then asked to write something already on disk and we
+                    # don't want to blindly clobber... throw informative error
+                    log.critical(("Overwriting %s with in-memory version " +
+                                 "to ensure a current version of the dataset" +
+                                 "is available " +
+                                 "to Calibration Service.") % inp.filename)
+                else:
+                    log.status(("Writing in-memory AstroData instance " +
+                               "to new disk file (%s) to ensure availability " +
+                               "to Calibration Service.") % inp.filename)
+                inp.write(clobber = True)
+
             cr.filename = inp.filename
             cr.caltype = caltype
+            # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the ID
             cr.datalabel = inp.data_label()
             
             reqEvents.append(cr)

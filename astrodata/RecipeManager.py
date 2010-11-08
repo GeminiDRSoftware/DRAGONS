@@ -1079,9 +1079,9 @@ class ReductionContext(dict):
         if type(caltype) != str:
             raise RecipeExcept("caltype not string, type = " + str( type(caltype)))
         if inputs is None:
-            addToCmdQueue = self.cdl.getCalReq(self.originalInputs, caltype)
+            addToCmdQueue = self.cdl.getCalReq(self.originalInputs, caltype, writeInput=True)
         else:
-            addToCmdQueue = self.cdl.getCalReq(inputs, caltype)
+            addToCmdQueue = self.cdl.getCalReq(inputs, caltype, writeInput=True)
         for re in addToCmdQueue:
             self.addRq(re)
     def saveCmdHistory(self):
