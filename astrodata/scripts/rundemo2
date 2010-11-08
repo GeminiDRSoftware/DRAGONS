@@ -53,7 +53,7 @@ try:
         for fits in filelist:
             filename = recdat + fits
             #command = reduce + ' -r ' + recipe + ' ' + filename
-            command = "reduce -m -r demo" + ' ' + filename 
+            command = "reduce -m -r NEWdemo" + ' ' + filename 
             os.system( command )
     else:
     	precommand1 = "reduce --addcal recipedata/N20090825S0114_flat.fits --caltype=twilight " + " ".join(fullflist)
