@@ -1,0 +1,25 @@
+# Recipe to show NEW primitives off
+
+showCals
+
+prepare
+
+getProcessedBias
+getProcessedFlat
+
+overscanCorrect
+
+biasCorrect
+flatCorrect
+mosaicDetectors
+
+display
+#shift
+
+measureIQ
+
+setStackable
+
+averageCombine
+display
+measureIQ
