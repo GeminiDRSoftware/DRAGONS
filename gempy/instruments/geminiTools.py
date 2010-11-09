@@ -136,6 +136,15 @@ def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
         
     return outFileName
 
+def LogDictParams(indict):
+        """ A function to log the parameters in a provided dictionary.  Main use
+        is to log the values in the dictionaries of parameters for function 
+        calls using the ** method.
+        """
+        for key in indict:
+            log.fullinfo(repr(key)+' = '+repr(indict[key]), 
+                         category='parameters')
+
 def pyrafBoolean(pythonBool):
     """
     A very basic function to reduce code repetition that simply 'casts' any 
@@ -398,7 +407,7 @@ class CLManager(object):
         
         """
         return self.templog.name
-    
+        
     def LogCurParams(self):
         """ A function to log the parameters in the local parameters file 
             and then global ones in the reduction context
@@ -408,7 +417,7 @@ class CLManager(object):
         # of the reduction context and log them
         for key in self.rc:
             val = self.rc[key]
-            log.fullinfo(repr(key)+' = '+repr(val), 'parameters')
+            log.fullinfo(repr(key)+' = '+repr(val), category='parameters')
 
         log.fullinfo('\ncurrent primitive specific parameters:', 'parameters')
         # Loop through the parameters in the local dictionary for the primitive
@@ -494,8 +503,8 @@ class CLManager(object):
                          finalname)
             log.fullinfo(finalname+' was loaded into memory')
             log.fullinfo(finalname+' was deleted from disk')
-            log.fullinfo(self.listname+' was deleted from disk')
-            log.fullinfo(self.templog.name+' was deleted from disk')
+            log.fullinfo('Temporary list '+self.listname+' was deleted from disk')
+            log.fullinfo('Temporary log '+self.templog.name+' was deleted from disk')
             # Removing the temporary files on disk that were inputs to IRAF
             for i in range(0, len(self._preCLcachestorenames)):
                 # Name of file written to disk for input to CL script
