@@ -188,6 +188,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                              'outpref'        :rc['postpend'],
                              }
                 
+                # Logging values set in the parameters dictionary above
+                log.fullinfo('\nParameters being used for girmfringe '+
+                             'function:\n')
+                gemt.LogDictParams(paramDict)
+                
                 # Calling the girmfringe function to perform the fringe 
                 # corrections, this function will return the corrected image as
                 # an AstroData instance
@@ -327,7 +332,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 clParamsDict = CLDefaultParamsDict('gifringe')
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
-    
+                
+                # Logging the values in the soft and prim parameter dictionaries
+                log.fullinfo('\nParameters set by the CLManager or dictated by the'+
+                             ' definition of the pritive:\n', category='parameters')
+                gemt.LogDictParams(clPrimParams)
+                log.fullinfo('\nUser adjustable parameters in the parameters '+
+                             'file:\n', category='parameters')
+                gemt.LogDictParams(clSoftcodedParams)
+                
                 log.debug('Calling the gifringe CL script for input list '+
                               clm.inputList())
                 

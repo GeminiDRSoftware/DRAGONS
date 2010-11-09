@@ -439,6 +439,14 @@ class GEMINIPrimitives(PrimitiveSet):
                 clParamsDict = CLDefaultParamsDict('gemcombine')
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
+                
+                # Logging the values in the soft and prim parameter dictionaries
+                log.fullinfo('\nParameters set by the CLManager or dictated by the'+
+                             ' definition of the pritive:\n', category='parameters')
+                gemt.LogDictParams(clPrimParams)
+                log.fullinfo('\nUser adjustable parameters in the parameters '+
+                             'file:\n', category='parameters')
+                gemt.LogDictParams(clSoftcodedParams)
                  
                 log.debug('Calling the gemcombine CL script for input list '+
                           clm.inputList())
