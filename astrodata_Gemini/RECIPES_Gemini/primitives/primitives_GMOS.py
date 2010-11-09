@@ -9,6 +9,7 @@ from primitives_GEMINI import GEMINIPrimitives, pyrafLoader
 import numpy as np
 import pyfits as pf
 import shutil
+from astrodata.ConfigSpace import lookupPath
 
 log=gemLog.getGeminiLog()
 
@@ -60,8 +61,13 @@ class GMOSPrimitives(GEMINIPrimitives):
             packagePath = sys.argv[0].split('gemini_python')[0]
             calPath = 'gemini_python/trunk/astrodata_Gemini/ADCONFIG_Gemini'+\
                                                                 '/lookups/GMOS/'
-            BPM_11 = AstroData(packagePath+calPath+'GMOS_BPM_11.fits')
-            BPM_22 = AstroData(packagePath+calPath+'GMOS_BPM_22.fits')
+            
+            BPM_11 = AstroData(lookupPath('Gemini/GMOS/GMOS_BPM_11.fits'))
+            BPM_22 = AstroData(lookupPath('Gemini/GMOS/GMOS_BPM_22.fits'))
+            
+            log.critical( ("GOT IT" + repr(BPM_11) + repr (BPM_22) )* 20)
+            #BPM_11 = AstroData(packagePath+calPath+'GMOS_BPM_11.fits')
+            #BPM_22 = AstroData(packagePath+calPath+'GMOS_BPM_22.fits')
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             for ad in rc.getInputs(style='AD'):
