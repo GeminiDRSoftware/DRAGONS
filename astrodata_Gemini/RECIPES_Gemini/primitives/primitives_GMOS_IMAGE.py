@@ -334,8 +334,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 clParamsDict.update(clSoftcodedParams)
                 
                 # Logging the values in the soft and prim parameter dictionaries
-                log.fullinfo('\nParameters set by the CLManager or dictated by the'+
-                             ' definition of the primitive:\n', category='parameters')
+                log.fullinfo('\nParameters set by the CLManager or dictated by '+
+                         'the definition of the primitive:\n', 
+                         category='parameters')
                 gemt.LogDictParams(clPrimParams)
                 log.fullinfo('\nUser adjustable parameters in the parameters '+
                              'file:\n', category='parameters')
