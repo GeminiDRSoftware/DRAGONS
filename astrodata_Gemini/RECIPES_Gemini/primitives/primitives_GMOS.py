@@ -58,16 +58,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to add the BPM frame(s) to the input data')
             
             #$$$$$$$$$$$$$ TO BE callibration search, correct when ready $$$$$$$
-            packagePath = sys.argv[0].split('gemini_python')[0]
-            calPath = 'gemini_python/trunk/astrodata_Gemini/ADCONFIG_Gemini'+\
-                                                                '/lookups/GMOS/'
-            
             BPM_11 = AstroData(lookupPath('Gemini/GMOS/GMOS_BPM_11.fits'))
             BPM_22 = AstroData(lookupPath('Gemini/GMOS/GMOS_BPM_22.fits'))
-            
-            log.critical( ("GOT IT" + repr(BPM_11) + repr (BPM_22) )* 20)
-            #BPM_11 = AstroData(packagePath+calPath+'GMOS_BPM_11.fits')
-            #BPM_22 = AstroData(packagePath+calPath+'GMOS_BPM_22.fits')
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             for ad in rc.getInputs(style='AD'):
