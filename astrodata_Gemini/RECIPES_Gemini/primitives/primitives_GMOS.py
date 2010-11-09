@@ -235,9 +235,9 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clSoftcodedParams)
             
             # Logging the values in the soft and prim parameter dictionaries
-            gemt.fullinfo('\nParameters set by the CLManager or dictated by the'+
+            log.fullinfo('\nParameters set by the CLManager or dictated by the'+
                          ' definition of the primitive:\n', category='parameters')
-            clm.LogDictParams(clPrimParams)
+            gemt.LogDictParams(clPrimParams)
             log.fullinfo('\nUser adjustable parameters in the parameters '+
                          'file:\n', category='parameters')
             gemt.LogDictParams(clSoftcodedParams)
