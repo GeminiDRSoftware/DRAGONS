@@ -190,7 +190,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Writing input files to disk with prefixes onto their file 
             # names so they can be deleted later easily 
             clm = gemt.CLManager(rc)
-            clm.LogCurParams()
+            #clm.LogCurParams()
             
             # Getting the bias file for the first file of the inputs and 
             # assuming it is the same for all the inputs. This should be 
@@ -459,7 +459,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Writing input files to disk with prefixes onto their file names so 
             # they can be deleted later easily 
             clm = gemt.CLManager(rc)
-            clm.LogCurParams() 
+            #clm.LogCurParams() 
             
             # Determining if gmosaic should propigate the VAR and DQ frames 
             ad=rc.getInputs(style='AD')[0]
@@ -569,7 +569,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Writing input files to disk with prefixes onto their file names 
             # so they can be deleted later easily 
             clm = gemt.CLManager(rc)
-            clm.LogCurParams()
+            #clm.LogCurParams()
 
             # Creating a dictionary of the parameters set by the gemt.CLManager 
             # or the definition of the prim 
@@ -664,7 +664,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Writing input files to disk with prefixes onto their file 
             # names so they can be deleted later easily 
             clm = gemt.CLManager(rc)
-            clm.LogCurParams()
+            #clm.LogCurParams()
             
             # Parameters set by the gemt.CLManager or the definition 
             # of the primitive 

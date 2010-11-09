@@ -404,7 +404,7 @@ class GEMINIPrimitives(PrimitiveSet):
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
                 clm=gemt.CLManager(rc)
-                clm.LogCurParams()
+                #clm.LogCurParams()
                 
                 # Creating a dictionary of the parameters set by the CLManager  
                 # or the definition of the primitive 
