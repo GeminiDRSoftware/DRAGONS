@@ -236,7 +236,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Logging the values in the soft and prim parameter dictionaries
             gemt.fullinfo('\nParameters set by the CLManager or dictated by the'+
-                         ' definition of the pritive:\n', category='parameters')
+                         ' definition of the primitive:\n', category='parameters')
             clm.LogDictParams(clPrimParams)
             log.fullinfo('\nUser adjustable parameters in the parameters '+
                          'file:\n', category='parameters')
@@ -499,7 +499,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Logging the values in the soft and prim parameter dictionaries
             log.fullinfo('\nParameters set by the CLManager or dictated by the'+
-                         ' definition of the pritive:\n', category='parameters')
+                         ' definition of the primitive:\n', category='parameters')
             gemt.LogDictParams(clPrimParams)
             log.fullinfo('\nUser adjustable parameters in the parameters '+
                          'file:\n', category='parameters')
@@ -602,7 +602,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Logging the values in the soft and prim parameter dictionaries
             log.fullinfo('\nParameters set by the CLManager or dictated by the'+
-                         ' definition of the pritive:\n', category='parameters')
+                         ' definition of the primitive:\n', category='parameters')
             gemt.LogDictParams(clPrimParams)
             log.fullinfo('\nUser adjustable parameters in the parameters '+
                          'file:\n', category='parameters')
@@ -696,7 +696,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Logging the values in the soft and prim parameter dictionaries
             log.fullinfo('\nParameters set by the CLManager or dictated by the'+
-                         ' definition of the pritive:\n', category='parameters')
+                         ' definition of the primitive:\n', category='parameters')
             gemt.LogDictParams(clPrimParams)
             log.fullinfo('\nUser adjustable parameters in the parameters '+
                          'file:\n', category='parameters')
