@@ -89,8 +89,14 @@ class StackKeeper(object):
             stacksDict.update( {ID:StackableRecord(ID,[])} )
 
         # print "SK89:"   
-
-        stacksDict[ID].filelist.extend(addtostack)
+        # @@REVIEW
+        # could use set to handle duplicates but I am not sure
+        # I want to lose the ordered nature of this list
+        #stacksDict[ID].filelist.extend(addtostack)
+        flist = stacksDict[ID].filelist
+        for ftoadd in addtostack:
+            if ftoadd not in flist:
+                flist.append(ftoadd)
         
         self.lock.release()
         
