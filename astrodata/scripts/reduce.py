@@ -14,10 +14,10 @@ import sys
 # start color printing filter for xgtermc
 REALSTDOUT = sys.stdout
 REALSTDERR = sys.stderr
-filteredstdout = terminal.FilteredStdout()
-filteredstdout.addFilter( terminal.ColorFilter())
-irafstdout = terminal.IrafStdout(fout = filteredstdout)
-sys.stdout = filteredstdout
+#filteredstdout = terminal.FilteredStdout()
+#filteredstdout.addFilter( terminal.ColorFilter())
+irafstdout = terminal.IrafStdout() #fout = filteredstdout)
+#sys.stdout = filteredstdout
 # sys.stderr = terminal.ColorStdout(REALSTDERR, term)
 import commands
 from datetime import datetime
@@ -30,7 +30,7 @@ if False:
         import pyraf
         from pyraf import iraf
     except:
-        print "didn't get pyraf"
+        log.info("didn't find pyraf")
 #et = time.time()
 #print 'IRAF TIME', (et-st)
 import subprocess
@@ -62,6 +62,9 @@ from astrodata import Proxies
 #------------------------------------------------------------------------------ 
 from astrodata.adutils import gemLog
 #-----------------------------------------------------------------------------
+ 
+
+
 #oet = time.time()
 #print 'TIME:', (oet -ost)
 b = datetime.now()
@@ -172,9 +175,9 @@ parser.add_option("--invoked", dest="invoked", default=False, action="store_true
 
 if options.invoked:
     opener = "reduce started in adcc mode (--invoked)"
-    print "."*len(opener)
-    print opener
-    print "."*len(opener)
+    log.status("."*len(opener))
+    log.status(opener)
+    log.status("."*len(opener))
     sys.stdout.flush()
 
 useTK =  options.bMonitor
@@ -195,8 +198,8 @@ log = gemLog.getGeminiLog(logName=options.logName,verbose=options.verbose,debug=
 
 def abortBadParamfile(lines):
     for i in range(0,len(lines)):
-        print "  %03d:%s" % (i, lines[i]),
-    print "  %03d:<<stopped parsing due to error>>" % (i+1)
+        log.error("  %03d:%s" % (i, lines[i]))
+    log.error("  %03d:<<stopped parsing due to error>>" % (i+1))
     sys.exit(1)
 
 def command_line():
@@ -265,8 +268,8 @@ def command_line():
                     # not a section
                     keyval = line.split("=")
                     if len(keyval)<2:
-                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
-                              "\n  Line #%d: %s""" % (options.paramfile, i, oline)
+                        log.error("$Badly formatted parameter file (%s)" \
+                              "\n  Line #%d: %s""" % (options.paramfile, i, oline))
                         abortBadParamfile(lines)
                         sys.exit(1)
                     key = keyval[0].strip()
@@ -276,15 +279,15 @@ def command_line():
                     if val[-1] == "'" or val[-1] == '"':
                         val = val[0:-1]
                     if primname and not astrotype:
-                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                        log.error("Badly formatted parameter file (%s)" \
                               '\n  The primitive name is set to "%s", but the astrotype is not set' \
-                              "\n  Line #%d: %s" % (options.paramfile, primname, i, oline[:-1])
+                              "\n  Line #%d: %s" % (options.paramfile, primname, i, oline[:-1]))
                         
                         abortBadParamfile(lines)
                     if not primname and astrotype:
-                        print "${RED}Badly formatted parameter file (%s)${NORMAL}" \
+                        log.error("Badly formatted parameter file (%s)" \
                               '\n  The astrotype is set to "%s", but the primitive name is not set' \
-                              "\n  Line #%d: %s" % (options.paramfile, astrotype, i, oline)
+                              "\n  Line #%d: %s" % (options.paramfile, astrotype, i, oline))
                         abortBadParamfile(lines)
                     if not primname and not astrotype:
                         gparms.update({key:val})
@@ -308,22 +311,21 @@ def command_line():
         co.restoreCalIndex(calindfile)
         co.calibrations = {}
         co.persistCalIndex( calindfile )
-        print "Calibration cache index cleared"
+        log.status("Calibration cache index cleared")
         import shutil
         
         if os.path.exists(CALDIR):
             shutil.rmtree(CALDIR)
-        print "Calibration directory removed"
+        log.status("Calibration directory removed")
         
         sys.exit(0)
     
-    print "${NORMAL}",
     try:
         if len( args ) == 0 and options.astrotype == None:
             raise IndexError
         infile   = args
     except IndexError:
-        print "${RED}NO INPUT FILE${NORMAL}"
+        log.error("NO INPUT FILE")
         parser.print_help()
         sys.exit(1)
     
@@ -431,7 +433,6 @@ reduceServer = Proxies.ReduceServer()
 # to provide to every component that wants to use the adcc as an active-library
 
 #prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
-print "r434:create prs proxy"
 prs = Proxies.PRSProxy.getPRSProxy(reduceServer=reduceServer)
 
 usePRS = True
@@ -442,7 +443,7 @@ usePRS = True
 # registered with the reduction object
 def commandClause(ro, coi):
     global prs
-    print "${NORMAL}",
+    
     coi.processCmdReq()
     while (coi.paused):
         time.sleep(.100)
@@ -452,7 +453,7 @@ def commandClause(ro, coi):
     #process calibration requests
     for rq in coi.rorqs:
         rqTyp = type(rq)
-        msg = '${BOLD}REDUCE:${NORMAL}\n'
+        msg = 'REDUCE:\n'
         msg += '-'*30+'\n'
         if rqTyp == CalibrationRequest:
             fn = rq.filename
@@ -491,9 +492,7 @@ def commandClause(ro, coi):
                 msg += '%s already stored.\n' %(str(typ))
                 msg += 'Using:\n'
 
-            #msg += '${RED}%s${NORMAL} at ${BLUE}%s${NORMAL}' %( str(os.path.basename(calname)), 
-            #                                                   str(os.path.dirname(calname)) )
-            msg += '${BLUE}%s%s${RED}%s${NORMAL}' %( os.path.dirname(calname), os.path.sep, os.path.basename(calname))
+            msg += '%s%s%s' %( os.path.dirname(calname), os.path.sep, os.path.basename(calname))
 
             #print msg
             #print '-'*30
@@ -518,10 +517,6 @@ def commandClause(ro, coi):
                 
                    
         elif rqTyp == ImageQualityRequest:
-            #print 'RED394:'
-            #$$ next line is commented out as it has been converted to a log call below
-            #filteredstdout.write(str(rq)+"\n", forceprefix = ("${NORMAL}${RED}","IQ reported: ", "${NORMAL}"))
-            
             # Logging returned Image Quality statistics
             log.stdinfo(str(rq), category='IQ')
             
@@ -538,8 +533,8 @@ def commandClause(ro, coi):
                     iqlog = "%s: %s = %s\n"
                     ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ellMean)
                     seeing = iqlog % (gemdate(timestamp=rq.timestamp),"seeing", rq.fwhmMean)
-                    print ell
-                    print seeing
+                    log.status(ell)
+                    log.status(seeing)
                     timestr = gemdate(timestamp = rq.timestamp)
 
                     cw.iqLog(co.inputs[0].filename, '', timestr)
@@ -587,8 +582,8 @@ def commandClause(ro, coi):
         #print "#" * 80
         #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
         # CLEAR THE REQUEST LEAGUE
-    if primfilter == None:
-        raise "This is an error that should never happen, primfilter = None"
+#    if primfilter == None:
+#        raise "This is an error that should never happen, primfilter = None"
 
 
 
@@ -647,9 +642,10 @@ for infiles in allinputs: #for dealing with multiple files.
     #prof.close()
     #raise "over"
     
-    print "${BOLD}Starting Reduction #%d of %d${NORMAL}" % (i, numReductions)
+    log.status("Starting Reduction #%d of %d" % (i, numReductions))
+    
     for infile in infiles:
-        print "    %s" % (infile.filename)
+        log.status("    %s" % (infile.filename))
     currentReductionNum = i
     i += 1
     
@@ -708,19 +704,19 @@ for infiles in allinputs: #for dealing with multiple files.
             title += "\n    %s" % infiln
     tl = len(title)
     tb = " " * tl
-    print "${REVERSE}" + tb
-    print "${REVERSE}" + title
-    print "${REVERSE}" + tb + "${NORMAL}",
+    log.status(tb)
+    log.status(title)
+    log.status(tb)
     if options.recipename == None:
-        print "\nRecipe(s) found by dataset type:"
+        log.status("Recipe(s) found by dataset type:")
     else:
-        print "\nA recipe was specified:"
+        log.status("A recipe was specified:")
         
     for typ in recdict.keys():
         recs = recdict[typ]
-        print "  for type: %s" % typ
+        log.info("  for type: %s" % typ)
         for rec in recs:
-            print "    %s" % rec
+            log.info("    %s" % rec)
     
     
     bReportHistory = False
@@ -736,7 +732,7 @@ for infiles in allinputs: #for dealing with multiple files.
             # create fresh context object
             # @@TODO:possible: see if deepcopy can do this better 
             co = ReductionContext()
-            print "r739:stack index file", stkindfile
+            #print "r739:stack index file", stkindfile
             # @@NAME: stackIndexFile, location for persistent stack list cache
             co.setCacheFile("stackIndexFile", stkindfile)
             co.ro = ro
@@ -787,7 +783,7 @@ for infiles in allinputs: #for dealing with multiple files.
                 ro.addPrimSet(userPrimSet)
                 
                 
-            print "running recipe: '%s'\n" % rec
+            log.status( "running recipe: '%s'\n" % rec)
             if (os.path.exists(rec)):
                 if "recipe." not in rec:
                     raise "Recipe files must be named 'recipe.RECIPENAME'"
@@ -812,8 +808,9 @@ for infiles in allinputs: #for dealing with multiple files.
             # CONTROL LOOP #
             ################
             #print str(dir(TerminalController))
-            primfilter = terminal.PrimitiveFilter()
-            filteredstdout.addFilter(primfilter)
+            #@@COLOR primfilter = terminal.PrimitiveFilter()
+            primfilter = None
+            #@@COLOR filteredstdout.addFilter(primfilter)
             frameForDisplay = 1
             #######
             #######
@@ -845,14 +842,14 @@ for infiles in allinputs: #for dealing with multiple files.
             print "Ctrl-C Exit"
             sys.exit(0)
         except astrodata.ReductionObjects.ReductionExcept, e:
-            print "${RED}FATAL:" + str(e) + "${NORMAL}"
+            log.error("FATAL:" + str(e))
             sys.exit()
         except:
-            print "CONTEXT AFTER FATAL ERROR"
-            print "--------------------------"
-            raise
+            log.status("CONTEXT AFTER FATAL ERROR")
+            log.status("-------------------------")
             if reduceServer:
-                reduceServer.finished=True
+                #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
+                Proxies.reduceServer.finished=True
             co.persistCalIndex(calindfile)
             if (bReportHistory):
                 co.reportHistory()
@@ -862,13 +859,14 @@ for infiles in allinputs: #for dealing with multiple files.
                 cw.killed = True
                 cw.quit()
             co.persistCalIndex(calindfile)
+            
             raise
         co.persistCalIndex(calindfile)
     
         if (bReportHistory):
     
-            print "CONTEXT HISTORY"
-            print "---------------"
+            log.error( "CONTEXT HISTORY")
+            log.error( "---------------")
     
             co.reportHistory()
             rl.reportHistory()
@@ -898,6 +896,5 @@ for infiles in allinputs: #for dealing with multiple files.
     # print co.reportHistory()
     # main()
     # don't leave the terminal in another color/mode, that's rude
-    print "${NORMAL}"
     
     reduceServer.finished=True

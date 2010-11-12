@@ -6,7 +6,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 import select
 import socket
 
-PDEB = True
+PDEB = False
 
 class ReduceCommands(object):
     prsready = False
@@ -59,6 +59,7 @@ class ReduceServer(object):
                 if r:
                     server.handle_request()
                 # print "prsw: ",webserverdone
+                #print "P62:", str(id(self)), repr(self.finished), str(id(reduceServer)), repr(reduceServer.finished)
                 if self.finished == True:
                     # print "P63: shutting down reduce xmlrpc thread"
                     break
