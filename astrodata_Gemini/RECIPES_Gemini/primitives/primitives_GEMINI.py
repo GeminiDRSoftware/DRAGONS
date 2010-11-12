@@ -872,6 +872,7 @@ class GEMINIPrimitives(PrimitiveSet):
             # Logging current values of postpend and prepend
             log.status('postpend = '+str(rc['postpend']))
             log.status('prepend = '+str(rc['prepend']))
+            log.status('strip = '+str(rc['strip']))
             
             for ad in rc.getInputs(style='AD'):
                 # If the value of 'postpend' was set, then set the file name 
@@ -879,7 +880,8 @@ class GEMINIPrimitives(PrimitiveSet):
                 if rc['postpend']:
                     log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                     ad.filename = gemt.fileNameUpdater(ad.filename, 
-                                        postpend=rc['postpend'], strip=True)
+                                        postpend=rc['postpend'], 
+                                        strip=rc['strip'])
                     log.status('File name updated to '+ad.filename)
                     outfilename = os.path.basename(ad.filename)
                     
