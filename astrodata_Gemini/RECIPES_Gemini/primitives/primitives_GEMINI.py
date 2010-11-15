@@ -874,6 +874,10 @@ class GEMINIPrimitives(PrimitiveSet):
             log.status('prepend = '+str(rc['prepend']))
             log.status('strip = '+str(rc['strip']))
             
+            if rc['postpend'] and rc['prepend']:
+                log.critical('The input will have'+rc['prepend']+' prepended'+
+                             ' and '+rc['postpend']+' postpended onto it')
+                
             for ad in rc.getInputs(style='AD'):
                 # If the value of 'postpend' was set, then set the file name 
                 # to be written to disk to be postpended by it
@@ -887,7 +891,7 @@ class GEMINIPrimitives(PrimitiveSet):
                     
                 # If the value of 'prepend' was set, then set the file name 
                 # to be written to disk to be prepended by it
-                elif rc['prepend']:
+                if rc['prepend']:
                     infilename = os.path.basename(ad.filename)
                     outfilename = rc['prepend']+infilename
                     
