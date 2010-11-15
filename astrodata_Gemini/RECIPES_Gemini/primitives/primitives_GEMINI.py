@@ -875,7 +875,7 @@ class GEMINIPrimitives(PrimitiveSet):
             log.status('strip = '+str(rc['strip']))
             
             if rc['postpend'] and rc['prepend']:
-                log.critical('The input will have'+rc['prepend']+' prepended'+
+                log.critical('The input will have '+rc['prepend']+' prepended'+
                              ' and '+rc['postpend']+' postpended onto it')
                 
             for ad in rc.getInputs(style='AD'):
