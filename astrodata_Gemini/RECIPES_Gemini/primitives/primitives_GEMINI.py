@@ -728,7 +728,7 @@ class GEMINIPrimitives(PrimitiveSet):
                            ad.filename)
    
             log.status('Observatory headers fixed')
-            log.debug('Salling standardizeInstrumentHeaders primitive')
+            log.debug('Calling standardizeInstrumentHeaders primitive')
             log.status('Standardizing instrument specific headers')
             
             # Calling standarizeInstrumentHeaders primitive
@@ -790,7 +790,7 @@ class GEMINIPrimitives(PrimitiveSet):
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
                 rc.reportOutput(ad)
-            
+   
             log.status('*FINISHED* standardizing the structure of input data')
         except:
             log.critical('Problem preparing one of '+rc.inputsAsStr())
