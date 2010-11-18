@@ -2,6 +2,9 @@ import re
 import os
 import traceback
 
+from astrodata.adutils import gemLog
+
+log = gemLog.getGeminiLog()
 class ReductionExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -82,6 +85,7 @@ class ReductionObject(object):
         return retd
         
     def substeps(self, primname, context):
+        log.status("STARTING PRIMITIVE: "+ primname)
         savedLocalparms = context.localparms
         context.status = "RUNNING"
         
@@ -131,6 +135,7 @@ class ReductionObject(object):
         self.curPrimName = prevprimname
         yield context.end(primname)
         context.localparms = savedLocalparms
+        log.status("ENDING PRIMITIVE: "+ primname)
         yield context
         
     def runstep(self, primname, cfgobj):

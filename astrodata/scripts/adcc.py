@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+print "ADCC2: starting adcc"
 import exceptions
 from optparse import OptionParser
-import os
+import os, sys
 import pickle
 import re
+import time
 import select
 import signal
 from SimpleXMLRPCServer import SimpleXMLRPCServer
@@ -34,6 +36,7 @@ from prsproxyutil import calibrationSearch, CALMGR, CALTYPEDICT,urljoin
 
 from astrodata import AstroData
 
+print "ADCC Started:", " ".join(sys.argv)
 
 parser = OptionParser()
 

@@ -1,12 +1,13 @@
 import xmlrpclib
 import subprocess
 from time import sleep
+import time
 import os
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 import select
 import socket
 
-PDEB = False
+PDEB = True
 
 class ReduceCommands(object):
     prsready = False
@@ -67,8 +68,25 @@ class ReduceServer(object):
             print '^C received, shutting down server'
             server.socket.close()
 
-    
+def startADCC():
+    prsout = open("adcc-reducelog-%d-%s" % (
+                                                        os.getpid(),
+                                                        str(time.time())
+                                                       )
+                                                        , "w")
+    prsargs = ["adcc.py",
+                "--invoked",
+                #"--reduce-port", "%d" % reduceServer.listenport,
+                "--reduce-pid", "%d" % os.getpid(),
+                ]
 
+    pid = subprocess.Popen( prsargs, 
+                            stdout = prsout, 
+                            stderr = subprocess.STDOUT #prserr,
+                            ).pid
+
+    return pid
+                                        
 class PRSProxy(object):
     # the xmlrpc interface is saved
     _class_prs = None
@@ -87,17 +105,64 @@ class PRSProxy(object):
         try:
             self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
             self.reduceServer = reduceServer
-            PRSProxy._class_prs = self.prs
+            PRSProxy._class_prs = self # .prs
             self.found = True
         except socket.error:
             self.found = False
-        
+            raise "NOPE"
         
     @classmethod
-    def getPRSProxy(cls, start = True, proxy = None, reduceServer = None):
+    def getADCC(cls, reduceServer = None):
         if  type(cls._class_prs) != type(None):
             proxy = cls._class_prs
             start = False
+            print "P101:", repr(dir(proxy)), repr(proxy), repr(reduceServer)
+            return cls._class_prs
+                    
+        newProxy = None
+
+        found = False
+        newProxy = PRSProxy(reduceServer = reduceServer)
+                
+        while(not found):
+            try:
+                newProxy.version = newProxy.get_version()
+                print "after version"
+                found = True
+
+                if (PDEB):
+                    print "P102: newProxy id", id(newProxy), newProxy.found
+                    print "P100: checking for proxy up"
+
+                # After this version call, we know it's up, we keep this
+                # proxy, and start listening for commands
+                if PDEB:
+                    print "P109: setting found equal true"
+                newProxy.found = True
+                if PDEB:
+                    print "P111: about to register"
+                if reduceServer:
+                    details =  {"port":reduceServer.listenport}
+                else:
+                    details = {}
+                newProxy.prs.register(os.getpid(), details)
+                if PDEB:
+                    print "P120: Proxy found"
+            except socket.error:
+                newProxy.found = False
+                print ("Waiting for ADCC...")
+                sleep(.1)
+                # try again
+
+
+        return newProxy
+
+    @classmethod
+    def OLDgetPRSProxy(cls, start = False, proxy = None, reduceServer = None):
+        if  type(cls._class_prs) != type(None):
+            proxy = cls._class_prs
+            start = False
+            print "P101:", repr(dir(proxy)), repr(proxy), repr(reduceServer)
             return cls._class_prs
                     
         newProxy = None
@@ -127,7 +192,10 @@ class PRSProxy(object):
             newProxy.found = True
             if PDEB:
                 print "P111: about to register"
-            details =  {"port":reduceServer.listenport}
+            if reduceServer:
+                details =  {"port":reduceServer.listenport}
+            else:
+                details = {}
             newProxy.prs.register(os.getpid(), details)
             if PDEB:
                 print "P120: Proxy found"
@@ -139,11 +207,28 @@ class PRSProxy(object):
             if start == False:
                 raise
             if start:
+                import time
                 if (PDEB):
                     print "P132: newProxy id", id(newProxy)
                     print "P125: starting adcc.py"
-                prsout = open("adcc-reducelog-%d" % os.getpid(), "w")
-                pid = subprocess.Popen(["adcc.py", "--invoked"], stdout = prsout, stderr=prsout).pid
+                prsout = open("adcc-reducelog-%d-%s" % (
+                                                        os.getpid(),
+                                                        str(time.time())
+                                                       )
+                                                        , "w")
+                prsargs = ["adcc.py",
+                                        "--invoked",
+                                        #"--reduce-port", "%d" % reduceServer.listenport,
+                                        "--reduce-pid", "%d" % os.getpid(),
+                                        
+                                        ]
+                
+                pid = subprocess.Popen( prsargs, 
+                                        stdout = prsout, 
+                                        stderr = subprocess.STDOUT #prserr,
+                                        ).pid
+                                        
+                                    
                 if (PDEB):
                     print "P147: pid =", pid
                 notfound = True
@@ -151,12 +236,14 @@ class PRSProxy(object):
                     print "P150: waiting"
                 # After this version call, we know it's up, we keep this
                 # proxy, and start listening for commands
-                while reduceServer.prsready == False:
-                    if (PDEB):
-                        print "P155: sleeping .1"
-                    sleep(.1)
-                
-                # newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduceServer = reduceServer)
+                if reduceServer:
+                    # if there was a reduceServer then wait to hear a response
+                    while reduceServer.prsready == False:
+                        if (PDEB):
+                            print "P155: sleeping .1"
+                        sleep(.1)
+
+                newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduceServer = reduceServer)
                 if (PDEB):
                     print "P160:", type(newProxy.found)
                     print "P161:", newProxy.version, newProxy.finished, newProxy.reduceServer
@@ -170,8 +257,14 @@ class PRSProxy(object):
 
         return newProxy
         
+    def unregister(self):
+        self.prs.unregister(os.getpid())
+    def register(self):
+        self.prs.register(os.getpid())
+        
     def __del__(self):
         # raise " no "
+        print "P262: deleting proxy\n"*20
         import traceback
         if (PDEB):
             print "P153: self.found =",self.found, id(self)

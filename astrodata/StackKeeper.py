@@ -43,7 +43,7 @@ class StackKeeper(object):
         
         if local != True:
             self.local = local
-            self.adcc = Proxies.PRSProxy.getPRSProxy(start = False)
+            self.adcc = Proxies.PRSProxy.getADCC()
             # print "SK43:", repr(self.adcc)
 
         self.local = local
@@ -73,7 +73,7 @@ class StackKeeper(object):
             
         if self.local == False:
             abscf = os.path.abspath(cachefile)
-            self.adcc.stackPut(ID, addtostack, abscf)
+            self.adcc.prs.stackPut(ID, addtostack, abscf)
             return 
             
         # this is the local storage, in general use this is the instance
@@ -114,7 +114,7 @@ class StackKeeper(object):
         
         cachefile = os.path.abspath(cachefile)
         if self.local == False:
-            retval = self.adcc.stackGet(ID, cachefile)
+            retval = self.adcc.prs.stackGet(ID, cachefile)
             return retval
             
         if cachefile not in self.cacheIndex:

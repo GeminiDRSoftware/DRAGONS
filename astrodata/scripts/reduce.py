@@ -62,8 +62,6 @@ from astrodata import Proxies
 #------------------------------------------------------------------------------ 
 from astrodata.adutils import gemLog
 #-----------------------------------------------------------------------------
- 
-
 
 #oet = time.time()
 #print 'TIME:', (oet -ost)
@@ -423,17 +421,15 @@ def command_line():
             
     return input_files
 
-
-  
-# launch xmlrpc interface for control and communication
 from astrodata import Proxies
-reduceServer = Proxies.ReduceServer()
-
 # I think it best to start the adcc always, since it wants the reduceServer I prefer not
 # to provide to every component that wants to use the adcc as an active-library
-
-#prs = None # do this only if cal is requested   Proxies.PRSProxy.getPRSProxy()    
-prs = Proxies.PRSProxy.getPRSProxy(reduceServer=reduceServer)
+adccpid = Proxies.startADCC()
+print "r428: adccpid =", adccpid
+  
+# launch xmlrpc interface for control and communication
+reduceServer = Proxies.ReduceServer()
+prs = Proxies.PRSProxy.getADCC(reduceServer=reduceServer)
 
 usePRS = True
 
@@ -465,7 +461,7 @@ def commandClause(ro, coi):
                 calurl = None
                 if usePRS and prs == None:
                     # print "r454: getting prs"
-                    prs = Proxies.PRSProxy.getPRSProxy(reduceServer = reduceServer)
+                    prs = Proxies.PRSProxy.getADCC()
                     
                 if usePRS:
                     calurl = prs.calibrationSearch( rq )
@@ -512,7 +508,7 @@ def commandClause(ro, coi):
             #print "r508:", repr(nd)
             if usePRS and prs == None:
                 # print "r454: getting prs"
-                prs = Proxies.PRSProxy.getPRSProxy(reduceServer = reduceServer)
+                prs = Proxies.PRSProxy.getADCC()
             prs.displayRequest(nd)
                 
                    
@@ -850,6 +846,10 @@ for infiles in allinputs: #for dealing with multiple files.
             if reduceServer:
                 #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
                 Proxies.reduceServer.finished=True
+            if (False):
+                #crash on exceptions
+                print "R852: RAISING instead of ignoring"
+                raise
             co.persistCalIndex(calindfile)
             if (bReportHistory):
                 co.reportHistory()
@@ -898,3 +898,4 @@ for infiles in allinputs: #for dealing with multiple files.
     # don't leave the terminal in another color/mode, that's rude
     
     reduceServer.finished=True
+    prs.unregister()
