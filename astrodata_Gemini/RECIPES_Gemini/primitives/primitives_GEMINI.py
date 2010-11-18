@@ -558,6 +558,9 @@ class GEMINIPrimitives(PrimitiveSet):
             # measurements of the inputs
             from iqtool.iq import getiq
             
+            # Initializing a total time sum variable for logging purposes 
+            total_IQ_time = 0
+            
             for ad in rc.getInputs(style='AD'):
                 # Check that the files being processed are in the current 
                 # working directory, as that is a requirement for getiq to work
@@ -578,9 +581,10 @@ class GEMINIPrimitives(PrimitiveSet):
                 
                 # End time for measuring IQ of current file
                 et = time.time()
-                
+                total_IQ_time = total_IQ_time + (et - st)
                 # Logging the amount of time spent measuring the IQ 
                 log.stdinfo('MeasureIQ time: '+repr(et - st), category='IQ')
+                log.fullinfo('~'*45, category='format')
                 
                 # iqdata is list of tuples with image quality metrics
                 # (ellMean, ellSig, fwhmMean, fwhmSig)
@@ -589,6 +593,11 @@ class GEMINIPrimitives(PrimitiveSet):
                                 'none reported')
                 else:
                     rc.rqIQ( ad, *iqdata[0] )
+                    
+            # Logging the total amount of time spent measuring the IQ of all
+            # the inputs
+            log.stdinfo('Total measureIQ time: '+repr(total_IQ_time), 
+                        category='IQ')
             
             log.status('*FINISHED* measuring the IQ of the inputs')
         except:
