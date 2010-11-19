@@ -199,7 +199,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adOut = girmfringe.girmfringe(**paramDict)
                 
                 # Adding GEM-TLM(automatic) and RMFRINGE time stamps to the PHU     
-                adOut.historyMark()
                 adOut.historyMark(key='RMFRINGE', stomp=False)    
                 
                 log.fullinfo('************************************************'
@@ -208,9 +207,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              ,'header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), \
+                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header')
-                log.fullinfo('RMFRINGE = '+adOut.phuGetKeyValue('RMFRINGE'), category='header')
+                log.fullinfo('RMFRINGE = '+adOut.phuGetKeyValue('RMFRINGE'), 
+                             category='header')
                 log.fullinfo('------------------------------------------------'
                              , category='header')
                 
@@ -368,16 +368,16 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
                              ,'header')
-                log.fullinfo('file = '+ad.filename, 'header')
+                log.fullinfo('file = '+ad.filename, category='header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , 'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             'header')
-                log.fullinfo('COMBINE = '+ad.phuGetKeyValue('FRINGE'), 
-                             'header')
+                             category='header')
+                log.fullinfo('FRINGE = '+ad.phuGetKeyValue('FRINGE'), 
+                             category='header')
                 log.fullinfo('------------------------------------------------'
-                             , 'header')        
+                             , category='header')        
                 
                 log.status('*FINISHED* creating the fringe image')
         except:

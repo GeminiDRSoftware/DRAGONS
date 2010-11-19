@@ -148,15 +148,18 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.critical('BPM frames all ready exist for '+ad.filename+
                                  ', so addBPM will add new ones') 
 
-                # Updating GEM-TLM (automatic) time stamp in the PHU
-                ad.historyMark() 
+                # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
+                ad.historyMark(key='ADDBPM', stomp=False) 
                 # Updating logger with updated/added time stamps
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             ,'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'),'header')
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'),
+                             category='header')
+                log.fullinfo('ADDBPM = '+ad.phuGetKeyValue('ADDBPM'), 
+                             category='header')
                 log.fullinfo('------------------------------------------------'
-                             , 'header')
+                             , category='header')
                 
                 # Reporting the updated file to the reduction context
                 rc.reportOutput(ad)   
@@ -200,6 +203,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             ad = rc.getInputs(style='AD')[0]
             processedBias = rc.getCal(ad,'bias')
             log.status('Using bias '+processedBias+' to correct the inputs')
+            
+            log.critical('prim_Gmos204: '+rc.inputsAsStr())
             
             # Parameters set by the gemt.CLManager or the definition of the prim 
             clPrimParams = {
@@ -266,9 +271,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                                  ' was bias subracted successfully')
                     log.fullinfo('New file name is: '+ad.filename)
                 i=i+1
-                # Updating the GEM-TLM (automatic) time stamp in the PHU
-                ut = ad.historyMark()  
-                #$$$$$ should we also have a OVERSUB UT time stame in the PHU???
+                # Updating the GEM-TLM (automatic) and BIASCORR time stamps in 
+                # the PHU
+                ad.historyMark(key='BIASCORR', stomp=False)  
                 
                 # Reseting the value set by gireduce to just the filename
                 # for clarity
@@ -282,6 +287,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('BIASCORR = '+ad.phuGetKeyValue('BIASCORR'), 
                              category='header')
                 log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n', 
                              category='header')
@@ -320,8 +327,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adOut = ad.div(processedFlat)
                 log.status('ad.div successfully flat corrected '+ad.filename)
                 
-                # Updating GEM-TLM (automatic) time stamp to the PHU
-                ut = adOut.historyMark()
+                # Updating GEM-TLM (automatic) and FLATCORR time stamps to the 
+                # PHU
+                adOut.historyMark(key='FLATCORR', stomp=False)
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
@@ -341,6 +349,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('FLATCORR = '+ad.phuGetKeyValue('FLATCORR'), 
                              category='header')
                 log.fullinfo('------------------------------------------------'
                              , category='header')    
@@ -529,9 +539,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                                  ' mosaiced successfully')
                     log.fullinfo('New file name is: '+ad.filename)
                 i=i+1
-                # Updating GEM-TLM (automatic) time stamp to the PHU
-                ut = ad.historyMark()  
-                #$$$$$ should we also have a MOSAIC UT time stame in the PHU???
+                # Updating GEM-TLM (automatic) and MOSAIC time stamps to the PHU
+                ad.historyMark(key='MOSAIC', stomp=False)  
                 
                 # Updating logger with new GEM-TLM value
                 log.fullinfo('************************************************'
@@ -539,8 +548,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('File = '+ad.filename, category='header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('MOSAIC = '+ad.phuGetKeyValue('MOSAIC'), 
                              category='header')
                 
             log.status('*FINISHED* mosaicing the input images')
@@ -570,7 +581,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # so they can be deleted later easily 
             clm = gemt.CLManager(rc)
             #clm.LogCurParams()
-
+            #log.critical('prim_Gmos575: '+rc.inputsAsStr())
             # Creating a dictionary of the parameters set by the gemt.CLManager 
             # or the definition of the prim 
             clPrimParams = {
@@ -736,9 +747,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                                  ' had its overscan subracted successfully')
                     log.fullinfo('New file name is: '+ad.filename)
                 i = i+1
-                # Updating GEM-TLM time stamp
-                ut = ad.historyMark()  
-                #$$$$$ should we also have a OVERSUB UT time same in the PHU???
+                # Updating GEM-TLM and OVERSUB time stamps in the PHU
+                ad.historyMark(key='OVERSUB', stomp=False)  
                 
                 # Updating logger with new GEM-TLM time stamp value
                 log.fullinfo('************************************************'
@@ -747,7 +757,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n', 
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                              category='header')
+                log.fullinfo('OVERSUB = '+ad.phuGetKeyValue('OVERSUB')+'\n', 
                               category='header')
             
             log.status('*FINISHED* subtracting the overscan from the '+
@@ -806,8 +818,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     
                 ad.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')    
                 # Updating the GEM-TLM value and reporting the output to the RC    
-                ut = ad.historyMark()
-                #$$$$$ should we also have a OVERTRIM UT time same in the PHU???
+                ad.historyMark(key='OVERTRIM', stomp=False)
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
@@ -826,7 +837,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM')+'\n', 
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header') 
+                log.fullinfo('OVERTRIM = '+ad.phuGetKeyValue('OVERTRIM')+'\n', 
                              category='header') 
                 
             log.status('*FINISHED* trimming the overscan region from the input data')

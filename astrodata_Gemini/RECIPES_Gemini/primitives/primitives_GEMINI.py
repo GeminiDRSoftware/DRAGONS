@@ -168,16 +168,19 @@ class GEMINIPrimitives(PrimitiveSet):
                     log.critical('DQ frames all ready exist for '+ad.filename+
                                  ', so addDQ will not calculate new ones')
                     
-                # Adding GEM-TLM (automatic) and ADDVARDQ time stamp to the PHU
+                # Adding GEM-TLM (automatic) and ADDDQ time stamps to the PHU
                 ad.historyMark(key='ADDDQ', stomp=False) 
                 # updating logger with updated/added time stamps
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             ,'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'),'header')
-                log.fullinfo('ADDDQ = '+ad.phuGetKeyValue('ADDDQ'),'header')
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', 
+                             category='header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('ADDDQ = '+ad.phuGetKeyValue('ADDDQ'), 
+                             category='header')
                 log.fullinfo('------------------------------------------------'
-                             , 'header')
+                             , category='header')
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
@@ -263,16 +266,17 @@ class GEMINIPrimitives(PrimitiveSet):
                 ad.historyMark(key='ADDVAR', stomp=False)    
                 
                 log.fullinfo('************************************************'
-                             ,'header')
-                log.fullinfo('file = '+ad.filename, 'header')
+                             , category='header')
+                log.fullinfo('file = '+ad.filename, category='header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             ,'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), \
-                             'header')
-                log.fullinfo('ADDVAR = '+ad.phuGetKeyValue('ADDVAR'), 'header')
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('ADDVAR = '+ad.phuGetKeyValue('ADDVAR'), 
+                             category='header')
                 log.fullinfo('------------------------------------------------'
-                             ,'header')
+                             , category='header')
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
@@ -321,14 +325,15 @@ class GEMINIPrimitives(PrimitiveSet):
                     ext.SetKeyValue('GAIN', 1.0, 'Physical units is electrons') 
                     ext.SetKeyValue('BUNIT','electrons' , 'Physical units')
                     # Logging the changes to the header keys
-                    log.fullinfo('SCI extension number '+
-                                 str(ext.extver())+
-                                 ' keywords updated/added:\n', 'header')
-                    log.fullinfo('GAINORIG = '+str(gainorig),'header' )
-                    log.fullinfo('GAIN = '+str(1.0),'header' )
-                    log.fullinfo('BUNIT = '+'electrons','header' )
+                    log.fullinfo('SCI extension number '+str(ext.extver())+
+                                 ' keywords updated/added:\n', 
+                                 category='header')
+                    log.fullinfo('GAINORIG = '+str(gainorig), 
+                                 category='header' )
+                    log.fullinfo('GAIN = '+str(1.0), category='header' )
+                    log.fullinfo('BUNIT = '+'electrons', category='header' )
                     log.fullinfo('--------------------------------------------'
-                                 ,'header')
+                                 ,category='header')
                 # Updating VAR headers if they exist (not updating any 
                 # DQ headers as no changes were made to them here)  
                 for ext in adOut['VAR']:
@@ -343,29 +348,30 @@ class GEMINIPrimitives(PrimitiveSet):
                     ext.SetKeyValue('BUNIT','electrons squared' , 
                                        'Physical units')
                     # Logging the changes to the VAR extensions header keys
-                    log.fullinfo('VAR extension number '+
-                                 str(ext.extver())+\
-                                 ' keywords updated/added:\n', 'header')
-                    log.fullinfo('BUNIT = '+'electrons squared','header' )
+                    log.fullinfo('VAR extension number '+str(ext.extver())+
+                                 ' keywords updated/added:\n',
+                                  category='header')
+                    log.fullinfo('BUNIT = '+'electrons squared', 
+                                 category='header' )
                     log.fullinfo('--------------------------------------------'
-                                 ,'header')
+                                 ,category='header')
                 
                 # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
                 adOut.historyMark('ADU2ELEC', stomp=False)
                 
                 # Updating logger with time stamps
                 log.fullinfo('************************************************'
-                             ,'header')
-                log.fullinfo('ile = '+adOut.filename, 'header')
+                             , category='header')
+                log.fullinfo('File = '+adOut.filename, category='header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             ,'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             'header')
+                             category='header')
                 log.fullinfo('ADU2ELEC = '+ad.phuGetKeyValue('ADU2ELEC'), 
-                             'header')
+                             category='header')
                 log.fullinfo('------------------------------------------------'
-                             , 'header')
+                             , category='header')
                 
                 # Updating the file name with the postpend/outsuffix for this
                 # primitive and then reporting the new file to the reduction 
@@ -475,17 +481,17 @@ class GEMINIPrimitives(PrimitiveSet):
                 ad.historyMark(key='COMBINE',stomp=False)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
-                             ,'header')
-                log.fullinfo('file = '+ad.filename, 'header')
+                             , category='header')
+                log.fullinfo('file = '+ad.filename, category='header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , 'header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             'header')
+                             category='header')
                 log.fullinfo('COMBINE = '+ad.phuGetKeyValue('COMBINE'), 
-                             'header')
+                             category='header')
                 log.fullinfo('------------------------------------------------'
-                             , 'header')    
+                             , category='header')    
                 
                 log.status('*FINISHED* combining the images of the input data')
         except:
@@ -744,15 +750,31 @@ class GEMINIPrimitives(PrimitiveSet):
             rc.run('standardizeInstrumentHeaders') 
             log.status('Instrument specific headers fixed')
             
-            # Updating the file name with the postpend/outsuffix for this
-            # primitive and then reporting the new file to the reduction 
-            # context 
+            # Updating the file name with the postpend/outsuffix  and timestamps 
+            # for this primitive and then reporting the new file to the 
+            # reduction context 
             for ad in rc.getInputs(style='AD'):
+                # Adding a GEM-TLM (automatic) and STDHDRS time stamps 
+                # to the PHU
+                ad.historyMark(key='STDHDRS',stomp=False)
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
                                                    postpend=rc['postpend'], 
                                                    strip=True)
                 log.status('File name updated to '+ad.filename)
+                # Updating logger with updated/added time stamps
+                log.fullinfo('************************************************'
+                             ,category='header')
+                log.fullinfo('file = '+ad.filename, category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                             , 'header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('STDHDRS = '+ad.phuGetKeyValue('STDHDRS'), 
+                             category='header')
+                log.fullinfo('------------------------------------------------'
+                             , category='header')    
                 rc.reportOutput(ad)
                 
             log.status('*FINISHED* standardizing the headers')
@@ -790,7 +812,10 @@ class GEMINIPrimitives(PrimitiveSet):
                 log.status('Completed standardizing the structure for '+
                            ad.filename)
                 
-                # Updating the file name with the postpend/outsuffix for this
+                # Adding a GEM-TLM (automatic) and STDSTRUC time stamps 
+                # to the PHU
+                ad.historyMark(key='STDSTRUC',stomp=False)
+                # Updating the file name with the postpend/outsuffix for this   
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
@@ -798,6 +823,19 @@ class GEMINIPrimitives(PrimitiveSet):
                                                    postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
+                # Updating logger with updated/added time stamps
+                log.fullinfo('************************************************'
+                             ,category='header')
+                log.fullinfo('file = '+ad.filename, category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('STDSTRUC = '+ad.phuGetKeyValue('STDSTRUC'), 
+                             category='header')
+                log.fullinfo('------------------------------------------------'
+                             , category='header')  
                 rc.reportOutput(ad)
    
             log.status('*FINISHED* standardizing the structure of input data')
@@ -846,15 +884,31 @@ class GEMINIPrimitives(PrimitiveSet):
             log.status('Successfully returned to validateData'+
                        ' from the validateInstrumentData primitive') 
             
-            # Updating the file name with the postpend/outsuffix for this
-            # primitive and then reporting the new file to the reduction 
-            # context
+            # Updating the file name with the postpend/outsuffix  and timestamps 
+            # for this primitive and then reporting the new file to the 
+            # reduction context 
             for ad in rc.getInputs(style='AD'):
+                # Adding a GEM-TLM (automatic) and VALDATA time stamps 
+                # to the PHU
+                ad.historyMark(key='VALDATA',stomp=False)
                 log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
                                                    postpend='_validated', 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
+                # Updating logger with updated/added time stamps
+                log.fullinfo('************************************************'
+                             ,'header')
+                log.fullinfo('File = '+ad.filename, category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                              category='header')
+                log.fullinfo('VALDATA = '+ad.phuGetKeyValue('VALDATA'), 
+                             category='header')
+                log.fullinfo('------------------------------------------------'
+                             , category='header')  
                 rc.reportOutput(ad) 
                         
             log.status('*FINISHED* validating input data')                
