@@ -561,9 +561,9 @@ class ReductionContext(dict):
     
     def getStack(self, ID):
         cachefile = self.getCacheFile("stackIndexFile")
-        print "RM563:", cachefile
+        # print "RM563:", cachefile
         retval = self.stackeep.get(ID, cachefile )
-        print "RM565:", repr(retval)
+        # print "RM565:", repr(retval)
         return retval
  
     def inputsAsStr(self, strippath=True):
@@ -1110,16 +1110,16 @@ class ReductionContext(dict):
         self.addRq(iqReq)
     rqIQput = rqIQ
         
-    def rqStackGet(self):
+    def rqStackGet(self, purpose = ""):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for orig in self.originalInputs:
-            Sid = idFac.generateStackableID(orig.ad, ver)
+            Sid = purpose + idFac.generateStackableID(orig.ad, ver)
             stackUEv = GetStackableRequest()
             stackUEv.stkID = Sid
             self.addRq(stackUEv)
                 
-    def rqStackUpdate(self):
+    def rqStackUpdate(self, purpose = ""):
         '''
         This function creates requests to update a stack list.
         '''
@@ -1127,7 +1127,7 @@ class ReductionContext(dict):
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for inp in self.inputs:
             stackUEv = UpdateStackableRequest()
-            Sid = idFac.generateStackableID(inp.ad, ver)
+            Sid = purpose + idFac.generateStackableID(inp.ad, ver)
             stackUEv.stkID = Sid
             stackUEv.stkList = inp.filename
             self.addRq(stackUEv)
@@ -1136,7 +1136,6 @@ class ReductionContext(dict):
     
     def setCacheFile(self, key, filename):
         filename = os.path.abspath(filename)
-        print "RM1135:", filename
         self.cacheFiles.update({key:filename})
         
     def getCacheFile(self, key):

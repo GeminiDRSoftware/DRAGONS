@@ -7,7 +7,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 import select
 import socket
 
-PDEB = True
+PDEB = False
 
 class ReduceCommands(object):
     prsready = False
@@ -19,7 +19,6 @@ class ReduceCommands(object):
         return [("ReduceXMLRPS", "0.1")]
 
     def prsReady(self):
-        # print "P80: prs ready!"
         self.prsready = True
         reduceServer.prsready = True
             
@@ -101,7 +100,6 @@ class PRSProxy(object):
     reduceServer = None
             
     def __init__(self, reduceServer = None):
-        print ("P83: created PROXY")
         try:
             self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
             self.reduceServer = reduceServer
@@ -116,7 +114,6 @@ class PRSProxy(object):
         if  type(cls._class_prs) != type(None):
             proxy = cls._class_prs
             start = False
-            print "P101:", repr(dir(proxy)), repr(proxy), repr(reduceServer)
             return cls._class_prs
                     
         newProxy = None
@@ -127,7 +124,6 @@ class PRSProxy(object):
         while(not found):
             try:
                 newProxy.version = newProxy.get_version()
-                print "after version"
                 found = True
 
                 if (PDEB):

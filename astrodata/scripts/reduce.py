@@ -425,7 +425,6 @@ from astrodata import Proxies
 # I think it best to start the adcc always, since it wants the reduceServer I prefer not
 # to provide to every component that wants to use the adcc as an active-library
 adccpid = Proxies.startADCC()
-print "r428: adccpid =", adccpid
   
 # launch xmlrpc interface for control and communication
 reduceServer = Proxies.ReduceServer()
@@ -721,158 +720,207 @@ for infiles in allinputs: #for dealing with multiple files.
         cw = TkRecipeControl(recipes = reclist)
         cw.start()
         
+    if "USER" in reclist:
+        interactiveMode = True
+        import readline
+        readline.set_history_length(100)
+    else:
+        interactiveMode = False
 
-    for rec in reclist:
-    
-        try:
-            # create fresh context object
-            # @@TODO:possible: see if deepcopy can do this better 
-            co = ReductionContext()
-            #print "r739:stack index file", stkindfile
-            # @@NAME: stackIndexFile, location for persistent stack list cache
-            co.setCacheFile("stackIndexFile", stkindfile)
-            co.ro = ro
-            # @@DOC: put cachedirs in context
-            for cachename in cachedict:
-                co.update({cachename:cachedict[cachename]})
-            co.update({"cachedict":cachedict})
-            # rc.["storedcals"] will be the proper directory
-            
-            co.restoreCalIndex(calindfile)
-            # old local stack stuff co.restoreStkIndex( stkindfile )
-            
-            # add input files
-            co.addInput(infiles)
-            co.setIrafStdout(irafstdout)
-            co.setIrafStderr(irafstdout)
-            
-            # odl way rl.retrieveParameters(infile[0], co, rec)
-            if hasattr(options, "userParams"):
-                co.userParams = options.userParams
-            if hasattr(options, "globalParams"):
-                for pkey in options.globalParams.keys():
-                    co.update({pkey:options.globalParams[pkey]})
-            if (options.writeInt == True):       #$$$$$ to be removed after writeIntermediate thing works correctly
-                    co.update({"writeInt":True})  #$$$$$ to be removed after writeIntermediate thing works correctly
-            # print "r352:", repr(co.userParams.userParamDict)
-            if (useTK):
-                while cw.bReady == False:
-                    # this is hopefully not really needed
-                    # did it to give the tk thread a chance to get running
-                    time.sleep(.1)
-                cw.newControlWindow(rec,co)
-                cw.mainWindow.protocol("WM_DELETE_WINDOW", co.finish) 
-    
-    
-            # @@TODO:evaluate use of init for each recipe vs. for all recipes
-            ro.init(co)
-            if options.primsetname != None:
-                dr = os.path.abspath(os.path.dirname(options.primsetname))
-                # print "r349:", dr
-                sys.path.append(dr)
-                # print "r351:", sys.path
-                
-                exec ("import "+ os.path.basename(options.primsetname)[:-3] + " as newmodule")
-                userPrimSet = newmodule.userPrimSet
-                
-                userPrimSet.astrotype = ro.curPrimType
-                ro.addPrimSet(userPrimSet)
-                
-                
-            log.status( "running recipe: '%s'\n" % rec)
-            if (os.path.exists(rec)):
-                if "recipe." not in rec:
-                    raise "Recipe files must be named 'recipe.RECIPENAME'"
-                else:
-                    rname = re.sub("recipe.", "", os.path.basename(rec))
-                rf = open(rec)
-                rsrc = rf.read()
-                prec = rl.composeRecipe(rname, rsrc)
-                rfunc = rl.compileRecipe(rname, prec)
-                ro = rl.bindRecipe(ro, rname, rfunc)
-                rec = rname
+    while True:
+        for rec in reclist:
+            if rec == "USER":
+                try:
+                    rec = raw_input("reduce: ")
+                    if rec == "exit":
+                        interactiveMode = False
+                        break
+                    rawrec = True
+                except:
+                    interactiveMode = False
+                    break
             else:
-                if options.astrotype:
-                    rl.loadAndBindRecipe(ro, rec, astrotype=options.astrotype)
+                rawrec = False
+                
+            try:
+                # create fresh context object
+                # @@TODO:possible: see if deepcopy can do this better 
+                co = ReductionContext()
+                #print "r739:stack index file", stkindfile
+                # @@NAME: stackIndexFile, location for persistent stack list cache
+                co.setCacheFile("stackIndexFile", stkindfile)
+                co.ro = ro
+                # @@DOC: put cachedirs in context
+                for cachename in cachedict:
+                    co.update({cachename:cachedict[cachename]})
+                co.update({"cachedict":cachedict})
+                # rc.["storedcals"] will be the proper directory
+
+                co.restoreCalIndex(calindfile)
+                # old local stack stuff co.restoreStkIndex( stkindfile )
+
+                # add input files
+                co.addInput(infiles)
+                co.setIrafStdout(irafstdout)
+                co.setIrafStderr(irafstdout)
+
+                # odl way rl.retrieveParameters(infile[0], co, rec)
+                if hasattr(options, "userParams"):
+                    co.userParams = options.userParams
+                if hasattr(options, "globalParams"):
+                    for pkey in options.globalParams.keys():
+                        co.update({pkey:options.globalParams[pkey]})
+                if (options.writeInt == True):       #$$$$$ to be removed after writeIntermediate thing works correctly
+                        co.update({"writeInt":True})  #$$$$$ to be removed after writeIntermediate thing works correctly
+                # print "r352:", repr(co.userParams.userParamDict)
+                if (useTK):
+                    while cw.bReady == False:
+                        # this is hopefully not really needed
+                        # did it to give the tk thread a chance to get running
+                        time.sleep(.1)
+                    cw.newControlWindow(rec,co)
+                    cw.mainWindow.protocol("WM_DELETE_WINDOW", co.finish) 
+
+
+                # @@TODO:evaluate use of init for each recipe vs. for all recipes
+                ro.init(co)
+                if options.primsetname != None:
+                    dr = os.path.abspath(os.path.dirname(options.primsetname))
+                    # print "r349:", dr
+                    sys.path.append(dr)
+                    # print "r351:", sys.path
+
+                    exec ("import "+ os.path.basename(options.primsetname)[:-3] + " as newmodule")
+                    userPrimSet = newmodule.userPrimSet
+
+                    userPrimSet.astrotype = ro.curPrimType
+                    ro.addPrimSet(userPrimSet)
+
+
+                if rawrec == False:
+                    log.status( "running recipe: '%s'\n" % rec)
+                    
+                # logic to handle:
+                #  * recipes in config path somewhere
+                #  * filenames
+                #  * which need compiling due to arguments
+                if (os.path.exists(rec)):
+                    if "recipe." not in rec:
+                        raise "Recipe files must be named 'recipe.RECIPENAME'"
+                    else:
+                        rname = re.sub("recipe.", "", os.path.basename(rec))
+                    rf = open(rec)
+                    rsrc = rf.read()
+                    prec = rl.composeRecipe(rname, rsrc)
+                    rfunc = rl.compileRecipe(rname, prec)
+                    ro = rl.bindRecipe(ro, rname, rfunc)
+                    rec = rname
+                elif "(" in rec:
+                    print "r819:", rec
+                    rsrc = rec
+                    rname = "userCommand"
+                    prec = rl.composeRecipe(rname, rsrc)
+                    rfunc = rl.compileRecipe(rname, prec)
+                    ro = rl.bindRecipe(ro, rname, rfunc)
+                    rec = rname
                 else:
-                    rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
-            if (useTK):
-                cw.running(rec)
-            
-            controlLoopCounter = 1
-            ################
-            # CONTROL LOOP #
-            ################
-            #print str(dir(TerminalController))
-            #@@COLOR primfilter = terminal.PrimitiveFilter()
-            primfilter = None
-            #@@COLOR filteredstdout.addFilter(primfilter)
-            frameForDisplay = 1
-            #######
-            #######
-            #######
-            #######
-            ####### COMMAND LOOP
-            #######
-            #######
-            #######
-            # not this only works because we install a stdout filter right away with this
-            # member function
-            if (True): # try:
-                ro.run(rec, co)
-                #for coi in ro.substeps(rec, co):
-                #    ro.executeCommandClause()
-                    # filteredstdout.addFilter(primfilter)
-                # filteredstdout.removeFilter(primfilter)
-            #######
-            #######
-            #######
-            #######
-            #######
-            #######
-        except KeyboardInterrupt:
-            co.isFinished(True)
-            if (useTK):
-                cw.quit()
+                    if options.astrotype:
+                        rl.loadAndBindRecipe(ro, rec, astrotype=options.astrotype)
+                    else:
+                        rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
+                if (useTK):
+                    cw.running(rec)
+
+                controlLoopCounter = 1
+                ################
+                # CONTROL LOOP #
+                ################
+                #print str(dir(TerminalController))
+                #@@COLOR primfilter = terminal.PrimitiveFilter()
+                primfilter = None
+                #@@COLOR filteredstdout.addFilter(primfilter)
+                frameForDisplay = 1
+                #######
+                #######
+                #######
+                #######
+                ####### COMMAND LOOP
+                #######
+                #######
+                #######
+                # not this only works because we install a stdout filter right away with this
+                # member function
+                if (True): # try:
+                    ro.run(rec, co)
+                    #for coi in ro.substeps(rec, co):
+                    #    ro.executeCommandClause()
+                        # filteredstdout.addFilter(primfilter)
+                    # filteredstdout.removeFilter(primfilter)
+                #######
+                #######
+                #######
+                #######
+                #######
+                #######
+            except KeyboardInterrupt:
+                co.isFinished(True)
+                if (useTK):
+                    cw.quit()
+                co.persistCalIndex(calindfile)
+                print "Ctrl-C Exit"
+                prs.unregister()
+                sys.exit(0)
+            except astrodata.ReductionObjects.ReductionExcept, e:
+                log.error("FATAL:" + str(e))
+                prs.unregister()
+                sys.exit()
+            except:
+                log.status("CONTEXT AFTER FATAL ERROR")
+                log.status("-------------------------")
+                if reduceServer:
+                    #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
+                    Proxies.reduceServer.finished=True
+                co.persistCalIndex(calindfile)
+                if (bReportHistory):
+                    co.reportHistory()
+                    rl.reportHistory()
+                co.isFinished(True)
+                if (useTK):
+                    cw.killed = True
+                    cw.quit()
+                co.persistCalIndex(calindfile)
+                
+                # RAISE THE EXCEPTION AGAIN
+                if interactiveMode != True:
+                    # note, I expect this raise to produce
+                    # an exit and print of stack to user!
+                    # which is why I unregister... interactive mode
+                    # does not want to unregister while still
+                    # looping
+                    prs.unregister()
+                    raise
+                else:
+                    import traceback
+                    traceback.print_exc()
+                    print "\n Type 'exit' to exit."
+                    
             co.persistCalIndex(calindfile)
-            print "Ctrl-C Exit"
-            sys.exit(0)
-        except astrodata.ReductionObjects.ReductionExcept, e:
-            log.error("FATAL:" + str(e))
-            sys.exit()
-        except:
-            log.status("CONTEXT AFTER FATAL ERROR")
-            log.status("-------------------------")
-            if reduceServer:
-                #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
-                Proxies.reduceServer.finished=True
-            if (False):
-                #crash on exceptions
-                print "R852: RAISING instead of ignoring"
-                raise
-            co.persistCalIndex(calindfile)
+
             if (bReportHistory):
+
+                log.error( "CONTEXT HISTORY")
+                log.error( "---------------")
+
                 co.reportHistory()
                 rl.reportHistory()
+
             co.isFinished(True)
-            if (useTK):
-                cw.killed = True
-                cw.quit()
-            co.persistCalIndex(calindfile)
-            
-            raise
-        co.persistCalIndex(calindfile)
-    
-        if (bReportHistory):
-    
-            log.error( "CONTEXT HISTORY")
-            log.error( "---------------")
-    
-            co.reportHistory()
-            rl.reportHistory()
-            
-        co.isFinished(True)
-    
+        if interactiveMode == True:
+            reclist = ["USER"]
+        else:
+            break
+        
+        
     if useTK and currentReductionNum == numReductions:
         try:
             cw.done()
