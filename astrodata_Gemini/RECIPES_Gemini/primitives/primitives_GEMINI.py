@@ -10,6 +10,7 @@ import numpy as np
 import pyfits as pf
 from datetime import datetime
 import shutil
+from primitives_GENERAL import GENERALPrimitives
 
 log = gemLog.getGeminiLog()
 
@@ -60,7 +61,7 @@ class GEMINIException:
         when the exception is not caught."""
         return self.message
 
-class GEMINIPrimitives(PrimitiveSet):
+class GEMINIPrimitives(GENERALPrimitives):
     """ 
     This is the class of all primitives for the GEMINI astrotype of 
     the hierarchy tree.  It inherits all the primitives to the level above
@@ -524,7 +525,34 @@ class GEMINIPrimitives(PrimitiveSet):
             log.critical('Problem displaying output')
             raise 
         yield rc
- 
+
+    def setStackable(self, rc):
+        """
+        This primitive will update the lists of files to be stacked
+        that have the same observationID with the current inputs.
+        This file is cached between calls to reduce, thus allowing
+        for one-file-at-a-time processing.
+        
+        """
+        try:
+            log.status('*STARTING* to update/create the stack')
+            # Requesting for the reduction context to perform an update
+            # to the stack cache file (or create it) with the current inputs.
+            rc.rqStackUpdate()
+            # Writing the files in the stack to disk if not all ready there
+            for ad in rc.getInputs(style='AD'):
+                if not os.path.exists(ad.filename):
+                    log.fullinfo('writing '+ad.filename+\
+                                 ' to disk', category='stack')
+                    ad.write(ad.filename)
+                    
+            log.status('*FINISHED* updating/creating the stack')
+        except:
+            log.critical('Problem writing stack for files '+rc.inputsAsStr(),
+                         category='stack')
+            raise
+        yield rc
+  
     def getStackable(self, rc):
         """
         This primitive will check the files in the stack lists are on disk,
@@ -534,12 +562,11 @@ class GEMINIPrimitives(PrimitiveSet):
         """
         try:
             # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
-            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            log.fullinfo('getting stack '+stackid,'stack')
             rc.rqStackGet()
+            #yield to give time to the control loop
             yield rc
+            #the control loop satisfies the request during the yield
             stack = rc.getStack(stackid) #.filelist
-            #print 'prim_G366: ',repr(stack)
             rc.reportOutput(stack)
             print 'p_GEM529: stack', stack
         except:
@@ -618,41 +645,7 @@ class GEMINIPrimitives(PrimitiveSet):
     def setContext(self, rc):
         rc.update(rc.localparms)
         yield rc   
-    
-    def setStackable(self, rc):
-        """
-        This primitive will update the lists of files to be stacked
-        that have the same observationID with the current inputs.
-        This file is cached between calls to reduce, thus allowing
-        for one-file-at-a-time processing.
-        
-        """
-        try:
-            log.status('*STARTING* to update/create the stack')
-            # Getting specific stack ID based on the observationID of the 
-            # first file in the input list.
-            stackid = IDFactory.generateStackableID(rc.inputs[0].ad)
-            # Logging the stackid returned
-            log.fullinfo('updating stack '+stackid+' with '+rc.inputsAsStr(), 
-                         category='stack')
-            # Requesting for the reduction context to perform an update
-            # to the stack cache file (or create it) with the current inputs.
-            rc.rqStackUpdate()
-            print 'prim_GEM648: ',rc.inputsAsStr()
-            # Writing the files in the stack to disk if not all ready there
-            for ad in rc.getInputs(style='AD'):
-                if not os.path.exists(ad.filename):
-                    log.fullinfo('temporarily writing '+ad.filename+\
-                                 ' to disk', category='stack')
-                    ad.write(ad.filename)
-                    
-            log.status('*FINISHED* updating/creating the stack')
-        except:
-            log.critical('Problem preparing stack for files '+rc.inputsAsStr(),
-                         category='stack')
-            raise
-        yield rc
-    
+       
     def showCals(self, rc):
         if str(rc['showcals']).lower() == 'all':
             num = 0
@@ -707,6 +700,9 @@ class GEMINIPrimitives(PrimitiveSet):
          
     def showStackable(self, rc):
         sidset = set()
+        purpose = rc["purpose"]
+        if purpose == None:
+            purpose = ""
         for inp in rc.inputs:
             sidset.add(IDFactory.generateStackableID(inp.ad))
         for sid in sidset:

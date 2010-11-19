@@ -3,5 +3,6 @@
 # NOTE: primitives are the member functions of a Reduction Object.
 
 localPrimitiveIndex = {
-    "GEMINI": ("primitives_GEMINI.py", "GEMINIPrimitives")
+    "GENERAL": ("primitives_GENERAL.py", "GENERALPrimitives"),
+    "GEMINI":  ("primitives_GEMINI.py", "GEMINIPrimitives")
     }
