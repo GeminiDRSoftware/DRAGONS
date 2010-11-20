@@ -538,7 +538,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*STARTING* to update/create the stack')
             # Requesting for the reduction context to perform an update
             # to the stack cache file (or create it) with the current inputs.
-            rc.rqStackUpdate()
+            purpose = rc["purpose"]
+            if purpose == None:
+                purpose = ""
+                
+            rc.rqStackUpdate(purpose= purpose)
             # Writing the files in the stack to disk if not all ready there
             for ad in rc.getInputs(style='AD'):
                 if not os.path.exists(ad.filename):
@@ -703,8 +707,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         purpose = rc["purpose"]
         if purpose == None:
             purpose = ""
-        for inp in rc.inputs:
-            sidset.add(IDFactory.generateStackableID(inp.ad))
+        # print "pG710"
+        if purpose == "all":
+            allsids = rc.getStackIDs()
+            # print "pG713:", repr(allsids)
+            for sid in allsids:
+                sidset.add(sid)
+        else:   
+            for inp in rc.inputs:
+                sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
         for sid in sidset:
             stacklist = rc.getStack(sid) #.filelist
             log.status('Stack for stack id=%s' % sid)

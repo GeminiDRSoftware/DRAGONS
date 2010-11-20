@@ -40,6 +40,36 @@ class GENERALPrimitives(PrimitiveSet):
         return 
     init.pt_hide = True
     
+    def glob(self, rc):
+        import glob as gl
+        if rc["glob"] == None:
+            glob = "./*.fits"
+        else:
+            glob = rc["glob"]
+
+        log.status("Listing for: "+ glob)
+        files = gl.glob(glob)
+        files.sort()
+        if len(files) == 0:
+            log.status("No files")    
+        else:
+            log.status("\t"+"\n\t".join(files))
+        yield rc
+        add = rc["inputs"]
+        if add:
+            rc.addInput(files)
+        yield rc
+    def setInputs(self, rc):
+        files = rc["files"]
+        if files != None:
+            a = files.split(" ")
+            if len(a)>0:
+                rc.addInput(a)
+        yield rc
+    def clearInputs(self, rc):
+        rc.clearInput()
+        yield rc
+        
     def listDir(self,rc):
         if rc["dir"] == None:
             thedir = "."
