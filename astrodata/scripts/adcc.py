@@ -139,16 +139,22 @@ class ReduceInstanceManager(object):
             
             #quitServer()s
     def stackPut(self, ID, filelist, cachefile = None):
-        print "ADCC136:", ID, repr(filelist), repr(cachefile)
+        #print "ADCC136:", ID, repr(filelist), repr(cachefile)
         self.stackKeeper.add(ID, filelist, cachefile)
-        print "ADCC138: element added to stacklist:" , ID
+        #print "ADCC138: element added to stacklist:" , ID
         self.stackKeeper.persist(cachefile)
     
     def stackGet(self, ID, cachefile = None):
         retval = self.stackKeeper.get(ID, cachefile)
-        print "adcc147:", repr(retval)
+        #print "adcc147:", repr(retval)
         return retval
         
+    def stackIDsGet(self, cachefile = None):
+        print "adcc153:"
+        retval = self.stackKeeper.getStackIDs(cachefile)
+        return retval
+        
+           
     def displayRequest(self, rq):
         
         print "adcc99:", repr(rq)

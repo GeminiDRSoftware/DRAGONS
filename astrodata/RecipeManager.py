@@ -286,6 +286,9 @@ class ReductionContext(dict):
             callbacks.update({name:l})
         l.append(function)
     
+    def clearInput(self):
+        self.inputs = []
+        
     def addInput(self, filenames):
         '''
         Add input to be processed the next batch around. If this is the first input being added,
@@ -315,9 +318,12 @@ class ReductionContext(dict):
                 raise("BadArgument: '%(name)s' is an invalid type '%(type)s'. Should be str, AstroData, AstroDataRecord." 
                       % {'name':str(filename), 'type':str(type(filename))})
             
-            self.inputs.append(filename)
+            #@@CONFUSING: the word filename by here is an AstroDataRecord!
+            if filename not in self.inputs:
+                self.inputs.append(filename)
             if origFlag:
-                self.originalInputs.append(filename)        
+                if filename not in self.originalInputs:
+                    self.originalInputs.append(filename)        
        
     def addRq(self, rq):
         '''
@@ -559,6 +565,13 @@ class ReductionContext(dict):
             # raise RecipeExcept("AstroData instance not loaded for input %s" % self.inputs[0].filename)
         return self.inputs[0].ad
     
+    def getStackIDs(self):
+        cachefile = self.getCacheFile("stackIndexFile")
+        # print "RM563:", cachefile
+        retval = self.stackeep.getStackIDs(cachefile )
+        # print "RM565:", repr(retval)
+        return retval
+ 
     def getStack(self, ID):
         cachefile = self.getCacheFile("stackIndexFile")
         # print "RM563:", cachefile

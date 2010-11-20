@@ -727,15 +727,25 @@ for infiles in allinputs: #for dealing with multiple files.
     else:
         interactiveMode = False
 
-    while True:
+    # counts user given command for interactive mode
+    cmdnum = 0 # @@INTERACTIVE
+    co = None
+    while True: # THIS IS A LOOP FOR INTERACTIVE USE! @@INTERACTIVE
         for rec in reclist:
             if rec == "USER":
                 try:
                     rec = raw_input("reduce: ")
+                    rec = rec.strip()
                     if rec == "exit":
                         interactiveMode = False
                         break
+                    if rec.strip() == "":
+                        continue
+                    cmdnum += 1
                     rawrec = True
+                    if rec == "reset":
+                        co = None
+                        continue
                 except:
                     interactiveMode = False
                     break
@@ -743,33 +753,36 @@ for infiles in allinputs: #for dealing with multiple files.
                 rawrec = False
                 
             try:
-                # create fresh context object
-                # @@TODO:possible: see if deepcopy can do this better 
-                co = ReductionContext()
-                #print "r739:stack index file", stkindfile
-                # @@NAME: stackIndexFile, location for persistent stack list cache
-                co.setCacheFile("stackIndexFile", stkindfile)
-                co.ro = ro
-                # @@DOC: put cachedirs in context
-                for cachename in cachedict:
-                    co.update({cachename:cachedict[cachename]})
-                co.update({"cachedict":cachedict})
-                # rc.["storedcals"] will be the proper directory
+                if co == None or not interactiveMode:
+                    #then we want to keep the 
+                    # create fresh context object
+                    # @@TODO:possible: see if deepcopy can do this better 
+                    co = ReductionContext()
+                    #print "r739:stack index file", stkindfile
+                    # @@NAME: stackIndexFile, location for persistent stack list cache
+                    co.setCacheFile("stackIndexFile", stkindfile)
+                    co.ro = ro
+                    # @@DOC: put cachedirs in context
+                    for cachename in cachedict:
+                        co.update({cachename:cachedict[cachename]})
+                    co.update({"cachedict":cachedict})
+                    # rc.["storedcals"] will be the proper directory
 
-                co.restoreCalIndex(calindfile)
-                # old local stack stuff co.restoreStkIndex( stkindfile )
+                    co.restoreCalIndex(calindfile)
+                    # old local stack stuff co.restoreStkIndex( stkindfile )
 
-                # add input files
-                co.addInput(infiles)
-                co.setIrafStdout(irafstdout)
-                co.setIrafStderr(irafstdout)
+                    # add input files
+                    co.addInput(infiles)
+                    co.setIrafStdout(irafstdout)
+                    co.setIrafStderr(irafstdout)
 
-                # odl way rl.retrieveParameters(infile[0], co, rec)
-                if hasattr(options, "userParams"):
-                    co.userParams = options.userParams
-                if hasattr(options, "globalParams"):
-                    for pkey in options.globalParams.keys():
-                        co.update({pkey:options.globalParams[pkey]})
+                    # odl way rl.retrieveParameters(infile[0], co, rec)
+                    if hasattr(options, "userParams"):
+                        co.userParams = options.userParams
+                    if hasattr(options, "globalParams"):
+                        for pkey in options.globalParams.keys():
+                            co.update({pkey:options.globalParams[pkey]})
+
                 if (options.writeInt == True):       #$$$$$ to be removed after writeIntermediate thing works correctly
                         co.update({"writeInt":True})  #$$$$$ to be removed after writeIntermediate thing works correctly
                 # print "r352:", repr(co.userParams.userParamDict)
@@ -816,10 +829,11 @@ for infiles in allinputs: #for dealing with multiple files.
                     ro = rl.bindRecipe(ro, rname, rfunc)
                     rec = rname
                 elif "(" in rec:
-                    print "r819:", rec
+                    # print "r819:", rec
                     rsrc = rec
-                    rname = "userCommand"
+                    rname = "userCommand%d" % cmdnum
                     prec = rl.composeRecipe(rname, rsrc)
+                    # log.debug(prec)
                     rfunc = rl.compileRecipe(rname, prec)
                     ro = rl.bindRecipe(ro, rname, rfunc)
                     rec = rname

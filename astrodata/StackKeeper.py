@@ -99,6 +99,23 @@ class StackKeeper(object):
                 flist.append(ftoadd)
         
         self.lock.release()
+
+    def getStackIDs(self, cachefile = None):
+        cachefile = os.path.abspath(cachefile)
+        if self.local == False:
+            retval = self.adcc.prs.stackIDsGet(cachefile)
+            return retval
+        else:
+            if cachefile not in self.cacheIndex:
+                return []
+            # MT locking
+            self.lock.acquire()
+            stacksDict = self.cacheIndex[cachefile]
+            sids = stacksDict.keys()
+            self.lock.release()     
+            return sids
+        
+        return []           
         
 
     def get(self, ID, cachefile = None):
@@ -123,13 +140,14 @@ class StackKeeper(object):
         self.lock.acquire()
 
         stacksDict = self.cacheIndex[cachefile]
-
-        self.lock.release() 
                     
         if ID not in stacksDict:
+            self.lock.release()
             return []
         else:
-            return copy(stacksDict[ID].filelist)
+            scopy = copy(stacksDict[ID].filelist)
+            self.lock.release() 
+            return scopy
             
     def persist(self, cachefile = None):
         if cachefile == None:
