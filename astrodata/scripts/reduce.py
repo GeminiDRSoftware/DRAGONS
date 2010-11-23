@@ -514,7 +514,7 @@ def commandClause(ro, coi):
         elif rqTyp == ImageQualityRequest:
             # Logging returned Image Quality statistics
             log.stdinfo(str(rq), category='IQ')
-            
+            log.stdinfo('-'*40, category='IQ')
             #@@FIXME: All of this is kluge and will not remotely reflect how the 
             # RecipeProcessor will deal with ImageQualityRequests.
             if True:
