@@ -63,6 +63,7 @@ from astrodata import Proxies
 from astrodata.adutils import gemLog
 #-----------------------------------------------------------------------------
 
+
 #oet = time.time()
 #print 'TIME:', (oet -ost)
 b = datetime.now()
@@ -159,7 +160,7 @@ parser.add_option("--addprimset", dest = "primsetname", default = None,
 parser.add_option("--debug",dest='debug', default=False, action="store_true",
                   help="debug will set verbosity for console and log file to the extremely high developers debug level.")
 parser.add_option("--verbose",dest='verbose', default=2, type='int',
-                  help="verbose will set the verbosity level for the console; 0=none, 6=highest.") 
+                  help="verbose will set the verbosity level for the console; 0=none, 6=highest.")
 parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
                   help="name of log; default is 'gemini.log'.") 
 parser.add_option("--writeInt",dest='writeInt', default=False, action="store_true",
@@ -168,7 +169,6 @@ parser.add_option("--writeInt",dest='writeInt', default=False, action="store_tru
                   "(CURRENTLY THIS DOESN'T WORK)")       
 parser.add_option("--invoked", dest="invoked", default=False, action="store_true")
           
-
 (options,  args) = parser.parse_args()
 
 if options.invoked:
@@ -320,11 +320,14 @@ def command_line():
     
     try:
         if len( args ) == 0 and options.astrotype == None:
-            raise IndexError
+            raise IndexError()
         infile   = args
     except IndexError:
-        log.error("NO INPUT FILE")
-        parser.print_help()
+        log.info("When no filename is given the astrotype must be specified"
+                    "(-t or --astrotype). This is needed in order to load"
+                    "correct recipes and primitive sets.")
+        log.error("NO INPUT FILE or ASTROTYPE specified")
+        log.info("type 'reduce -h' for usage information")
         sys.exit(1)
     
     

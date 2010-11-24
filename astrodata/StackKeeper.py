@@ -98,6 +98,7 @@ class StackKeeper(object):
             if ftoadd not in flist:
                 flist.append(ftoadd)
         
+        self.persist(cachefile = cachefile)
         self.lock.release()
 
     def getStackIDs(self, cachefile = None):
@@ -135,7 +136,11 @@ class StackKeeper(object):
             return retval
             
         if cachefile not in self.cacheIndex:
-            return []
+            #@@NOTE: use memory version first, one adcc per machine makes this
+            # reasonable
+            self.load(cachefile = cachefile)
+            if cachefile not in self.cacheIndex:
+                return []
 
         self.lock.acquire()
 
@@ -148,7 +153,33 @@ class StackKeeper(object):
             scopy = copy(stacksDict[ID].filelist)
             self.lock.release() 
             return scopy
-            
+    def load(self, cachefile = None):
+        """This member loads the persistent stack for the given cachefile
+        name. NOTE: the contents of the cachefile will stomp any in-memory
+        copy of the cachefile. Process and thread safety 
+        (say if the list should
+        be made a union) must take place in the calling function."""
+        if cachefile == None:
+            raise SKExcept("Cannot load stack list, cachefile == None")
+        self.lock.acquire()
+        try:
+            pfile = open(cachefile, "r")
+            # print "SK131:", cachefile
+            stacksDict = pickle.load(pfile)
+            pfile.close()
+            # @@NOTE: consider doing union between in memory stack and loaded one
+            # @@NOTE: this would only be an issue if there are either
+            # @@NOTE:  two or more adcc instances running (which has to be forced)
+            # @@NOTE:  or adcc instances running on different machine while two
+            # @@NOTE:  or more reduces run on different machine, in a shared directory
+            # @@NOTE:  i.e. via network mount (i.e. NFS)
+            self.cacheIndex.update({cachefile: stacksDict})
+        # print "SK137: about to release SK lock in persist(..)"
+        except:
+            self.lock.release()
+            raise
+        self.lock.release()
+                
     def persist(self, cachefile = None):
         if cachefile == None:
             raise SKExcept("Cannot persist, cachefile == None")
