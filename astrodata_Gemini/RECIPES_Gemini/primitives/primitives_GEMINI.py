@@ -579,7 +579,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.fullinfo('   '+os.path.basename(f))
             yield rc
         except:
-            log.critical('Problem getting stack')
+            log.critical('Problem getting stack '+stackid, category='stack')
+
             raise 
         yield rc
     
