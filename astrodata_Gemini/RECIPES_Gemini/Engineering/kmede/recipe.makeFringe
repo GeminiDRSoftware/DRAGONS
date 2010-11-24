@@ -1,4 +1,4 @@
-#setForFringe
-getForFringe
+setStackable(purpose=fringe)
+getStackable(purpose=fringe)
 makeFringeFrame
 writeOutputs
