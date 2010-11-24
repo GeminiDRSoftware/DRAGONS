@@ -564,17 +564,22 @@ class GEMINIPrimitives(GENERALPrimitives):
         all members of the stack for stacking.
         
         """
+        sidset = set()
+        purpose=rc["purpose"]
+        if purpose==None:
+            purpose = ""
         try:
-            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
-            rc.rqStackGet()
-            #yield to give time to the control loop
+            for inp in rc.inputs:
+                sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
+            for sid in sidset:
+                stacklist = rc.getStack(sid) #.filelist
+                log.fullinfo('Stack for stack id=%s' % sid)
+                for f in stacklist:
+                    rc.reportOutput(f)
+                    log.fullinfo('   '+os.path.basename(f))
             yield rc
-            #the control loop satisfies the request during the yield
-            stack = rc.getStack(stackid) #.filelist
-            rc.reportOutput(stack)
-            print 'p_GEM529: stack', stack
         except:
-            log.critical('Problem getting stack '+stackid, 'stack')
+            log.critical('Problem getting stack')
             raise 
         yield rc
     
