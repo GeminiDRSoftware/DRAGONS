@@ -461,7 +461,7 @@ class CLManager(object):
             names and saves the original names in a list.
         
         """
-        log.critical(repr(self.rc.getInputs(style="FN")), "XXX")
+        #log.critical(repr(self.rc.getInputs(style="FN")), "XXX")
         
         for ad in self.rc.getInputs(style='AD'):
             # Load up the preCLfilenames list with the input's filename
