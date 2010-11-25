@@ -232,36 +232,36 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
         yield rc 
             
-    def getForFringe(self, rc):
-        """
-        This primitive will check the files in the fringe lists are on disk,
-        if not write them to disk and then update the inputs list to include
-        all members of the fringe list for stacking.
-        
-        """
-        try:
-            log.status('*STARTING* to prepare the fringe list for stacking')
-            # @@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
-            stackid = IDFactory.generateStackableID(rc.inputs[0].ad, 
-                                                    stackType='FringeList')
-            log.fullinfo('getting stack '+stackid, category='stack')
-            # Getting the reduction context to update the appropriate cache 
-            # files with the current inputs
-            rc.rqStackGet(stackType='FringeList')
-            # Yielding the reduction context so it can perform the 
-            # requested updates
-            yield rc
-            # Retrieving the updated stack list
-            stack = rc.getStack(stackid).filelist
-            # Loading the file in the stack into memory
-            print 'prim_G_I237: stack',stack
-            rc.reportOutput(stack)
-            
-            log.status('*FINISHED* preparing the fringe list for stacking')
-        except:
-            log.critical('Problem getting stack '+stackid, category='stack')
-            raise 
-        yield rc
+#    def getForFringe(self, rc):
+#        """
+#        This primitive will check the files in the fringe lists are on disk,
+#        if not write them to disk and then update the inputs list to include
+#        all members of the fringe list for stacking.
+#        
+#        """
+#        try:
+#            log.status('*STARTING* to prepare the fringe list for stacking')
+#            #@@REFERENCE IMAGE @@NOTE: to pick which stackable list to get
+#            stackid = IDFactory.generateStackableID(rc.inputs[0].ad, 
+#                                                    stackType='FringeList')
+#            log.fullinfo('getting stack '+stackid, category='stack')
+#            #Getting the reduction context to update the appropriate cache 
+#            #files with the current inputs
+#            rc.rqStackGet(stackType='FringeList')
+#            #Yielding the reduction context so it can perform the 
+#            #requested updates
+#            yield rc
+#            #Retrieving the updated stack list
+#            stack = rc.getStack(stackid).filelist
+#            #Loading the file in the stack into memory
+#            print 'prim_G_I237: stack',stack
+#            rc.reportOutput(stack)
+#            
+#            log.status('*FINISHED* preparing the fringe list for stacking')
+#        except:
+#            log.critical('Problem getting stack '+stackid, category='stack')
+#            raise 
+#        yield rc
     
     def dmakeFringeFrame(self, rc):
         try:
@@ -502,37 +502,37 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
         
-    def setForFringe(self, rc):
-        """ 
-        This primitive will update the list of files with the same observationID
-        to be combined into a single fringe frame. This list file is cached 
-        between calls to reduce, thus allowing for one-file-at-a-time processing. 
-        The fringe file will be produced with the makeFringe primitive and
-        later used to perform the fringe correction of the input science images 
-        in the fringeCorrect primitive. 
-        """
-        try:
-            log.status('*STARTING* to update/create the fringe list')
-            for ad in rc.getInputs(style='AD'):
-                fringeID = IDFactory.generateAstroDataID(ad)
-                print 'fringeID: ',repr(fringeID)
-                listID = IDFactory.generateFringeListID(ad)
-                print 'listID: ',repr(listID)
-                
-                rc.fringes.add(listID, fringeID, ad)
-                rc.rqStackUpdate(stackType='FringeList')
-                print 'prim_G_I390: ',rc.inputsAsStr()
-                # Writing the files in the stack to disk if not all ready there
-                if not os.path.exists(ad.filename):
-                    log.fullinfo('temporarily writing '+ad.filename+\
-                                 ' to disk', category='stack')
-                    ad.write(ad.filename)
-                    
-            log.status('*FINISHED* updating/creating the fringe list')
-        except:
-            raise 
-        
-        yield rc
+#    def setForFringe(self, rc):
+#        """ 
+#        This primitive will update the list of files with the same observationID
+#        to be combined into a single fringe frame. This list file is cached 
+#        between calls to reduce, thus allowing for one-file-at-a-time processing. 
+#        The fringe file will be produced with the makeFringe primitive and
+#        later used to perform the fringe correction of the input science images 
+#        in the fringeCorrect primitive. 
+#        """
+#        try:
+#            log.status('*STARTING* to update/create the fringe list')
+#            for ad in rc.getInputs(style='AD'):
+#                fringeID = IDFactory.generateAstroDataID(ad)
+#                print 'fringeID: ',repr(fringeID)
+#                listID = IDFactory.generateFringeListID(ad)
+#                print 'listID: ',repr(listID)
+#                
+#                rc.fringes.add(listID, fringeID, ad)
+#                rc.rqStackUpdate(stackType='FringeList')
+#                print 'prim_G_I390: ',rc.inputsAsStr()
+#                # Writing the files in the stack to disk if not all ready there
+#                if not os.path.exists(ad.filename):
+#                    log.fullinfo('temporarily writing '+ad.filename+\
+#                                 ' to disk', category='stack')
+#                    ad.write(ad.filename)
+#                    
+#            log.status('*FINISHED* updating/creating the fringe list')
+#        except:
+#            raise 
+#        
+#        yield rc
     
     def shift(self, rc):
         '''
