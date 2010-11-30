@@ -13,7 +13,7 @@ addVARDQ
 #showInputs
 setStackable
 
-avgCombine
+averageCombine
 
 #writeOutputs
 storeProcessedBias(clob=True)
