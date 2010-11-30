@@ -93,6 +93,7 @@ class PRSProxy(object):
     found = False
     version = None
     finished = False
+    registered = False
     
     prsport = 53530
     reducecmds = None
@@ -254,9 +255,17 @@ class PRSProxy(object):
         return newProxy
         
     def unregister(self):
-        self.prs.unregister(os.getpid())
+        if self.registered:
+            import traceback
+            traceback.print_stack()
+            self.prs.unregister(os.getpid())
+            self.registered=False
+        else:
+            print "WARNING: call to unregister from adcc while not registered"
+            
     def register(self):
         self.prs.register(os.getpid())
+        self.registered = True
         
     def __del__(self):
         # raise " no "

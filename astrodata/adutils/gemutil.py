@@ -1,8 +1,5 @@
-import os
+import sys,os
 
-from pyraf import iraf
-from iraf import gemini
-from iraf import gemlocal
 import mefutil
 import strutil
 import time
@@ -24,6 +21,39 @@ log = gemLog.getGeminiLog()
     appendFits (images)    
     chomp(line)
 """
+
+def pyrafLoader(rc=None):
+    """
+    This function is to load the modules needed by primitives that use pyraf. 
+    It will also ensure there are no additional prints to the console when 
+    loading the Gemini pyraf package.
+    The loaded modules are returned in the order of:
+    (pyraf, gemini, iraf.yes, iraf.no)
+    to be added to the name-space of the primitive this function is called from.
+    eg. (pyraf, gemini, yes, no)=pyrafLoader(rc)
+    
+    """
+    import pyraf
+    from pyraf import iraf
+    from iraf import gemini
+    from iraf import gmos
+    import StringIO
+    
+    # Changing the standard output so the excess prints while loading IRAF
+    # packages does not get displayed
+    SAVEOUT = sys.stdout
+    capture = StringIO.StringIO()
+    sys.stdout = capture
+    
+    # Setting the IRAF versions of True and False
+    yes = iraf.yes
+    no = iraf.no
+    
+    # This will load the gemini pyraf package    
+    gemini() 
+    gmos()    
+    
+    return (pyraf, gemini, iraf.yes, iraf.no)
 
     
 # This is used by removeExtension(), appendSuffix(), and replaceSuffix(),
@@ -61,6 +91,9 @@ def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
     @return: image name string with .fits
     @rtype: string
     """
+    # loading and bringing the pyraf related modules into the name-space
+    pyraf, gemini, yes, no = pyrafLoader()
+    iraf = pyraf.iraf
     #
     #  Make sure rawpath and mdfdir have a trailing '/'
     #

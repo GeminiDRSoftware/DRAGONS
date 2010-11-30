@@ -85,7 +85,6 @@ class ReductionObject(object):
         return retd
         
     def substeps(self, primname, context):
-        log.status("STARTING PRIMITIVE: "+ primname)
         savedLocalparms = context.localparms
         context.status = "RUNNING"
         
@@ -108,6 +107,10 @@ class ReductionObject(object):
             msg = "There is no recipe or primitive named \"%s\" in  %s" % (primname, str(repr(self)))
             self.curPrimName = prevprimname
             raise ReductionExcept(msg)
+        
+        # set type of prim for logging
+        btype = primset.btype
+        log.status("STARTING %s: %s" % (btype,primname))
                 
         context.begin(primname)
         # primset init should perhaps be called ready
@@ -135,12 +138,15 @@ class ReductionObject(object):
         self.curPrimName = prevprimname
         yield context.end(primname)
         context.localparms = savedLocalparms
-        log.status("ENDING PRIMITIVE: "+ primname)
+        log.status("ENDING %s: %s" % (btype, primname))
         yield context
         
     def runstep(self, primname, cfgobj):
         """runsetp(primitiveName, reductionContext)"""
         
+        # this is just a blocking thunk to substeps which executes the command clause
+        # @@NOTE: substeps does not execute the command clause because it yields to
+        # @@..... a caller which either runs/calls it at the top of the loop.
         for cfg in self.substeps(primname, cfgobj):
             ## call command clause
             if cfg.isFinished():
@@ -198,7 +204,7 @@ class ReductionObject(object):
 class PrimitiveSet(object):
     ro = None
     astrotype = None
-    btype = "PRIMSET"
+    btype = "PRIMITIVE"
     filename = None
     directory = None
     paramDict = None

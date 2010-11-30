@@ -4,8 +4,6 @@
 # ---PROFILER START to profile imports
 #import hotshot
 #importprof = hotshot.Profile("hotshot_edi_stats")
-import cProfile
-
 #------------------------------------------------------------------------------ 
 
 from astrodata.adutils import terminal
@@ -190,6 +188,9 @@ stkindfile = "./.reducecache/stkindex.pkl"
 terminal.forceWidth = options.forceWidth
 terminal.forceHeight = options.forceHeight
 
+if options.recipename == "USER":
+    options.verbose=6
+    
 #---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
 log = gemLog.getGeminiLog(logName=options.logName,verbose=options.verbose,debug=options.debug)
 #-------------------------------------------------------------------------
@@ -963,4 +964,7 @@ for infiles in allinputs: #for dealing with multiple files.
     # don't leave the terminal in another color/mode, that's rude
     
     reduceServer.finished=True
-    prs.unregister()
+    try:
+        prs.unregister()
+    except:
+        log.warning("Trouble unregistering from adcc shared services.")
