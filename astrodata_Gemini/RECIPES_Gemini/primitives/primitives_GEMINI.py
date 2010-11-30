@@ -11,41 +11,10 @@ import pyfits as pf
 from datetime import datetime
 import shutil
 from primitives_GENERAL import GENERALPrimitives
+from astrodata.adutils.gemutil import pyrafLoader
 
 log = gemLog.getGeminiLog()
 
-def pyrafLoader(rc=None):
-    """
-    This function is to load the modules needed by primitives that use pyraf. 
-    It will also ensure there are no additional prints to the console when 
-    loading the Gemini pyraf package.
-    The loaded modules are returned in the order of:
-    (pyraf, gemini, iraf.yes, iraf.no)
-    to be added to the name-space of the primitive this function is called from.
-    eg. (pyraf, gemini, yes, no)=pyrafLoader(rc)
-    
-    """
-    import pyraf
-    from pyraf import iraf
-    from iraf import gemini
-    from iraf import gmos
-    import StringIO
-    
-    # Changing the standard output so the excess prints while loading IRAF
-    # packages does not get displayed
-    SAVEOUT = sys.stdout
-    capture = StringIO.StringIO()
-    sys.stdout = capture
-    
-    # Setting the IRAF versions of True and False
-    yes = iraf.yes
-    no = iraf.no
-    
-    # This will load the gemini pyraf package    
-    gemini() 
-    gmos()    
-    
-    return (pyraf, gemini, iraf.yes, iraf.no)
 
 class GEMINIException:
     """ This is the general exception the classes and functions in the
