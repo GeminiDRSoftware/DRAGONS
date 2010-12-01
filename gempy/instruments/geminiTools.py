@@ -11,6 +11,8 @@ import tempfile
 
 log=gemLog.getGeminiLog() 
 
+orig_file_names_dict = None
+
 def biassecStrTonbiascontam(biassec, ad):
     """ 
     This function works with nbiascontam() of the CLManager. 
@@ -114,27 +116,75 @@ def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
                         postpend='_prepared', strip=True)
         result: 'N20020214S022_prepared.fits'
     
+    NOTE: Original (those passed into reduce initially) file names may NOT have 
+          repeated strings that contain '_'.
+    ie. no file names like: 'filename_1_1.fits' or 'filename_name_name1.fits'
+    
     """
     # Strip off any path that the input file name might have
     infilename = os.path.basename(origfilename)
     
-    # If a value for postpend was passed in
-    if postpend != '':
-        # if stripping was requested, then do so using stripPostfix function
-        if strip:
-            infilename = stripPostfix(infilename)
+    # Retrieving the global original filename dictionary
+    global orig_file_names_dict
+    # instantiating and adding first entry to dict 
+    if not orig_file_names_dict:
+        orig_file_names_dict = {}
+        # Adding a nested dictionary of lists for the postpends and prepends
+        # that will be added to the filename 
+        orig_file_names_dict[infilename] = {'postpends':[],'prepends':[]}
         # Split up the filename and the file type ie. the extension
         (name,filetype) = os.path.splitext(infilename)
+        if postpend != '':
+            orig_file_names_dict[infilename]['postpends'].append(postpend)
+        if prepend !='':
+            orig_file_names_dict[infilename]['prepends'].append(prepend)
         # Create output filename
-        outFileName = name+postpend+filetype
-        
-    elif prepend !='':
-        if strip:
-            infilename = stripPostfix(infilename)
+        outFileName = prepend+name+postpend+filetype
+        return outFileName
+    
+    # Dict exists so only adding new entry if it is indeed new 
+    # (ie. not in there yet)
+    elif orig_file_names_dict:
+        for key in orig_file_names_dict:
+            if infilename[0:-5].find(key[0:-5])>=0:
+                # Stripping any post/prepends from the input filename to see if
+                # it is actually just a modified version of one in the dict all ready
+                check_name = infilename
+                for val in orig_file_names_dict[key]['postpends']:
+                    check_name = check_name.replace(val,'')
+                for val in orig_file_names_dict[key]['prepends']:
+                    check_name = check_name.replace(val,'')
+                # Turns out the input filename matched the base name in the dict
+                # so perform the desired manipulation
+                if check_name == key:
+                    # Log that the input had a match found
+                    log.fullinfo('Input filename '+infilename+' was found to '+
+                                 'be an updated version of '+key)
+                    # If strip requested, go back to root name (ie. key in dict)
+                    if strip:
+                        infilename  = key
+                    # Split up the filename and the file type ie. the extension
+                    (name,filetype) = os.path.splitext(infilename)
+                    if postpend != '':
+                        orig_file_names_dict[key]['postpends'].append(postpend)
+                    if prepend !='':
+                        orig_file_names_dict[key]['prepends'].append(prepend)
+                    # Create output filename
+                    outFileName = prepend+name+postpend+filetype
+                    return outFileName
+                            
+        # Loop completed and input filename didn't match any basenames
+        orig_file_names_dict[infilename] = {'postpends':[],'prepends':[]}
+        # Split up the filename and the file type ie. the extension
         (name,filetype) = os.path.splitext(infilename)
-        outFileName = prepend+name+filetype
-        
-    return outFileName
+        if postpend != '':
+            orig_file_names_dict[infilename]['postpends'].append(postpend)
+        if prepend !='':
+            orig_file_names_dict[infilename]['prepends'].append(prepend)
+        # Create output filename
+        outFileName = prepend+name+postpend+filetype
+        return outFileName
+    
 
 def LogDictParams(indict):
         """ A function to log the parameters in a provided dictionary.  Main use
@@ -521,10 +571,12 @@ class CLManager(object):
                 # Name of file written to disk for input to CL script
                 storename = self._preCLcachestorenames[i]  
                 # Name of file CL wrote to disk
-                cloutname = self.postpend + storename  
+                cloutname = self.postpend + storename 
+                log.critical('gemTools525: cloutname='+cloutname) 
                 # Name I want the file to be
                 finalname = fileNameUpdater(self._preCLfilenames[i], 
-                                            postpend= self.postpend, strip=False)  
+                                            postpend= self.postpend, strip=False)
+                log.critical('gemTools529: finalname='+finalname)  
                 # Renaming the IRAF written file to the name we want
                 os.rename(cloutname, finalname )
                 
