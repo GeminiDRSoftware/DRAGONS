@@ -1,6 +1,6 @@
 #Author: Kyle Mede, June 2010
 #from Reductionobjects import Reductionobject
-from primitives_GEMINI import GEMINIPrimitives, pyrafLoader
+from primitives_GMOS import GMOSPrimitives, pyrafLoader
 # All GEMINI IRAF task wrappers.
 import time
 from astrodata.adutils import filesystem
@@ -26,11 +26,11 @@ class GMOS_SPECTException:
         when the exception is not caught."""
         return self.message
 
-class GMOS_SPECTPrimitives(GEMINIPrimitives):
+class GMOS_SPECTPrimitives(GMOSPrimitives):
     astrotype = "GMOS_SPECT"
     
     def init(self, rc):
-        GEMINIPrimitives.init(self, rc)
+        GMOSPrimitives.init(self, rc)
         return rc
     
     def display(self, rc):
@@ -55,7 +55,7 @@ class GMOS_SPECTPrimitives(GEMINIPrimitives):
         yield rc
     
     #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   
+       
 #$$$$$$$$$$$$$$$$$$$$ NEW STUFF BY KYLE FOR: PREPARE $$$$$$$$$$$$$$$$$$$$$
     '''
     These are the primitives for 'prepare' that are just to check how the general primitives in 
