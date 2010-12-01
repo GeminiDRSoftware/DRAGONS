@@ -548,7 +548,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.fullinfo('   '+os.path.basename(f))
             yield rc
         except:
-            log.critical('Problem getting stack '+stackid, category='stack')
+            log.critical('Problem getting stack '+sid, category='stack')
 
             raise 
         yield rc
@@ -742,7 +742,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(ad.filename, 
                                                    postpend=rc['postpend'], 
-                                                   strip=True)
+                                                   strip=False)
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
