@@ -16,7 +16,7 @@ from xml.dom import minidom
 import xmlrpclib
 from copy import copy
 
-from CmdQueue import TSCmdQueue
+from astrodata.adutils.reduceutils.CmdQueue import TSCmdQueue
 from astrodata.StackKeeper import StackKeeper
 
 # @@DEPEND: PIL
@@ -30,8 +30,8 @@ import numpy
 import numpy as np
 from numpy import where
 from datetime import datetime
-import prsproxyweb
-from prsproxyutil import calibrationSearch, CALMGR, CALTYPEDICT,urljoin
+from astrodata.adutils.reduceutils import prsproxyweb
+from astrodata.adutils.reduceutils.prsproxyutil import calibrationSearch, CALMGR, CALTYPEDICT,urljoin
 
 from astrodata import AstroData
 
@@ -209,7 +209,7 @@ class ReduceInstanceManager(object):
 
                         im = numpy2im(data)
                         im = im.transpose(Image.FLIP_TOP_BOTTOM)
-                        from CacheManager import get_cache_dir,put_cache_file
+                        from astrodata.adutils.reduceutils.CacheManager import get_cache_dir,put_cache_file
                         tdir = get_cache_dir("adcc.display")
                         dispname = "sci%d-%s_%d.png" % (sci.extver(), 
                                                      sci.data_label(),
