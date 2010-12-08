@@ -95,9 +95,10 @@ class ReductionObject(object):
         # will be NONE if there are no current inputs, maintain current
         # curPrimType
         if correctPrimType and correctPrimType != self.curPrimType:
+            print "RO98:", repr(correctPrimType), repr(self.curPrimType)
             newprimset  = self.recipeLib.retrievePrimitiveSet(astrotype=correctPrimType)
             self.addPrimSet(newprimset)
-            self.curPrimType = newprimset.astrotype
+            self.curPrimType = correctPrimType
         self.recipeLib.checkAndBind(self, primname, context=context) 
         # print "substeps(%s,%s)" % (primname, str(cfgobj))
         primset = self.getPrimSet(primname)
@@ -176,6 +177,11 @@ class ReductionObject(object):
         newprimset.paramDict = paramdict0               
         
     def addPrimSet(self,primset):
+        if type(primset) == list:
+            for ps in primset:
+                self.addPrimSet(ps)
+            return
+            
         if primset.astrotype == None:
             raise ReductionExcept("Primitive Set astrotype is None, fatal error, corrupt configuration")
         if primset.btype == "RECIPE":
@@ -273,3 +279,128 @@ class PrimitiveSet(object):
             for bcls in cls.__bases__:
                 bcls.getParentModules(self, bcls, appendList)
         return appendList
+
+def commandClause(ro, coi):
+    global prs
+    
+    coi.processCmdReq()
+    while (coi.paused):
+        time.sleep(.100)
+    if coi.finished:
+        return
+    
+    #process calibration requests
+    for rq in coi.rorqs:
+        rqTyp = type(rq)
+        msg = 'REDUCE:\n'
+        msg += '-'*30+'\n'
+        if rqTyp == CalibrationRequest:
+            fn = rq.filename
+            typ = rq.caltype
+            calname = coi.getCal(fn, typ)
+            # print "r399:", "handling calibrations"
+            if calname == None:
+                # Do the calibration search
+                calurl = None
+                if usePRS and prs == None:
+                    # print "r454: getting prs"
+                    prs = Proxies.PRSProxy.getADCC()
+                    
+                if usePRS:
+                    calurl = prs.calibrationSearch( rq )
+                
+                # print "r396:", calurl
+                if calurl == None:
+                    # @@NOTE: should log no calibrations found
+                    raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
+                    break
+
+                msg += 'A suitable %s found:\n' %(str(typ))
+                
+                storenames = {"bias":"retrievedbiases",
+                              "flat":"retrievedflats"
+                              }
+                calfname = os.path.join(coi[storenames[typ]], os.path.basename(calurl))
+                if os.path.exists(calfname):
+                    coi.addCal(fn, typ, calfname)
+                else:
+                    coi.addCal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
+                coi.persistCalIndex( calindfile )
+                calname = calurl
+            else:
+                msg += '%s already stored.\n' %(str(typ))
+                msg += 'Using:\n'
+
+            msg += '%s%s%s' %( os.path.dirname(calname), os.path.sep, os.path.basename(calname))
+
+            #print msg
+            #print '-'*30
+
+        elif rqTyp == UpdateStackableRequest:
+            coi.stackAppend(rq.stkID, rq.stkList, stkindfile)
+            coi.persistStkIndex( stkindfile )
+        elif rqTyp == GetStackableRequest:
+            pass
+            # Don't actually do anything, because this primitive allows the control system to
+            #  retrieve the list from another resource, but reduce lets ReductionContext keep the
+            # cache.
+            #print "RD172: GET STACKABLE REQS:", rq
+        elif rqTyp == DisplayRequest:
+            # process display request
+            nd = rq.toNestedDicts()
+            #print "r508:", repr(nd)
+            if usePRS and prs == None:
+                # print "r454: getting prs"
+                prs = Proxies.PRSProxy.getADCC()
+            prs.displayRequest(nd)
+                
+                   
+        elif rqTyp == ImageQualityRequest:
+            # Logging returned Image Quality statistics
+            log.stdinfo(str(rq), category='IQ')
+            log.stdinfo('-'*40, category='IQ')
+            #@@FIXME: All of this is kluge and will not remotely reflect how the 
+            # RecipeProcessor will deal with ImageQualityRequests.
+            if True:
+                #@@FIXME: Kluge to get this to work.
+                dispFrame = 0
+                if frameForDisplay > 0:
+                    dispFrame = frameForDisplay - 1
+
+                st = time.time()
+                if (useTK):
+                    iqlog = "%s: %s = %s\n"
+                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ellMean)
+                    seeing = iqlog % (gemdate(timestamp=rq.timestamp),"seeing", rq.fwhmMean)
+                    log.status(ell)
+                    log.status(seeing)
+                    timestr = gemdate(timestamp = rq.timestamp)
+
+                    cw.iqLog(co.inputs[0].filename, '', timestr)
+                    cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
+                    cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
+                    cw.iqLog('', '-'*14, timestr)
+               
+               # $$$ next three lines are commented out as the display server
+               # $$$ is not in use anymore.
+               # elif ds.ds9 is not None:
+               #     dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
+               #     ds.markText( 0, 2200, dispText )
+
+
+                else:    
+                # this was a kludge to mark the image with the metric 
+                # The following i)s annoying IRAF file methodology.
+                    tmpFilename = 'tmpfile.tmp'
+                    tmpFile = open( tmpFilename, 'w' )
+                    coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
+                                                                     'ell':str(rq.ellMean)}
+                    tmpFile.write( coords )
+                    tmpFile.close()
+                    #print 'r165: importing iraf again'
+                    import pyraf
+                    from pyraf import iraf  
+                    iraf.tvmark( frame=dispFrame,coords=tmpFilename,
+                    pointsize=0, color=204, label=pyraf.iraf.yes )
+                et = time.time()
+                #print 'RED422:', (et - st)

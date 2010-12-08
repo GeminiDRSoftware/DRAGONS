@@ -40,15 +40,20 @@ def grab(name, subdir = "" ):
             div = divcand
             break
             
-    tocdivs= div.getElementsByTagName("table")
-    for divcand in tocdivs:
-        if divcand.getAttribute("class") == "toc":
-            
-            div.removeChild(divcand)
-            break
-            
+    try:
+        tocdivs= div.getElementsByTagName("table")
+        for divcand in tocdivs:
+            if divcand.getAttribute("class") == "toc":
+
+                div.removeChild(divcand)
+                break
+    except AttributeError:
+        pass # page has no TOC
+                    
     if div == None:
-        print 'Article %s has no div with class="WIKIDOC"' % name
+        print ('ERROR: Article %s has no div with class="WIKIDOC"' % name +
+               "\nUse {{START-WIKIDOC}} and {{END-WIKIDOC}} templates for text "
+               "to be included in document.")
         return 
     def killLink(node):
         child = node.firstChild

@@ -8,10 +8,11 @@ import pyfits as pf
 import numpy as np
 from copy import deepcopy
 import astrodata
-from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 
-log = gemLog.getGeminiLog() 
+# LOGGER: do not log from this module, raise exception and log in caller
+# from astrodata.adutils import gemLog
+# log = gemLog.getGeminiLog() 
 
 class ArithExcept:
     def __init__(self, msg='Exception Raised in arith toolbox'):
@@ -184,9 +185,10 @@ def div(numerator, denominator):
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI extension'
-                                 +str(extver)+' of the input '
-                                 +num.filename+' and '+den.filename)
+                    # DO NOT LOG FROM THIS MODULE
+                    #log.critical('Arrays are different sizes for SCI extension'
+                    #             +str(extver)+' of the input '
+                    #             +num.filename+' and '+den.filename)
                     raise ArithExcept('An error occurred while performing '+
                                       'the div task')
             except:
@@ -195,8 +197,9 @@ def div(numerator, denominator):
     # If the input was not of type astrodata, float, float list or dictionary
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.div() only accepts inputB of types AstroData, '+
-                     'list, float or dict, '+str(type(den))+' passed in')    
+        # DO NOT LOG FROM THIS MODULE
+        # log.critical('arith.div() only accepts inputB of types AstroData, '+
+        #              'list, float or dict, '+str(type(den))+' passed in')    
         raise ArithExcept('An error occurred while performing the div task')  
     # Return the fully updated output astrodata object      
     return out       
@@ -360,9 +363,10 @@ def mult(inputA, inputB):
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI '+
-                                 'extension '+i+' of the input '
-                                 +inA.filename+' and '+inB.filename)
+                    # DO NOT LOG FROM THIS MODULE
+                    # log.critical('Arrays are different sizes for SCI '+
+                    #              'extension '+i+' of the input '
+                    #             +inA.filename+' and '+inB.filename)
                     raise ArithExcept('An error occurred while performing an'+
                                       ' mult task')
             except:
@@ -371,8 +375,9 @@ def mult(inputA, inputB):
     # If the input was not of type astrodata, float, float list or dictionary
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.mult() only accepts inputB of types AstroData, '+
-                     'list and float, '+str(type(inB))+' passed in')    
+        # DO NOT LOG FROM THIS MODULE
+        # log.critical('arith.mult() only accepts inputB of types AstroData, '+
+        #             'list and float, '+str(type(inB))+' passed in')    
         raise ArithExcept('An error occurred while performing the mult task')      
     # Return the fully updated output astrodata object 
     return out   
@@ -488,9 +493,10 @@ def add(inputA, inputB):
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI '+
-                                 'extension '+i+' of the input '
-                                 +inA.filename+' and '+inB.filename)
+                    # DO NOT LOG FROM THIS MODULE
+                    # log.critical('Arrays are different sizes for SCI '+
+                    #             'extension '+i+' of the input '
+                    #              +inA.filename+' and '+inB.filename)
                     raise ArithExcept('An error occurred while performing '+
                                       'the add task')
             except:
@@ -499,8 +505,9 @@ def add(inputA, inputB):
     # If the input was not of type astrodata or float,
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.add() only accepts inputB of types AstroData '+
-                     'and float, '+str(type(inB))+' passed in')    
+        # DO NOT LOG FROM THIS MODULE
+        # log.critical('arith.add() only accepts inputB of types AstroData '+
+        #              'and float, '+str(type(inB))+' passed in')    
         raise ArithExcept('An error occurred while performing an arith task')            
     # Return the fully updated output astrodata object 
     return out     
@@ -617,9 +624,10 @@ def sub(inputA, inputB):
                 # If arrays are different sizes then make a critical log message
                 # and raise and exception
                 else:
-                    log.critical('Arrays are different sizes for SCI '+
-                                 'extension '+i+' of the input '
-                                 +inA.filename+' and '+inB.filename)
+                    # DO NOT LOG FROM THIS MODULE
+                    # log.critical('Arrays are different sizes for SCI '+
+                    #              'extension '+i+' of the input '
+                    #              +inA.filename+' and '+inB.filename)
                     raise ArithExcept('An error occurred while performing '+
                                       'the sub task')
             except:
@@ -628,8 +636,9 @@ def sub(inputA, inputB):
     # If the input was not of type astrodata or float,
     # issue a critical log message and raise and exception
     else:
-        log.critical('arith.sub() only accepts inputB of types AstroData '+
-                     'and float, '+str(type(inB))+' passed in')    
+        # DO NOT LOG FROM THIS MODULE
+        # log.critical('arith.sub() only accepts inputB of types AstroData '+
+        #              'and float, '+str(type(inB))+' passed in')    
         raise ArithExcept('An error occurred while performing an arith task')            
     # Return the fully updated output astrodata object 
     return out 

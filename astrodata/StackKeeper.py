@@ -153,6 +153,7 @@ class StackKeeper(object):
             scopy = copy(stacksDict[ID].filelist)
             self.lock.release() 
             return scopy
+            
     def load(self, cachefile = None):
         """This member loads the persistent stack for the given cachefile
         name. NOTE: the contents of the cachefile will stomp any in-memory
@@ -163,10 +164,13 @@ class StackKeeper(object):
             raise SKExcept("Cannot load stack list, cachefile == None")
         self.lock.acquire()
         try:
-            pfile = open(cachefile, "r")
-            # print "SK131:", cachefile
-            stacksDict = pickle.load(pfile)
-            pfile.close()
+            if os.path.exists(cachefile):
+                pfile = open(cachefile, "r")
+                # print "SK131:", cachefile
+                stacksDict = pickle.load(pfile)
+                pfile.close()
+            else:
+                stacksDict = {}
             # @@NOTE: consider doing union between in memory stack and loaded one
             # @@NOTE: this would only be an issue if there are either
             # @@NOTE:  two or more adcc instances running (which has to be forced)

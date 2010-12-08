@@ -968,3 +968,4 @@ for infiles in allinputs: #for dealing with multiple files.
         prs.unregister()
     except:
         log.warning("Trouble unregistering from adcc shared services.")
+        raise

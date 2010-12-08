@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-print "ADCC2: starting adcc"
 import exceptions
 from optparse import OptionParser
 import os, sys
@@ -35,8 +34,6 @@ import prsproxyweb
 from prsproxyutil import calibrationSearch, CALMGR, CALTYPEDICT,urljoin
 
 from astrodata import AstroData
-
-print "ADCC Started:", " ".join(sys.argv)
 
 parser = OptionParser()
 
@@ -121,9 +118,9 @@ class ReduceInstanceManager(object):
         can manage it's own and their processes. 
         """
         self.numinsts +=1
-        print "prs73 reg:",self.numinsts 
+        print "registering client %d, number currently registered: %s" % (pid, self.numinsts )
         self.finished = False
-        print "prs75:",repr(details)
+        print "registering client details:",repr(details)
         self.reducedict.update({pid:details})
         # self.reducecmds.prsready()
         
@@ -131,7 +128,7 @@ class ReduceInstanceManager(object):
         self.numinsts -= 1
         if pid in self.reducedict:
             del self.reducedict[pid] 
-        print "prs17 unreg:",self.numinsts 
+        print "unregesting client %d, number remaining registered %d" % (pid, self.numinsts)
         if self.numinsts< 0:
             self.numinsts = 0
         if self.numinsts == 0:

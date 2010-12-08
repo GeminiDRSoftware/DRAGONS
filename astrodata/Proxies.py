@@ -6,6 +6,9 @@ import os
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 import select
 import socket
+from astrodata.adutils import gemLog
+
+log = gemLog.getGeminiLog()
 
 PDEB = False
 
@@ -112,6 +115,7 @@ class PRSProxy(object):
         
     @classmethod
     def getADCC(cls, reduceServer = None):
+        PDEB=True
         if  type(cls._class_prs) != type(None):
             proxy = cls._class_prs
             start = False
@@ -142,7 +146,7 @@ class PRSProxy(object):
                     details =  {"port":reduceServer.listenport}
                 else:
                     details = {}
-                newProxy.prs.register(os.getpid(), details)
+                newProxy.register( details)
                 if PDEB:
                     print "P120: Proxy found"
             except socket.error:
@@ -193,7 +197,7 @@ class PRSProxy(object):
                 details =  {"port":reduceServer.listenport}
             else:
                 details = {}
-            newProxy.prs.register(os.getpid(), details)
+            newProxy.register(os.getpid(), details)
             if PDEB:
                 print "P120: Proxy found"
         except socket.error:
@@ -255,17 +259,18 @@ class PRSProxy(object):
         return newProxy
         
     def unregister(self):
+        print "P262 self.registered=", repr(self.registered)
         if self.registered:
-            import traceback
-            traceback.print_stack()
             self.prs.unregister(os.getpid())
             self.registered=False
         else:
-            print "WARNING: call to unregister from adcc while not registered"
+            log.warning("WARNING: call to unregister from adcc while not registered"
+                      "\nGenerally harmless, but in case of bug adcc may be left running.")
             
-    def register(self):
-        self.prs.register(os.getpid())
+    def register(self, details = None):
+        self.prs.register(os.getpid(), details)
         self.registered = True
+        print "P275 self.registered=", repr(self.registered)
         
     def __del__(self):
         # raise " no "

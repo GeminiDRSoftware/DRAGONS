@@ -289,6 +289,10 @@ class ReductionContext(dict):
     def clearInput(self):
         self.inputs = []
         
+    def addInputs(self, filelist):
+        for f in filelist:
+            self.addInput(f)
+            
     def addInput(self, filenames):
         '''
         Add input to be processed the next batch around. If this is the first input being added,
@@ -1472,10 +1476,10 @@ class RecipeLibrary(object):
             astrotype = k[0]
         # print "RM1272:", astrotype
         primset = None
-        # print "RM1275:", repr(centralPrimitivesIndex)
+        # print "RM1475:", repr(centralPrimitivesIndex)
         if (astrotype != None) and (astrotype in centralPrimitivesIndex):
             primdeflist = centralPrimitivesIndex[astrotype]
-            # print "RM1276:", repr(primdeflist)
+            # print "RM1478:", repr(primdeflist)
             primlist = []
             for primdef in primdeflist:
                 rfilename = primdef[0] # the first in the tuple is the primset file
