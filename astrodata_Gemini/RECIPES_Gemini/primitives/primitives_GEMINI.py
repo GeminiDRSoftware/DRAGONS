@@ -694,8 +694,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         for sid in sidset:
             stacklist = rc.getStack(sid) #.filelist
             log.status('Stack for stack id=%s' % sid)
-            for f in stacklist:
-                log.status('   '+os.path.basename(f))
+            if len(stacklist)>0:
+                for f in stacklist:
+                    log.status('    '+os.path.basename(f))
+            else:
+                log.status("    no datasets in list")
         yield rc
             
     def sleep(self, rc):
