@@ -115,7 +115,7 @@ class PRSProxy(object):
         
     @classmethod
     def getADCC(cls, reduceServer = None):
-        PDEB=True
+        import sys
         if  type(cls._class_prs) != type(None):
             proxy = cls._class_prs
             start = False
@@ -125,7 +125,9 @@ class PRSProxy(object):
 
         found = False
         newProxy = PRSProxy(reduceServer = reduceServer)
-                
+           
+        if not found:
+            sys.stdout.write("Contacting ADCC")
         while(not found):
             try:
                 newProxy.version = newProxy.get_version()
@@ -151,10 +153,10 @@ class PRSProxy(object):
                     print "P120: Proxy found"
             except socket.error:
                 newProxy.found = False
-                print ("Waiting for ADCC...")
+                sys.stdout.write(".")
                 sleep(.1)
                 # try again
-
+        print "\nFound ADCC"
 
         return newProxy
 
@@ -270,11 +272,11 @@ class PRSProxy(object):
     def register(self, details = None):
         self.prs.register(os.getpid(), details)
         self.registered = True
-        print "P275 self.registered=", repr(self.registered)
+        # print "P275 self.registered=", repr(self.registered)
         
     def __del__(self):
         # raise " no "
-        print "P262: deleting proxy\n"*20
+        # print "P262: deleting proxy\n"*20
         import traceback
         if (PDEB):
             print "P153: self.found =",self.found, id(self)
