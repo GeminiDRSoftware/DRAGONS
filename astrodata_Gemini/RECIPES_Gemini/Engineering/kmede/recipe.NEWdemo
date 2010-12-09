@@ -4,10 +4,10 @@ showCals
 
 prepare
 
+overscanCorrect
+
 getProcessedBias
 getProcessedFlat
-
-overscanCorrect
 
 biasCorrect
 flatCorrect

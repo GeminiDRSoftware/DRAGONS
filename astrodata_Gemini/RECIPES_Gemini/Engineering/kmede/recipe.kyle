@@ -1,8 +1,8 @@
+
 prepare
+overscanCorrect
+addVARDQ
 #writeOutputs
-#NEWgetProcessedBias
-#measureIQ
-setForFringe
-makeFringe
-#setStackable
-#getStackable
+getProcessedBias
+#localGetProcessedBias
+biasCorrect
