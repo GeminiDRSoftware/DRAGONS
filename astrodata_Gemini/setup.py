@@ -49,6 +49,7 @@ for s in ['.']+[RECIPENAME]:
                                      os.path.join(s,'INSTALL'),
                                      ])
 PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'recipe.*')))
+#  What about "recipeIndex.TEST.py"?
 PACKAGE_DATA[PACKAGENAME].append(os.path.join(RECIPENAME,'primitives','primitives_List.txt'))
 
 
@@ -102,6 +103,7 @@ setup ( name=PACKAGENAME,
             'Topic :: Gemini',
             'Topic :: Data Reduction',
             'Topic :: Astronomy',
+            'Topic :: Astrodata'
             ],
        )
 
