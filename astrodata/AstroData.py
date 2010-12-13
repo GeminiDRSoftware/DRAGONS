@@ -354,7 +354,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
                 exttmp = self.hdulist[ext]
                 # exttmp = hdul[ext]
             except KeyError:
-                print "gd105: keyerror:[%s]" % str(ext)
+                print 'Extension "%s" does not exist' % str(ext)
                 # selector not valid
                 self.relhdul()
                 return None
@@ -743,8 +743,16 @@ Note, the variable "ad" is generally used to represent an already constructed As
         
     
     def getIntExt(self, extension, hduref=False):
+        """getInxExt takes an extension index, either an integer
+        or (EXTNAME, EXTVER) tuple, and returns the index location
+        of the extension.  If hduref is set to True, then the index
+        returns is relative to the HDUList (0=PHU, 1=First non-PHU extension).
+        If hduref == False (the default) then the index returned is relative to 
+        the AstroData numbering convention, where index=0 is the first non-PHU
+        extension in the MEF file.
+        """
         if type(extension) == int:
-            return extension
+            return extension + 1
         if type(extension) == tuple:
             
             for i in range(1, len( self.hdulist)):
