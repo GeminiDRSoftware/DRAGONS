@@ -276,10 +276,19 @@ Note, the variable "ad" is generally used to represent an already constructed As
         else:
             if (self.hdulist != None):
                 self.hdulist.close()
-                
+    
+    def __contains__(self, ext):
+        try:
+            val = self[ext]
+            if val == None:
+                return False
+        except:
+            return False
+        return True
+                    
     def __getitem__(self,ext):
         """This function support the "[]" syntax on AstroData instances,
-        e.g. ad[("SCI,1)].  We use it to create
+        e.g. ad[("SCI",1)].  We use it to create
         AstroData objects associated with "subdata"... that is, a limited
         subset of extensions in the given MEF. e.g.::
         
@@ -354,7 +363,7 @@ Note, the variable "ad" is generally used to represent an already constructed As
                 exttmp = self.hdulist[ext]
                 # exttmp = hdul[ext]
             except KeyError:
-                print 'Extension "%s" does not exist' % str(ext)
+                # print 'Extension "%s" does not exist' % str(ext)
                 # selector not valid
                 self.relhdul()
                 return None
