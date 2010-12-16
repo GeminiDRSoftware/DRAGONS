@@ -141,7 +141,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def makeFringeFrame(self, rc):
         """
         This primitive will create a single fringe image from all the inputs.
-        $$$$$$$$ MORE $$$$$$$$$$$$$$$$
+        It utilizes the CL script gifringe to create the fringe image.
         """
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader(rc)
