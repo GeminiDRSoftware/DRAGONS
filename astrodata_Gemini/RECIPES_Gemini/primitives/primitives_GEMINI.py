@@ -783,6 +783,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             log.status('*STARTING* to standardize the structure of input data')
             
+            #$$$$ MAYBE SET THIS TO FALSE IF GMOS_IMAGE AND TRUE IF GMOS_SPEC?$$$$$$$
             # Add the MDF if not set to false
             if rc['addMDF'] is True:
                 log.debug('Calling attachMDF primitive')
