@@ -516,7 +516,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             gemt.LogDictParams(clSoftcodedParams)
             
             log.debug('calling the gmosaic CL script for inputs '+\
-                      clm.inputsAsStr)
+                      clm.inputsAsStr())
             
             gemini.gmos.gmosaic(**clParamsDict)
             
