@@ -284,16 +284,16 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adOut = ad.mult(ad['SCI'].gain(asDict=True))  
                 log.status('ad.mult completed converting the pixel units'+
                            ' to electrons')              
-
+ 
                 # Updating SCI headers
                 for ext in adOut['SCI']:
                     # Retrieving this SCI extension's gain
                     gainorig = ext.gain()
                     # Updating this SCI extension's header keys
-                    ext.SetKeyValue('GAINORIG', gainorig, 
+                    ext.header.update('GAINORIG', gainorig, 
                                        'Gain prior to unit conversion (e-/ADU)')
-                    ext.SetKeyValue('GAIN', 1.0, 'Physical units is electrons') 
-                    ext.SetKeyValue('BUNIT','electrons' , 'Physical units')
+                    ext.header.update('GAIN', 1.0, 'Physical units is electrons') 
+                    ext.header.update('BUNIT','electrons' , 'Physical units')
                     # Logging the changes to the header keys
                     log.fullinfo('SCI extension number '+str(ext.extver())+
                                  ' keywords updated/added:\n', 
@@ -315,7 +315,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     
                     # Updating then logging the change to the BUNIT 
                     # key in the VAR header
-                    ext.SetKeyValue('BUNIT','electrons squared' , 
+                    ext.header.update('BUNIT','electrons squared' , 
                                        'Physical units')
                     # Logging the changes to the VAR extensions header keys
                     log.fullinfo('VAR extension number '+str(ext.extver())+
@@ -328,6 +328,16 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
                 # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
                 adOut.historyMark('ADU2ELEC', stomp=False)
+                
+                # Updating the file name with the postpend/outsuffix for this
+                # primitive and then reporting the new file to the reduction 
+                # context.
+                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
+                adOut.filename=gemt.fileNameUpdater(ad.filename, 
+                                                    postpend=rc['postpend'], 
+                                                    strip=False)
+                log.status('File name updated to '+adOut.filename)
+                rc.reportOutput(adOut)   
                 
                 # Updating logger with time stamps
                 log.fullinfo('************************************************'
@@ -342,16 +352,6 @@ class GEMINIPrimitives(GENERALPrimitives):
                              category='header')
                 log.fullinfo('------------------------------------------------'
                              , category='header')
-                
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context.
-                log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                adOut.filename=gemt.fileNameUpdater(adOut.filename, 
-                                                    postpend=rc['postpend'], 
-                                                    strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(adOut)   
                 
             log.status('*FINISHED* converting the pixel units to electrons')
         except:
