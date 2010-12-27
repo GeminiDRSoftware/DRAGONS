@@ -776,14 +776,31 @@ Note, the variable "ad" is generally used to represent an already constructed As
                             return i
         return None
     
-    def renameExt(self, name, ver = None, force = False):
-        """The renameExt() function is needed in order to give an HDU an new EXTNAME and EXTVER based identifier.  Merely changing
-        the values in the extensions header are not sufficient, as there are in-memory properties of the HDU that are not changes when
-        the header changes.
-        WARNING: this function maniplates private (or somewhat private) 
-            HDU members, name and _extver. STSCI has been informed of the issue and has made us a special HDU function for 
-            performing the renaming.  When generally available, this new function will be used instead of manipulating the 
-            HDU's properties directly."""
+    def renameExt(self, name, ver = None, force = True):
+        """
+        The renameExt() function is used in order to give an HDU a new EXTNAME
+        and EXTVER based identifier.  Merely changing the values in the
+        extensions header are not sufficient, though the values change in the
+        pyfits Header instance, there are special HDU members which are not
+        updated. 
+        
+            Note: This member only works on single extension AstroData instances.
+        
+            WARNING: this function maniplates private (or somewhat private)  HDU
+            members, specifically "name" and "_extver". STSCI has been informed of the issue and
+            has made us a special HDU function for  performing the renaming. 
+            When generally available, this new function will be used instead of
+            manipulating the  HDU's properties directly.
+            
+        :param name: New "EXTNAME" for the given extension.
+        :type name: string
+        
+        :param ver: New "EXTVER" for the given extension
+        :type ver: int
+        """
+            
+        # @@TODO: change to use STSCI provided function.
+        
         if force != True and self.borrowedHDUList:
             raise ADExcept("cannot setExtname on subdata")
         
