@@ -28,6 +28,8 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             hdu[0].header[stdkeyDictMICHELLE['key_central_wavelength']]
         
         ret_central_wavelength = float(central_wavelength)
+        if(ret_central_wavelength < 0.0):
+            ret_central_wavelength = None
         
         return ret_central_wavelength
     
