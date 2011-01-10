@@ -1,3 +1,5 @@
+import re
+
 from astrodata import Lookups
 from astrodata import Descriptors
 
