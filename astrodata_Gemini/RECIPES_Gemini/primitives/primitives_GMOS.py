@@ -303,6 +303,33 @@ class GMOSPrimitives(GEMINIPrimitives):
             
         yield rc
 
+    def display(self, rc):
+        """ This is a primitive for displaying GMOS data.
+            It utilizes the IRAF routine gdisplay and requires DS9 to be running
+            before this primitive is called.
+        """
+        from astrodata.adutils.future import gemDisplay
+        pyraf, gemini, yes, no = pyrafLoader(rc)
+        pyraf.iraf.set(stdimage='imtgmos')
+        ds = gemDisplay.getDisplayService()
+        for i in range(0, len(rc.inputs)):   
+            inputRecord = rc.inputs[i]
+            try:
+                gemini.gmos.gdisplay( inputRecord.filename, i+1, fl_imexam=pyraf.iraf.no,
+                                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
+            except:
+                # This exception should allow for a smooth exiting if there is an 
+                # error with gdisplay, most likely due to DS9 not running yet
+                GMOSException('ERROR occurred while trying to display '+str(inputRecord.filename)
+                                    +' ensure that DS9 is running and try again')
+                
+            # this version had the display id conversion code which we'll need to redo
+            # code above just uses the loop index as frame number
+            #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
+            #    Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+            
+        yield rc
+
     def flatCorrect(self,rc):
         """
         This primitive performs a flat correction by dividing the inputs by a 
