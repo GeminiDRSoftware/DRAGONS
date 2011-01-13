@@ -102,7 +102,11 @@ class PrimInspect():
                     self.module_list.extend(ps)
         else:
             for key in primtypes:
-                self.module_list.extend(rl.retrievePrimitiveSet(astrotype = key))
+                try:
+                    self.module_list.extend(rl.retrievePrimitiveSet(astrotype = key))
+                except:
+                    self.show("${RED}ERROR: cannot load primitive set for astrotype %s${NORMAL}"
+                                    % key)
         if len(self.module_list) == 0:
             print "Found no primitive sets associated with:"
             for arg in self.options.args:
