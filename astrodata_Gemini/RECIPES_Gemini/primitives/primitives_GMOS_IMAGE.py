@@ -12,7 +12,7 @@ from primitives_GEMINI import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
-from devel.gmos import girmfringe
+from gempy.instruments import girmfringe
 import pyfits as pf
 #import numdisplay
 
@@ -56,6 +56,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def fringeCorrect(self, rc):
         """
         This primitive will scale and subtract the fringe frame from the inputs.
+        It utilizes the Python re-written version of cl script girmfringe to 
+        do the work.
         """
         
         try: 
@@ -76,7 +78,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                              'fl_statscale'   :rc['fl_statscale'],
                              'statsec'        :rc['statsec'],
                              'scale'          :rc['scale'],
-                             'outpref'        :rc['postpend'],
                              }
                 
                 # Logging values set in the parameters dictionary above
