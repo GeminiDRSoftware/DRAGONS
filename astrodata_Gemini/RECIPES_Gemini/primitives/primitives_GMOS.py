@@ -308,26 +308,71 @@ class GMOSPrimitives(GEMINIPrimitives):
             It utilizes the IRAF routine gdisplay and requires DS9 to be running
             before this primitive is called.
         """
-        from astrodata.adutils.future import gemDisplay
-        pyraf, gemini, yes, no = pyrafLoader(rc)
-        pyraf.iraf.set(stdimage='imtgmos')
-        ds = gemDisplay.getDisplayService()
-        for i in range(0, len(rc.inputs)):   
-            inputRecord = rc.inputs[i]
-            try:
-                gemini.gmos.gdisplay( inputRecord.filename, i+1, fl_imexam=pyraf.iraf.no,
-                                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr() )
-            except:
-                # This exception should allow for a smooth exiting if there is an 
-                # error with gdisplay, most likely due to DS9 not running yet
-                GMOSException('ERROR occurred while trying to display '+str(inputRecord.filename)
-                                    +' ensure that DS9 is running and try again')
-                
-            # this version had the display id conversion code which we'll need to redo
-            # code above just uses the loop index as frame number
-            #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
-            #    Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+        try:
+            #from astrodata.adutils.future import gemDisplay
+            #ds = gemDisplay.getDisplayService()
             
+            log.status('*STARTING* to display the images of the input data')
+            
+            # Loading and bringing the pyraf related modules into the name-space
+            pyraf, gemini, yes, no = pyrafLoader(rc)
+            
+            # Ensuring image buffer is large enough to handle GMOS images
+            pyraf.iraf.set(stdimage='imtgmos')              
+                
+            for i in range(0, len(rc.inputs)):  
+                # Retrieving the input object for this increment from the RC 
+                inputRecord = rc.inputs[i]
+                
+                # Creating a dictionary of the parameters set by definition of the primitive 
+                clPrimParams = {
+                'image'         :inputRecord.filename,
+                # Using the increment value (+1) for the frame value
+                'frame'         :i+1,
+                'fl_imexam'     :no,
+                # Retrieving the observatory key from the PHU
+                'observatory'   :inputRecord.ad.phuGetKeyValue('OBSERVAT')
+                                }
+                
+                # Grabbing the default parameters dictionary and updating 
+                # it with the above dictionary
+                clParamsDict = CLDefaultParamsDict('gdisplay')
+                clParamsDict.update(clPrimParams)
+                
+                # Logging the values in the prim parameter dictionaries
+                log.fullinfo('\nParameters dictated by the definition of the '+
+                         'primitive:\n', 
+                         category='parameters')
+                gemt.LogDictParams(clPrimParams)
+                
+                log.debug('Calling the gdisplay CL script for input list '+
+                              inputRecord.filename)
+                
+                try:
+                    gemini.gmos.gdisplay(**clParamsDict)
+                    
+                    if gemini.gmos.gdisplay.status:
+                        log.critical('gdisplay failed for input '+
+                                     inputRecord.filename)
+                        raise GMOSException('gdisplay failed')
+                    else:
+                        log.status('Exited the gdisplay CL script successfully')
+                        
+                except:
+                    # This exception should allow for a smooth exiting if there is an 
+                    # error with gdisplay, most likely due to DS9 not running yet
+                    log.critical('ERROR occurred while trying to display '+str(inputRecord.filename)
+                                        +', ensure that DS9 is running and try again')
+                    
+                # this version had the display id conversion code which we'll need to redo
+                # code above just uses the loop index as frame number
+                #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
+                #    Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+                
+            log.status('*FINISHED* displaying the images of the input data')
+        except:
+            log.critical('There was a problem displaying '+rc.inputsAsStr())
+            raise     
         yield rc
 
     def flatCorrect(self,rc):
@@ -994,10 +1039,10 @@ def CLDefaultParamsDict(CLscript):
     # Ensuring that if a invalide CLscript was requested, that a critical
     # log message be made and exception raised.
     if (CLscript != 'gireduce') and (CLscript != 'giflat') and \
-    (CLscript != 'gmosaic') :
+    (CLscript != 'gmosaic') and (CLscript != 'gdisplay') :
         log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
-        raise GEMINIException('The CLscript '+CLscript+
+        raise GMOSException('The CLscript '+CLscript+
                               ' does not have a default'+' dictionary')
     
     if CLscript == 'gireduce':
@@ -1138,5 +1183,33 @@ def CLDefaultParamsDict(CLscript):
             'Stdout'     :gemt.IrafStdout(),
             'Stderr'     :gemt.IrafStdout()
                        }
+    
+    if CLscript == 'gdisplay':
+        defaultParams = { 
+            'image'         :'',                # GMOS image to display, can use number if current UT
+            'frame'         :1,                 # Frame to write to
+            'output'        :'',                # Save pasted file to this name if not blank
+            'fl_paste'      :'no',              # Paste images to one for imexamine
+            'fl_bias'       :'no',              # Rough bias subtraction
+            'rawpath'       :'',                # Path for input image if not included in name
+            'gap'           :'default',         # Size of the gap between the CCDs (in pixels)
+            'z1'            :0.0,               # Lower limit if not autoscaling
+            'z2'            :0.0,               # Upper limit if not autoscaling
+            'fl_sat'        :'no',              # Flag saturated pixels
+            'fl_imexam'     :'yes',             # If possible, run imexam
+            'signal'        :'INDEF',           # Flag pixels with signal above this limit
+            'sci_ext'       :'SCI',             # Name of extension(s) to display
+            'observatory'   :'',                # Observatory (gemini-north or gemini-south)
+            'prefix'        :'auto',            # File prefix, (N/S)YYYYMMDDS if not auto
+            'key_detsec'    :'DETSEC',          # Header keyword for detector section
+            'key_datasec'   :'DATASEC',         # Header keyword for data section
+            'key_ccdsum'    :'CCDSUM',          # Header keyword for CCD binning
+            'gaindb'        :'default',         # Database with gain data
+            'verbose'       :yes,               # Verbose
+            'status'        :0,                 # Exit status (0=good)
+            'Stdout'        :gemt.IrafStdout(), 
+            'Stderr'        :gemt.IrafStdout()  
+                       }
+                                  
     return defaultParams    
     #$$$$$$$$$$$$$$$$$$$$$$$ END OF KYLES NEW STUFF $$$$$$$$$$$$$$$$$$$$$$$$$$
