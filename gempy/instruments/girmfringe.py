@@ -41,7 +41,9 @@ class GIRMFRINGEException:
         (or the default message) when the exception is not caught."""
         return self.message
 
-
+# There was talk about generalizing this module to work on all imaging data
+# rather than just GMOS images and then renaming it something like 
+# 'removeImgFringe'.  This is left as a task to look into later.
 def girmfringe(inimage, fringe, fl_statscale=False, statsec='', 
                scale=0.0):                
                 
