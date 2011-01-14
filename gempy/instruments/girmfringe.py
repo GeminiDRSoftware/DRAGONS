@@ -93,7 +93,10 @@ def girmfringe(inimage, fringe, fl_statscale=False, statsec='',
     if (statsec == '') and fl_statscale:
         imagexbin = inimage[('SCI',2)].detector_x_bin()
         fringexbin = fringe[('SCI',2)].detector_x_bin()
-        if imagexbin == fringexbin:
+        imageybin = inimage[('SCI',2)].detector_y_bin()
+        fringeybin = fringe[('SCI',2)].detector_y_bin()
+        # Ensuring images are square binned and image binning = fringe binning
+        if imagexbin == fringexbin == imageybin == fringeybin:
             # Setting to default value for 1x1 images and logging value
             if imagexbin == 1:
                 statsec = '[SCI,2][100:1900,100:4500]'
@@ -108,10 +111,10 @@ def girmfringe(inimage, fringe, fl_statscale=False, statsec='',
                              inimage.filename)
         # Logging critical message and raising exception if ccd x binning doesn't match 
         else:
-            log.critical('The CCD X binning for the input image '+inimage.filename+
+            log.critical('The CCD X and Y binning for the input image '+inimage.filename+
                          ' and the input fringe '+fringe.filename+ 
                          ' do not match.')
-            raise GIRMFRINGEException('The CCD X binning for the input image '+inimage.filename+
+            raise GIRMFRINGEException('The CCD X and Y binning for the input image '+inimage.filename+
                          ' and the input fringe '+fringe.filename+ 
                          ' do not match.')
     
