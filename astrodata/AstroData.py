@@ -98,66 +98,55 @@ class gdExcept:
 
 class AstroData(object, CalculatorInterface):
     """
-The AstroData Class which represents a dataset in memory much like any I/O 
-interface, e.g. you can provide a filename and it will construct and object
-representing that file that can be used to access information therein. It uses
-pyfits for actual data manipulation and focusses instead of representing the
-dataset as a whole and negotiating the incidental difference between datasets 
-from different instruments and modes.
+AstroData relies on the MEF file format for data storage, and pyfits structures for
+the dataset when in memory. AstroData always interprets a MEF as a  single dataset,
+with extensions available using "[]" syntax (see 
+:method:AstroData.__getitem__()<astrodata.data.AstroData>).
 
-AstroData relies on the MEF file format for data storage, and pyfits structures
-for the dataset when in memory. AstroData presumes that a MEF is a single dataset
-and acts as a collection of AstroData instances associated with each header-data
-the file (note the PHU is handles specially, and is not represented as a part of 
-the collection. Note, these sub-instances are not maintained in memory, but are
-created by the __getitem__ member function, i.e. the "[]" interface.
-
-The class loads configurations found on ADCONFIGPATH, RECIPEPATH, and the PYTHONPATH,
-in that order, in directories named "astrodata_<ANYTHING>" containing subdirectories
-with the naming convention "ADCONFIG_<ANYTHING>". Configurations define AstroData Types,
-descriptors which produce high-level metadata, primitives, which are units of 
-transformation which may be implemented differently based on AstroData Type, and 
-relationships between extensions (the prototype Structures feature).
+The class loads configuration packages which can either be in the PYTHONPATH
+Astrodata environment variable RECIPEPATH which contains definitions for all 
+Gemini-specific (in general, any datatype-specific) behavior, which is implemented
+through type definitions, descriptors functions, lookup tables, and any other
+code or information needed to handle specific types of dataset.
 
 This allows AstroData, for example...:
 
-+ to regularize the reduction script determines the instrument-mode the dataset was taken in
++ to allow reduction scripts to have easy access to dataset classification
+    information in a consistent way across all instrument-modes
 
-+ to normalize differences in how meta-data is presented
-
-+ to discriminate types of data arrays, e.g. science data from variance and data quality 
-  mask data, and to know with which of the former the latter are associated.
-  
-+ to propagate header-data units important to the given instrument mode, but which are
++ to provide consistent interfaces for obtaining common meta-data across all
+    instrument modes
+    
++ to relates internal extensions, e.g. discriminate between science and variance
+    arrays and associate them properly.
+     
++ to help propagate header-data units important to the given instrument mode, but which are
   not directly part of the current transformation, e.g. propagating Mask Definition 
-  extensions when running a simple general-purpose reduction step that is no GMOS or MOS specific,
-  such as an image subtraction.
+  extensions for spectra in general reduction scripts (like an add), which are not
+  aware of (and don't want to be aware of) the instrument-mode-specific extensions. 
 
-All type and high level meta-data definitions, and supporting information, is loaded 
-from configuration directories. 
-Semantic knowledge about Gemini data, the dataset types, particulare
-name of high-level metadata and so on,
-is not encoded directly in the AstroData class, but sits in configuration files
-which are used to detect and provide the information desired.
 All access to configurations goes 
-through a :class:`ConfigSpace<astrodata.ConfigSpace.ConfigSpace>` class,
-which by default looks on the paths mentioned above for packages named "astrodata_<ANYTHING>".
+through a special class, :class:`ConfigSpace<astrodata.ConfigSpace.ConfigSpace>` ,
+which by default looks on the paths mentioned above for packages named 
+"astrodata_<ANYTHING>".
 
 In general one can consider the functionality to consist of
 file handling, data handling, type checking, and managing
-meta-information for complex datasets. AstroData uses subsidiary classes to provide
-most functionality, e.g. for file handling 
-and data handling the
-class uses python standards Pyfits and NumPy. The type
-services, projection of structures, normalization of standard high-level meta data 
-are provided by custom classes in the astrodata package, generally through the AstroData class or RecipeSystem.
-For example, the regular user uses the AstroData type interface to access type information, while
+meta-information for complex datasets, though other features
+like file validation and history are present and under development.
+AstroData uses subsidiary classes to provide
+most functionality and acts as a central interface for accessing much dataset-related
+information. 
+
+For example, the regular user uses the AstroData type interface to access 
+type information, while
 internally the AstroDataType module relies on the 
 :class:`ClassificationLibrary<astrodata.datatypes.ClassificationLibrary>` and related 
 :class:`DataClassification<astrodata.datatypes.DataClassficiation>` to
 execute the type detection code.
 
-Note, the variable "ad" is generally used to represent an already constructed AstroData instance.
+Note, the variable "ad" is generally used to represent an already constructed 
+AstroData instance in Astrodata Tutorials and documentation.
 """
     
     types = None
