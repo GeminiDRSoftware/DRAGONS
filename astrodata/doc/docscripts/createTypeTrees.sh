@@ -9,6 +9,9 @@ typelib GEMINI GENERIC GMOS GNIRS NICI NIFS NIRI MICHELLE RAW TRECS
 echo "with assignments shown..."
 typelib -a GEMINI GENERIC GMOS GNIRS NICI NIFS NIRI MICHELLE RAW TRECS 
 
+echo "special graphs"
+typelib -a GMOS_IMAGE
+
 # typelib GENERIC
 # typelib GEMINI
 # typelib RAW

@@ -8,37 +8,37 @@ This document is the user manual for the "astrodata" software, which
 is provided as part of the Gemini Data Processing Suite currently
 being deployed at Gemini. This system includes the AstroData data
 handling class for MEFs, as well as the the Astrodata "Recipe System"
-which provides automation features. In all, the features described
-relate to three installed packages, one which contains the base
-Astrodata source code and two which contain configurations (including
-code) used to handle data intelligently based on the type of dataset
-it represents.
+which provides automation features. Each respectively abstracts the
+datasets and the dataset transformation processes. In all, the
+features described relate to two installed packages, one which
+contains the base Astrodata source code and is a proper python package
+(meant to be "imported") and another which is not meant to be
+imported, but which lived on the PYTHONPATH in order to be discovered
+by the astrodata package. This latter package is the astrodata
+configuration in which types and type related behaviours are defined.
 
-The term "astrodata" is used in different related sense, generally
-distinguished in writing by the capitalization, but sometimes perhaps
-depending on context. There is "AstroData" the class, which presents
-itself as an I/O class (given a filename it loads the dataset and
-returns an object representing it, the AstroData "instance"). There is
-"astrodata" the package, which includes related classes but no Gemini
-specific configurations, and there is simply "Astrodata" a loose term
-for the whole package and possibly refering to astrodata plus its
-Gemini configuration.
+The term "astrodata" in this document can refer to slightly diffrent
+aspects of the astrodata system. There is "AstroData" the class, which
+is distinguishable by the camel caps capitalization. There is
+"astrodata" the importable python package, which includes related
+classes but no Gemini specific configurations, and there is simply
+"Astrodata" a loose term for the whole package, possibly including the
+Gemini astrodata configuration (the "astrodata_Gemini") package.
 
 
 Intended Audience
 -----------------
 
 This document is intended for users of the astrodata package in
-general, given any configuration of datatypes. Particular examples
-refer to the astrodata_Gemini configuration, the only currently extant
-configuration, and use Gemini definitions for dataset types, high
-level meta-data names, and definitions of primitive dataset
-transformations. In most cases, users should begin with the AstroData
-User Tutorial, which can currently be found here
-`http://ophiuchus.hi.gemini.edu/ADTRUNK/astrodata/doc/ADTutorial.pdf <
-http://ophiuchus.hi.gemini.edu/ADTRUNK/astrodata/doc/ADTutorial.pdf>`_
-_. It provides a quick hands-on introduction to the concepts involved
-using AstroData to work with Gemini datasets. In contrast, this
-document gives a more complete and detailed picture, emphasizing how
-the system works.
+conjunction with the "astrodata_Gemini" configuration package. Some
+descriptions are kept general, but all concrete examples rely on the
+"astrodata_Gemini" configuration package which is the only currently
+extant configuration. In most cases, new users should begin with the
+AstroData User Tutorial , which can currently be found here
+http://ophiuchus.hi.gemini.edu/ADTRUNK/astrodata/doc/ADTutorial.pdf.
+It provides a quick hands-on introduction to the concepts involved
+using AstroData to work with Gemini datasets. In contrast this
+document provides a bigger picture of the components and philosophy of
+Astrodata, and includes a reference manual for the classes of primary
+interest to users of the system.
 

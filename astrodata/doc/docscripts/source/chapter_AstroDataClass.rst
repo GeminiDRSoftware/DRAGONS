@@ -66,7 +66,7 @@ Type Information
 
 .. toctree::
 
-.. automethod:: astrodata.data.isType
+.. automethod:: astrodata.data.AstroData.isType
 
 .. automethod:: astrodata.data.AstroData.getTypes
 
@@ -187,7 +187,7 @@ header attribute
 
 .. automethod:: astrodata.data.AstroData.setHeader
 
-Renaming the Extension
+Renaming an Extension
 ######################
 
 .. toctree::

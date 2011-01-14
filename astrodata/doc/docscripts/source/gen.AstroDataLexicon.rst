@@ -4,8 +4,6 @@
 AstroData Lexicon
 -----------------
 
-Ideally, the creation of an ast
-
 
 astrodata Grammar
 ~~~~~~~~~~~~~~~~~
