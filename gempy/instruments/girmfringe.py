@@ -89,29 +89,29 @@ def girmfringe(inimage, fringe, fl_statscale=False, statsec='',
                                   'failure between' + inimage.filename + 
                                   fringe.filename)
                 
-    # Setting statsec to the correct default value if needed
+    # Setting statsec to the correct default value if needed (assumes square binning)
     if (statsec == '') and fl_statscale:
-        imageccdsum = inimage[('SCI',2)].getKeyValue('CCDSUM')
-        fringeccdsum = fringe[('SCI',2)].getKeyValue('CCDSUM')
-        if imageccdsum == fringeccdsum:
+        imagexbin = inimage[('SCI',2)].detector_x_bin()
+        fringexbin = fringe[('SCI',2)].detector_x_bin()
+        if imagexbin == fringexbin:
             # Setting to default value for 1x1 images and logging value
-            if imageccdsum == '1 1':
+            if imagexbin == 1:
                 statsec = '[SCI,2][100:1900,100:4500]'
                 log.fullinfo('Using statsec = '+statsec)
             # Setting to default value for 2x2 images and logging value
-            elif imageccdsum == '2 2':
+            elif imagexbin == 2:
                 statsec = '[SCI,2][100:950,100:2250]'
                 log.fullinfo('Using statsec = '+statsec)
             else:
-                log.critical('The CCDSUM '+imageccdsum+
-                             ' is not 1x1 or 2x2 for the input image '+
+                log.critical('The CCD X binning '+imagexbin+
+                             ' is not 1 or 2 for the input image '+
                              inimage.filename)
-        # Logging critical message and raising exception if ccdsum's don't match 
+        # Logging critical message and raising exception if ccd x binning doesn't match 
         else:
-            log.critical('The CCDSUM for the input image '+inimage.filename+
+            log.critical('The CCD X binning for the input image '+inimage.filename+
                          ' and the input fringe '+fringe.filename+ 
                          ' do not match.')
-            raise GIRMFRINGEException('The CCDSUM for the input image '+inimage.filename+
+            raise GIRMFRINGEException('The CCD X binning for the input image '+inimage.filename+
                          ' and the input fringe '+fringe.filename+ 
                          ' do not match.')
     
