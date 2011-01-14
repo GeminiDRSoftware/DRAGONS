@@ -116,7 +116,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 log.status('File name updated to '+adOut.filename)
                 rc.reportOutput(adOut)        
                 
-            log.status('*FINISHED* adding the VAR frame(s) to the input data')
+            log.status('*FINISHED* fringe correcting the input data')
             
         except:
             print "Problem subtracting fringe from "+rc.inputsAsStr()
