@@ -139,11 +139,23 @@ class ConfigSpace(object):
         adconfdirs = []
         i = 1
         pathlist = sys.path
+            
+        # support for ADCONFIGPATH and RECIPEPATH
+        # NOTE: due to the way the list is extended, ADCONFIGPATH appearing second
+        #       means it has precedence over RECIPEPATH, that is, ADCONFIGPATH
+        #       is searched prior to RECIPEPATH
         if "RECIPEPATH" in os.environ:
             rpath = os.environ["RECIPEPATH"].split(":")
             # we want this path in front...
             rpath.extend(pathlist)
             pathlist = rpath
+
+        if "ADCONFIGPATH" in os.environ:
+            rpath = os.environ["RECIPEPATH"].split(":")
+            # we want this path in front...
+            rpath.extend(pathlist)
+            pathlist = rpath
+
         for path in pathlist:
             # print "@@@@@@@@:",".svn" in path,":::",  path
             if os.path.isdir(path):

@@ -98,13 +98,25 @@ class gdExcept:
 
 class AstroData(object, CalculatorInterface):
     """
-AstroData relies on the MEF file format for data storage, and pyfits structures for
-the dataset when in memory. AstroData always interprets a MEF as a  single dataset,
-with extensions available using "[]" syntax (see 
-:method:AstroData.__getitem__()<astrodata.data.AstroData>).
+The AstroData class abstracts single datasets stored in MEF files
+and provides uniform interfaces for working on datasets from different
+instruments and modes, using configuration packages that describe
+the data characteristics, layour, and which implements
+type-specific behavior.
 
-The class loads configuration packages which can either be in the PYTHONPATH
-Astrodata environment variable RECIPEPATH which contains definitions for all 
+AstroData always interprets a MEF as a single complex entity,
+with MEF "extensions" available using "[]" syntax (see 
+:method:AstroData.__getitem__()<astrodata.data.AstroData>). AstroData uses 
+pyfits for MEF I/O and numpy for pixel manipulations. While the pyfits
+structures are available to the programmer, AstroData possesses analagous
+methods for most pyfits functionality which allow it to maintain the dataset 
+as a cohesive whole. The programmer uses the numpy pixel arrays directly
+for pixel manipulation.
+
+In order to identify types of dataset and provide type-specific behavior
+AstroData relies on configuration packages which 
+can either be in the PYTHONPATH environment variable or the Astrodataenvironment 
+variable, RECIPEPATH, which contains definitions for all 
 Gemini-specific (in general, any datatype-specific) behavior, which is implemented
 through type definitions, descriptors functions, lookup tables, and any other
 code or information needed to handle specific types of dataset.
@@ -128,24 +140,26 @@ This allows AstroData, for example...:
 All access to configurations goes 
 through a special class, :class:`ConfigSpace<astrodata.ConfigSpace.ConfigSpace>` ,
 which by default looks on the paths mentioned above for packages named 
-"astrodata_<ANYTHING>".
+"astrodata_<ANYTHING>" (e.g. "astrodata_Gemini")
 
 In general one can consider the functionality to consist of
 file handling, data handling, type checking, and managing
 meta-information for complex datasets, though other features
 like file validation and history are present and under development.
 AstroData uses subsidiary classes to provide
-most functionality and acts as a central interface for accessing much dataset-related
-information. 
+most functionality and serves to tie together 
+much dataset-related information and manipulation.
 
-For example, the regular user uses the AstroData type interface to access 
-type information, while
-internally the AstroDataType module relies on the 
-:class:`ClassificationLibrary<astrodata.datatypes.ClassificationLibrary>` and related 
-:class:`DataClassification<astrodata.datatypes.DataClassficiation>` to
+For example, the AstroData user relies on AstroData instnaces
+to retrieve dataset type interface, while
+internally AstroData relies on the AstroDataType module, which in turn
+relies on the 
+:class:`ClassificationLibrary<astrodata.datatypes.ClassificationLibrary>` 
+class and the related 
+:class:`DataClassification<astrodata.datatypes.DataClassficiation>` class to
 execute the type detection code.
 
-Note, the variable "ad" is generally used to represent an already constructed 
+.. tip the variable "ad" is generally used to represent an already constructed 
 AstroData instance in Astrodata Tutorials and documentation.
 """
     
