@@ -258,8 +258,8 @@ def checkParam(parameter, paramType, defaultValue, compareValue=0.0):
 
 def checkFileFitExtension( filename ):
     """
-    Determines if the fits file has a [X], to see if a particular extension 
-    is to be opened.
+    Determines if the fits file has a [X], [sci,X] or [SCI,X], to see if a  
+    particular extension is to be opened.
     
     @param filename: Name of a fits file
     @type filename: str
@@ -268,14 +268,19 @@ def checkFileFitExtension( filename ):
              extension > 0. In the case of any error, 0 is returned.
     @rtype: tuple 
     """
-    file_and_extensions = filename.rsplit( '[' )
-    if(len(file_and_extensions) > 1):
+    if filename.find('['):
         try:
-            extension_number = file_and_extensions[-1][0]
-            extension_number = int(extension_number)
+            # Getting the filename without extension specification
+            file = filename.split('[')[0]
+            # Getting extension for both possible [] cases
+            if filename.find('sci')>(-1) or filename.find('SCI')>(-1):
+                exten = int(filename.split( '[' )[1].split( ']' )[0].split(',')[1])
+            else:
+                exten = int(filename.split( '[' )[1].split( ']' )[0])
         except:
-            extension_number = 0
-        return (file_and_extensions[0], extension_number)
+            exten = 0
+        return (file, exten)
+    
     else:
         return (filename, 0)
     
