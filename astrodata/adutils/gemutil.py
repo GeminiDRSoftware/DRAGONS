@@ -53,6 +53,9 @@ def pyrafLoader(rc=None):
     gemini() 
     gmos()    
     
+    # Returning stdout back to normal so prints show on the screen
+    sys.stdout = SAVEOUT
+    
     return (pyraf, gemini, iraf.yes, iraf.no)
 
     
