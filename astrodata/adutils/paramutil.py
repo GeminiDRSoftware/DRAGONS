@@ -265,8 +265,7 @@ def checkFileFitExtension( filename ):
     @type filename: str
     
     @return: Tuple with the filename and extension specified. 0 means all 
-    extension > 0. In the case of any error, 0 
-    is returned.
+             extension > 0. In the case of any error, 0 is returned.
     @rtype: tuple 
     """
     file_and_extensions = filename.rsplit( '[' )
