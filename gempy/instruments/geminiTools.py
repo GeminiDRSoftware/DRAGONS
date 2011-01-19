@@ -273,35 +273,37 @@ def stdObsHdrs(ad):
     ad.phuSetKeyValue('EXPTIME', effExpTime , 'Effective exposure time') 
     ad.phuSetKeyValue('NCOADD', str(numcoadds) , 'Number of coadds')
     
+    # Adding the current filename (without directory info) to ORIGNAME in PHU
+    origName = ad.storeOriginalName()
+    
     # Adding/updating the GEM-TLM (automatic) and GPREPARE time stamps
     ut = ad.historyMark(key='GPREPARE',stomp=False) 
        
     # Updating logger with updated/added keywords
     log.fullinfo('****************************************************', 
-                 'header')
-    log.fullinfo('file = '+ad.filename,'header')
+                 category='header')
+    log.fullinfo('file = '+ad.filename, category='header')
     log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
-                 'header')
-    log.fullinfo('PHU keywords updated/added:\n', 'header')
-    log.fullinfo('NSCIEXT = '+str(ad.countExts('SCI')),'header' )
-    log.fullinfo('PIXSCALE = '+str(ad.pixel_scale()),'header' )
-    log.fullinfo('NEXTEND = '+str(len(ad)),'header' )
-    log.fullinfo('OBSMODE = '+str(ad.observation_mode()),'header' )
-    log.fullinfo('COADDEXP = '+str(ad.phuValue('EXPTIME')),'header' )
-    log.fullinfo('EXPTIME = '+str(effExpTime),'header' )
-    log.fullinfo('GEM-TLM = '+str(ut),'header' )
-    log.fullinfo('---------------------------------------------------','header')
+                 category='header')
+    log.fullinfo('PHU keywords updated/added:\n', category='header')
+    log.fullinfo('NSCIEXT = '+str(ad.countExts('SCI')), category='header' )
+    log.fullinfo('PIXSCALE = '+str(ad.pixel_scale()), category='header' )
+    log.fullinfo('NEXTEND = '+str(len(ad)), category='header' )
+    log.fullinfo('OBSMODE = '+str(ad.observation_mode()), category='header' )
+    log.fullinfo('COADDEXP = '+str(ad.phuValue('EXPTIME')), category='header' )
+    log.fullinfo('EXPTIME = '+str(effExpTime), category='header' )
+    log.fullinfo('ORIGNAME = '+str(origName), category='header')
+    log.fullinfo('GEM-TLM = '+str(ut), category='header' )
+    log.fullinfo('---------------------------------------------------', 
+                 category='header')
          
     # A loop to add the missing/needed keywords in the SCI extensions
     for ext in ad['SCI']:
-        ext.header.update('GAIN', ext.gain(), 
-                           'Gain (e-/ADU)')
+        ext.header.update('GAIN', ext.gain(), 'Gain (e-/ADU)')
         ext.header.update('PIXSCALE', ext.pixel_scale(), 
                            'Pixel scale in Y in arcsec/pixel')
-        ext.header.update('RDNOISE', ext.read_noise() , 
-                           'readout noise in e-')
-        ext.header.update('BUNIT','adu' , \
-                           'Physical units')
+        ext.header.update('RDNOISE', ext.read_noise(), 'readout noise in e-')
+        ext.header.update('BUNIT','adu', 'Physical units')
         
         # Retrieving the value for the non-linear value of the pixels using the
         # non_linear_level descriptor, if it returns nothing, 
@@ -309,23 +311,23 @@ def stdObsHdrs(ad):
         nonlin = ext.non_linear_level()
         if not nonlin:
             nonlin = 'None'     
-        ext.header.update( 'NONLINEA', nonlin , 
-                           'Non-linear regime level in ADU')
+        ext.header.update( 'NONLINEA', nonlin, 'Non-linear regime level in ADU')
         ext.header.update( 'SATLEVEL', 
                            ext.saturation_level(), 'Saturation level in ADU')
-        ext.header.update( 'EXPTIME', effExpTime , 'Effective exposure time')
+        ext.header.update( 'EXPTIME', effExpTime, 'Effective exposure time')
         
         log.fullinfo('SCI extension number '+str(ext.extver())+
-                     ' keywords updated/added:\n', 'header')
-        log.fullinfo('GAIN = '+str(ext.gain()), 'header' )
-        log.fullinfo('PIXSCALE = '+str(ext.pixel_scale()), 'header' )
-        log.fullinfo('RDNOISE = '+str(ext.read_noise()), 'header' )
-        log.fullinfo('BUNIT = '+'adu', 'header' )
-        log.fullinfo('NONLINEA = '+str(nonlin), 'header' )
-        log.fullinfo('SATLEVEL = '+str(ext.saturation_level()),'header' )
-        log.fullinfo('EXPTIME = '+str(effExpTime), 'header' )
+                     ' keywords updated/added:\n', category='header')
+        log.fullinfo('GAIN = '+str(ext.gain()), category='header' )
+        log.fullinfo('PIXSCALE = '+str(ext.pixel_scale()), category='header')
+        log.fullinfo('RDNOISE = '+str(ext.read_noise()), category='header')
+        log.fullinfo('BUNIT = '+'adu', category='header' )
+        log.fullinfo('NONLINEA = '+str(nonlin), category='header' )
+        log.fullinfo('SATLEVEL = '+str(ext.saturation_level()),
+                     category='header')
+        log.fullinfo('EXPTIME = '+str(effExpTime), category='header' )
         log.fullinfo('---------------------------------------------------', 
-                     'header')
+                     category='header')
 
 def stdObsStruct(ad):
     """ This function is used by standardizeStructure in primitives_GEMINI.
@@ -340,10 +342,10 @@ def stdObsStruct(ad):
         
     # Formatting so logger looks organized for these messages
     log.fullinfo('****************************************************', 
-                 'header') 
-    log.fullinfo('file = '+ad.filename, 'header')
+                 category='header') 
+    log.fullinfo('file = '+ad.filename, category='header')
     log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
-                 'header')
+                 category='header')
     # A loop to add the missing/needed keywords in the SCI extensions
     for ext in ad['SCI']:
         # Setting EXTNAME = 'SCI' and EXTVER = descriptor value
@@ -351,11 +353,11 @@ def stdObsStruct(ad):
         ext.header.update( 'EXTVER', ext.extver(), 'Extension version') 
         # Updating logger with new header key values
         log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
-                     ' keywords updated/added:\n', 'header')       
-        log.fullinfo('EXTNAME = '+'SCI', 'header' )
-        log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), 'header' )
+                     ' keywords updated/added:\n', category='header')       
+        log.fullinfo('EXTNAME = '+'SCI', category='header' )
+        log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), category='header' )
         log.fullinfo('---------------------------------------------------', 
-                     'header')
+                     category='header')
         
 def stripPostfix(filename):
     """ This function is used by fileNameUpdater to strip all the original
@@ -462,19 +464,19 @@ class CLManager(object):
         """ A function to log the parameters in the local parameters file 
             and then global ones in the reduction context
         """
-        log.fullinfo('\ncurrent general parameters:', 'parameters')
+        log.fullinfo('\ncurrent general parameters:', category='parameters')
         # Loop through the parameters in the general dictionary
         # of the reduction context and log them
         for key in self.rc:
             val = self.rc[key]
             log.fullinfo(repr(key)+' = '+repr(val), category='parameters')
 
-        log.fullinfo('\ncurrent primitive specific parameters:', 'parameters')
+        log.fullinfo('\ncurrent primitive specific parameters:', category='parameters')
         # Loop through the parameters in the local dictionary for the primitive
         # the CLManager was called from of the reduction context and log them
         for key in self.rc.localparms:
             val = self.rc.localparms[key]
-            log.fullinfo(repr(key)+' = '+repr(val), 'parameters')
+            log.fullinfo(repr(key)+' = '+repr(val), category='parameters')
     
     def nbiascontam(self):
         """This function will find the largest difference between the horizontal 
@@ -630,9 +632,9 @@ class IrafStdout():
             
         """
         if 'PANIC' in out or 'ERROR' in out:
-            log.error(out, 'clError')
+            log.error(out, category='clError')
         elif len(out) > 1:
-            log.fullinfo(out, 'clInfo')
+            log.fullinfo(out, category='clInfo')
         
     def flush(self):
         """ A function that is needed IRAF but not used in our wrapping its
