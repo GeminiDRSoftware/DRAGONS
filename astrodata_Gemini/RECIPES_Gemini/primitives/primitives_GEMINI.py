@@ -588,7 +588,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
                 # Calling the gemiq function to detect the sources and then
                 # measure the IQ of the current image 
-                iqdata = getiq.gemiq( ad.filename, function='moffat', 
+                iqdata = getiq.gemiq( ad.filename, function='moffat', verbose=True,
                                       display=True, mosaic=False, qa=True)
                 
                 # End time for measuring IQ of current file
@@ -600,11 +600,28 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
                 # iqdata is list of tuples with image quality metrics
                 # (ellMean, ellSig, fwhmMean, fwhmSig)
+                # First check if it is empty (ie. gemiq failed in someway)
                 if len(iqdata) == 0:
                     log.warning('Problem Measuring IQ Statistics, '+
                                 'none reported')
+                # If it all worked, then format the output and log it
                 else:
-                    rc.rqIQ( ad, *iqdata[0] )
+                    # Formatting this output for printing or logging                
+                    fnStr = 'Filename:'.ljust(19)+ad.filename
+                    emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
+                    esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
+                    fmStr = 'FWHM Mean:'.ljust(19)+str(iqdata[0][2])
+                    fsStr = 'FWHM Sigma:'.ljust(19)+str(iqdata[0][3])
+                    sStr = 'Seeing:'.ljust(19)+str(iqdata[0][2])
+                    psStr = 'PixelScale:'.ljust(19)+str(ad.pixel_scale())
+                    vStr = 'VERSION:'.ljust(19)+'None' #$$$$$ made on ln12 of ReductionsObjectRequest.py, always 'None' it seems.
+                    tStr = 'TIMESTAMP:'.ljust(19)+str(datetime.now())
+                    # Create final formated string
+                    finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'\
+                                    +fmStr+'\n'+fsStr+'\n'+sStr+'\n'+psStr+\
+                                    '\n'+vStr+'\n'+tStr+'\n'+'-'*45
+                    # Log final string
+                    log.stdinfo(finalStr, category='IQ')
                     
             # Logging the total amount of time spent measuring the IQ of all
             # the inputs
