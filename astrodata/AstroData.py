@@ -1,5 +1,6 @@
 #!/bin/env pyth
 import sys
+import os
 from copy import copy, deepcopy
 import pyfits
 __docformat__ = "restructuredtext" #for epydoc
@@ -167,6 +168,7 @@ AstroData instance in Astrodata Tutorials and documentation.
     typesStatus = None
     typesTypology = None
     filename = None
+    __origFilename = None
     url = None # if retrieved
     hdulist = None
     hdurefcount = 0
@@ -875,6 +877,7 @@ AstroData instance in Astrodata Tutorials and documentation.
         if isinstance(source, AstroData):
             inferRAW = False
             self.filename = source.filename
+            self.__origFilename = source.filename
             self.borrowedHDUList = True
             self.container = source
             # @@REVISIT: should this cache copy of types be here?
@@ -909,6 +912,7 @@ AstroData instance in Astrodata Tutorials and documentation.
                 if not os.path.exists(source):
                     raise ADExcept("Cannot open "+source)
                 self.filename = source
+                self.__origFilename = source
                 try:
                     if mode == 'new':
                         if os.access(self.filename, os.F_OK):
@@ -1522,9 +1526,26 @@ AstroData instance in Astrodata Tutorials and documentation.
         else:
              self.phuSetKeyValue('GEM-TLM',self.tlm,'UT Last modification with GEMINI')     
         
+        # Returning the current time for logging if desired
         return self.tlm
-    #-------------------------------------------------------
     
+    def storeOriginalName(self):
+        """
+        This function will add the key 'ORIGNAME' to PHU of the astrodata instance 
+        containing the filename when object was instantiated (without any directory info, ie. the basename).
+        """ 
+        origFilename = os.path.basename(self.__origFilename)
+        
+        if (self.phuGetKeyValue('ORIGNAME') is not None):
+            # Key is all ready there so raise and exception
+            raise ADExcept('An ORIGNAME key all ready exists in the phu')
+        else:
+            # phu key doesn't exist yet, so add it
+            self.phuSetKeyValue('ORIGNAME', origFilename, 'Original name of file prior to modifications')
+        
+        # Returning the filename for logging if desired   
+        return origFilename
+
     def div(self,denominator):
         
         adOut=arith.div(self,denominator)
