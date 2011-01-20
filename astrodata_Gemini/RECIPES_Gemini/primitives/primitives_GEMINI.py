@@ -156,7 +156,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
@@ -181,7 +181,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
             
             for ad in rc.getInputs(style='AD'):
-                print ad.info()
                 # Check if there VAR frames all ready exist
                 if ad['VAR']:
                     # If VAR frames don't exist, loop through the SCI extensions 
@@ -252,7 +251,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
@@ -333,7 +332,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context.
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                adOut.filename=gemt.fileNameUpdater(ad.filename, 
+                adOut.filename=gemt.fileNameUpdater(adIn=ad, 
                                                     postpend=rc['postpend'], 
                                                     strip=False)
                 log.status('File name updated to '+adOut.filename)
@@ -760,7 +759,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # to the PHU
                 ad.historyMark(key='STDHDRS',stomp=False)
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
@@ -822,7 +821,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
@@ -895,7 +894,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # to the PHU
                 ad.historyMark(key='VALDATA',stomp=False)
                 log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
-                ad.filename = gemt.fileNameUpdater(ad.filename, 
+                ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    postpend='_validated', 
                                                    strip=False)
                 log.status('File name updated to '+ad.filename)
@@ -949,7 +948,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # to be written to disk to be postpended by it
                 if rc['postpend']:
                     log.debug('calling gemt.fileNameUpdater on '+ad.filename)
-                    ad.filename = gemt.fileNameUpdater(ad.filename, 
+                    ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                         postpend=rc['postpend'], 
                                         strip=rc['strip'])
                     log.status('File name updated to '+ad.filename)

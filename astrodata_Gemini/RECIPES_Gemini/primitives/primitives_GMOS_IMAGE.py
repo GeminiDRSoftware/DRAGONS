@@ -110,7 +110,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                adOut.filename = gemt.fileNameUpdater(ad.filename, 
+                adOut.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    postpend=rc['postpend'], 
                                                    strip=False)
                 log.status('File name updated to '+adOut.filename)
