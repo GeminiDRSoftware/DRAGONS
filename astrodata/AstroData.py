@@ -1534,9 +1534,12 @@ AstroData instance in Astrodata Tutorials and documentation.
         This function will add the key 'ORIGNAME' to PHU of the astrodata instance 
         containing the filename when object was instantiated (without any directory info, ie. the basename).
         """ 
+        # Grabbing value of astrodata instances private member '__origFilename'
         origFilename = os.path.basename(self.__origFilename)
+        # Grabbing value of 'ORIGNAME' from PHU
+        phuOrigFilename = self.phuGetKeyValue('ORIGNAME')
         
-        if (self.phuGetKeyValue('ORIGNAME') is not None):
+        if (phuOrigFilename is not None):
             # Key is all ready there so raise and exception
             raise ADExcept('An ORIGNAME key all ready exists in the phu')
         else:
