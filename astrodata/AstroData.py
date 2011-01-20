@@ -1533,18 +1533,26 @@ AstroData instance in Astrodata Tutorials and documentation.
         """
         This function will add the key 'ORIGNAME' to PHU of the astrodata instance 
         containing the filename when object was instantiated (without any directory info, ie. the basename).
+        
+        If key has all ready been added (ie. has undergone processing where storeOriginalName was performed before),
+        then the value is just returned. 
         """ 
         # Grabbing value of astrodata instances private member '__origFilename'
         origFilename = os.path.basename(self.__origFilename)
         # Grabbing value of 'ORIGNAME' from PHU
         phuOrigFilename = self.phuGetKeyValue('ORIGNAME')
         
-        if (phuOrigFilename is not None):
-            # Key is all ready there so raise and exception
-            raise ADExcept('An ORIGNAME key all ready exists in the phu')
-        else:
+        if (origFilename is None):
+            # No private member value was found so throw an exception
+            raise ADExcept('Error, '+self.filename+' failed to have its original filename stored when astrodata instantiated it')
+        elif (phuOrigFilename is None):
             # phu key doesn't exist yet, so add it
-            self.phuSetKeyValue('ORIGNAME', origFilename, 'Original name of file prior to modifications')
+            self.phuSetKeyValue('ORIGNAME', origFilename, 'Original name of file prior to processing')
+        elif (phuOrigFilename is not None):
+            # phu key exists, so check if it matches private members value
+            if phuOrigFilename != origFilename:
+                #$$ Maybe a print message or something should go here??
+                pass
         
         # Returning the filename for logging if desired   
         return origFilename
