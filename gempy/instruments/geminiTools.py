@@ -95,11 +95,23 @@ def biassecStrTonbiascontam(biassec, ad):
                   'nbiascontam, so using default value = 4')
         return 4 
 
-def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
-    """ This function is for updating the file names.
-    
-    Note: if the input filename has a path, the returned value will have
+def fileNameUpdater(adIn=None, infilename='', postpend='', prepend='' , strip=False):
+    """ This function is for updating the file names of astrodata objects.
+        
+        It can be used in a few different ways.  For simple post/prepending of
+        the infilename string, there is no need to define adIn or strip. The 
+        current filename for adIn will be used if infilename is not defined. 
+        The examples below should make the main uses clear.
+        
+    Note: 1.if the input filename has a path, the returned value will have
           path stripped off of it.
+          2. if strip is set to True, then adIn must be defined.
+          
+    @param adIn: input astrodata instance having its filename being updated
+    @type adIn: astrodata object
+    
+    @param infilename: filename to be updated
+    @type infilename: string
     
     @param postpend: string to put between end of current filename and the 
                     extension 
@@ -108,82 +120,51 @@ def fileNameUpdater(origfilename, postpend='', prepend='' , strip=False):
     @param prepend: string to put at the beginning of a filename
     @type prepend: string
     
-    @param strip: Boolean to signal if the original postpends should be 
-                  removed prior to adding the new one (if one exists).
+    @param strip: Boolean to signal that the original filename of the astrodata
+                  object prior to processing should be used. adIn MUST be 
+                  defined for this to work.
     @type strip: Boolean
     
-    ex. fileNameUpdater('N20020214S022_prepared_vardq_oversubed_overtrimd.fits',
-                        postpend='_prepared', strip=True)
+    ex. fileNameUpdater(adIn=myAstrodataObject, postpend='_prepared', strip=True)
         result: 'N20020214S022_prepared.fits'
-    
-    NOTE: Original (those passed into reduce initially) file names may NOT have 
-          repeated strings that contain '_'.
-    ie. no file names like: 'filename_1_1.fits' or 'filename_name_name1.fits'
+        
+        fileNameUpdater(infilename='N20020214S022_prepared.fits', postpend='_biasCorrected')
+        result: 'N20020214S022_prepared_biasCorrected.fits'
+        
+        fileNameUpdater(adIn=myAstrodataObject, prepend='testversion_')
+        result: 'testversion_N20020214S022.fits'
     
     """
+    # Check there is a name to update
+    if infilename=='':
+        # if both infilename and adIn are not passed in, then log critical msg
+        if adIn==None:
+            log.critical('A filename or an astrodata object must be passed '+
+                         'into fileNameUpdater, so it has a name to update')
+        # adIn was passed in, so set infilename to that ad's filename
+        else:
+            infilename = adIn.filename
+            
     # Strip off any path that the input file name might have
-    infilename = os.path.basename(origfilename)
+    basefilename = os.path.basename(infilename)
+
+    # Split up the filename and the file type ie. the extension
+    (name,filetype) = os.path.splitext(basefilename)
     
-    # Retrieving the global original filename dictionary
-    global orig_file_names_dict
-    # instantiating and adding first entry to dict 
-    if not orig_file_names_dict:
-        orig_file_names_dict = {}
-        # Adding a nested dictionary of lists for the postpends and prepends
-        # that will be added to the filename 
-        orig_file_names_dict[infilename] = {'postpends':[],'prepends':[]}
+    if strip:
+        # Grabbing the value of PHU key 'ORIGNAME'
+        phuOrigFilename = adIn.phuGetKeyValue('ORIGNAME') 
+        # If key was 'None', ie. storeOriginalName() wasn't ran yet, then run it now
+        if phuOrigFilename is None:
+            # Storing the original name of this astrodata object in the PHU
+            phuOrigFilename = adIn.storeOriginalName()
+            
         # Split up the filename and the file type ie. the extension
-        (name,filetype) = os.path.splitext(infilename)
-        if postpend != '':
-            orig_file_names_dict[infilename]['postpends'].append(postpend)
-        if prepend !='':
-            orig_file_names_dict[infilename]['prepends'].append(prepend)
-        # Create output filename
-        outFileName = prepend+name+postpend+filetype
-        return outFileName
-    
-    # Dict exists so only adding new entry if it is indeed new 
-    # (ie. not in there yet)
-    elif orig_file_names_dict:
-        for key in orig_file_names_dict:
-            if infilename[0:-5].find(key[0:-5])>=0:
-                # Stripping any post/prepends from the input filename to see if
-                # it is actually just a modified version of one in the dict all ready
-                check_name = infilename
-                for val in orig_file_names_dict[key]['postpends']:
-                    check_name = check_name.replace(val,'')
-                for val in orig_file_names_dict[key]['prepends']:
-                    check_name = check_name.replace(val,'')
-                # Turns out the input filename matched the base name in the dict
-                # so perform the desired manipulation
-                if check_name == key:
-                    # Log that the input had a match found
-                    log.fullinfo('Input filename '+infilename+' was found to '+
-                                 'be an updated version of '+key)
-                    # If strip requested, go back to root name (ie. key in dict)
-                    if strip:
-                        infilename  = key
-                    # Split up the filename and the file type ie. the extension
-                    (name,filetype) = os.path.splitext(infilename)
-                    if postpend != '':
-                        orig_file_names_dict[key]['postpends'].append(postpend)
-                    if prepend !='':
-                        orig_file_names_dict[key]['prepends'].append(prepend)
-                    # Create output filename
-                    outFileName = prepend+name+postpend+filetype
-                    return outFileName
-                            
-        # Loop completed and input filename didn't match any basenames
-        orig_file_names_dict[infilename] = {'postpends':[],'prepends':[]}
-        # Split up the filename and the file type ie. the extension
-        (name,filetype) = os.path.splitext(infilename)
-        if postpend != '':
-            orig_file_names_dict[infilename]['postpends'].append(postpend)
-        if prepend !='':
-            orig_file_names_dict[infilename]['prepends'].append(prepend)
-        # Create output filename
-        outFileName = prepend+name+postpend+filetype
-        return outFileName
+        (name,filetype) = os.path.splitext(phuOrigFilename)
+        
+    # Create output filename
+    outFileName = prepend+name+postpend+filetype
+    return outFileName
     
 
 def LogDictParams(indict):
@@ -519,7 +500,7 @@ class CLManager(object):
             # Load up the preCLfilenames list with the input's filename
             self._preCLfilenames.append(ad.filename)
             # Strip off all postfixes and prepend filename with a unique prefix
-            name = fileNameUpdater(ad.filename, prepend=self.prefix, strip=True)
+            name = fileNameUpdater(adIn=ad, prepend=self.prefix, strip=True)
             # store the unique name in preCLcachestorenames for later reference
             self._preCLcachestorenames.append(name)
             # Log the name of this temporary file being written to disk
@@ -539,7 +520,7 @@ class CLManager(object):
             # The name that IRAF wrote the output to
             cloutname = self.postpend+self._preCLcachestorenames[0]
             # The name we want the file to be
-            finalname = fileNameUpdater(self._preCLfilenames[0], 
+            finalname = fileNameUpdater(adIn=self.rc.getInputs(style='AD')[0],infilename=self._preCLfilenames[0], 
                                       postpend= self.postpend, strip=False)
             # Renaming the IRAF written file to the name we want
             os.rename(cloutname, finalname )
@@ -576,8 +557,8 @@ class CLManager(object):
                 cloutname = self.postpend + storename 
                 log.critical('gemTools525: cloutname='+cloutname) 
                 # Name I want the file to be
-                finalname = fileNameUpdater(self._preCLfilenames[i], 
-                                            postpend= self.postpend, strip=False)
+                finalname = fileNameUpdater(adIn=self.rc.getInputs(style='AD')[i], infilename=self._preCLfilenames[i], 
+                                            postpend=self.postpend, strip=False)
                 log.critical('gemTools529: finalname='+finalname)  
                 # Renaming the IRAF written file to the name we want
                 os.rename(cloutname, finalname )
