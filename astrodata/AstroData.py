@@ -1531,11 +1531,13 @@ AstroData instance in Astrodata Tutorials and documentation.
     
     def storeOriginalName(self):
         """
-        This function will add the key 'ORIGNAME' to PHU of the astrodata instance 
+        This function will add the key 'ORIGNAME' to PHU of an astrodata object 
         containing the filename when object was instantiated (without any directory info, ie. the basename).
         
         If key has all ready been added (ie. has undergone processing where storeOriginalName was performed before),
-        then the value is just returned. 
+        then the value original filename is just returned.  If the key is there, but does not
+        match the original filename of the object, then the original name is returned, NOT the 
+        value in the PHU. The value in the PHU can always be found using ad.phuGetKeyValue('ORIGNAME').
         """ 
         # Grabbing value of astrodata instances private member '__origFilename'
         origFilename = os.path.basename(self.__origFilename)
@@ -1548,10 +1550,14 @@ AstroData instance in Astrodata Tutorials and documentation.
         elif (phuOrigFilename is None):
             # phu key doesn't exist yet, so add it
             self.phuSetKeyValue('ORIGNAME', origFilename, 'Original name of file prior to processing')
+        # The check below is extra at the moment, but could be useful in the future
         elif (phuOrigFilename is not None):
             # phu key exists, so check if it matches private members value
             if phuOrigFilename != origFilename:
                 #$$ Maybe a print message or something should go here??
+                pass
+            else:
+                #$$ They match, do something?
                 pass
         
         # Returning the filename for logging if desired   
