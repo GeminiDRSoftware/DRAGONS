@@ -59,7 +59,7 @@ class StackKeeper(object):
         @param addtostack: A list of files for stacking or a StackableRecord instance.
         @type addtostack: list or StackableRecord  
         '''
-        #print "SK62: entering add"
+        # print "SK62: entering add"
         cachefile = os.path.abspath(cachefile)
         self.lock.acquire()
         if cachefile == None:
@@ -73,6 +73,7 @@ class StackKeeper(object):
             
         if self.local == False:
             abscf = os.path.abspath(cachefile)
+            #print "SK75: remote add to %s of %s" % (abscf, repr(addtostack))
             self.adcc.prs.stackPut(ID, addtostack, abscf)
             return 
             
@@ -80,11 +81,13 @@ class StackKeeper(object):
         # used by the adcc
         # print "79: about to add to:", cachefile, repr(self.cacheIndex)
         if cachefile not in self.cacheIndex:
-            stacksDict  = {}
-            self.cacheIndex.update({cachefile:stacksDict})
-        #print "SK83:"
+            # print "SK83: adding cachefile to cacheIndex"
+            self.load(cachefile)
+            #stacksDict  = {}
+            #self.cacheIndex.update({cachefile:stacksDict})
+            
         stacksDict = self.cacheIndex[cachefile]
-
+        # print "SK88: %s:%s" % (cachefile, repr(stacksDict))
         if ID not in stacksDict:
             stacksDict.update( {ID:StackableRecord(ID,[])} )
 
@@ -132,10 +135,18 @@ class StackKeeper(object):
         
         cachefile = os.path.abspath(cachefile)
         if self.local == False:
+            #print "SK136: remote stack request"
             retval = self.adcc.prs.stackGet(ID, cachefile)
+            #print "SK138:", repr(retval)
             return retval
+        else:
+            #print "SK139: local stack load"
+            pass
             
-        if cachefile not in self.cacheIndex:
+        print "SK143",repr(self.cacheIndex)
+        
+        if (cachefile not in self.cacheIndex 
+            or len(self.cacheIndex[cachefile]) == 0):
             #@@NOTE: use memory version first, one adcc per machine makes this
             # reasonable
             self.load(cachefile = cachefile)
@@ -185,10 +196,16 @@ class StackKeeper(object):
         self.lock.release()
                 
     def persist(self, cachefile = None):
+        if (self.local == False):
+            #do nothing, persistence is done on local side
+            return
+            
         if cachefile == None:
             raise SKExcept("Cannot persist, cachefile == None")
         self.lock.acquire()
         if cachefile not in self.cacheIndex:
+            print "cachefile not in Index"
+            raise
             return # nothing to persist
         pfile = open(cachefile, "w")
         # print "SK131:", cachefile

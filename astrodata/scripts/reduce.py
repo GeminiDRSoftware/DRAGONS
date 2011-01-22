@@ -169,13 +169,6 @@ parser.add_option("--invoked", dest="invoked", default=False, action="store_true
           
 (options,  args) = parser.parse_args()
 
-if options.invoked:
-    opener = "reduce started in adcc mode (--invoked)"
-    log.status("."*len(opener))
-    log.status(opener)
-    log.status("."*len(opener))
-    sys.stdout.flush()
-
 useTK =  options.bMonitor
 # ------
 #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
@@ -190,10 +183,21 @@ terminal.forceHeight = options.forceHeight
 
 if options.recipename == "USER":
     options.verbose=6
+
+if options.invoked:
+    options.verbose = 6
     
 #---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
 log = gemLog.getGeminiLog(logName=options.logName,verbose=options.verbose,debug=options.debug)
 #-------------------------------------------------------------------------
+
+if options.invoked:
+    opener = "reduce started in adcc mode (--invoked)"
+    options.verbose = 6
+    log.status("."*len(opener))
+    log.status(opener)
+    log.status("."*len(opener))
+    sys.stdout.flush()
 
 def abortBadParamfile(lines):
     for i in range(0,len(lines)):

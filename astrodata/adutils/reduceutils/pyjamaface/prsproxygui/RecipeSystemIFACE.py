@@ -148,6 +148,8 @@ class ReducePanelIFACE(PanelIFACE):
         filesstr = "&p=".join(rfiles)
                 
         cl = "/runreduce?%s&p=%s" % (rstr, filesstr)
+        # @@TEST
+        # cl = "/recipes.xml"
         if False:
             msg = repr(self.parent)+repr(dir(self.parent))
             JS("alert(msg)")

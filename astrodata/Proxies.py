@@ -71,11 +71,25 @@ class ReduceServer(object):
             server.socket.close()
 
 def startADCC():
-    prsout = open("adcc-reducelog-%d-%s" % (
-                                                        os.getpid(),
-                                                        str(time.time())
-                                                       )
-                                                        , "w")
+    logdir = ".autologs"
+    if not os.path.exists(logdir):
+        os.mkdir(logdir)
+    logname = os.path.join( ".autologs",
+                            "adcc-reducelog-%d-%s" % 
+                                    (
+                                    os.getpid(),
+                                    str(time.time())
+                                    )
+                          )
+                          
+    prsout = open(logname, "w")
+                  
+    loglink = "adcclog-latest"
+    if os.path.exists(loglink):
+        os.remove(loglink)
+    print "creating %s -> %s" % (logname, loglink)
+    os.symlink(logname, loglink)
+    
     prsargs = ["adcc.py",
                 "--invoked",
                 #"--reduce-port", "%d" % reduceServer.listenport,
@@ -261,7 +275,7 @@ class PRSProxy(object):
         return newProxy
         
     def unregister(self):
-        print "P262 self.registered=", repr(self.registered)
+        # print "P262 self.registered=", repr(self.registered)
         if self.registered:
             self.prs.unregister(os.getpid())
             self.registered=False

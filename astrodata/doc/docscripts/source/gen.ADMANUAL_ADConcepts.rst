@@ -14,36 +14,58 @@ Dataset Abstraction
 
 The AstroData class traces back to a request by Gemini Astronomers to
 "handle MEFs better" in our reduction package. A "MEF" is of course a
-"Multiple-Extension FITS File", and is also Gemini's standard dataset
+"Multiple-Extension FITS File" and is also Gemini's standard dataset
 storage format. Investigation showed that the MEF libraries were
-sufficient for handling "MEFs" as such, and the real meaning of the
-request was for a better dataset abstraction. FITS libraries (e.g.
-pyfits) return opened MEFs as lists of Header-Data Units, aka lists of
-"extensions". The libraries do not recognize semantic relationships
-between the extensions except as part of a list (though adding a
-secondary listing mechanism using (EXTNAME, EXTVER) tuples. AstroData
-on the other hand can be configured to recognise internal connections
-that MEF does not directly encode.
+sufficient for handling "MEFs" as such and the real meaning of the
+request was for a better dataset abstraction for Gemini's datasets.
+Gemini MEF, and MEFs in general, are usually meant to be coherent
+collections of data. The separate pixel arrays, or extensions, are
+collocated in a common MEF because they are related. The MEF
+abstraction does not recognize these connections, however, and view
+the MEF as a list of separate header-data units, their only relation
+being collocation in the list. FITS libraries (e.g. pyfits) return
+opened MEFs as objects which act as lists of Header-Data Units, aka
+lists of "extensions". The libraries do not recognize the purpose of
+one extension versus that of another, nor many semantic relationships
+between the extensions except as part of a list and as sub-lists of
+identically named extensions, adding a secondary indexing mechanism
+using (EXTNAME, EXTVER) tuples.
 
-An additional role of the abstraction is to standardise access to
-metadata. FITS allows copious metadata in each extension and in the
-shared "zero'th" extension (aka "the PHU"), but it standardizes only a
-small subset of what is stored there. Many properties which are, for
-Gemini, universal properties for our datasets across instruments and
-modes are thus not standardised and are distributed across different
-header key-value pairs. This leads to ubiquitous information being
-available, in all datasets but requiring dataset-specific coding for
-retrieval. AstroData hides the particulars behind getting a particular
-bit of dataset metadata behind a common AstroData interface.
+AstroData on the other hand is designed to be configured to recognize
+many internal connections that MEF does not directly encode. AstroData
+detects type type of the data, and then can make sound assumptions
+about what the data is and how to handle it. Any particular (python-
+level) actions on the data are then performed by implementations in
+the configuration space.
 
-AstroData begins by detecting the type of dataset, ideally on
-characteristics of the file available from the PHU, but able to look
-at any aspect of the datase4t. Then, using this knowledge, AstroData
-can load and apply particular, potentially instrument-specific,
-methods to obtain the general behaviour required by the user. To first
-order Astrodata Types map to instrument-modes, but more rich types of
-dataset identification are possible (such as generic types such as
-"IFU" vs "IMAGE").
+An additional role of the AstroData abstraction is to standardize
+access to metadata. FITS allows copious metadata in each extension and
+in the shared "zero'th" extension (aka "the PHU"), but it standardizes
+only a small subset of what sort of information is stored there. Many
+properties which are for Gemini essentially universal properties for
+our datasets, across instruments and modes, are not standardized as a
+result. These bits of information which are commonly required are
+distributed across different header key-value pairs, in different
+units, for different instruments and modes. This leads to a situation
+where there is a certain bit of information which is ubiquitously
+available in all datasets, but which requires instrument-mode-specific
+coding to be retrieved to a particular unit and meaning. AstroData
+hides the particulars by allowing functions that calculate the
+metadata to be defined in the same configuration space in which the
+dataset type itself is defined.
+
+The AstroDataType system is able to look at any aspect of the dataset
+to judge if it belongs in a given classification, but the intent is to
+find characteristics in the MEF's PHU. Using this knowledge, AstroData
+loads and applies particular arbitrarily instrument-mode-specific
+methods to obtain the general behavior required by the user, not only
+in the case of metadata but also in the case of transformations and
+indeed, for any dataset-type-specific behavior. To first order,
+Astrodata Types map to instrument-modes, and these provide a good
+concrete image of what Astrodata Type are. However more abstract types
+of dataset identification are also possible and make themselves
+useful, such as generic types such as "IFU" vs "IMAGE", or processing
+status types such as "RAW" vs "PREPARED".
 
 
 Dataset Transformations
@@ -51,22 +73,52 @@ Dataset Transformations
 
 The Astrodata package's "Recipe System" handles all abstractions
 involved in transforming a dataset and is built on top of the
-AstroData dataset abstraction. Note, use of AstroData does not import
-any aspects of the "Recipe System", so there is no overhead from the
-Recipe System borne due to use only of the AstroData abstraction. Our
-desire with transformations was to have a system in which high level
-transformations could be build of low level transformations, and users
-and automation systems alike (e.g. pipelines) could invoke these
-transformations at whatever level of interactivity was appropriate for
-the particular class.
+AstroData dataset abstraction. The system is called the "recipe
+system" because the top level instructions for transforming data are
+"recipes", text files of sequential instructions to perform. For
+example the recipe "overscanCorrect" contains the following (comments
+removed):
+
+.. code-block:: python
+    :linenos:
+
+    
+    prepare
+    overscanCorrect
+    addVARDQ
+    setStackable
+    averageCombine
+    storeProcessedBias(clob=True)
+
+
+Each of these instructions is either a "primitive", which is a python
+function implemented in the configuration space for a dataset of the
+given classification, or another recipe. Note that
+"storeProcessedBias" primitive above takes an argument in this
+example, "clob(ber)" equals "True", which tells the storage primitive
+to overwrite any previous versions of the bias produced.
+
+
+NOTE: Recipe System Separate from Astrodata Core
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+Use of AstroData does not import any aspects of the "Recipe System",
+so there is no overhead on users of AstroData borne from the Recipe
+System, neither the configuration package or even the relevant
+"astrodata package" modules are imported until the Recipe System is
+explicitly used. Our desire with transformations was to have a system
+in which high level transformations could be build of low level
+transformations, and users and automation systems alike (e.g.
+pipelines) could invoke these transformations at whatever level of
+interactivity was appropriate for the particular class.
 
 
 The Astrodata Lexicon and Configurations
 ````````````````````````````````````````
 
 An Astrodata Configuration package, defining types, metadata, and
-transformations, relies on a lexicon consisting of three types of
-elements, which are implemented in the package in a way such that
+transformations, relies on a configuration which understands a lexicon
+of elements which are implemented in the package in a way such that
 Astrodata can load and apply the functionality involved. In the
 current system there are three types of terms to be concerned with:
 
@@ -80,40 +132,45 @@ current system there are three types of terms to be concerned with:
 Each of these have associated actions:
 
 
-+ Astrodata Type: checks a dataset for adherence to a classification
-  criteria, generally by checking PHU key-value pairs.
-+ Astrodata Descriptors: calculates a particular, named, piece of
-  high-level metadata for a particular Astrodata Type.
-+ Primitives: performs a standard, named, transformation on a dataset
-  of a particular Astrodata Type.
++ **Astrodata Type**: checks a dataset for adherence to a
+  classification criteria, generally by checking key-value pairs in the
+  PHU.
++ **Astrodata Descriptors**: calculates a named piece of high-level
+  metadata for a particular Astrodata Type.
++ **Primitives**: performs a named transformation on a dataset of a
+  particular Astrodata Type.
 
 
 The "astrodata_Gemini" package contains these definitions for Gemini
-datasets separated into two parts of the configuration. First,
-ADCONFIG_Gemini, which defines types, descriptor functions, and any
-other AstroData related features. Second, RECIPES_Gemini, which
+datasets separated into two parts of the configuration. The first
+section, in its own subdirectory in the configuration packages, is
+ADCONFIG_Gemini, which defines types, descriptor functions, and other
+AstroData-related features. The second section, in its own
+subdirectory in the configuration package, is RECIPES_Gemini, which
 defines configurations and implementations needed by the Recipe
-System, such as primitives.
+System, such as recipes and primitives.
 
 
 Astrodata Type
 ~~~~~~~~~~~~~~
 
-Lack of a central system for type detection in our legacy package
-means that scripts and tasks in that system make extended checks on
-the header data in the datasets they manipulate. Often these checks
-merely verify that the right type of data is being worked on, and yet
-they can still be somewhat complex, at the least multi-lines, hard
-coded to particular hearder values, and can vary from task to task
-even when the same check is intended.
+An Astrodata Type is a named set of dataset characteristics.
 
-Thus, how a dataset classification is recognised is not presumed to be
-consistent throughout the legacy package. Astrodata's classification
-system, on the other hand, allows defining dataset classifications in
-configuration packages such that the type definitions are shared
-throughout the system. This centralizes the meaning of a particular
-type and also the official heuristics for detecting it. This allows
-programmers to make such checks in a single line of code:
+Lack of a central system for type detection in our legacy package
+meant that scripts and tasks in that system make extended checks on
+the header data in the datasets they manipulate. Often these checks
+merely verify that the right type of data is being worked on, a very
+common task, yet these checks can still be somewhat complex and
+brittle, for example relying on specific headers which may change when
+an instrument is upgraded.
+
+Astrodata's classification system on the other hand allows defining
+dataset classifications in configuration packages such that the type
+definitions are shared throughout the system. The calling code can
+refer to type information by string that names the type, and any
+subtitles in or changes to the means of detection are centralized,
+allowing programmers to check dataset types with a single line of
+code:
 
 .. code-block:: python
     :linenos:
@@ -136,9 +193,9 @@ The `isType(..)` function on lines 5 and 8 above is an example of one-
 line type checking. The one-line check replaces a larger set of PHU
 header checks which would otherwise have to be used. Users benefit in
 a forward-compatible way from any future improvements to the named
-type, such as better checks, or incorporating new instruments and
+type, such as better checks or incorporation of new instruments and
 modes, and also gain additional sophistication such as type-hierarchy
-relationships which are simply not present in the legacy approach.
+relationships which are simply not present with the legacy approach.
 
 The most general of benefits to a clean type system is the ability to
 assign type-specific behaviors and still provide the using programmer
@@ -148,56 +205,60 @@ with a consistent interface to the type of functionality involved.
 Astrodata Descriptors
 ~~~~~~~~~~~~~~~~~~~~~
 
+A descriptor is named metadata.
+
 It goes without saying that our scientific datasets contain (and
 require) copious metadata. Significant amounts of "information about
-the information" is present regarding an observation and much of it is
-important to a data analysis process. The `MEF
-</gdpsgwiki/index.php/MEF>`__ file structure supports such meta-data
-in the headers of the primary and extension HDUs. One might presume,
-as we did, the problem is that the header have different names, and
-that a table driven solution could work, such that when the user
-needs, for example, the gain value(s) associated with a dataset, the
-problem is the value is stored in header values with differing key
-names. One could look the correct name for a particular concept of
-metadata up, for a given instrument, and do a header lookup based on
-that key.
+the information" is present along with the pixel data regarding an
+observation and much of it is important to data analysis processes.
+The `MEF </gdpsgwiki/index.php/MEF>`__ file structure supports such
+meta-data in the header units of the primary and other extension HDUs.
 
-This approach is not workable. Firstly, the units of the given value
-are different. To return the values in different units would break the
-point of unifying access to the data, though one could add unit
-information to the key-name lookup table, and either convert the value
-to a standard unit or at least report the unit to the user. However,
-expanding the table approach this way would still not be sufficient.
+At first blush the problem retrieving metadata consistently is that
+while the values of interest are stored in some form in the headers,
+the header key names do not follow consistent conventions over all.
+It's easy to assume that there is a one to one relationship between
+particular metadata headers of different instrument-modes and that the
+discrepancy is that the developers have chosen different header key
+names. If that were the entire problem a table oriented approach could
+be used and one could look up the proper header key name for a
+particular named piece of metadata based on the type of dataset. This
+particular key would be used to look up the information in the
+headers.
 
-The reason no table lookup can be a general solution is that the
-desired and expected metadata is sometime distributed across multiple
-header key/value pairs. As the distribution and meaning of the header
-cards in which the information is located therefore in general
-requires arbitrary computation to combine. Secondly a correct
-calculation sometimes requires use of lookup tables that are not in
-the dataset at all, and must be looked up using type information about
-the dataset.
+This table driven approach is not workable because the situation turns
+out to be more complex. Firstly, the units of the given header value
+may be different for different instruments and modes. A table could be
+expanded to have a column for the value's storage and return type, but
+expanding the table in this way would still not be sufficient.
 
-For these reasons only a function-based system was deemed general
-enough. Thus part of the ADCONFIG_Gemini configuration package
-contains functions that can calculate given metadata. These functions
-can be shared by branches of the type tree for which the metadata is
-calculated (or looked up) identically, and also particular functions
-can be assigned to instrument-modes which require a special means of
-calculation due to instrument specific behaviors or merely a different
-arrangement of raw metadata in the MEF headers.
+The decisive complications that preclude a simple table look-up
+approach are two. One, the information needed to provide the named
+metadata is sometimes distributed across multiple key/header values.
+These require combination or computation, and the for another
+instrument or mode the information is in such cases sometimes
+distributed differently. Two, a correct calculation of the metadata
+sometimes requires use of look-up tables that must be loaded based on
+the dataset's Astrodata Type.
 
-We call the high-level metadata "Astrodata Descriptors", or just
-"descriptors". The descriptor is a concept, both the name and the
-meaning of the name, including details such as the units in which the
-metadata is returned. Behind this name and concept are implementations
-attached to branches of the type-hierarchy which then share the same
-calculation method, when that is possible. The configuration includes
-tables which assign "descriptor calculators" to Astrodata Types, and
-at runtime the correct implementation is looked up using these tables
-defined in the configuration itself. Given an AstroData instance, ad ,
-to get the "gain" metadata for any supported datatype, you would use
-the following code, regardless of the instrument-mode of the dataset:
+For metadata which complies with the more simple expectations of the
+first consideration, widely shared descriptors for some metadata are
+able to lookup the data based on standard names or due to simple rules
+that generalize whatever variation in storage of that particular
+metadata. While it is possible for a descriptor to store it's
+calculated value in the header of the dataset, and return that if
+called again, essentially caching the value in the header, Gemini
+descriptors always recalculate, and leave such caching to the calling
+program.
+
+A descriptor is named piece of metadata, complete with proper unit and
+a conceptual description (`Template:URL GEMINI DESCRIPTORS </gdpsgwiki
+/index.php?title=Template:URL_GEMINI_DESCRIPTORS&action=edit&redlink=1
+>`__). E.g. Any CCD based data will have an associated "gain",
+relating to the electronics used to take the image. Given an AstroData
+instance, ad , to get the "gain" for any supported Astrodata Type, you
+would use the following source code regardless of the instrument-mode
+of the dataset:
 
 .. code-block:: python
     :linenos:
@@ -206,112 +267,109 @@ the following code, regardless of the instrument-mode of the dataset:
 
 
 Because the proper descriptors are assigned to the correct Astrodata
-Types, the line above will work for any supported datatype, taking
-into account any type-specific peculiarity. The current
-ADCONFIG_Gemini configuration implementation has descriptors for all
-Gemini instruments. See "Gemini AstroData Type Reference"
+Types for Gemini Instruments, the line above will take into account
+any type-specific peculiarities of any supported dataset. The current
+ADCONFIG_Gemini configuration implementation has descriptors present
+for all Gemini instruments. See "Gemini AstroData Type Reference"
 (`http://www.gemini.edu/INSERTFINALGATREFURLHERE
 <http://www.gemini.edu/INSERTFINALGATREFURLHERE>`__) for a list of
-available descriptors for Gemini data.
+available descriptors for Gemini data. Note that descriptor names
+themselves are not covered in the Astrodata Users Manual itself
+because they are part of the type-specific configuration package.
 
 
 Recipe System Primitives
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-A primitive is meant to name a particular abstract dataset
-transformation both in name and idea. The means of implementing the
-transformation can and will sometimes be different for different types
-of dataset, but the meaning of the transformation should apply in all
-cases. E.g. "subtractSky" has the same idea and name for MIR and
-Optical data, but will be implemented differently due to different
-practices in different wavelength regimes.
+A primitive is a named transformation.
 
-The concept of a "recipe" is important to the Recipe System, and is
-just a list of "primitives". As with primitives and other Astrodata
-features, recipes can be written for particular branches of the type
-hierarchy, however, since they are lists of primitives, which already
-normalize transformations which may in fact have different
-implementations, a "recipe" should tend to be a more general purpose
-element, shared higher up the type hierarchy, with instrument specific
-behavior happening not in the recipe but during the dispatch to
-particular primitives in the recipe. Recipes can contain recipes and
-internally recipes are converted "to primitives" at run time, so the
-level at which specific behaviour is invoked can be carefully
-controlled.
+A primitive is meant to name an abstract dataset transformation for
+which we will want to assign concrete implementations on a per
+Astrodata Type basis. E.g. "subtractSky" is a transformation that has
+meaning for a variety of wavelength regimes which involve subtracting
+sky frames from the science pixels. Nevertheless, different
+instruments in different modes will require different implementations
+of this step, due both to differences in the data and data layout
+produced by a particular instrument-mode, and also to different
+reduction practices common in different wavelength regimes.
 
-Formalizing the transformation concepts allows us to refactor the
-solutions due to unforeseen complications, new information and
-instruments, and so on, without having to necessarily change recipes
-that call these transformations. This helps us expand and improve the
-available transformations while still providing a stable interface to
-the user.
+Recipe and primitive names both have rolls bridging the gap between
+what the computer does and what the science user expects to be done,
+which details to expose, i.e. in a name, and which details to obscure
+and assume are unimportant if done "properly for the given type of
+data". The primitives are thus human-recognizable steps such as come
+up in a discussion among science users about data flow procedures. The
+recipes are, loosely, the names of data processing work, and the
+primitves are names for human-recognizable steps in that process. This
+puts a constaint on how fine grained primitives should becomes, for
+example at Gemini we have assumed the coherent of primitives as steps
+means the data should never be incoherent or invalid scientifically
+after a given step. That is, no step should require another step to
+complete for its own transformation to be considered complete.
 
-AstroData is intended to be useful in general python scripting so one
-does not have to write code in the form of primitives, and the Recipe
-System is not automatically imported (i.e. as a result of "import
-astrodata"). A script using AstroData benefits from the type,
-descriptor and other built in data handling features of AstroData but
-such scripts do not lend themselves to use in a well-controlled
-automated system. They lack a consistent control and parameter
-interface. If one wants to take advantage of the automation systems
-within the Recipe System, such code is wrapped in primitives which
-provides a consistent input/output interface the both the user and the
-primitive author.
+The fact that recipes can call recipes addresses the different levels
+of conception of what is considered a complete step in terms of the
+degree of the transformation. That is, a recipe called by a recipe at
+one level is seen as an atomic step, but to experts in the mode being
+processed, this recipe in turn is made of coherent steps. At bottom
+primitives have to be executed so that actual python can run and
+manipulate the data but below a certain level of granularity
+primitives become inappropriate, and such code, insofar as it is
+reuseable and/or needs to be encapsulated, appears in utility
+libraries, such as the Gemini "gempy" package.
+
+Formalizing the transformation concept allows us to refactor our data
+reduction approaches due to unforeseen complications, new information,
+new instruments, and so on, without having to necessarily change
+recipes that call these transformations, or the named transformations
+which the recipes themselves represent. Recipes for specific nodes in
+the Astrodata Type tree can also be assigned as needed, and the fact
+that recipes and primitives can be used by name interchangeably
+ensures that transformations can be refactored and solved with
+different levels of recipe and primitive. This flexibility helps us
+expand and improve the available transformations while still providing
+a stable interface to the user.
+
+AstroData is intended to be useful for general python scripting, that
+is, one does not have to write code in the form of primitives to use
+Astrodata. And, as mentioned previously, the Recipe System is not
+automatically imported (i.e. as a result of "import astrodata") so
+that no overhead is borne by the AstroData user not making use of
+automation features, such as when writing a script. A script using
+AstroData benefits from the type, descriptor, validation, and other
+built in data handling features of AstroData. However, such scripts do
+not lend themselves to use in a well-controlled automated system, and
+thus the Recipe System is provided for when there is need for such a
+system, as with the Gemini Pipeline projects. Unconstrained python
+scripts lack a consistent control and parameter interface.
+
+When writing primitives all inputs are provided through the Reduction
+Context, and depending on the control system these may come from the
+unix command line, the pyraf command line, from a pipeline control
+system or other software, or by calling recipes and primitives.
+Primitive functions are written as python generators, allowing the
+control system performs some tasks for the primitive, such as history
+keeping and logging, keeping lists of stackable images, retrieving
+appropriate calibrations, reporting image statistics to a central
+database, etc., when the primitive "yields".
 
 The automation system is designed to support a range of automation,
-from dataset by dataset automation for a pipeline processing data as
-it comes from the telescope, through to a more "interactive"
-automation where the user decides at what level to initiate
-automation.
+from dataset by dataset fully automated mode for pipeline processing
+data as it comes from the telescope, through to "interactive
+automation" where the user decides at what level to initiate
+automation and where to intervene.
 
-The primitives themselves are implemented as python "generators", a
-type of function from which the programmer can "yield" control such
-that the function can be subsequently reentered at the point of the
-yield. This ability allows communication and cooperative control to
-take place "while" a primitive executes, in a cooperatively
-multitasking manner. This allows the controlling system to perform
-some services for the reduction (like retrieving calibrations from a
-potentially remote source), during "yield" statements.
-
-The astrodata package itself in no way enforces any rules about the
-complication or nature of the transformations performed by the
-primitive, but such standards are meant to be part of a particular
-configuration. In the astrodata_Gemini configuration the general
-intention has been that primitives represent transformations which are
-arguably "scientifically meaningful". The name of a primitive should
-bear some meaning in an offline conversation about data flow.
-
-For examples, some example primitive names are "subtractSky" and
-"biasCorrect" which have meaning in conversation about dataflow,
-regardless of how they are performed on a particular dataset.
-Arbitrarily complex material differences in the dataset may require
-very different implementations, but so long as the step is performed
-properly for the type processed, the differences are not represented
-in the primitive names (and thus not in the recipes invoking them).
-
-Within the primitive there is pure python code and significant
-software engineering artifacts, but in the name of the primitives, and
-thus in recipes, only a reference to the scientific concepts of the
-named primitives exists. There are no explicit conditionals or
-variables in recipes. However, the correct implementation for a given
-primitive is ensured to be run, and thus there is implicit conditional
-behavior in recipes, based on Astrodata Type. Thus recipes are said to
-"adapt" to the dataset type being processed at that point in the
-recipe, as determined by the dataset being processed at that state of
-processing.
-
-As users advance it may be of interest to mention that primitives,
-strictly speaking, transform a"Reduction Context" object, not
+As users advance it may be of interest to know that primitives,
+strictly speaking, transform the"Reduction Context" object and not
 specifically (or merely) the input datasets. This context contains
 references to all objects and datasets which are part of the
-reduction, part of which are the input files and is passed into the
-primitives as the standard and sole argument for all primitive
-generators.
-
-For example, a primitive to calculate "seeing quality" will not
-actually modify the dataset, but it will in fact modify the Reduction
-Context by reporting the calculated statistic to context via the
-ReductionContext class' API.
+reduction, including the input datasets. It is the Reduction Context
+as a whole that is passed into the primitives as the standard and sole
+argument for the primitive, and which must be left in a coherent state
+upon final exit. For example, a primitive to calculate "seeing
+quality" will not actually modify the dataset, but it will in fact
+modify the Reduction Context by reporting the calculated statistic to
+the reduction context via the ReductionContext class' API.
 
 Below is a prototype recipe in use in our development environment for
 testing. It performs some initial processing on RAW data.
@@ -342,119 +400,165 @@ primitive sets within the correct part of the configuration.
 
 
 
-Benefit of the Primitive Concept
-````````````````````````````````
+Some Benefits of the Primitive Concept
+``````````````````````````````````````
 
 Use of primitives instead of scripts for reduction processes has a
 major side benefit besides enabling automation features through the
-Recipe System, which is that it promotes breaking reductions down into
-discrete chunks, each of which is a comprehensible transformation of
-one valid dataset into another valid dataset. Discussing how to break
-down and name our classical reduction procedures into reusable recipes
-and primitives has had the effect of clarifying our understanding of
-these procedures.
+Recipe System, due to the fact that it is bound to the language
+members of data flow teams at Gemini, as well as Instrument Scientists
+and PIs, use to discuss data flow procedures. This requirement has
+promoted being consistent when breaking reductions down into discrete
+chunks. The fact that the steps have to be implemented with common
+interfaces, ensures we create conceptions of comprehensible
+transformations that can be implemented.
 
-Steps with re-use potential in other recipes should be contained as
-separate primitives, as should those which may be of use if used
-directly by a user in isolation of other transformations. In our
-experience so far, mapping a general processing script into a recipe,
-which means breaking the process down into discrete primitive steps,
-leads to discovery of reusable concepts that enrich our data flow
-language even if the script had a rather specific purpose. That is,
-even in very mode-specific processing there exist general purpose
-steps which benefit from a library of mode-general standard
-transformations.
+Discussing how to break down our classical reduction procedures into
+recipes made of reusable primitives has had the effect of clarifying
+our understanding of these procedures. Steps with re-use potential in
+other recipes should be contained as separate primitives, and this
+becomes clear in the process of regularizing procedures into clear
+reduction steps (i.e. into recipes). Even in very instrument and mode-
+specific processing there seem to exist general purpose steps which
+benefit a general purpose reusable reduction toolkit of primitive
+operations.
 
 In effect, primitives have become our natural data flow language. As
 we design primitives, we end up formalizing and implementing the very
-terms we use to describe our data flow. When a new primitive is
-defined, a new term is created that we use to describe our data flow.
+terms we use to describe our data flow. As we discuss new reduction
+features, we invent terms which then are judged on the possibility of
+making the abstraction and also implementing the concrete methods
+given the inputs specified in the abstractions. In this way we judge
+and rejudge our abstractions and approaches, finding holes in either.
 
-Note: We have performed the exercise of breaking down a set of pre-
-existing scripts into recipes and primitives. It turned out relatively
-easy to find where the discrete transitions occur in the scripts, and
-identify them as primitives. These primitives were developed in a
-separate recipe package from RECIPES_Gemini, added to the RECIPEPATH
-environment variable (they can appear in PYTHONPATH but this is not
-always desirable and not necessary since they are accessed by
-astrodata and not directly imported. As a stand alone package for a
-particular purpose (Instrument Monitoring) it was not as important to
-create idealized primitives as it is for the standardized Gemini
-primitives which are intended to be reusable and generally
-comprehensible. Instead of formal design, these primitives had been
-abstracted from the ad hoc design of the scripts. However, since the
-ad hoc source code is hidden within the primitives, the recipe still
-is a good high level description of the scripts original algorithmic
-shape, and subsequent to the conversion lends itself to careful and
-conscious refactoring as deemed worthwhile.
 
-In the case of our instrument monitoring example case, the result of
-the refactoring to the Recipe System is functional and in use, and
-there was no serious need to change the method used in a significant
-way to benefit from the Gemini library of primitives. Also, several of
-the primitives created proved of probable general interest (i.e.
-retrieving data from the GSA automatically), and would be temptingly
-simple to generalize.
+Brief Aside: Test Case at Gemini Observatory Refactoring to Primitives
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+We (GDPSG and DA teams) have performed the exercise of breaking down a
+set of pre-existing scripts into recipes and primitives. The procedure
+turned out relatively easy:
+
+
+#. finding where the natural discrete transitions occur in the scripts
+   involved, these are places where the input datasets and the entire
+   reduction context are in a coherent state (milestone states).
+#. identifying each of these transitions as named primitives, identify
+   their input and output.
+#. cutting and pasting script code into a primitive and adapting the
+   code to obtain whatever input is needed from the reduction context. If
+   the code produced information which informed another part of the
+   original script which is now in another primitive, then the code it
+   adapted to store the information in the reduction context so it is
+   available to the other primitive.
+#. a recipe is created listing the steps so created.
+
+
+The primitives in this case were developed into a separate recipe
+package from RECIPES_Gemini, added to the RECIPEPATH environment
+variable (they can appear in PYTHONPATH but this is not always
+desirable and not necessary since they are accessed by astrodata and
+not directly imported). As a stand alone package for a particular
+internal purpose (Instrument Monitoring) it was not as important for
+these primitives to follow idealized standards, i.e. in terms of
+robustness or methodology, as it is for the general library of Gemini
+primitives. Thus, instead of formal design, these primitives were
+abstracted from the ad hoc design of the scripts that had been doing
+the work. Even so, since the original, ad hoc, source code is hidden
+within named steps, the primitives, the recipe is a good high level
+description of the scripts original algorithmic process, information
+which was far from evident perusing the original scripts themselves.
+Subsequent work on the recipes only improves the exposure and ordering
+of the processes involved.
+
+In the case of our instrument monitoring example the result of the
+refactoring to the Recipe System is functional and in use. The
+resulting recipes made use of some primitives from the Gemini library
+of primitives, and could use more with some refactoring (i.e. they
+performed their own "prepare" step on GMOS data). Furthermore, several
+of the primitives created from the scripts proved of probable general
+interest, such as a primitive which can retrieve data from the GSA.
 
 
 Recipes calling Recipes
 ```````````````````````
 
-Recipes can in fact call recipes, as can primitives. The result is we
-tend to have top level recipes which represent the most abstract view
-of the data transformation and describe steps most data go through. At
-the lowest level we have primitives which represent the most concrete
-steps we want want to consider as "arguably scientific", or at least
-consider "data flow language" rather than "pure python". In between
-can be recipes and primitives with a varying degree of mode-
-specificity.
+Recipes can in fact call other recipes as well as primitive, as can
+primitives. During execution the Astrodata Recipe System makes little
+distinction between recipes and primitives or from the caller's
+perspective. Calling code can give a primitive name to the "reduce"
+command as a "recipe" and reduce will execute the primitive directly.
+Still the general picture is that we tend to have top level recipes
+for standard processes such as making a processed bias, which list the
+steps that the data must go through to complete the processing named
+by the recipe.
 
-Ultimately, at the lowest level, within the primitives, is of course,
-pure python. However, this python code can still be written in a
-generic way, and be assigned to a high level type. The result is that
-recipes and primitives both can appear anywhere in the type hierarchy
-with respect to mode-specificity, with recipes still conceptually at a
-higher level, but technically possibly below the "level" of a
-particular primitive. Recipes and be refactored into primitives and
-vice versa fairly easilly, and design of the system and the
-particulars of the development goals in a given case thus can drive
-what is a recipe vs what is a primitive in addition to the general
-guidline that recipes are used for transformations defined higher in
-the type hierarchy.
+It is a judgment call how fine grained this list should be, and what
+is appropriate to view in a recipe of a certain scope may not be the
+same granularity appropriate for specialists in the data regime being
+processed. Sometimes if the top level recipe were to name every step
+which an Instrument Analyst of Data Processing Developer found
+distinct, then the more finely grained steps should be bundled
+together into a recipe which can be called as a single step from a
+higher level recipe. The ability for recipes to call recipes ensures
+steps can be named whatever is semantically appropriate for whatever
+level of processing is of interest to the user in a particular
+situation. This means that at one extreme the recipe system can
+support a processing paradigm in pipelines which invoke reduction with
+the most general instructions, "do the appropriate thing for the next
+file", and at the other extreme allows users to decide what to treat
+as atomic processes and when to intervene.
+
+The fact that primitives (should) always leave datasets at some
+milestone of processing provides some security for the user that they
+will not perform an operation that puts the dataset in an incoherent
+state.
+
+Breaking down recipes into sub-recipes and so on into primitives
+truncates at the lowest level when we have primitives that, however
+focused, modify the data (or reduction context) in some significant
+way and leave the dataset at some milestone of reduction, however
+minor. It's also possible, especially if a primitive is adapted from a
+script, that a primitive will be monolithic, and cannot be broken down
+into a recipe until more finely grained primitives are created. The
+interchangeability of recipes and primitive names is meant to
+encourage such refactoring, as any reusable set of primitives is
+considered more useful than a monolithic primitive performing all the
+functions of the reusable set at once.
 
 
 AstroData Lexicon
 ~~~~~~~~~~~~~~~~~
 
-These three concepts, starting with Astrodata Type, and then adding
-Astrodata Descriptors and Primitives which are assigned to the types,
-contribute in a lexicon of terms about the datasets recognized by the
-configuration, e.g. in the case of Gemini, as defined in
-astrodata_Gemini our astrodata configuration package. Type-specific
-behaviors are assigned to branches (or leaves) of the type-tree
-hierarchies and will apply to those types below them in the hierarchy
-unless overridden by a still more-type-specific assignment. While I
-have described two general features which require type-dependent
-implementations, the system is arranged such that it is relatively
-easy to look up (and therefore assign) any feature or property based
-on Astrodata Type in the same manner. Other behaviors can and will
-also be assigned this way in the future, for example the Astrodata
-Structures feature, currently a prototype implementation, which
-provides hierarchical representation of datasets as well as performing
-validation functionality. For complete documentation of the
-ADCONFIG_Gemini type and descriptor package see {{GATREFNAME},
-available at `http://www.gemini.edu/INSERTFINALGATREFURLHERE
+A lexicon is a list of words, and this is what the designer of an
+Astrodata configuration creates at the top level of abstraction.
+Firstly, they words that identify types of dataset. Then they
+construct words that describe metadata one expects to be associated
+with these datasets, and finally they create words that describe
+transformations that can be performed on datasets.
+
+Astrodata Types sufficiently defined can be recognized by astrodata
+and thus the other behaviors can be inferred. For example, the
+"astrodata_Gemini" package is the public configuration package
+defining data from Gemini instruments. Descriptors for all instruments
+have been created, and early implementations of primitives for
+GMOS_IMAGE and GMOS are available (and under development).
+
+For complete documentation of the ADCONFIG_Gemini type and descriptor
+package see {{GATREFNAME}, available at
+`http://www.gemini.edu/INSERTFINALGATREFURLHERE
 <http://www.gemini.edu/INSERTFINALGATREFURLHERE>`__.
 
-The astrodata package itself has no built in type or descriptor
+The astrodata package itself has no built-in type or descriptor
 definitions. It contains only the infrastructure to load such
 definitions from an astrodata configuration package directory (which
-appears in the PYTHONPATH or RECIPEPATH environment variables as a
-directory following the "astrodata_xxx" naming convention, and which
-also by convention contains the specific "ADCONFIG_xxx" and
-optionally, the "RECIPE_xxx" sub-packages). Here is an example of part
-of the GMOS type tree graph, specifically for the GMOS_IMAGE branch,
-from the current Gemini classification library:
+appears in the PYTHONPATH, RECIPEPATH, or ADCONFIGPATH environment
+variables as a directory complying with the "astrodata_xxx" naming
+convention, and containing at least one ADCONFIG_xyz or RECIPES_xyz
+sub-package.
+
+Here is an part of the Gemini type hierarchy, the GMOS_IMAGE branch of
+the GMOS types:
 
 
 .. figure:: images_types/GMOS_IMAGE-tree-pd.png
@@ -466,22 +570,28 @@ from the current Gemini classification library:
     
 
 
-This graph shows GMOS_IMAGE is a child type of the GMOS type, which in
-turn is a child of the GEMINI type. The children of GMOS_IMAGE are
-other types which are children of GMOS_IMAGE. The graph shows a
-descriptor calculator and primitive set assignments and shows a
-descriptor assigned to GMOS which GMOS_IMAGE inherits, as there is
-nothing more specific assigned. The graph shows primitive sets
-assigned to GEMINI, GMOS, and GMOS_IMAGE. A primitive set specific for
-GMOS_IMAGE is present so this is what would be used for
-transformations to GMOS_IMAGE objects. Note, the primitive set class
-used internally for GMOS_IMAGE uses the GMOS primitive set as a parent
-class, and only over writes those primitives which require special
-handling in the GMOS_IMAGE case, thus GMOS_IMAGE still uses GMOS and
-GEMINI primitives, and the assignment is to allow overriding special
-cases in which it is required.
+This diagram shows GMOS_IMAGE is a child type of the GMOS type, which
+in turn is a child of the GEMINI type. The children of GMOS_IMAGE are
+other types which share common primitives or other properties with
+GMOS_IMAGE, but which may in some cases require special handling. The
+diagram shows descriptor calculator and primitive set assignments. A
+descriptor calculator (a set of descriptor functions) is assigned to
+GMOS, from which GMOS_IMAGE inherits as there is nothing more specific
+assigned and GMOS_SPECT shares the GMOS descriptors which work in both
+cases.
 
-The GEMINI primitives are generally just bookkeeping functions as few
-transformations can be generalized across all Gemini datasets, though
-some can.
+The graph also shows primitive sets assigned to GEMINI, GMOS, and
+GMOS_IMAGE. Since a primitive set specific to GMOS_IMAGE is present in
+the configuration, it would be used for transformations applying to
+GMOS_IMAGE datasets. Note, the primitive set class for GMOS_IMAGE
+defined in astrodata_Gemini uses the GMOS primitive set as a parent
+class, and only overwrites those primitives which require special
+handling in the GMOS_IMAGE case. Thus GMOS_IMAGE still uses GMOS (and
+GEMINI) primitives, and the assignment paradigm allows overriding just
+those which need special handling.
+
+Primitives associated with the GEMINI Astrodata Type are generally
+just bookkeeping functions as few transformations can be generalized
+across all Gemini datasets, though some can. Some are planned to be
+moved to a still more general, MEF, type.
 

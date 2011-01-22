@@ -128,7 +128,7 @@ class ReduceInstanceManager(object):
         self.numinsts -= 1
         if pid in self.reducedict:
             del self.reducedict[pid] 
-        print "unregesting client %d, number remaining registered %d" % (pid, self.numinsts)
+        print "ADCC: unregistering client %d, number remaining registered %d" % (pid, self.numinsts)
         if self.numinsts< 0:
             self.numinsts = 0
         if self.numinsts == 0:

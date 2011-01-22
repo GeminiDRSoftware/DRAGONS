@@ -461,67 +461,87 @@ class MyHandler(BaseHTTPRequestHandler):
                 rout = StringIO()
                 cmdlist = ["reduce", "--invoked"]
                 cmdlist.extend(parms["p"])
+                
+                cmdlist = ["ls"]
                 print "prs97 executing: ", " ".join(cmdlist)
                 if os.path.exists(".prsproxy"):
                     os.path.mkdir(".prsproxy")
-                
-                pid = subprocess.Popen( cmdlist, #["reduce", "-c", "ctest.cfg"],
-                                        stdout = subprocess.PIPE, 
-                                        stderr = subprocess.PIPE)
+
+                reducelog = "reduce-addcinvokedlog-%d%s" % (
+                                os.getpid(), str(time.time())
+                                )
+                f = open(reducelog, "w"
+                        )
+                            
+                #pid = subprocess.Popen( cmdlist,
+                #                        stdout = f,
+                #                        stderr = f)
+                f.write("hello there")
                 
                 self.wfile.write('<b style="font-size=150%">REDUCTION STARTED</b>')
                 self.wfile.write("<pre>")
-                self.wfile.flush()
-                while True:
-                    error = False
-                    while(True):
-                        stdout = None
-                        stderr = None
-                        r,v,w = select.select([pid.stdout],[],[],.1)
-                        #print "prsw112:", repr(r)
-                        if len(r):
-                            # print "prsw116: reading"
-                            # stdout = pid.stdout.read()
-                            stdout = r[0].read()
-                            # print "prsw118:", stdout
-                            break;
-                        else:
-                            r,v,w = select.select([pid.stderr],[],[],.1)
-                            # print "prsw:ERR:112:", repr(r)
+                # self.wfile.flush()
+                f.close()
+                f = open(reducelog)                
+                self.wfile.write("this is a test") # f.read())
+                f.close()
+                try:
+                    while False:
+                        error = False
+                        while(True):
+                            stdout = None
+                            stderr = None
+                            r,v,w = select.select([pid.stdout],[],[],.1)
+                            print "prsw112:", repr(r)
                             if len(r):
-                                stderr = pid.stderr.read()
+                                # print "prsw116: reading"
+                                # stdout = pid.stdout.read()
+                                stdout = r[0].read()
+                                print "prsw487:", stdout
                                 break;
-                                
-                    
-                    
-                    # stderr = pid.stderr.read(100)
-                    #stdout, stderr  = pid.communicate()
-                    #print "51: pid.poll()", str(pid.poll())
-                    if stdout:
-                        self.wfile.write(str(stdout))
-                    if stderr:
-                        #self.wfile.write("</pre><b><pre>\n")
-                        self.wfile.write("{"+stderr+"}")
-                        #self.wfile.write("</pre></b><pre>\n")
-                        #self.wfile.flush()
-                        
-                    #self.wfile.write("ERROR:"+str(stderr)+"\n")
-                    #+"\nerror:\n"+str(stderr))
-                    self.wfile.flush()
-                    if pid.poll()!= None:
+                            else:
+                                r,v,w = select.select([pid.stderr],[],[],.1)
+                                # print "prsw:ERR:112:", repr(r)
+                                if len(r):
+                                    stderr = pid.stderr.read()
+                                    print "prsw494:", stderr
+                                    break;
+
+
+
+                        # stderr = pid.stderr.read(100)
+                        #stdout, stderr  = pid.communicate()
+                        #print "51: pid.poll()", str(pid.poll())
+                        if stdout:
+                            self.wfile.write(str(stdout))
+                        if stderr:
+                            #self.wfile.write("</pre><b><pre>\n")
+                            self.wfile.write("{"+stderr+"}")
+                            #self.wfile.write("</pre></b><pre>\n")
+                            #self.wfile.flush()
+
+                        #self.wfile.write("ERROR:"+str(stderr)+"\n")
+                        #+"\nerror:\n"+str(stderr))
                         self.wfile.flush()
-                        break
+                        if pid.poll()!= None:
+                            self.wfile.flush()
+                            break
+                except:
+                    print "PRSW516 EMERGENCY:"
+                    
                 self.wfile.write("</pre>")
-                r,v,x = select.select([pid.stderr], [], [], .1)
-                if len(r):
-                    stderr = pid.stderr.read()
-                else:
-                    stderr = None
+                
+                if False:
+                    r,v,x = select.select([pid.stderr], [], [], .1)
+                    if len(r):
+                        stderr = pid.stderr.read()
+                    else:
+                        stderr = None
                 # stderr = pid.stderr.read(100)
-                if stderr != None:
-                    self.wfile.write("<b><pre>\n")
-                    self.wfile.write(str(stderr))
-                    self.wfile.write("</pre></b>")
+                    if stderr != None:
+                        self.wfile.write("<b><pre>\n")
+                        self.wfile.write(str(stderr))
+                        self.wfile.write("</pre></b>")
                 self.wfile.write('<b style="font-size=150%">REDUCTION ENDED</b>')
                 self.wfile.write("\n</body></html>")
                 self.wfile.flush()
