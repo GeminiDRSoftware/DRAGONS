@@ -87,7 +87,7 @@ def startADCC():
     loglink = "adcclog-latest"
     if os.path.exists(loglink):
         os.remove(loglink)
-    print "creating %s -> %s" % (logname, loglink)
+    # print "creating %s -> %s" % (logname, loglink)
     os.symlink(logname, loglink)
     
     prsargs = ["adcc.py",
@@ -141,7 +141,7 @@ class PRSProxy(object):
         newProxy = PRSProxy(reduceServer = reduceServer)
            
         if not found:
-            sys.stdout.write("Contacting ADCC")
+            log.info("reduce-->adcc?")
         while(not found):
             try:
                 newProxy.version = newProxy.get_version()
@@ -170,7 +170,7 @@ class PRSProxy(object):
                 sys.stdout.write(".")
                 sleep(.1)
                 # try again
-        print "\nFound ADCC"
+        log.info("reduce--><--adcc")
 
         return newProxy
 

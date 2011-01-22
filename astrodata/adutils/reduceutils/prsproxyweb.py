@@ -459,31 +459,58 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write("<html><head></head><body>\n")
                 from StringIO import StringIO
                 rout = StringIO()
-                cmdlist = ["reduce", "--invoked"]
+                cmdlist = ["reduce", "--invoked", "--verbose=6"]
                 cmdlist.extend(parms["p"])
                 
-                cmdlist = ["ls"]
-                print "prs97 executing: ", " ".join(cmdlist)
-                if os.path.exists(".prsproxy"):
-                    os.path.mkdir(".prsproxy")
+                #print "prs97 executing: ", " ".join(cmdlist)
+                # make a convienience link to the log
+                logdir = ".autologs"
+                if not os.path.exists(logdir):
+                    os.mkdir(logdir)
 
-                reducelog = "reduce-addcinvokedlog-%d%s" % (
+                reducelog = os.path.join(logdir, 
+                                "reduce-addcinvokedlog-%d%s" % (
                                 os.getpid(), str(time.time())
-                                )
-                f = open(reducelog, "w"
-                        )
+                                ))
+                f = open(reducelog, "w")
+                
+                loglink = "reducelog-latest"
+                if os.path.exists(loglink):
+                    os.remove(loglink)
+                os.symlink(reducelog, loglink)
                             
-                #pid = subprocess.Popen( cmdlist,
-                #                        stdout = f,
-                #                        stderr = f)
-                f.write("hello there")
+                # WARNING, this call had used Popen and 
+                # selected on the subprocess.PIPE... now uses call
+                # there is kruft remaining (may move it back to old style
+                # soon but there was a bug)
+                print "adcc running: \n\t" + " ".join(cmdlist)
+                pid = subprocess.call( cmdlist,
+                                        stdout = f,
+                                        stderr = f)
+                #f.write("hello there")
                 
                 self.wfile.write('<b style="font-size=150%">REDUCTION STARTED</b>')
                 self.wfile.write("<pre>")
                 # self.wfile.flush()
                 f.close()
-                f = open(reducelog)                
-                self.wfile.write("this is a test") # f.read())
+                f = open(reducelog, "r")      
+                txt = f.read()
+                # pretty the text
+                ptxt = txt
+                if (True): # make pretty
+                    ptxt = re.sub("STARTING RECIPE:(.*)\n", 
+                                  '<b>STARTING RECIPE:</b><span style="color:blue">\g<1></span>\n', ptxt)
+                    ptxt = re.sub("STARTING PRIMITIVE:(.*)\n", 
+                                  '<i>STARTING PRIMITIVE:</i><span style="color:green">\g<1></span>\n', ptxt)
+                    ptxt = re.sub("ENDING PRIMITIVE:(.*)\n", 
+                                  '<i>ENDING PRIMITIVE:</i>  <span style="color:green">\g<1></span>\n', ptxt)
+                    ptxt = re.sub("ENDING RECIPE:(.*)\n", 
+                                  '<b>ENDING RECIPE:</b>  <span style="color:blue">\g<1></span>\n', ptxt)
+                    ptxt = re.sub("(STATUS|INFO|FULLINFO|WARNING|CRITICAL|ERROR)(.*?)-(.*?)-", 
+                                  '<span style="font-size:70%">\g<1>\g<2>-\g<3>- </span>', ptxt)
+                    
+
+                self.wfile.write(ptxt) # f.read())
                 f.close()
                 try:
                     while False:
