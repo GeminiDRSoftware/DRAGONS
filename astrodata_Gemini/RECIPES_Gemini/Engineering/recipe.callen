@@ -1,10 +1,5 @@
 #
 #
 #
-clearCalCache
-showCals
-NEWgetProcessedBias
-NEWgetProcessedFlat
-# sleep(duration=10.0)
-showCals
+getStackable
 showInputs
