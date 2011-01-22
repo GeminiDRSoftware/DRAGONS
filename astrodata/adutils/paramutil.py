@@ -13,7 +13,7 @@ log = gemLog.getGeminiLog()
     checkParam( parameter, paramType, defaultValue, compareValue=0.0 )
     checkFileFitExtension( filename )
 """
-def checkImageParam(image):
+def checkImageParam(image, logBadlist=False):
     """
     Tries to accomplish the same thing as most IRAF tasks in regards to how they
     handle the input file parameter.
@@ -32,6 +32,9 @@ def checkImageParam(image):
     
     @type image: String or List of Strings
     
+    @param logBadlist: Controls if lists of images that cannot be accessed are
+        written to the log or not.
+        
     @return: The list of filenames of images to be run. If an error occurs, 
              None is returned.
     @rtype: list, None
@@ -82,10 +85,22 @@ def checkImageParam(image):
                     'is not supported. The only supported types are String '+
                     'and List of Strings.')
         return None
+    outList = []
+    badList = []
     for img in inList:
         if not os.access(img,os.R_OK):
-            log.error('Cannot read file: '+str(img))   
-    return inList
+            # log.error('Cannot read file: '+str(img))   
+            badList.append(img)
+        else:
+            outList.append(img)
+    
+    if badList:
+        if logBadlist:
+            err = "\n\t".join(badList)
+            log.warning("Some files not found or cannot be opened:\n\t"+err)
+        return None
+    
+    return outList
 
 #------------------------------------------------------------------------------------------      
         

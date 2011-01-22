@@ -55,6 +55,10 @@ class ADExcept:
         print the message associated with this exception.
         """
         return self.message
+        
+class ADNOTFOUND(ADExcept):
+    pass
+    
 class SingleHDUMemberExcept(ADExcept):
     def __init__(self, msg=None):
         if msg == None:
@@ -910,7 +914,7 @@ AstroData instance in Astrodata Tutorials and documentation.
                 self.hdulist = pyfits.HDUList([phu])
             else:
                 if not os.path.exists(source):
-                    raise ADExcept("Cannot open "+source)
+                    raise ADNOTFOUND("Cannot open "+source)
                 self.filename = source
                 self.__origFilename = source
                 try:

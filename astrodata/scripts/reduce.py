@@ -40,6 +40,7 @@ a = datetime.now()
 
 import astrodata
 from astrodata import RecipeManager
+from astrodata.AstroData import ADExcept, ADNOTFOUND
 from astrodata.AstroData import AstroData
 from astrodata.AstroDataType import getClassificationLibrary
 from astrodata.RecipeManager import ReductionContext
@@ -337,15 +338,28 @@ def command_line():
     
     
     input_files = []
+    badList = []
     for inf in infile:
+        
         #"""
         # checkImageParam allows the argument to be an @list, turns it
         # into a list of filenames as otherwise expected from the command line
         tmpInp = paramutil.checkImageParam( inf )
         if tmpInp == None:
-            raise "The input had "+ str(inf)+" cannot be loaded."
-        # extend the list of input files with contents of @ list
-        input_files.extend( tmpInp )
+            badList.append(inf)
+        else:
+            # extend the list of input files with contents of @ list
+            input_files.extend( tmpInp )
+
+    if len(badList)>0:
+        err = "\n\t".join(badList)
+        log.error("Some files not found or can't be loaded:\n\t"+err)
+        log.error("Exiting due to missing datasets.")
+        if len(input_files ) > 0:
+            found = "\n\t".join(input_files)
+            log.info("These datasets were found and loaded:\n\t"+found)
+        sys.exit(1)
+
     # print "r161:", input_files
         
     if options.add_cal != None:
@@ -624,9 +638,19 @@ if options.intelligence:
 else:
     nl = []
     for inp in allinputs:
-        nl.append(AstroData(inp))
-        
-    allinputs = [nl]
+        try:
+            ad = AstroData(inp)
+            nl.append(ad)
+        except ADNOTFOUND:
+            err = "Can't Load Dataset: %s" % inp
+            log.warning(err)
+            
+    # note: this clause might be best placed elsewhere (earlier)
+    if len(nl) == 0:
+        log.error("No files, and no astrotype, quiting...")
+        allinputs = []
+    else:
+        allinputs = [nl]
     
 
 #===============================================================================
@@ -640,7 +664,7 @@ else:
 
 numReductions = len(allinputs)
 i = 1
-for infiles in allinputs: #for dealing with multiple files.
+for infiles in allinputs: #for dealing with multiple sets of files.
     #print "r232: profiling end"
     #prof.close()
     #raise "over"
@@ -657,7 +681,7 @@ for infiles in allinputs: #for dealing with multiple files.
     # can be done by filename
     #@@REFERENCEIMAGE: used to retrieve/build correct reduction object
     if (options.astrotype == None):
-        ro = rl.retrieveReductionObject(infile[0]) 
+        ro = rl.retrieveReductionObject(infiles[0]) 
     else:
         ro = rl.retrieveReductionObject(astrotype = options.astrotype)
     
@@ -967,9 +991,9 @@ for infiles in allinputs: #for dealing with multiple files.
     # main()
     # don't leave the terminal in another color/mode, that's rude
     
-    reduceServer.finished=True
-    try:
-        prs.unregister()
-    except:
-        log.warning("Trouble unregistering from adcc shared services.")
-        raise
+reduceServer.finished=True
+try:
+    prs.unregister()
+except:
+    log.warning("Trouble unregistering from adcc shared services.")
+    raise
