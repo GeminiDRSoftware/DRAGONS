@@ -204,33 +204,50 @@ AstroData instance in Astrodata Tutorials and documentation.
     def __init__(self, dataset=None, mode="readonly", exts = None, extInsts = None,
                     header = None, data = None, store = None, storeClobber = False):
         """
-        :type dataset:  string, AstroData, HDUList
-        :param dataset: the dataset to load, either a filename (string), an AstroData
-                    instance, or a pyfits.HDUList
-        :param mode: IO access mode, same as pyfits mode ("readonly", "update", "or append") with one additional 
-                    supported mode, "new". If the mode is "new", then the constructor checks the named file does not
-                    exist, and if it does not already exist, it creates an empty AstroData of that name, but does not
-                    write it to disk.  Such an AstroData instance is ready to have HDUs appended, and to be written to
-                    disk as the user's command with "ad.write()".
-        :type mode: string
-        :param exts: (advanced) a list of extension indexes in the parent HDUList that this instance should refer to, given 
-                     integer or tuples specifying each extention in the "pyfits" index space where
-                     the PHU is 0, and first data extension is 1, and so on.
-                     I.e. (EXTNAME,EXTVER) tuples or 
-                     and integer index which specifies the ordinal position of the extension in the MEF 
-                     file, begining with index 0 for the PHU. NOTE: if present this option will
-                     Foverride and obscure the extInsts argument which will be ignored.
-                     This is generally used internally to support subdata, i.e. sci_subdata = ad["SCI"]
-                     is constructed passing the "SCI" extensions to this constructor.
-        :type exts: list
-        :param extInsts: a list of extensions this instance should refer to, given as
-                         actual pyfits.HDU instances. NOTE: if the "exts" argument is also set,
-                         this argument is ignored.
-        :type extInsts: list
+        :param dataset: the dataset to load, either a filename (string), an
+                    AstroData instance, or a pyfits.HDUList 
+        :type dataset:  string,
+                    AstroData, HDUList
 
-        The AstroData constructor constructs an in memory representation of a dataset.
-        If given a filename it uses pyfits to open the dataset, reads the header
-        and detects applicable types. Binary data, such as pixel data, is left on disk until referenced.
+        :param mode: IO access mode, same as pyfits mode ("readonly", "update",
+                    "or append") with one additional AstroData-specific mode,
+                    "new". If the mode is "new", and a filename is provided,  the
+                    constructor checks the named file does not exist, and if it
+                    does not already exist, it creates an empty AstroData of that
+                    name (to save the filename), but does not write it to disk. 
+                    Such an AstroData instance is ready to have HDUs appended,
+                    and to be written to disk at the user's command with
+                    "ad.write()".
+        :type mode: string
+        
+        :param exts: (advanced) a list of extension indexes in the parent HDUList
+                     that this instance should refer to, given  integer or 
+                     (EXTNAME, EXTVER) tuples specifying each extention in the
+                     "pyfits" index space where the PHU is at index 0, the first data
+                     extension is at index 1, and so on. I.e. 
+                     This is primarilly intended for internal use creating
+                     "sub-data", which are AstroData instances that represent
+                     a slice, or subset, of some other AstroData instance.
+                     NOTE: if present this option will override and
+                     obscure the extInsts argument which will be ignored. 
+                     Example of subdata: 'sci_subdata = ad["SCI"]'
+                     is constructed passing the "SCI"
+                     extensions to this constructor.  The 'sci_subdata' object
+                     would consist of it's own AstroData instance referring to
+                     it's own HDUList, but the HDUs in this list would still be
+                     shared with the 'ad' object, and appear in its HDUList as
+                     well.
+        :type exts: list
+        
+        :param extInsts: a list of extensions this instance should contain,
+                         given as actual pyfits.HDU instances. NOTE: if the
+                         "exts" argument is also set, this argument is ignored.
+        :type extInsts: list of pyfits.HDU objects
+
+        The AstroData constructor constructs an in-memory representation of a
+        dataset. If given a filename it uses pyfits to open the dataset, reads
+        the header and detects applicable types. Binary data, such as pixel data,
+        is left on disk until referenced.
         
         """
         
@@ -480,18 +497,20 @@ AstroData instance in Astrodata Tutorials and documentation.
     def append(self, moredata=None, data=None, header=None):
         """
         :param moredata: either an AstroData instance, an HDUList instance, 
-            or an HDU instance. When present, data and header will be ignored.
-
+            or an HDU instance to add to this AstroData object.
+            When present, data and header arguments will be ignored.
         :type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
-        :param data: if moredata *is not* specified, data and header should 
-            both be set and are used to instantiate
-            a new HDU which is then added to the 
-            AstroData instance.
+        
+        :param data: if moredata *is not* specified, data and header should  both
+            be set and are used to construct a new HDU which is then added to
+            the  AstroData object. The 'data' argument should be set to a 
+            valid numpy array.
         :type data: numarray.numaraycore.NumArray
-        :param header: if moredata *is not* specified, data and header are used to make 
-            an HDU which is then added to the HDUList associated with this
-            AstroData instance.
-
+        
+        :param header: if moredata *is not* specified, data and header are used
+            to make  an HDU which is then added to the HDUList associated with
+            this AstroData instance. The 'header' argument should be set to a
+            valid pyfits.Header object.
         :type header: pyfits.Header
 
         This function appends more data units (aka "HDUs") to the AstroData
@@ -510,27 +529,46 @@ AstroData instance in Astrodata Tutorials and documentation.
                 self.hdulist.append(hdu)
         elif type(moredata) is pyfits.ImageHDU:
             self.hdulist.append(moredata)
-
+    
+    def close(self):
+        """The close(..) function will close the HDUList associated with this
+        AstroData instance.
+        If this is subdata, e.g.
+        (sd = gd[SCI] where gd is another AstroData instance, sd is "sub-data") 
+        then sd.close()
+        will not close the original hdulist because gd will actually own the
+        hold on that HDUList and it's related file."""
+        
+        if self.borrowedHDUList:
+            self.container.relhdul()
+            self.hdulist = None
+        else:
+            if self.hdulist != None:
+                self.hdulist.close()
+                self.hdulist = None
+ 
     def insert(self, index, moredata=None, data=None, header=None):
         """
-        :param index: the extension index, either an int or (EXTNAME, EXTVER) pair
-                      before which the extension is to be inserted. Note, the first data extension
-                      is [0], you cannot insert before the PHU.
-        :param moredata: Either an AstroData instance, an HDUList instance, 
-                      or an HDU instance. When present, data and header will be ignored.
-
+        :param index: the extension index, either an int or (EXTNAME, EXTVER)
+                      pair before which the extension is to be inserted. Note,
+                      the first data extension is [0], you cannot insert before
+                      the PHU.
+        :type index: integer or (EXTNAME,EXTVER) tuple
+        
+        :param moredata: Either an AstroData instance, an HDUList instance,  or
+                      an HDU instance. When present, data and header will be
+                      ignored.
         :type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
+        
         :param data: if moredata *is not* specified, data and header should 
-                     both be set and areare used to instantiate
+                     both be set and are used to construct
                      a new HDU which is then added to the 
                      AstroData instance.
-
         :type data: numarray.numaraycore.NumArray
 
         :param header: if moredata *is not* specified, data and header are used to make 
                        an HDU which is then added to the HDUList associated with this
                        AstroData instance.
-
         :type header: pyfits.Header
 
         This function inserts more data units (aka an "HDU") to the AstroData
@@ -557,24 +595,20 @@ AstroData instance in Astrodata Tutorials and documentation.
                 index += 1
         elif type(moredata) is pyfits.ImageHDU:
             self.hdulist.insert(index, moredata)
-    
-    def close(self):
-        """The close(..) function will close the associated HDUList
-        If this is subdata, e.g.
-        (sd = gd[SCI] where gd is another AstroData instance, sd is "sub-data") 
-        then sd.close()
-        will not close the hdulist because gd will actually own the
-        hold on that file."""
-        
-        if self.borrowedHDUList:
-            self.container.relhdul()
-            self.hdulist = None
-        else:
-            if self.hdulist != None:
-                self.hdulist.close()
-                self.hdulist = None
-                
+               
     def infostr(self, asHTML = False):
+        """
+        :param asHTML: boolean that indicates if the string should be HTML
+                    formatted or not
+        :type fname: bool
+        
+        The infostr(..) function is used to get a string ready for display
+        either as plain text or HTML.  It provides AstroData-relative
+        information, unlike the pyfits-forwarding function AstroData.info(),
+        and so uses AstroData relative indexes, descriptors, and so on.  
+        
+        The format of this string is subject to change.
+        """
         if not asHTML:
             rets = ""
             for ext in self:
@@ -1406,7 +1440,7 @@ AstroData instance in Astrodata Tutorials and documentation.
    
     def info(self):
         """The info(..) function calls the pyfits.HDUList.info(..) function
-        on this instances "hdulist" member.  This function outputs information
+        on this instance's "hdulist" member.  This function outputs information
         about the datasets HDUList to standard out. There are plans to
         replace this with a more AstroData centric display, e.g. the integer
         indexes given are relative to the HDUList and not the AstroData
