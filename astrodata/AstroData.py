@@ -336,40 +336,49 @@ AstroData instance in Astrodata Tutorials and documentation.
                     
     def __getitem__(self,ext):
         """
-        :param ext: EXTNAME name for this subdata's HDU. If an int or tuple, a 
-            single extension is wrapped with an AstroData instance, if a string
-            then all extensions with the given EXTNAME will be wrapped by the 
-            new AstroData instance.
+        :param ext: The integeter index, indexing tuble, or EXTNAME name for the
+            desired subdata. If an int or tuple, a  single extension is
+            wrapped with an AstroData instance, and "single-extension" members
+            of the AstroData object can be used. If a string is given then all
+            extensions with the given EXTNAME will be wrapped by the  new
+            AstroData instance.
         :type ext: string, int, or tuple
-        :returns: an AstroData instance associated with the subset of data
+        
+        :returns: an AstroData instance associated with the subset of data.
         :rtype: AstroData
 
         
-        This function support the "[]" syntax on AstroData instances,
-        e.g. ad[("SCI",1)].  We use it to create
-        AstroData objects associated with "subdata"... that is, a limited
-        subset of extensions in the given MEF. e.g.::
+        This function supports the "[]" syntax for AstroData instances,
+        e.g. *ad[("SCI",1)]*.  We use it to create
+        AstroData objects associated with "subdata" of the parent
+        AstroData object, that is, consisting of an HDUList which
+        consists of some subset of the parent MEF. e.g.::
         
             datasetA = AstroData.AstroData("datasetMEF.fits")
             datasetB = datasetA[SCI]
             
-        In this case datasetB would be a AstroData object associated with the
-        same MEF, sharing some of the the same actual HDUs in memory as 
-        datasetA.  The "datasetB" will behave as if the SCI extensions are the only
-        extensions in the HDUList, and indeed will have it's own HDUList.
-        Note, datasetA and datasetB share the PHU and
-        also the data structures of the HDUs they have in common. So a change
-        to "datasetA[('SCI',1)].data" will change "datasetB[('SCI',1)].data" member
-        because they are in fact the same numpy array in memory. The HDUList is
-        a different list, however, that references common HDUs.  Thus if written to disk,
-        the resulting MEF will contain only the extensions in datasetB's HDUList.
+        In this case, after the operations, datasetB is an AstroData object
+        associated with the same MEF, sharing some of the the same actual HDUs
+        in memory as  datasetA. The object in "datasetB" will behave as if the
+        SCI extensions are its only members, and it does in fact have its own
+        pyfits.HDUList. Note that datasetA and datasetB share the PHU and
+        also the data structures of the HDUs they have in common, so that  a
+        change to "datasetA[('SCI',1)].data" will change the
+        "datasetB[('SCI',1)].data" member and vice versa. They are in fact both
+        references to the same numpy array in memory. The HDUList is a different
+        list, however, that references common HDUs. If a subdata related
+        AstroData object is written to disk, the resulting MEF will contain only
+        the extensions in datasetB's HDUList.
 
-        NOTE: Integer extensions start at 0 for the data-containing extensions,
-        not at the PHU as with pyfits.  This is important:
-        ad[0] is the first extension AFTER the PHU; it is not the PHU!  In
-        AstroData instances, the PHU is purely a header, which can be accessed 
-        with the code, "ad.phu".
-        
+        :note: Integer extensions start at 0 for the data-containing extensions,
+            not at the PHU as with pyfits.  This is important: ad[0] is the
+            first content extension, in traditional MEF percpective, the
+            extension AFTER the PHU; it is not the PHU!  In AstroData instances,
+            the PHU is purely a header, and not counted as an extension in the
+            way that headers generally are not counted as their own elements in
+            the array they contain meta-data for.  The PHU can be accessed  with
+            the code, "ad.phu", or via the AstroData PHU-related member
+            functions.
         """
         hdul = self.gethdul()
         # ext can be tuple, an int, or string ("EXTNAME")
@@ -641,18 +650,22 @@ AstroData instance in Astrodata Tutorials and documentation.
 
     def getData(self):
         """
-        The 'data' property is returned by the getData(..) member, and returns HDU data member(s)
-        specifically for the case in which
-        the AstroData instance has ONE HDU (in addition to PHU). This
-        allows a single-extension AstroData, such as AstroData generates through iteration, 
-        to be used as though
-        it simply is just the one extension, e.g. allowing gd.data to be used in
-        place of the more esoteric and ultimately more dangerous gd[0].data.
-        One can assure one is dealing with single extension AstroData instances
-        when iterating over the AstroData extensions, and when picking out an extension 
-        by integer or tuple indexing, e.g.:
+        :raise: gdExcept if AstroData instance has more than one extension 
+            (not including PHU).
+        :return: data array associated with the single extension
+        :rtype: pyfits.ndarray
 
-        .. code-block: python
+
+        The getData(..) member is the function behind the property style "data"
+        member and returns appropriate HDU's data member(s) specifically for the
+        case in which the AstroData instance has ONE HDU (in addition to PHU).
+        This allows a single-extension AstroData, such as AstroData generates
+        through iteration,  to be used as though it simply is just the one
+        extension, e.g. allowing *gd.data* to be used in place of the more
+        esoteric and ultimately more dangerous *gd[0].data*. One can assure one
+        is dealing with single extension AstroData instances when iterating over
+        the AstroData extensions and when picking out an extension  by integer
+        or tuple indexing, e.g.::
 
             for gd in dataset[SCI]:
                 # gd is a single-HDU index
@@ -660,12 +673,6 @@ AstroData instance in Astrodata Tutorials and documentation.
 
             # assuming the named extension exists, sd will be a single-HDU AstroData
             sd = dataset[("SCI",1)]
-
-
-        :raise: gdExcept if AstroData instance has more than one extension 
-            (not including PHU).
-        :return: data array associated with the single extension
-        :rtype: pyfits.ndarray
         """
         hdl = self.gethdul()
         if len(hdl) == 2:
@@ -680,15 +687,15 @@ AstroData instance in Astrodata Tutorials and documentation.
     def setData(self, newdata):
         """
         :raise gdExcept: if AstroData instance has more than one extension 
-        (not including PHU).
+            (not including PHU).
         :param newdata: new data objects
         :type newdata: numarray.numarraycore.NumArray
 
-        This function sets the data member(s) of a data section of an HDU, 
-        specifically for the case in which
-        the AstroData instance has ONE extension (in addition to PHU).  This case
-        is assured when iterating over the AstroData extensions, e.g.::
-        
+        This function sets the data member of a data section of an AstroDat
+        object, specifically for the case in which the AstroData instance has
+        ONE header-data unit (in addition to PHU).  This case is assured when
+        iterating over the AstroData extensions, e.g.::
+
             for gd in dataset[SCI]:
                 ...
         """
@@ -703,26 +710,29 @@ AstroData instance in Astrodata Tutorials and documentation.
         return
     
     data = property(getData, setData, None, """
-            The data property can only be used for single-HDU AstroData instances, such as those returned
-            during iteration. It is a property attribute which uses getData(..) and setData(..)
-            to access the data members with "=" syntax.
-            To set the data member, use "ad.data = newdata", where "newdata" must be a numpy array
-            To get the data member, use "npdata = ad.data".
+            The data property can only be used for single-HDU AstroData
+            instances, such as those returned during iteration. It is a property
+            attribute which uses *getData(..)* and *setData(..)* to access the
+            data members with "=" syntax. To set the data member, use "ad.data =
+            newdata", where "newdata" must be a numpy array. To get the data
+            member, use "npdata = ad.data".
             """)
     
     def getHeader(self, extension = None):
         """
-        The getHeader(..) function returns header member for Single-HDU AstroData instances
-        (which are those that
-        have only one extension plus PHU). This case 
-        is assured when iterating over extensions using AstroData, e.g.:
-        
-        for gd in dataset[SCI]: ...
-        
         :raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
             (note: The PHU is not considered an extension in this case)
         :return: header
         :rtype: pyfits.Header
+
+        The getHeader(..) function returns theheader member for Single-HDU
+        AstroData instances (which are those that have only one extension plus
+        PHU). This case  can be assured for when iterating over extensions using
+        AstroData, e.g.::
+        
+            for gd in dataset[SCI]: 
+                ...
+
         """
         if extension == None:
             hdl = self.gethdul()
@@ -757,9 +767,10 @@ AstroData instance in Astrodata Tutorials and documentation.
 
         The setHeader(..) function sets the extension header member for SINGLE EXTENSION MEFs 
         (which are those that have only one extension plus PHU). This case 
-        is assured when iterating over extensions using AstroData, e.g.:
+        is assured when iterating over extensions using AstroData, e.g.::
         
-        for gd in dataset[SCI]: ...
+            for gd in dataset[SCI]: 
+                ...
         """
         if extension == None:
             hdl = self.gethdul()
@@ -773,11 +784,13 @@ AstroData instance in Astrodata Tutorials and documentation.
             self.hdulist[extension].header = header
                     
     header = property(getHeader,setHeader, None, """
-                The header property can only be used for single-HDU AstroData instances, such as those returned
-                during iteration. It is a property attribute which uses getHeader(..) and setHeader(..)
-                to access the data members with "=" syntax.
-                To set the header member, use "ad.header = newheader", where "newheader" must be a pyfits.Header object.
-                To get the header member, use "hduheader = ad.header".
+                The header property can only be used for single-HDU AstroData
+                instances, such as those returned during iteration. It is a
+                property attribute which uses *getHeader(..)* and
+                *setHeader(..)* to access the header member with the "=" syntax.
+                To set the header member, use "ad.header = newheader", where
+                "newheader" must be a pyfits.Header object. To get the header
+                member, use "hduheader = ad.header".
                 """
                 )
 
@@ -856,16 +869,15 @@ AstroData instance in Astrodata Tutorials and documentation.
 
             Note: This member only works on single extension AstroData instances.
 
-        The renameExt() function is used in order to give an HDU a new EXTNAME
-        and EXTVER based identifier.  Merely changing the values in the
-        extensions header are not sufficient, though the values change in the
-        pyfits Header instance, there are special HDU members which are not
-        updated. 
+        The renameExt() function is used in order to rename an HDU with a new
+        EXTNAME and EXTVER based identifier.  Merely changing the values in the
+        extensions pyfits.Header are not sufficient. Though the values change in
+        the pyfits.Header object, there are special HDU class members which are
+        not updated. 
         
-        
-            WARNING: this function maniplates private (or somewhat private)  HDU
+        :warning: This function maniplates private (or somewhat private)  HDU
             members, specifically "name" and "_extver". STSCI has been informed of the issue and
-            has made us a special HDU function for  performing the renaming. 
+            has made us a special HDU function for performing the renaming. 
             When generally available, this new function will be used instead of
             manipulating the  HDU's properties directly.
         """
@@ -898,26 +910,27 @@ AstroData instance in Astrodata Tutorials and documentation.
 
     def open(self, source, mode = "readonly"):
         '''
-        :param source: source for data to be associated with this instance, can be 
-                       an AstroData instance, a pyfits.HDUList instance, or a string filename.
+        :param source: source contains some reference for the dataset to 
+                       be opened and associated with this instance. Generally
+                       it would be a filename, but can also be
+                       an AstroData instance or a pyfits.HDUList instance.
         
         :type source: string | AstroData | pyfits.HDUList
         
-        :param mode: IO access mode, same as the pyfits open mode, C{readonly},
-                     C{update}, or C{append}.  The mode is passed to pyfits so if it is an
-                     illegal mode name, pyfits will be the subsystem reporting the error. 
+        :param mode: IO access mode, same as the pyfits open mode, "readonly,
+                     "update", or "append".  The mode is passed to pyfits so
+                     if it is an illegal mode name, pyfits will be the subsystem
+                     reporting the error. 
         
         :type mode: string
 
         This function wraps a source dataset, which can be in memory as another 
         AstroData or pyfits HDUList, or on disk, given as the string filename.
         
-        This is not the way one generally creates an AstroData instance from a 
-        filename or other object. Instead, we generally pass the filename or HDUList instance
-        into the
-        constructor, which calls open. This function can still be of use if
-        the AstroData object has been closed, but should probably be left to advanced
-        users. Most people should use the constructor.
+        Please note that generally one does not use "open" directly, but passes
+        the filename to the AstroData constructor. The constructor uses open(..)
+        however.  Most users should use the constructor, which may perform extra
+        operations.
         '''
                 
         inferRAW = True
@@ -1030,6 +1043,49 @@ AstroData instance in Astrodata Tutorials and documentation.
             self.container = None
             
         self.hdulist = None
+    def write(self, filename = None, clobber = False, rename=True):
+        """
+        :param fname: file name to write to, optional if instance already has
+                      name, which might not be the case for new AstroData
+                      instances created in memory.
+        :type fname: string
+        :param clobber: This flag drives if AstroData will overwrite an existing
+                    file.
+        :type clobber: bool
+        :param rename: This flag allows you to write the AstroData instance to a
+            new filename, but leave the "current" name in tact.
+        :type rename: bool
+
+        The write function acts similarly to the pyfits HDUList.writeto(..)
+        function if a filename is given, or like pyfits.HDUList.update(..) if no
+        name is given, using whatever the current name is set to. When a name is
+        given, this becomes the new on-disk name of the AstroData object and
+        will be used on subsequent calls to  write for which a filename is not
+        provided. If the clobber flag is False (the default) then write(..)
+        throws an exception if the file already exists.
+
+        """
+        fname = filename
+        hdul = self.gethdul()
+        if fname == None:
+            rename = False
+            fname = self.filename
+        else:
+            if rename == True:
+                self.filename = fname
+           
+        # by here fname is either the name passed in, or if None, it is self.filename
+        if (fname == None):
+            # @@FUTURE:
+            # perhaps create tempfile name and use it?
+            raise gdExcept()
+           
+        if os.path.exists(fname):
+            if clobber:
+                os.remove(fname)
+            else:
+                raise OutputExists(fname)
+        hdul.writeto(fname)
             
     
     def getHDUList(self):
@@ -1089,21 +1145,34 @@ AstroData instance in Astrodata Tutorials and documentation.
         """
         :param prune: flag which controls 'pruning' the returned type list so that only the
               leaf node type for a given set of related types is returned.
-        :type prune: Bool
+        :type prune: bool
         :returns: a list of classification names that apply to this data
-        :rtype: list of strings
+        :rtype: list of string type names
 
-        This function returns an array of type names as a list of strings.  It is possible to
-        "prune" the list so that only leaf nodes appear, since these are the most specific types available.
+        The getTypes(..) function returns a list of type names, where type names
+        are as always, strings. It is possible to "prune" the list so that only
+        leaf nodes are returned.  
+         
+        Note: types are divided into two categories, one intended for types
+        which represent processing status (i.e. RAW vs PREPARED), and another
+        which contains a more traditional "typology" consisting of a 
+        heirarchical trees of datastypes. This latter tree maps roughly to
+        instrument-modes, with instrument types branching from the general
+        observatory type, (e.g. "GEMINI"). 
         
-        Note: types are divided into two categories, one intended for types which detect processing
-        status (i.e. RAW vs PREPARED), and the other which contains a more traditional "typology" consisting of heirarchical
-        trees of related datastypes.  To retrieve just status types, use getStatus(..), and to retreive just typological
-        types use getTypology(..).  Note, the system does not enforce what checks are actually performed by types in each
-        category, and both use the same DataClassification objects to define and discover type.  The distinction is
-        organizational, and to allow assignment of features in status-related types to not conflict features assigned in
-        typological-related types.
+        To retrieve only status types, use getStatus(..); to retreive just
+        typological types use getTypology(..).  Note that the system does not
+        enforce what checks are actually performed by types in each category,
+        that is, one could miscategorize a type when authoring a configuration
+        package. Both classifications use the same DataClassification objects to
+        classify datasets. It is up to  those implementing the
+        type-specific configuration package to ensure types related to status
+        appear in the correct part of the configuration space.
         
+        Currently the distinction is not used by the system (e.g. in
+        type-specific default recipe assignments) and is provided as a service
+        for higher level code, e.g. primitives and scripts which make use of
+        the distinction.
         """
         
         retary = self.discoverTypes()
@@ -1151,15 +1220,16 @@ AstroData instance in Astrodata Tutorials and documentation.
             return self.types
         
     def getStatus(self, prune=False):
-        """ This function returns the set of type names (strings) which apply to
-        this dataset and which
-        come from the status section of the AstroData Type
-        library. "Status" classifications are those which tend
-        to change during the reduction of a dataset, 
-        e.g. those related
-        to the processing status of the data, e.g. RAW vs PREPARED. 
-        Strictly a "status" type is any
-        type defined in or below the "astrodata_Gemini/ADCONFIG/classification/status" 
+        """
+        This function returns the set of type names (strings) which apply to
+        this dataset and which come from the status section of the AstroData
+        Type library. "Status" classifications are those which tend to change
+        during the reduction of a dataset based on the amount of processing as
+        opposed to instrument-mode classifications, such as GMOS_MOS,  which
+        will tend to persist. e.g. RAW vs PREPARED.  Strictly a "status" type is
+        any type defined in or below the status part of the classification
+        configuration, i.e. in the Gemini type configuration any types files in
+        or below the "astrodata_Gemini/ADCONFIG/classification/status" 
         directory.
 
         :returns: a list of string classification names
@@ -1188,13 +1258,14 @@ AstroData instance in Astrodata Tutorials and documentation.
     def getTypology(self):
         """
         This function returns the set of type names (strings) which apply to
-        this dataset and which
-        come from the typology section of the AstroData Type
-        library. "Typology" classifications are those which tend
-        to remain with the data in spite of reduction, e.g. those related
-        to the instrument mode of the data. Strictly it is any
-        type defined in or below the "astrodata_Gemini/ADCONFIG/classification/types" 
-        directory.
+        this dataset and which come from the typology section of the AstroData
+        Type library. "Typology" classifications are those which tend to remain
+        with the data in spite of reduction status, e.g. those related to the
+        instrument-mode of the dataset or of the datasets used to produce
+        it. Strictly these consist of any type defined in or below
+        the correct configuration directory, i.e. in Gemini's configuration,
+        "astrodata_Gemini/ADCONFIG/classification/types"  directory.
+        
         :returns: a list of classification name strings
         :rtype: list of strings"""
         
@@ -1220,16 +1291,15 @@ AstroData instance in Astrodata Tutorials and documentation.
         
     def isType(self, *typenames):
         """
-        :param typename: Specifies the type name to check.
+        :param typename: specifies the type name to check.
         :type typename: string
         :returns: True if the given type applies to this dataset, False otherwise.
         :rtype: Bool
 
-        This function checks the type of this data to see if it can be characterized 
-        as the type specified 
-        by C{typename}.
+        This function checks the AstroData object to see if it is the
+        given types and returns True if so.
         
-        :Note: "AstroData.checkType" is an alias for "AstroData.isType"
+        :note: "AstroData.checkType" is an alias for "AstroData.isType".
         
         """
         if (self.types == None):
@@ -1268,12 +1338,12 @@ AstroData instance in Astrodata Tutorials and documentation.
         :param key: name of header value to retrieve
         :type key: string
         :rtype: string
-        :returns: the key's value or None if not present, user must convert from
-            string type.
+        :returns: the key's value as string or None if not present.
 
         The phuGetKeyValue(..) function returns the value associated with the
         given key within the primary header unit
-        of the dataset.
+        of the dataset. The value is returned as a string (storage format)
+        and must be converted as necessary by the caller.
         
         """
         try:
@@ -1294,11 +1364,11 @@ AstroData instance in Astrodata Tutorials and documentation.
         :param value: value to apply to PHU header
         :type value: string (or can be converted to string)
 
-        The phuSetKeyValue(..) function is used to set the value 
-        (and optionally
-        the comment) associated
-        with a given key in the primary header unit of the dataset.
-        
+        The phuSetKeyValue(..) function is used to set the value  (and
+        optionally the comment) associated with a given key in the primary
+        header unit of the dataset. The value argument will be converted to
+        string, so it must have a string operator member function or be passed
+        in as string. 
         """
         hdus = self.hdulist
         hdus[0].header.update(key, value, comment)
@@ -1347,13 +1417,64 @@ AstroData instance in Astrodata Tutorials and documentation.
 
         The getKeyValue(..) function is used to get the value associated
         with a given key in the data-header unit of a single-HDU
-        AstroData instance (such as returned by iteration).        
+        AstroData instance (such as returned by iteration). The value argument will be converted to
+        string, so it must have a string operator member function or be passed
+        in as string. 
+        
+        :note: 
+        
+            Single extension AstroData objects are those with only a single
+            header-data unit besides the PHU.  They may exist if a single
+            extension file is loaded, but in general are produced by indexing or
+            iteration instructions, i.e.:
+        
+                sead = ad[("SCI",1)]
+            
+                for sead in ad["SCI"]:
+                    ...
+                
+            The variable "sead" above is ensured to hold a single extension
+            AstroData object, and can be used more convieniently.
+            
+                        
         """
         if len(self.hdulist) == 2:
             return self.extGetKeyValue(0,key)
         else:
             raise ADExcept("getHeaderValue must be called on single extension instance")
     getHeaderValue = getKeyValue
+
+    def setKeyValue(self, key):
+        """
+        :param key: name of data header value to set
+        :type key: string
+        :param value: value to apply to header
+        :type value: string (or can be converted to string)
+
+        The setKeyValue(..) function is used to set the value (and optionally
+        the comment) associated
+        with a given key in the data-header of a single-HDU AstroData instance.
+                
+        :note: 
+        
+            Single extension AstroData objects are those with only a single
+            header-data unit besides the PHU.  They may exist if a single
+            extension file is loaded, but in general are produced by indexing or
+            iteration instructions, i.e.:
+        
+                sead = ad[("SCI",1)]
+            
+                for sead in ad["SCI"]:
+                    ...
+                
+            The variable "sead" above is ensured to hold a single extension
+            AstroData object, and can be used more convieniently.
+            
+        """
+        if len(self.hdulist) == 2:
+            self.extSetKeyValue(0,key)
+        else:
+            raise ADExcept("setKeyValue must be called on single extension instance")
            
     def extGetKeyValue(self, extension, key):
         """
@@ -1387,22 +1508,6 @@ AstroData instance in Astrodata Tutorials and documentation.
         # print "AD914:", key, "=",retval    
         return retval
     
-    def setKeyValue(self, key):
-        """
-        :param key: name of data header value to set
-        :type key: string
-        :param value: value to apply to header
-        :type value: string (or can be converted to string)
-
-        The setKeyValue(..) function is used to set the value (and optionally
-        the comment) associated
-        with a given key in the data-header of a single-HDU AstroData instance.
-        
-        """
-        if len(self.hdulist) == 2:
-            self.extSetKeyValue(0,key)
-        else:
-            raise ADExcept("setKeyValue must be called on single extension instance")
     
     def extSetKeyValue(self, extension, key, value, comment = None):
         """
@@ -1415,9 +1520,10 @@ AstroData instance in Astrodata Tutorials and documentation.
         :type value: string (or can be converted to string)
 
         The extSetKeyValue(..) function is used to set the value (and optionally
-        the comment) associated
-        with a given key in the header unit of the given extension within
-        the dataset.
+        the comment) associated with a given key in the header unit of the given
+        extension within the dataset. This function sets the value in the
+        given extension's header, with "0" being the first data extension.  To
+        set values IN the PHU use phusetKeyValue(..).
         """
         origextension = extension
         if type(extension) == int:
@@ -1453,48 +1559,6 @@ AstroData instance in Astrodata Tutorials and documentation.
         import IDFactory
         return IDFactory.generateStackableID(self)
  
-    def write(self, filename = None, clobber = False, rename=True):
-        """
-        :param fname: file name to write to, optional if instance already has
-                      name, which might not be the case for new AstroData
-                      instances created in memory.
-        :type fname: string
-        :param clobber: This flag drives if AstroData will overwrite an existing
-                    file.
-        :type clobber: bool
-        :param rename: This flag allows you to write the AstroData instance to a
-            new filename, but leave the "current" name in tact.
-        :type rename: bool
-
-        The write function acts similarly to the HDUList.writeto(..) function
-        if a filename is given, or like HDUList.update(..) if no name is given.
-        When a name is given, this becomes the new on-disk name of the AstroData
-        and will be used on subsequent calls to write for which the filename is
-        not provided. If the clobber flag is False (the default) then
-        write(..) throws an exception if the file already exists.
-        
-        """
-        fname = filename
-        hdul = self.gethdul()
-        if fname == None:
-            rename = False
-            fname = self.filename
-        else:
-            if rename == True:
-                self.filename = fname
-           
-        # by here fname is either the name passed in, or if None, it is self.filename
-        if (fname == None):
-            # @@FUTURE:
-            # perhaps create tempfile name and use it?
-            raise gdExcept()
-           
-        if os.path.exists(fname):
-            if clobber:
-                os.remove(fname)
-            else:
-                raise OutputExists(fname)
-        hdul.writeto(fname)
         
         
     # MID LEVEL MEF INFORMATION
@@ -1635,24 +1699,25 @@ def correlate( *iary):
     :param iary: A list of AstroData instances to produce correlation dict for
     :type iary: list of AstroData instance
     :returns: a list of tuples containing correlated extensions from the arguments. 
-    :returns: list of tuples
+    :rtype: list of tuples
 
-    The AstroData helper function, correlate(..), returns a list of tuples of 
-    Single Extension AstroData instances which associate members extension
-    among the input array.
-    It accepts a variable number of arguments, all of which
-    should be AstroData instances. The returned list contains tuples of associated 
-    extensions... that is, given three inputs, 'a', 'b' and 'c'. 
-    Assuming all have (SCI,1) extensions, then within the returned lists will
-    be the equivalent of the following tuple
-    (a[(SCI,1)], b[(SCI,1)], c[(SCI,1)]).  This is useful for processes which
-    process multiple input images, i.e. within the Gemini system, to "add MEFa to MEFb" 
-    means precicely this, to add MEFa[(SCI,1)] to MEFb[(SCI,1)], 
-    MEFa[(SCI,2)] to MEFb[(SCI,2)] and so on. Similarly, such an operation of "SCI" frames
-    will imply complementary changes on "VAR" and "DQ" frames which also will use
-    the correlate function.
+    The *correlate(..)* function is a module-level helper function which returns
+    a list of tuples  of Single Extension AstroData instances which associate
+    extensions from each listed AstroData object, to identically named
+    extensions among the rest of the input array. The *correlate(..)* function
+    accepts a variable number of arguments, all of which should be AstroData
+    instances.
+    
+    For eample, given three inputs, 'a', 'b' and 'c'.  Assuming all have (SCI,1)
+    extensions, then within the returned lists will be the equivalent of the
+    following tuple (a[(SCI,1)], b[(SCI,1)], c[(SCI,1)]).  This is useful for
+    processes which process multiple input images, i.e. within the Gemini
+    system, to "add MEFa to MEFb"  means precicely this, to add MEFa[(SCI,1)] to
+    MEFb[(SCI,1)],  MEFa[(SCI,2)] to MEFb[(SCI,2)] and so on. Similarly, such an
+    operation on all "SCI" frames will imply complementary changes on "VAR" and "DQ"
+    frames which also will use the correlate function.
         
-    :Note: to appear in the list, all the given arguments must have an extension
+    :Info: to appear in the list, all the given arguments must have an extension
         with the given (EXTNAME,EXTVER) for that tuple.
     """
     numinputs = len(iary)
