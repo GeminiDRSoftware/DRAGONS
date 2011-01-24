@@ -1732,8 +1732,15 @@ def correlate( *iary):
     baseGD = iary[0]
     
     for extinbase in baseGD:
-        extname = extinbase.header["EXTNAME"]
-        extver  = extinbase.header["EXTVER"]
+        try:
+            extname = extinbase.header["EXTNAME"]
+        except:
+            extname = ""
+        try:
+            extver  = extinbase.header["EXTVER"]
+        except:
+            extver  = 0
+            
         outrow = [ extinbase ]
         #print "gd610: (%s,%d)" % (extname,extver)
         for gd in iary[1:]:
