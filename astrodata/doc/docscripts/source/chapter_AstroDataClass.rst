@@ -47,6 +47,13 @@ info(..)
 
 .. automethod:: astrodata.data.AstroData.info
 
+infostr(..)
+############
+
+.. toctree::
+
+.. automethod:: astrodata.data.AstroData.infostr
+
 open(..)
 #########
 
@@ -79,28 +86,35 @@ Header Manipulations
 
 .. toctree::
 
-Manipulations of headers that relate to high-level metadata covered by
-"Astrodata Descriptors" should be read using the appropriate descriptor. 
-Descriptions of descriptors are aspects of the Astrodata configuration, so
-see the ''Gemini AstroData Type Reference''.
+Manipulations of headers, specifically retrieving and setting key-value
+pair settings in the header section of header-data units
+can be done directly using the AstroData header manipulation functions
+which cover both PHU and extension headers.
+For higher level metadata which is availalbe for all types in the tree
+(in a properly constructed configuration space) data is retreived by 
+descriptor functions, as members of the AstroData object.  Descriptor functions
+access the lower level headers to return data more consistently than they
+exist as stored across all instrument-modes.
 
-However, to work with meta-data not covered by descriptors, one must read
-and write key-value pairs to the HDU headers at the lower-level. AstroData
-offers three pairs of functions for getting and setting header values, for
-each of three distinct cases.  While it is possible to use the
-pyfits.Header directly (available via "ad[..].header"), it is preferrable
-to use the AstroData calls which allow AstroData to keep type information
-up to date, as well as update any other characteristics maintained in
-reference to the dataset's header data.
+To set information or retrieve meta-data not covered by descriptors, one must
+read and write key-value pairs to the HDU headers at the lower-level. AstroData
+offers three pairs of functions for getting and setting header values, for each
+of three distinct cases.  While it is possible to use the pyfits.Header directly
+(available via "ad[..].header"), it is preferrable to use the AstroData calls
+which allow AstroData to keep type information up to date, as well as to update
+any other characteristics of the AstroData object which may need to be
+maintained when the dataset is changed.
 
-The three distinct uses are:
+The three distinct pairs of header access functions serve the following
+purposes:
 
 + set/get headers in PHU.
-+ set/get headers in the single extension of a single-HDU AstroData
-  instance.
++ set/get headers in the single extension of a "single-HDU AstroData
+  object".
 + set/get headers in an extension of a multi-HDU (aka "multi-extension") 
   AstroData instance. This requires specifying the extension index, and
-  cannot modify the PHU.
+  cannot be used to modify the PHU as extension 0 is the first real 
+  header-data section in the MEF.
 
 Set/Get PHU Headers
 ####################
