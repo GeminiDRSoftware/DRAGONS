@@ -1708,14 +1708,13 @@ def correlate( *iary):
     accepts a variable number of arguments, all of which should be AstroData
     instances.
     
-    For eample, given three inputs, 'a', 'b' and 'c'.  Assuming all have (SCI,1)
-    extensions, then within the returned lists will be the equivalent of the
-    following tuple (a[(SCI,1)], b[(SCI,1)], c[(SCI,1)]).  This is useful for
-    processes which process multiple input images, i.e. within the Gemini
-    system, to "add MEFa to MEFb"  means precicely this, to add MEFa[(SCI,1)] to
-    MEFb[(SCI,1)],  MEFa[(SCI,2)] to MEFb[(SCI,2)] and so on. Similarly, such an
-    operation on all "SCI" frames will imply complementary changes on "VAR" and "DQ"
-    frames which also will use the correlate function.
+    The function returns a structured dictionary of dictories of lists of
+    AstroData objects. For example, given three inputs, *ad*, *bd* and *cd*, all
+    with three "SCI", "VAR" and "DQ" extensions. And given *adlist = [ad, bd,
+    cd]*, then *corstruct = correlate(adlist)* will return to *corstruct* a
+    dictionary first keyed by the EXTNAME, then keyed by tuple. The contents
+    (e.g. of *corstruct["SCI"][1]*) are just a list of AstroData instances each
+    containing a header-data unit from *ad*, *bd*, and *cd* respectively.
         
     :Info: to appear in the list, all the given arguments must have an extension
         with the given (EXTNAME,EXTVER) for that tuple.
@@ -1735,7 +1734,7 @@ def correlate( *iary):
         try:
             extname = extinbase.header["EXTNAME"]
         except:
-            extname = ""
+            extname = "NONE"
         try:
             extver  = extinbase.header["EXTVER"]
         except:
@@ -1762,37 +1761,57 @@ def correlate( *iary):
 
 def prepOutput(inputAry = None, name = None, clobber = False):
     """
-    :param inputAry : The input array from which propagated content (such as the 
-        source PHU) will be taken. Note: the zero-th element in the list is 
-        used as the reference dataset, for PHU or other items which require
+    :param inputAry: The input array from which propagated content (such as
+        the  source PHU) will be taken. Note: the zero-th element in the list
+        is  used as the reference dataset, for PHU or other items which require
         a particular reference.
+    :type inputAry: list of AstroData Instances
+    
     :param name: File name to use for returned AstroData, optional.
     
     :param clobber: By default prepOutput(..) checks to see if a file of the
-        given name already exists, and will throw an exception if found.
-        Set 'clobber' to True to override this behavior, to allow creation
-        of an AstroData instance regardless of it's existence on disk. 
+        given name already exists, and will raise an exception if found.
+        Set *clobber* to *True* to override this behavior and potentially
+        overwrite the extant file.  The datset on disk will not be overwritten
+        as a direct result of prepOutput, which only prepares the object
+        in memory, but will occur when the AstroData object returned is 
+        written (i.e. *ad.write()^. 
     :type clobber: bool
         
-    :returns: an AstroData instance with associated data from the inputAry 
-        properly represented to the returned instance.
-        File will not have been written to disk by prepOutput(..).
+    :returns: an AstroData instance initialized with appropriate
+        header-data units such as the PHU, Standard Gemini headers
+        and with type-specific associated  data-header units such as
+        binary table Mask Definition tables (aka MDF).
+        
+        ..info: File will not have been written to disk by prepOutput(..).
     :rtype: AstroData
 
-    The prepOutput(..) function creates a new AstroData ready for appending
-    output information.  While you can also simply create an empty AstroData
-    instance by giving no arguments to the AstroData constructor 
-    (i.e. "ad = AstroData()"), prepOutput(..) will take into account the input
-    array provided to:
+    The prepOutput(..) function creates a new AstroData object ready for
+    appending output information (i.e. *ad.append(..)*).  While you can also
+    create an empty AstroData object by giving no arguments to the
+    AstroData constructor  (i.e. *ad = AstroData()*), *prepOutput(..)* exists for
+    the common case where a new dataset object will is intended as the output
+    of come combinatorial process on a list of source dataset. 
     
-    + Copy the PHU of the reference image (inputAry[0])
+    The *prepOutput(..)* function makes use of this knowledge to ensure the
+    file meets standards in what is considered a complete output file given
+    such a combination.  In the future this function can make use of dataset
+    history and extensive structure definitions in the ADCONFIG configuration
+    space, and as it improves, scripts and primtiives that use it will benefit
+    in a forward compatible way, in that their output datasets will benefit from
+    more automatic propagation, validations, and data flow control, such as the
+    emergence of history database propacation.
+    
+    However, presently, it already provides the following:
+    
+    + Ensures that all standard headers  are in place in the new file, using the
+    configuration 
+    + Copy the PHU of the reference image (inputAry[0]). 
     + Propagate associated information such as the MDF in the case of a MOS 
-      observation    
-    """
-    if inputAry == None:
-        raise gdExcept()
-        return None
-    
+        observation, configurable by the Astrodata Structures system. 
+    """ 
+    if inputAry == None: raise gdExcept() return None
+
     if type(inputAry) != list:
         iary = [inputAry]
     else:
