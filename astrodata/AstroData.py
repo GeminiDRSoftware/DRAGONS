@@ -1444,7 +1444,7 @@ AstroData instance in Astrodata Tutorials and documentation.
             raise ADExcept("getHeaderValue must be called on single extension instance")
     getHeaderValue = getKeyValue
 
-    def setKeyValue(self, key):
+    def setKeyValue(self, key, value):
         """
         :param key: name of data header value to set
         :type key: string
@@ -1472,7 +1472,7 @@ AstroData instance in Astrodata Tutorials and documentation.
             
         """
         if len(self.hdulist) == 2:
-            self.extSetKeyValue(0,key)
+            self.extSetKeyValue(0,key, value)
         else:
             raise ADExcept("setKeyValue must be called on single extension instance")
            
@@ -1810,7 +1810,9 @@ def prepOutput(inputAry = None, name = None, clobber = False):
     + Propagate associated information such as the MDF in the case of a MOS 
         observation, configurable by the Astrodata Structures system. 
     """ 
-    if inputAry == None: raise gdExcept() return None
+    if inputAry == None: 
+        raise gdExcept() 
+        return None
 
     if type(inputAry) != list:
         iary = [inputAry]
