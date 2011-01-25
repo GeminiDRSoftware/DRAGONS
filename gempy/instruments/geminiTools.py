@@ -11,8 +11,6 @@ import tempfile
 
 log=gemLog.getGeminiLog() 
 
-orig_file_names_dict = None
-
 def biassecStrTonbiascontam(biassec, ad):
     """ 
     This function works with nbiascontam() of the CLManager. 
@@ -520,7 +518,8 @@ class CLManager(object):
             # The name that IRAF wrote the output to
             cloutname = self.postpend+self._preCLcachestorenames[0]
             # The name we want the file to be
-            finalname = fileNameUpdater(adIn=self.rc.getInputs(style='AD')[0],infilename=self._preCLfilenames[0], 
+            finalname = fileNameUpdater(adIn=self.rc.getInputs(style='AD')[0],
+                                        infilename=self._preCLfilenames[0], 
                                       postpend= self.postpend, strip=False)
             # Renaming the IRAF written file to the name we want
             os.rename(cloutname, finalname )
