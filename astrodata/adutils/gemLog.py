@@ -27,14 +27,41 @@ level#, verbose,  level,          includes (current rough outline)
     note: level 'info' exists, but it is not being used in the
     Recipe Systems logging standards
     
+    @param logName: Name of the file the log messages will be written to
+    @type logName: string
+    
+    @param verbose: verbosity setting for the lowest level of messages to 
+                    print to the screen.
+    @type verbose: integer from 0-10 following above chart
+    
+    @param debug: Flag for showing debug level messages
+    @type debug: python boolean (True/False)
+    
+    @param noLogFile: Flag for stopping a log file from being created
+    @type noLogFile: python boolean (True/False)
+    
+    @param allOff: Flag to turn off all messages to the screen or file
+    @type allOff: python boolean (True/False)
+    
     """
     logger = None
-    def __init__(self, logName=None, verbose=1, debug=False):
+    def __init__(self, logName=None, verbose=1, debug=False, noLogFile=False, allOff=False):
+        # Setting verbose and noFile accordingly if allOff is turned on
+        if allOff:
+            verbose=0
+            noLogFile=True
+        
+        # If noLogFile=True, then set the log file as 'null'
+        if noLogFile:
+            self._logName = '/dev/null'
         # Set the file name for the log, default is currently 'gemini.log'
-        if not logName:
-            self._logName = 'gemini.log'
         else:
-            self._logName = logName
+            # Setting the logName to the default or the value passed in, 
+            # if there was one
+            if not logName:
+                self._logName = 'gemini.log'
+            else:
+                self._logName = logName
                 
         # Adding logger levels not in default Python logger 
         # note: INFO level = 20
@@ -73,7 +100,9 @@ level#, verbose,  level,          includes (current rough outline)
             
         # Set console handler depending on value provided on verbose value
         else:
-            if (verbose == 6):
+            if (verbose == 10):
+                ch.setLevel(logging.DEBUG)
+            elif (verbose == 6):
                 ch.setLevel(FULLINFO)
             elif (verbose == 5):
                 ch.setLevel(STDINFO)
@@ -85,6 +114,9 @@ level#, verbose,  level,          includes (current rough outline)
                 ch.setLevel(logging.ERROR)
             elif (verbose == 1):
                 ch.setLevel(logging.CRITICAL)
+            elif (verbose==0):
+                #ie. 'MAX' out the level so it is above all existing log levels
+                ch.setLevel(100)
             else:
                 ch.setLevel(FULLINFO)
                 fh.setLevel(FULLINFO)
@@ -358,7 +390,7 @@ def checkHandlers(log, remove=True):
         else:
             return False    
 
-def getGeminiLog(logName=None , verbose = 0, debug = False):
+def getGeminiLog(logName=None , verbose = 0, debug = False, noLogFile=False, allOff=False):
     """ The function called to retrieve the desired logger object.
         This can be a new one, and thus getGeminiLog will create one to be 
         returned, else it will return the requested one based on the 
@@ -370,19 +402,19 @@ def getGeminiLog(logName=None , verbose = 0, debug = False):
     
     # No logger exists, so create one
     if not _geminiLogger:
-        _geminiLogger = GeminiLogger(logName, verbose, debug)
+        _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
         return _geminiLogger
     
     # You want a non-default logger, but there is a different one already
     # , so create new non-default logger
     elif _geminiLogger and (_geminiLogger.logname() != logName) and \
     (logName is not None):
-        _geminiLogger = GeminiLogger(logName, verbose, debug)
+        _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
         return _geminiLogger
     
     # A non-default logger exists, but you want a default one, so create it
     elif _geminiLogger and (logName is not None):
-        _geminiLogger = GeminiLogger(logName, verbose, debug)
+        _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
         return _geminiLogger
     
     # Otherwise return the previous logger object
