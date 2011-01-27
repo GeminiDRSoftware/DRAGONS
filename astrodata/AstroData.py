@@ -114,22 +114,19 @@ pairs populating headers and pixel data populating data,
 AstroData interprets a MEF as a single complex entity.  The individual
 "extensions" with the MEF are available using python list ("[]") syntax and are 
 wrapped in AstroData objects (see 
-:method:AstroData.__getitem__()<astrodata.data.AstroData>). AstroData uses 
+:meth:AstroData.__getitem__()<astrodata.data.AstroData>). AstroData uses 
 pyfits for MEF I/O and numpy for pixel manipulations. While the pyfits
 and numpy objects are available to the programmer, AstroData possesses analagous
-methods for most pyfits functionality which allow it to maintain the dataset 
+methods for most pyfits functionality which allows it to maintain the dataset 
 as a cohesive whole. The programmer does however use the numpy pixel arrays directly
-for pixel manipulation.  The automation system allows presentation of commands that 
-do not refer to the numpy, however, these behaviors need to be implemented in
-primitives (part of the accompanying automation syste, aka the Recipe System), which
-will use nympy when getting data from AstroData instances.
+for pixel manipulation.
 
 In order to identify types of dataset and provide type-specific behavior AstroData
 relies on configuration packages which  can either be in the PYTHONPATH environment
 variable or the Astrodata package environment  variables, ADCONFIGPATH, or RECIPEPATH.
 The configuration (i.e. astrodata_Gemini) contains definitions for all 
-instrument-mode-specific behavior. The configuration is implemented as
-type definitions, descriptors functions, lookup tables, and any other code or
+instrument-mode-specific behavior. The configuration contains
+type definitions, meta-data functions, information lookup tables, and any other code or
 information needed to handle specific types of dataset.
 
 This allows AstroData to manage access to the dataset for convienience and consistency.
@@ -137,45 +134,19 @@ For example AstroData is able...:
 
 + to allow reduction scripts to have easy access to dataset classification
     information in a consistent way across all instrument-modes
-
 + to provide consistent interfaces for obtaining common meta-data across all
     instrument modes
-    
 + to relates internal extensions, e.g. discriminate between science and variance
-    arrays and associate them properly.
-     
+    arrays and associate them properly
 + to help propagate header-data units important to the given instrument mode, but
-  which are not directly part of the current transformation, e.g. propagating Mask
-  Definition extensions for spectral datasets in general reduction scripts (like an
-  add) which are not aware of (and don't want to be aware of) the
-  instrument-mode-specific extensions requiring special handling. 
+    which are not directly part of the current transformation, e.g. propagating Mask
+    Definition extensions for spectral datasets in general reduction scripts (like an
+    add) which are not aware of (and don't want to be aware of) the
+    instrument-mode-specific extensions requiring special handling. 
 
-All access to configurations goes through a special class,
-:class:`ConfigSpace<astrodata.ConfigSpace.ConfigSpace>`, which by default will have
-found the configuraiton spaces looking on the paths mentioned above.  Isolation 
-behind the ConfigSpace interface allows us to retrieve the configuration from
-any sort of storage, but currently ConfigSpace looks on disk in the paths
-specified for packages
-named  "astrodata_<ANYTHING>" (e.g. "astrodata_Gemini").  Naming conventions within
-this directory allow specific configurations to be stored and found by ConfigSpace.
-
-In general one can consider the functionality of AstroData to consist of
-file handling, data handling, type checking, and managing
-meta-information for complex datasets, though other features
-like file validation and history are present and under development.
-AstroData uses subsidiary classes to provide
-most functionality and serves to tie together 
-much dataset-related information and manipulation.
-
-For example, the AstroData user relies on AstroData instances to retrieve dataset type
-information, but AstroData itself relies on the AstroDataType module, which in turn
-relies on the 
-:class:`ClassificationLibrary<astrodata.datatypes.ClassificationLibrary>`  class and
-the related  :class:`DataClassification<astrodata.datatypes.DataClassficiation>` class
-to execute the actual type detection.
-
-.. tip the variable "ad" is generally used to represent an already constructed 
-AstroData instance in Astrodata Tutorials and documentation.
+AstroData's purpose in general is to provide a smart dataset-centered interfaces
+which adapt to dataset type. The primary interfaces of note are for file
+handling, dataset-type checking, and managing meta-data.
 """
     
     types = None
