@@ -51,6 +51,10 @@ level#, verbose,  level,          includes (current rough outline)
             verbose=0
             noLogFile=True
         
+        # Save verbosity setting for log to a private variable to allow for 
+        # changing the value in future calls. 
+        self._verbose=verbose
+        
         # If noLogFile=True, then set the log file as 'null'
         if noLogFile:
             self._logName = '/dev/null'
@@ -62,7 +66,7 @@ level#, verbose,  level,          includes (current rough outline)
                 self._logName = 'gemini.log'
             else:
                 self._logName = logName
-                
+            
         # Adding logger levels not in default Python logger 
         # note: INFO level = 20
         FULLINFO    = 15
@@ -155,7 +159,13 @@ level#, verbose,  level,          includes (current rough outline)
         
         """
         return self._logName
-     
+    
+    def verbosity(self, verbose=None):
+        """Just a function to return the 'private' member variable _verbose
+        to allow checking what the current verbosity of this logger object is.        
+        """     
+        return self._verbose
+    
     def defaultCategory(self, level=None, category=None):
         """
          A function to access and set the 'private' default category variables.
@@ -404,8 +414,11 @@ def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=
     
     # No logger list (ie, not even one log object) exists, so create one
     if not _listOfLoggers:
+        #print 'GL415: creating new logger' #$$$$$$$$$$$$$$$$$$$$$
         _listOfLoggers = []
-        _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
+        _geminiLogger = GeminiLogger(logName=logName, verbose=verbose, 
+                                     debug=debug, noLogFile=noLogFile, 
+                                     allOff=allOff)
         _listOfLoggers.append(_geminiLogger)
     # At least one logger object exists, so loop through current loggers in the 
     # in the list and see if the one you are requesting exists.
@@ -418,11 +431,22 @@ def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=
         for log in _listOfLoggers:
             # The log you requested is found in list
             if log.logname() == logName:
-                _geminiLogger=log
+                #print 'GL432: using old logger'
+                if verbose!=log.verbosity():
+                    #print 'GL445: updating verbosity of existing log'
+                    _geminiLogger = GeminiLogger(logName=logName, verbose=verbose, 
+                                         debug=debug, noLogFile=noLogFile, 
+                                         allOff=allOff)
+                    log = _geminiLogger
+                else:
+                    _geminiLogger=log
         # The log you requested is not there, so create it and add it to list. 
         if not _geminiLogger:
-                _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
-                _listOfLoggers.append(_geminiLogger)
+            #print 'GL436: creating new logger but list was there'
+            _geminiLogger = GeminiLogger(logName=logName, verbose=verbose, 
+                                         debug=debug, noLogFile=noLogFile, 
+                                         allOff=allOff)
+            _listOfLoggers.append(_geminiLogger)
                 
     # return the log that was requested, whether it had to be created or was all ready there.             
     return _geminiLogger
