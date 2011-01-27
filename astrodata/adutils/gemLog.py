@@ -4,7 +4,7 @@ import sys, os
 import logging
 import traceback as tb
 
-_geminiLogger = None
+_listOfLoggers = None
 
 class GeminiLogger(object):
     """
@@ -390,35 +390,41 @@ def checkHandlers(log, remove=True):
         else:
             return False    
 
-def getGeminiLog(logName=None , verbose = 0, debug = False, noLogFile=False, allOff=False):
+def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=False):
     """ The function called to retrieve the desired logger object.
         This can be a new one, and thus getGeminiLog will create one to be 
         returned, else it will return the requested one based on the 
         parameter 'logName' in the call.
         
         """
-    # Retrieve the latest logger object
-    global _geminiLogger
+    # Retrieve the list of loggers
+    global _listOfLoggers
     
-    # No logger exists, so create one
-    if not _geminiLogger:
+    _geminiLogger = None
+    
+    # No logger list (ie, not even one log object) exists, so create one
+    if not _listOfLoggers:
+        _listOfLoggers = []
         _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
-        return _geminiLogger
-    
-    # You want a non-default logger, but there is a different one already
-    # , so create new non-default logger
-    elif _geminiLogger and (_geminiLogger.logname() != logName) and \
-    (logName is not None):
-        _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
-        return _geminiLogger
-    
-    # A non-default logger exists, but you want a default one, so create it
-    elif _geminiLogger and (logName is not None):
-        _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
-        return _geminiLogger
-    
-    # Otherwise return the previous logger object
+        _listOfLoggers.append(_geminiLogger)
+    # At least one logger object exists, so loop through current loggers in the 
+    # in the list and see if the one you are requesting exists.
     else:
-        return _geminiLogger
+        # Since logName=None means use default 'gemini.log', just set it to that 
+        # now to make searching the logger list easier.
+        if logName==None:
+            logName='gemini.log'
+        # Loop through logs in list
+        for log in _listOfLoggers:
+            # The log you requested is found in list
+            if log.logname() == logName:
+                _geminiLogger=log
+        # The log you requested is not there, so create it and add it to list. 
+        if not _geminiLogger:
+                _geminiLogger = GeminiLogger(logName, verbose, debug, noLogFile, allOff)
+                _listOfLoggers.append(_geminiLogger)
+                
+    # return the log that was requested, whether it had to be created or was all ready there.             
+    return _geminiLogger
 
     
