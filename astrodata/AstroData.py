@@ -493,6 +493,7 @@ AstroData instance in Astrodata Tutorials and documentation.
         lohdus = []
         for hdu in self.hdulist:
             nhdu = copy(hdu)
+            #print "AD496:", repr(hdu.header), id(hdu.data)
             nhdu.header = nhdu.header.copy()
             lohdus.append(nhdu)
         
@@ -501,7 +502,7 @@ AstroData instance in Astrodata Tutorials and documentation.
         return AstroData(hdulist)
             
         
-        print "AD298: copy?"
+        # print "AD298: copy?"
     
     def append(self, moredata=None, data=None, header=None):
         """
@@ -1501,9 +1502,12 @@ AstroData instance in Astrodata Tutorials and documentation.
             
         hdul = self.gethdul()
         try:
-            retval = hdul[extension].header[key]
+            exthd = hdul[extension]
         except KeyError:
-            raise "AD912"
+            raise ADExcept("No such extension: %s" % str(extension))
+        try:
+            retval = exthd.header[key]
+        except:
             return None
         # print "AD914:", key, "=",retval    
         return retval
@@ -1530,13 +1534,17 @@ AstroData instance in Astrodata Tutorials and documentation.
             # this translates ints from our 0-relative base of AstroData to the 
             #  1-relative base of the hdulist, but leaves tuple extensions
             #  as is.
-            #print "AD892: pre-ext", extension
+            print "AD892: pre-ext", extension
             extension = self.translateIntExt(extension)
-            #print "AD892: ext", extension
+            print "AD892: ext", extension
             
         #make sure extension is in the extensions list if present
-        if (self.extensions != None) and (not extension in self.extensions):
-            raise ADExcept("Extention %s not present in AstroData instance" % str(origextension))
+        #if (self.extensions != None) and (not extension in self.extensions):
+        #    print "AD1538:", self.extensions
+        try:
+            tx = self.hdulist[extension]
+        except:
+            raise ADExcept("Extension %s not present in AstroData instance" % str(origextension))
             
         hdul = self.gethdul()
         hdul[extension].header.update(key, value, comment)
@@ -1821,7 +1829,8 @@ def prepOutput(inputAry = None, name = None, clobber = False):
     
     #get PHU from inputAry[0].hdulist
     hdl = iary[0].gethdul()
-    outphu = hdl[0]
+    outphu = copy(hdl[0])
+    outphu.header = outphu.header.copy()
         
     # make outlist the complete hdulist
     outlist = [outphu]
