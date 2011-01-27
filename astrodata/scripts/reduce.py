@@ -142,8 +142,7 @@ parser.add_option("--caltype", dest="cal_type", default=None, type="string",
                   "This should be the type of calibration in lowercase and one word. " + \
                   "For example: 'bias', 'twilight'.")
 parser.add_option("--showcolors", dest="show_colors", default=False, action = "store_true",
-                    help="""For debugging any color output problems, show
-s what colors
+                    help="""For debugging any color output problems, shows what colors
                     reduce thinks are available based on the terminal setting.""")
 ##@@FIXME: This next option should not be put into the package
 parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_true",
@@ -162,6 +161,10 @@ parser.add_option("--verbose",dest='verbose', default=2, type='int',
                   help="verbose will set the verbosity level for the console; 0=none, 6=highest.")
 parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
                   help="name of log; default is 'gemini.log'.") 
+parser.add_option("--noLogFile",dest='noLogFile', default=False, action="store_true",
+                  help="Calling this flag will make it so no log file is created.")
+parser.add_option("--logAllOff",dest='logAllOff', default=False, action="store_true",
+                  help="Calling this flag will turn the logging completely off, no log file and no messages to the screen.")
 parser.add_option("--writeInt",dest='writeInt', default=False, action="store_true",
                   help="writeInt (short for writeIntermediate) will set it so the outputs of" + \
                   "each primitive are written to disk rather than only at the end of the recipe. default=False."+ \
@@ -189,12 +192,12 @@ if options.invoked:
     options.verbose = 6
     
 #---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
-log = gemLog.getGeminiLog(logName=options.logName,verbose=options.verbose,debug=options.debug)
+log = gemLog.getGeminiLog(logName=options.logName,verbose=options.verbose,debug=options.debug, noLogFile=options.noLogFile, allOff=options.logAllOff)
 #-------------------------------------------------------------------------
 
 if options.invoked:
     opener = "reduce started in adcc mode (--invoked)"
-    options.verbose = 6
+    #options.verbose = 6
     log.status("."*len(opener))
     log.status(opener)
     log.status("."*len(opener))
