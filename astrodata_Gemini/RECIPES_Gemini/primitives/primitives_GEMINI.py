@@ -5,7 +5,8 @@ import time
 from astrodata.ReductionObjects import PrimitiveSet
 from astrodata.adutils import gemLog
 from astrodata import IDFactory
-from gempy.instruments import geminiTools  as gemt
+from gempy.instruments import geminiTools as gemt
+from gempy.science import geminiScience
 import numpy as np
 import pyfits as pf
 from datetime import datetime
@@ -14,7 +15,6 @@ from primitives_GENERAL import GENERALPrimitives
 from astrodata.adutils.gemutil import pyrafLoader
 
 log = gemLog.getGeminiLog()
-
 
 class GEMINIException:
     """ This is the general exception the classes and functions in the
@@ -272,86 +272,17 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             log.status('*STARTING* to convert the pixel values from '+
                        'ADU to electrons')
-            for ad in rc.getInputs(style='AD'):
-                log.fullinfo('calling ad.mult on '+ad.filename)
-                
-                # mult in this primitive will multiply the SCI frames by the
-                # frame's gain, VAR frames by gain^2 (if they exist) and leave
-                # the DQ frames alone (if they exist).
-                log.debug('Calling ad.mult to convert pixel units from '+
-                          'ADU to electrons')
-                adOut = ad.mult(ad['SCI'].gain(asDict=True))  
-                log.status('ad.mult completed converting the pixel units'+
-                           ' to electrons')              
- 
-                # Updating SCI headers
-                for ext in adOut['SCI']:
-                    # Retrieving this SCI extension's gain
-                    gainorig = ext.gain()
-                    # Updating this SCI extension's header keys
-                    ext.header.update('GAINORIG', gainorig, 
-                                       'Gain prior to unit conversion (e-/ADU)')
-                    ext.header.update('GAIN', 1.0, 'Physical units is electrons') 
-                    ext.header.update('BUNIT','electrons' , 'Physical units')
-                    # Logging the changes to the header keys
-                    log.fullinfo('SCI extension number '+str(ext.extver())+
-                                 ' keywords updated/added:\n', 
-                                 category='header')
-                    log.fullinfo('GAINORIG = '+str(gainorig), 
-                                 category='header' )
-                    log.fullinfo('GAIN = '+str(1.0), category='header' )
-                    log.fullinfo('BUNIT = '+'electrons', category='header' )
-                    log.fullinfo('--------------------------------------------'
-                                 ,category='header')
-                # Updating VAR headers if they exist (not updating any 
-                # DQ headers as no changes were made to them here)  
-                for ext in adOut['VAR']:
-                    # Ensure there are no GAIN and GAINORIG header keys for 
-                    # the VAR extension. No errors are thrown if they aren't 
-                    # there initially, so all good not to check ahead. 
-                    del ext.header['GAINORIG']
-                    del ext.header['GAIN']
-                    
-                    # Updating then logging the change to the BUNIT 
-                    # key in the VAR header
-                    ext.header.update('BUNIT','electrons squared' , 
-                                       'Physical units')
-                    # Logging the changes to the VAR extensions header keys
-                    log.fullinfo('VAR extension number '+str(ext.extver())+
-                                 ' keywords updated/added:\n',
-                                  category='header')
-                    log.fullinfo('BUNIT = '+'electrons squared', 
-                                 category='header' )
-                    log.fullinfo('--------------------------------------------'
-                                 ,category='header')
-                
-                # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
-                adOut.historyMark('ADU2ELEC', stomp=False)
-                
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context.
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                adOut.filename=gemt.fileNameUpdater(adIn=ad, 
-                                                    postpend=rc['postpend'], 
-                                                    strip=False)
-                log.status('File name updated to '+adOut.filename)
-                rc.reportOutput(adOut)   
-                
-                # Updating logger with time stamps
-                log.fullinfo('************************************************'
-                             , category='header')
-                log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('ADU2ELEC = '+ad.phuGetKeyValue('ADU2ELEC'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
-                
+            # Calling geminiScience toolbox function ADUtoElectons to do the work
+            # of converting the pixels, updating headers and logging.
+            log.debug('Calling geminiScience.ADUtoElectrons')
+            
+            adOuts = geminiScience.ADUtoElectrons(adIns=rc.getInputs(style='AD'), postpend=rc['postpend'])    
+           
+            log.status('geminiScience.ADUtoElectrons completed successfully')
+            
+            # Reporting the outputs to the reduction context
+            rc.reportOutput(adOuts)   
+            
             log.status('*FINISHED* converting the pixel units to electrons')
         except:
             log.critical('Problem converting the pixel units of one of '+
