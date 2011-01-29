@@ -109,40 +109,35 @@ instruments and modes.  Configuration packages are used to describe
 the specific data characteristics, layout, and to store type-specific
 implementations.
 
-While MEFs can be generalized as lists of header-data units, with key-value 
+MEFs can be generalized as lists of header-data units, with key-value 
 pairs populating headers and pixel data populating data,
 AstroData interprets a MEF as a single complex entity.  The individual
 "extensions" with the MEF are available using python list ("[]") syntax and are 
 wrapped in AstroData objects (see 
 :meth:AstroData.__getitem__()<astrodata.data.AstroData>). AstroData uses 
-pyfits for MEF I/O and numpy for pixel manipulations. While the pyfits
-and numpy objects are available to the programmer, AstroData possesses analagous
-methods for most pyfits functionality which allows it to maintain the dataset 
-as a cohesive whole. The programmer does however use the numpy pixel arrays directly
-for pixel manipulation.
+pyfits for MEF I/O and numpy for pixel manipulations. 
 
-In order to identify types of dataset and provide type-specific behavior AstroData
-relies on configuration packages which  can either be in the PYTHONPATH environment
-variable or the Astrodata package environment  variables, ADCONFIGPATH, or RECIPEPATH.
-The configuration (i.e. astrodata_Gemini) contains definitions for all 
-instrument-mode-specific behavior. The configuration contains
-type definitions, meta-data functions, information lookup tables, and any other code or
-information needed to handle specific types of dataset.
+While the pyfits and numpy objects are available to the programmer, AstroData
+provides analagous methods for most pyfits functionality which allows it to
+maintain the dataset  as a cohesive whole. The programmer does however use the
+numpy pixel arrays directly for pixel manipulation.
+
+In order to identify types of dataset and provide type-specific behavior
+AstroData relies on configuration packages either in the PYTHONPATH environment
+variable or the Astrodata package environment variables, ADCONFIGPATH, or
+RECIPEPATH. The configuration (i.e. astrodata_Gemini) contains definitions for
+all  instrument-mode-specific behavior. The configuration contains type
+definitions, meta-data functions, information lookup tables, and any other code
+or information needed to handle specific types of dataset.
 
 This allows AstroData to manage access to the dataset for convienience and consistency.
 For example AstroData is able...:
 
-+ to allow reduction scripts to have easy access to dataset classification
-    information in a consistent way across all instrument-modes
-+ to provide consistent interfaces for obtaining common meta-data across all
-    instrument modes
-+ to relates internal extensions, e.g. discriminate between science and variance
-    arrays and associate them properly
-+ to help propagate header-data units important to the given instrument mode, but
-    which are not directly part of the current transformation, e.g. propagating Mask
-    Definition extensions for spectral datasets in general reduction scripts (like an
-    add) which are not aware of (and don't want to be aware of) the
-    instrument-mode-specific extensions requiring special handling. 
++ to allow reduction scripts to have easy access to dataset classification 
+  information in a consistent way across all instrument-modes
++ to provide consistent interfaces for obtaining common meta-data across all instrument modes
++ to relates internal extensions, e.g. discriminate between science and variance arrays and associate them properly
++ to help propagate header-data units important to the given instrument mode, but which are not directly part of the current transformation, e.g. propagating Mask Definition extensions for spectral datasets in general reduction scripts (like an add) which are not aware of (and don't want to be aware of) the instrument-mode-specific extensions requiring special handling. 
 
 AstroData's purpose in general is to provide a smart dataset-centered interfaces
 which adapt to dataset type. The primary interfaces of note are for file
