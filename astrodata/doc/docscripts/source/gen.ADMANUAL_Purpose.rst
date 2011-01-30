@@ -5,18 +5,18 @@ Document Purpose
 ----------------
 
 This document provides basic user information on the design and
-primary interfaces of teh "astrodata" software, a python package which
+primary interfaces of the astrodata software, a python package which
 is part of the Gemini Data Processing Suite currently being deployed
-at Gemini. This system includes the AstroData data handling class for
-MEFs, as well as the the Astrodata "Recipe System" which provides
-automation features. Each respectively abstracts the datasets and the
-dataset transformation processes. The infrastructural software that
-supports these features is located in an the "astrodata" package
-proper. Information, including code, used for specific types of
-datasets is implemented by a configuration package which is not meant
-to be imported. Gemini's configuration package is "astrodata_Gemini"
-and depends on a library of code presented as a stand alone python
-package, "gempy".
+at Gemini. The astrodata package includes the AstroData data handling
+class for MEFs as well as the the Astrodata "Recipe System" which
+provides automation features. AstroData abstracts datasets, and the
+Recipe System abstracts transformation processes. The infrastructural
+software that supports these features is located in an the "astrodata"
+package itself, while type-specific information, including code, used
+for recognizing, data mining, or processing specific types of datasets
+is implemented in a configuration package astrodata discovers.
+Gemini's configuration package is "astrodata_Gemini" and depends on a
+library of code presented as a stand alone python package, "gempy".
 
 The term "astrodata" in this document can refer to three somewhat
 distinct aspects of the system. There is "AstroData" the class, which
@@ -44,8 +44,7 @@ with the AstroData User Tutorial which allows one to start using the
 class immediately. The tutorial can currently be found at
 http://ophiuchus.hi.gemini.edu/ADTRUNK/astrodata/doc/ADTutorial.pdf.
 It provides a quick hands-on introduction to the concepts involved
-using AstroData to work with Gemini datasets. This document provides
-explanation of how the components in the system work and philosophy of
-Astrodata, and includes an API reference manual for the classes of
-primary interest to users of the system.
+using AstroData to work with Gemini datasets. This document explains
+show the components in the system work and includes an API reference
+manual for classes of primary interest to users of the system.
 
