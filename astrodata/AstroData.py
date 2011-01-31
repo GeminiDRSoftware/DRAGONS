@@ -958,6 +958,8 @@ handling, dataset-type checking, and managing meta-data.
         if len(self.hdulist):
             try:
                 self.discoverTypes()
+            except KeyboardInterrupt:
+                raise
             except:
                 raise ADExcept("discover types failed")
 

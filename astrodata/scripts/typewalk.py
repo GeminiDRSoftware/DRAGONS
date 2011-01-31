@@ -142,6 +142,6 @@ else:
     except KeyboardInterrupt:
     
         print "Interrupted by Control-C"
-        if (showStack):
+        if False: #(showStack):
             st = tb.extract_stack()
             print repr(st)

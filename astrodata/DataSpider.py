@@ -180,6 +180,7 @@ class DataSpider(object):
                             fl = AstroData(fname)
                         except ADExcept:
                             print "${RED}Could not open %s as AstroData${NORMAL}" %fname
+                            raise
                             continue
 
                         gain = 0
@@ -327,8 +328,9 @@ class DataSpider(object):
                                     #print "DS242:", sd
                                     try:
                                         if "(" not in sd:
-                                            dval = eval("fl."+sd+"()")
+                                            dval = eval("fl."+sd+"(asDict=True)")
                                         else:
+                                            print "DS333:", repr(sd)
                                             dval = eval("fl."+sd)
                                         pad = " " * (maxlen - len(sd))
                                         sd = str(sd) + pad
