@@ -1,4 +1,13 @@
-{        'biasCorrect':{'fl_over':
+{       'addBPM': {'postpend':
+                          {
+                           'default': '_bpm' , #value to be post pended to this primitives outputs
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':False    
+                           }
+                          },
+
+        'biasCorrect':{'fl_over':
                         {
                           'default': False , 
                           'recipeOverride': True,
