@@ -145,6 +145,62 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_focal_plane_mask
     
+    def read_mode(self, dataset, **args):
+        """
+        Return the read_mode value for GNIRS
+        This is either "Very Bright Objects", "Bright Objects", "Faint Objects" or "Very Faint Objects" in the OT.
+        Returns "Invalid" if the headers don't make sense wrt these defined modes
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @return: the read mode used to acquire the data
+        """
+
+        hdu = dataset.hdulist
+        lnrs = hdu[0].header[stdkeyDictGNIRS['key_lnrs']]
+        ndavgs = hdu[0].header[stdkeyDictGNIRS['key_ndavgs']]
+
+        read_mode = 'Invalid'
+
+        if lnrs == 32 and ndavgs == 16:
+          read_mode = 'Very Faint Objects'
+
+        if lnrs == 16 and ndavgs == 16:
+          read_mode = 'Faint Objects'
+
+        if lnrs == 1 and ndavgs == 16:
+          read_mode = 'Bright Objects'
+
+        if lnrs == 1 and ndavgs == 1:
+          read_mode = 'Very Bright Objects'
+
+        return read_mode
+
+    def well_depth_mode(self, dataset, **args):
+        """
+        Return the well_depth_mode value for GNIRS
+        This is either "Shallow" or "Deep" in the OT.
+        Returns "Invalid" if the headers don't make sense wrt these defined modes
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @return: the well depth mode used to acquire the data
+        """
+
+        hdu = dataset.hdulist
+        biasvoltage = hdu[0].header[stdkeyDictGNIRS['key_bias']]
+        
+        well_depth_mode = 'Invalid'
+
+        if(abs(biasvoltage+0.3) < 0.1):
+            well_depth_mode = 'Deep'
+
+        if(abs(biasvoltage+0.6) < 0.1):
+            well_depth_mode = 'Shallow'
+        
+        return well_depth_mode
+
+
     def gain(self, dataset, **args):
         """
         Return the gain value for GNIRS
