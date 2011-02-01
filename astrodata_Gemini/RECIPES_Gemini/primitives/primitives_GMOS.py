@@ -5,6 +5,7 @@ from astrodata import Descriptors
 from astrodata.data import AstroData
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
+from gempy.science import geminiScience
 from primitives_GEMINI import GEMINIPrimitives, pyrafLoader
 import numpy as np
 import pyfits as pf
@@ -46,7 +47,11 @@ class GMOSPrimitives(GEMINIPrimitives):
         primitives_GEMINI to add the appropriate BPM (Bad Pixel Mask)
         to the inputs.  This function will add the BPM as frames matching
         that of the SCI frames and ensure the BPM's data array is the same 
-        size as that of the SCI data array.
+        size as that of the SCI data array. If the SCI array is larger 
+        (say SCI's were overscan trimmed, but BPMs were not), the BPMs will 
+        have their arrays padded with zero's to match the sizes and use the 
+        data_section descriptor on the SCI data arrays to ensure the match is
+        a correct fit.
         
         Using this approach, rather than appending the BPM in the addDQ allows
         for specialized BPM processing to be done in the instrument specific
@@ -62,107 +67,28 @@ class GMOSPrimitives(GEMINIPrimitives):
             BPM_22 = AstroData(lookupPath('Gemini/GMOS/GMOS_BPM_22.fits'))
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
+            # Instantiate a list of suitable BPMs to be passed to addBPM func 
+            BPMlist = []
+            
+            # Loop through inputs and load up BPMlist
             for ad in rc.getInputs(style='AD'):
-                # Check if BPM extensions all ready exist for this file
-                if not  ad['BPM']:
-                    for sciExt in ad['SCI']:
-                        #$$ edit when callibration service works for BPMs $$$$$$
-                        if sciExt.getKeyValue('CCDSUM') == '1 1':
-                            BPMArrayIn = BPM_11[('DQ', sciExt.extver())].data
-                            BPMfilename = 'GMOS_BPM_11.fits'
-                        elif sciExt.getKeyValue('CCDSUM') == '2 2':
-                            BPMArrayIn = BPM_22[('DQ', sciExt.extver())].data
-                            BPMfilename = 'GMOS_BPM_22.fits'
-                        else:
-                            BPMArrayIn = np.zeros(sciExt.data.shape, 
-                                                  dtype=np.int16)
-                            log.error('CCDSUM is not 1x1 or 2x2, using'+
-                                      ' zeros array for BPM')
-                            BPMfilename = 'None'
-                        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   
-                        
-                        # logging the BPM file being used for this SCI extension
-                        log.fullinfo('SCI extension number '+
-                                     str(sciExt.extver())+', of file '+
-                                     ad.filename+ ' is matched to BPM file '+
-                                     BPMfilename)
-                        
-                        # Getting the data section from the header and 
-                        # converting to an integer list
-                        datasecStr = sciExt.data_section()
-                        datasecList = gemt.secStrToIntList(datasecStr) 
-                        dsl = datasecList
-                        datasecShape = (dsl[3]-dsl[2]+1, dsl[1]-dsl[0]+1)
-                        
-                        # Creating a zeros array the same size as SCI array
-                        # for this extension
-                        BPMArrayOut = np.zeros(sciExt.data.shape, 
-                                               dtype=np.int16)
-    
-                        # Loading up zeros array with data from BPM array
-                        # if the sizes match then there is no change, else
-                        # output BPM array will be 'padded with zeros' or 
-                        # 'not bad pixels' to match SCI's size.
-                        if BPMArrayIn.shape==datasecShape:
-                            BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
-                                                                    BPMArrayIn
-                        elif BPMArrayIn.shape==BPMArrayOut.shape:
-                            BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
-                                BPMArrayIn[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]]
-                        
-                        # Creating a header for the BPM array and updating
-                        # further updating to this header will take place in 
-                        # addDQ primitive
-                        BPMheader = pf.Header() 
-                        BPMheader.update('BITPIX', 16, 
-                                        'number of bits per data pixel')
-                        BPMheader.update('NAXIS', 2)
-                        BPMheader.update('PCOUNT', 0, 
-                                        'required keyword; must = 0')
-                        BPMheader.update('GCOUNT', 1, 
-                                        'required keyword; must = 1')
-                        BPMheader.update('BUNIT', 'bit', 'Physical units')
-                        BPMheader.update('BPMFILE', BPMfilename, 
-                                            'Bad Pixel Mask file name')
-                        BPMheader.update('EXTVER', sciExt.extver(), 
-                                            'Extension Version')
-                        # This extension will be renamed DQ in addDQ
-                        BPMheader.update('EXTNAME', 'BPM', 'Extension Name')
-                        
-                        # Creating an astrodata instance from the 
-                        # DQ array and header
-                        bpmAD = AstroData(header=BPMheader, data=BPMArrayOut)
-                        
-                        # Using renameExt to correctly set the EXTVer and 
-                        # EXTNAME values in the header   
-                        bpmAD.renameExt('BPM', ver=sciExt.extver())
-                        
-                        # Appending BPM astrodata instance to the input one
-                        log.debug('Appending new BPM HDU onto the file '+ 
-                                  ad.filename)
-                        ad.append(bpmAD)
-                        log.status('Appending BPM complete for '+ ad.filename)
-                        
-               # If BPM frames exist, send a critical message to the logger
+                if ad[('SCI',1)].getKeyValue('CCDSUM')=='1 1':
+                    BPMlist.append(BPM_11)
+                elif ad[('SCI',1)].getKeyValue('CCDSUM')=='2 2':
+                    BPMlist.append(BPM_22)
                 else:
-                    log.critical('BPM frames all ready exist for '+ad.filename+
-                                 ', so addBPM will add new ones') 
-
-                # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
-                ad.historyMark(key='ADDBPM', stomp=False) 
-                # Updating logger with updated/added time stamps
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'),
-                             category='header')
-                log.fullinfo('ADDBPM = '+ad.phuGetKeyValue('ADDBPM'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
+                    log.error('CCDSUM is not 1x1 or 2x2')
+                    raise
+   
+            log.debug('Calling geminiScience.addBPM function')
+            
+            adOuts = geminiScience.addBPM(adIns=rc.getInputs(style='AD'), 
+                                         BPMs=BPMlist, postpend=rc['postpend'])           
+            
+            log.status('geminiScience.addBPM completed successfully')
                 
-                # Reporting the updated file to the reduction context
-                rc.reportOutput(ad)   
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)   
                 
             log.status('*FINISHED* adding the BPM to the inputs') 
         except:
