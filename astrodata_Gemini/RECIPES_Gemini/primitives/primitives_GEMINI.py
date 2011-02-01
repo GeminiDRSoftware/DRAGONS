@@ -62,105 +62,20 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.debug('Calling addBPM primitive for '+rc.inputsAsStr())
             rc.run('addBPM')
             log.status('Returned from the addBPM primitive successfully')
-              
-            # Loop through the inputs to perform the non-linear and saturated
-            # pixel searches of the SCI frames to update the BPM frames into
-            # full DQ frames.       
-            for ad in rc.getInputs(style='AD'):
-                # Check if DQ extensions all ready exist for this file
-                if not ad['DQ']:
-                    for sciExt in ad['SCI']: 
-                        # Retrieving BPM extension 
-                        bpmAD = ad[('BPM',sciExt.extver())]
-                        
-                        # Extracting the BPM data array for this extension
-                        BPMArray = bpmAD.data
-                        
-                        # Extracting the BPM header for this extension to be 
-                        # later converted to a DQ header
-                        dqheader = bpmAD.header
-                        
-                        # Getting the data section from the header and 
-                        # converting to an integer list
-                        datasecStr = sciExt.data_section()
-                        datasecList = gemt.secStrToIntList(datasecStr) 
-                        dsl = datasecList
-                        
-                        # Preparing the non linear and saturated pixel arrays
-                        # and their respective constants
-                        nonLinArray = np.zeros(sciExt.data.shape, 
-                                               dtype=np.int16)
-                        saturatedArray = np.zeros(sciExt.data.shape, 
-                                                  dtype=np.int16)
-                        linear = sciExt.non_linear_level()
-                        saturated = sciExt.saturation_level()
-    
-                        if (linear is not None) and \
-                        (rc['fl_nonlinear'] is True): 
-                            log.debug('Performing an np.where to find '+
-                                      'non-linear pixels for extension '+
-                                      str(sciExt.extver())+' of '+ad.filename)
-                            nonLinArray = np.where(sciExt.data>linear,2,0)
-                            log.status('Done calculating array of non-linear'+
-                                       ' pixels')
-                        if (saturated is not None) and \
-                        (rc['fl_saturated'] is True):
-                            log.debug('Performing an np.where to find '+
-                                      'saturated pixels for extension '+
-                                      str(sciExt.extver())+' of '+ad.filename)
-                            saturatedArray = np.where(sciExt.data>saturated,4,0)
-                            log.status('Done calculating array of saturated'+
-                                       ' pixels') 
-                        
-                        # Creating one DQ array from the three
-                        dqArray=np.add(BPMArray, nonLinArray, 
-                                       saturatedArray) 
-                        # Updating data array for the BPM array to be the 
-                        # newly calculated DQ array
-                        ad[('BPM',sciExt.extver())].data = dqArray
-                        
-                        # Renaming the extension to DQ from BPM
-                        dqheader.update('EXTNAME', 'DQ', 'Extension Name')
-                        
-                        
-                        # Using renameExt to correctly set the EXTVer and 
-                        # EXTNAME values in the header   
-                        bpmAD.renameExt('DQ', ver=sciExt.extver(), force=True)
-
-                        # Logging that the name of the BPM extension was changed
-                        log.fullinfo('BPM Extension '+str(sciExt.extver())+
-                                     ' of '+ad.filename+' had its EXTVER '+
-                                     'changed to '+
-                                     ad[('DQ',sciExt.extver())].header['EXTNAME'])
-                        
-                # If DQ frames exist, send a critical message to the logger
-                else:
-                    log.critical('DQ frames all ready exist for '+ad.filename+
-                                 ', so addDQ will not calculate new ones')
-                    
-                # Adding GEM-TLM (automatic) and ADDDQ time stamps to the PHU
-                ad.historyMark(key='ADDDQ', stomp=False) 
-                # updating logger with updated/added time stamps
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 
-                             category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('ADDDQ = '+ad.phuGetKeyValue('ADDDQ'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
                 
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend=rc['postpend'], 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(ad)        
+            # Calling geminiScience toolbox function ADUtoElectons to do the work
+            # of converting the pixels, updating headers and logging.
+            log.debug('Calling geminiScience.addDQ')
+
+            adOuts = geminiScience.addDQ(adIns=rc.getInputs(style='AD'), 
+                                         fl_nonlinear=rc['fl_nonlinear'], 
+                                         fl_saturated=rc['fl_saturated'], 
+                                         postpend=rc['postpend'])    
+           
+            log.status('geminiScience.addDQ completed successfully')
+            
+            # Reporting the outputs to the reduction context
+            rc.reportOutput(adOuts)          
                 
             log.status('*FINISHED* adding the DQ frame(s) to the input data')
         except:
