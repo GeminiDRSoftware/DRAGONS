@@ -169,3 +169,17 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_ut_date = None
         
         return ret_ut_date
+
+    def read_mode(self, dataset, **args):
+        """
+        Return the read_mode value for MICHELLE
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the read mode string
+        """
+
+        hdu = dataset.hdulist
+        read_mode = hdu[0].header[stdkeyDictMICHELLE['key_read_mode']]
+
+        return read_mode

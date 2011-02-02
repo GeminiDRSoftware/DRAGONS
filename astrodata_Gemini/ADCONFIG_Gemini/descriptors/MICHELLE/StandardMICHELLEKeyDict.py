@@ -10,4 +10,5 @@ stdkeyDictMICHELLE = {
     "key_observation_mode":"MODE",
     "key_pixel_scale":"PIXELSIZ",
     "key_ut_date":"UTDATE",
+    "key_read_mode":"MODE",
     }
