@@ -183,3 +183,18 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         read_mode = hdu[0].header[stdkeyDictMICHELLE['key_read_mode']]
 
         return read_mode
+
+    def coadds(self, dataset, **args):
+        """
+        Return the coadds value for MICHELLE
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the coadds
+        """
+
+        hdu = dataset.hdulist
+        coadds = hdu[0].header[stdkeyDictMICHELLE['key_coadds']]
+
+        return coadds
+
