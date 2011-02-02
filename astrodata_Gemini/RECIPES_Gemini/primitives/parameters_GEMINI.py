@@ -26,21 +26,7 @@
                       'recipeOverride': True,
                       'type': 'str',
                       'userOverride':False 
-                    },
-                    'fl_saturated':
-                    {
-                      'default': True , 
-                      'recipeOverride': True,
-                      'type': 'bool',
-                      'userOverride':True                                      
-                     },
-                     'fl_nonlinear':
-                    {
-                      'default': True , 
-                      'recipeOverride': True,
-                      'type': 'bool',
-                      'userOverride':True                                      
-                     }
+                    }
                     },
     'ADUtoElectrons':{'postpend':
                       {
