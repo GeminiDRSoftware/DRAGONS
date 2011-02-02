@@ -78,6 +78,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     BPMlist.append(BPM_22)
                 else:
                     log.error('CCDSUM is not 1x1 or 2x2')
+                    #$$$ NOT REALLY SURE THIS IS THE APPROPRIATE ACTION HERE
                     raise
    
             log.debug('Calling geminiScience.addBPM function')
