@@ -95,82 +95,18 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
             
-            for ad in rc.getInputs(style='AD'):
-                # Check if there VAR frames all ready exist
-                if ad['VAR']:
-                    # If VAR frames don't exist, loop through the SCI extensions 
-                    # and calculate a corresponding VAR frame for it, then 
-                    # append it
-                    for sciExt in ad['SCI']:
-                        # var = (read noise/gain)2 + max(data,0.0)/gain
-                        
-                        # Retrieving necessary values (read noise, gain)
-                        readNoise=sciExt.read_noise()
-                        gain=sciExt.gain()
-                        # Creating (read noise/gain) constant
-                        rnOverG=readNoise/gain
-                        # Convert negative numbers (if they exist) to zeros
-                        maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
-                        # Creating max(data,0.0)/gain array
-                        maxOverGain=np.divide(maxArray,gain)
-                        # Putting it all together
-                        varArray=np.add(maxOverGain,rnOverG*rnOverG)
-                         
-                        # Creating the variance frame's header and updating it     
-                        varheader = pf.Header()
-                        varheader.update('NAXIS', 2)
-                        varheader.update('PCOUNT', 0, 
-                                         'required keyword; must = 0 ')
-                        varheader.update('GCOUNT', 1, 
-                                         'required keyword; must = 1')
-                        varheader.update('EXTNAME', 'VAR', 
-                                         'Extension Name')
-                        varheader.update('EXTVER', sciExt.extver(), 
-                                         'Extension Version')
-                        varheader.update('BITPIX', -32, 
-                                         'number of bits per data pixel')
-                        
-                        # Turning individual variance header and data 
-                        # into one astrodata instance
-                        varAD = AstroData(header=varheader, data=varArray)
-                        
-                        # Appending variance astrodata instance onto input one
-                        log.debug('Appending new VAR HDU onto the file '
-                                     +ad.filename)
-                        ad.append(varAD)
-                        log.status('appending VAR complete for '+ad.filename)
-                        
-                # If VAR frames all ready existed, 
-                # make a critical message in the logger
-                else:
-                    log.critical('VAR frames all ready exist for '+ad.filename+
-                                 ', so addVAR will not calculate new ones')
-                
-                # Adding GEM-TLM(automatic) and ADDVAR time stamps to the PHU     
-                ad.historyMark(key='ADDVAR', stomp=False)    
-                
-                log.fullinfo('************************************************'
-                             , category='header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('ADDVAR = '+ad.phuGetKeyValue('ADDVAR'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
-                
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend=rc['postpend'], 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(ad)        
+            
+            # Calling geminiScience toolbox function ADUtoElectons to do the work
+            # of converting the pixels, updating headers and logging.
+            log.debug('Calling geminiScience.addVAR')
+            
+            adOuts = geminiScience.addVAR(adIns=rc.getInputs(style='AD'), 
+                                         postpend=rc['postpend'])    
+           
+            log.status('geminiScience.addVAR completed successfully')
+            
+            # Reporting the outputs to the reduction context
+            rc.reportOutput(adOuts)            
                 
             log.status('*FINISHED* adding the VAR frame(s) to the input data')
         except:
