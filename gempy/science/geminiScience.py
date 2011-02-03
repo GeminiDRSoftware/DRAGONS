@@ -963,6 +963,170 @@ def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', ver
     except:
         raise ('An error occurred while trying to run flatCorrect')
     
+def overscanTrim(adIns, outNames=None, postpend=None, logName='', verbose=1, 
+                                                            noLogFile=False):
+    """
+    This function uses AstroData to trim the overscan region 
+    from the input images and update their headers.
     
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
     
+    @param adIns: Astrodata inputs to have DQ extensions added to
+    @type adIns: Astrodata objects, either a single or a list of objects
     
+    @param outNames: filenames of output(s)
+    @type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    @param postpend: string to postpend on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    @type postpend: string
+    
+    @param logName: Name of the log file, default is 'gemini.log'
+    @type logName: string
+    
+    @param verbose: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of verbose setting, all messages always go 
+                          to the logfile if it is not turned off.
+    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    @param noLogFile: A boolean to make it so no log file is created
+    @type noLogFile: Python boolean (True/False)
+    """
+    
+    if logName!='':
+        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
+                                noLogFile=noLogFile)
+    else:
+        # Use default logName 'gemini.log'
+        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+        
+    log.status('**STARTING** the overscanTrim function')
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "postpend" was passed in')
+    
+    try:
+        if adIns!=None:
+            # Set up counter for looping through outNames list
+            count=0
+            
+            # Creating empty list of ad's to be returned that will be filled below
+            if len(adIns)>1:
+                adOuts=[]
+            
+            # Loop through the inputs to perform the non-linear and saturated
+            # pixel searches of the SCI frames to update the BPM frames into
+            # full DQ frames. 
+            for ad in adIns:  
+                # Making a deepcopy of the input to work on
+                # (ie. a truly new+different object that is a complete copy of the input)
+                adOut = deepcopy(ad)
+                # moving the filename over as deepcopy doesn't do that
+                adOut.filename = ad.filename
+                                 
+                # To clean up log and screen if multiple inputs
+                log.fullinfo('+'*50, category='format')    
+                
+                for sciExt in adOut['SCI']:
+                    # Converting data section string to an integer list
+                    datasecStr=sciExt.data_section()
+                    datasecList=gemt.secStrToIntList(datasecStr) 
+                    dsl=datasecList
+                    # Updating logger with the section being kept
+                    log.stdinfo('\nfor '+adOut.filename+' extension '+
+                                str(sciExt.extver())+
+                                ', keeping the data from the section '+
+                                datasecStr,'science')
+                    # Trimming the data section from input SCI array
+                    # and making it the new SCI data
+                    sciExt.data=sciExt.data[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
+                    # Updating header keys to match new dimensions
+                    sciExt.header['NAXIS1'] = dsl[1]-dsl[0]+1
+                    sciExt.header['NAXIS2'] = dsl[3]-dsl[2]+1
+                    newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
+                                    str(dsl[3]-dsl[2]+1)+']' 
+                    sciExt.header['DATASEC']=newDataSecStr
+                    sciExt.header.update('TRIMSEC', datasecStr, 
+                                       'Data section prior to trimming')
+                    # Updating logger with updated/added keywords to each SCI frame
+                    log.fullinfo('********************************************'
+                                 , category='header')
+                    log.fullinfo('File = '+adOut.filename, category='header')
+                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                                 , category='header')
+                    log.fullinfo('SCI extension number '+str(sciExt.extver())+
+                                 ' keywords updated/added:\n', 'header')
+                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
+                                category='header')
+                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),
+                                 category='header')
+                    log.fullinfo('DATASEC= '+newDataSecStr, category='header')
+                    log.fullinfo('TRIMSEC= '+datasecStr, category='header')
+                    
+                adOut.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')    
+                # Updating the GEM-TLM value and reporting the output to the RC    
+                adOut.historyMark(key='OVERTRIM', stomp=False)                
+                
+                # Updating logger with updated/added keywords to the PHU
+                log.fullinfo('************************************************'
+                             , category='header')
+                log.fullinfo('file = '+adOut.filename, category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                             category='header') 
+                log.fullinfo('OVERTRIM = '+adOut.phuGetKeyValue('OVERTRIM')+'\n', 
+                             category='header') 
+                
+                # Updating the file name with the postpend for this
+                # function and then reporting the new file 
+                if postpend!=None:
+                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
+                    if outNames!=None:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                              infilename=outNames[count],
+                                                          postpend=postpend, 
+                                                          strip=False)
+                    else:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                          postpend=postpend, 
+                                                          strip=False)
+                elif postpend==None:
+                    if outNames!=None:
+                        if len(outNames)>1: 
+                            adOut.filename = outNames[count]
+                        else:
+                            adOut.filename = outNames
+                    else:
+                        raise('outNames and postpend parameters can not BOTH\
+                                                                    be None')
+                        
+                log.status('File name updated to '+adOut.filename)
+            
+                if len(adIns)>1:
+                    adOuts.append(adOut)
+                else:
+                    adOuts = adOut
+
+                count=count+1
+        else:
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the overscanTrim function')
+        
+        # Return the outputs (list or single, matching adIns)
+        return adOuts
+    except:
+        raise ('An error occurred while trying to run overscanTrim')
