@@ -72,6 +72,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Loop through inputs and load up BPMlist
             for ad in rc.getInputs(style='AD'):
+                ### This section might need to be upgraded in the future for more 
+                ### general use instead of just 1x1 and 2x2 imaging
                 if ad[('SCI',1)].getKeyValue('CCDSUM')=='1 1':
                     BPMlist.append(BPM_11)
                 elif ad[('SCI',1)].getKeyValue('CCDSUM')=='2 2':
@@ -306,7 +308,8 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         This primitive performs a flat correction by dividing the inputs by a 
         processed flat similar to the way gireduce would perform this operation
-        but written in pure python.  
+        but written in pure python in the arith toolbox.
+          
         It is currently assumed that the same flat file may be applied to all
         input images.
         
@@ -318,41 +321,19 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOne = rc.getInputs(style='AD')[0]
             processedFlat = AstroData(rc.getCal(adOne,'flat'))
             
-            for ad in rc.getInputs(style='AD'):
-                log.status('Input flat file being used for flat correction '
-                           +processedFlat.filename)
-                log.debug('Calling ad.div on '+ad.filename)
-                
-                adOut = ad.div(processedFlat)
-                log.status('ad.div successfully flat corrected '+ad.filename)
-                
-                # Updating GEM-TLM (automatic) and FLATCORR time stamps to the 
-                # PHU
-                adOut.historyMark(key='FLATCORR', stomp=False)
-                
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                adOut.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                      postpend=rc['postpend'], 
-                                                      strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(adOut)   
-                
-                # Updating logger with new GEM-TLM value
-                log.fullinfo('************************************************'
-                             , category='header')
-                log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('FLATCORR = '+ad.phuGetKeyValue('FLATCORR'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')    
+            # Taking care of the case where there was no, or an invalid flat 
+            if processedFlat.countExts('SCI')==0:
+                raise GMOSException('Invalid processed flat retrieved')               
+            
+            log.debug('Calling geminiScience.flatCorrect function')
+            
+            adOuts = geminiScience.flatCorrect(adIns=rc.getInputs(style='AD'),     
+                                         flats=processedFlat, postpend=rc['postpend'])           
+            
+            log.status('geminiScience.flatCorrect completed successfully')
+              
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)   
 
             log.status('*FINISHED* flat correcting the inputs')  
         except:
