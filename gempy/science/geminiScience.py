@@ -62,8 +62,9 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
     log.status('**STARTING** the ADUtoElectrons function')
     
     if (adIns!=None) and (outNames!=None):
-        if len(adIns)!= len(outNames):
-            if postpend==None:
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
@@ -110,8 +111,8 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
                                  category='header' )
                     log.fullinfo('GAIN = '+str(1.0), category='header' )
                     log.fullinfo('BUNIT = '+'electrons', category='header' )
-                    log.fullinfo('--------------------------------------------'
-                                 ,category='header')
+                    log.fullinfo('-'*50, category='header')
+                    
                 # Updating VAR headers if they exist (not updating any 
                 # DQ headers as no changes were made to them here)  
                 for ext in adOut['VAR']:
@@ -131,8 +132,7 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
                                   category='header')
                     log.fullinfo('BUNIT = '+'electrons squared', 
                                  category='header' )
-                    log.fullinfo('--------------------------------------------'
-                                 ,category='header')
+                    log.fullinfo('-'*50, category='header')
                         
                 # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
                 adOut.historyMark(key='ADU2ELEC', stomp=False)
@@ -163,18 +163,16 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
                 log.status('File name updated to '+adOut.filename)
                 
                 # Updating logger with time stamps
-                log.fullinfo('************************************************'
-                             , category='header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
+                log.fullinfo('~'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header')
                 log.fullinfo('ADU2ELEC = '+adOut.phuGetKeyValue('ADU2ELEC'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
+                log.fullinfo('-'*50, category='header')
+                
                 if len(adIns)>1:
                     adOuts.append(adOut)
                 else:
@@ -353,16 +351,14 @@ def addDQ(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=No
                 adOut.historyMark(key='ADDDQ', stomp=False) 
                 
                 # updating logger with updated/added time stamps
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 
                              category='header')
                 log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header')
                 log.fullinfo('ADDDQ = '+adOut.phuGetKeyValue('ADDDQ'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
+                log.fullinfo('-'*50, category='header')
                 
                 # Updating the file name with the postpend for this
                 # function and then reporting the new file 
@@ -463,13 +459,17 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
     log.status('**STARTING** the addBPM function')
     
     if (adIns!=None) and (outNames!=None):
-        if len(adIns)!= len(outNames):
-            if postpend==None:
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "postpend" was passed in')
-    
+                   
+    if BPMs==None:
+        raise('There must be at least one BPM provided, the "BPMs" parameter must not be None.')
+                   
     try:
         # Ensure there are inputs to work on and BPMs to add to the inputs
         if (adIns!=None) and (BPMs!=None):
@@ -483,13 +483,13 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
             # Do the work on each ad in the inputs
             for ad in adIns:
                 # Getting the right BPM for this input
-                if len(BPMs)>1:
-                    BPM = BPMs[count]
-                else:
-                    if isinstance(BPMs, list):
-                        BPM = BPMs[0]
+                if isinstance(BPMs, list):
+                    if len(BPMs)>1:
+                        BPM = BPMs[count]
                     else:
-                        BPM = BPMs
+                        BPM = BPMs[0]
+                else:
+                    BPM = BPMs
                 
                 # Check if this input all ready has a BPM extension
                 if not ad['BPM']:
@@ -501,7 +501,6 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
                     
                     # Getting the filename for the BPM and removing any paths
                     BPMfilename = os.path.basename(BPM.filename)
-                    
                     
                     for sciExt in adOut['SCI']:
                         # Extracting the matching DQ extension from the BPM 
@@ -578,15 +577,13 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
                 # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
                 adOut.historyMark(key='ADDBPM', stomp=False) 
                 # Updating logger with updated/added time stamps
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'),
                              category='header')
                 log.fullinfo('ADDBPM = '+adOut.phuGetKeyValue('ADDBPM'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
+                log.fullinfo('-'*50, category='header')
                 
                 # Updating the file name with the postpend for this
                 # function and then reporting the new file 
@@ -626,5 +623,346 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise #('An error occurred while trying to run addBPM')
+        raise ('An error occurred while trying to run addBPM')
+    
+
+def addVAR(adIns, outNames=None, postpend=None, logName='', verbose=1, 
+                                                            noLogFile=False):
+    """
+    This function uses numpy to calculate the variance of each SCI frame
+    in the input files and appends it as a VAR frame using AstroData.
+    
+    The calculation will follow the formula:
+    variance = (read noise/gain)2 + max(data,0.0)/gain
+    
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    @param adIns: Astrodata inputs to have DQ extensions added to
+    @type adIns: Astrodata objects, either a single or a list of objects
+    
+    @param outNames: filenames of output(s)
+    @type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    @param postpend: string to postpend on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    @type postpend: string
+    
+    @param logName: Name of the log file, default is 'gemini.log'
+    @type logName: string
+    
+    @param verbose: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of verbose setting, all messages always go 
+                          to the logfile if it is not turned off.
+    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    @param noLogFile: A boolean to make it so no log file is created
+    @type noLogFile: Python boolean (True/False)
+    """
+    
+    if logName!='':
+        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
+                                noLogFile=noLogFile)
+    else:
+        # Use default logName 'gemini.log'
+        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+        
+    log.status('**STARTING** the addVAR function')
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "postpend" was passed in')
+    
+    try:
+        if adIns!=None:
+            # Set up counter for looping through outNames list
+            count=0
+            
+            # Creating empty list of ad's to be returned that will be filled below
+            if len(adIns)>1:
+                adOuts=[]
+            
+            # Loop through the inputs to perform the non-linear and saturated
+            # pixel searches of the SCI frames to update the BPM frames into
+            # full DQ frames. 
+            for ad in adIns:   
+                # Making a deepcopy of the input to work on
+                # (ie. a truly new+different object that is a complete copy of the input)
+                adOut = deepcopy(ad)
+                # moving the filename over as deepcopy doesn't do that
+                adOut.filename = ad.filename
+                
+                # To clean up log and screen if multiple inputs
+                log.fullinfo('+'*50, category='format')
+                # Check if there VAR frames all ready exist
+                if not adOut['VAR']:                 
+                    # If VAR frames don't exist, loop through the SCI extensions 
+                    # and calculate a corresponding VAR frame for it, then 
+                    # append it
+                    for sciExt in adOut['SCI']:
+                        # var = (read noise/gain)2 + max(data,0.0)/gain
+                        
+                        # Retrieving necessary values (read noise, gain)
+                        readNoise=sciExt.read_noise()
+                        gain=sciExt.gain()
+                        # Creating (read noise/gain) constant
+                        rnOverG=readNoise/gain
+                        # Convert negative numbers (if they exist) to zeros
+                        maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
+                        # Creating max(data,0.0)/gain array
+                        maxOverGain=np.divide(maxArray,gain)
+                        # Putting it all together
+                        varArray=np.add(maxOverGain,rnOverG*rnOverG)
+                         
+                        # Creating the variance frame's header and updating it     
+                        varheader = pf.Header()
+                        varheader.update('NAXIS', 2)
+                        varheader.update('PCOUNT', 0, 
+                                         'required keyword; must = 0 ')
+                        varheader.update('GCOUNT', 1, 
+                                         'required keyword; must = 1')
+                        varheader.update('EXTNAME', 'VAR', 
+                                         'Extension Name')
+                        varheader.update('EXTVER', sciExt.extver(), 
+                                         'Extension Version')
+                        varheader.update('BITPIX', -32, 
+                                         'number of bits per data pixel')
+                        
+                        # Turning individual variance header and data 
+                        # into one astrodata instance
+                        varAD = AstroData(header=varheader, data=varArray)
+                        
+                        # Appending variance astrodata instance onto input one
+                        log.debug('Appending new VAR HDU onto the file '
+                                     +adOut.filename)
+                        adOut.append(varAD)
+                        log.status('appending VAR frame '+str(sciExt.extver())+
+                                   ' complete for '+adOut.filename)
+                        
+                # If VAR frames all ready existed, 
+                # make a critical message in the logger
+                else:
+                    log.critical('VAR frames all ready exist for '+adOut.filename+
+                                 ', so addVAR will not calculate new ones')
+                
+                # Adding GEM-TLM(automatic) and ADDVAR time stamps to the PHU     
+                adOut.historyMark(key='ADDVAR', stomp=False)    
+                
+                log.fullinfo('*'*50, category='header')
+                log.fullinfo('file = '+adOut.filename, category='header')
+                log.fullinfo('~'*50, category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('ADDVAR = '+adOut.phuGetKeyValue('ADDVAR'), 
+                             category='header')
+                log.fullinfo('-'*50, category='header')
+                
+                # Updating the file name with the postpend for this
+                # function and then reporting the new file 
+                if postpend!=None:
+                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
+                    if outNames!=None:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                              infilename=outNames[count],
+                                                          postpend=postpend, 
+                                                          strip=False)
+                    else:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                          postpend=postpend, 
+                                                          strip=False)
+                elif postpend==None:
+                    if outNames!=None:
+                        if len(outNames)>1: 
+                            adOut.filename = outNames[count]
+                        else:
+                            adOut.filename = outNames
+                    else:
+                        raise('outNames and postpend parameters can not BOTH\
+                                                                    be None')
+                        
+                log.status('File name updated to '+adOut.filename)
+            
+                if len(adIns)>1:
+                    adOuts.append(adOut)
+                else:
+                    adOuts = adOut
+
+                count=count+1
+        else:
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the addVAR function')
+        # Return the outputs (list or single, matching adIns)
+        return adOuts
+    except:
+        raise ('An error occurred while trying to run addVAR')
+    
+    
+def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', verbose=1, 
+                                                            noLogFile=False):
+    """
+    This function performs a flat correction by dividing the inputs by  
+    processed flats, similar to the way gireduce would perform this operation
+    but written in pure python in the arith toolbox.
+    
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    @param adIns: Astrodata inputs to have DQ extensions added to
+    @type adIns: Astrodata objects, either a single or a list of objects
+    
+    @param flats: The flat(s) to divide the input(s) by.
+    @type flats: AstroData objects in a list, or a single instance.
+                Note: If there is multiple inputs and one flat provided, then the
+                      same flat will be applied to all inputs; else the flats   
+                      list must match the length of the inputs.
+    
+    @param outNames: filenames of output(s)
+    @type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    @param postpend: string to postpend on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    @type postpend: string
+    
+    @param logName: Name of the log file, default is 'gemini.log'
+    @type logName: string
+    
+    @param verbose: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of verbose setting, all messages always go 
+                          to the logfile if it is not turned off.
+    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    @param noLogFile: A boolean to make it so no log file is created
+    @type noLogFile: Python boolean (True/False)
+    """
+    
+    if logName!='':
+        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
+                                noLogFile=noLogFile)
+    else:
+        # Use default logName 'gemini.log'
+        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+        
+    log.status('**STARTING** the flatCorrect function')
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "postpend" was passed in')
+    
+    if flats==None:
+        raise('There must be at least one processed flat provided, the "flats" parameter must not be None.')
+    
+    try:
+        if adIns!=None:
+            # Set up counter for looping through outNames list
+            count=0
+            
+            # Creating empty list of ad's to be returned that will be filled below
+            if len(adIns)>1:
+                adOuts=[]
+            
+            # Loop through the inputs to perform the non-linear and saturated
+            # pixel searches of the SCI frames to update the BPM frames into
+            # full DQ frames. 
+            for ad in adIns:                   
+                # To clean up log and screen if multiple inputs
+                log.fullinfo('+'*50, category='format')    
+    
+                # Getting the right flat for this input
+                if isinstance(flats, list):
+                    if len(flats)>1:
+                        processedFlat = flats[count]
+                    else:
+                        processedFlat = flats[0]
+                else:
+                    processedFlat = flats
+    
+                log.status('Input flat file being used for flat correction '
+                           +processedFlat.filename)
+                log.debug('Calling ad.div on '+ad.filename)
+                
+                adOut = ad.div(processedFlat)
+                adOut.filename = ad.filename
+                log.status('ad.div successfully flat corrected '+ad.filename)
+                
+                # Updating GEM-TLM (automatic) and FLATCORR time stamps to the 
+                # PHU
+                adOut.historyMark(key='FLATCORR', stomp=False)   
+                
+                # Updating logger with new GEM-TLM value
+                log.fullinfo('************************************************'
+                             , category='header')
+                log.fullinfo('File = '+adOut.filename, category='header')
+                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                             , category='header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('FLATCORR = '+adOut.phuGetKeyValue('FLATCORR'), 
+                             category='header')
+                log.fullinfo('------------------------------------------------'
+                             , category='header')  
+                
+                # Updating the file name with the postpend for this
+                # function and then reporting the new file 
+                if postpend!=None:
+                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
+                    if outNames!=None:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                              infilename=outNames[count],
+                                                          postpend=postpend, 
+                                                          strip=False)
+                    else:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                          postpend=postpend, 
+                                                          strip=False)
+                elif postpend==None:
+                    if outNames!=None:
+                        if len(outNames)>1: 
+                            adOut.filename = outNames[count]
+                        else:
+                            adOut.filename = outNames
+                    else:
+                        raise('outNames and postpend parameters can not BOTH\
+                                                                    be None')
+                        
+                log.status('File name updated to '+adOut.filename)
+            
+                if len(adIns)>1:
+                    adOuts.append(adOut)
+                else:
+                    adOuts = adOut
+
+                count=count+1
+        else:
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the flatCorrect function')
+        
+        # Return the outputs (list or single, matching adIns)
+        return adOuts
+    except:
+        raise ('An error occurred while trying to run flatCorrect')
+    
+    
+    
     
