@@ -7,8 +7,6 @@ from astrodata.adutils import gemLog
 from astrodata import IDFactory
 from gempy.instruments import geminiTools as gemt
 from gempy.science import geminiScience
-import numpy as np
-import pyfits as pf
 from datetime import datetime
 import shutil
 from primitives_GENERAL import GENERALPrimitives
