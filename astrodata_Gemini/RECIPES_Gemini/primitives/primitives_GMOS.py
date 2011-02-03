@@ -759,68 +759,15 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             log.status('*STARTING* to trim the overscan region from the input data')
             
-            for ad in rc.getInputs(style='AD'):
-                for sciExt in ad['SCI']:
-                    # Converting data section string to an integer list
-                    datasecStr=sciExt.data_section()
-                    datasecList=gemt.secStrToIntList(datasecStr) 
-                    dsl=datasecList
-                    # Updating logger with the section being kept
-                    log.stdinfo('\nfor '+ad.filename+' extension '+
-                                str(sciExt.extver())+
-                                ', keeping the data from the section '+
-                                datasecStr,'science')
-                    # Trimming the data section from input SCI array
-                    # and making it the new SCI data
-                    sciExt.data=sciExt.data[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
-                    # Updating header keys to match new dimensions
-                    sciExt.header['NAXIS1'] = dsl[1]-dsl[0]+1
-                    sciExt.header['NAXIS2'] = dsl[3]-dsl[2]+1
-                    newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
-                                    str(dsl[3]-dsl[2]+1)+']' 
-                    sciExt.header['DATASEC']=newDataSecStr
-                    sciExt.header.update('TRIMSEC', datasecStr, 
-                                       'Data section prior to trimming')
-                    # Updating logger with updated/added keywords to each SCI frame
-                    log.fullinfo('********************************************'
-                                 , category='header')
-                    log.fullinfo('File = '+ad.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                                 , category='header')
-                    log.fullinfo('SCI extension number '+str(sciExt.extver())+
-                                 ' keywords updated/added:\n', 'header')
-                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
-                                category='header')
-                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),
-                                 category='header')
-                    log.fullinfo('DATASEC= '+newDataSecStr, category='header')
-                    log.fullinfo('TRIMSEC= '+datasecStr, category='header')
-                    
-                ad.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')    
-                # Updating the GEM-TLM value and reporting the output to the RC    
-                ad.historyMark(key='OVERTRIM', stomp=False)
-                
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(infilename=ad.filename, 
-                                                   postpend=rc['postpend'], 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                rc.reportOutput(ad)
-                
-                # Updating logger with updated/added keywords to the PHU
-                log.fullinfo('************************************************'
-                             , category='header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header') 
-                log.fullinfo('OVERTRIM = '+ad.phuGetKeyValue('OVERTRIM')+'\n', 
-                             category='header') 
+            log.debug('Calling geminiScience.overscanTrim function')
+            
+            adOuts = geminiScience.overscanTrim(adIns=rc.getInputs(style='AD'),     
+                                                        postpend=rc['postpend'])           
+            
+            log.status('geminiScience.overscanTrim completed successfully')
+              
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)   
                 
             log.status('*FINISHED* trimming the overscan region from the input data')
         except:
