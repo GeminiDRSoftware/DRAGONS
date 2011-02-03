@@ -7,8 +7,6 @@ from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.science import geminiScience
 from primitives_GEMINI import GEMINIPrimitives, pyrafLoader
-import numpy as np
-import pyfits as pf
 import shutil
 from astrodata.ConfigSpace import lookupPath
 
