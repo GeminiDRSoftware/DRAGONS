@@ -22,7 +22,7 @@ log = gemLog.getGeminiLog()
     chomp(line)
 """
 
-def pyrafLoader(rc=None):
+def pyrafLoader():
     """
     This function is to load the modules needed by primitives that use pyraf. 
     It will also ensure there are no additional prints to the console when 
@@ -30,7 +30,7 @@ def pyrafLoader(rc=None):
     The loaded modules are returned in the order of:
     (pyraf, gemini, iraf.yes, iraf.no)
     to be added to the name-space of the primitive this function is called from.
-    eg. (pyraf, gemini, yes, no)=pyrafLoader(rc)
+    eg. (pyraf, gemini, yes, no)=pyrafLoader()
     
     """
     import pyraf
