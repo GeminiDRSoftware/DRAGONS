@@ -214,22 +214,90 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_filter_name
     
-    def focal_plane_mask(self, dataset, **args):
+    def slit(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the slit value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to remove the component ID
+        @param pretty: set to True to return a human readable
+        @rtype: string
+        @return: the slit used to acquire the data
+
+        Note that in GNIRS all the slits are machined into one physical piece
+        of metal, which is on a slide - the mechanism simply slides the slide
+        along to put the right slit in the beam. Thus all the slits have the
+        same componenet ID as they're they same physical compononet.
+        """
+        hdu = dataset.hdulist
+        slit = hdu[0].header[stdkeyDictGNIRS['key_slit']]
+        
+        if pretty:
+            stripID=True
+
+        if stripID:
+            slit = GemCalcUtil.removeComponentID(slit)
+
+        return slit
+    
+    def decker(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the decker value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to remove the component ID
+        @param pretty: set to True to return a human readable
+        @rtype: string
+        @return: the decker postition used to acquire the data
+
+
+        In GNIRS, the decker is used to basically mask off the ends of the
+        slit to create the short slits used in the cross dispersed modes.
+        """
+        hdu = dataset.hdulist
+        decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
+
+        if pretty:
+            stripID=True
+
+        if stripID:
+            decker = GemCalcUtil.removeComponentID(decker)
+
+        return decker
+
+    def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the focal_plane_mask value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
+        @param stripID: set to True to remove the component IDs
+        @param pretty: set to True to return a human readable
         @rtype: string
         @return: the focal plane mask used to acquire the data
+
+        Note that in GNIRS, the focal plane mask is the combination of the slit
+        mechanism and the decker mechanism. 
         """
-        hdu = dataset.hdulist
-        focal_plane_mask = \
-            hdu[0].header[stdkeyDictGNIRS['key_focal_plane_mask']]
-        
-        ret_focal_plane_mask = str(focal_plane_mask)
-        
-        return ret_focal_plane_mask
-    
+
+        if pretty:
+            stripID=True
+
+        slit = self.slit(dataset = dataset, stripID=stripID, pretty=pretty)
+        decker = self.decker(dataset = dataset, stripID=stripID, pretty=pretty)
+
+        fpmask = slit + '&' + decker
+
+        if pretty:
+          # For pretty output, disregard the decker if it's in long slit mode
+          if decker.count('Long'):
+              fpmask = slit
+          # For pretty output, simply append XD to the slit name if the decker is in XD
+          if decker.count('XD'):
+              fpmask = slit + 'XD'
+
+        return fpmask
+
+
     def read_mode(self, dataset, **args):
         """
         Return the read_mode value for GNIRS

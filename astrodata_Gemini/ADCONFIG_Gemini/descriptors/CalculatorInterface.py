@@ -1128,6 +1128,82 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
+    def prism(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "prism")
+            if not hasattr( self.descriptorCalculator, "prism"):
+                key = "key_"+"prism"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.prism(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
+    def grating(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "grating")
+            if not hasattr( self.descriptorCalculator, "grating"):
+                key = "key_"+"grating"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.grating(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
+    def slit(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "slit")
+            if not hasattr( self.descriptorCalculator, "slit"):
+                key = "key_"+"slit"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.slit(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
+    def decker(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "decker")
+            if not hasattr( self.descriptorCalculator, "decker"):
+                key = "key_"+"decker"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.decker(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
         '''Function to put at top of all descriptor members

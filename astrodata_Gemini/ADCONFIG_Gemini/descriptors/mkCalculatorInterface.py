@@ -91,6 +91,8 @@ descriptors =   [   DD("airmass"),
                     DD("qa_state"),
                     DD("prism"),
                     DD("grating"),
+                    DD("slit"),
+                    DD("decker"),
                 ]
 
 wholeout = """
