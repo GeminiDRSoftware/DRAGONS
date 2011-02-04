@@ -1,10 +1,10 @@
 #!/bin/env pyth
+__docformat__ = "restructuredtext" #for epydoc
+
 import sys
 import os
 from copy import copy, deepcopy
 import pyfits
-
-__docformat__ = "restructuredtext" #for epydoc
 
 from AstroDataType import *
 
