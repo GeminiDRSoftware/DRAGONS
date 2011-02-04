@@ -39,30 +39,115 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_central_wavelength
     
+    def grating(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the grating value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to strip the component ID from the
+        returned disperser name
+        @param pretty: set to True to return a human readable grating name. In this case, this is the same as stripID
+        @rtype: string
+        @return: the grating used to acquire the data
+
+        Note. A CC software change approx July 2010 changed the grating names to also include the 
+        camera, eg 32/mmSB_G5533 indicates the 32/mm grating with the Short Blue camera.
+        This is unhelpful as if we wanted to know the camera, we'd call the camera descriptor.
+        Thus, this descriptor function repairs the header values to only list the grating.
+        """
+        import re
+        hdu = dataset.hdulist
+        string = hdu[0].header[stdkeyDictGNIRS['key_grating']]
+
+        # The format of the grating string is currently (2011) nnn/mmCAM_Gnnnn
+        # nnn is a 2 or 3 digit number (lines per mm)
+        # /mm is literally '/mm'
+        # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
+        # _G is literally '_G'
+        # nnnn is the 4 digit component ID.
+
+        cre = re.compile('([\d/m]+)([A-Z]*)(_G)(\d+)')
+        m = cre.match(string)
+     
+        grating = string
+        if(m):
+            parts = m.groups()
+            grating = parts[0] + parts[2] + parts[3]
+
+        if(stripID or pretty):
+            grating = str(GemCalcUtil.removeComponentID(grating))
+        
+        return grating
+
+
+    def prism(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the prism value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to strip the component ID from the
+        returned disperser name
+        @param pretty: set to True to return a human readable prism name. In this case, this is the same as stripID
+        @rtype: string
+        @return: the prism used to acquire the data
+
+        Note. A CC software change approx July 2010 changed the prism names to also include the 
+        camera, eg 32/mmSB_G5533 indicates the 32/mm grating with the Short Blue camera.
+        This is unhelpful as if we wanted to know the camera, we'd call the camera descriptor.
+        Thus, this descriptor function repairs the header values to only list the prism.
+        """
+        import re
+        hdu = dataset.hdulist
+        string = hdu[0].header[stdkeyDictGNIRS['key_prism']]
+
+        # The format of the prism string is currently (2011) [CAM+]prism_Gnnnn
+        # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
+        # + is a literal '+'
+        # prism is the actual prism name
+        # nnnn is the 4 digit component ID.
+
+        cre = re.compile('([LBSR]*\+)*([A-Z]*)(_G)(\d+)')
+        m = cre.match(string)
+
+        prism = string
+        if(m):
+            parts = m.groups()
+            prism = parts[1] + parts[2] + parts[3]
+
+        if(stripID or pretty):
+            prism = str(GemCalcUtil.removeComponentID(prism))
+
+        return prism
+
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for GNIRS
         @param dataset: the data set
         @type dataset: AstroData
         @param stripID: set to True to strip the component ID from the
-        returned disperser name
-        @param pretty: set to True to return a meaningful disperser name
+        returned disperser names
+        @param pretty: set to True to return a human meaningful disperser name
         @rtype: string
-        @return: the disperser / grating used to acquire the data
+        @return: the dispersers used to acquire the data
+
+        Note that GNIRS contains two dispersers - the grating and the prism.
+        This descriptor will combine the two with '&'
+        Sometimes the "prism" is a mirror, in which case we don't list it in
+        the human readable pretty string.
         """
-        # No specific pretty names, just use stripID
+
         if pretty:
-            stripID=True
+          stripID=True
+
+        grating = self.grating(dataset, stripID, pretty)
+        prism = self.prism(dataset, stripID, pretty)
         
-        hdu = dataset.hdulist
-        disperser = hdu[0].header[stdkeyDictGNIRS['key_disperser']]
-        
-        if stripID:
-            ret_disperser = str(GemCalcUtil.removeComponentID(disperser))
+        if(pretty and prism[0:3]=='MIR'):
+            disperser = grating
         else:
-            ret_disperser = str(disperser)
-        
-        return ret_disperser
+            disperser = grating + '&' + prism
+
+        return disperser
     
     def exposure_time(self, dataset, **args):
         """

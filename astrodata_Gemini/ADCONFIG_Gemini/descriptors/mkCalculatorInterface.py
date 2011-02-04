@@ -89,6 +89,8 @@ descriptors =   [   DD("airmass"),
                     DD("y_offset"),
                     DD("release_date"),
                     DD("qa_state"),
+                    DD("prism"),
+                    DD("grating"),
                 ]
 
 wholeout = """
