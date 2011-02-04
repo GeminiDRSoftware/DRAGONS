@@ -149,98 +149,23 @@ class GEMINIPrimitives(GENERALPrimitives):
         to the final file.
         
         """
-        # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader(rc)
+#        # Loading and bringing the pyraf related modules into the name-space
+#        pyraf, gemini, yes, no = pyrafLoader()
         
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* combine the images of the input data')
                 
-                # Preparing input files, lists, parameters... for input to 
-                # the CL script
-                clm=gemt.CLManager(rc)
-                #clm.LogCurParams()
-                
-                # Creating a dictionary of the parameters set by the CLManager  
-                # or the definition of the primitive 
-                clPrimParams = {
-                    # Retrieving the inputs as a list from the CLManager
-                    'input'       :clm.inputList(),
-                    # Maybe allow the user to override this in the future. 
-                    'output'      :clm.combineOutname(), 
-                    # This returns a unique/temp log file for IRAF  
-                    'logfile'     :clm.logfile(),  
-                    # This is actually in the default dict but wanted to 
-                    # show it again       
-                    'Stdout'      :gemt.IrafStdout(), 
-                    # This is actually in the default dict but wanted to 
-                    # show it again    
-                    'Stderr'      :gemt.IrafStdout(),
-                    # This is actually in the default dict but wanted to 
-                    # show it again     
-                    'verbose'     :yes                    
-                              }
-                # Creating a dictionary of the parameters from the Parameter 
-                # file adjustable by the user
-                clSoftcodedParams = {
-                    'fl_vardq'      :rc['fl_vardq'],
-                    # pyrafBoolean converts the python booleans to pyraf ones
-                    'fl_dqprop'     :gemt.pyrafBoolean(rc['fl_dqprop']),
-                    'combine'       :rc['method'],
-                    'reject'        :'none'
-                                    }
-                # Grabbing the default parameters dictionary and updating 
-                # it with the two above dictionaries
-                clParamsDict = CLDefaultParamsDict('gemcombine')
-                clParamsDict.update(clPrimParams)
-                clParamsDict.update(clSoftcodedParams)
-                
-                # Logging the values in the soft and prim parameter dictionaries
-                log.fullinfo('\nParameters set by the CLManager or dictated by '+
-                         'the definition of the primitive:\n', 
-                         category='parameters')
-                gemt.LogDictParams(clPrimParams)
-                log.fullinfo('\nUser adjustable parameters in the parameters '+
-                             'file:\n', category='parameters')
-                gemt.LogDictParams(clSoftcodedParams)
-                 
-                log.debug('Calling the gemcombine CL script for input list '+
-                          clm.inputList())
-                
-                gemini.gemcombine(**clParamsDict)
-                
-                if gemini.gemcombine.status:
-                    log.critical('gemcombine failed for inputs '+
-                                 rc.inputsAsStr())
-                    raise GEMINIException('gemcombine failed')
-                else:
-                    log.status('Exited the gemcombine CL script successfully')
+                # Calling geminiScience toolbox function combine to do the work
+                # of converting the pixels, updating headers and logging.
+                log.debug('Calling geminiScience.combine')
                     
-                # Renaming CL outputs and loading them back into memory 
-                # and cleaning up the intermediate temp files written to disk
-                clm.finishCL(combine=True) 
-                #clm.rmStackFiles() #$$$$$$$$$ DON'T do this if 
-                #^ Intermediate outputs are wanted!!!!
+                adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), fl_vardq=rc['fl_vardq'], fl_dqprop=rc['fl_dqprop'], method=rc['method'], postpend=rc['postpend']) 
                 
-                # There is only one at this point so no need to perform a loop
-                ad = rc.getOutputs(style='AD')[0] 
-                
-                # Adding a GEM-TLM (automatic) and COMBINE time stamps 
-                # to the PHU
-                ad.historyMark(key='COMBINE',stomp=False)
-                # Updating logger with updated/added time stamps
-                log.fullinfo('************************************************'
-                             , category='header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('COMBINE = '+ad.phuGetKeyValue('COMBINE'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')    
+                log.status('geminiScience.combine completed successfully')
+            
+                # Reporting the outputs to the reduction context
+                rc.reportOutput(adOut)    
                 
                 log.status('*FINISHED* combining the images of the input data')
         except:
