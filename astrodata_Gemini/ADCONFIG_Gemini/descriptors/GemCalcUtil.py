@@ -9,9 +9,9 @@ import re
 ## id from a filter
 
 def removeComponentID(instr):
-    m = re.match (r"(?P<filt>.*?)_(.*?)", instr)
+    m = re.match (r"(?P<filt>.*?)_G(.*?)", instr)
     if (m == None):
-        #then there was no "_" return FILTER val as filter
+        #then there was no "_G" return FILTER val as filter
         return instr
     else:
         retstr = m.group("filt")
