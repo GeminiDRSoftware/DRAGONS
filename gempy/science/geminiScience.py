@@ -12,6 +12,8 @@ from copy import deepcopy
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from gempy.instruments import geminiTools  as gemt
+from astrodata.adutils.gemutil import pyrafLoader
+from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='', 
                                                     verbose=1, noLogFile=False):
@@ -52,12 +54,7 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
     @type noLogFile: Python boolean (True/False)
     """
     
-    if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
-                                noLogFile=noLogFile)
-    else:
-        # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
         
     log.status('**STARTING** the ADUtoElectrons function')
     
@@ -243,12 +240,7 @@ def addDQ(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=No
     @type noLogFile: Python boolean (True/False)
     """
     
-    if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
-                                noLogFile=noLogFile)
-    else:
-        # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
         
     log.status('**STARTING** the addDQ function')
     
@@ -449,12 +441,7 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
     @type noLogFile: Python boolean (True/False)
     """
     
-    if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
-                                noLogFile=noLogFile)
-    else:
-        # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
         
     log.status('**STARTING** the addBPM function')
     
@@ -664,12 +651,7 @@ def addVAR(adIns, outNames=None, postpend=None, logName='', verbose=1,
     @type noLogFile: Python boolean (True/False)
     """
     
-    if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
-                                noLogFile=noLogFile)
-    else:
-        # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
         
     log.status('**STARTING** the addVAR function')
     
@@ -850,12 +832,7 @@ def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', ver
     @type noLogFile: Python boolean (True/False)
     """
     
-    if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
-                                noLogFile=noLogFile)
-    else:
-        # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
         
     log.status('**STARTING** the flatCorrect function')
     
@@ -1130,3 +1107,205 @@ def overscanTrim(adIns, outNames=None, postpend=None, logName='', verbose=1,
         return adOuts
     except:
         raise ('An error occurred while trying to run overscanTrim')
+    
+################################## CL Based functions #########################
+
+
+def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average', 
+            outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+    """
+    This function will average and combine the SCI extensions of the 
+    inputs. It takes all the inputs and creates a list of them and 
+    then combines each of their SCI extensions together to create 
+    average combination file. New VAR frames are made from these 
+    combined SCI frames and the DQ frames are propagated through 
+    to the final file.
+    NOTE: The inputs to this function MUST be prepared. 
+
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    @param adIns: Astrodata inputs to have DQ extensions added to
+    @type adIns: Astrodata objects, either a single or a list of objects
+    
+    @param fl_vardq: Make VAR and DQ frames?
+    @type fl_vardq: Python boolean (True/False)
+    
+    @param fl_dqprop: propogate the current DQ values?
+    @type fl_dqprop: Python boolean (True/False)
+    
+    @param method: type of combining method to use.
+    @type method: string, options: 'average', 'median'.
+    
+    @param outNames: filenames of output(s)
+    @type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    @param postpend: string to postpend on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    @type postpend: string
+    
+    @param logName: Name of the log file, default is 'gemini.log'
+    @type logName: string
+    
+    @param verbose: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of verbose setting, all messages always go 
+                          to the logfile if it is not turned off.
+    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    @param noLogFile: A boolean to make it so no log file is created
+    @type noLogFile: Python boolean (True/False)
+    """
+    
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
+                                noLogFile=noLogFile)
+
+    log.status('**STARTING** the combine function')
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "postpend" was passed in')
+    
+    try:
+        if adIns!=None:
+            # Set up counter for looping through outNames list
+            count=0
+            
+            # Creating empty list of ad's to be returned that will be filled below
+            if len(adIns)>1:
+                
+                # loading and bringing the pyraf related modules into the name-space
+                pyraf, gemini, yes, no = pyrafLoader()
+                
+                # Preparing input files, lists, parameters... for input to 
+                # the CL script
+                clm=gemt.CLManager(adIns=adIns, outNames=outNames, postpend=postpend, funcName='combine')
+                
+                # Check the status of the CLManager object, True=continue, False= issue warning
+                if clm.status:
+                
+                    # Creating a dictionary of the parameters set by the CLManager  
+                    # or the definition of the primitive 
+                    clPrimParams = {
+                        # Retrieving the inputs as a list from the CLManager
+                        'input'       :clm.inputList(),
+                        # Maybe allow the user to override this in the future. 
+                        'output'      :clm.combineOutname(), 
+                        # This returns a unique/temp log file for IRAF  
+                        'logfile'     :clm.logfile(),  
+                        # This is actually in the default dict but wanted to 
+                        # show it again       
+                        'Stdout'      :gemt.IrafStdout(), 
+                        # This is actually in the default dict but wanted to 
+                        # show it again    
+                        'Stderr'      :gemt.IrafStdout(),
+                        # This is actually in the default dict but wanted to 
+                        # show it again     
+                        'verbose'     :yes,    
+                        'reject'      :'none'                
+                                  }
+                    
+                    # Creating a dictionary of the parameters from the Parameter 
+                    # file adjustable by the user
+                    clSoftcodedParams = {
+                        'fl_vardq'      :fl_vardq,
+                        # pyrafBoolean converts the python booleans to pyraf ones
+                        'fl_dqprop'     :gemt.pyrafBoolean(fl_dqprop),
+                        'combine'       :method,
+                                        }
+                    # Grabbing the default parameters dictionary and updating 
+                    # it with the two above dictionaries
+                    clParamsDict = CLDefaultParamsDict('gemcombine')
+                    clParamsDict.update(clPrimParams)
+                    clParamsDict.update(clSoftcodedParams)
+                    
+                    # Logging the parameters that were not defaults
+                    log.fullinfo('\nparameters set automatically:', category='parameters')
+                    # Loop through the parameters in the clPrimParams dictionary
+                    # and log them
+                    gemt.logDictParams(clPrimParams)
+                    
+                    log.fullinfo('\nparameters adjustable by the user:', category='parameters')
+                    # Loop through the parameters in the clSoftcodedParams dictionary
+                    # and log them
+                    gemt.logDictParams(clSoftcodedParams)
+                    
+                    log.debug('Calling the gemcombine CL script for input list '+
+                              clm.inputList())
+                    
+                    gemini.gemcombine(**clParamsDict)
+                    
+                    if gemini.gemcombine.status:
+                        log.critical('gemcombine failed for inputs '+
+                                     clm.inputsAsStr())
+                        raise ('gemcombine failed')
+                    else:
+                        log.status('Exited the gemcombine CL script successfully')
+                    
+                    
+                    # Renaming CL outputs and loading them back into memory 
+                    # and cleaning up the intermediate temp files written to disk
+                    adOuts = clm.finishCL(combine=True) 
+                
+                    # There is only one at this point so no need to perform a loop
+                    # CLmanager outputs a list always, so take the 0th
+                    adOut = adOuts[0]
+                    
+                    # Adding a GEM-TLM (automatic) and COMBINE time stamps 
+                    # to the PHU
+                    adOut.historyMark(key='COMBINE',stomp=False)
+                    # Updating logger with updated/added time stamps
+                    log.fullinfo('************************************************'
+                                 , category='header')
+                    log.fullinfo('file = '+adOut.filename, category='header')
+                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                                 , category='header')
+                    log.fullinfo('PHU keywords updated/added:\n', category='header')
+                    log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                                 category='header')
+                    log.fullinfo('COMBINE = '+adOut.phuGetKeyValue('COMBINE'), 
+                                 category='header')
+                    log.fullinfo('------------------------------------------------'
+                                 , category='header')    
+                else:
+                    log.critical('One of the inputs has not been prepared,\
+                    the combine function can only work on prepared data.')
+                    raise('One of the inputs was not prepared')
+        else:
+            log.critical('The parameter "adIns" must not be None')
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the combine function')
+        
+        # Return the outputs (list or single, matching adIns)
+        return adOut
+    except:
+        raise ('An error occurred while trying to run combine')
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
