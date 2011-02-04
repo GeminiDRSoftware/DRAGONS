@@ -111,13 +111,18 @@ elif (options.htmldoc):
     print cl.htmlDoc()
 else:
     try:
-        if (options.showdescriptors == "all"):
+        osd = options.showdescriptors
+        
+        if (osd == "all" or osd == "err"):
             import CalculatorInterface
             funs = dir(CalculatorInterface.CalculatorInterface)
             descs = []
+            if osd == "err":
+                descs.append("err")
             for fun in funs:
                 if not fun.startswith("_") and (fun.lower() == fun):
                     descs.append(fun)
+            
             options.showdescriptors = ",".join(descs) 
 
         if opti:

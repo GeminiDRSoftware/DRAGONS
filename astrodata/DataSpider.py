@@ -321,6 +321,11 @@ class DataSpider(object):
                                 # print "DS320:", repr(sdl)
                                 # print ol
                                 # get maxlen
+                                if "err" in sdl:
+                                    errOnly = True
+                                    sdl.remove("err")
+                                else:
+                                    errOnly = False
                                 maxlen = 0
                                 for sd in sdl:
                                     maxlen = max(len(sd),maxlen)
@@ -335,7 +340,8 @@ class DataSpider(object):
                                             dval = eval("fl."+sd)
                                         pad = " " * (maxlen - len(sd))
                                         sd = str(sd) + pad
-                                        print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
+                                        if (not errOnly):
+                                            print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
                                     except AttributeError:
                                         exinfo = sys.exc_info()
                                         print '          ${BOLD}(DERR)%s${NORMAL}: ${RED}NO SUCH DESCRIPTOR${NORMAL}' % (sd)
