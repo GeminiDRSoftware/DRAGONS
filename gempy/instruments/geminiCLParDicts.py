@@ -4,6 +4,7 @@
 # have its important parameters updated and then passed into the iraf function.
 
 from astrodata.adutils.gemutil import pyrafLoader
+from gempy.instruments import geminiTools  as gemt
 
 def CLDefaultParamsDict(CLscript):
     """
