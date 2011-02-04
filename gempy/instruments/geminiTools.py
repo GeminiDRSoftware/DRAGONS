@@ -165,14 +165,14 @@ def fileNameUpdater(adIn=None, infilename='', postpend='', prepend='' , strip=Fa
     return outFileName
     
 
-def LogDictParams(indict):
-        """ A function to log the parameters in a provided dictionary.  Main use
-        is to log the values in the dictionaries of parameters for function 
-        calls using the ** method.
-        """
-        for key in indict:
-            log.fullinfo(repr(key)+' = '+repr(indict[key]), 
-                         category='parameters')
+def logDictParams(indict):
+    """ A function to log the parameters in a provided dictionary.  Main use
+    is to log the values in the dictionaries of parameters for function 
+    calls using the ** method.
+    """
+    for key in indict:
+        log.fullinfo(repr(key)+' = '+repr(indict[key]), 
+                     category='parameters')
 
 def pyrafBoolean(pythonBool):
     """
@@ -336,27 +336,7 @@ def stdObsStruct(ad):
         log.fullinfo('EXTNAME = '+'SCI', category='header' )
         log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), category='header' )
         log.fullinfo('---------------------------------------------------', 
-                     category='header')
-        
-def stripPostfix(filename):
-    """ This function is used by fileNameUpdater to strip all the original
-        postfixes of a input string, separated from the base filename by
-        '_'. 
-    
-    """
-    # Saving the path of the input file
-    dirname = os.path.dirname(filename)
-    # Saving the filename without its path
-    basename = os.path.basename(filename)
-    # Split up the filename and the file type ie. the extension 
-    (name, filetype) = os.path.splitext(basename)
-    # Splitting up file name into a list by the '_' delimiter 
-    a = name.split('_')
-    # The file name without the postfixes is the first element of the list
-    name = a[0]
-    # Re-attaching the path and file type to the cleaned file name 
-    retname = os.path.join(dirname, name+filetype)
-    return retname    
+                     category='header') 
 
 class CLManager(object):
     """This is a class that will take care of all the preparation and wrap-up 
@@ -368,43 +348,71 @@ class CLManager(object):
     # The original names of the files at the start of the 
     # primitive which called CLManager
     _preCLfilenames = [] 
-    # Preparing 'global' objects to be accessed throughout this class
-    rc = None
+    # Preparing other 'global' objects to be accessed throughout this class
     prefix = None
     postpend = None
     listname = None
     templog = None
-    
+    outNames = None
+    funcName = None
+    adOuts = None
+    status = None
      
-    def __init__(self, rc, postpend = None):
-        """This instantiates all the globally accessible variables"""
-        self.rc  = rc
-        if postpend is None:
-            # If no postpend passed in retrieve the postpend value from the 
-            # local parameters in the reduction context
-            postpend = rc['postpend']
-        self.postpend = postpend
-        self._preCLcachestorenames = []
-        self._preCLfilenames = []
-        self.prefix = self.uniquePrefix()
-        self.preCLwrites()
-        # Create a temporary log file object
-        self.templog = tempfile.NamedTemporaryFile() 
+    def __init__(self, adIns=None, outNames=None, postpend=None, funcName=None):
+        """This instantiates all the globally accessible variables and prepares
+           the inputs for use in CL scripts by temporarily writing them to 
+           disk with temp names.
+        """
+        if isinstance(adIns,list):
+            self.inputs = adIns
+        else:
+            self.inputs = [adIns]
+        # Check that the inputs have been prepared, if not then CL scripts might
+        # not work correctly.
+        self.status = True
+        for ad in self.inputs:
+            if (ad.phuGetKeyValue('GPREPARE')==None) and (ad.phuGetKeyValue('PREPARED')==None):
+                self.status = False
+        # All inputs prepared, then continue, else the False status will trigger
+        # the caller to not proceed further.
+        if self.status:
+            self.postpend = postpend
+            self._preCLcachestorenames = []
+            self._preCLfilenames = []
+            self.outNames = outNames
+            self.funcName = funcName
+            self.adOuts = []
+            self.prefix = self.uniquePrefix()
+            self.preCLwrites()
+            # Create a temporary log file object
+            self.templog = tempfile.NamedTemporaryFile() 
+    
+    def outNamesMaker(self):
+        """ A function to apply the provided postpend value to the end of 
+            each input filename and add to a list for use to name the ouput
+            files with.
+        """
+        if isinstance(self.inputs,list):
+            outNames=[]
+            for ad in self.inputs:
+                outNames.append(fileNameUpdater(adIn=ad, postpend=self.postpend, 
+                                                                strip=False))
+        else:
+            outNames = fileNameUpdater(adIn=ad, postpend=self.postpend, strip=False)
+        return outNames
     
     def cacheStoreNames(self):
         """ Just a function to return the 'private' member variable 
          _preCLcachestorenames.
-        
         """
         return self._preCLcachestorenames
         
     def combineOutname(self):
         """ This creates the output name for combine type IRAF tasks to write 
-            the combined output file to.
+            the combined output file to.  Uses the postpend value and
         
         """
         #@@ REFERENCE IMAGE: for output name
-
         return self.postpend+self._preCLcachestorenames[0]
          
     def finishCL(self, combine=False): 
@@ -412,8 +420,9 @@ class CLManager(object):
          This is currently just an alias for postCLloads and might have 
          more functionality in the future.
          
-         """
-        self.postCLloads(combine)    
+         """    
+        self.postCLloads(combine)
+        return self.adOuts  
           
     def inputsAsStr(self):
         """ This returns the list of temporary file names written to disk for 
@@ -426,11 +435,20 @@ class CLManager(object):
     def inputList(self):
         """ This creates a list file of the inputs for use in combine type
         primitives.
-        
         """
-        # Create a unique name for the list file
-        self.listname = 'List'+str(os.getpid())+self.rc.ro.curPrimName
-        return self.rc.makeInlistFile(self.listname, self._preCLcachestorenames)
+        try:
+            filename = 'List'+str(os.getpid())+self.funcName
+            if os.path.exists(filename):
+                return filename
+            else:
+                fh = open(filename, 'w')
+                for item in self._preCLcachestorenames:
+                    fh.writelines(item + '\n')                    
+                fh.close()
+                self.listname = filename
+                return "@" + self.listname
+        except:
+            raise "Could not write inlist file for stacking." 
            
     def logfile(self):
         """ A function to return the name of the unique temporary log file to 
@@ -439,25 +457,7 @@ class CLManager(object):
         """
         return self.templog.name
         
-    def LogCurParams(self):
-        """ A function to log the parameters in the local parameters file 
-            and then global ones in the reduction context
-        """
-        log.fullinfo('\ncurrent general parameters:', category='parameters')
-        # Loop through the parameters in the general dictionary
-        # of the reduction context and log them
-        for key in self.rc:
-            val = self.rc[key]
-            log.fullinfo(repr(key)+' = '+repr(val), category='parameters')
-
-        log.fullinfo('\ncurrent primitive specific parameters:', category='parameters')
-        # Loop through the parameters in the local dictionary for the primitive
-        # the CLManager was called from of the reduction context and log them
-        for key in self.rc.localparms:
-            val = self.rc.localparms[key]
-            log.fullinfo(repr(key)+' = '+repr(val), category='parameters')
-    
-    def nbiascontam(self):
+    def nbiascontam(self, biassec=None):
         """This function will find the largest difference between the horizontal 
         component of every BIASSEC value and those of the biassec parameter. 
         The returned value will be that difference as an integer and it will be
@@ -469,9 +469,7 @@ class CLManager(object):
         # Prepare a stored value to be compared between the inputs
         retval=0
         # Loop through the inputs
-        for ad in self.rc.getInputs(style='AD'):
-            # Retrieve the biassec value in the parameters file
-            biassec = self.rc['biassec']
+        for ad in self.inputs:
             # Pass the retrieved value to biassecStrToBiasContam function
             # to do the work in finding the difference of the biassec's
             val = biassecStrTonbiascontam(biassec, ad)
@@ -492,9 +490,11 @@ class CLManager(object):
             names and saves the original names in a list.
         
         """
-        #log.critical(repr(self.rc.getInputs(style="FN")), "XXX")
+        if self.outNames is None:
+            # load up a outNames list (or single name) for use in postCLloads
+            self.outNames = self.outNamesMaker()
         
-        for ad in self.rc.getInputs(style='AD'):
+        for ad in self.inputs:            
             # Load up the preCLfilenames list with the input's filename
             self._preCLfilenames.append(ad.filename)
             # Strip off all postfixes and prepend filename with a unique prefix
@@ -518,14 +518,15 @@ class CLManager(object):
             # The name that IRAF wrote the output to
             cloutname = self.postpend+self._preCLcachestorenames[0]
             # The name we want the file to be
-            finalname = fileNameUpdater(adIn=self.rc.getInputs(style='AD')[0],
+            finalname = fileNameUpdater(adIn=self.inputs[0],
                                         infilename=self._preCLfilenames[0], 
-                                      postpend= self.postpend, strip=False)
+                                      postpend=self.postpend, strip=False)
             # Renaming the IRAF written file to the name we want
             os.rename(cloutname, finalname )
             # Reporting the renamed file to the reduction context and thus
             # bringing it into memory
-            self.rc.reportOutput(finalname)
+            self.adOuts.append(AstroData(finalname))
+            
             # Deleting the renamed file from disk
             os.remove(finalname)
             # Removing the list file of the inputs 
@@ -556,7 +557,7 @@ class CLManager(object):
                 cloutname = self.postpend + storename 
                 log.critical('gemTools525: cloutname='+cloutname) 
                 # Name I want the file to be
-                finalname = fileNameUpdater(adIn=self.rc.getInputs(style='AD')[i], infilename=self._preCLfilenames[i], 
+                finalname = fileNameUpdater(adIn=self.inputs[i], infilename=self._preCLfilenames[i], 
                                             postpend=self.postpend, strip=False)
                 log.critical('gemTools529: finalname='+finalname)  
                 # Renaming the IRAF written file to the name we want
@@ -564,7 +565,7 @@ class CLManager(object):
                 
                 # Reporting the renamed file to the reduction context and thus
                 # bringing it into memory
-                self.rc.reportOutput(finalname)
+                self.adOuts.append(AstroData(finalname))
                 # Clearing file written for CL input
                 os.remove(finalname) 
                 # clearing renamed file output by CL
@@ -592,7 +593,7 @@ class CLManager(object):
             prefix for the files being temporarily written to disk.
         
         """
-        return 'tmp'+ str(os.getpid())+self.rc.ro.curPrimName
+        return 'tmp'+ str(os.getpid())+self.funcName
     
 class IrafStdout():
     """  This is a class to act as the standard output for the IRAF 
