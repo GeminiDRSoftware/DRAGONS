@@ -6,7 +6,8 @@ from astrodata.data import AstroData
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.science import geminiScience
-from primitives_GEMINI import GEMINIPrimitives, pyrafLoader
+from primitives_GEMINI import GEMINIPrimitives
+from astrodata.adutils.gemutil import pyrafLoader
 import shutil
 from astrodata.ConfigSpace import lookupPath
 
@@ -110,7 +111,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         """
         # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader()
         
         try:
             log.status('*STARTING* to subtract the bias from the inputs')
@@ -242,7 +243,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to display the images of the input data')
             
             # Loading and bringing the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader(rc)
+            pyraf, gemini, yes, no = pyrafLoader()
             
             # Ensuring image buffer is large enough to handle GMOS images
             pyraf.iraf.set(stdimage='imtgmos')              
@@ -438,7 +439,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         """
         # loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader()
         
         try:
             log.status('*STARTING* to mosaic the input images SCI extensions'+
@@ -550,7 +551,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         """
         # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader()
         
         try:
             
@@ -647,7 +648,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         """
         # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader()
         
         try:
             log.status('*STARTING* to subtract the overscan from the inputs')
