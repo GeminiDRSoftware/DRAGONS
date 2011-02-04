@@ -1,5 +1,4 @@
 import sys, StringIO, os
-#from Reductionobjects import Reductionobject
 
 import time
 from astrodata.adutils import filesystem
@@ -13,8 +12,6 @@ from primitives_GMOS import GMOSPrimitives
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.instruments import girmfringe
-import pyfits as pf
-#import numdisplay
 
 log=gemLog.getGeminiLog()
 
@@ -40,7 +37,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
 #    def findshiftsAndCombine(self, rc):
 #       try:
-#          pyraf,gemini, yes, no = pyrafLoader(rc)
+#          pyraf,gemini, yes, no = pyrafLoader()
 #          print "shifting and combining images"
 #          #@@TODO: hardcoded parmeters and ***imcoadd.dat may need to move from 
 #          # imcoadd_data/test4 to test_data dir before running
@@ -83,7 +80,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # Logging values set in the parameters dictionary above
                 log.fullinfo('\nParameters being used for girmfringe '+
                              'function:\n')
-                gemt.LogDictParams(paramDict)
+                gemt.logDictParams(paramDict)
                 
                 # Calling the girmfringe function to perform the fringe 
                 # corrections, this function will return the corrected image as
@@ -130,7 +127,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         It utilizes the CL script gifringe to create the fringe image.
         """
         # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader(rc)
+        pyraf, gemini, yes, no = pyrafLoader()
         
         try:
             if len(rc.getInputs())>1:
@@ -238,7 +235,7 @@ def CLDefaultParamsDict(CLscript):
     
     # Ensuring that if a invalide CLscript was requested, that a critical
     # log message be made and exception raised.
-    if CLscript != 'gifringe':
+    if (CLscript != 'gifringe'):
         log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
         raise GMOS_IMAGEException('The CLscript '+CLscript+
