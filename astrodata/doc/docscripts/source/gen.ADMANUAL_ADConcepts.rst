@@ -686,7 +686,7 @@ the GMOS types:
 
 
 .. figure:: images_types/GMOS_IMAGE-tree-pd.png
-    :scale: 90
+    :scale: 100 
     :figwidth: 5.4in
     :figclass: align-center
     

@@ -28,5 +28,5 @@ make astrodatadocumentation.pdf &> makepdf.build.log
 
 # make AD type reference
 # slow... commented out
-#rm ADtypereference.pdf
-#make ADtypereference.pdf &> makepdf.build.log
+rm ADtypereference.pdf
+make ADtypereference.pdf &> makepdf.build.log

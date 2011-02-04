@@ -318,6 +318,7 @@ class DataSpider(object):
                             # show descriptors                            
                             if (showDescriptors != None):
                                 sdl = showDescriptors.split(",")
+                                # print "DS320:", repr(sdl)
                                 # print ol
                                 # get maxlen
                                 maxlen = 0
@@ -328,18 +329,25 @@ class DataSpider(object):
                                     #print "DS242:", sd
                                     try:
                                         if "(" not in sd:
-                                            dval = eval("fl."+sd+"(asDict=True)")
+                                            dval = eval("fl."+sd+"(asList=True)")
                                         else:
-                                            print "DS333:", repr(sd)
+                                            #print "DS333:", repr(sd)
                                             dval = eval("fl."+sd)
                                         pad = " " * (maxlen - len(sd))
                                         sd = str(sd) + pad
                                         print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
-                                        
+                                    except AttributeError:
+                                        exinfo = sys.exc_info()
+                                        print '          ${BOLD}(DERR)%s${NORMAL}: ${RED}NO SUCH DESCRIPTOR${NORMAL}' % (sd)
+                                        if raiseExcept:
+                                            raise
+                                             
                                     except:
-                                        pad = " " * (maxlen - len(sd))
-                                        sd = str(sd) + pad
-                                        print ("          ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}: %s") % (sd, str(sys.exc_info()[1])) 
+                                        # pad = " " * (maxlen - len(sd))
+                                        # sd = str(sd) + pad
+                                        exinfo = sys.exc_info()
+                                        
+                                        print '          ${BOLD}(DERR)%s${NORMAL}: ${RED}%s${NORMAL}' % (sd, repr(exinfo[1]).strip())
                                         if raiseExcept:
                                             raise
                                         
@@ -591,21 +599,33 @@ class DataSpider(object):
                                 for sd in sdl:
                                     maxlen = max(len(sd),maxlen)
                                     
+                                # print "DS595:", repr(fl.gain(asDict=True))
+                                # print "DS596:", repr(fl.amp_read_area(asList = True))
                                 for sd in sdl:
                                     #print "DS242:", sd
                                     try:
                                         if "(" not in sd:
-                                            dval = eval("fl."+sd+"()")
+                                            dval = eval("fl."+sd+"(asList=True)")
                                         else:
                                             dval = eval("fl."+sd)
                                         pad = " " * (maxlen - len(sd))
                                         sd = str(sd) + pad
                                         print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
-                                        
+                                    except AttributeError:
+                                        pad = " " * (maxlen - len(sd))
+                                        sd = str(sd) + pad
+                                        exinfo = sys.exc_info()
+                                        print "          ${BOLD}%s${NORMAL} = ${RED}NO SUCH DESCRIPTOR${NORMAL}" % (sd)
+                                        if raiseExcept:
+                                            raise
+                                             
+                                       
                                     except:
                                         pad = " " * (maxlen - len(sd))
                                         sd = str(sd) + pad
                                         print ("          ${BOLD}%s${NORMAL} = ${RED}FAILED${NORMAL}: %s") % (sd, str(sys.exc_info()[1])) 
+                                        raise
+                                        
                                         if raiseExcept:
                                             raise
                             # if phead then there are headers to print per file

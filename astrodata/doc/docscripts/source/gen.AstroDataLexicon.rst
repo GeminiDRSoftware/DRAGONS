@@ -41,7 +41,7 @@ AstroTypes, Primitive Sets and Descriptor Calculators
 
 
 .. figure:: images_types/GMOS-tree.png
-    :scale: 90
+    :scale: 100 
     :figwidth: 5.4in
     :figclass: align-center
     

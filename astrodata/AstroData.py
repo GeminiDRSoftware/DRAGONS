@@ -803,8 +803,10 @@ integrates other functionality.
             # print "AD727:", repr(fun)
             try:
                 val = eval("self.%s(asList=True)" % fun)
+            except AttributeError:
+                val = 'ERROR: No Descriptor Function Named "%s"' % fun  
             except:
-                val = "ERROR Getting Value"
+                val = "ERROR: %s" % repr(sys.exc_info()[1])
             rdict.update({fun:val})
         return rdict
         
