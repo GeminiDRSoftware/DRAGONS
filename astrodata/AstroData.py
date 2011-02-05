@@ -816,7 +816,7 @@ integrates other functionality.
         """getInxExt takes an extension index, either an integer
         or (EXTNAME, EXTVER) tuple, and returns the index location
         of the extension.  If hduref is set to True, then the index
-        returns is relative to the HDUList (0=PHU, 1=First non-PHU extension).
+        returned is relative to the HDUList (0=PHU, 1=First non-PHU extension).
         If hduref == False (the default) then the index returned is relative to 
         the AstroData numbering convention, where index=0 is the first non-PHU
         extension in the MEF file.
