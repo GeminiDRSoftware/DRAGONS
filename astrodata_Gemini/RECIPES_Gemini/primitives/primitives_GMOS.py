@@ -133,7 +133,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                                          fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                          postpend=rc['postpend'], verbose=rc['logVerbose'])           
             
-            log.status('geminiScience.addBPM completed successfully')
+            log.status('geminiScience.biasCorrect completed successfully')
                 
             # Reporting the updated files to the reduction context
             rc.reportOutput(adOuts)   
@@ -358,94 +358,18 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             log.status('*STARTING* to mosaic the input images SCI extensions'+
                        ' together')
-            # Writing input files to disk with prefixes onto their file names so 
-            # they can be deleted later easily 
-            clm = gemt.CLManager(rc)
-            #clm.LogCurParams() 
             
-            # Determining if gmosaic should propigate the VAR and DQ frames 
-            ad=rc.getInputs(style='AD')[0]
-            if ad.countExts('VAR')==ad.countExts('DQ')==ad.countExts('SCI'):
-                fl_vardq=yes
-            else:
-                fl_vardq=no
+            log.debug('Calling geminiScience.mosaicDetectors function')
+            
+            adOuts = geminiScience.mosaicDetectors(adIns=rc.getInputs(style='AD'), 
+                                        fl_paste=rc['fl_paste'], interp_function=rc['interp_function'], 
+                                        fl_vardq='AUTO', postpend=rc['postpend'], 
+                                        verbose=rc['logVerbose'])           
+            
+            log.status('geminiScience.mosaicDetectors completed successfully')
                 
-            # Parameters set by the gemt.CLManager or the definition of the prim 
-            clPrimParams = {
-              # Retrieving the inputs as a string of filenames
-              'inimages'    :clm.inputsAsStr(),
-              # Setting the value of FL_vardq set above
-              'fl_vardq'    :fl_vardq,
-              # This returns a unique/temp log file for IRAF 
-              'logfile'     :clm.logfile(),
-              # This is actually in the default dict but wanted to show it again     
-              'Stdout'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'verbose'     :yes                
-                          }
-            # Parameters from the Parameter file adjustable by the user
-            clSoftcodedParams = {
-              # pyrafBoolean converts the python booleans to pyraf ones
-              'fl_paste'    :gemt.pyrafBoolean(rc['fl_paste']),
-              'outpref'     :rc['postpend'],
-              'outimages'   :rc['outimages'],
-              'geointer'    :rc['interp_function'],
-                              }
-            # Grabbing the default params dict and updating it with 
-            # the two above dicts
-            clParamsDict = CLDefaultParamsDict('gmosaic')
-            clParamsDict.update(clPrimParams)
-            clParamsDict.update(clSoftcodedParams)
-            
-            # Logging the values in the soft and prim parameter dictionaries
-            log.fullinfo('\nParameters set by the CLManager or dictated by '+
-                         'the definition of the primitive:\n', 
-                         category='parameters')
-            gemt.LogDictParams(clPrimParams)
-            log.fullinfo('\nUser adjustable parameters in the parameters '+
-                         'file:\n', category='parameters')
-            gemt.LogDictParams(clSoftcodedParams)
-            
-            log.debug('calling the gmosaic CL script for inputs '+\
-                      clm.inputsAsStr())
-            
-            gemini.gmos.gmosaic(**clParamsDict)
-            
-            if gemini.gmos.gmosaic.status:
-                log.critical('gmosaic failed for '+rc.inputsAsStr())
-                raise GMOSException('gmosaic failed')
-            else:
-                log.fullinfo('exited the gmosaic CL script successfully')
-            
-            # Renaming CL outputs and loading them back into memory, and  
-            # cleaning up the intermediate tmp files written to disk
-            clm.finishCL()
-            # Wrap up logging
-            i=0
-            for ad in rc.getOutputs(style='AD'):
-                # Varifying gireduce was actually ran on the file
-                # then logging file names of successfully reduced files
-                if ad.phuGetKeyValue('GMOSAIC'): 
-                    log.fullinfo('file '+clm.preCLNames()[i]+\
-                                 ' mosaiced successfully')
-                    log.fullinfo('New file name is: '+ad.filename)
-                i=i+1
-                # Updating GEM-TLM (automatic) and MOSAIC time stamps to the PHU
-                ad.historyMark(key='MOSAIC', stomp=False)  
-                
-                # Updating logger with new GEM-TLM value
-                log.fullinfo('************************************************'
-                             , category='header')
-                log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('MOSAIC = '+ad.phuGetKeyValue('MOSAIC'), 
-                             category='header')
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts) 
                 
             log.status('*FINISHED* mosaicing the input images')
         except:
