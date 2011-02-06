@@ -170,7 +170,7 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
                              category='header')
                 log.fullinfo('-'*50, category='header')
                 
-                if len(adIns)>1:
+                if (isinstance(adIns,list)) and (len(adIns)>1):
                     adOuts.append(adOut)
                 else:
                     adOuts = adOut
@@ -377,7 +377,7 @@ def addDQ(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=No
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if len(adIns)>1:
+                if (isinstance(adIns,list)) and (len(adIns)>1):
                     adOuts.append(adOut)
                 else:
                     adOuts = adOut
@@ -597,7 +597,7 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if len(adIns)>1:
+                if (isinstance(adIns,list)) and (len(adIns)>1):
                     adOuts.append(adOut)
                 else:
                     adOuts = adOut
@@ -774,7 +774,7 @@ def addVAR(adIns, outNames=None, postpend=None, logName='', verbose=1,
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if len(adIns)>1:
+                if (isinstance(adIns,list)) and (len(adIns)>1):
                     adOuts.append(adOut)
                 else:
                     adOuts = adOut
@@ -924,7 +924,7 @@ def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', ver
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if len(adIns)>1:
+                if (isinstance(adIns,list)) and (len(adIns)>1):
                     adOuts.append(adOut)
                 else:
                     adOuts = adOut
@@ -1092,7 +1092,7 @@ def overscanTrim(adIns, outNames=None, postpend=None, logName='', verbose=1,
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if len(adIns)>1:
+                if (isinstance(adIns,list)) and (len(adIns)>1):
                     adOuts.append(adOut)
                 else:
                     adOuts = adOut
@@ -1160,8 +1160,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     @type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
-                                noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
 
     log.status('**STARTING** the combine function')
     
@@ -1179,8 +1178,8 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
             # Set up counter for looping through outNames list
             count=0
             
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
+            # Ensuring there is more than one input to combine
+            if (isinstance(adIns,list)) and (len(adIns)>1):
                 
                 # loading and bringing the pyraf related modules into the name-space
                 pyraf, gemini, yes, no = pyrafLoader()
@@ -1228,12 +1227,12 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     clParamsDict.update(clSoftcodedParams)
                     
                     # Logging the parameters that were not defaults
-                    log.fullinfo('\nparameters set automatically:', category='parameters')
+                    log.fullinfo('\nParameters set automatically:', category='parameters')
                     # Loop through the parameters in the clPrimParams dictionary
                     # and log them
                     gemt.logDictParams(clPrimParams)
                     
-                    log.fullinfo('\nparameters adjustable by the user:', category='parameters')
+                    log.fullinfo('\nParameters adjustable by the user:', category='parameters')
                     # Loop through the parameters in the clSoftcodedParams dictionary
                     # and log them
                     gemt.logDictParams(clSoftcodedParams)
@@ -1289,6 +1288,246 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
         return adOut
     except:
         raise ('An error occurred while trying to run combine')
+                
+                
+                
+def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False, 
+                outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+    """
+    This function will subtract the biases from the inputs using the 
+    CL script gireduce.
+    
+    WARNING: The gireduce script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the gireduce
+    with a Python routine to do the bias subtraction.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    @param adIns: Astrodata inputs to have DQ extensions added to
+    @type adIns: Astrodata objects, either a single or a list of objects
+    
+    @param biases: The bias(es) to divide the input(s) by.
+    @type biases: AstroData objects in a list, or a single instance.
+                Note: If there is multiple inputs and one bias provided, then the
+                      same bias will be applied to all inputs; else the biases   
+                      list must match the length of the inputs.
+    
+    @param fl_vardq: Make VAR and DQ frames?
+    @type fl_vardq: Python boolean (True/False)
+    
+    @param fl_trim: Trim the overscan region from the frames?
+    @type fl_trim: Python boolean (True/False)
+    
+    @param fl_over: Subtract the overscan level from the frames?
+    @type fl_over: Python boolean (True/False)
+    
+    @param method: type of combining method to use.
+    @type method: string, options: 'average', 'median'.
+    
+    @param outNames: filenames of output(s)
+    @type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    @param postpend: string to postpend on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    @type postpend: string
+    
+    @param logName: Name of the log file, default is 'gemini.log'
+    @type logName: string
+    
+    @param verbose: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of verbose setting, all messages always go 
+                          to the logfile if it is not turned off.
+    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    @param noLogFile: A boolean to make it so no log file is created
+    @type noLogFile: Python boolean (True/False)
+    """
+    
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+
+    log.status('**STARTING** the biasCorrect function')
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "postpend" was passed in')
+    
+    try:
+        if adIns!=None:
+            # Set up counter for looping through outNames list
+            count=0
+            
+            # Creating empty list of ad's to be returned that will be filled below
+            if isinstance(adIns,list) and (len(adIns)>1):
+                adOuts = []
+                
+            # loading and bringing the pyraf related modules into the name-space
+            pyraf, gemini, yes, no = pyrafLoader()
+                
+            # Performing work in a loop, so that different biases may be
+            # used for each input as gireduce only allows one bias input per run.
+            for ad in adIns:
+                
+                # To clean up log and screen if multiple inputs
+                log.fullinfo('+'*50, category='format')    
+                
+                if isinstance(outNames,list) and (len(outNames)>1):
+                    outName = outNames[count]
+                elif isinstance(outNames,list) and (len(outNames)==1):
+                    outName = outNames[0]
+                else:
+                    outName = None
+                
+                # Preparing input files, lists, parameters... for input to 
+                # the CL script
+                clm=gemt.CLManager(adIns=ad, outNames=outName, postpend=postpend, funcName='biasCorrect')
+                
+                # Check the status of the CLManager object, True=continue, False= issue warning
+                if clm.status:               
+                    
+                    # Setting up the processedBias correctly
+                    if (isinstance(biases,list)) and (len(biases)>1):
+                        processedBias = biases[count]
+                    elif (isinstance(biases,list)) and (len(biases)==1):
+                        # Not sure if I need this check, but can't hurt
+                        processedBias = biases[0]
+                    else:
+                        processedBias = biases
+                        
+                    # Parameters set by the gemt.CLManager or the definition of the function 
+                    clPrimParams = {
+                      'inimages'    :clm.inputsAsStr(),
+                      'gp_outpref'  :clm.uniquePrefix(),
+                      # This returns a unique/temp log file for IRAF 
+                      'logfile'     :clm.logfile(),     
+                      'fl_bias'     :yes,
+                      # Possibly add this to the params file so the user can override
+                      # this input file
+                      'bias'        :processedBias,   
+                      # This is actually in the default dict but wanted to show it again  
+                      'Stdout'      :gemt.IrafStdout(), 
+                      # This is actually in the default dict but wanted to show it again
+                      'Stderr'      :gemt.IrafStdout(), 
+                      # This is actually in the default dict but wanted to show it again
+                      'verbose'     :yes                
+                                  }
+                        
+                    # Parameters from the Parameter file adjustable by the user
+                    clSoftcodedParams = {
+                       # pyrafBoolean converts the python booleans to pyraf ones
+                       'fl_trim'    :gemt.pyrafBoolean('fl_trim'),
+                       'outpref'    :postpend,
+                       'fl_over'    :gemt.pyrafBoolean('fl_over'),
+                       'fl_vardq'   :gemt.pyrafBoolean('fl_vardq')
+                                       }
+                    # Grabbing the default params dict and updating it 
+                    # with the two above dicts
+                    clParamsDict = CLDefaultParamsDict('gireduce')
+                    clParamsDict.update(clPrimParams)
+                    clParamsDict.update(clSoftcodedParams)
+                
+                    # Logging the parameters that were not defaults
+                    log.fullinfo('\nParameters set automatically:', 
+                                 category='parameters')
+                    # Loop through the parameters in the clPrimParams dictionary
+                    # and log them
+                    gemt.logDictParams(clPrimParams)
+                    
+                    log.fullinfo('\nParameters adjustable by the user:', 
+                                 category='parameters')
+                    # Loop through the parameters in the clSoftcodedParams 
+                    # dictionary and log them
+                    gemt.logDictParams(clSoftcodedParams)
+                    
+                    log.debug('calling the gireduce CL script for inputs '+
+                                                            clm.inputsAsStr())
+                
+                    gemini.gmos.gireduce(**clParamsDict)
+            
+                    if gemini.gmos.gireduce.status:
+                        log.critical('gireduce failed for inputs '+
+                                     clm.inputsAsStr())
+                        raise ('gireduce failed')
+                    else:
+                        log.status('Exited the gireduce CL script successfully')
+                        
+                    # Renaming CL outputs and loading them back into memory 
+                    # and cleaning up the intermediate temp files written to disk
+                    adOut = clm.finishCL()
+                    
+                    # There is only one at this point so no need to perform a loop
+                    # CLmanager outputs a list always, so take the 0th
+                    adOut = adOut[0]
+                    
+                    # Varifying gireduce was actually ran on the file
+                    # then logging file names of successfully reduced files
+                    if adOut.phuGetKeyValue('GIREDUCE'): 
+                        log.fullinfo('File '+clm.preCLNames()[0]+
+                                     ' was bias subracted successfully')
+                        log.fullinfo('New file name is: '+adOut.filename)
+      
+                    # Updating the GEM-TLM (automatic) and BIASCORR time stamps in 
+                    # the PHU
+                    adOut.historyMark(key='BIASCORR', stomp=False)  
+                    
+                    # Reseting the value set by gireduce to just the filename
+                    # for clarity
+                    adOut.phuSetKeyValue('BIASIM', os.path.basename(processedBias)) 
+                    
+                    # Updating log with new GEM-TLM value and BIASIM header keys
+                    log.fullinfo('************************************************'
+                                 , category='header')
+                    log.fullinfo('File = '+adOut.filename, category='header')
+                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                                 , category='header')
+                    log.fullinfo('PHU keywords updated/added:\n', 'header')
+                    log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                                 category='header')
+                    log.fullinfo('BIASCORR = '+adOut.phuGetKeyValue('BIASCORR'), 
+                                 category='header')
+                    log.fullinfo('BIASIM = '+adOut.phuGetKeyValue('BIASIM')+'\n', 
+                                 category='header')
+                    
+                    if (isinstance(adIns,list)) and (len(adIns)>1):
+                        adOuts.append(adOut)
+                    else:
+                        adOuts = adOut
+               
+                    count = count+1
+                    
+                else:
+                    log.critical('One of the inputs has not been prepared,\
+                    the combine function can only work on prepared data.')
+                    raise('One of the inputs was not prepared')
+                
+            log.warning('The CL script gireduce REPLACED the previously '+
+                        'calculated DQ frames')
+        
+        else:
+            log.critical('The parameter "adIns" must not be None')
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the biasCorrect function')
+        
+        # Return the outputs (list or single, matching adIns)
+        return adOuts
+    except:
+        raise #('An error occurred while trying to run biasCorrect')    
+                
+                
+                
                 
                 
                 
