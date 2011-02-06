@@ -85,7 +85,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug('Calling geminiScience.addBPM function')
             
             adOuts = geminiScience.addBPM(adIns=rc.getInputs(style='AD'), 
-                                         BPMs=BPMlist, postpend=rc['postpend'])           
+                                         BPMs=BPMlist, postpend=rc['postpend'], verbose=rc['logVerbose'])           
             
             log.status('geminiScience.addBPM completed successfully')
                 
@@ -110,16 +110,11 @@ class GMOSPrimitives(GEMINIPrimitives):
         with a Python routine to do the bias subtraction.
         
         """
-        # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
+#        # Loading and bringing the pyraf related modules into the name-space
+#        pyraf, gemini, yes, no = pyrafLoader()
         
         try:
             log.status('*STARTING* to subtract the bias from the inputs')
-            
-            # Writing input files to disk with prefixes onto their file 
-            # names so they can be deleted later easily 
-            clm = gemt.CLManager(rc)
-            #clm.LogCurParams()
             
             # Getting the bias file for the first file of the inputs and 
             # assuming it is the same for all the inputs. This should be 
@@ -129,100 +124,19 @@ class GMOSPrimitives(GEMINIPrimitives):
             # one flat and one bias, this will work well with the CLManager
             # as that was how i wrote this prim originally.
             ad = rc.getInputs(style='AD')[0]
-            processedBias = rc.getCal(ad,'bias')
+            processedBias = rc.getCal(ad,'bias') 
             log.status('Using bias '+processedBias+' to correct the inputs')
+            log.debug('Calling geminiScience.biasCorrect function')
             
-            log.critical('prim_Gmos204: '+rc.inputsAsStr())
+            adOuts = geminiScience.biasCorrect(adIns=rc.getInputs(style='AD'), 
+                                         biases=processedBias, fl_vardq=rc['fl_vardq'], 
+                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
+                                         postpend=rc['postpend'], verbose=rc['logVerbose'])           
             
-            # Parameters set by the gemt.CLManager or the definition of the prim 
-            clPrimParams = {
-              'inimages'    :clm.inputsAsStr(),
-              'gp_outpref'  :clm.uniquePrefix(),
-              # This returns a unique/temp log file for IRAF 
-              'logfile'     :clm.logfile(),     
-              'fl_bias'     :yes,
-              # Possibly add this to the params file so the user can override
-              # this input file
-              'bias'        :processedBias,   
-              # This is actually in the default dict but wanted to show it again  
-              'Stdout'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'verbose'     :yes                
-                          }
-            # Parameters from the Parameter file adjustable by the user
-            clSoftcodedParams = {
-               # pyrafBoolean converts the python booleans to pyraf ones
-               'fl_trim'    :gemt.pyrafBoolean(rc['fl_trim']),
-               'outpref'    :rc['postpend'],
-               'fl_over'    :gemt.pyrafBoolean(rc['fl_over']),
-               'fl_vardq'   :gemt.pyrafBoolean(rc['fl_vardq'])
-                               }
-            # Grabbing the default params dict and updating it 
-            # with the two above dicts
-            clParamsDict = CLDefaultParamsDict('gireduce')
-            clParamsDict.update(clPrimParams)
-            clParamsDict.update(clSoftcodedParams)
-            
-            # Logging the values in the soft and prim parameter dictionaries
-            log.fullinfo('\nParameters set by the CLManager or dictated by '+
-                         'the definition of the primitive:\n', 
-                         category='parameters')
-            gemt.LogDictParams(clPrimParams)
-            log.fullinfo('\nUser adjustable parameters in the parameters '+
-                         'file:\n', category='parameters')
-            gemt.LogDictParams(clSoftcodedParams)
-            
-            log.debug('calling the gireduce CL script for inputs '+
-                      clm.inputsAsStr())
-
-            gemini.gmos.gireduce(**clParamsDict)
-            
-            if gemini.gmos.gireduce.status:
-                 log.critical('gireduce failed for '+rc.inputsAsStr())
-                 raise GMOSException('gireduce failed')
-            else:
-                 log.status('Exited the gireduce CL script successfully')
-            
-            # Renaming CL outputs and loading them back into memory, and 
-            # cleaning up the intermediate tmp files written to disk
-            clm.finishCL()
-            
-            # Wrap up logging
-            i=0
-            for ad in rc.getOutputs(style='AD'):
-                # Varifying gireduce was actually ran on the file
-                # then logging file names of successfully reduced files
-                if ad.phuGetKeyValue('GIREDUCE'): 
-                    log.fullinfo('File '+clm.preCLNames()[i]+
-                                 ' was bias subracted successfully')
-                    log.fullinfo('New file name is: '+ad.filename)
-                i=i+1
-                # Updating the GEM-TLM (automatic) and BIASCORR time stamps in 
-                # the PHU
-                ad.historyMark(key='BIASCORR', stomp=False)  
+            log.status('geminiScience.addBPM completed successfully')
                 
-                # Reseting the value set by gireduce to just the filename
-                # for clarity
-                ad.phuSetKeyValue('BIASIM', os.path.basename(processedBias)) 
-                
-                # Updating log with new GEM-TLM value and BIASIM header keys
-                log.fullinfo('************************************************'
-                             , category='header')
-                log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('BIASCORR = '+ad.phuGetKeyValue('BIASCORR'), 
-                             category='header')
-                log.fullinfo('BIASIM = '+os.path.basename(processedBias)+'\n', 
-                             category='header')
-                
-            log.warning('The CL script gireduce REPLACED the previously '+
-                        'calculated DQ frames')
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)   
             
             log.status('*FINISHED* subtracting the bias from the input flats')
         except:
@@ -327,7 +241,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug('Calling geminiScience.flatCorrect function')
             
             adOuts = geminiScience.flatCorrect(adIns=rc.getInputs(style='AD'),     
-                                         flats=processedFlat, postpend=rc['postpend'])           
+                                         flats=processedFlat, postpend=rc['postpend'], verbose=rc['logVerbose'])           
             
             log.status('geminiScience.flatCorrect completed successfully')
               
