@@ -389,7 +389,7 @@ class CLManager(object):
     
     def outNamesMaker(self):
         """ A function to apply the provided postpend value to the end of 
-            each input filename and add to a list for use to name the ouput
+            each input filename and add to a list for use to name the output
             files with.
         """
         if isinstance(self.inputs,list):
@@ -398,7 +398,7 @@ class CLManager(object):
                 outNames.append(fileNameUpdater(adIn=ad, postpend=self.postpend, 
                                                                 strip=False))
         else:
-            outNames = fileNameUpdater(adIn=ad, postpend=self.postpend, strip=False)
+            outNames = [fileNameUpdater(adIn=ad, postpend=self.postpend, strip=False)]
         return outNames
     
     def cacheStoreNames(self):
@@ -491,7 +491,7 @@ class CLManager(object):
         
         """
         if self.outNames is None:
-            # load up a outNames list (or single name) for use in postCLloads
+            # load up a outNames list for use in postCLloads
             self.outNames = self.outNamesMaker()
         
         for ad in self.inputs:            
@@ -515,29 +515,31 @@ class CLManager(object):
         """
         # Do the appropriate wrapping up for combine type primitives
         if combine is True:
+            # If a combine type CL function is called, the output will be a 
+            # single file and thus no looping is required here.
+            
             # The name that IRAF wrote the output to
             cloutname = self.postpend+self._preCLcachestorenames[0]
             # The name we want the file to be
-            finalname = fileNameUpdater(adIn=self.inputs[0],
-                                        infilename=self._preCLfilenames[0], 
-                                      postpend=self.postpend, strip=False)
+            outName = self.outNames[0] 
+            
             # Renaming the IRAF written file to the name we want
-            os.rename(cloutname, finalname )
+            os.rename(cloutname, outName )
             # Reporting the renamed file to the reduction context and thus
             # bringing it into memory
-            self.adOuts.append(AstroData(finalname))
+            self.adOuts.append(AstroData(outName))
             
             # Deleting the renamed file from disk
-            os.remove(finalname)
+            os.remove(outName)
             # Removing the list file of the inputs 
             os.remove(self.listname)
             # Close, and thus delete, the temporary log object needed by IRAF
             self.templog.close() 
             # Logging files that were affected during wrap-up
             log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n'+
-                         finalname)
-            log.fullinfo(finalname+' was loaded into memory')
-            log.fullinfo(finalname+' was deleted from disk')
+                         outName)
+            log.fullinfo(outName+' was loaded into memory')
+            log.fullinfo(outName+' was deleted from disk')
             log.fullinfo('Temporary list '+self.listname+' was deleted from disk')
             log.fullinfo('Temporary log '+self.templog.name+' was deleted from disk')
             # Removing the temporary files on disk that were inputs to IRAF
@@ -555,28 +557,27 @@ class CLManager(object):
                 storename = self._preCLcachestorenames[i]  
                 # Name of file CL wrote to disk
                 cloutname = self.postpend + storename 
-                log.critical('gemTools525: cloutname='+cloutname) 
-                # Name I want the file to be
-                finalname = fileNameUpdater(adIn=self.inputs[i], infilename=self._preCLfilenames[i], 
-                                            postpend=self.postpend, strip=False)
-                log.critical('gemTools529: finalname='+finalname)  
+                
+                # Name I want the file to be dictated by outNames
+                outName = self.outNames[i]
+                
                 # Renaming the IRAF written file to the name we want
-                os.rename(cloutname, finalname )
+                os.rename(cloutname, self.outNames[i] )
                 
                 # Reporting the renamed file to the reduction context and thus
                 # bringing it into memory
-                self.adOuts.append(AstroData(finalname))
+                self.adOuts.append(AstroData(outName))
                 # Clearing file written for CL input
-                os.remove(finalname) 
+                os.remove(outName) 
                 # clearing renamed file output by CL
                 os.remove(storename) 
                 # Close, and thus delete, the temporary log needed by IRAF
                 self.templog.close()
                 # Logging files that were affected during wrap-up
                 log.fullinfo('CL outputs '+cloutname+
-                             ' was renamed on disk to:\n '+finalname)
-                log.fullinfo(finalname+' was loaded into memory')
-                log.fullinfo(finalname+' was deleted from disk')
+                             ' was renamed on disk to:\n '+outName)
+                log.fullinfo(outName+' was loaded into memory')
+                log.fullinfo(outName+' was deleted from disk')
                 log.fullinfo(storename+' was deleted from disk')
          
     def rmStackFiles(self):
