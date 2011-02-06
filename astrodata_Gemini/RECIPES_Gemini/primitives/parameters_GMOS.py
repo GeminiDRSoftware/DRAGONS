@@ -62,15 +62,7 @@
                           'userOverride':False  ,
                         'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                         },
-                        'outimages':
-                          {
-                           'default': '' ,
-                          'recipeOverride': True,
-                          'type': 'str',
-                          'userOverride':True,  
-                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-                           },
-                        'interp_function':  #this is the geointer parameters new name for easier reading to the user
+                    'interp_function':  #this is the geointer parameters new name for easier reading to the user
                           {
                            'default': 'linear' ,
                           'recipeOverride': True,
