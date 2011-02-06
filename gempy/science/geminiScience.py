@@ -1327,9 +1327,6 @@ def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False,
     @param fl_over: Subtract the overscan level from the frames?
     @type fl_over: Python boolean (True/False)
     
-    @param method: type of combining method to use.
-    @type method: string, options: 'average', 'median'.
-    
     @param outNames: filenames of output(s)
     @type outNames: String, either a single or a list of strings of same length
                     as adIns.
@@ -1528,19 +1525,203 @@ def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False,
                 
                 
                 
+def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
+                outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+    """
+    This function will mosaic the SCI frames of the input images, 
+    along with the VAR and DQ frames if they exist.  
+    
+    WARNING: The gireduce script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the gireduce
+    with a Python routine to do the bias subtraction.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    @param adIns: Astrodata inputs to have DQ extensions added to
+    @type adIns: Astrodata objects, either a single or a list of objects
+    
+    @param fl_paste: Paste images instead of mosaic?
+    @type fl_paste: Python boolean (True/False)
+    
+    @param interp_function: type of interpolation algorithm to use for between the chip gaps.
+    @type interp_function: string, options: 'linear', 'nearest', 'poly3', 
+                                            'poly5', 'spine3', 'sinc'.
+    
+    @param fl_vardq: Also mosaic VAR and DQ frames?
+    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+                    it automatically if there are VAR and DQ frames in the inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
+                        so, if the first does, then the rest MUST also have them as well.
+    
+    @param outNames: filenames of output(s)
+    @type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    @param postpend: string to postpend on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    @type postpend: string
+    
+    @param logName: Name of the log file, default is 'gemini.log'
+    @type logName: string
+    
+    @param verbose: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of verbose setting, all messages always go 
+                          to the logfile if it is not turned off.
+    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    @param noLogFile: A boolean to make it so no log file is created
+    @type noLogFile: Python boolean (True/False)
+    """
+    
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+
+    log.status('**STARTING** the mosaicDetectors function')
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "postpend" was passed in')
+    
+    try:
+        if adIns!=None: 
+            # loading and bringing the pyraf related modules into the name-space
+            pyraf, gemini, yes, no = pyrafLoader()  
                 
+            # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
+            if fl_vardq=='AUTO':
+                if isinstance(adIns,list):
+                    if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                        fl_vardq=yes
+                    else:
+                        fl_vardq=no
+                else:
+                    if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                        fl_vardq=yes
+                    else:
+                        fl_vardq=no
+            
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
+            
+            # Preparing input files, lists, parameters... for input to 
+            # the CL script
+            clm=gemt.CLManager(adIns=adIns, outNames=outNames, postpend=postpend, funcName='mosaicDetectors')
+            
+            # Check the status of the CLManager object, True=continue, False= issue warning
+            if clm.status: 
                 
+                # Parameters set by the gemt.CLManager or the definition of the prim 
+                clPrimParams = {
+                  # Retrieving the inputs as a string of filenames
+                  'inimages'    :clm.inputsAsStr(),
+                  # Setting the value of FL_vardq set above
+                  'fl_vardq'    :fl_vardq,
+                  # This returns a unique/temp log file for IRAF 
+                  'logfile'     :clm.logfile(),
+                  # This is actually in the default dict but wanted to show it again     
+                  'Stdout'      :gemt.IrafStdout(), 
+                  # This is actually in the default dict but wanted to show it again
+                  'Stderr'      :gemt.IrafStdout(), 
+                  # This is actually in the default dict but wanted to show it again
+                  'verbose'     :yes                
+                              }
+                # Parameters from the Parameter file adjustable by the user
+                clSoftcodedParams = {
+                  # pyrafBoolean converts the python booleans to pyraf ones
+                  'fl_paste'    :gemt.pyrafBoolean(fl_paste),
+                  'outpref'     :postpend,
+                  'geointer'    :interp_function,
+                                  }
+                # Grabbing the default params dict and updating it with 
+                # the two above dicts
+                clParamsDict = CLDefaultParamsDict('gmosaic')
+                clParamsDict.update(clPrimParams)
+                clParamsDict.update(clSoftcodedParams)      
+                    
+                # Logging the parameters that were not defaults
+                log.fullinfo('\nParameters set automatically:', 
+                             category='parameters')
+                # Loop through the parameters in the clPrimParams dictionary
+                # and log them
+                gemt.logDictParams(clPrimParams)
                 
+                log.fullinfo('\nParameters adjustable by the user:', 
+                             category='parameters')
+                # Loop through the parameters in the clSoftcodedParams 
+                # dictionary and log them
+                gemt.logDictParams(clSoftcodedParams)
                 
+                log.debug('calling the gmosaic CL script for inputs '+
+                                                        clm.inputsAsStr())
+            
+                gemini.gmos.gmosaic(**clParamsDict)
+        
+                if gemini.gmos.gmosaic.status:
+                    log.critical('gireduce failed for inputs '+
+                                 clm.inputsAsStr())
+                    raise ('gmosaic failed')
+                else:
+                    log.status('Exited the gmosaic CL script successfully')    
+                    
+                    
+                # Renaming CL outputs and loading them back into memory 
+                # and cleaning up the intermediate temp files written to disk
+                adOuts = clm.finishCL()    
+                    
+                # Wrap up logging
+                i=0
+                for ad in adOuts:
+                    log.fullinfo('-----------------------------------------------'
+                                 , category='header')
+                    
+                    # Varifying gireduce was actually ran on the file
+                    # then logging file names of successfully reduced files
+                    if ad.phuGetKeyValue('GMOSAIC'): 
+                        log.fullinfo('file '+clm.preCLNames()[i]+\
+                                     ' mosaiced successfully')
+                        log.fullinfo('New file name is: '+ad.filename)
+                    i=i+1
+                    # Updating GEM-TLM (automatic) and MOSAIC time stamps to the PHU
+                    ad.historyMark(key='MOSAIC', stomp=False)  
+                    
+                    # Updating logger with new GEM-TLM value
+                    log.fullinfo('************************************************'
+                                 , category='header')
+                    log.fullinfo('File = '+ad.filename, category='header')
+                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                                 , category='header')
+                    log.fullinfo('PHU keywords updated/added:\n', category='header')
+                    log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                                 category='header')
+                    log.fullinfo('MOSAIC = '+ad.phuGetKeyValue('MOSAIC')+'\n', 
+                                 category='header')    
                 
+            else:
+                    log.critical('One of the inputs has not been prepared,\
+                    the mosaicDetectors function can only work on prepared data.')
+                    raise('One of the inputs was not prepared')
                 
-                
-                
-                
-                
-                
-                
-                
+        else:
+            log.critical('The parameter "adIns" must not be None')
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the mosaicDetectors function')
+        
+        # Return the outputs (list or single, matching adIns)
+        return adOuts
+    except:
+        raise ('An error occurred while trying to run mosaicDetectors') 
                 
                 
                 
