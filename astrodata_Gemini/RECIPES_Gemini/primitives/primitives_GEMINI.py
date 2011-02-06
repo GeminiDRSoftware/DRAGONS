@@ -68,7 +68,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             adOuts = geminiScience.addDQ(adIns=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
-                                         postpend=rc['postpend'])    
+                                         postpend=rc['postpend'], verbose=rc['logVerbose'])    
            
             log.status('geminiScience.addDQ completed successfully')
             
@@ -99,7 +99,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.debug('Calling geminiScience.addVAR')
             
             adOuts = geminiScience.addVAR(adIns=rc.getInputs(style='AD'), 
-                                         postpend=rc['postpend'])    
+                                         postpend=rc['postpend'], verbose=rc['logVerbose'])    
            
             log.status('geminiScience.addVAR completed successfully')
             
@@ -125,7 +125,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # of converting the pixels, updating headers and logging.
             log.debug('Calling geminiScience.ADUtoElectrons')
             
-            adOuts = geminiScience.ADUtoElectrons(adIns=rc.getInputs(style='AD'), postpend=rc['postpend'])    
+            adOuts = geminiScience.ADUtoElectrons(adIns=rc.getInputs(style='AD'), postpend=rc['postpend'], verbose=rc['logVerbose'])    
            
             log.status('geminiScience.ADUtoElectrons completed successfully')
             
@@ -159,8 +159,11 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # Calling geminiScience toolbox function combine to do the work
                 # of converting the pixels, updating headers and logging.
                 log.debug('Calling geminiScience.combine')
-                    
-                adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), fl_vardq=rc['fl_vardq'], fl_dqprop=rc['fl_dqprop'], method=rc['method'], postpend=rc['postpend']) 
+                
+                adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), 
+                                              fl_vardq=rc['fl_vardq'], fl_dqprop=rc['fl_dqprop'], 
+                                              method=rc['method'], postpend=rc['postpend'], 
+                                              verbose=rc['logVerbose']) 
                 
                 log.status('geminiScience.combine completed successfully')
             
@@ -699,68 +702,3 @@ class GEMINIPrimitives(GENERALPrimitives):
             raise 
         yield rc   
          
-def CLDefaultParamsDict(CLscript):
-    """
-    A function to return a dictionary full of all the default parameters 
-    for each CL script used so far in the Recipe System.
-    
-    """
-    # loading and bringing the pyraf related modules into the name-space
-    pyraf, gemini, yes, no = pyrafLoader()
-    
-    # Ensuring that if a invalide CLscript was requested, that a critical
-    # log message be made and exception raised.
-    if CLscript != 'gemcombine':
-        log.critical('The CLscript '+CLscript+' does not have a default'+
-                     ' dictionary')
-        raise GEMINIException('The CLscript '+CLscript+
-                              ' does not have a default'+' dictionary')
-        
-    if CLscript == 'gemcombine':
-        defaultParams = {
-            'input'      :'',            # Input MEF images
-            'output'     :'',            # Output MEF image
-            'title'      :'DEFAULT',     # Title for output SCI plane
-            'combine'    :'average',     # Combination operation
-            'reject'     :'avsigclip',   # Rejection algorithm
-            'offsets'    :'none',        # Input image offsets
-            'masktype'   :'none',        # Mask type
-            'maskvalue'  :0.0,           # Mask value
-            'scale'      :'none',        # Image scaling
-            'zero'       :'none',        # Image zeropoint offset
-            'weight'     :'none',        # Image weights
-            'statsec'    :'[*,*]',       # Statistics section
-            'expname'    :'EXPTIME',     # Exposure time header keyword
-            'lthreshold' :'INDEF',       # Lower threshold
-            'hthreshold' :'INDEF',       # Upper threshold
-            'nlow'       :1,             # minmax: Number of low pixels to reject
-            'nhigh'      :1,             # minmax: Number of high pixels to reject
-            'nkeep'      :1,             # Minimum to keep or maximum to reject
-            'mclip'      :yes,           # Use median in sigma clipping algorithms?
-            'lsigma'     :3.0,           # Lower sigma clipping factor
-            'hsigma'     :3.0,           # Upper sigma clipping factor
-            'key_ron'    :'RDNOISE',     # Keyword for readout noise in e-
-            'key_gain'   :'GAIN',        # Keyword for gain in electrons/ADU
-            'ron'        :0.0,           # Readout noise rms in electrons
-            'gain'       :1.0,           # Gain in e-/ADU
-            'snoise'     :'0.0',         # ccdclip: Sensitivity noise (electrons
-            'sigscale'   :0.1,           # Tolerance for sigma clipping scaling correction                                
-            'pclip'      :-0.5,          # pclip: Percentile clipping parameter
-            'grow'       :0.0,           # Radius (pixels) for neighbor rejection
-            'bpmfile'    :'',            # Name of bad pixel mask file or image.
-            'nrejfile'   :'',            # Name of rejected pixel count image.
-            'sci_ext'    :'SCI',         # Name(s) or number(s) of science extension
-            'var_ext'    :'VAR',         # Name(s) or number(s) of variance extension
-            'dq_ext'     :'DQ',          # Name(s) or number(s) of data quality extension
-            'fl_vardq'   :no,            # Make variance and data quality planes?
-            'logfile'    :'',            # Log file
-            'fl_dqprop'  :no,            # Propagate all DQ values?
-            'verbose'    :yes,           # Verbose output?
-            'status'     :0,             # Exit status (0=good)
-            'Stdout'     :gemt.IrafStdout(),
-            'Stderr'     :gemt.IrafStdout()
-                       }
-        return defaultParams                                  
-
-    
-    
