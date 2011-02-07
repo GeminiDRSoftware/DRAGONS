@@ -886,18 +886,15 @@ def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', ver
                 adOut.historyMark(key='FLATCORR', stomp=False)   
                 
                 # Updating logger with new GEM-TLM value
-                log.fullinfo('************************************************'
-                             , category='header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
+                log.fullinfo('~'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header')
                 log.fullinfo('FLATCORR = '+adOut.phuGetKeyValue('FLATCORR'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')  
+                log.fullinfo('-'*50, category='header')  
                 
                 # Updating the file name with the postpend for this
                 # function and then reporting the new file 
@@ -1037,11 +1034,9 @@ def overscanTrim(adIns, outNames=None, postpend=None, logName='', verbose=1,
                     sciExt.header.update('TRIMSEC', datasecStr, 
                                        'Data section prior to trimming')
                     # Updating logger with updated/added keywords to each SCI frame
-                    log.fullinfo('********************************************'
-                                 , category='header')
+                    log.fullinfo('*'*50, category='header')
                     log.fullinfo('File = '+adOut.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                                 , category='header')
+                    log.fullinfo('~'*50, category='header')
                     log.fullinfo('SCI extension number '+str(sciExt.extver())+
                                  ' keywords updated/added:\n', 'header')
                     log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
@@ -1056,11 +1051,9 @@ def overscanTrim(adIns, outNames=None, postpend=None, logName='', verbose=1,
                 adOut.historyMark(key='OVERTRIM', stomp=False)                
                 
                 # Updating logger with updated/added keywords to the PHU
-                log.fullinfo('************************************************'
-                             , category='header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('file = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
+                log.fullinfo('~'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header') 
@@ -1127,11 +1120,14 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to have DQ extensions added to
+    @param adIns: Astrodata inputs to be combined
     @type adIns: Astrodata objects, either a single or a list of objects
     
-    @param fl_vardq: Make VAR and DQ frames?
-    @type fl_vardq: Python boolean (True/False)
+    @param fl_vardq: Create variance and data quality frames?
+    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+                    it automatically if there are VAR and DQ frames in the inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
+                        so, if the first does, then the rest MUST also have them as well.
     
     @param fl_dqprop: propogate the current DQ values?
     @type fl_dqprop: Python boolean (True/False)
@@ -1183,6 +1179,24 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 # loading and bringing the pyraf related modules into the name-space
                 pyraf, gemini, yes, no = pyrafLoader()
+                
+                # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
+                if fl_vardq=='AUTO':
+                    if isinstance(adIns,list):
+                        if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                            fl_vardq=yes
+                        else:
+                            fl_vardq=no
+                    else:
+                        if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                            fl_vardq=yes
+                        else:
+                            fl_vardq=no
+                else:
+                    if fl_vardq:
+                        fl_vardq=yes
+                    elif fl_vardq==False:
+                        fl_vardq=no
                 
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
@@ -1262,18 +1276,15 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     # to the PHU
                     adOut.historyMark(key='COMBINE',stomp=False)
                     # Updating logger with updated/added time stamps
-                    log.fullinfo('************************************************'
-                                 , category='header')
+                    log.fullinfo('*'*50, category='header')
                     log.fullinfo('file = '+adOut.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                                 , category='header')
+                    log.fullinfo('~'*50, category='header')
                     log.fullinfo('PHU keywords updated/added:\n', category='header')
                     log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                                  category='header')
                     log.fullinfo('COMBINE = '+adOut.phuGetKeyValue('COMBINE'), 
                                  category='header')
-                    log.fullinfo('------------------------------------------------'
-                                 , category='header')    
+                    log.fullinfo('-'*50, category='header')    
                 else:
                     log.critical('One of the inputs has not been prepared,\
                     the combine function can only work on prepared data.')
@@ -1291,7 +1302,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 
                 
-def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False, 
+def biasCorrect(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
                 outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
     """
     This function will subtract the biases from the inputs using the 
@@ -1309,7 +1320,7 @@ def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False,
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to have DQ extensions added to
+    @param adIns: Astrodata inputs to be bias subtracted
     @type adIns: Astrodata objects, either a single or a list of objects
     
     @param biases: The bias(es) to divide the input(s) by.
@@ -1318,8 +1329,9 @@ def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False,
                       same bias will be applied to all inputs; else the biases   
                       list must match the length of the inputs.
     
-    @param fl_vardq: Make VAR and DQ frames?
-    @type fl_vardq: Python boolean (True/False)
+    @param fl_vardq: Create variance and data quality frames?
+    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+                    it automatically if there are VAR and DQ frames in the input(s).
     
     @param fl_trim: Trim the overscan region from the frames?
     @type fl_trim: Python boolean (True/False)
@@ -1386,6 +1398,24 @@ def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False,
                     outName = outNames[0]
                 else:
                     outName = None
+                
+                # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
+                if fl_vardq=='AUTO':
+                    if isinstance(adIns,list):
+                        if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                            fl_vardq=yes
+                        else:
+                            fl_vardq=no
+                    else:
+                        if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                            fl_vardq=yes
+                        else:
+                            fl_vardq=no
+                else:
+                    if fl_vardq:
+                        fl_vardq=yes
+                    elif fl_vardq==False:
+                        fl_vardq=no
                 
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
@@ -1484,11 +1514,9 @@ def biasCorrect(adIns, biases=None,fl_vardq=True, fl_trim=False, fl_over=False,
                     adOut.phuSetKeyValue('BIASIM', os.path.basename(processedBias)) 
                     
                     # Updating log with new GEM-TLM value and BIASIM header keys
-                    log.fullinfo('************************************************'
-                                 , category='header')
+                    log.fullinfo('*'*50, category='header')
                     log.fullinfo('File = '+adOut.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                                 , category='header')
+                    log.fullinfo('~'*50, category='header')
                     log.fullinfo('PHU keywords updated/added:\n', 'header')
                     log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                                  category='header')
@@ -1543,7 +1571,7 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to have DQ extensions added to
+    @param adIns: Astrodata inputs to mosaic the extensions of
     @type adIns: Astrodata objects, either a single or a list of objects
     
     @param fl_paste: Paste images instead of mosaic?
@@ -1610,6 +1638,11 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
                         fl_vardq=yes
                     else:
                         fl_vardq=no
+            else:
+                if fl_vardq:
+                    fl_vardq=yes
+                elif fl_vardq==False:
+                    fl_vardq=no
             
             # To clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    
@@ -1682,8 +1715,7 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
                 # Wrap up logging
                 i=0
                 for ad in adOuts:
-                    log.fullinfo('-----------------------------------------------'
-                                 , category='header')
+                    log.fullinfo('-'*50, category='header')
                     
                     # Varifying gireduce was actually ran on the file
                     # then logging file names of successfully reduced files
@@ -1696,11 +1728,9 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
                     ad.historyMark(key='MOSAIC', stomp=False)  
                     
                     # Updating logger with new GEM-TLM value
-                    log.fullinfo('************************************************'
-                                 , category='header')
+                    log.fullinfo('*'*50, category='header')
                     log.fullinfo('File = '+ad.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                                 , category='header')
+                    log.fullinfo('~'*50, category='header')
                     log.fullinfo('PHU keywords updated/added:\n', category='header')
                     log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                                  category='header')
@@ -1722,6 +1752,213 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
         return adOuts
     except:
         raise ('An error occurred while trying to run mosaicDetectors') 
+                
+                
+def normalizeFlat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
+                outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+    """
+    This function will combine the input flats (adIns) and then normalize them 
+    using the CL script giflat.
+    
+    WARNING: The giflat script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the giflat
+    with a Python routine to do the bias subtraction.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    @param adIns: Astrodata input flat(s) to be combined and normalized
+    @type adIns: Astrodata objects, either a single or a list of objects
+    
+    @param fl_trim: Trim the overscan region from the frames?
+    @type fl_trim: Python boolean (True/False)
+    
+    @param fl_over: Subtract the overscan level from the frames?
+    @type fl_over: Python boolean (True/False)
+    
+    @param fl_vardq: Create variance and data quality frames?
+    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+                    it automatically if there are VAR and DQ frames in the inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
+                        so, if the first does, then the rest MUST also have them as well.
+    
+    @param outNames: filenames of output(s)
+    @type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    @param postpend: string to postpend on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    @type postpend: string
+    
+    @param logName: Name of the log file, default is 'gemini.log'
+    @type logName: string
+    
+    @param verbose: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of verbose setting, all messages always go 
+                          to the logfile if it is not turned off.
+    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    @param noLogFile: A boolean to make it so no log file is created
+    @type noLogFile: Python boolean (True/False)
+    """
+    
+    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+
+    log.status('**STARTING** the normalizeFlat function')
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(adIns,list) and isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "postpend" was passed in')
+    
+    try:
+        if adIns!=None: 
+            # loading and bringing the pyraf related modules into the name-space
+            pyraf, gemini, yes, no = pyrafLoader()  
+                
+            # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
+            if fl_vardq=='AUTO':
+                if isinstance(adIns,list):
+                    if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                        fl_vardq=yes
+                    else:
+                        fl_vardq=no
+                else:
+                    if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                        fl_vardq=yes
+                    else:
+                        fl_vardq=no
+            else:
+                if fl_vardq:
+                    fl_vardq=yes
+                elif fl_vardq==False:
+                    fl_vardq=no
+            
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
+            
+            # Preparing input files, lists, parameters... for input to 
+            # the CL script
+            clm=gemt.CLManager(adIns=adIns, outNames=outNames, postpend=postpend, funcName='normalizeFlat')
+            
+            # Check the status of the CLManager object, True=continue, False= issue warning
+            if clm.status:                 
+                
+                # Creating a dictionary of the parameters set by the gemt.CLManager 
+                # or the definition of the function 
+                clPrimParams = {
+                  'inflats'     :clm.inputList(),
+                  # Maybe allow the user to override this in the future
+                  'outflat'     :clm.combineOutname(), 
+                  # This returns a unique/temp log file for IRAF  
+                  'logfile'     :clm.logfile(),         
+                  # This is actually in the default dict but wanted to show it again
+                  'Stdout'      :gemt.IrafStdout(),   
+                  # This is actually in the default dict but wanted to show it again  
+                  'Stderr'      :gemt.IrafStdout(), 
+                  # This is actually in the default dict but wanted to show it again    
+                  'verbose'     :yes                    
+                              }
+                # Creating a dictionary of the parameters from the function call 
+                # adjustable by the user
+                clSoftcodedParams = {
+                   'fl_vardq'   :fl_vardq,
+                   'fl_over'    :gemt.pyrafBoolean(fl_over),
+                   'fl_trim'    :gemt.pyrafBoolean(fl_trim)
+                                   }
+                # Grabbing the default params dict and updating it 
+                # with the two above dicts
+                clParamsDict = CLDefaultParamsDict('giflat')
+                clParamsDict.update(clPrimParams)
+                clParamsDict.update(clSoftcodedParams)
+                
+                # Logging the parameters that were not defaults
+                log.fullinfo('\nParameters set automatically:', 
+                             category='parameters')
+                # Loop through the parameters in the clPrimParams dictionary
+                # and log them
+                gemt.logDictParams(clPrimParams)
+                
+                log.fullinfo('\nParameters adjustable by the user:', 
+                             category='parameters')
+                # Loop through the parameters in the clSoftcodedParams 
+                # dictionary and log them
+                gemt.logDictParams(clSoftcodedParams)
+                
+                log.debug('Calling the giflat CL script for inputs list '+
+                      clm.inputList())
+            
+                gemini.giflat(**clParamsDict)
+                
+                if gemini.giflat.status:
+                    log.critical('giflat failed for inputs '+
+                                 clm.inputsAsStr())
+                    raise ('giflat failed')
+                else:
+                    log.status('Exited the giflat CL script successfully')
+                
+                # Renaming CL outputs and loading them back into memory 
+                # and cleaning up the intermediate temp files written to disk
+                adOuts = clm.finishCL(combine=True) 
+            
+                # There is only one at this point so no need to perform a loop
+                # CLmanager outputs a list always, so take the 0th
+                adOut = adOuts[0]
+                
+                # Adding GEM-TLM (automatic) and GIFLAT time stamps to the PHU
+                adOut.historyMark(key='GIFLAT', stomp=False)
+                
+                # Updating log with new GEM-TLM and GIFLAT time stamps
+                log.fullinfo('*'*50, category='header')
+                log.fullinfo('File = '+adOut.filename, category='header')
+                log.fullinfo('~'*50, category='header')
+                log.fullinfo('PHU keywords updated/added:\n', 'header')
+                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('GIFLAT = '+adOut.phuGetKeyValue('GIFLAT'), 
+                             category='header')
+                log.fullinfo('-'*50, category='header')     
+                
+            else:
+                log.critical('One of the inputs has not been prepared,\
+                the normalizeFlat function can only work on prepared data.')
+                raise('One of the inputs was not prepared')
+                
+        else:
+            log.critical('The parameter "adIns" must not be None')
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the normalizeFlat function')
+        
+        # Return the outputs (list or single, matching adIns)
+        return adOuts
+    except:
+        raise #('An error occurred while trying to run normalizeFlat') 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 
                 
                 
