@@ -105,14 +105,6 @@
                           'type': 'str',
                           'userOverride':False    
                            },
-                          'fl_bias':
-                          {
-                           'default': False , 
-                          'recipeOverride': False,
-                          'type': 'bool',
-                          'userOverride':False, 
-                          'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-                           }
                           },
                                                    
         'overscanSubtract':{'fl_trim':
