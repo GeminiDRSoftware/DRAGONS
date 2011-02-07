@@ -392,86 +392,20 @@ class GMOSPrimitives(GEMINIPrimitives):
         pyraf, gemini, yes, no = pyrafLoader()
         
         try:
-            
             log.status('*STARTING* to combine and normalize the input flats')
-            # Writing input files to disk with prefixes onto their file names 
-            # so they can be deleted later easily 
-            clm = gemt.CLManager(rc)
-            #clm.LogCurParams()
-            #log.critical('prim_Gmos575: '+rc.inputsAsStr())
-            # Creating a dictionary of the parameters set by the gemt.CLManager 
-            # or the definition of the prim 
-            clPrimParams = {
-              'inflats'     :clm.inputList(),
-              # Maybe allow the user to override this in the future
-              'outflat'     :clm.combineOutname(), 
-              # This returns a unique/temp log file for IRAF  
-              'logfile'     :clm.logfile(),         
-              # This is actually in the default dict but wanted to show it again
-              'Stdout'      :gemt.IrafStdout(),   
-              # This is actually in the default dict but wanted to show it again  
-              'Stderr'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again    
-              'verbose'     :yes                    
-                          }
-            # Creating a dictionary of the parameters from the Parameter file 
-            # adjustable by the user
-            clSoftcodedParams = {
-               'fl_bias'    :rc['fl_bias'],
-               'fl_vardq'   :rc['fl_vardq'],
-               'fl_over'    :rc['fl_over'],
-               'fl_trim'    :rc['fl_trim']
-                               }
-            # Grabbing the default params dict and updating it 
-            # with the two above dicts
-            clParamsDict = CLDefaultParamsDict('giflat')
-            clParamsDict.update(clPrimParams)
-            clParamsDict.update(clSoftcodedParams)
             
-            # Logging the values in the soft and prim parameter dictionaries
-            log.fullinfo('\nParameters set by the CLManager or dictated by '+
-                         'the definition of the primitive:\n', 
-                         category='parameters')
-            gemt.LogDictParams(clPrimParams)
-            log.fullinfo('\nUser adjustable parameters in the parameters '+
-                         'file:\n', category='parameters')
-            gemt.LogDictParams(clSoftcodedParams)
+            log.debug('Calling geminiScience.normalizeFlat function')
             
-            log.debug('Calling the giflat CL script for inputs list '+
-                      clm.inputList())
+            adOuts = geminiScience.normalizeFlat(adIns=rc.getInputs(style='AD'), 
+                                        fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
+                                        fl_vardq='AUTO', postpend=rc['postpend'], 
+                                        verbose=rc['logVerbose'])           
             
-            gemini.giflat(**clParamsDict)
-            
-            if gemini.giflat.status:
-                log.critical('giflat failed for '+rc.inputsAsStr())
-                raise GMOSException('giflat failed')
-            else:
-                log.status('Exited the giflat CL script successfully')
+            log.status('geminiScience.normalizeFlat completed successfully')
                 
-            # Renaming CL outputs and loading them back into memory, and 
-            # cleaning up the intermediate tmp files written to disk
-            clm.finishCL(combine=True) 
-            
-            # There is only one after above combination, so no need to perform a loop
-            ad = rc.getOutputs(style='AD')[0] 
-            
-            # Adding GEM-TLM (automatic) and GIFLAT time stamps to the PHU
-            ad.historyMark(key='GIFLAT', stomp=False)
-            
-            # Updating log with new GEM-TLM and GIFLAT time stamps
-            log.fullinfo('****************************************************'
-                         , category='header')
-            log.fullinfo('File = '+ad.filename, category='header')
-            log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                         , category='header')
-            log.fullinfo('PHU keywords updated/added:\n', 'header')
-            log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                         category='header')
-            log.fullinfo('GIFLAT = '+ad.phuGetKeyValue('GIFLAT'), 
-                         category='header')
-            log.fullinfo('----------------------------------------------------'
-                         , category='header')       
-                
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)
+        
             log.status('*FINISHED* combining and normalizing the input flats')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
