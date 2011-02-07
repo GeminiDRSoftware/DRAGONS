@@ -1501,7 +1501,7 @@ def biasCorrect(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False
                     # Varifying gireduce was actually ran on the file
                     # then logging file names of successfully reduced files
                     if adOut.phuGetKeyValue('GIREDUCE'): 
-                        log.fullinfo('File '+clm.preCLNames()[0]+
+                        log.fullinfo('\nFile '+clm.preCLNames()[0]+
                                      ' was bias subracted successfully')
                         log.fullinfo('New file name is: '+adOut.filename)
       
@@ -1559,10 +1559,10 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
     This function will mosaic the SCI frames of the input images, 
     along with the VAR and DQ frames if they exist.  
     
-    WARNING: The gireduce script used here replaces the previously 
+    WARNING: The gmosaic script used here replaces the previously 
     calculated DQ frames with its own versions.  This may be corrected 
-    in the future by replacing the use of the gireduce
-    with a Python routine to do the bias subtraction.
+    in the future by replacing the use of the gmosaic
+    with a Python routine to do the frame mosaicing.
     
     NOTE: The inputs to this function MUST be prepared. 
 
@@ -1720,7 +1720,7 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
                     # Varifying gireduce was actually ran on the file
                     # then logging file names of successfully reduced files
                     if ad.phuGetKeyValue('GMOSAIC'): 
-                        log.fullinfo('file '+clm.preCLNames()[i]+\
+                        log.fullinfo('\nFile '+clm.preCLNames()[i]+\
                                      ' mosaiced successfully')
                         log.fullinfo('New file name is: '+ad.filename)
                     i=i+1
@@ -1763,7 +1763,7 @@ def normalizeFlat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     WARNING: The giflat script used here replaces the previously 
     calculated DQ frames with its own versions.  This may be corrected 
     in the future by replacing the use of the giflat
-    with a Python routine to do the bias subtraction.
+    with a Python routine to do the flat normalizing.
     
     NOTE: The inputs to this function MUST be prepared. 
 
@@ -1943,21 +1943,9 @@ def normalizeFlat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise #('An error occurred while trying to run normalizeFlat') 
+        raise ('An error occurred while trying to run normalizeFlat') 
                 
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
+                       
                 
                 
                 
