@@ -510,25 +510,31 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # reduced to a certain point (~gscut), so the descriptor function
         # should return None if the data is RAW, etc and the true value
         # when it is past the given data reduction point - TO BE DONE!
-        if asList:
-            ret_mdf_row_id = []
-            if dataset.countExts('SCI') <= 1:
-                hdu = dataset.hdulist
-                mdf_row_id = \
-                    hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
-                ret_mdf_row_id.append(mdf_row_id)
-            else:
-                for ext in dataset:
+        
+        # FIRST check if the images is prepared, or not an image
+        if ('IMAGE' not in dataset.types) or ('PREPARED' in dataset.types):
+            if asList:
+                ret_mdf_row_id = []
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
                     mdf_row_id = \
-                        ext.header[globalStdkeyDict['key_mdf_row_id']]
+                        hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
                     ret_mdf_row_id.append(mdf_row_id)
-        else:
-            if dataset.countExts('SCI') <= 1:
-                hdu = dataset.hdulist
-                mdf_row_id = hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
-                ret_mdf_row_id = int(mdf_row_id)
+                else:
+                    for ext in dataset:
+                        mdf_row_id = \
+                            ext.header[globalStdkeyDict['key_mdf_row_id']]
+                        ret_mdf_row_id.append(mdf_row_id)
             else:
-                raise Errors.DescriptorListError()
+                if dataset.countExts('SCI') <= 1:
+                    hdu = dataset.hdulist
+                    print repr(hdu)#$$$$$$
+                    mdf_row_id = hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
+                    ret_mdf_row_id = int(mdf_row_id)
+                else:
+                    raise Errors.DescriptorListError()
+        else:
+            ret_mdf_row_id = None
         
         return ret_mdf_row_id
     
