@@ -49,8 +49,15 @@ parser.add_option("-t", "--typewalk", dest="twdir", default =".",
         help="Recursively walk given directory and put type information to stdout.")
 parser.add_option("-o", "--only", dest="only", default="all",
         help= "Choose only certain types to find, list multiple types separated by commas with NO WHITESPACE.")
-parser.add_option("-v", "--showdescriptors", dest="showdescriptors", default=None,
-        help = "Show descriptors listed, separate with commas and NO WHITESPACE" )
+parser.add_option("-v", "--showdescriptors", dest="showdescriptors",
+        default=None,
+        help = """Show descriptors listed. User should separate descriptor names
+with commas and NO WHITESPACE. The "-l" option can be used to show available
+descriptor names. Special values "all" and "err" can be used instead of
+descriptor names.  The "all" argument shows all descriptors and "err" argument
+shows all
+descriptors that are failing (for descriptor debugging).
+""" )
 parser.add_option("-l", "--listdescriptors", dest="listdescriptors", action="store_true",
         help = "Lists available descriptors")
 parser.add_option("-p", "--printheader", metavar="PHEADLIST", dest="pheads", default=None,

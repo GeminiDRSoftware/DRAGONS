@@ -60,6 +60,9 @@ class ADExcept:
 class ADNOTFOUND(ADExcept):
     pass
     
+class ADREADONLY(ADExcept):
+    pass
+    
 class SingleHDUMemberExcept(ADExcept):
     def __init__(self, msg=None):
         if msg == None:
@@ -155,7 +158,7 @@ integrates other functionality.
     types = None
     typesStatus = None
     typesTypology = None
-    filename = None
+    _filename = None
     __origFilename = None
     url = None # if retrieved
     hdulist = None
@@ -478,6 +481,17 @@ integrates other functionality.
         
         # print "AD298: copy?"
     
+    def getFilename(self):
+        return self._filename
+    def setFilename(self, newfn):
+        if self.mode == "readonly":
+            self.mode = "update"
+        self._filename = newfn
+
+    filename = property(getFilename, setFilename, None, "The filename member is "
+                "monitored so that the mode can be changed from readonly when the "
+                "filename is changed.")
+    
     def append(self, moredata=None, data=None, header=None):
         """
         :param moredata: either an AstroData instance, an HDUList instance, 
@@ -594,9 +608,12 @@ integrates other functionality.
         """
         if not asHTML:
             rets = ""
+            rets += self.filename+"\n"
             for ext in self:
-                rets += "id =",id(ext.hdulist[1]), "\n"
-                rets += "    ", ext.extname(), ext.extver(), "\n"
+                rets += "\tid of (%(nam)s,%(ver)s) = %(id)s\n" % {
+                    "nam":str(ext.extname()),
+                    "ver":str(ext.extver()),
+                    "id":id(ext.hdulist[1])}
         else:
             rets="<b>Extension List</b>: %d in file" % len(self)
             rets+="<ul>"
@@ -854,13 +871,13 @@ integrates other functionality.
         HDU class members which are not updated. 
         
         :warning: This function maniplates private (or somewhat private)  HDU
-            members, specifically "name" and "_extver". STSCI has been informed of the issue and
+            members, specifically "name" and "_extver". STSCI has bee
+n informed of the issue and
             has made a special HDU function for performing the renaming. 
             When generally available, this new function will be used instead of
             manipulating the  HDU's properties directly, and this function will 
             call the new pyfits.HDUList(..) function.
         """
-            
         # @@TODO: change to use STSCI provided function.
         
         if force != True and self.borrowedHDUList:
@@ -896,6 +913,7 @@ integrates other functionality.
         
         :type source: string | AstroData | pyfits.HDUList
         
+
         :param mode: IO access mode, same as the pyfits open mode, "readonly,
                      "update", or "append".  The mode is passed to pyfits so
                      if it is an illegal mode name, pyfits will be the subsystem
@@ -960,6 +978,7 @@ integrates other functionality.
                             os.remove(self.filename)
                         mode = 'append'
                     self.hdulist = pyfits.open(self.filename, mode = mode)
+                    self.mode = mode
 		    #print "AD591:", self.hdulist[1].header["EXTNAME"]
                     #print "AD543: opened with pyfits", len(self.hdulist)
                 except IOError:
@@ -1031,6 +1050,13 @@ integrates other functionality.
         throws an exception if the file already exists.
 
         """
+        if filename != None:
+            self.filename = filename
+        if (self.mode == "readonly"):
+            raise ADREADONLY("Cannot use AstroData.write(..) on this instance, "
+                             "file opened in readonly mode, either open for "
+                             "update/writing or rename the file.")
+
         fname = filename
         hdul = self.gethdul()
         if fname == None:
