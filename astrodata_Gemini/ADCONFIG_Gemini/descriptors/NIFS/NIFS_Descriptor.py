@@ -271,31 +271,31 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     def read_mode(self, dataset, **args):
         """
         Return the read_mode value for NIFS
-        Returns the following values as defined in the OT: "Faint Object", "Medium Object", "Bright Object"
-        Returns "Invalid" if the headers dont make sense wrt these definitions
+        Returns the following values as defined in the OT: 'Faint Object',
+        'Medium Object', 'Bright Object'. Returns 'Invalid' if the headers
+        don't make sense wrt these definitions
         @param dataset: the data set
         @type dataset: AstroData
-        @rtype: float
-        @returns: the read_mode string
+        @rtype: string
+        @returns: the read mode
         """
         hdu = dataset.hdulist
         lnrs = hdu[0].header[stdkeyDictNIFS['key_lnrs']]
         headerbias = hdu[0].header[stdkeyDictNIFS['key_bias']]
-
+        
         read_mode = 'Invalid'
-
+        
         if lnrs == 1:
             read_mode = 'Bright Object'
-
+        
         if lnrs == 4:
             read_mode = 'Medium Object'
-
+        
         if lnrs == 16:
             read_mode = 'Faint Object'
-
+        
         return read_mode
-
-
+    
     def read_noise(self, dataset, **args):
         """
         Return the read_noise value for NIFS
