@@ -1,6 +1,7 @@
 from astrodata import Lookups
 from astrodata import Descriptors
 import math
+import re
 
 from astrodata.Calculator import Calculator
 
@@ -39,89 +40,37 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_central_wavelength
     
-    def grating(self, dataset, stripID=False, pretty=False, **args):
+    def decker(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the grating value for GNIRS
+        Return the decker value for GNIRS
+        In GNIRS, the decker is used to basically mask off the ends of the
+        slit to create the short slits used in the cross dispersed modes.
         @param dataset: the data set
         @type dataset: AstroData
-        @param stripID: set to True to strip the component ID from the
-        returned disperser name
-        @param pretty: set to True to return a human readable grating name. In this case, this is the same as stripID
+        @param stripID: set to True to remove the component ID from the
+        returned decker names
+        @param pretty: set to True to return a human meaningful decker name
         @rtype: string
-        @return: the grating used to acquire the data
-
-        Note. A CC software change approx July 2010 changed the grating names to also include the 
-        camera, eg 32/mmSB_G5533 indicates the 32/mm grating with the Short Blue camera.
-        This is unhelpful as if we wanted to know the camera, we'd call the camera descriptor.
-        Thus, this descriptor function repairs the header values to only list the grating.
+        @return: the decker postition used to acquire the data
         """
-        import re
         hdu = dataset.hdulist
-        string = hdu[0].header[stdkeyDictGNIRS['key_grating']]
-
-        # The format of the grating string is currently (2011) nnn/mmCAM_Gnnnn
-        # nnn is a 2 or 3 digit number (lines per mm)
-        # /mm is literally '/mm'
-        # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
-        # _G is literally '_G'
-        # nnnn is the 4 digit component ID.
-
-        cre = re.compile('([\d/m]+)([A-Z]*)(_G)(\d+)')
-        m = cre.match(string)
-     
-        grating = string
-        if(m):
-            parts = m.groups()
-            grating = parts[0] + parts[2] + parts[3]
-
-        if(stripID or pretty):
-            grating = str(GemCalcUtil.removeComponentID(grating))
+        decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
         
-        return grating
-
-
-    def prism(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the prism value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to strip the component ID from the
-        returned disperser name
-        @param pretty: set to True to return a human readable prism name. In this case, this is the same as stripID
-        @rtype: string
-        @return: the prism used to acquire the data
-
-        Note. A CC software change approx July 2010 changed the prism names to also include the 
-        camera, eg 32/mmSB_G5533 indicates the 32/mm grating with the Short Blue camera.
-        This is unhelpful as if we wanted to know the camera, we'd call the camera descriptor.
-        Thus, this descriptor function repairs the header values to only list the prism.
-        """
-        import re
-        hdu = dataset.hdulist
-        string = hdu[0].header[stdkeyDictGNIRS['key_prism']]
-
-        # The format of the prism string is currently (2011) [CAM+]prism_Gnnnn
-        # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
-        # + is a literal '+'
-        # prism is the actual prism name
-        # nnnn is the 4 digit component ID.
-
-        cre = re.compile('([LBSR]*\+)*([A-Z]*)(_G)(\d+)')
-        m = cre.match(string)
-
-        prism = string
-        if(m):
-            parts = m.groups()
-            prism = parts[1] + parts[2] + parts[3]
-
-        if(stripID or pretty):
-            prism = str(GemCalcUtil.removeComponentID(prism))
-
-        return prism
-
+        if pretty:
+            stripID=True
+        
+        if stripID:
+            decker = GemCalcUtil.removeComponentID(decker)
+        
+        return decker
+    
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for GNIRS
+        Note that GNIRS contains two dispersers - the grating and the prism.
+        This descriptor will combine the two with '&'. Sometimes the 'prism'
+        is a mirror, in which case we don't list it in the human readable
+        pretty string.
         @param dataset: the data set
         @type dataset: AstroData
         @param stripID: set to True to strip the component ID from the
@@ -129,24 +78,18 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         @param pretty: set to True to return a human meaningful disperser name
         @rtype: string
         @return: the dispersers used to acquire the data
-
-        Note that GNIRS contains two dispersers - the grating and the prism.
-        This descriptor will combine the two with '&'
-        Sometimes the "prism" is a mirror, in which case we don't list it in
-        the human readable pretty string.
         """
-
         if pretty:
-          stripID=True
-
-        grating = self.grating(dataset, stripID, pretty)
-        prism = self.prism(dataset, stripID, pretty)
+            stripID=True
         
-        if(pretty and prism[0:3]=='MIR'):
+        grating = self.grating(dataset=dataset, stripID=stripID, pretty=pretty)
+        prism = self.prism(dataset=dataset, stripID=stripID, pretty=pretty)
+        
+        if (pretty and prism[0:3]=='MIR'):
             disperser = grating
         else:
             disperser = grating + '&' + prism
-
+        
         return disperser
     
     def exposure_time(self, dataset, **args):
@@ -214,146 +157,39 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_filter_name
     
-    def slit(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the slit value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID
-        @param pretty: set to True to return a human readable
-        @rtype: string
-        @return: the slit used to acquire the data
-
-        Note that in GNIRS all the slits are machined into one physical piece
-        of metal, which is on a slide - the mechanism simply slides the slide
-        along to put the right slit in the beam. Thus all the slits have the
-        same componenet ID as they're they same physical compononet.
-        """
-        hdu = dataset.hdulist
-        slit = hdu[0].header[stdkeyDictGNIRS['key_slit']]
-        
-        if pretty:
-            stripID=True
-
-        if stripID:
-            slit = GemCalcUtil.removeComponentID(slit)
-
-        return slit
-    
-    def decker(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the decker value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID
-        @param pretty: set to True to return a human readable
-        @rtype: string
-        @return: the decker postition used to acquire the data
-
-
-        In GNIRS, the decker is used to basically mask off the ends of the
-        slit to create the short slits used in the cross dispersed modes.
-        """
-        hdu = dataset.hdulist
-        decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
-
-        if pretty:
-            stripID=True
-
-        if stripID:
-            decker = GemCalcUtil.removeComponentID(decker)
-
-        return decker
-
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the focal_plane_mask value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component IDs
-        @param pretty: set to True to return a human readable
-        @rtype: string
-        @return: the focal plane mask used to acquire the data
-
         Note that in GNIRS, the focal plane mask is the combination of the slit
         mechanism and the decker mechanism. 
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to remove the component IDs from the
+        returned focal_plane_mask names
+        @param pretty: set to True to return a human meaningful
+        focal_plane_mask name
+        @rtype: string
+        @return: the focal plane mask used to acquire the data
         """
-
         if pretty:
             stripID=True
-
-        slit = self.slit(dataset = dataset, stripID=stripID, pretty=pretty)
-        decker = self.decker(dataset = dataset, stripID=stripID, pretty=pretty)
-
+        
+        slit = self.slit(dataset=dataset, stripID=stripID, pretty=pretty)
+        decker = self.decker(dataset=dataset, stripID=stripID, pretty=pretty)
+        
         fpmask = slit + '&' + decker
-
+        
         if pretty:
-          # For pretty output, disregard the decker if it's in long slit mode
-          if decker.count('Long'):
-              fpmask = slit
-          # For pretty output, simply append XD to the slit name if the decker is in XD
-          if decker.count('XD'):
-              fpmask = slit + 'XD'
-
+            # For pretty output, disregard the decker if it's in long slit mode
+            if decker.count('Long'):
+                fpmask = slit
+            # For pretty output, simply append XD to the slit name if the
+            # decker is in XD
+            if decker.count('XD'):
+                fpmask = slit + 'XD'
+        
         return fpmask
-
-
-    def read_mode(self, dataset, **args):
-        """
-        Return the read_mode value for GNIRS
-        This is either "Very Bright Objects", "Bright Objects", "Faint Objects" or "Very Faint Objects" in the OT.
-        Returns "Invalid" if the headers don't make sense wrt these defined modes
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the read mode used to acquire the data
-        """
-
-        hdu = dataset.hdulist
-        lnrs = hdu[0].header[stdkeyDictGNIRS['key_lnrs']]
-        ndavgs = hdu[0].header[stdkeyDictGNIRS['key_ndavgs']]
-
-        read_mode = 'Invalid'
-
-        if lnrs == 32 and ndavgs == 16:
-          read_mode = 'Very Faint Objects'
-
-        if lnrs == 16 and ndavgs == 16:
-          read_mode = 'Faint Objects'
-
-        if lnrs == 1 and ndavgs == 16:
-          read_mode = 'Bright Objects'
-
-        if lnrs == 1 and ndavgs == 1:
-          read_mode = 'Very Bright Objects'
-
-        return read_mode
-
-    def well_depth_mode(self, dataset, **args):
-        """
-        Return the well_depth_mode value for GNIRS
-        This is either "Shallow" or "Deep" in the OT.
-        Returns "Invalid" if the headers don't make sense wrt these defined modes
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the well depth mode used to acquire the data
-        """
-
-        hdu = dataset.hdulist
-        biasvoltage = hdu[0].header[stdkeyDictGNIRS['key_bias']]
-        
-        well_depth_mode = 'Invalid'
-
-        if(abs(biasvoltage+0.3) < 0.1):
-            well_depth_mode = 'Deep'
-
-        if(abs(biasvoltage+0.6) < 0.1):
-            well_depth_mode = 'Shallow'
-        
-        return well_depth_mode
-
-
+    
     def gain(self, dataset, **args):
         """
         Return the gain value for GNIRS
@@ -381,6 +217,47 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_gain
     
     gnirsArrayDict = None
+    
+    def grating(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the grating value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to strip the component ID from the
+        returned grating name
+        @param pretty: set to True to return a human meaningful grating name.
+        In this case, this is the same as stripID
+        @rtype: string
+        @return: the grating used to acquire the data
+
+        Note. A CC software change approx July 2010 changed the grating names
+        to also include the camera, eg 32/mmSB_G5533 indicates the 32/mm
+        grating with the Short Blue camera. This is unhelpful as if we wanted
+        to know the camera, we'd call the camera descriptor. Thus, this
+        descriptor function repairs the header values to only list the grating.
+        """
+        hdu = dataset.hdulist
+        string = hdu[0].header[stdkeyDictGNIRS['key_grating']]
+        
+        # The format of the grating string is currently (2011) nnn/mmCAM_Gnnnn
+        # nnn is a 2 or 3 digit number (lines per mm)
+        # /mm is literally '/mm'
+        # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
+        # _G is literally '_G'
+        # nnnn is the 4 digit component ID.
+        
+        cre = re.compile('([\d/m]+)([A-Z]*)(_G)(\d+)')
+        m = cre.match(string)
+        
+        grating = string
+        if m:
+            parts = m.groups()
+            grating = parts[0] + parts[2] + parts[3]
+        
+        if (stripID or pretty):
+            grating = str(GemCalcUtil.removeComponentID(grating))
+        
+        return grating
     
     def non_linear_level(self, dataset, **args):
         """
@@ -464,6 +341,77 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     gnirsConfigDict = None
     
+    def prism(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the prism value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to strip the component ID from the
+        returned prism name
+        @param pretty: set to True to return a human meaningful prism name. In
+        this case, this is the same as stripID
+        @rtype: string
+        @return: the prism used to acquire the data
+
+        Note. A CC software change approx July 2010 changed the prism names to
+        also include the camera, eg 32/mmSB_G5533 indicates the 32/mm grating
+        with the Short Blue camera. This is unhelpful as if we wanted to know
+        the camera, we'd call the camera descriptor. Thus, this descriptor
+        function repairs the header values to only list the prism.
+        """
+        hdu = dataset.hdulist
+        string = hdu[0].header[stdkeyDictGNIRS['key_prism']]
+        
+        # The format of the prism string is currently (2011) [CAM+]prism_Gnnnn
+        # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
+        # + is a literal '+'
+        # prism is the actual prism name
+        # nnnn is the 4 digit component ID.
+        
+        cre = re.compile('([LBSR]*\+)*([A-Z]*)(_G)(\d+)')
+        m = cre.match(string)
+        
+        prism = string
+        if m:
+            parts = m.groups()
+            prism = parts[1] + parts[2] + parts[3]
+        
+        if (stripID or pretty):
+            prism = str(GemCalcUtil.removeComponentID(prism))
+        
+        return prism
+    
+    def read_mode(self, dataset, **args):
+        """
+        Return the read_mode value for GNIRS
+        This is either 'Very Bright Objects', 'Bright Objects',
+        'Faint Objects' or 'Very Faint Objects' in the OT. Returns 'Invalid'
+        if the headers don't make sense wrt these defined modes
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @return: the read mode used to acquire the data
+        """
+        hdu = dataset.hdulist
+        lnrs = hdu[0].header[stdkeyDictGNIRS['key_lnrs']]
+        ndavgs = hdu[0].header[stdkeyDictGNIRS['key_ndavgs']]
+        
+        read_mode = 'Invalid'
+        
+        if lnrs == 32 and ndavgs == 16:
+            read_mode = 'Very Faint Objects'
+        
+        if lnrs == 16 and ndavgs == 16:
+            read_mode = 'Faint Objects'
+        
+        if lnrs == 1 and ndavgs == 16:
+            read_mode = 'Bright Objects'
+        
+        if lnrs == 1 and ndavgs == 1:
+            read_mode = 'Very Bright Objects'
+        
+        return read_mode
+    
     def read_noise(self, dataset, **args):
         """
         Return the read_noise value for GNIRS
@@ -524,3 +472,52 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_saturation_level
     
     gnirsArrayDict = None
+    
+    def slit(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the slit value for GNIRS
+        @param dataset: the data set
+        @type dataset: AstroData
+        @param stripID: set to True to remove the component ID
+        @param pretty: set to True to return a human readable
+        @rtype: string
+        @return: the slit used to acquire the data
+
+        Note that in GNIRS all the slits are machined into one physical piece
+        of metal, which is on a slide - the mechanism simply slides the slide
+        along to put the right slit in the beam. Thus all the slits have the
+        same componenet ID as they're they same physical compononet.
+        """
+        hdu = dataset.hdulist
+        slit = hdu[0].header[stdkeyDictGNIRS['key_slit']]
+        
+        if pretty:
+            stripID=True
+        
+        if stripID:
+            slit = GemCalcUtil.removeComponentID(slit)
+        
+        return slit
+    
+    def well_depth_mode(self, dataset, **args):
+        """
+        Return the well_depth_mode value for GNIRS
+        This is either 'Shallow' or 'Deep' in the OT. Returns 'Invalid' if the
+        headers don't make sense wrt these defined modes
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @return: the well depth mode used to acquire the data
+        """
+        hdu = dataset.hdulist
+        biasvoltage = hdu[0].header[stdkeyDictGNIRS['key_bias']]
+        
+        well_depth_mode = 'Invalid'
+        
+        if abs(biasvoltage + 0.3) < 0.1:
+            well_depth_mode = 'Deep'
+        
+        if abs(biasvoltage + 0.6) < 0.1:
+            well_depth_mode = 'Shallow'
+        
+        return well_depth_mode
