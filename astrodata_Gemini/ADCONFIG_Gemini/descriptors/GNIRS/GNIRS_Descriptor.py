@@ -54,7 +54,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         @return: the decker postition used to acquire the data
         """
         hdu = dataset.hdulist
-        decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
+        decker = hdu[0].header[globalStdkeyDict['key_decker']]
         
         if pretty:
             stripID=True
@@ -237,7 +237,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         descriptor function repairs the header values to only list the grating.
         """
         hdu = dataset.hdulist
-        string = hdu[0].header[stdkeyDictGNIRS['key_grating']]
+        string = hdu[0].header[globalStdkeyDict['key_grating']]
         
         # The format of the grating string is currently (2011) nnn/mmCAM_Gnnnn
         # nnn is a 2 or 3 digit number (lines per mm)
@@ -302,9 +302,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         @return: the observing mode
         """
         hdu = dataset.hdulist
-        prism = hdu[0].header[stdkeyDictGNIRS['key_prism']]
-        decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
-        disperser = hdu[0].header[stdkeyDictGNIRS['key_disperser']]
+        prism = hdu[0].header[globalStdkeyDict['key_prism']]
+        decker = hdu[0].header[globalStdkeyDict['key_decker']]
+        disperser = hdu[0].header[globalStdkeyDict['key_grating']]
         camera = hdu[0].header[globalStdkeyDict['key_camera']]
         
         observation_mode_key = (prism, decker, disperser, camera)
@@ -326,9 +326,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         @return: the pixel scale (arcsec/pixel)
         """
         hdu = dataset.hdulist
-        prism = hdu[0].header[stdkeyDictGNIRS['key_prism']]
-        decker = hdu[0].header[stdkeyDictGNIRS['key_decker']]
-        disperser = hdu[0].header[stdkeyDictGNIRS['key_disperser']]
+        prism = hdu[0].header[globalStdkeyDict['key_prism']]
+        decker = hdu[0].header[globalStdkeyDict['key_decker']]
+        disperser = hdu[0].header[globalStdkeyDict['key_grating']]
         camera = dataset.camera()
         
         pixel_scale_key = (prism, decker, disperser, camera)
@@ -360,7 +360,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         function repairs the header values to only list the prism.
         """
         hdu = dataset.hdulist
-        string = hdu[0].header[stdkeyDictGNIRS['key_prism']]
+        string = hdu[0].header[globalStdkeyDict['key_prism']]
         
         # The format of the prism string is currently (2011) [CAM+]prism_Gnnnn
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
@@ -489,7 +489,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         same componenet ID as they're they same physical compononet.
         """
         hdu = dataset.hdulist
-        slit = hdu[0].header[stdkeyDictGNIRS['key_slit']]
+        slit = hdu[0].header[globalStdkeyDict['key_slit']]
         
         if pretty:
             stripID=True
