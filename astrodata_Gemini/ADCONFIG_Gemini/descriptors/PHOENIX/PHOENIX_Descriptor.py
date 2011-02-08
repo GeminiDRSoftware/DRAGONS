@@ -71,7 +71,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         @return: the disperser / grating used to acquire the data
         """
         hdu = dataset.hdulist
-        disperser = hdu[0].header[stdkeyDictPHOENIX['key_disperser']]
+        disperser = hdu[0].header[globalStdkeyDict['key_disperser']]
         
         ret_disperser = str(disperser)
         
