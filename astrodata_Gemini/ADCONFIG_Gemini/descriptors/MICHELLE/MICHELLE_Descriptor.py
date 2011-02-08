@@ -33,6 +33,19 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_central_wavelength
     
+    def coadds(self, dataset, **args):
+        """
+        Return the coadds value for MICHELLE
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the coadds
+        """
+        hdu = dataset.hdulist
+        coadds = hdu[0].header[stdkeyDictMICHELLE['key_coadds']]
+        
+        return coadds
+    
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the disperser value for MICHELLE
@@ -63,7 +76,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         hdu = dataset.hdulist
         exposure = float(hdu[0].header[stdkeyDictMICHELLE['key_exposure']])
-        numexpos = float(hdu[0].header[stdkeyDictMICHELLE['key_numexpos']])
+        numexpos = float(hdu[0].header[stdkeyDictMICHELLE['key_coadds']])
         numext = float(hdu[0].header[stdkeyDictMICHELLE['key_numext']])
         
         ret_exposure_time = float(exposure * numexpos * numext)
@@ -140,6 +153,19 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_pixel_scale
     
+    def read_mode(self, dataset, **args):
+        """
+        Return the read_mode value for MICHELLE
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: string
+        @returns: the read mode string
+        """
+        hdu = dataset.hdulist
+        read_mode = hdu[0].header[stdkeyDictMICHELLE['key_read_mode']]
+        
+        return read_mode
+    
     def ut_date(self, dataset, **args):
         """
         Return the ut_date value for MICHELLE
@@ -169,32 +195,4 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_ut_date = None
         
         return ret_ut_date
-
-    def read_mode(self, dataset, **args):
-        """
-        Return the read_mode value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the read mode string
-        """
-
-        hdu = dataset.hdulist
-        read_mode = hdu[0].header[stdkeyDictMICHELLE['key_read_mode']]
-
-        return read_mode
-
-    def coadds(self, dataset, **args):
-        """
-        Return the coadds value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the coadds
-        """
-
-        hdu = dataset.hdulist
-        coadds = hdu[0].header[stdkeyDictMICHELLE['key_coadds']]
-
-        return coadds
 
