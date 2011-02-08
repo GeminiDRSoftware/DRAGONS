@@ -8,6 +8,6 @@ stdkeyDictGEMINI = {
     "key_oiwfs":"OIWFS_ST",
     "key_pwfs1":"PWFS1_ST",
     "key_pwfs2":"PWFS2_ST",
-    "key_raw_pi_requirements_met":"RAWPIREQ",
     "key_raw_gemini_qa":"RAWGEMQA",
+    "key_raw_pi_requirements_met":"RAWPIREQ",
     }
