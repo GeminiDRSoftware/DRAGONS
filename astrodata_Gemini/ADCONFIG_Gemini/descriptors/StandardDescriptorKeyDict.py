@@ -8,7 +8,7 @@ globalStdkeyDict = {
     "key_data_label":"DATALAB",
     "key_data_section":"DATASEC",
     "key_dec":"DEC",
-    "key_decker":"DECKER"
+    "key_decker":"DECKER",
     "key_detector_section":"DETSEC",
     "key_detector_x_bin":"XCCDBIN",
     "key_detector_y_bin":"YCCDBIN",
