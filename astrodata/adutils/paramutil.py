@@ -283,7 +283,7 @@ def checkFileFitExtension( filename ):
              extension > 0. In the case of any error, 0 is returned.
     @rtype: tuple 
     """
-    if filename.find('['):
+    if filename.find('[') >= 0:
         try:
             # Getting the filename without extension specification
             file = filename.split('[')[0]
@@ -297,7 +297,7 @@ def checkFileFitExtension( filename ):
         return (file, exten)
     
     else:
-        return (filename, 0)
+        return (filename, None)
     
 #------------------------------------------------------------------------------ 
 
