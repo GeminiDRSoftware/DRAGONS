@@ -512,7 +512,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # when it is past the given data reduction point - TO BE DONE!
         
         # FIRST check if the images is prepared, or not an image
-        if ('IMAGE' not in dataset.types) or ('PREPARED' in dataset.types):
+        if ('IMAGE' not in dataset.types) and ('PREPARED' in dataset.types):
             if asList:
                 ret_mdf_row_id = []
                 if dataset.countExts('SCI') <= 1:
