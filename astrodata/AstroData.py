@@ -63,6 +63,9 @@ class ADNOTFOUND(ADExcept):
 class ADREADONLY(ADExcept):
     pass
     
+class ADBADARGUMENT(ADExcept):
+    pass
+    
 class SingleHDUMemberExcept(ADExcept):
     def __init__(self, msg=None):
         if msg == None:
@@ -311,6 +314,7 @@ integrates other functionality.
             return False
         return True
                     
+
     def __getitem__(self,ext):
         """
         :param ext: The integeter index, indexing(EXTNAME, EXTVER) tuple,
@@ -525,8 +529,10 @@ integrates other functionality.
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.append(hdu)
-        elif type(moredata) is pyfits.ImageHDU:
+        elif isinstance(moredata, pyfits.core._AllHDU):
             self.hdulist.append(moredata)
+        else:
+            raise ADBADARGUMENT("The 'moredata' argument is of and unsupported type: %s" % str(type(moredata)))
     
     def close(self):
         """The close(..) function will close the HDUList associated with this
