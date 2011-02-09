@@ -201,43 +201,30 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.critical('Problem displaying output')
             raise 
         yield rc
-
-    def setStackable(self, rc):
+   
+    def getProcessedBias(self,rc):
         """
-        This primitive will update the lists of files to be stacked
-        that have the same observationID with the current inputs.
-        This file is cached between calls to reduce, thus allowing
-        for one-file-at-a-time processing.
+        A primitive to search and return the appropriate calibration bias from
+        a server for the given inputs.
         
         """
-        try:
-            log.status('*STARTING* to update/create the stack')
-            # Requesting for the reduction context to perform an update
-            # to the stack cache file (or create it) with the current inputs.
-            purpose = rc["purpose"]
-            if purpose == None:
-                purpose = ""
-                
-            rc.rqStackUpdate(purpose= purpose)
-            # Writing the files in the stack to disk if not all ready there
-            for ad in rc.getInputs(style='AD'):
-                if not os.path.exists(ad.filename):
-                    log.fullinfo('writing '+ad.filename+\
-                                 ' to disk', category='stack')
-                    ad.write(ad.filename)
-                    
-            log.status('*FINISHED* updating/creating the stack')
-        except:
-            log.critical('Problem writing stack for files '+rc.inputsAsStr(),
-                         category='stack')
-            raise
+        rc.rqCal('bias', rc.getInputs(style='AD'))
         yield rc
-  
+        
+    def getProcessedFlat(self,rc):
+        """
+        A primitive to search and return the appropriate calibration flat from
+        a server for the given inputs.
+        
+        """
+        rc.rqCal('flat', rc.getInputs(style='AD'))
+        yield rc
+    
     def getStackable(self, rc):
         """
         This primitive will check the files in the stack lists are on disk,
-        if not write them to disk and then update the inputs list to include
-        all members of the stack for stacking.
+        and then update the inputs list to include all members of the stack 
+        for stacking.
         
         """
         sidset = set()
@@ -349,6 +336,37 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.update(rc.localparms)
         yield rc   
        
+    def setStackable(self, rc):
+        """
+        This primitive will update the lists of files to be stacked
+        that have the same observationID with the current inputs.
+        This file is cached between calls to reduce, thus allowing
+        for one-file-at-a-time processing.
+        
+        """
+        try:
+            log.status('*STARTING* to update/create the stack')
+            # Requesting for the reduction context to perform an update
+            # to the stack cache file (or create it) with the current inputs.
+            purpose = rc["purpose"]
+            if purpose == None:
+                purpose = ""
+                
+            rc.rqStackUpdate(purpose= purpose)
+            # Writing the files in the stack to disk if not all ready there
+            for ad in rc.getInputs(style='AD'):
+                if not os.path.exists(ad.filename):
+                    log.fullinfo('writing '+ad.filename+\
+                                 ' to disk', category='stack')
+                    ad.write(ad.filename)
+                    
+            log.status('*FINISHED* updating/creating the stack')
+        except:
+            log.critical('Problem writing stack for files '+rc.inputsAsStr(),
+                         category='stack')
+            raise
+        yield rc
+    
     def showCals(self, rc):
         if str(rc['showcals']).lower() == 'all':
             num = 0
