@@ -279,9 +279,9 @@ def checkFileFitExtension( filename ):
     @param filename: Name of a fits file
     @type filename: str
     
-    @return: Tuple with the filename and extension specified. 
-             In the case of any error, 0 is returned.
-             In the case that no '[]' exists in the filename, None is returned.
+    @return: Tuple with the root filename and extension specified. 
+             In the case that no '[]' exists in the filename, (filename, None) is returned.
+             In the case of an error parsing the input filename, (None,None) is returned.
     @rtype: tuple 
     """
     if filename.find('[') >= 0:
@@ -294,7 +294,7 @@ def checkFileFitExtension( filename ):
             else:
                 exten = int(filename.split( '[' )[1].split( ']' )[0])
         except:
-            exten = 0
+            return (None, None)
         return (file, exten)
     
     else:
