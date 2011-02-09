@@ -511,7 +511,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # should return None if the data is RAW, etc and the true value
         # when it is past the given data reduction point - TO BE DONE!
         
-        # FIRST check if the images is prepared, or not an image
+        # FIRST check if the images is prepared, and not an image
         if ('IMAGE' not in dataset.types) and ('PREPARED' in dataset.types):
             if asList:
                 ret_mdf_row_id = []
