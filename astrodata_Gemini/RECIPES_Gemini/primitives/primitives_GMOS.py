@@ -218,43 +218,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise     
         yield rc
 
-    def flatCorrect(self,rc):
-        """
-        This primitive performs a flat correction by dividing the inputs by a 
-        processed flat similar to the way gireduce would perform this operation
-        but written in pure python in the arith toolbox.
-          
-        It is currently assumed that the same flat file may be applied to all
-        input images.
-        
-        """
-        try:
-            log.status('*STARTING* to flat correct the inputs')
-            
-            # Retrieving the appropriate flat for the first of the inputs
-            adOne = rc.getInputs(style='AD')[0]
-            processedFlat = AstroData(rc.getCal(adOne,'flat'))
-            
-            # Taking care of the case where there was no, or an invalid flat 
-            if processedFlat.countExts('SCI')==0:
-                raise GMOSException('Invalid processed flat retrieved')               
-            
-            log.debug('Calling geminiScience.flatCorrect function')
-            
-            adOuts = geminiScience.flatCorrect(adIns=rc.getInputs(style='AD'),     
-                                         flats=processedFlat, postpend=rc['postpend'], verbose=rc['logVerbose'])           
-            
-            log.status('geminiScience.flatCorrect completed successfully')
-              
-            # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)   
-
-            log.status('*FINISHED* flat correcting the inputs')  
-        except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise  
-        yield rc
-
     def localGetProcessedBias(self,rc):
         """
         A prim that works with the calibration system (MAYBE), but as it isn't 
@@ -473,73 +436,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
         
         yield rc 
-   
-    def storeProcessedBias(self,rc):
-        """
-        This should be a primitive that interacts with the calibration system 
-        (MAYBE) but that isn't up and running yet. Thus, this will just strip 
-        the extra postfixes to create the 'final' name for the 
-        makeProcessedBias outputs and write them to disk in a storedcals folder.
-        
-        """
-        try:  
-            log.status('*STARTING* to store the processed bias by writing '+
-                       'it to disk')
-            for ad in rc.getInputs(style='AD'):
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend='_preparedbias', 
-                                                   strip=True)
-                log.status('File name updated to '+ad.filename)
-                
-                # Adding a GBIAS time stamp to the PHU
-                ad.historyMark(key='GBIAS', 
-                              comment='fake key to trick CL that GBIAS was ran')
-                
-                log.fullinfo('File written to = '+rc['storedbiases']+'/'+
-                             ad.filename)
-                ad.write(os.path.join(rc['storedbiases'],ad.filename), 
-                         clobber=rc['clob'])
-                
-            log.status('*FINISHED* storing the processed bias on disk')
-        except:
-            log.critical('Problem storing one of '+rc.inputsAsStr())
-            raise 
-        yield rc
-   
-    def storeProcessedFlat(self,rc):
-        """
-        This should be a primitive that interacts with the calibration 
-        system (MAYBE) but that isn't up and running yet. Thus, this will 
-        just strip the extra postfixes to create the 'final' name for the 
-        makeProcessedFlat outputs and write them to disk in a storedcals folder.
-        
-        """
-        try:   
-            log.status('*STARTING* to store the processed flat by writing it to disk')
-            for ad in rc.getInputs(style='AD'):
-                # Updating the file name with the postpend/outsuffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend='_preparedflat', 
-                                                   strip=True)
-                log.status('File name updated to '+ad.filename)
-                
-                log.fullinfo('File written to = '+rc['storedflats']+'/'
-                             +ad.filename)
-                ad.write(os.path.join(rc['storedflats'],ad.filename),
-                         clobber=rc['clob'])
-                
-            log.status('*FINISHED* storing the processed flat on disk')
-        except:
-            log.critical('Problem storing one of '+rc.inputsAsStr())
-            raise 
-        yield rc
     
     def validateInstrumentData(self,rc):
         """
