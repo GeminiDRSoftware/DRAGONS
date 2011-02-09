@@ -595,7 +595,7 @@ integrates other functionality.
             for hdu in moredata[1:]:
                 self.hdulist.insert(index, hdu)
                 index += 1
-        elif type(moredata) is pyfits.ImageHDU:
+        elif isinstance(moredata. pyfits.core._AllHDU):
             self.hdulist.insert(index, moredata)
                
     def infostr(self, asHTML = False):
@@ -966,7 +966,7 @@ n informed of the issue and
             # print "AD559:", self.hdulist[1].header["EXTVER"]
         elif type(source) == pyfits.HDUList:
             self.hdulist = source
-        elif type(source) == pyfits.ImageHDU:
+        elif isinstance(source, pyfits.core._AllHDU):
             phu = pyfits.PrimaryHDU()
             self.hdulist= pyfits.HDUList([phu, source])
         else:
