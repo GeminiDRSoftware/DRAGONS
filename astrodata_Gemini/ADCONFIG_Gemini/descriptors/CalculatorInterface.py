@@ -1,3 +1,4 @@
+
 import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
@@ -549,6 +550,44 @@ class CalculatorInterface:
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
             return self.descriptorCalculator.non_linear_level(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
+    def nod_count(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "nod_count")
+            if not hasattr( self.descriptorCalculator, "nod_count"):
+                key = "key_"+"nod_count"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.nod_count(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
+    def nod_pixels(self, **args):
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "nod_pixels")
+            if not hasattr( self.descriptorCalculator, "nod_pixels"):
+                key = "key_"+"nod_pixels"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.nod_pixels(self, **args)
         except:
             if self.descriptorCalculator.throwExceptions == True:
                 raise

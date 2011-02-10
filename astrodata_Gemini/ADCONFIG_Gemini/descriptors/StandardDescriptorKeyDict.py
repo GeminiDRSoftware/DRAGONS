@@ -25,6 +25,8 @@ globalStdkeyDict = {
     "key_instrument":"INSTRUME",
     "key_local_time":"LT",
     "key_mdf_row_id":"MDFROW",
+    "key_nod_count":"NODCOUNT",
+    "key_nod_pixels":"NODPIX",
     "key_non_linear_level":"NONLINEA",
     "key_object":"OBJECT",
     "key_observation_class":"OBSCLASS",
