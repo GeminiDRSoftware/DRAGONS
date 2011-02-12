@@ -40,12 +40,12 @@ class GENERALPrimitives(PrimitiveSet):
         return 
     init.pt_hide = True
     
-    def glob(self, rc):
+    def addInputs(self, rc):
         import glob as gl
-        if rc["glob"] == None:
+        if rc["files"] == None:
             glob = "./*.fits"
         else:
-            glob = rc["glob"]
+            glob = rc["files"]
 
         log.status("Listing for: "+ glob)
         files = gl.glob(glob)
@@ -55,7 +55,7 @@ class GENERALPrimitives(PrimitiveSet):
         else:
             log.status("\t"+"\n\t".join(files))
         yield rc
-        add = rc["inputs"]
+        add = True # rc["inputs"]
         if add:
             rc.addInput(files)
         yield rc
