@@ -1,9 +1,7 @@
-"""
 # Author: Kyle Mede, February 2011
 # For now, this module is to hold the code which performs the actual work of the 
 # primitives that is considered generic enough to be at the 'GMOS' level of
 # the hierarchy tree, but too specific for the 'gemini' level above this.
-"""
 
 import os
 
@@ -18,73 +16,81 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 
-def overscanSubtract(adIns, fl_trim=False, fl_vardq='AUTO', biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
-                      outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+def overscanSubtract(adIns, fl_trim=False, fl_vardq='AUTO', 
+            biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
+            outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
     """
     This function uses the CL script gireduce to subtract the overscan 
     from the input images.
     
-    WARNING: The gireduce script used here replaces the previously 
-    calculated DQ frames with its own versions.  This may be corrected 
-    in the future by replacing the use of the gireduce
-    with a Python routine to do the overscan subtraction.
-    
-    NOTE: The inputs to this function MUST be prepared.
+    WARNING: 
+        The gireduce script used here replaces the previously 
+        calculated DQ frames with its own versions.  This may be corrected 
+        in the future by replacing the use of the gireduce
+        with a Python routine to do the overscan subtraction.
 
-    A string representing the name of the log file to write all log messages to
+    note
+        The inputs to this function MUST be prepared.
+
+    String representing the name of the log file to write all log messages to
     can be defined, or a default of 'gemini.log' will be used.  If the file
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
+
+    FOR FUTURE
+        This function has many GMOS dependencies that would be great to work out
+        so that this could be made a more general function (say at the Gemini level).
+        In the future the parameters can be looked into and the CL script can be 
+        upgraded to handle things like row based overscan calculations/fitting/modeling... 
+        vs the column based used right now, add the model, nbiascontam, ... params to the 
+        functions inputs so the user can choose them for themselves.
+
+    :param noLogFile: A boolean to make it so no log file is created
+
+    :type noLogFile: Python boolean (True/False)
     
-    ####################### FOR FUTURE #########################################
-    This function has many GMOS dependencies that would be great to work out
-    so that this could be made a more general function (say at the Gemini level).
-    In the future the parameters can be looked into and the CL script can be 
-    upgraded to handle things like row based overscan calculations/fitting/modeling... 
-    vs the column based used right now, add the model, nbiascontam, ... params to the 
-    functions inputs so the user can choose them for themselves.
-    While for now, GMOS is the only instrument that overscanSubtract is needed
-    for, it would be great to offer this type of function for future instruments
-    and or telescopes :-D Dream the Dream!
-    ###########################################################################
+    :param fl_trim: Trim the overscan region from the frames?
+
+    :type fl_trim: Python boolean (True/False)
     
-    @param adIns: Astrodata input flat(s) to be combined and normalized
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param fl_vardq: Create variance and data quality frames?
+
+    :type fl_vardq: 
+        Python boolean (True/False), OR string 'AUTO' to do 
+        it automatically if there are VAR and DQ frames in the inputs.
+        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
+        so, if the first does, then the rest MUST also have them as well.
+        
+    :param LogFile: A boolean to make it so no log file is created
+    :type LogFile: Python boolean (True/False)
+
+    :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+
+    :type biassec: string. default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' is ideal for 2x2 GMOS data.
     
-    @param fl_trim: Trim the overscan region from the frames?
-    @type fl_trim: Python boolean (True/False)
+    :param outNames: filenames of output(s)
+
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param fl_vardq: Create variance and data quality frames?
-    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the inputs.
-                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                        so, if the first does, then the rest MUST also have them as well.
+    :param postpend: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
+
+    :type postpend: string
     
-    @param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
-    @type biassec: string. default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
-                                    is ideal for 2x2 GMOS data.
+    :param logName: Name of the log file, default is 'gemini.log'
+
+    :type logName: string
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
-    
-    @param postpend: string to postpend on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    @type postpend: string
-    
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
-    
-    @param verbose: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
-    
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param verbose: 
+         verbosity setting for the log messages to screen,
+         default is 'critical' messages only.
+         Note: independent of verbose setting, all messages always go 
+         to the logfile if it is not turned off.
+
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+   
+
     """
-    
+
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
 
     log.status('**STARTING** the overscanSubtract function')

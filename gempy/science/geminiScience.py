@@ -26,32 +26,35 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
 
-    Note: the SCI extensions of the input AstroData objects must have 'GAIN'
-          header key values available to multiply them by for conversion to 
-          e- units.
+    Note: 
+      the SCI extensions of the input AstroData objects must have 'GAIN'
+      header key values available to multiply them by for conversion to 
+      e- units.
           
-    @param adIns: Astrodata inputs to be converted to Electron pixel units
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to be converted to Electron pixel units
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: 
+        String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :param postpend: 
+        string to postpend on the end of the input filenames 
+        (or outNames if not None) for the output filenames.
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :param verbose: 
+         verbosity setting for the log messages to screen,
+         default is 'critical' messages only.
+         Note: independent of verbose setting, all messages always go 
+         to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -200,44 +203,44 @@ def addDQ(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=No
           the SCI data array for creation of the DQ array.
           ie. for now, no BPM extensions=this function will crash
           
-    $$$$$$$$$$$$$$$$$
-    FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
-    TO PASS IT IN...
-    $$$$$$$$$$$$$$$$$$$
+    NOTE:
+        FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
+        TO PASS IT IN...
     
     A string representing the name of the log file to write all log messages to
     can be defined, or a default of 'gemini.log' will be used.  If the file
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to have DQ extensions added to
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to have DQ extensions added to
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param fl_nonlinear: Flag to turn checking for nonlinear pixels on/off
-    @type fl_nonLinear: Python boolean (True/False), default is True
+    :param fl_nonlinear: Flag to turn checking for nonlinear pixels on/off
+    :type fl_nonLinear: Python boolean (True/False), default is True
     
-    @param fl_saturated: Flag to turn checking for saturated pixels on/off
-    @type fl_saturated: Python boolean (True/False), default is True
+    :param fl_saturated: Flag to turn checking for saturated pixels on/off
+    :type fl_saturated: Python boolean (True/False), default is True
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :param postpend: 
+       string to postpend on the end of the input filenames 
+       (or outNames if not None) for the output filenames.
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :param verbose: 
+         verbosity setting for the log messages to screen,
+         default is 'critical' messages only.
+         Note: independent of verbose setting, all messages always go 
+         to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -411,34 +414,36 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
           
-    @param adIns: Astrodata inputs to be converted to Electron pixel units
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to be converted to Electron pixel units
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param BPMs: The BPM(s) to be added to the input(s).
-    @type BPMs: AstroData objects in a list, or a single instance.
-                Note: If there is multiple inputs and one BPM provided, then the
-                      same BPM will be applied to all inputs; else the BPMs list  
-                      must match the length of the inputs.
+    :param BPMs: The BPM(s) to be added to the input(s).
+    :type BPMs: 
+       AstroData objects in a list, or a single instance.
+       Note: If there is multiple inputs and one BPM provided, then the
+       same BPM will be applied to all inputs; else the BPMs list  
+       must match the length of the inputs.
                       
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :param postpend: 
+         string to postpend on the end of the input filenames 
+         (or outNames if not None) for the output filenames.
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :param verbose: 
+          verbosity setting for the log messages to screen,
+          default is 'critical' messages only.
+          Note: independent of verbose setting, all messages always go 
+          to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -627,28 +632,29 @@ def addVAR(adIns, outNames=None, postpend=None, logName='', verbose=1,
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to have DQ extensions added to
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to have DQ extensions added to
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :param postpend: 
+        string to postpend on the end of the input filenames 
+        (or outNames if not None) for the output filenames.
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :param verbose: 
+        verbosity setting for the log messages to screen,
+        default is 'critical' messages only.
+        Note: independent of verbose setting, all messages always go 
+        to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -802,34 +808,33 @@ def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', ver
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to have DQ extensions added to
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to have DQ extensions added to
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param flats: The flat(s) to divide the input(s) by.
-    @type flats: AstroData objects in a list, or a single instance.
+    :param flats: The flat(s) to divide the input(s) by.
+    :type flats: AstroData objects in a list, or a single instance.
                 Note: If there is multiple inputs and one flat provided, then the
-                      same flat will be applied to all inputs; else the flats   
-                      list must match the length of the inputs.
+                same flat will be applied to all inputs; else the flats   
+                list must match the length of the inputs.
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
+    :param postpend: string to postpend on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
+    :param verbose: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
                     Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+                    to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -948,28 +953,28 @@ def overscanTrim(adIns, outNames=None, postpend=None, logName='', verbose=1,
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to have DQ extensions added to
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to have DQ extensions added to
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length
                     as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
+    :param postpend: string to postpend on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
+    :param verbose: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
                     Note: independent of verbose setting, all messages always go 
                           to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     if logName!='':
@@ -1120,40 +1125,40 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to be combined
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to be combined
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param fl_vardq: Create variance and data quality frames?
-    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
                     it automatically if there are VAR and DQ frames in the inputs.
                     NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
                         so, if the first does, then the rest MUST also have them as well.
     
-    @param fl_dqprop: propogate the current DQ values?
-    @type fl_dqprop: Python boolean (True/False)
+    :param fl_dqprop: propogate the current DQ values?
+    :type fl_dqprop: Python boolean (True/False)
     
-    @param method: type of combining method to use.
-    @type method: string, options: 'average', 'median'.
+    :param method: type of combining method to use.
+    :type method: string, options: 'average', 'median'.
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length
                     as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
+    :param postpend: string to postpend on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
+    :param verbose: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
                     Note: independent of verbose setting, all messages always go 
                           to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -1320,44 +1325,47 @@ def biasCorrect(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to be bias subtracted
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to be bias subtracted
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param biases: The bias(es) to divide the input(s) by.
-    @type biases: AstroData objects in a list, or a single instance.
-                Note: If there is multiple inputs and one bias provided, then the
-                      same bias will be applied to all inputs; else the biases   
-                      list must match the length of the inputs.
+    :param biases: The bias(es) to divide the input(s) by.
+    :type biases: 
+        AstroData objects in a list, or a single instance.
+        Note: If there is multiple inputs and one bias provided, then the
+        same bias will be applied to all inputs; else the biases   
+        list must match the length of the inputs.
     
-    @param fl_vardq: Create variance and data quality frames?
-    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the input(s).
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq: 
+         Python boolean (True/False), OR string 'AUTO' to do 
+         it automatically if there are VAR and DQ frames in the input(s).
     
-    @param fl_trim: Trim the overscan region from the frames?
-    @type fl_trim: Python boolean (True/False)
+    :param fl_trim: Trim the overscan region from the frames?
+    :type fl_trim: Python boolean (True/False)
     
-    @param fl_over: Subtract the overscan level from the frames?
-    @type fl_over: Python boolean (True/False)
+    :param fl_over: Subtract the overscan level from the frames?
+    :type fl_over: Python boolean (True/False)
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :param postpend: 
+           string to postpend on the end of the input filenames 
+           (or outNames if not None) for the output filenames.
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :param verbose: 
+          verbosity setting for the log messages to screen,
+          default is 'critical' messages only.
+          Note: independent of verbose setting, all messages always go 
+          to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -1571,41 +1579,40 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata inputs to mosaic the extensions of
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata inputs to mosaic the extensions of
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param fl_paste: Paste images instead of mosaic?
-    @type fl_paste: Python boolean (True/False)
+    :param fl_paste: Paste images instead of mosaic?
+    :type fl_paste: Python boolean (True/False)
     
-    @param interp_function: type of interpolation algorithm to use for between the chip gaps.
-    @type interp_function: string, options: 'linear', 'nearest', 'poly3', 
+    :param interp_function: type of interpolation algorithm to use for between the chip gaps.
+    :type interp_function: string, options: 'linear', 'nearest', 'poly3', 
                                             'poly5', 'spine3', 'sinc'.
     
-    @param fl_vardq: Also mosaic VAR and DQ frames?
-    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+    :param fl_vardq: Also mosaic VAR and DQ frames?
+    :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
                     it automatically if there are VAR and DQ frames in the inputs.
                     NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                        so, if the first does, then the rest MUST also have them as well.
+                    so, if the first does, then the rest MUST also have them as well.
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
+    :param postpend: string to postpend on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
+    :param verbose: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
                     Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+                    to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
@@ -1772,40 +1779,41 @@ def normalizeFlat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    @param adIns: Astrodata input flat(s) to be combined and normalized
-    @type adIns: Astrodata objects, either a single or a list of objects
+    :param adIns: Astrodata input flat(s) to be combined and normalized
+    :type adIns: Astrodata objects, either a single or a list of objects
     
-    @param fl_trim: Trim the overscan region from the frames?
-    @type fl_trim: Python boolean (True/False)
+    :param fl_trim: Trim the overscan region from the frames?
+    :type fl_trim: Python boolean (True/False)
     
-    @param fl_over: Subtract the overscan level from the frames?
-    @type fl_over: Python boolean (True/False)
+    :param fl_over: Subtract the overscan level from the frames?
+    :type fl_over: Python boolean (True/False)
     
-    @param fl_vardq: Create variance and data quality frames?
-    @type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the inputs.
-                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                        so, if the first does, then the rest MUST also have them as well.
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq:
+        Python boolean (True/False), OR string 'AUTO' to do 
+        it automatically if there are VAR and DQ frames in the inputs.
+        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
+        so, if the first does, then the rest MUST also have them as well.
     
-    @param outNames: filenames of output(s)
-    @type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    @param postpend: string to postpend on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    @type postpend: string
+    :param postpend:
+            string to postpend on the end of the input filenames 
+            (or outNames if not None) for the output filenames.
+    :type postpend: string
     
-    @param logName: Name of the log file, default is 'gemini.log'
-    @type logName: string
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
     
-    @param verbose: verbosity setting for the log messages to screen,
+    :param verbose: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
                     Note: independent of verbose setting, all messages always go 
-                          to the logfile if it is not turned off.
-    @type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+                    to the logfile if it is not turned off.
+    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
-    @param noLogFile: A boolean to make it so no log file is created
-    @type noLogFile: Python boolean (True/False)
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
     
     log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)

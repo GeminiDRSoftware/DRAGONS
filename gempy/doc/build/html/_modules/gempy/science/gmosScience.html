@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gempy.science.gmosScience &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gempy.science.gmosScience</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+<span class="kn">from</span> <span class="nn">astrodata.AstroData</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">geminiTools</span>  <span class="k">as</span> <span class="n">gemt</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils.gemutil</span> <span class="kn">import</span> <span class="n">pyrafLoader</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments.geminiCLParDicts</span> <span class="kn">import</span> <span class="n">CLDefaultParamsDict</span>
+
+
+<span class="c">#def fhfh():</span>
+<div class="viewcode-block" id="overscanSubtract"><a class="viewcode-back" href="../../../index.html#gempy.science.gmosScience.overscanSubtract">[docs]</a><span class="k">def</span> <span class="nf">overscanSubtract</span><span class="p">(</span><span class="n">adIns</span><span class="p">,</span> <span class="n">fl_trim</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">fl_vardq</span><span class="o">=</span><span class="s">&#39;AUTO&#39;</span><span class="p">,</span> 
+            <span class="n">biassec</span><span class="o">=</span><span class="s">&#39;[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]&#39;</span><span class="p">,</span>
+            <span class="n">outNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">postpend</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logName</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noLogFile</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function uses the CL script gireduce to subtract the overscan </span>
+<span class="sd">    from the input images.</span>
+<span class="sd">    </span>
+<span class="sd">    WARNING: </span>
+<span class="sd">        The gireduce script used here replaces the previously </span>
+<span class="sd">        calculated DQ frames with its own versions.  This may be corrected </span>
+<span class="sd">        in the future by replacing the use of the gireduce</span>
+<span class="sd">        with a Python routine to do the overscan subtraction.</span>
+
+<span class="sd">    note</span>
+<span class="sd">        The inputs to this function MUST be prepared.</span>
+
+<span class="sd">    String representing the name of the log file to write all log messages to</span>
+<span class="sd">    can be defined, or a default of &#39;gemini.log&#39; will be used.  If the file</span>
+<span class="sd">    all ready exists in the directory you are working in, then this file will </span>
+<span class="sd">    have the log messages during this function added to the end of it.</span>
+
+<span class="sd">    FOR FUTURE</span>
+<span class="sd">        This function has many GMOS dependencies that would be great to work out</span>
+<span class="sd">        so that this could be made a more general function (say at the Gemini level).</span>
+<span class="sd">        In the future the parameters can be looked into and the CL script can be </span>
+<span class="sd">        upgraded to handle things like row based overscan calculations/fitting/modeling... </span>
+<span class="sd">        vs the column based used right now, add the model, nbiascontam, ... params to the </span>
+<span class="sd">        functions inputs so the user can choose them for themselves.</span>
+
+<span class="sd">    :param noLogFile: A boolean to make it so no log file is created</span>
+
+<span class="sd">    :type noLogFile: Python boolean (True/False)</span>
+<span class="sd">    </span>
+<span class="sd">    :param fl_trim: Trim the overscan region from the frames?</span>
+
+<span class="sd">    :type fl_trim: Python boolean (True/False)</span>
+<span class="sd">    </span>
+<span class="sd">    :param fl_vardq: Create variance and data quality frames?</span>
+
+<span class="sd">    :type fl_vardq: </span>
+<span class="sd">        Python boolean (True/False), OR string &#39;AUTO&#39; to do </span>
+<span class="sd">        it automatically if there are VAR and DQ frames in the inputs.</span>
+<span class="sd">        NOTE: &#39;AUTO&#39; uses the first input to determine if VAR and DQ frames exist, </span>
+<span class="sd">        so, if the first does, then the rest MUST also have them as well.</span>
+<span class="sd">        </span>
+<span class="sd">    :param biassec: biassec parameter of format &#39;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#39;</span>
+
+<span class="sd">    :type biassec: string. default: &#39;[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]&#39; is ideal for 2x2 GMOS data.</span>
+<span class="sd">    </span>
+<span class="sd">    :param outNames: filenames of output(s)</span>
+
+<span class="sd">    :type outNames: String, either a single or a list of strings of same length as adIns.</span>
+<span class="sd">    </span>
+<span class="sd">    :param postpend: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.</span>
+
+<span class="sd">    :type postpend: string</span>
+<span class="sd">    </span>
+<span class="sd">    :param logName: Name of the log file, default is &#39;gemini.log&#39;</span>
+
+<span class="sd">    :type logName: string</span>
+<span class="sd">    </span>
+<span class="sd">    :param verbose: </span>
+<span class="sd">         verbosity setting for the log messages to screen,</span>
+<span class="sd">         default is &#39;critical&#39; messages only.</span>
+<span class="sd">         Note: independent of verbose setting, all messages always go </span>
+<span class="sd">         to the logfile if it is not turned off.</span>
+
+<span class="sd">    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen</span>
+<span class="sd">   </span>
+<span class="sd">    :param noLogFile: A boolean to make it so no log file is created</span>
+<span class="sd">    :type noLogFile: Python boolean (True/False)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">log</span><span class="o">=</span><span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">logName</span><span class="o">=</span><span class="n">logName</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">noLogFile</span><span class="o">=</span><span class="n">noLogFile</span><span class="p">)</span>
+
+    <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;**STARTING** the overscanSubtract function&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="n">adIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">outNames</span><span class="o">!=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adIns</span><span class="p">,</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outNames</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">adIns</span><span class="p">)</span><span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outNames</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">postpend</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                   <span class="k">raise</span> <span class="p">(</span><span class="s">&#39;Then length of the inputs, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">adIns</span><span class="p">))</span><span class="o">+</span>
+                       <span class="s">&#39;, did not match the length of the outputs, &#39;</span><span class="o">+</span>
+                       <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">outNames</span><span class="p">))</span><span class="o">+</span>
+                       <span class="s">&#39; AND no value of &quot;postpend&quot; was passed in&#39;</span><span class="p">)</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">adIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span> 
+            <span class="c"># loading and bringing the pyraf related modules into the name-space</span>
+            <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>  
+                
+            <span class="c"># Determining if gmosaic should propigate the VAR and DQ frames, if &#39;AUTO&#39; was chosen </span>
+            <span class="k">if</span> <span class="n">fl_vardq</span><span class="o">==</span><span class="s">&#39;AUTO&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adIns</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">adIns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">)</span><span class="o">==</span><span class="n">adIns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;DQ&#39;</span><span class="p">)</span><span class="o">==</span><span class="n">adIns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">):</span>
+                        <span class="n">fl_vardq</span><span class="o">=</span><span class="n">yes</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fl_vardq</span><span class="o">=</span><span class="n">no</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">adIns</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">)</span><span class="o">==</span><span class="n">adIns</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;DQ&#39;</span><span class="p">)</span><span class="o">==</span><span class="n">adIns</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">):</span>
+                        <span class="n">fl_vardq</span><span class="o">=</span><span class="n">yes</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">fl_vardq</span><span class="o">=</span><span class="n">no</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fl_vardq</span><span class="p">:</span>
+                    <span class="n">fl_vardq</span><span class="o">=</span><span class="n">yes</span>
+                <span class="k">elif</span> <span class="n">fl_vardq</span><span class="o">==</span><span class="bp">False</span><span class="p">:</span>
+                    <span class="n">fl_vardq</span><span class="o">=</span><span class="n">no</span>
+            
+            <span class="c"># To clean up log and screen if multiple inputs</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;+&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;format&#39;</span><span class="p">)</span>                                 
+                
+            <span class="c"># Preparing input files, lists, parameters... for input to </span>
+            <span class="c"># the CL script</span>
+            <span class="n">clm</span><span class="o">=</span><span class="n">gemt</span><span class="o">.</span><span class="n">CLManager</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">adIns</span><span class="p">,</span> <span class="n">outNames</span><span class="o">=</span><span class="n">outNames</span><span class="p">,</span> <span class="n">postpend</span><span class="o">=</span><span class="n">postpend</span><span class="p">,</span> <span class="n">funcName</span><span class="o">=</span><span class="s">&#39;overscanSubtract&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Check the status of the CLManager object, True=continue, False= issue warning</span>
+            <span class="k">if</span> <span class="n">clm</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>                     
+                
+                <span class="c"># Parameters set by the gemt.CLManager or the definition </span>
+                <span class="c"># of the primitive </span>
+                <span class="n">clPrimParams</span> <span class="o">=</span> <span class="p">{</span>
+                  <span class="s">&#39;inimages&#39;</span>    <span class="p">:</span><span class="n">clm</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">(),</span>
+                  <span class="s">&#39;gp_outpref&#39;</span>  <span class="p">:</span><span class="n">clm</span><span class="o">.</span><span class="n">uniquePrefix</span><span class="p">(),</span>
+                  <span class="c"># This returns a unique/temp log file for IRAF</span>
+                  <span class="s">&#39;logfile&#39;</span>     <span class="p">:</span><span class="n">clm</span><span class="o">.</span><span class="n">logfile</span><span class="p">(),</span>      
+                  <span class="s">&#39;fl_over&#39;</span>     <span class="p">:</span><span class="n">yes</span><span class="p">,</span> 
+                  <span class="c"># This is actually in the default dict but wanted to show it again</span>
+                  <span class="s">&#39;Stdout&#39;</span>      <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">IrafStdout</span><span class="p">(),</span> 
+                  <span class="c"># This is actually in the default dict but wanted to show it again</span>
+                  <span class="s">&#39;Stderr&#39;</span>      <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">IrafStdout</span><span class="p">(),</span> 
+                  <span class="c"># This is actually in the default dict but wanted to show it again</span>
+                  <span class="s">&#39;verbose&#39;</span>     <span class="p">:</span><span class="n">yes</span>                
+                              <span class="p">}</span>
+                
+                <span class="c"># Taking care of the biasec-&gt;nbiascontam param</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">biassec</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">nbiascontam</span> <span class="o">=</span> <span class="n">clm</span><span class="o">.</span><span class="n">nbiascontam</span><span class="p">(</span><span class="n">biassec</span><span class="o">=</span><span class="n">biassec</span><span class="p">)</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;nbiascontam parameter was updated to = &#39;</span><span class="o">+</span>
+                                 <span class="nb">str</span><span class="p">(</span><span class="n">nbiascontam</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span> 
+                    <span class="c"># Do not try to calculate it, just use default value of 4.</span>
+                    <span class="n">nbiascontam</span> <span class="o">=</span> <span class="mi">4</span>
+                
+                <span class="c"># Parameters from the Parameter file that are adjustable by the user</span>
+                <span class="n">clSoftcodedParams</span> <span class="o">=</span> <span class="p">{</span>
+                   <span class="c"># pyrafBoolean converts the python booleans to pyraf ones</span>
+                   <span class="s">&#39;fl_trim&#39;</span>    <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">pyrafBoolean</span><span class="p">(</span><span class="n">fl_trim</span><span class="p">),</span>
+                   <span class="s">&#39;outpref&#39;</span>    <span class="p">:</span><span class="n">postpend</span><span class="p">,</span>
+                   <span class="s">&#39;fl_vardq&#39;</span>   <span class="p">:</span><span class="n">fl_vardq</span><span class="p">,</span>
+                   <span class="s">&#39;nbiascontam&#39;</span><span class="p">:</span><span class="n">nbiascontam</span>
+                                   <span class="p">}</span>
+                <span class="c"># Grabbing the default params dict and updating it with </span>
+                <span class="c"># the two above dicts</span>
+                <span class="n">clParamsDict</span> <span class="o">=</span> <span class="n">CLDefaultParamsDict</span><span class="p">(</span><span class="s">&#39;gireduce&#39;</span><span class="p">)</span>
+                <span class="n">clParamsDict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clPrimParams</span><span class="p">)</span>
+                <span class="n">clParamsDict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clSoftcodedParams</span><span class="p">)</span>
+                
+                <span class="c"># Logging the parameters that were not defaults</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Parameters set automatically:&#39;</span><span class="p">,</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+                <span class="c"># Loop through the parameters in the clPrimParams dictionary</span>
+                <span class="c"># and log them</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">logDictParams</span><span class="p">(</span><span class="n">clPrimParams</span><span class="p">)</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Parameters adjustable by the user:&#39;</span><span class="p">,</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+                <span class="c"># Loop through the parameters in the clSoftcodedParams </span>
+                <span class="c"># dictionary and log them</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">logDictParams</span><span class="p">(</span><span class="n">clSoftcodedParams</span><span class="p">)</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling the gireduce CL script for inputs &#39;</span><span class="o">+</span>
+                      <span class="n">clm</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            
+                <span class="n">gemini</span><span class="o">.</span><span class="n">gmos</span><span class="o">.</span><span class="n">gireduce</span><span class="p">(</span><span class="o">**</span><span class="n">clParamsDict</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">gemini</span><span class="o">.</span><span class="n">gmos</span><span class="o">.</span><span class="n">gireduce</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;gireduce failed for inputs &#39;</span><span class="o">+</span>
+                                 <span class="n">clm</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+                    <span class="k">raise</span> <span class="p">(</span><span class="s">&#39;gireduce failed&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Exited the gireduce CL script successfully&#39;</span><span class="p">)</span>
+                
+                <span class="c"># Renaming CL outputs and loading them back into memory, and </span>
+                <span class="c"># cleaning up the intermediate tmp files written to disk</span>
+                <span class="n">adOuts</span> <span class="o">=</span> <span class="n">clm</span><span class="o">.</span><span class="n">finishCL</span><span class="p">()</span>
+                
+                <span class="c"># Wrap up logging</span>
+                <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+                <span class="k">for</span> <span class="n">adOut</span> <span class="ow">in</span> <span class="n">adOuts</span><span class="p">:</span>
+                    <span class="c"># Verifying gireduce was actually ran on the file</span>
+                    <span class="k">if</span> <span class="n">adOut</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GIREDUCE&#39;</span><span class="p">):</span> 
+                        <span class="c"># If gireduce was ran, then log the changes to the files </span>
+                        <span class="c"># it made</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">File &#39;</span><span class="o">+</span><span class="n">clm</span><span class="o">.</span><span class="n">preCLNames</span><span class="p">()[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span>
+                                     <span class="s">&#39; had its overscan subracted successfully&#39;</span><span class="p">)</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;New file name is: &#39;</span><span class="o">+</span><span class="n">adOut</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+                    <span class="c"># Updating GEM-TLM and OVERSUB time stamps in the PHU</span>
+                    <span class="n">adOut</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;OVERSUB&#39;</span><span class="p">,</span> <span class="n">stomp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>  
+                    
+                    <span class="c"># Updating logger with new GEM-TLM time stamp value</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;************************************************&#39;</span>
+                                 <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;File = &#39;</span><span class="o">+</span><span class="n">adOut</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~&#39;</span>
+                                 <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;PHU keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;header&#39;</span><span class="p">)</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;GEM-TLM = &#39;</span><span class="o">+</span><span class="n">adOut</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GEM-TLM&#39;</span><span class="p">),</span> 
+                                  <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;OVERSUB = &#39;</span><span class="o">+</span><span class="n">adOut</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;OVERSUB&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> 
+                                  <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                
+                
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;One of the inputs has not been prepared,</span><span class="se">\</span>
+<span class="s">                the overscanSubtract function can only work on prepared data.&#39;</span><span class="p">)</span>
+                <span class="k">raise</span><span class="p">(</span><span class="s">&#39;One of the inputs was not prepared&#39;</span><span class="p">)</span>
+                
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;The parameter &quot;adIns&quot; must not be None&#39;</span><span class="p">)</span>
+            <span class="k">raise</span><span class="p">(</span><span class="s">&#39;The parameter &quot;adIns&quot; must not be None&#39;</span><span class="p">)</span>
+        
+        <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;**FINISHED** the overscanSubtract function&#39;</span><span class="p">)</span>
+        
+        <span class="c"># Return the outputs (list or single, matching adIns)</span>
+        <span class="k">return</span> <span class="n">adOuts</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="p">(</span><span class="s">&#39;An error occurred while trying to run overscanSubtract&#39;</span><span class="p">)</span> 
+                
+                
+                
+                
+                </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
