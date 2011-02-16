@@ -650,8 +650,8 @@ else:
             
     # note: this clause might be best placed elsewhere (earlier)
     if len(nl) == 0:
-        log.error("No files, and no astrotype, quiting...")
-        allinputs = []
+        log.warning("No files, and no astrotype, quiting...")
+        allinputs = [None]
     else:
         allinputs = [nl]
     
@@ -673,9 +673,9 @@ for infiles in allinputs: #for dealing with multiple sets of files.
     #raise "over"
     
     log.status("Starting Reduction #%d of %d" % (i, numReductions))
-    
-    for infile in infiles:
-        log.status("    %s" % (infile.filename))
+    if infiles:
+        for infile in infiles:
+            log.status("    %s" % (infile.filename))
     currentReductionNum = i
     i += 1
     
@@ -713,15 +713,16 @@ for infiles in allinputs: #for dealing with multiple sets of files.
         types = [options.astrotype]
             
     infilenames = []
-    for infs in infiles:
-        if type(infs) == AstroData:
-            infilenames.append( infs.filename )
-        else:
-            # I don't think this can happen now
-            # where the input files are still strings at this point
-            infilenames.append( infs )
-            raise "not expected to happen"
-       
+    if infiles:
+        for infs in infiles:
+            if type(infs) == AstroData:
+                infilenames.append( infs.filename )
+            else:
+                # I don't think this can happen now
+                # where the input files are still strings at this point
+                infilenames.append( infs )
+                raise "not expected to happen"
+
     numi = len(infilenames) 
 
     if numi < 1:
@@ -807,7 +808,8 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     # old local stack stuff co.restoreStkIndex( stkindfile )
 
                     # add input files
-                    co.addInput(infiles)
+                    if infiles:
+                        co.addInput(infiles)
                     co.setIrafStdout(irafstdout)
                     co.setIrafStderr(irafstdout)
 
