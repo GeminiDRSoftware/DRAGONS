@@ -9,8 +9,6 @@ stdkeyDictGMOS = {
     "key_dispersion":"CD1_1",
     "key_filter1":"FILTER1",
     "key_filter2":"FILTER2",
-    "key_filtid1":"FILTID1",
-    "key_filtid2":"FILTID2",
     "key_focal_plane_mask":"MASKNAME",
     "key_gainorig":"GAINORIG",
     "key_maskname":"MASKNAME",

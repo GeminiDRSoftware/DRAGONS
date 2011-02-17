@@ -294,26 +294,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_exposure_time
     
-    def filter_id(self, dataset, **args):
-        """
-        Return the filter_id value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the unique filter ID number string
-        """
-        hdu = dataset.hdulist
-        filtid1 = str(hdu[0].header[stdkeyDictGMOS['key_filtid1']])
-        filtid2 = str(hdu[0].header[stdkeyDictGMOS['key_filtid2']])
-        
-        filtsid = []
-        filtsid.append(filtid1)
-        filtsid.append(filtid2)
-        filtsid.sort()
-        ret_filter_id = str('&'.join(filtsid))
-        
-        return ret_filter_id
-    
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the filter_name value for GMOS

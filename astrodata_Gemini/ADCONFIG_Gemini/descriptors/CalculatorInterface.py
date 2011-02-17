@@ -1,4 +1,3 @@
-
 import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
@@ -8,6 +7,9 @@ class CalculatorInterface:
     descriptorCalculator = None
 
     def airmass(self, **args):
+        """
+        Return the airmass value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "airmass")
@@ -27,6 +29,9 @@ class CalculatorInterface:
                 return None
     
     def amp_read_area(self, **args):
+        """
+        Return the amp_read_area value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "amp_read_area")
@@ -46,6 +51,9 @@ class CalculatorInterface:
                 return None
     
     def azimuth(self, **args):
+        """
+        Return the azimuth value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "azimuth")
@@ -65,6 +73,9 @@ class CalculatorInterface:
                 return None
     
     def camera(self, **args):
+        """
+        Return the camera value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "camera")
@@ -84,6 +95,9 @@ class CalculatorInterface:
                 return None
     
     def cass_rotator_pa(self, **args):
+        """
+        Return the cass_rotator_pa value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "cass_rotator_pa")
@@ -103,6 +117,9 @@ class CalculatorInterface:
                 return None
     
     def central_wavelength(self, **args):
+        """
+        Return the central_wavelength value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "central_wavelength")
@@ -122,6 +139,9 @@ class CalculatorInterface:
                 return None
     
     def coadds(self, **args):
+        """
+        Return the coadds value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "coadds")
@@ -141,6 +161,9 @@ class CalculatorInterface:
                 return None
     
     def data_label(self, **args):
+        """
+        Return the data_label value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "data_label")
@@ -160,6 +183,9 @@ class CalculatorInterface:
                 return None
     
     def data_section(self, **args):
+        """
+        Return the data_section value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "data_section")
@@ -179,6 +205,9 @@ class CalculatorInterface:
                 return None
     
     def dec(self, **args):
+        """
+        Return the dec value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "dec")
@@ -198,6 +227,9 @@ class CalculatorInterface:
                 return None
     
     def decker(self, **args):
+        """
+        Return the decker value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "decker")
@@ -217,6 +249,9 @@ class CalculatorInterface:
                 return None
     
     def detector_section(self, **args):
+        """
+        Return the detector_section value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "detector_section")
@@ -236,6 +271,9 @@ class CalculatorInterface:
                 return None
     
     def detector_x_bin(self, **args):
+        """
+        Return the detector_x_bin value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "detector_x_bin")
@@ -255,6 +293,9 @@ class CalculatorInterface:
                 return None
     
     def detector_y_bin(self, **args):
+        """
+        Return the detector_y_bin value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "detector_y_bin")
@@ -274,6 +315,9 @@ class CalculatorInterface:
                 return None
     
     def disperser(self, **args):
+        """
+        Return the disperser value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "disperser")
@@ -293,6 +337,9 @@ class CalculatorInterface:
                 return None
     
     def dispersion(self, **args):
+        """
+        Return the dispersion value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "dispersion")
@@ -312,6 +359,9 @@ class CalculatorInterface:
                 return None
     
     def dispersion_axis(self, **args):
+        """
+        Return the dispersion_axis value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "dispersion_axis")
@@ -331,6 +381,9 @@ class CalculatorInterface:
                 return None
     
     def elevation(self, **args):
+        """
+        Return the elevation value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "elevation")
@@ -350,6 +403,9 @@ class CalculatorInterface:
                 return None
     
     def exposure_time(self, **args):
+        """
+        Return the exposure_time value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "exposure_time")
@@ -368,26 +424,10 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def filter_id(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "filter_id")
-            if not hasattr( self.descriptorCalculator, "filter_id"):
-                key = "key_"+"filter_id"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.filter_id(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def filter_name(self, **args):
+        """
+        Return the filter_name value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "filter_name")
@@ -407,6 +447,9 @@ class CalculatorInterface:
                 return None
     
     def focal_plane_mask(self, **args):
+        """
+        Return the focal_plane_mask value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "focal_plane_mask")
@@ -426,6 +469,9 @@ class CalculatorInterface:
                 return None
     
     def gain(self, **args):
+        """
+        Return the gain value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "gain")
@@ -445,6 +491,9 @@ class CalculatorInterface:
                 return None
     
     def grating(self, **args):
+        """
+        Return the grating value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "grating")
@@ -464,6 +513,9 @@ class CalculatorInterface:
                 return None
     
     def gain_mode(self, **args):
+        """
+        Return the gain_mode value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "gain_mode")
@@ -483,6 +535,9 @@ class CalculatorInterface:
                 return None
     
     def instrument(self, **args):
+        """
+        Return the instrument value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "instrument")
@@ -502,6 +557,9 @@ class CalculatorInterface:
                 return None
     
     def local_time(self, **args):
+        """
+        Return the local_time value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "local_time")
@@ -521,6 +579,9 @@ class CalculatorInterface:
                 return None
     
     def mdf_row_id(self, **args):
+        """
+        Return the mdf_row_id value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "mdf_row_id")
@@ -539,26 +600,10 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def non_linear_level(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "non_linear_level")
-            if not hasattr( self.descriptorCalculator, "non_linear_level"):
-                key = "key_"+"non_linear_level"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.non_linear_level(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def nod_count(self, **args):
+        """
+        Return the nod_count value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "nod_count")
@@ -578,6 +623,9 @@ class CalculatorInterface:
                 return None
     
     def nod_pixels(self, **args):
+        """
+        Return the nod_pixels value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "nod_pixels")
@@ -596,7 +644,32 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
+    def non_linear_level(self, **args):
+        """
+        Return the non_linear_level value for generic data
+        """
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "non_linear_level")
+            if not hasattr( self.descriptorCalculator, "non_linear_level"):
+                key = "key_"+"non_linear_level"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            return self.descriptorCalculator.non_linear_level(self, **args)
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
     def object(self, **args):
+        """
+        Return the object value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "object")
@@ -616,6 +689,9 @@ class CalculatorInterface:
                 return None
     
     def observation_class(self, **args):
+        """
+        Return the observation_class value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "observation_class")
@@ -635,6 +711,9 @@ class CalculatorInterface:
                 return None
     
     def observation_epoch(self, **args):
+        """
+        Return the observation_epoch value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "observation_epoch")
@@ -654,6 +733,9 @@ class CalculatorInterface:
                 return None
     
     def observation_id(self, **args):
+        """
+        Return the observation_id value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "observation_id")
@@ -673,6 +755,9 @@ class CalculatorInterface:
                 return None
     
     def observation_mode(self, **args):
+        """
+        Return the observation_mode value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "observation_mode")
@@ -692,6 +777,9 @@ class CalculatorInterface:
                 return None
     
     def observation_type(self, **args):
+        """
+        Return the observation_type value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "observation_type")
@@ -710,26 +798,10 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def observer(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observer")
-            if not hasattr( self.descriptorCalculator, "observer"):
-                key = "key_"+"observer"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.observer(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def pixel_scale(self, **args):
+        """
+        Return the pixel_scale value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "pixel_scale")
@@ -749,6 +821,9 @@ class CalculatorInterface:
                 return None
     
     def prism(self, **args):
+        """
+        Return the prism value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "prism")
@@ -768,6 +843,9 @@ class CalculatorInterface:
                 return None
     
     def program_id(self, **args):
+        """
+        Return the program_id value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "program_id")
@@ -787,6 +865,9 @@ class CalculatorInterface:
                 return None
     
     def pupil_mask(self, **args):
+        """
+        Return the pupil_mask value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "pupil_mask")
@@ -806,6 +887,9 @@ class CalculatorInterface:
                 return None
     
     def qa_state(self, **args):
+        """
+        Return the qa_state value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "qa_state")
@@ -825,6 +909,9 @@ class CalculatorInterface:
                 return None
     
     def ra(self, **args):
+        """
+        Return the ra value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "ra")
@@ -844,6 +931,9 @@ class CalculatorInterface:
                 return None
     
     def raw_bg(self, **args):
+        """
+        Return the raw_bg value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "raw_bg")
@@ -863,6 +953,9 @@ class CalculatorInterface:
                 return None
     
     def raw_cc(self, **args):
+        """
+        Return the raw_cc value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "raw_cc")
@@ -881,26 +974,10 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def raw_gemini_qa(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_gemini_qa")
-            if not hasattr( self.descriptorCalculator, "raw_gemini_qa"):
-                key = "key_"+"raw_gemini_qa"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.raw_gemini_qa(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def raw_iq(self, **args):
+        """
+        Return the raw_iq value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "raw_iq")
@@ -919,26 +996,10 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def raw_pi_requirement(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_pi_requirement")
-            if not hasattr( self.descriptorCalculator, "raw_pi_requirement"):
-                key = "key_"+"raw_pi_requirement"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.raw_pi_requirement(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def raw_wv(self, **args):
+        """
+        Return the raw_wv value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "raw_wv")
@@ -958,6 +1019,9 @@ class CalculatorInterface:
                 return None
     
     def read_mode(self, **args):
+        """
+        Return the read_mode value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "read_mode")
@@ -977,6 +1041,9 @@ class CalculatorInterface:
                 return None
     
     def read_noise(self, **args):
+        """
+        Return the read_noise value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "read_noise")
@@ -996,6 +1063,9 @@ class CalculatorInterface:
                 return None
     
     def read_speed_mode(self, **args):
+        """
+        Return the read_speed_mode value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "read_speed_mode")
@@ -1014,26 +1084,10 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def release_date(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "release_date")
-            if not hasattr( self.descriptorCalculator, "release_date"):
-                key = "key_"+"release_date"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.release_date(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def saturation_level(self, **args):
+        """
+        Return the saturation_level value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "saturation_level")
@@ -1053,6 +1107,9 @@ class CalculatorInterface:
                 return None
     
     def slit(self, **args):
+        """
+        Return the slit value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "slit")
@@ -1071,26 +1128,10 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def ssa(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "ssa")
-            if not hasattr( self.descriptorCalculator, "ssa"):
-                key = "key_"+"ssa"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.ssa(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def telescope(self, **args):
+        """
+        Return the telescope value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "telescope")
@@ -1110,6 +1151,9 @@ class CalculatorInterface:
                 return None
     
     def ut_date(self, **args):
+        """
+        Return the ut_date value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "ut_date")
@@ -1129,6 +1173,9 @@ class CalculatorInterface:
                 return None
     
     def ut_time(self, **args):
+        """
+        Return the ut_time value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "ut_time")
@@ -1148,6 +1195,9 @@ class CalculatorInterface:
                 return None
     
     def wavefront_sensor(self, **args):
+        """
+        Return the wavefront_sensor value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "wavefront_sensor")
@@ -1167,6 +1217,9 @@ class CalculatorInterface:
                 return None
     
     def wavelength_reference_pixel(self, **args):
+        """
+        Return the wavelength_reference_pixel value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "wavelength_reference_pixel")
@@ -1186,6 +1239,9 @@ class CalculatorInterface:
                 return None
     
     def well_depth_mode(self, **args):
+        """
+        Return the well_depth_mode value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "well_depth_mode")
@@ -1205,6 +1261,9 @@ class CalculatorInterface:
                 return None
     
     def x_offset(self, **args):
+        """
+        Return the x_offset value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "x_offset")
@@ -1224,6 +1283,9 @@ class CalculatorInterface:
                 return None
     
     def y_offset(self, **args):
+        """
+        Return the y_offset value for generic data
+        """
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "y_offset")

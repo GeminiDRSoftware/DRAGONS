@@ -3,6 +3,9 @@ class DescriptorDescriptor:
     
     thunkfuncbuff = """
     def %(name)s(self, **args):
+        \"\"\"
+        Return the %(name)s value for generic data
+        \"\"\"
         try:
             self._lazyloadCalculator()
             #print hasattr( self.descriptorCalculator, "%(name)s")
@@ -49,7 +52,6 @@ descriptors =   [   DD("airmass"),
                     DD("dispersion_axis"),
                     DD("elevation"),
                     DD("exposure_time"),
-                    DD("filter_id"),
                     DD("filter_name"),
                     DD("focal_plane_mask"),
                     DD("gain"),
@@ -58,16 +60,15 @@ descriptors =   [   DD("airmass"),
                     DD("instrument"),
                     DD("local_time"),
                     DD("mdf_row_id"),
-                    DD("non_linear_level"),
                     DD("nod_count"),
                     DD("nod_pixels"),
+                    DD("non_linear_level"),
                     DD("object"),
                     DD("observation_class"),
                     DD("observation_epoch"),
                     DD("observation_id"),
                     DD("observation_mode"),
                     DD("observation_type"),
-                    DD("observer"),
                     DD("pixel_scale"),
                     DD("prism"),
                     DD("program_id"),
@@ -76,17 +77,13 @@ descriptors =   [   DD("airmass"),
                     DD("ra"),
                     DD("raw_bg"),
                     DD("raw_cc"),
-                    DD("raw_gemini_qa"),
                     DD("raw_iq"),
-                    DD("raw_pi_requirement"),
                     DD("raw_wv"),
                     DD("read_mode"),
                     DD("read_noise"),
                     DD("read_speed_mode"),
-                    DD("release_date"),
                     DD("saturation_level"),
                     DD("slit"),
-                    DD("ssa"),
                     DD("telescope"),
                     DD("ut_date"),
                     DD("ut_time"),
