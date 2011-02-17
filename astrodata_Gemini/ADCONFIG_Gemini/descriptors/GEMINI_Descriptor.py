@@ -159,17 +159,17 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Calculate the derived QA state
         qa_state = "%s:%s" % (rawpireq, rawgemqa)
         if rawpireq == 'UNKNOWN' and rawgemqa == 'UNKNOWN':
-            ret_qa_state = 'Undefined'
+            qa_state = 'Undefined'
         if rawpireq == 'YES' and rawgemqa == 'USABLE':
-            ret_qa_state = 'Pass'
+            qa_state = 'Pass'
         if rawpireq == 'NO' and rawgemqa == 'USABLE':
-            ret_qa_state = 'Usable'
+            qa_state = 'Usable'
         if rawpireq == 'NO' and rawgemqa == 'BAD':
-            ret_qa_state = 'Fail'
+            qa_state = 'Fail'
         if rawpireq == 'CHECK' and rawgemqa == 'CHECK':
-            ret_qa_state = 'CHECK'
+            qa_state = 'CHECK'
         
-        return ret_qa_state
+        return qa_state
     
     def ut_time(self, dataset, **args):
         """
