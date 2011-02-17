@@ -218,32 +218,6 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_observation_epoch
     
-    nifsConfigDict = None
-    
-    def observation_mode(self, dataset, **args):
-        """
-        Return the observation_mode value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the observing mode
-        """
-        hdu = dataset.hdulist
-        focal_plane_mask = \
-            hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
-        disperser = hdu[0].header[stdkeyDictNIFS['key_disperser']]
-        filter = hdu[0].header[stdkeyDictNIFS['key_filter']]
-        
-        observation_mode_key = (focal_plane_mask, disperser, filter)
-        
-        array = self.nifsConfigDict[observation_mode_key]
-        
-        ret_observation_mode = str(array[3])
-        
-        return ret_observation_mode
-    
-    nifsConfigDict = None
-    
     def pixel_scale(self, dataset, **args):
         """
         Return the pixel_scale value for NIFS

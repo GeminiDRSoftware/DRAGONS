@@ -122,22 +122,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_focal_plane_mask
     
-    def observation_mode(self, dataset, **args):
-        """
-        Return the observation_mode value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the observation mode
-        """
-        hdu = dataset.hdulist
-        observation_mode = \
-            hdu[0].header[stdkeyDictMICHELLE['key_observation_mode']]
-        
-        ret_observation_mode = str(observation_mode)
-        
-        return ret_observation_mode
-    
     def pixel_scale(self, dataset, **args):
         """
         Return the pixel_scale value for MICHELLE

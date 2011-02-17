@@ -7,7 +7,6 @@ stdkeyDictMICHELLE = {
     "key_filter":"FILTER",
     "key_focal_plane_mask":"SLITNAME",
     "key_numext":"NUMEXT",
-    "key_observation_mode":"MODE",
     "key_pixel_scale":"PIXELSIZ",
     "key_read_mode":"MODE",
     "key_ut_date":"UTDATE",

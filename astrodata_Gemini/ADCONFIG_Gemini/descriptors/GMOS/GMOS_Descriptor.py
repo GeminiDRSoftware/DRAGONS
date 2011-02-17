@@ -530,43 +530,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_non_linear_level
     
-    def observation_mode(self, dataset, **args):
-        """
-        Return the observation_mode value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the observing mode
-        """
-        hdu = dataset.hdulist
-        masktype = hdu[0].header[stdkeyDictGMOS['key_masktype']]
-        maskname = hdu[0].header[stdkeyDictGMOS['key_maskname']]
-        grating = hdu[0].header[stdkeyDictGMOS['key_disperser']]
-        
-        if masktype == 0 or dataset.isType('GMOS_BIAS') == True:
-            ret_observation_mode = 'IMAGE'
-        
-        elif masktype == -1:
-            ret_observation_mode = 'IFU'
-        
-        elif masktype == 1:
-            
-            if re.search('arcsec', maskname) != None and \
-                re.search('NS', maskname) == None:
-                ret_observation_mode = 'LONGSLIT'
-            else:
-                ret_observation_mode = 'MOS'
-        else:
-            # if observation_mode cannot be determined, set it equal to IMAGE
-            # instead of crashing
-            ret_observation_mode = 'IMAGE'
-        
-        # mask or IFU cannot be used without grating
-        if grating == 'MIRROR' and masktype != 0:
-            ret_observation_mode == 'IMAGE' 
-        
-        return ret_observation_mode
-    
     def pixel_scale(self, dataset, **args):
         """
         Return the pixel_scale value for GMOS

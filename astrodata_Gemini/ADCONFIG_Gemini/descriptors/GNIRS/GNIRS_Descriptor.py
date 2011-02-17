@@ -293,30 +293,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     gnirsArrayDict = None
     
-    def observation_mode(self, dataset, **args):
-        """
-        Return the observation_mode value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the observing mode
-        """
-        hdu = dataset.hdulist
-        prism = hdu[0].header[globalStdkeyDict['key_prism']]
-        decker = hdu[0].header[globalStdkeyDict['key_decker']]
-        disperser = hdu[0].header[globalStdkeyDict['key_grating']]
-        camera = hdu[0].header[globalStdkeyDict['key_camera']]
-        
-        observation_mode_key = (prism, decker, disperser, camera)
-        
-        array = self.gnirsConfigDict[observation_mode_key]
-        
-        ret_observation_mode = str(array[3])
-        
-        return ret_observation_mode
-    
-    gnirsConfigDict = None
-    
     def pixel_scale(self, dataset, **args):
         """
         Return the pixel_scale value for GNIRS

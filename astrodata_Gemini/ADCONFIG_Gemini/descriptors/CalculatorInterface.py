@@ -754,28 +754,6 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def observation_mode(self, **args):
-        """
-        Return the observation_mode value for generic data
-        """
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observation_mode")
-            if not hasattr( self.descriptorCalculator, "observation_mode"):
-                key = "key_"+"observation_mode"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.observation_mode(self, **args)
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def observation_type(self, **args):
         """
         Return the observation_type value for generic data

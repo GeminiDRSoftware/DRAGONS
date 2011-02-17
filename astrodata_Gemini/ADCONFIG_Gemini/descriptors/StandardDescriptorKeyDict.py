@@ -31,7 +31,6 @@ globalStdkeyDict = {
     "key_observation_class":"OBSCLASS",
     "key_observation_epoch":"OBSEPOCH",
     "key_observation_id":"OBSID",
-    "key_observation_mode":"OBSMODE",
     "key_observation_type":"OBSTYPE",
     "key_pixel_scale":"PIXSCALE",
     "key_prism":"PRISM",
