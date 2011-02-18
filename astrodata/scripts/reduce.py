@@ -683,11 +683,19 @@ for infiles in allinputs: #for dealing with multiple sets of files.
     #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") 
     # can be done by filename
     #@@REFERENCEIMAGE: used to retrieve/build correct reduction object
-    if (options.astrotype == None):
-        ro = rl.retrieveReductionObject(infiles[0]) 
-    else:
-        ro = rl.retrieveReductionObject(astrotype = options.astrotype)
-    
+    try:
+        if (options.astrotype == None):
+            ro = rl.retrieveReductionObject(infiles[0]) 
+        else:
+            ro = rl.retrieveReductionObject(astrotype = options.astrotype)
+    except:
+        reduceServer.finished=True
+        try:
+            prs.unregister()
+        except:
+            log.warning("Trouble unregistering from adcc shared services.")
+        raise
+
     # add command clause
     ro.registerCommandClause(commandClause)
         
