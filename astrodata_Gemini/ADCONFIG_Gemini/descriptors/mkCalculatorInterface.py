@@ -15,7 +15,15 @@ class DescriptorDescriptor:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.%(name)s(self, **args)
+            retval = self.descriptorCalculator.%(name)s(self, **args)
+            if "asString" in args and args["asString"]==True:
+                from datetime import datetime
+                from astrodata.adutils.gemutil import stdDateString
+                if isinstance(a, datetime):                    
+                    retval = stdDateString(a)
+                else:
+                    retval = str(retval)
+            return retval
         except:
             if self.descriptorCalculator.throwExceptions == True:
                 raise
