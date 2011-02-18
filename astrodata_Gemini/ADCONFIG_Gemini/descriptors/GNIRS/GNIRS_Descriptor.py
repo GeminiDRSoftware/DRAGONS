@@ -475,9 +475,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return slit
     
-    def well_depth_mode(self, dataset, **args):
+    def well_depth_setting(self, dataset, **args):
         """
-        Return the well_depth_mode value for GNIRS
+        Return the well_depth_setting value for GNIRS
         This is either 'Shallow' or 'Deep' in the OT. Returns 'Invalid' if the
         headers don't make sense wrt these defined modes
         @param dataset: the data set
@@ -488,12 +488,12 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         hdu = dataset.hdulist
         biasvoltage = hdu[0].header[stdkeyDictGNIRS['key_bias']]
         
-        well_depth_mode = 'Invalid'
+        well_depth_setting = 'Invalid'
         
         if abs(biasvoltage + 0.3) < 0.1:
-            well_depth_mode = 'Deep'
+            well_depth_setting = 'Deep'
         
         if abs(biasvoltage + 0.6) < 0.1:
-            well_depth_mode = 'Shallow'
+            well_depth_setting = 'Shallow'
         
-        return well_depth_mode
+        return well_depth_setting

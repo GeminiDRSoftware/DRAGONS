@@ -382,8 +382,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     headergain = hdu[1].header[globalStdkeyDict['key_gain']]
                 
                 ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_mode()
-                rmode = dataset.read_speed_mode()
+                gmode = dataset.gain_setting()
+                rmode = dataset.read_speed_setting()
                 
                 gainkey = (rmode, gmode, ampname)
                 
@@ -408,8 +408,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         headergain = ext.header[globalStdkeyDict['key_gain']]
                     
                     ampname = ext.header[stdkeyDictGMOS['key_ampname']]
-                    gmode = dataset.gain_mode()
-                    rmode = dataset.read_speed_mode()
+                    gmode = dataset.gain_setting()
+                    rmode = dataset.read_speed_setting()
                     
                     gainkey = (rmode, gmode, ampname)
                     
@@ -433,8 +433,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     headergain = hdu[1].header[globalStdkeyDict['key_gain']]
                 
                 ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_mode()
-                rmode = dataset.read_speed_mode()
+                gmode = dataset.gain_setting()
+                rmode = dataset.read_speed_setting()
                 
                 gainkey = (rmode, gmode, ampname)
                 
@@ -452,9 +452,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     gmosampsGain = None
     gmosampsGainBefore20060831 = None
     
-    def gain_mode(self, dataset, **args):
+    def gain_setting(self, dataset, **args):
         """
-        Return the gain_mode value for GMOS
+        Return the gain_setting value for GMOS
         This is used in the gain descriptor for GMOS
         @param dataset: the data set
         @type dataset: AstroData
@@ -470,11 +470,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             headergain = hdu[1].header[globalStdkeyDict['key_gain']]
         
         if headergain > 3.0:
-            ret_gain_mode = 'high'
+            ret_gain_setting = 'high'
         else:
-            ret_gain_mode = 'low'
+            ret_gain_setting = 'low'
         
-        return ret_gain_mode
+        return ret_gain_setting
     
     def mdf_row_id(self, dataset, asList=False, **args):
         """
@@ -582,8 +582,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     headergain = hdu[1].header[globalStdkeyDict['key_gain']]
                     
                 ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_mode()
-                rmode = dataset.read_speed_mode()
+                gmode = dataset.gain_setting()
+                rmode = dataset.read_speed_setting()
                 
                 read_noise_key = (rmode, gmode, ampname)
                 
@@ -606,8 +606,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         headergain = ext.header[globalStdkeyDict['key_gain']]
                     
                     ampname = ext.header[stdkeyDictGMOS['key_ampname']]
-                    gmode = dataset.gain_mode()
-                    rmode = dataset.read_speed_mode()
+                    gmode = dataset.gain_setting()
+                    rmode = dataset.read_speed_setting()
                     
                     read_noise_key = (rmode, gmode, ampname)
                     
@@ -629,8 +629,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     headergain = hdu[1].header[globalStdkeyDict['key_gain']]
                 
                 ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_mode()
-                rmode = dataset.read_speed_mode()
+                gmode = dataset.gain_setting()
+                rmode = dataset.read_speed_setting()
                 
                 read_noise_key = (rmode, gmode, ampname)
                 
@@ -649,9 +649,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     gmosampsRdnoise = None
     gmosampsRdnoiseBefore20060831 = None
     
-    def read_speed_mode(self, dataset, **args):
+    def read_speed_setting(self, dataset, **args):
         """
-        Return the read_speed_mode value for GMOS
+        Return the read_speed_setting value for GMOS
         This is used in the gain descriptor for GMOS
         @param dataset: the data set
         @type dataset: AstroData
@@ -662,11 +662,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
         
         if ampinteg == 1000:
-            ret_read_speed_mode = 'fast'
+            ret_read_speed_setting = 'fast'
         else:
-            ret_read_speed_mode = 'slow'
+            ret_read_speed_setting = 'slow'
         
-        return ret_read_speed_mode
+        return ret_read_speed_setting
     
     def saturation_level(self, dataset, **args):
         """

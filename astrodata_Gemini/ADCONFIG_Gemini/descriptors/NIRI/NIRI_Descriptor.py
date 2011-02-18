@@ -329,14 +329,14 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         hdu = dataset.hdulist
         coadds = dataset.coadds()
         gain = dataset.gain()
-        well_depth_mode = dataset.well_depth_mode()
+        well_depth_setting = dataset.well_depth_setting()
         
         shallowwell = self.niriSpecDict['shallowwell']
         deepwell = self.niriSpecDict['deepwell']
         
-        if well_depth_mode == 'Shallow':
+        if well_depth_setting == 'Shallow':
             ret_saturation_level = int(shallowwell * coadds / gain)
-        elif well_depth_mode == 'Deep':
+        elif well_depth_setting == 'Deep':
             ret_saturation_level = int(deepwell * coadds / gain)
         else:
             ret_saturation_level = None
@@ -345,9 +345,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     niriSpecDict = None
     
-    def well_depth_mode(self, dataset, **args):
+    def well_depth_setting(self, dataset, **args):
         """
-        Return the well_depth_mode value for NIRI
+        Return the well_depth_setting value for NIRI
         This is either 'Deep' or 'Shallow' as in the OT. Returns 'Invalid' if
         the bias numbers aren't what we normally use. Uses parameters in the
         niriSpecDict dictionary
@@ -366,13 +366,13 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         deepbias = self.niriSpecDict['deepbias']
         
         if abs(biasvolt - shallowbias) < 0.05:
-            ret_well_depth_mode = 'Shallow'
+            ret_well_depth_setting = 'Shallow'
         elif abs(biasvolt - deepbias) < 0.05:
-            ret_well_depth_mode = 'Deep'
+            ret_well_depth_setting = 'Deep'
         else:
-            ret_well_depth_mode = 'Invalid'
+            ret_well_depth_setting = 'Invalid'
         
-        return ret_well_depth_mode
+        return ret_well_depth_setting
     
     ## UTILITY MEMBER FUNCTIONS (NOT DESCRIPTORS)
     

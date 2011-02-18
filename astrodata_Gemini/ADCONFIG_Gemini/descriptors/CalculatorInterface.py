@@ -1,3 +1,4 @@
+
 import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
@@ -512,20 +513,20 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def gain_mode(self, **args):
+    def gain_setting(self, **args):
         """
-        Return the gain_mode value for generic data
+        Return the gain_setting value for generic data
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "gain_mode")
-            if not hasattr( self.descriptorCalculator, "gain_mode"):
-                key = "key_"+"gain_mode"
+            #print hasattr( self.descriptorCalculator, "gain_setting")
+            if not hasattr( self.descriptorCalculator, "gain_setting"):
+                key = "key_"+"gain_setting"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.gain_mode(self, **args)
+            return self.descriptorCalculator.gain_setting(self, **args)
         except:
             if self.descriptorCalculator.throwExceptions == True:
                 raise
@@ -1040,20 +1041,20 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def read_speed_mode(self, **args):
+    def read_speed_setting(self, **args):
         """
-        Return the read_speed_mode value for generic data
+        Return the read_speed_setting value for generic data
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "read_speed_mode")
-            if not hasattr( self.descriptorCalculator, "read_speed_mode"):
-                key = "key_"+"read_speed_mode"
+            #print hasattr( self.descriptorCalculator, "read_speed_setting")
+            if not hasattr( self.descriptorCalculator, "read_speed_setting"):
+                key = "key_"+"read_speed_setting"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.read_speed_mode(self, **args)
+            return self.descriptorCalculator.read_speed_setting(self, **args)
         except:
             if self.descriptorCalculator.throwExceptions == True:
                 raise
@@ -1216,20 +1217,20 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def well_depth_mode(self, **args):
+    def well_depth_setting(self, **args):
         """
-        Return the well_depth_mode value for generic data
+        Return the well_depth_setting value for generic data
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "well_depth_mode")
-            if not hasattr( self.descriptorCalculator, "well_depth_mode"):
-                key = "key_"+"well_depth_mode"
+            #print hasattr( self.descriptorCalculator, "well_depth_setting")
+            if not hasattr( self.descriptorCalculator, "well_depth_setting"):
+                key = "key_"+"well_depth_setting"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            return self.descriptorCalculator.well_depth_mode(self, **args)
+            return self.descriptorCalculator.well_depth_setting(self, **args)
         except:
             if self.descriptorCalculator.throwExceptions == True:
                 raise
