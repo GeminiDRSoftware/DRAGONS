@@ -772,8 +772,8 @@ class MTHTTPServer(ThreadingMixIn, HTTPServer):
     """Handles requests using threads"""
 
 def startInterfaceServer(port = 8777, **informers):
+    import socket
     try:
-        print "starting httpserver on port ...", port,
         # important to set prior to any instantiations of MyHandler
         MyHandler.informers = informers
         if "dirdict" in informers:
@@ -783,7 +783,16 @@ def startInterfaceServer(port = 8777, **informers):
         if "rim" in informers:
             ppwstate.rim = informers["rim"]
         # e.g. below by the HTTPServer class
-        server = MTHTTPServer(('', port), MyHandler)
+        findingPort = True
+        while findingPort:
+            try:
+                print "starting httpserver on port ...", port,
+                server = MTHTTPServer(('', port), MyHandler)
+                findingPort = False
+            except socket.error:
+                print "failed, port taken"
+                port += 1
+                
         print "started"
         #server.serve_forever()
         while True:

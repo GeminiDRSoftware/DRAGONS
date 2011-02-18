@@ -177,7 +177,12 @@ class DataSpider(object):
                         fname = os.path.join(root, tfile)
                        
                         try:
+                            # NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE  NOTE
+                            # fl is the astrodata instance of tfile/fname
                             fl = AstroData(fname)
+                            #
+                            # NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE  NOTE
+                            
                         except ADExcept:
                             print "${RED}Could not open %s as AstroData${NORMAL}" %fname
                             raise
@@ -377,16 +382,24 @@ class DataSpider(object):
 
                                 hlist.close()
                             if (showCals == True):
-                                adr = AstroDataRecord(fl)
-                                for caltyp in ["bias", "twilight"]:
-                                    rq = self.calDefLib.getCalReq([adr],caltyp)[0]
-                                    try:
-                                        cs = "%s" % (str(self.calService.search(rq)[0]))
-                                    except:
+                                from astrodata.adutils.adccutils.calutil import localCalibrationSearch
+                                from astrodata.adutils.adccutils.calutil import geminiCalibrationSearch
+                                
+                                calurls = localCalibrationSearch(fl)
+                                print "     ${BOLD}Local Calibration Search${NORMAL}"
+                                if calurls != None:
+                                    for caltyp in calurls.keys():
+                                        print "          ${BOLD}%s${NORMAL}: %s" % (caltyp, calurls[caltyp])
+                                else:
+                                    print "          ${RED}No Calibrations Found${NORMAL}"
+                                calurls = geminiCalibrationSearch(fl)
+                                print "     ${BOLD}Gemini Calibration Search${NORMAL}"
+                                if calurls != None:
+                                    for caltyp in calurls.keys():
+                                        print "          ${BOLD}%s${NORMAL}: %s" % (caltyp, calurls[caltyp])
+                                else:
+                                    print "          ${RED}No Calibrations Found${NORMAL}"
 
-                                        cs = "No %s found, %s " % ( caltyp, str(sys.exc_info()[1]))
-                                        raise
-                                    print "          %10s: %s" % (caltyp, cs)
                             if (recipe):
                                 banner = ' Running Recipe "%s" on %s ' % (recipe, fname)
                                 print "${REVERSE}${RED}" + " "*len(banner)

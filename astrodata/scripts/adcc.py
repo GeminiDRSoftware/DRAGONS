@@ -52,7 +52,7 @@ parser.add_option("--reload", dest = "reload", action = "store_true",
             default = False,
             help = """Just like --preload, but uses last, cached (pickled)
             directory scan.""")
-parser.add_option("-r", "--reduce-port", dest = "reduceport", default=53531, type="int",
+parser.add_option("-r", "--reduce-port", dest = "reduceport", default=54530, type="int",
             help="""When invoked by reduce, this is used to inform the prsproxy of the 
             port on which reduce listens for xmlrpc commands.""")
 parser.add_option("-p", "--reduce-pid", dest ="reducepid", default=None, type="int",
@@ -239,12 +239,42 @@ def get_version():
     print "prsproxy version:", repr(version)
     return version
     
+racefile = ".adcc/adccinfo.py"
+adccdir = getPersistDir()
+if os.path.exists(racefile):
+    print "ADCC250: adcc already has lockfile"
+    from astrodata.Proxies import PRSProxy
+    adcc = PRSProxy.getADCC(checkOnce = True)
+    if adcc == None:
+        print "ADCC248: no adcc running, clearing lockfile"
+        os.remove(racefile)
+    else:
+        print "ADCC252: adcc instance found running, halting"
+        adcc.unregister()
+        sys.exit()
 
-    
-server = SimpleXMLRPCServer(("localhost", options.listenport), allow_none=True)
-print "PRS Proxy listening on port %d..." % options.listenport
+# note: we here try to get a unique port starting at the standard port
+findingPort = True
+while findingPort:
+    try:
+        server = SimpleXMLRPCServer(("localhost", options.listenport), allow_none=True)
+        print "PRS Proxy listening on port %d..." % options.listenport
+        findingPort = False
+    except socket.error:
+        options.listenport += 1
+
+# write out XMLRPC and HTTP port   
+vals = { "xmlrpc_port": options.listenport,
+        "http_port":options.httpport,
+        "pid":os.getpid()}
+ports = file(racefile, "w")
+ports.write(repr(vals))
+ports.close()
+
 server.register_function(get_version, "get_version")
 server.register_function(calibrationSearch, "calibrationSearch")
+
+# store the port
 
 rim = ReduceInstanceManager()
 server.register_instance(rim)
@@ -280,13 +310,13 @@ if (webinterface):
     #import multiprocessing
     if ds and dirdict:
         web = Thread(None, prsproxyweb.main, "webface", 
-                    kwargs = {"port":8777,
+                    kwargs = {"port":options.httpport,
                               "rim":rim,
                               "dirdict":dirdict,
                               "dataSpider":ds})
     else:
         web = Thread(None, prsproxyweb.main, "webface", 
-                    kwargs = {"port":8777,
+                    kwargs = {"port":options.httpport,
                               "rim":rim})
         
     web.start()
@@ -331,3 +361,7 @@ while True:
             # not needed os.kill(os.getpid(), signal.SIGTERM)
             break
 
+
+if os.path.exists(racefile):
+    os.remove(racefile)
+    

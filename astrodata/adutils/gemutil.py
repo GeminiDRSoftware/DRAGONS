@@ -276,6 +276,10 @@ def gemdate(zone='UT', timestamp = None):
     else:
         t = timestamp.strftime('%Y-%m-%dT%H:%M:%S')
     return t
+    
+def stdDateString(date):
+    retstr = date.strftime('%Y-%m-%dT%H:%M:%S')
+    return retstr
 
 #---------------------------------------------------------------------------
 def gemhedit(filename=None, extension=0, keyword='', value='', comment='',

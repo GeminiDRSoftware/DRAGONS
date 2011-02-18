@@ -29,7 +29,7 @@ reduceServer = None
 
 class ReduceServer(object):
     xmlrpcthread = None
-    listenport = 53531    
+    listenport = 54530    
     reducecmds = None
     finished = False
     prsready = False
@@ -71,6 +71,8 @@ class ReduceServer(object):
             server.socket.close()
 
 def startADCC():
+    from time import sleep
+    racefile = ".adcc/racefile.py"
     logdir = ".autologs"
     if not os.path.exists(logdir):
         os.mkdir(logdir)
@@ -101,6 +103,10 @@ def startADCC():
                             stderr = subprocess.STDOUT #prserr,
                             ).pid
 
+    # wait for adccinfo
+    if not os.path.exists(racefile):
+        sleep(1)
+        
     return pid
                                         
 class PRSProxy(object):
@@ -117,8 +123,11 @@ class PRSProxy(object):
     xmlrpcthread = None
     reduceServer = None
             
-    def __init__(self, reduceServer = None):
+    def __init__(self, reduceServer = None, port = None):
         try:
+            if port != None:
+                self.prsport = port
+            #self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
             self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
             self.reduceServer = reduceServer
             PRSProxy._class_prs = self # .prs
@@ -128,7 +137,14 @@ class PRSProxy(object):
             raise "NOPE"
         
     @classmethod
-    def getADCC(cls, reduceServer = None):
+    def getADCC(cls, reduceServer = None, checkOnce = False):
+        # note: the correct ADCC will store it's info in .adcc/adccinfo.py
+        racefile = ".adcc/adccinfo.py"
+        infof = file(racefile)
+        infos = infof.read()
+        infof.close()
+        info = eval(infos)
+
         import sys
         if  type(cls._class_prs) != type(None):
             proxy = cls._class_prs
@@ -138,7 +154,7 @@ class PRSProxy(object):
         newProxy = None
 
         found = False
-        newProxy = PRSProxy(reduceServer = reduceServer)
+        newProxy = PRSProxy(reduceServer = reduceServer, port = info["xmlrpc_port"])
            
         if not found:
             log.info("reduce-->adcc?")
@@ -169,6 +185,9 @@ class PRSProxy(object):
                 newProxy.found = False
                 sys.stdout.write(".")
                 sleep(.1)
+                if checkOnce:
+                    newProxy = None
+                    break
                 # try again
         log.info("reduce--><--adcc")
 
