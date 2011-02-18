@@ -160,13 +160,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         qa_state = "%s:%s" % (rawpireq, rawgemqa)
         if rawpireq == 'UNKNOWN' and rawgemqa == 'UNKNOWN':
             qa_state = 'Undefined'
-        if rawpireq == 'YES' and rawgemqa == 'USABLE':
+        if rawpireq.upper() == 'YES' and rawgemqa.upper() == 'USABLE':
             qa_state = 'Pass'
-        if rawpireq == 'NO' and rawgemqa == 'USABLE':
+        if rawpireq.upper() == 'NO' and rawgemqa.upper() == 'USABLE':
             qa_state = 'Usable'
-        if rawpireq == 'NO' and rawgemqa == 'BAD':
+        if rawgemqa.upper() == 'BAD':
             qa_state = 'Fail'
-        if rawpireq == 'CHECK' and rawgemqa == 'CHECK':
+        if rawpireq.upper() == 'CHECK' or rawgemqa.upper() == 'CHECK':
             qa_state = 'CHECK'
         
         return qa_state
