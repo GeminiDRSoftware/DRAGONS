@@ -66,6 +66,25 @@
                       'userOverride':False  
                     },   
                     },
+                    
+     'flatCorrect':{'postpend':
+                   {
+                    'default': '_comb' , #value to be post pended to this primitives outputs
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False 
+                    },               
+                    },
+       
+    'getStackable':{'purpose':
+                   {
+                    'default': '' ,
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False 
+                    },               
+                    },
+                    
     'measureIQ':{'function':
                  {
                   'default': 'both' , # can be moffat/gauss/both
@@ -89,7 +108,7 @@
                     }, 
                     'qa':
                    {
-                   'default': True , 
+                   'default': True , # A flag to use a grid of sub-windows for detecting the sources in the image frames, rather than the entire frame all at once.
                    'recipeOverride': True,
                    'type': 'bool',
                    'userOverride':True 
@@ -103,6 +122,16 @@
                'note2':"pause doesn't need a 'message' parameter"
                }
               },      
+              
+    'setStackable':{'purpose':
+                   {
+                    'default': '' ,
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False 
+                    },               
+                    },
+    
     'showParameters': {'test': 
                    {
                     'default': True,
@@ -125,6 +154,16 @@
                      'tags':['test', 'wcslib']
                     }
                 },
+                
+    'showStackable':{'purpose':
+                   {
+                    'default': '' ,
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False 
+                    },               
+                    },
+    
     'standardizeHeaders':{'postpend':
                    {
                     'default': '_headers' , #value to be post pended to this primitives outputs
@@ -147,7 +186,25 @@
                       'type': 'bool',
                       'userOverride':True                                      
                      }     
-                          },                      
+                          },        
+                          
+          'storeProcessedBias':{'clob':
+                              {
+                                'default': False,
+                                'recipeOverride': True,
+                                'type': 'bool',
+                                'userOverride':True  
+                               }
+                              } ,
+        'storeProcessedFlat':{'clob':
+                              {
+                                'default': False,
+                                'recipeOverride': True,
+                                'type': 'bool',
+                                'userOverride':True  
+                               }
+                              } ,
+                                            
     'validateData':{'postpend':
                    {
                     'default': '_validated' , #value to be post pended to this primitives outputs
