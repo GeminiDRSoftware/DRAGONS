@@ -143,22 +143,5 @@
                           'type': 'str',
                           'userOverride':False    
                            }
-                        },
-        'storeProcessedBias':{'clob':
-                              {
-                                'default': False,
-                                'recipeOverride': True,
-                                'type': 'bool',
-                                'userOverride':True  
-                               }
-                              } ,
-        'storeProcessedFlat':{'clob':
-                              {
-                                'default': False,
-                                'recipeOverride': True,
-                                'type': 'bool',
-                                'userOverride':True  
-                               }
-                              } ,
-        
+                        },        
 }
