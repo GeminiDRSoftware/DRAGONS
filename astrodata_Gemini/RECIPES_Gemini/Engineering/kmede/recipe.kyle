@@ -1,8 +1,12 @@
-
 prepare
 overscanCorrect
 addVARDQ
 #writeOutputs
-getProcessedBias
-#localGetProcessedBias
+#getProcessedBias
+localGetProcessedBias
 biasCorrect
+
+#showInputs
+setStackable
+
+makeNormalizedFlat
