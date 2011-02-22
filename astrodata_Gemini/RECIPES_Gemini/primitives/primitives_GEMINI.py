@@ -84,7 +84,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # of converting the pixels, updating headers and logging.
             log.debug('Calling geminiScience.addDQ')
 
-            adOuts = geminiScience.addDQ(adIns=rc.getInputs(style='AD'), 
+            adOuts = geminiScience.add_dq(adIns=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
                                          postpend=rc['postpend'], verbose=int(rc['logVerbose']))    
@@ -129,7 +129,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # of converting the pixels, updating headers and logging.
             log.debug('Calling geminiScience.addVAR')
             
-            adOuts = geminiScience.addVAR(adIns=rc.getInputs(style='AD'), 
+            adOuts = geminiScience.add_var(adIns=rc.getInputs(style='AD'), 
                                          postpend=rc['postpend'], 
                                          verbose=int(rc['logVerbose']))    
            
@@ -144,7 +144,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             raise 
         yield rc 
     
-    def ADUtoElectrons(self,rc):
+    def adu_to_electrons(self,rc):
         """
         This primitive will convert the inputs from having pixel 
         units of ADU to electrons.
@@ -315,7 +315,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.debug('Calling geminiScience.flatCorrect function')
             
-            adOuts = geminiScience.flatCorrect(adIns=rc.getInputs(style='AD'),     
+            adOuts = geminiScience.flat_correct(adIns=rc.getInputs(style='AD'),     
                                          flats=processedFlat, postpend=rc['postpend'], 
                                          verbose=int(rc['logVerbose']))           
             

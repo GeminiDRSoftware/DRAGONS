@@ -94,7 +94,7 @@ class GMOSPrimitives(GEMINIPrimitives):
    
             log.debug('Calling geminiScience.addBPM function')
             
-            adOuts = geminiScience.addBPM(adIns=rc.getInputs(style='AD'), 
+            adOuts = geminiScience.add_bpm(adIns=rc.getInputs(style='AD'), 
                                          BPMs=BPMlist, postpend=rc['postpend'], 
                                          verbose=int(rc['logVerbose']))           
             
@@ -166,7 +166,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('Using bias '+processedBias+' to correct the inputs')
             log.debug('Calling geminiScience.biasCorrect function')
             
-            adOuts = geminiScience.biasCorrect(adIns=rc.getInputs(style='AD'), 
+            adOuts = geminiScience.bias_correct(adIns=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                          postpend=rc['postpend'], verbose=int(rc['logVerbose']))           
@@ -389,7 +389,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling geminiScience.mosaicDetectors function')
             
-            adOuts = geminiScience.mosaicDetectors(adIns=rc.getInputs(style='AD'), 
+            adOuts = geminiScience.mosaic_detectors(adIns=rc.getInputs(style='AD'), 
                                         fl_paste=rc['fl_paste'], interp_function=rc['interp_function'], 
                                         fl_vardq='AUTO', postpend=rc['postpend'], 
                                         verbose=int(rc['logVerbose']))           
@@ -450,7 +450,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling geminiScience.normalizeFlat function')
             
-            adOuts = geminiScience.normalizeFlat(adIns=rc.getInputs(style='AD'), 
+            adOuts = geminiScience.normalize_flat(adIns=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                         fl_vardq='AUTO', postpend=rc['postpend'], 
                                         verbose=int(rc['logVerbose']))           
@@ -506,7 +506,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling gmosScience.overscanSubtract function')
             
-            adOuts = gmosScience.overscanSubtract(adIns=rc.getInputs(style='AD'), 
+            adOuts = gmosScience.overscan_subtract(adIns=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], biassec=rc['biassec'], 
                                         fl_vardq='AUTO', postpend=rc['postpend'], 
                                         verbose=int(rc['logVerbose']))           
@@ -547,7 +547,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling geminiScience.overscanTrim function')
             
-            adOuts = geminiScience.overscanTrim(adIns=rc.getInputs(style='AD'),     
+            adOuts = geminiScience.overscan_trim(adIns=rc.getInputs(style='AD'),     
                                                         postpend=rc['postpend'], 
                                                         verbose= int(rc['logVerbose']))           
             
