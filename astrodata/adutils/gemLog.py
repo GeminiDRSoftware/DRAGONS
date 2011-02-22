@@ -436,7 +436,7 @@ def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=
             if log.logname() == logName:
                 #print 'GL432: using old logger'
                 if verbose!=log.verbosity():
-                    print 'GL445: updating verbosity of existing log to '+str(verbose)
+                    #print 'GL445: updating verbosity of existing log to '+str(verbose)
                     _geminiLogger = GeminiLogger(logName=logName, 
                                          verbose=verbose, debug=debug, 
                                          noLogFile=noLogFile, allOff=allOff)
