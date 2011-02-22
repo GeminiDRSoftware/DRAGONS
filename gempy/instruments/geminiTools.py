@@ -175,7 +175,24 @@ def logDictParams(indict, verbose=1):
     for key in indict:
         log.fullinfo(repr(key)+' = '+repr(indict[key]), 
                      category='parameters')
-
+def observationMode(ad):
+    """ 
+    A basic function to determine if the input is one of 
+    (IMAGE|IFU|MOS|LONGSLIT) type.  It returns the type as a string. If input is  
+    none of these types, then None is returned.
+    """
+    types = ad.getTypes()
+    if 'IMAGE' in types:
+        return 'IMAGE'
+    elif 'IFU' in types:
+        return 'IFU'
+    elif 'MOS' in types:
+        return 'MOS'
+    elif 'LONGSLIT' in types:
+        return 'LONGSLIT'
+    else:
+        return None
+    
 def pyrafBoolean(pythonBool):
     """
     A very basic function to reduce code repetition that simply 'casts' any 
@@ -240,7 +257,7 @@ def stdObsHdrs(ad, verbose=1):
     ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale(), 
                       'Pixel scale in Y in arcsec/pixel')
     ad.phuSetKeyValue('NEXTEND', len(ad) , 'Number of extensions')
-    ad.phuSetKeyValue('OBSMODE', ad.observation_mode() , 
+    ad.phuSetKeyValue('OBSMODE', observationMode(ad) , 
                       'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
     ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , 
                       'Exposure time for each coadd frame')
@@ -269,14 +286,14 @@ def stdObsHdrs(ad, verbose=1):
     log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
                  category='header')
     log.fullinfo('PHU keywords updated/added:\n', category='header')
-    log.fullinfo('NSCIEXT = '+str(ad.countExts('SCI')), category='header' )
-    log.fullinfo('PIXSCALE = '+str(ad.pixel_scale()), category='header' )
-    log.fullinfo('NEXTEND = '+str(len(ad)), category='header' )
-    log.fullinfo('OBSMODE = '+str(ad.observation_mode()), category='header' )
-    log.fullinfo('COADDEXP = '+str(ad.phuValue('EXPTIME')), category='header' )
-    log.fullinfo('EXPTIME = '+str(effExpTime), category='header' )
-    log.fullinfo('ORIGNAME = '+str(origName), category='header')
-    log.fullinfo('GEM-TLM = '+str(ut), category='header' )
+    log.fullinfo('NSCIEXT = '+str(ad.phuGetKeyValue('NSCIEXT')), category='header' )
+    log.fullinfo('PIXSCALE = '+str(ad.phuGetKeyValue('PIXSCALE')), category='header' )
+    log.fullinfo('NEXTEND = '+str(ad.phuGetKeyValue('NEXTEND')), category='header' )
+    log.fullinfo('OBSMODE = '+ad.phuGetKeyValue('OBSMODE'), category='header' )
+    log.fullinfo('COADDEXP = '+str(ad.phuGetKeyValue('COADDEXP')), category='header' )
+    log.fullinfo('EXPTIME = '+str(ad.phuGetKeyValue('EXPTIME')), category='header' )
+    log.fullinfo('ORIGNAME = '+ad.phuGetKeyValue('ORIGNAME'), category='header')
+    log.fullinfo('GEM-TLM = '+str(ad.phuGetKeyValue('GEM-TLM')), category='header' )
     log.fullinfo('---------------------------------------------------', 
                  category='header')
          
