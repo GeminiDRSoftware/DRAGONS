@@ -16,7 +16,7 @@ from gempy.instruments import geminiTools  as gemt
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
-def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='', 
+def adu_to_electrons(adIns=None, outNames=None, postpend=None, logName='', 
                                                     verbose=1, noLogFile=False):
     """
     This function will convert the inputs from having pixel values in ADU to 
@@ -189,7 +189,7 @@ def ADUtoElectrons(adIns=None, outNames=None, postpend=None, logName='',
         raise('An error occurred while trying to run ADUtoElectrons')
     
     
-def addDQ(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=None, 
+def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=None, 
                                     logName='', verbose=1, noLogFile=False):
     """
     This function will create a numpy array for the data quality 
@@ -397,7 +397,7 @@ def addDQ(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=No
         raise ('An error occurred while trying to run addDQ')
     
 
-def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='', 
+def add_bpm(adIns=None, BPMs=None, outNames=None, postpend=None, logName='', 
                                                     verbose=1, noLogFile=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
@@ -619,7 +619,7 @@ def addBPM(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
         raise ('An error occurred while trying to run addBPM')
     
 
-def addVAR(adIns, outNames=None, postpend=None, logName='', verbose=1, 
+def add_var(adIns, outNames=None, postpend=None, logName='', verbose=1, 
                                                             noLogFile=False):
     """
     This function uses numpy to calculate the variance of each SCI frame
@@ -797,7 +797,7 @@ def addVAR(adIns, outNames=None, postpend=None, logName='', verbose=1,
         raise ('An error occurred while trying to run addVAR')
     
     
-def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', verbose=1, 
+def flat_correct(adIns, flats=None, outNames=None, postpend=None, logName='', verbose=1, 
                                                             noLogFile=False):
     """
     This function performs a flat correction by dividing the inputs by  
@@ -943,7 +943,7 @@ def flatCorrect(adIns, flats=None, outNames=None, postpend=None, logName='', ver
     except:
         raise ('An error occurred while trying to run flatCorrect')
     
-def overscanTrim(adIns, outNames=None, postpend=None, logName='', verbose=1, 
+def overscan_trim(adIns, outNames=None, postpend=None, logName='', verbose=1, 
                                                             noLogFile=False):
     """
     This function uses AstroData to trim the overscan region 
@@ -1310,7 +1310,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 
                 
-def biasCorrect(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
+def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
                 outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
     """
     This function will subtract the biases from the inputs using the 
@@ -1566,7 +1566,7 @@ def biasCorrect(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False
                 
                 
                 
-def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
+def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
                 outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
     """
     This function will mosaic the SCI frames of the input images, 
@@ -1768,7 +1768,7 @@ def mosaicDetectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='A
         raise ('An error occurred while trying to run mosaicDetectors') 
                 
                 
-def normalizeFlat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
+def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
                 outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
     """
     This function will combine the input flats (adIns) and then normalize them 

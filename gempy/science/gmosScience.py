@@ -16,7 +16,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 
-def overscanSubtract(adIns, fl_trim=False, fl_vardq='AUTO', 
+def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
             outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
     """
