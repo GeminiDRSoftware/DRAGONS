@@ -429,7 +429,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
                         it automatically if there are VAR and DQ frames in the inputs.
                         NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                    so, if the first does, then the rest MUST also have them as well.
+                        so, if the first does, then the rest MUST also have them as well.
             
         
         :param logVerbose: Verbosity setting for log messages to the screen.
