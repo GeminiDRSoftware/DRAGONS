@@ -1,0 +1,433 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GMOS Primitives &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="index.html" />
+    <link rel="next" title="GMOS_IMAGE Primitives" href="GMOS_IMAGE_primitives.html" />
+    <link rel="prev" title="GEMINI Primitives" href="GEMINI_primitives.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GMOS_IMAGE_primitives.html" title="GMOS_IMAGE Primitives"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GEMINI_primitives.html" title="GEMINI Primitives"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-primitives_GMOS">
+<span id="gmos-primitives"></span><h1>GMOS Primitives<a class="headerlink" href="#module-primitives_GMOS" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="primitives_GMOS.GMOSException">
+<em class="property">class </em><tt class="descclassname">primitives_GMOS.</tt><tt class="descname">GMOSException</tt><big>(</big><em>message='Exception Raised in Recipe System'</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSException" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the general exception the classes and functions in the
+Structures.py module raise.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="primitives_GMOS.GMOSPrimitives">
+<em class="property">class </em><tt class="descclassname">primitives_GMOS.</tt><tt class="descname">GMOSPrimitives</tt><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the class of all primitives for the GMOS level of the type 
+hierarchy tree.  It inherits all the primitives to the level above
+, &#8216;GEMINIPrimitives&#8217;.</p>
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.addBPM">
+<tt class="descname">addBPM</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.addBPM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.addBPM" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive is used by the general addDQ primitive of 
+primitives_GEMINI to add the appropriate BPM (Bad Pixel Mask)
+to the inputs.  This function will add the BPM as frames matching
+that of the SCI frames and ensure the BPM&#8217;s data array is the same 
+size as that of the SCI data array. If the SCI array is larger 
+(say SCI&#8217;s were overscan trimmed, but BPMs were not), the BPMs will 
+have their arrays padded with zero&#8217;s to match the sizes and use the 
+data_section descriptor on the SCI data arrays to ensure the match is
+a correct fit.</p>
+<p>Using this approach, rather than appending the BPM in the addDQ allows
+for specialized BPM processing to be done in the instrument specific
+primitive sets where it belongs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.biasCorrect">
+<tt class="descname">biasCorrect</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.biasCorrect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.biasCorrect" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will subtract the biases from the inputs using the 
+CL script gireduce.</p>
+<p>WARNING: The gireduce script used here replaces the previously 
+calculated DQ frames with its own versions.  This may be corrected 
+in the future by replacing the use of the gireduce
+with a Python routine to do the bias subtraction.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>fl_over</strong> (<em>Python boolean (True/False), default is False</em>) &#8211; Subtract the overscan?</li>
+<li><strong>fl_trim</strong> (<em>Python boolean (True/False), default is False. 
+Note: This value cannot be set during a recipe or from 
+reduce command line call, only in the parameter file.</em>) &#8211; Trim the overscan region from the frames?</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR 
+and DQ frames exist, so, if the first does, then the 
+rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.display">
+<tt class="descname">display</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.display" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a primitive for displaying GMOS data.
+It utilizes the IRAF routine gdisplay and requires DS9 to be running
+before this primitive is called.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.localGetProcessedBias">
+<tt class="descname">localGetProcessedBias</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.localGetProcessedBias"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.localGetProcessedBias" title="Permalink to this definition">¶</a></dt>
+<dd><p>A prim that works with the calibration system (MAYBE), but as it isn&#8217;t 
+written yet this simply copies the bias file from the stored processed 
+bias directory and reports its name to the reduction context. 
+This is the basic form that the calibration system will work as well 
+but with proper checking for what the correct bias file would be rather 
+than my oversimplified checking the bining alone.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.localGetProcessedFlat">
+<tt class="descname">localGetProcessedFlat</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.localGetProcessedFlat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.localGetProcessedFlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>A prim that works with the calibration system (MAYBE), but as it 
+isn&#8217;t written yet this simply copies the bias file from the stored 
+processed bias directory and reports its name to the reduction 
+context. this is the basic form that the calibration system will work 
+as well but with proper checking for what the correct bias file would 
+be rather than my oversimplified checking
+the binning alone.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.mosaicDetectors">
+<tt class="descname">mosaicDetectors</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.mosaicDetectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.mosaicDetectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will mosaic the SCI frames of the input images, 
+along with the VAR and DQ frames if they exist.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>fl_paste</strong> (<em>Python boolean (True/False), default is False</em>) &#8211; Paste images instead of mosaic?</li>
+<li><strong>interp_function</strong> (<em>string, options: &#8216;linear&#8217;, &#8216;nearest&#8217;, &#8216;poly3&#8217;, 
+&#8216;poly5&#8217;, &#8216;spine3&#8217;, &#8216;sinc&#8217;.</em>) &#8211; Type of interpolation function to use accross the chip gaps</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.normalizeFlat">
+<tt class="descname">normalizeFlat</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.normalizeFlat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.normalizeFlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will combine the input flats and then normalize them 
+using the CL script giflat.</p>
+<p>Warning: giflat calculates its own DQ frames and thus replaces the 
+previously produced ones in calculateDQ. This may be fixed in the 
+future by replacing giflat with a Python equivilent with more 
+appropriate options for the recipe system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>fl_over</strong> (<em>Python boolean (True/False)</em>) &#8211; Subtract the overscan level from the frames?</li>
+<li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
+so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.overscanSubtract">
+<tt class="descname">overscanSubtract</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.overscanSubtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.overscanSubtract" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive uses the CL script gireduce to subtract the overscan 
+from the input images.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
+so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>biassec</strong> (<em>string. default: &#8216;[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]&#8217; is ideal for 2x2 GMOS data.</em>) &#8211; biassec parameter of format &#8216;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#8217;</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.overscanTrim">
+<tt class="descname">overscanTrim</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.overscanTrim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.overscanTrim" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive uses AstroData to trim the overscan region 
+from the input images and update their headers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.standardizeInstrumentHeaders">
+<tt class="descname">standardizeInstrumentHeaders</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.standardizeInstrumentHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.standardizeInstrumentHeaders" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive is called by standardizeHeaders to makes the changes and 
+additions to the headers of the input files that are instrument 
+specific.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GMOS.GMOSPrimitives.validateInstrumentData">
+<tt class="descname">validateInstrumentData</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS.html#GMOSPrimitives.validateInstrumentData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.validateInstrumentData" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive is called by validateData to validate the instrument 
+specific data checks for all input files.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GEMINI_primitives.html"
+                        title="previous chapter">GEMINI Primitives</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GMOS_IMAGE_primitives.html"
+                        title="next chapter">GMOS_IMAGE Primitives</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/GMOS_primitives.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GMOS_IMAGE_primitives.html" title="GMOS_IMAGE Primitives"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GEMINI_primitives.html" title="GEMINI Primitives"
+             >previous</a> |</li>
+        <li><a href="index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

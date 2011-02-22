@@ -1,0 +1,682 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GEMINI Primitives &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="index.html" />
+    <link rel="next" title="GMOS Primitives" href="GMOS_primitives.html" />
+    <link rel="prev" title="PRIMITIVES:" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GMOS_primitives.html" title="GMOS Primitives"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="PRIMITIVES:"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-primitives_GEMINI">
+<span id="gemini-primitives"></span><h1>GEMINI Primitives<a class="headerlink" href="#module-primitives_GEMINI" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="primitives_GEMINI.GEMINIException">
+<em class="property">class </em><tt class="descclassname">primitives_GEMINI.</tt><tt class="descname">GEMINIException</tt><big>(</big><em>message='Exception Raised in Recipe System'</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIException" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the general exception the classes and functions in the
+Structures.py module raise.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="primitives_GEMINI.GEMINIPrimitives">
+<em class="property">class </em><tt class="descclassname">primitives_GEMINI.</tt><tt class="descname">GEMINIPrimitives</tt><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the class of all primitives for the GEMINI astrotype of 
+the hierarchy tree.  It inherits all the primitives to the level above
+, &#8216;PrimitiveSet&#8217;.</p>
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.ADUtoElectrons">
+<tt class="descname">ADUtoElectrons</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.ADUtoElectrons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.ADUtoElectrons" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will convert the inputs from having pixel 
+units of ADU to electrons.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.addDQ">
+<tt class="descname">addDQ</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.addDQ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.addDQ" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will create a numpy array for the data quality 
+of each SCI frame of the input data. This will then have a 
+header created and append to the input using AstroData as a DQ 
+frame. The value of a pixel will be the sum of the following: 
+(0=good, 1=bad pixel (found in bad pixel mask), 
+2=value is non linear, 4=pixel is saturated)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>fl_nonlinear</strong> &#8211; Flag to turn checking for nonlinear pixels on/off</li>
+<li><strong>fl_saturated</strong> (<em>Python boolean (True/False), default is True</em>) &#8211; Flag to turn checking for saturated pixels on/off</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.addVAR">
+<tt class="descname">addVAR</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.addVAR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.addVAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive uses numpy to calculate the variance of each SCI frame
+in the input files and appends it as a VAR frame using AstroData.</p>
+<p>The calculation will follow the formula:
+variance = (read noise/gain)2 + max(data,0.0)/gain</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.combine">
+<tt class="descname">combine</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.combine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.combine" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will average and combine the SCI extensions of the 
+inputs. It takes all the inputs and creates a list of them and 
+then combines each of their SCI extensions together to create 
+average combination file. New VAR frames are made from these 
+combined SCI frames and the DQ frames are propagated through 
+to the final file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR 
+and DQ frames exist, so, if the first does, then the 
+rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>fl_dqprop</strong> (<em>Python boolean (True/False)</em>) &#8211; propogate the current DQ values?</li>
+<li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median&#8217;.</em>) &#8211; type of combining method to use.</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.display">
+<tt class="descname">display</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.display" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.flatCorrect">
+<tt class="descname">flatCorrect</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.flatCorrect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.flatCorrect" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive performs a flat correction by dividing the inputs by a 
+processed flat similar to the way gireduce would perform this operation
+but written in pure Python in the arith toolbox.</p>
+<p>It is currently assumed that the same flat file will be applied to all
+input images.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.getProcessedBias">
+<tt class="descname">getProcessedBias</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.getProcessedBias"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.getProcessedBias" title="Permalink to this definition">¶</a></dt>
+<dd><p>A primitive to search and return the appropriate calibration bias from
+a server for the given inputs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.getProcessedFlat">
+<tt class="descname">getProcessedFlat</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.getProcessedFlat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.getProcessedFlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>A primitive to search and return the appropriate calibration flat from
+a server for the given inputs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.getStackable">
+<tt class="descname">getStackable</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.getStackable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.getStackable" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will check the files in the stack lists are on disk,
+and then update the inputs list to include all members of the stack 
+for stacking.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>purpose</strong> (<em>string, either: &#8216;&#8217; for regular image stacking, 
+or &#8216;fringe&#8217; for fringe stacking.</em>) &#8211; </li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.measureIQ">
+<tt class="descname">measureIQ</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.measureIQ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.measureIQ" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will detect the sources in the input images and fit
+both Gaussian and Moffat models to their profiles and calculate the 
+Image Quality and seeing from this.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>function</strong> (<em>string, can be: &#8216;moffat&#8217;,&#8217;gauss&#8217; or &#8216;both&#8217;; 
+Default &#8216;both&#8217;</em>) &#8211; Function for centroid fitting</li>
+<li><strong>display</strong> (<em>Python boolean (True/False)
+Default: True</em>) &#8211; Flag to turn on displaying the fitting to ds9</li>
+<li><strong>mosaic</strong> (<em>Python boolean (True/False)
+default: True</em>) &#8211; Flag to indicate the images have been mosaic&#8217;d 
+(ie only 1 &#8216;SCI&#8217; extension in images)</li>
+<li><strong>qa</strong> (<em>Python boolean (True/False)
+default: True</em>) &#8211; flag to use a grid of sub-windows for detecting the sources in 
+the image frames, rather than the entire frame all at once.</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.setStackable">
+<tt class="descname">setStackable</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.setStackable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.setStackable" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will update the lists of files to be stacked
+that have the same observationID with the current inputs.
+This file is cached between calls to reduce, thus allowing
+for one-file-at-a-time processing.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>purpose</strong> (<em>string, either: &#8216;&#8217; for regular image stacking, 
+or &#8216;fringe&#8217; for fringe stacking.</em>) &#8211; </li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.showCals">
+<tt class="descname">showCals</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.showCals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.showCals" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.showFiles">
+<tt class="descname">showFiles</tt><big>(</big><em>rc</em><big>)</big><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.showFiles" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.showInputs">
+<tt class="descname">showInputs</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.showInputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.showInputs" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.showParameters">
+<tt class="descname">showParameters</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.showParameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.showParameters" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.showStackable">
+<tt class="descname">showStackable</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.showStackable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.showStackable" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will log the list of files in the stacking list matching
+the current inputs and &#8216;purpose&#8217; value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>purpose</strong> (<em>string, either: &#8216;&#8217; for regular image stacking, 
+or &#8216;fringe&#8217; for fringe stacking.</em>) &#8211; </li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.standardizeHeaders">
+<tt class="descname">standardizeHeaders</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.standardizeHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.standardizeHeaders" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive updates and adds the important header keywords
+for the input MEFs. First the general headers for Gemini will 
+be update/created, followed by those that are instrument specific.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.standardizeStructure">
+<tt class="descname">standardizeStructure</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.standardizeStructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.standardizeStructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive ensures the MEF structure is ready for further 
+processing, through adding the MDF if necessary and the needed 
+keywords to the headers.  First the MEF&#8217;s will be checked for the 
+general Gemini structure requirements and then the instrument specific
+ones if needed. If the data requires a MDF to be attached, use the 
+&#8216;addMDF&#8217; flag to make this happen 
+(eg. standardizeStructure(addMDF=True)).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>addMDF</strong> (<em>Python boolean (True/False)
+default: True</em>) &#8211; A flag to turn on/off appending the appropriate MDF 
+file to the inputs.</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.storeProcessedBias">
+<tt class="descname">storeProcessedBias</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.storeProcessedBias"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.storeProcessedBias" title="Permalink to this definition">¶</a></dt>
+<dd><p>This should be a primitive that interacts with the calibration system 
+(MAYBE) but that isn&#8217;t up and running yet. Thus, this will just strip 
+the extra postfixes to create the &#8216;final&#8217; name for the 
+makeProcessedBias outputs and write them to disk in a storedcals folder.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>clob</strong> (<em>Python boolean (True/False)
+default: False</em>) &#8211; Write over any previous file with the same name that
+all ready exists?</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.storeProcessedFlat">
+<tt class="descname">storeProcessedFlat</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.storeProcessedFlat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.storeProcessedFlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>This should be a primitive that interacts with the calibration 
+system (MAYBE) but that isn&#8217;t up and running yet. Thus, this will 
+just strip the extra postfixes to create the &#8216;final&#8217; name for the 
+makeProcessedFlat outputs and write them to disk in a storedcals folder.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>clob</strong> (<em>Python boolean (True/False)
+default: False</em>) &#8211; Write over any previous file with the same name that
+all ready exists?</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.validateData">
+<tt class="descname">validateData</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.validateData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.validateData" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will ensure the data is not corrupted or in an odd 
+format that will affect later steps in the reduction process.  
+It will call a function to take care of the general Gemini issues 
+and then one for the instrument specific ones. If there are issues 
+with the data, the flag &#8216;repair&#8217; can be used to turn on the feature to 
+repair it or not (eg. validateData(repair=True))
+(this feature is not coded yet).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>repair</strong> (<em>Python boolean (True/False)
+default: True</em>) &#8211; A flag to turn on/off repairing the data if there is a
+problem with it. 
+Note: this feature does not work yet.</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.writeOutputs">
+<tt class="descname">writeOutputs</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.writeOutputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.writeOutputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>A primitive that may be called by a recipe at any stage to
+write the outputs to disk.
+If postpend is set during the call to writeOutputs, any previous 
+postpends will be striped and replaced by the one provided.
+examples: 
+writeOutputs(postpend= &#8216;_string&#8217;), writeOutputs(prepend= &#8216;_string&#8217;) 
+or if you have a full file name in mind for a SINGLE file being 
+ran through Reduce you may use writeOutputs(outfilename=&#8217;name.fits&#8217;).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>strip</strong> (<em>Python boolean (True/False)
+default: False</em>) &#8211; Strip the previously postpended strings off file name?</li>
+<li><strong>clobber</strong> (<em>Python boolean (True/False)
+default: False</em>) &#8211; Write over any previous file with the same name that
+all ready exists?</li>
+<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>prepend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>outfilename</strong> (<em>string</em>) &#8211; The full filename you wish the file to be written to.
+Note: this only works if there is ONLY ONE file in the inputs.</li>
+<li><strong>logVerbose</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">PRIMITIVES:</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GMOS_primitives.html"
+                        title="next chapter">GMOS Primitives</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/GEMINI_primitives.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GMOS_primitives.html" title="GMOS Primitives"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="PRIMITIVES:"
+             >previous</a> |</li>
+        <li><a href="index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

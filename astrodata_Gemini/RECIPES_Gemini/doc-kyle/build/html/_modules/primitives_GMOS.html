@@ -1,0 +1,710 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>primitives_GMOS &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for primitives_GMOS</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">StringIO</span><span class="o">,</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">Descriptors</span>
+<span class="kn">from</span> <span class="nn">astrodata.data</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">geminiTools</span> <span class="k">as</span> <span class="n">gemt</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">gmosTools</span> <span class="k">as</span> <span class="n">gmost</span>
+<span class="kn">from</span> <span class="nn">gempy.science</span> <span class="kn">import</span> <span class="n">geminiScience</span>
+<span class="kn">from</span> <span class="nn">gempy.science</span> <span class="kn">import</span> <span class="n">gmosScience</span>
+<span class="kn">from</span> <span class="nn">primitives_GEMINI</span> <span class="kn">import</span> <span class="n">GEMINIPrimitives</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils.gemutil</span> <span class="kn">import</span> <span class="n">pyrafLoader</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">astrodata.ConfigSpace</span> <span class="kn">import</span> <span class="n">lookupPath</span>
+
+<div class="viewcode-block" id="GMOSException"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSException">[docs]</a><span class="k">class</span> <span class="nc">GMOSException</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; This is the general exception the classes and functions in the</span>
+<span class="sd">    Structures.py module raise.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s">&#39;Exception Raised in Recipe System&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This constructor takes a message to print to the user.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This str conversion member returns the message given </span>
+<span class="sd">        by the user (or the default message)</span>
+<span class="sd">        when the exception is not caught.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+</div>
+<div class="viewcode-block" id="GMOSPrimitives"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GMOSPrimitives</span><span class="p">(</span><span class="n">GEMINIPrimitives</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    This is the class of all primitives for the GMOS level of the type </span>
+<span class="sd">    hierarchy tree.  It inherits all the primitives to the level above</span>
+<span class="sd">    , &#39;GEMINIPrimitives&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">astrotype</span> <span class="o">=</span> <span class="s">&#39;GMOS&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="n">GEMINIPrimitives</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rc</span>
+     
+<div class="viewcode-block" id="GMOSPrimitives.addBPM"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.addBPM">[docs]</a>    <span class="k">def</span> <span class="nf">addBPM</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive is used by the general addDQ primitive of </span>
+<span class="sd">        primitives_GEMINI to add the appropriate BPM (Bad Pixel Mask)</span>
+<span class="sd">        to the inputs.  This function will add the BPM as frames matching</span>
+<span class="sd">        that of the SCI frames and ensure the BPM&#39;s data array is the same </span>
+<span class="sd">        size as that of the SCI data array. If the SCI array is larger </span>
+<span class="sd">        (say SCI&#39;s were overscan trimmed, but BPMs were not), the BPMs will </span>
+<span class="sd">        have their arrays padded with zero&#39;s to match the sizes and use the </span>
+<span class="sd">        data_section descriptor on the SCI data arrays to ensure the match is</span>
+<span class="sd">        a correct fit.</span>
+<span class="sd">        </span>
+<span class="sd">        Using this approach, rather than appending the BPM in the addDQ allows</span>
+<span class="sd">        for specialized BPM processing to be done in the instrument specific</span>
+<span class="sd">        primitive sets where it belongs.                          </span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to add the BPM frame(s) to the input data&#39;</span><span class="p">)</span>
+            
+            <span class="c">#$$$$$$$$$$$$$ TO BE callibration search, correct when ready $$$$$$$</span>
+            <span class="n">BPM_11</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">lookupPath</span><span class="p">(</span><span class="s">&#39;Gemini/GMOS/GMOS_BPM_11.fits&#39;</span><span class="p">))</span>
+            <span class="n">BPM_22</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">lookupPath</span><span class="p">(</span><span class="s">&#39;Gemini/GMOS/GMOS_BPM_22.fits&#39;</span><span class="p">))</span>
+            <span class="c">#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$</span>
+            
+            <span class="c"># Instantiate a list of suitable BPMs to be passed to addBPM func </span>
+            <span class="n">BPMlist</span> <span class="o">=</span> <span class="p">[]</span>
+            
+            <span class="c"># Loop through inputs and load up BPMlist</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="c">### This section might need to be upgraded in the future for more </span>
+                <span class="c">### general use instead of just 1x1 and 2x2 imaging</span>
+                <span class="k">if</span> <span class="n">ad</span><span class="p">[(</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">getKeyValue</span><span class="p">(</span><span class="s">&#39;CCDSUM&#39;</span><span class="p">)</span><span class="o">==</span><span class="s">&#39;1 1&#39;</span><span class="p">:</span>
+                    <span class="n">BPMlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BPM_11</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">ad</span><span class="p">[(</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">getKeyValue</span><span class="p">(</span><span class="s">&#39;CCDSUM&#39;</span><span class="p">)</span><span class="o">==</span><span class="s">&#39;2 2&#39;</span><span class="p">:</span>
+                    <span class="n">BPMlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BPM_22</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;CCDSUM is not 1x1 or 2x2&#39;</span><span class="p">)</span>
+                    <span class="c">#$$$ NOT REALLY SURE THIS IS THE APPROPRIATE ACTION HERE</span>
+                    <span class="k">raise</span>
+   
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.addBPM function&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">addBPM</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                         <span class="n">BPMs</span><span class="o">=</span><span class="n">BPMlist</span><span class="p">,</span> <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                         <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>           
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.addBPM completed successfully&#39;</span><span class="p">)</span>
+                
+            <span class="c"># Reporting the updated files to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>   
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* adding the BPM to the inputs&#39;</span><span class="p">)</span> 
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem processing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span>  
+            
+        <span class="k">yield</span> <span class="n">rc</span>       
+        </div>
+<div class="viewcode-block" id="GMOSPrimitives.biasCorrect"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.biasCorrect">[docs]</a>    <span class="k">def</span> <span class="nf">biasCorrect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will subtract the biases from the inputs using the </span>
+<span class="sd">        CL script gireduce.</span>
+<span class="sd">        </span>
+<span class="sd">        WARNING: The gireduce script used here replaces the previously </span>
+<span class="sd">        calculated DQ frames with its own versions.  This may be corrected </span>
+<span class="sd">        in the future by replacing the use of the gireduce</span>
+<span class="sd">        with a Python routine to do the bias subtraction.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_over: Subtract the overscan?</span>
+<span class="sd">        :type fl_over: Python boolean (True/False), default is False</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_trim: Trim the overscan region from the frames?</span>
+<span class="sd">        :type fl_trim: Python boolean (True/False), default is False. </span>
+<span class="sd">                       Note: This value cannot be set during a recipe or from </span>
+<span class="sd">                       reduce command line call, only in the parameter file.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_vardq: Create variance and data quality frames?</span>
+<span class="sd">        :type fl_vardq: Python boolean (True/False), OR string &#39;AUTO&#39; to do </span>
+<span class="sd">                        it automatically if there are VAR and DQ frames in the inputs.</span>
+<span class="sd">                        NOTE: &#39;AUTO&#39; uses the first input to determine if VAR </span>
+<span class="sd">                        and DQ frames exist, so, if the first does, then the </span>
+<span class="sd">                        rest MUST also have them as well.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c">#        # Loading and bringing the pyraf related modules into the name-space</span>
+<span class="c">#        pyraf, gemini, yes, no = pyrafLoader()</span>
+        
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to subtract the bias from the inputs&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Getting the bias file for the first file of the inputs and </span>
+            <span class="c"># assuming it is the same for all the inputs. This should be </span>
+            <span class="c"># corrected in the future to be more intelligent and get the </span>
+            <span class="c"># correct bias for each input individually if they are not </span>
+            <span class="c"># all the same. Then gireduce can be called in a loop with </span>
+            <span class="c"># one flat and one bias, this will work well with the CLManager</span>
+            <span class="c"># as that was how i wrote this prim originally.</span>
+            <span class="n">ad</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">processedBias</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getCal</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span><span class="s">&#39;bias&#39;</span><span class="p">)</span> 
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Using bias &#39;</span><span class="o">+</span><span class="n">processedBias</span><span class="o">+</span><span class="s">&#39; to correct the inputs&#39;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.biasCorrect function&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">biasCorrect</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                         <span class="n">biases</span><span class="o">=</span><span class="n">processedBias</span><span class="p">,</span> <span class="n">fl_vardq</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_vardq&#39;</span><span class="p">],</span> 
+                                         <span class="n">fl_trim</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_trim&#39;</span><span class="p">],</span> <span class="n">fl_over</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_over&#39;</span><span class="p">],</span> 
+                                         <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>           
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.biasCorrect completed successfully&#39;</span><span class="p">)</span>
+                
+            <span class="c"># Reporting the updated files to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>   
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* subtracting the bias from the input flats&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem processing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+            
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GMOSPrimitives.display"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; This is a primitive for displaying GMOS data.</span>
+<span class="sd">            It utilizes the IRAF routine gdisplay and requires DS9 to be running</span>
+<span class="sd">            before this primitive is called.</span>
+<span class="sd">            </span>
+<span class="sd">            :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">            :type logVerbose: int. </span>
+<span class="sd">                              This value can be set for each primitive individually </span>
+<span class="sd">                              in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                              If no value is specified during the recipe, the value </span>
+<span class="sd">                              set during the call to reduce or its default (2) will </span>
+<span class="sd">                              be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c">#from astrodata.adutils.future import gemDisplay</span>
+            <span class="c">#ds = gemDisplay.getDisplayService()</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to display the images of the input data&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Loading and bringing the pyraf related modules into the name-space</span>
+            <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>
+            
+            <span class="c"># Ensuring image buffer is large enough to handle GMOS images</span>
+            <span class="n">pyraf</span><span class="o">.</span><span class="n">iraf</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">stdimage</span><span class="o">=</span><span class="s">&#39;imtgmos&#39;</span><span class="p">)</span>              
+                
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">inputs</span><span class="p">)):</span>  
+                <span class="c"># Retrieving the input object for this increment from the RC </span>
+                <span class="n">inputRecord</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                
+                <span class="c"># Creating a dictionary of the parameters set by definition of the primitive </span>
+                <span class="n">clPrimParams</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;image&#39;</span>         <span class="p">:</span><span class="n">inputRecord</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+                <span class="c"># Using the increment value (+1) for the frame value</span>
+                <span class="s">&#39;frame&#39;</span>         <span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                <span class="s">&#39;fl_imexam&#39;</span>     <span class="p">:</span><span class="n">no</span><span class="p">,</span>
+                <span class="c"># Retrieving the observatory key from the PHU</span>
+                <span class="s">&#39;observatory&#39;</span>   <span class="p">:</span><span class="n">inputRecord</span><span class="o">.</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;OBSERVAT&#39;</span><span class="p">)</span>
+                                <span class="p">}</span>
+                
+                <span class="c"># Grabbing the default parameters dictionary and updating </span>
+                <span class="c"># it with the above dictionary</span>
+                <span class="n">clParamsDict</span> <span class="o">=</span> <span class="n">CLDefaultParamsDict</span><span class="p">(</span><span class="s">&#39;gdisplay&#39;</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">clParamsDict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clPrimParams</span><span class="p">)</span>
+                
+                <span class="c"># Logging the values in the prim parameter dictionaries</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Parameters dictated by the definition of the &#39;</span><span class="o">+</span>
+                         <span class="s">&#39;primitive:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> 
+                         <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">LogDictParams</span><span class="p">(</span><span class="n">clPrimParams</span><span class="p">)</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling the gdisplay CL script for input list &#39;</span><span class="o">+</span>
+                              <span class="n">inputRecord</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">gemini</span><span class="o">.</span><span class="n">gmos</span><span class="o">.</span><span class="n">gdisplay</span><span class="p">(</span><span class="o">**</span><span class="n">clParamsDict</span><span class="p">)</span>
+                    
+                    <span class="k">if</span> <span class="n">gemini</span><span class="o">.</span><span class="n">gmos</span><span class="o">.</span><span class="n">gdisplay</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;gdisplay failed for input &#39;</span><span class="o">+</span>
+                                     <span class="n">inputRecord</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                        <span class="k">raise</span> <span class="n">GMOSException</span><span class="p">(</span><span class="s">&#39;gdisplay failed&#39;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Exited the gdisplay CL script successfully&#39;</span><span class="p">)</span>
+                        
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># This exception should allow for a smooth exiting if there is an </span>
+                    <span class="c"># error with gdisplay, most likely due to DS9 not running yet</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;ERROR occurred while trying to display &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">inputRecord</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                                        <span class="o">+</span><span class="s">&#39;, ensure that DS9 is running and try again&#39;</span><span class="p">)</span>
+                    
+                <span class="c"># this version had the display id conversion code which we&#39;ll need to redo</span>
+                <span class="c"># code above just uses the loop index as frame number</span>
+                <span class="c">#gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,</span>
+                <span class="c">#    Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )</span>
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* displaying the images of the input data&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;There was a problem displaying &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span>     
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GMOSPrimitives.localGetProcessedBias"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.localGetProcessedBias">[docs]</a>    <span class="k">def</span> <span class="nf">localGetProcessedBias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A prim that works with the calibration system (MAYBE), but as it isn&#39;t </span>
+<span class="sd">        written yet this simply copies the bias file from the stored processed </span>
+<span class="sd">        bias directory and reports its name to the reduction context. </span>
+<span class="sd">        This is the basic form that the calibration system will work as well </span>
+<span class="sd">        but with proper checking for what the correct bias file would be rather </span>
+<span class="sd">        than my oversimplified checking the bining alone.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">packagePath</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;gemini_python&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">calPath</span> <span class="o">=</span> <span class="s">&#39;gemini_python/test_data/test_cal_files/processed_biases/&#39;</span>
+            
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">extGetKeyValue</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;CCDSUM&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;1 1&#39;</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;NO 1x1 PROCESSED BIAS YET TO USE&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="s">&#39;error&#39;</span>
+                <span class="k">elif</span> <span class="n">ad</span><span class="o">.</span><span class="n">extGetKeyValue</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;CCDSUM&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;2 2&#39;</span><span class="p">:</span>
+                    <span class="n">biasfilename</span> <span class="o">=</span> <span class="s">&#39;N20020214S022_preparedBias.fits&#39;</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;.reducecache/&#39;</span><span class="o">+</span>
+                                                       <span class="s">&#39;storedcals/retrievd&#39;</span><span class="o">+</span>
+                                                       <span class="s">&#39;biases&#39;</span><span class="p">,</span> <span class="n">biasfilename</span><span class="p">)):</span>
+                        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">packagePath</span><span class="o">+</span><span class="n">calPath</span><span class="o">+</span><span class="n">biasfilename</span><span class="p">,</span> 
+                                    <span class="s">&#39;.reducecache/storedcals/retrievedbiases&#39;</span><span class="p">)</span>
+                    <span class="n">rc</span><span class="o">.</span><span class="n">addCal</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span><span class="s">&#39;bias&#39;</span><span class="p">,</span> 
+                              <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;.reducecache/storedcals/retrieve&#39;</span><span class="o">+</span>
+                                           <span class="s">&#39;dbiases&#39;</span><span class="p">,</span><span class="n">biasfilename</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;CCDSUM is not 1x1 or 2x2 for the input flat!!&#39;</span><span class="p">)</span>
+           
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem preparing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+   </div>
+<div class="viewcode-block" id="GMOSPrimitives.localGetProcessedFlat"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.localGetProcessedFlat">[docs]</a>    <span class="k">def</span> <span class="nf">localGetProcessedFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A prim that works with the calibration system (MAYBE), but as it </span>
+<span class="sd">        isn&#39;t written yet this simply copies the bias file from the stored </span>
+<span class="sd">        processed bias directory and reports its name to the reduction </span>
+<span class="sd">        context. this is the basic form that the calibration system will work </span>
+<span class="sd">        as well but with proper checking for what the correct bias file would </span>
+<span class="sd">        be rather than my oversimplified checking</span>
+<span class="sd">        the binning alone.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">packagePath</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;gemini_python&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">calPath</span><span class="o">=</span><span class="s">&#39;gemini_python/test_data/test_cal_files/processed_flats/&#39;</span>
+            
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">extGetKeyValue</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;CCDSUM&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;1 1&#39;</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;NO 1x1 PROCESSED BIAS YET TO USE&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="s">&#39;error&#39;</span>
+                <span class="k">elif</span> <span class="n">ad</span><span class="o">.</span><span class="n">extGetKeyValue</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;CCDSUM&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;2 2&#39;</span><span class="p">:</span>
+                    <span class="n">flatfilename</span> <span class="o">=</span> <span class="s">&#39;N20020211S156_preparedFlat.fits&#39;</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;.reducecache/storedca&#39;</span><span class="o">+</span>
+                                                       <span class="s">&#39;ls/retrievedflats&#39;</span><span class="p">,</span> 
+                                                       <span class="n">flatfilename</span><span class="p">)):</span>
+                        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">packagePath</span><span class="o">+</span><span class="n">calPath</span><span class="o">+</span><span class="n">flatfilename</span><span class="p">,</span> 
+                                    <span class="s">&#39;.reducecache/storedcals/retrievedflats&#39;</span><span class="p">)</span>
+                    <span class="n">rc</span><span class="o">.</span><span class="n">addCal</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span><span class="s">&#39;flat&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;.reducecache/storedca&#39;</span><span class="o">+</span>
+                                                      <span class="s">&#39;ls/retrievedflats&#39;</span><span class="p">,</span> 
+                                                      <span class="n">flatfilename</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;CCDSUM is not 1x1 or 2x2 for the input image!!&#39;</span><span class="p">)</span>
+           
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem retrieving one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span>
+        
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GMOSPrimitives.mosaicDetectors"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.mosaicDetectors">[docs]</a>    <span class="k">def</span> <span class="nf">mosaicDetectors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will mosaic the SCI frames of the input images, </span>
+<span class="sd">        along with the VAR and DQ frames if they exist.  </span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_paste: Paste images instead of mosaic?</span>
+<span class="sd">        :type fl_paste: Python boolean (True/False), default is False</span>
+<span class="sd">        </span>
+<span class="sd">        :param interp_function: Type of interpolation function to use accross the chip gaps</span>
+<span class="sd">        :type interp_function: string, options: &#39;linear&#39;, &#39;nearest&#39;, &#39;poly3&#39;, </span>
+<span class="sd">                               &#39;poly5&#39;, &#39;spine3&#39;, &#39;sinc&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        
+        <span class="c"># loading and bringing the pyraf related modules into the name-space</span>
+        <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to mosaic the input images SCI extensions&#39;</span><span class="o">+</span>
+                       <span class="s">&#39; together&#39;</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.mosaicDetectors function&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">mosaicDetectors</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                        <span class="n">fl_paste</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_paste&#39;</span><span class="p">],</span> <span class="n">interp_function</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;interp_function&#39;</span><span class="p">],</span> 
+                                        <span class="n">fl_vardq</span><span class="o">=</span><span class="s">&#39;AUTO&#39;</span><span class="p">,</span> <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                        <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>           
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.mosaicDetectors completed successfully&#39;</span><span class="p">)</span>
+                
+            <span class="c"># Reporting the updated files to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span> 
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* mosaicing the input images&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem processing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span>   
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GMOSPrimitives.normalizeFlat"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.normalizeFlat">[docs]</a>    <span class="k">def</span> <span class="nf">normalizeFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will combine the input flats and then normalize them </span>
+<span class="sd">        using the CL script giflat.</span>
+<span class="sd">        </span>
+<span class="sd">        Warning: giflat calculates its own DQ frames and thus replaces the </span>
+<span class="sd">        previously produced ones in calculateDQ. This may be fixed in the </span>
+<span class="sd">        future by replacing giflat with a Python equivilent with more </span>
+<span class="sd">        appropriate options for the recipe system.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_over: Subtract the overscan level from the frames?</span>
+<span class="sd">        :type fl_over: Python boolean (True/False)</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_trim: Trim the overscan region from the frames?</span>
+<span class="sd">        :type fl_trim: Python boolean (True/False)</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_vardq: Create variance and data quality frames?</span>
+<span class="sd">        :type fl_vardq: Python boolean (True/False), OR string &#39;AUTO&#39; to do </span>
+<span class="sd">                        it automatically if there are VAR and DQ frames in the inputs.</span>
+<span class="sd">                        NOTE: &#39;AUTO&#39; uses the first input to determine if VAR and DQ frames exist, </span>
+<span class="sd">                    so, if the first does, then the rest MUST also have them as well.</span>
+<span class="sd">            </span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        
+        <span class="c"># Loading and bringing the pyraf related modules into the name-space</span>
+        <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to combine and normalize the input flats&#39;</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.normalizeFlat function&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">normalizeFlat</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                        <span class="n">fl_trim</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_trim&#39;</span><span class="p">],</span> <span class="n">fl_over</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_over&#39;</span><span class="p">],</span> 
+                                        <span class="n">fl_vardq</span><span class="o">=</span><span class="s">&#39;AUTO&#39;</span><span class="p">,</span> <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                        <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>           
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.normalizeFlat completed successfully&#39;</span><span class="p">)</span>
+                
+            <span class="c"># Reporting the updated files to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>
+        
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* combining and normalizing the input flats&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem processing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+            
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GMOSPrimitives.overscanSubtract"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.overscanSubtract">[docs]</a>    <span class="k">def</span> <span class="nf">overscanSubtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive uses the CL script gireduce to subtract the overscan </span>
+<span class="sd">        from the input images.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_trim: Trim the overscan region from the frames?</span>
+<span class="sd">        :type fl_trim: Python boolean (True/False)</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_vardq: Create variance and data quality frames?</span>
+<span class="sd">        :type fl_vardq: Python boolean (True/False), OR string &#39;AUTO&#39; to do </span>
+<span class="sd">                        it automatically if there are VAR and DQ frames in the inputs.</span>
+<span class="sd">                        NOTE: &#39;AUTO&#39; uses the first input to determine if VAR and DQ frames exist, </span>
+<span class="sd">                        so, if the first does, then the rest MUST also have them as well.</span>
+<span class="sd">            </span>
+<span class="sd">        :param biassec: biassec parameter of format &#39;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#39;</span>
+<span class="sd">        :type biassec: string. default: &#39;[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]&#39; is ideal for 2x2 GMOS data.</span>
+<span class="sd">    </span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="c"># Loading and bringing the pyraf related modules into the name-space</span>
+        <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to subtract the overscan from the inputs&#39;</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gmosScience.overscanSubtract function&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">gmosScience</span><span class="o">.</span><span class="n">overscanSubtract</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                        <span class="n">fl_trim</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_trim&#39;</span><span class="p">],</span> <span class="n">biassec</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;biassec&#39;</span><span class="p">],</span> 
+                                        <span class="n">fl_vardq</span><span class="o">=</span><span class="s">&#39;AUTO&#39;</span><span class="p">,</span> <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                        <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>           
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;gmosScience.overscanSubtract completed successfully&#39;</span><span class="p">)</span>
+                
+            <span class="c"># Reporting the updated files to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* subtracting the overscan from the &#39;</span><span class="o">+</span>
+                       <span class="s">&#39;input data&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem processing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        
+        <span class="k">yield</span> <span class="n">rc</span>    
+</div>
+<div class="viewcode-block" id="GMOSPrimitives.overscanTrim"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.overscanTrim">[docs]</a>    <span class="k">def</span> <span class="nf">overscanTrim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive uses AstroData to trim the overscan region </span>
+<span class="sd">        from the input images and update their headers.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to trim the overscan region from the input data&#39;</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.overscanTrim function&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">overscanTrim</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span>     
+                                                        <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                                        <span class="n">verbose</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>           
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.overscanTrim completed successfully&#39;</span><span class="p">)</span>
+              
+            <span class="c"># Reporting the updated files to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>   
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* trimming the overscan region from the input data&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem processing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        
+        <span class="k">yield</span> <span class="n">rc</span>
+         </div>
+<div class="viewcode-block" id="GMOSPrimitives.standardizeInstrumentHeaders"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.standardizeInstrumentHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeInstrumentHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive is called by standardizeHeaders to makes the changes and </span>
+<span class="sd">        additions to the headers of the input files that are instrument </span>
+<span class="sd">        specific.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>                                          
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span> 
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gmost.stdInstHdrs for &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span> 
+                <span class="n">gmost</span><span class="o">.</span><span class="n">stdInstHdrs</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span> 
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Completed standardizing instrument headers for &#39;</span><span class="o">+</span>
+                           <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem preparing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        
+        <span class="k">yield</span> <span class="n">rc</span> 
+    </div>
+<div class="viewcode-block" id="GMOSPrimitives.validateInstrumentData"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.validateInstrumentData">[docs]</a>    <span class="k">def</span> <span class="nf">validateInstrumentData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive is called by validateData to validate the instrument </span>
+<span class="sd">        specific data checks for all input files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gmost.valInstData for &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">gmost</span><span class="o">.</span><span class="n">valInstData</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Completed validating instrument data for &#39;</span><span class="o">+</span>
+                           <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem preparing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        
+        <span class="k">yield</span> <span class="n">rc</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

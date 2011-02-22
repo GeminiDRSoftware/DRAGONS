@@ -1,0 +1,418 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>primitives_GMOS_IMAGE &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for primitives_GMOS_IMAGE</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">StringIO</span><span class="o">,</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">filesystem</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">IDFactory</span>
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">Descriptors</span>
+<span class="kn">from</span> <span class="nn">astrodata.data</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">primitives_GEMINI</span> <span class="kn">import</span> <span class="n">GEMINIPrimitives</span>
+<span class="kn">from</span> <span class="nn">primitives_GEMINI</span> <span class="kn">import</span> <span class="n">pyrafLoader</span>
+<span class="kn">from</span> <span class="nn">primitives_GMOS</span> <span class="kn">import</span> <span class="n">GMOSPrimitives</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">geminiTools</span> <span class="k">as</span> <span class="n">gemt</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">gmosTools</span> <span class="k">as</span> <span class="n">gmost</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">girmfringe</span>
+
+<div class="viewcode-block" id="GMOS_IMAGEException"><a class="viewcode-back" href="../GMOS_IMAGE_primitives.html#primitives_GMOS_IMAGE.GMOS_IMAGEException">[docs]</a><span class="k">class</span> <span class="nc">GMOS_IMAGEException</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; This is the general exception the classes and functions in the</span>
+<span class="sd">    Structures.py module raise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">&quot;Exception Raised in Recipe System&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This constructor takes a message to print to the user.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">msg</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This str conversion member returns the message given by the user (or the default message)</span>
+<span class="sd">        when the exception is not caught.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+</div>
+<div class="viewcode-block" id="GMOS_IMAGEPrimitives"><a class="viewcode-back" href="../GMOS_IMAGE_primitives.html#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GMOS_IMAGEPrimitives</span><span class="p">(</span><span class="n">GMOSPrimitives</span><span class="p">):</span>
+    <span class="n">astrotype</span> <span class="o">=</span> <span class="s">&quot;GMOS_IMAGE&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        
+        <span class="n">GMOSPrimitives</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rc</span>
+    
+<span class="c">#    def findshiftsAndCombine(self, rc):</span>
+<span class="c">#       try:</span>
+<span class="c">#          pyraf,gemini, yes, no = pyrafLoader()</span>
+<span class="c">#          print &quot;shifting and combining images&quot;</span>
+<span class="c">#          #@@TODO: hardcoded parmeters and ***imcoadd.dat may need to move from </span>
+<span class="c">#          # imcoadd_data/test4 to test_data dir before running</span>
+<span class="c">#          gemini.imcoadd(rc.stack_inputsAsStr(),fwhm=5, threshold=100,\</span>
+<span class="c">#                fl_over=yes, fl_avg=yes,</span>
+<span class="c">#                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())</span>
+<span class="c">#       except:</span>
+<span class="c">#           print &quot;Problem shifting and combining images&quot;</span>
+<span class="c">#           raise</span>
+<span class="c">#</span>
+<span class="c">#       yield rc</span>
+        
+<div class="viewcode-block" id="GMOS_IMAGEPrimitives.fringeCorrect"><a class="viewcode-back" href="../GMOS_IMAGE_primitives.html#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.fringeCorrect">[docs]</a>    <span class="k">def</span> <span class="nf">fringeCorrect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will scale and subtract the fringe frame from the inputs.</span>
+<span class="sd">        It utilizes the Python re-written version of cl script girmfringe to </span>
+<span class="sd">        do the work.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_statscale: Scale by statistics rather than exposure time</span>
+<span class="sd">        :type fl_statscale: Boolean</span>
+<span class="sd">        </span>
+<span class="sd">        :param statsec: image section used to determine the scale factor </span>
+<span class="sd">                        if fl_statsec=True</span>
+<span class="sd">        :type statsec: string of format &#39;[EXTNAME,EXTVER][x1:x2,y1:y2]&#39;</span>
+<span class="sd">                       default: If CCDSUM = &#39;1 1&#39; :[SCI,2][100:1900,100:4500]&#39;</span>
+<span class="sd">                       If CCDSUM = &#39;2 2&#39; : [SCI,2][100:950,100:2250]&#39;</span>
+<span class="sd">        </span>
+<span class="sd">        :param scale: Override auto-scaling if not 0.0</span>
+<span class="sd">        :type scale: real</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span> 
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to fringe correct the images&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Using the same fringe file for all the input images</span>
+            <span class="c">#fringe = $$$$$$$$$$$$$$$$$$$$$$$$$$$ ??? where to get it  ?????</span>
+            <span class="c">#$$$$$$$ TEMP $$$$$$$$$$$$</span>
+            <span class="n">fringe</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c">#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$</span>
+            
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                
+                <span class="c"># Loading up a dictionary with the input parameters for girmfringe</span>
+                <span class="n">paramDict</span> <span class="o">=</span> <span class="p">{</span>
+                             <span class="s">&#39;inimage&#39;</span>        <span class="p">:</span><span class="n">ad</span><span class="p">,</span>
+                             <span class="s">&#39;fringe&#39;</span>         <span class="p">:</span><span class="n">fringe</span><span class="p">,</span>
+                             <span class="s">&#39;fl_statscale&#39;</span>   <span class="p">:</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_statscale&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;statsec&#39;</span>        <span class="p">:</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;statsec&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;scale&#39;</span>          <span class="p">:</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;scale&#39;</span><span class="p">],</span>
+                             <span class="p">}</span>
+                
+                <span class="c"># Logging values set in the parameters dictionary above</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Parameters being used for girmfringe &#39;</span><span class="o">+</span>
+                             <span class="s">&#39;function:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">logDictParams</span><span class="p">(</span><span class="n">paramDict</span><span class="p">)</span>
+                
+                <span class="c"># Calling the girmfringe function to perform the fringe </span>
+                <span class="c"># corrections, this function will return the corrected image as</span>
+                <span class="c"># an AstroData instance</span>
+                <span class="n">adOut</span> <span class="o">=</span> <span class="n">girmfringe</span><span class="o">.</span><span class="n">girmfringe</span><span class="p">(</span><span class="o">**</span><span class="n">paramDict</span><span class="p">)</span>
+                
+                <span class="c"># Adding GEM-TLM(automatic) and RMFRINGE time stamps to the PHU     </span>
+                <span class="n">adOut</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;RMFRINGE&#39;</span><span class="p">,</span> <span class="n">stomp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>    
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;************************************************&#39;</span>
+                             <span class="p">,</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;file = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~&#39;</span>
+                             <span class="p">,</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;PHU keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;GEM-TLM = &#39;</span><span class="o">+</span><span class="n">adOut</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GEM-TLM&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;RMFRINGE = &#39;</span><span class="o">+</span><span class="n">adOut</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;RMFRINGE&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;------------------------------------------------&#39;</span>
+                             <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                
+                <span class="c"># Updating the file name with the postpend/outsuffix for this</span>
+                <span class="c"># primitive and then reporting the new file to the reduction </span>
+                <span class="c"># context</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">adOut</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> 
+                                                   <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                                   <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;File name updated to &#39;</span><span class="o">+</span><span class="n">adOut</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOut</span><span class="p">)</span>        
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* fringe correcting the input data&#39;</span><span class="p">)</span>
+            
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Problem subtracting fringe from &quot;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+
+        <span class="k">yield</span> <span class="n">rc</span> 
+    </div>
+<div class="viewcode-block" id="GMOS_IMAGEPrimitives.makeFringeFrame"><a class="viewcode-back" href="../GMOS_IMAGE_primitives.html#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.makeFringeFrame">[docs]</a>    <span class="k">def</span> <span class="nf">makeFringeFrame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will create a single fringe image from all the inputs.</span>
+<span class="sd">        It utilizes the CL script gifringe to create the fringe image.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_vardq: Create variance and data quality frames?</span>
+<span class="sd">        :type fl_vardq: Python boolean (True/False), OR string &#39;AUTO&#39; to do </span>
+<span class="sd">                        it automatically if there are VAR and DQ frames in the inputs.</span>
+<span class="sd">                        NOTE: &#39;AUTO&#39; uses the first input to determine if VAR and DQ frames exist, </span>
+<span class="sd">                        so, if the first does, then the rest MUST also have them as well.</span>
+<span class="sd">        </span>
+<span class="sd">        :param method: type of combining method to use on the fringe frames.</span>
+<span class="sd">        :type method: string, options: &#39;average&#39;, &#39;median</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        
+        <span class="c"># Loading and bringing the pyraf related modules into the name-space</span>
+        <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">())</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to create a fringe frame from the inputs&#39;</span><span class="p">)</span>
+    
+                <span class="c"># Preparing input files, lists, parameters... for input to </span>
+                <span class="c"># the CL script</span>
+                <span class="n">clm</span><span class="o">=</span><span class="n">gemt</span><span class="o">.</span><span class="n">CLManager</span><span class="p">(</span><span class="n">rc</span><span class="p">)</span>
+                <span class="c">#clm.LogCurParams()</span>
+    
+                <span class="c"># Creating a dictionary of the parameters set by the CLManager  </span>
+                <span class="c"># or the definition of the primitive </span>
+                <span class="n">clPrimParams</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="c"># Retrieving the inputs as a list from the CLManager</span>
+                    <span class="s">&#39;inimages&#39;</span>    <span class="p">:</span><span class="n">clm</span><span class="o">.</span><span class="n">inputList</span><span class="p">(),</span>
+                    <span class="c"># Maybe allow the user to override this in the future. </span>
+                    <span class="s">&#39;outimage&#39;</span>    <span class="p">:</span><span class="n">clm</span><span class="o">.</span><span class="n">combineOutname</span><span class="p">(),</span> 
+                    <span class="c"># This returns a unique/temp log file for IRAF  </span>
+                    <span class="s">&#39;logfile&#39;</span>     <span class="p">:</span><span class="n">clm</span><span class="o">.</span><span class="n">logfile</span><span class="p">(),</span>  
+                    <span class="c"># This is actually in the default dict but wanted to </span>
+                    <span class="c"># show it again       </span>
+                    <span class="s">&#39;Stdout&#39;</span>      <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">IrafStdout</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">])),</span> 
+                    <span class="c"># This is actually in the default dict but wanted to </span>
+                    <span class="c"># show it again    </span>
+                    <span class="s">&#39;Stderr&#39;</span>      <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">IrafStdout</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">])),</span>
+                    <span class="c"># This is actually in the default dict but wanted to </span>
+                    <span class="c"># show it again     </span>
+                    <span class="s">&#39;verbose&#39;</span>     <span class="p">:</span><span class="n">yes</span>                    
+                              <span class="p">}</span>
+    
+                <span class="c"># Creating a dictionary of the parameters from the Parameter </span>
+                <span class="c"># file adjustable by the user</span>
+                <span class="n">clSoftcodedParams</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s">&#39;fl_vardq&#39;</span>      <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">pyrafBoolean</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_vardq&#39;</span><span class="p">]),</span>
+                    <span class="s">&#39;combine&#39;</span>       <span class="p">:</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;method&#39;</span><span class="p">],</span>
+                    <span class="s">&#39;reject&#39;</span>        <span class="p">:</span><span class="s">&#39;none&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;outpref&#39;</span>       <span class="p">:</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span>
+                                    <span class="p">}</span>
+                <span class="c"># Grabbing the default parameters dictionary and updating </span>
+                <span class="c"># it with the two above dictionaries</span>
+                <span class="n">clParamsDict</span> <span class="o">=</span> <span class="n">CLDefaultParamsDict</span><span class="p">(</span><span class="s">&#39;gifringe&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">clParamsDict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clPrimParams</span><span class="p">)</span>
+                <span class="n">clParamsDict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">clSoftcodedParams</span><span class="p">)</span>
+                
+                <span class="c"># Logging the values in the soft and prim parameter dictionaries</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Parameters set by the CLManager or dictated by &#39;</span><span class="o">+</span>
+                         <span class="s">&#39;the definition of the primitive:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> 
+                         <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">LogDictParams</span><span class="p">(</span><span class="n">clPrimParams</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">User adjustable parameters in the parameters &#39;</span><span class="o">+</span>
+                             <span class="s">&#39;file:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">LogDictParams</span><span class="p">(</span><span class="n">clSoftcodedParams</span><span class="p">)</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling the gifringe CL script for input list &#39;</span><span class="o">+</span>
+                              <span class="n">clm</span><span class="o">.</span><span class="n">inputList</span><span class="p">())</span>
+                
+                <span class="n">gemini</span><span class="o">.</span><span class="n">gifringe</span><span class="p">(</span><span class="o">**</span><span class="n">clParamsDict</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">gemini</span><span class="o">.</span><span class="n">gifringe</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;gifringe failed for inputs &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+                    <span class="k">raise</span> <span class="n">GMOS_IMAGEException</span><span class="p">(</span><span class="s">&#39;gifringe failed&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Exited the gifringe CL script successfully&#39;</span><span class="p">)</span>
+                    
+                <span class="c"># Renaming CL outputs and loading them back into memory </span>
+                <span class="c"># and cleaning up the intermediate temp files written to disk</span>
+                <span class="n">clm</span><span class="o">.</span><span class="n">finishCL</span><span class="p">(</span><span class="n">combine</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> 
+                <span class="c">#clm.rmStackFiles() #$$$$$$$$$ DON&#39;T do this if </span>
+                <span class="c">#^ Intermediate outputs are wanted!!!!</span>
+                
+                <span class="c"># There is only one at this point so no need to perform a loop</span>
+                <span class="n">ad</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getOutputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> 
+                
+                <span class="c"># Adding a GEM-TLM (automatic) and FRINGE time stamps </span>
+                <span class="c"># to the PHU</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;FRINGE&#39;</span><span class="p">,</span><span class="n">stomp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="c"># Updating logger with updated/added time stamps</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;************************************************&#39;</span>
+                             <span class="p">,</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;file = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~&#39;</span>
+                             <span class="p">,</span> <span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;PHU keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;GEM-TLM = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GEM-TLM&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;FRINGE = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;FRINGE&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;------------------------------------------------&#39;</span>
+                             <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>        
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* creating the fringe image&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Problem creating fringe from &quot;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>  
+</div></div>
+<div class="viewcode-block" id="CLDefaultParamsDict"><a class="viewcode-back" href="../GMOS_IMAGE_primitives.html#primitives_GMOS_IMAGE.CLDefaultParamsDict">[docs]</a><span class="k">def</span> <span class="nf">CLDefaultParamsDict</span><span class="p">(</span><span class="n">CLscript</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A function to return a dictionary full of all the default parameters </span>
+<span class="sd">    for each CL script used so far in the Recipe System.</span>
+<span class="sd">    </span>
+<span class="sd">    :param verbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">    :type logVerbose: int. Default: 1</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+    
+    <span class="c"># loading and bringing the pyraf related modules into the name-space</span>
+    <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>
+    
+    <span class="c"># Ensuring that if a invalide CLscript was requested, that a critical</span>
+    <span class="c"># log message be made and exception raised.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">CLscript</span> <span class="o">!=</span> <span class="s">&#39;gifringe&#39;</span><span class="p">):</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;The CLscript &#39;</span><span class="o">+</span><span class="n">CLscript</span><span class="o">+</span><span class="s">&#39; does not have a default&#39;</span><span class="o">+</span>
+                     <span class="s">&#39; dictionary&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">GMOS_IMAGEException</span><span class="p">(</span><span class="s">&#39;The CLscript &#39;</span><span class="o">+</span><span class="n">CLscript</span><span class="o">+</span>
+                              <span class="s">&#39; does not have a default&#39;</span><span class="o">+</span><span class="s">&#39; dictionary&#39;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">CLscript</span> <span class="o">==</span> <span class="s">&#39;gifringe&#39;</span><span class="p">:</span>
+        <span class="n">defaultParams</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;inimages&#39;</span>  <span class="p">:</span><span class="s">&#39;&#39;</span><span class="p">,</span>              <span class="c"># Input GMOS images</span>
+            <span class="s">&#39;outimage&#39;</span>  <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>             <span class="c"># Output fringe frame</span>
+            <span class="s">&#39;typezero&#39;</span>  <span class="p">:</span> <span class="s">&#39;mean&#39;</span><span class="p">,</span>         <span class="c"># Operation to determine the sky level or zero point</span>
+            <span class="s">&#39;skysec&#39;</span>    <span class="p">:</span> <span class="s">&#39;default&#39;</span><span class="p">,</span>      <span class="c"># Zero point statistics section</span>
+            <span class="s">&#39;skyfile&#39;</span>   <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>             <span class="c"># File with zero point values for each input image</span>
+            <span class="s">&#39;key_zero&#39;</span>  <span class="p">:</span> <span class="s">&#39;OFFINT&#39;</span><span class="p">,</span>       <span class="c"># Keyword for zero level</span>
+            <span class="s">&#39;msigma&#39;</span>    <span class="p">:</span> <span class="mf">4.0</span><span class="p">,</span>            <span class="c"># Sigma threshold above sky for mask</span>
+            <span class="s">&#39;bpm&#39;</span>       <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>             <span class="c"># Name of bad pixel mask file or image</span>
+            <span class="s">&#39;combine&#39;</span>   <span class="p">:</span> <span class="s">&#39;median&#39;</span><span class="p">,</span>       <span class="c"># Combination operation</span>
+            <span class="s">&#39;reject&#39;</span>    <span class="p">:</span> <span class="s">&#39;avsigclip&#39;</span><span class="p">,</span>    <span class="c"># Rejection algorithm</span>
+            <span class="s">&#39;scale&#39;</span>     <span class="p">:</span> <span class="s">&#39;none&#39;</span><span class="p">,</span>         <span class="c"># Image scaling</span>
+            <span class="s">&#39;weight&#39;</span>    <span class="p">:</span> <span class="s">&#39;none&#39;</span><span class="p">,</span>         <span class="c"># Image Weights</span>
+            <span class="s">&#39;statsec&#39;</span>   <span class="p">:</span> <span class="s">&#39;[*,*]&#39;</span><span class="p">,</span>        <span class="c"># Statistics section for image scaling</span>
+            <span class="s">&#39;expname&#39;</span>   <span class="p">:</span> <span class="s">&#39;EXPTIME&#39;</span><span class="p">,</span>      <span class="c"># Exposure time header keyword for image scaling</span>
+            <span class="s">&#39;nlow&#39;</span>      <span class="p">:</span> <span class="mi">1</span><span class="p">,</span>              <span class="c"># minmax: Number of low pixels to reject</span>
+            <span class="s">&#39;nhigh&#39;</span>     <span class="p">:</span> <span class="mi">1</span><span class="p">,</span>              <span class="c"># minmax: Number of high pixels to reject</span>
+            <span class="s">&#39;nkeep&#39;</span>     <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>              <span class="c"># Minimum to keep or maximum to reject</span>
+            <span class="s">&#39;mclip&#39;</span>     <span class="p">:</span> <span class="n">yes</span><span class="p">,</span>            <span class="c"># Use median in sigma clipping algorithms?</span>
+            <span class="s">&#39;lsigma&#39;</span>    <span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>            <span class="c"># Lower sigma clipping factor</span>
+            <span class="s">&#39;hsigma&#39;</span>    <span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>            <span class="c"># Upper sigma clipping factor</span>
+            <span class="s">&#39;sigscale&#39;</span>  <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>            <span class="c"># Tolerance for sigma clipping scaling correction</span>
+            <span class="s">&#39;sci_ext&#39;</span>   <span class="p">:</span> <span class="s">&#39;SCI&#39;</span><span class="p">,</span>          <span class="c"># Name of science extension</span>
+            <span class="s">&#39;var_ext&#39;</span>   <span class="p">:</span> <span class="s">&#39;VAR&#39;</span><span class="p">,</span>          <span class="c"># Name of variance extension</span>
+            <span class="s">&#39;dq_ext&#39;</span>    <span class="p">:</span> <span class="s">&#39;DQ&#39;</span><span class="p">,</span>           <span class="c"># Name of data quality extension</span>
+            <span class="s">&#39;fl_vardq&#39;</span>  <span class="p">:</span> <span class="n">no</span><span class="p">,</span>             <span class="c"># Make variance and data quality planes?</span>
+            <span class="s">&#39;logfile&#39;</span>   <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>             <span class="c"># Name of the logfile</span>
+            <span class="s">&#39;glogpars&#39;</span>  <span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>             <span class="c"># Logging preferences</span>
+            <span class="s">&#39;verbose&#39;</span>   <span class="p">:</span> <span class="n">yes</span><span class="p">,</span>            <span class="c"># Verbose output</span>
+            <span class="s">&#39;status&#39;</span>    <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>              <span class="c"># Exit status (0=good)</span>
+            <span class="s">&#39;Stdout&#39;</span>    <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">IrafStdout</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">),</span>
+            <span class="s">&#39;Stderr&#39;</span>    <span class="p">:</span><span class="n">gemt</span><span class="o">.</span><span class="n">IrafStdout</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+                       <span class="p">}</span>
+        <span class="k">return</span> <span class="n">defaultParams</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
