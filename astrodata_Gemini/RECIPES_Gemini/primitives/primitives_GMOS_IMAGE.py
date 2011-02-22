@@ -26,27 +26,17 @@ class GMOS_IMAGEException:
         return self.message
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
+    """
+        This is the class of all primitives for the GMOS_IMAGE level of the type 
+        hierarchy tree.  It inherits all the primitives to the level above
+        , 'GMOSPrimitives'.
+    """
     astrotype = "GMOS_IMAGE"
     
     def init(self, rc):
         
         GMOSPrimitives.init(self, rc)
         return rc
-    
-#    def findshiftsAndCombine(self, rc):
-#       try:
-#          pyraf,gemini, yes, no = pyrafLoader()
-#          print "shifting and combining images"
-#          #@@TODO: hardcoded parmeters and ***imcoadd.dat may need to move from 
-#          # imcoadd_data/test4 to test_data dir before running
-#          gemini.imcoadd(rc.stack_inputsAsStr(),fwhm=5, threshold=100,\
-#                fl_over=yes, fl_avg=yes,
-#                Stdout = rc.getIrafStdout(), Stderr = rc.getIrafStderr())
-#       except:
-#           print "Problem shifting and combining images"
-#           raise
-#
-#       yield rc
         
     def fringeCorrect(self, rc):
         """
