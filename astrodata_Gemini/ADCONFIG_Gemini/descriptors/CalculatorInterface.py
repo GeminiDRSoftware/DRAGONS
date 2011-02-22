@@ -577,33 +577,6 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def filter_id(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "filter_id")
-            if not hasattr( self.descriptorCalculator, "filter_id"):
-                key = "key_"+"filter_id"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.filter_id(self, **args)
-            if "asString" in args and args["asString"]==True:
-                from datetime import datetime
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
-                else:
-                    retval = str(retval)
-            return retval
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def filter_name(self, **args):
         """
         Return the filter_name value for generic data
@@ -737,7 +710,7 @@ class CalculatorInterface:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.gain_mode(self, **args)
+            retval = self.descriptorCalculator.gain_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -857,7 +830,7 @@ class CalculatorInterface:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.non_linear_level(self, **args)
+            retval = self.descriptorCalculator.nod_count(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -887,7 +860,7 @@ class CalculatorInterface:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.nod_count(self, **args)
+            retval = self.descriptorCalculator.nod_pixels(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -917,7 +890,7 @@ class CalculatorInterface:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.nod_pixels(self, **args)
+            retval = self.descriptorCalculator.non_linear_level(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1054,33 +1027,6 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def observation_mode(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observation_mode")
-            if not hasattr( self.descriptorCalculator, "observation_mode"):
-                key = "key_"+"observation_mode"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.observation_mode(self, **args)
-            if "asString" in args and args["asString"]==True:
-                from datetime import datetime
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
-                else:
-                    retval = str(retval)
-            return retval
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def observation_type(self, **args):
         """
         Return the observation_type value for generic data
@@ -1095,33 +1041,6 @@ class CalculatorInterface:
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
             retval = self.descriptorCalculator.observation_type(self, **args)
-            if "asString" in args and args["asString"]==True:
-                from datetime import datetime
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
-                else:
-                    retval = str(retval)
-            return retval
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
-    def observer(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observer")
-            if not hasattr( self.descriptorCalculator, "observer"):
-                key = "key_"+"observer"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.observer(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1378,33 +1297,6 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
-    def raw_gemini_qa(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_gemini_qa")
-            if not hasattr( self.descriptorCalculator, "raw_gemini_qa"):
-                key = "key_"+"raw_gemini_qa"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.raw_gemini_qa(self, **args)
-            if "asString" in args and args["asString"]==True:
-                from datetime import datetime
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
-                else:
-                    retval = str(retval)
-            return retval
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
     def raw_iq(self, **args):
         """
         Return the raw_iq value for generic data
@@ -1419,33 +1311,6 @@ class CalculatorInterface:
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
             retval = self.descriptorCalculator.raw_iq(self, **args)
-            if "asString" in args and args["asString"]==True:
-                from datetime import datetime
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
-                else:
-                    retval = str(retval)
-            return retval
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
-    def raw_pi_requirement(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_pi_requirement")
-            if not hasattr( self.descriptorCalculator, "raw_pi_requirement"):
-                key = "key_"+"raw_pi_requirement"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.raw_pi_requirement(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1565,34 +1430,7 @@ class CalculatorInterface:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.read_speed_mode(self, **args)
-            if "asString" in args and args["asString"]==True:
-                from datetime import datetime
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
-                else:
-                    retval = str(retval)
-            return retval
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
-    def release_date(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "release_date")
-            if not hasattr( self.descriptorCalculator, "release_date"):
-                key = "key_"+"release_date"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.release_date(self, **args)
+            retval = self.descriptorCalculator.read_speed_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1653,33 +1491,6 @@ class CalculatorInterface:
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
             retval = self.descriptorCalculator.slit(self, **args)
-            if "asString" in args and args["asString"]==True:
-                from datetime import datetime
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
-                else:
-                    retval = str(retval)
-            return retval
-        except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
-            else:
-            #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
-                return None
-    
-    def ssa(self, **args):
-        try:
-            self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "ssa")
-            if not hasattr( self.descriptorCalculator, "ssa"):
-                key = "key_"+"ssa"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.ssa(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1859,7 +1670,7 @@ class CalculatorInterface:
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
                     return self.phuHeader(SDKD.globalStdkeyDict[key])
-            retval = self.descriptorCalculator.well_depth_mode(self, **args)
+            retval = self.descriptorCalculator.well_depth_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
