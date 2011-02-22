@@ -170,8 +170,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(rc)
-                #clm.LogCurParams()
+                clm=gemt.CLManager(adIns=rc.getInputs(style='AD'), 
+                                   postpend=rc['postpend'],  
+                                   funcName='makeFringeFrame', 
+                                   verbose=int(rc['logVerbose']))
     
                 # Creating a dictionary of the parameters set by the CLManager  
                 # or the definition of the primitive 
@@ -229,12 +231,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     
                 # Renaming CL outputs and loading them back into memory 
                 # and cleaning up the intermediate temp files written to disk
-                clm.finishCL(combine=True) 
-                #clm.rmStackFiles() #$$$$$$$$$ DON'T do this if 
-                #^ Intermediate outputs are wanted!!!!
-                
-                # There is only one at this point so no need to perform a loop
-                ad = rc.getOutputs(style='AD')[0] 
+                ad = clm.finishCL(combine=True)  
                 
                 # Adding a GEM-TLM (automatic) and FRINGE time stamps 
                 # to the PHU
