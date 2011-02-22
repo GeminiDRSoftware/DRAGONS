@@ -1,0 +1,1209 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>primitives_GEMINI &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for primitives_GEMINI</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">sets</span> <span class="kn">import</span> <span class="n">Set</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">astrodata.ReductionObjects</span> <span class="kn">import</span> <span class="n">PrimitiveSet</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">IDFactory</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">geminiTools</span> <span class="k">as</span> <span class="n">gemt</span>
+<span class="kn">from</span> <span class="nn">gempy.science</span> <span class="kn">import</span> <span class="n">geminiScience</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">primitives_GENERAL</span> <span class="kn">import</span> <span class="n">GENERALPrimitives</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils.gemutil</span> <span class="kn">import</span> <span class="n">pyrafLoader</span>
+
+<span class="c">#log = gemLog.getGeminiLog()</span>
+
+<div class="viewcode-block" id="GEMINIException"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIException">[docs]</a><span class="k">class</span> <span class="nc">GEMINIException</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; This is the general exception the classes and functions in the</span>
+<span class="sd">    Structures.py module raise.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s">&#39;Exception Raised in Recipe System&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This constructor takes a message to print to the user.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This str conversion member returns the message given by the </span>
+<span class="sd">        user (or the default message)</span>
+<span class="sd">        when the exception is not caught.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+</div>
+<div class="viewcode-block" id="GEMINIPrimitives"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GEMINIPrimitives</span><span class="p">(</span><span class="n">GENERALPrimitives</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    This is the class of all primitives for the GEMINI astrotype of </span>
+<span class="sd">    the hierarchy tree.  It inherits all the primitives to the level above</span>
+<span class="sd">    , &#39;PrimitiveSet&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">astrotype</span> <span class="o">=</span> <span class="s">&#39;GEMINI&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="k">return</span> 
+    <span class="n">init</span><span class="o">.</span><span class="n">pt_hide</span> <span class="o">=</span> <span class="bp">True</span>
+    
+<div class="viewcode-block" id="GEMINIPrimitives.addDQ"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.addDQ">[docs]</a>    <span class="k">def</span> <span class="nf">addDQ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will create a numpy array for the data quality </span>
+<span class="sd">        of each SCI frame of the input data. This will then have a </span>
+<span class="sd">        header created and append to the input using AstroData as a DQ </span>
+<span class="sd">        frame. The value of a pixel will be the sum of the following: </span>
+<span class="sd">        (0=good, 1=bad pixel (found in bad pixel mask), </span>
+<span class="sd">        2=value is non linear, 4=pixel is saturated)</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_nonlinear: Flag to turn checking for nonlinear pixels on/off</span>
+<span class="sd">        :type fl_nonLinear: Python boolean (True/False), default is True</span>
+<span class="sd">    </span>
+<span class="sd">        :param fl_saturated: Flag to turn checking for saturated pixels on/off</span>
+<span class="sd">        :type fl_saturated: Python boolean (True/False), default is True</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span> 
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to add the DQ frame(s) to the input data&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Calling addBPM primitive to add the appropriate Bad Pixel Mask</span>
+            <span class="c"># to the inputs which will then be updated below to create data </span>
+            <span class="c"># quality frames from these new BPM extensions in the inputs.</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling addBPM primitive for &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s">&#39;addBPM&#39;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Returned from the addBPM primitive successfully&#39;</span><span class="p">)</span>
+                
+            <span class="c"># Calling geminiScience toolbox function ADUtoElectons to do the work</span>
+            <span class="c"># of converting the pixels, updating headers and logging.</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.addDQ&#39;</span><span class="p">)</span>
+
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">addDQ</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                         <span class="n">fl_nonlinear</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_nonlinear&#39;</span><span class="p">],</span> 
+                                         <span class="n">fl_saturated</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_saturated&#39;</span><span class="p">],</span> 
+                                         <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>    
+           
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.addDQ completed successfully&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Reporting the outputs to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>          
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* adding the DQ frame(s) to the input data&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem adding the DQ to one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+    </div>
+<div class="viewcode-block" id="GEMINIPrimitives.addVAR"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.addVAR">[docs]</a>    <span class="k">def</span> <span class="nf">addVAR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive uses numpy to calculate the variance of each SCI frame</span>
+<span class="sd">        in the input files and appends it as a VAR frame using AstroData.</span>
+<span class="sd">        </span>
+<span class="sd">        The calculation will follow the formula:</span>
+<span class="sd">        variance = (read noise/gain)2 + max(data,0.0)/gain</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;*STARTING* to add the VAR frame(s) to the input data&#39;</span><span class="p">)</span>
+            
+            
+            <span class="c"># Calling geminiScience toolbox function ADUtoElectons to do the work</span>
+            <span class="c"># of converting the pixels, updating headers and logging.</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.addVAR&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">addVAR</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                         <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                         <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>    
+           
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.addVAR completed successfully&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Reporting the outputs to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>            
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* adding the VAR frame(s) to the input data&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem adding the VAR to one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span> 
+    </div>
+<div class="viewcode-block" id="GEMINIPrimitives.ADUtoElectrons"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.ADUtoElectrons">[docs]</a>    <span class="k">def</span> <span class="nf">ADUtoElectrons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will convert the inputs from having pixel </span>
+<span class="sd">        units of ADU to electrons.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to convert the pixel values from &#39;</span><span class="o">+</span>
+                       <span class="s">&#39;ADU to electrons&#39;</span><span class="p">)</span>
+            <span class="c"># Calling geminiScience toolbox function ADUtoElectons to do the work</span>
+            <span class="c"># of converting the pixels, updating headers and logging.</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.ADUtoElectrons&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">ADUtoElectrons</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                                  <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                                  <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>    
+           
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.ADUtoElectrons completed successfully&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Reporting the outputs to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>   
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* converting the pixel units to electrons&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem converting the pixel units of one of &#39;</span><span class="o">+</span>
+                         <span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+            </div>
+<div class="viewcode-block" id="GEMINIPrimitives.combine"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.combine">[docs]</a>    <span class="k">def</span> <span class="nf">combine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will average and combine the SCI extensions of the </span>
+<span class="sd">        inputs. It takes all the inputs and creates a list of them and </span>
+<span class="sd">        then combines each of their SCI extensions together to create </span>
+<span class="sd">        average combination file. New VAR frames are made from these </span>
+<span class="sd">        combined SCI frames and the DQ frames are propagated through </span>
+<span class="sd">        to the final file.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_vardq: Create variance and data quality frames?</span>
+<span class="sd">        :type fl_vardq: Python boolean (True/False), OR string &#39;AUTO&#39; to do </span>
+<span class="sd">                        it automatically if there are VAR and DQ frames in the inputs.</span>
+<span class="sd">                        NOTE: &#39;AUTO&#39; uses the first input to determine if VAR </span>
+<span class="sd">                        and DQ frames exist, so, if the first does, then the </span>
+<span class="sd">                        rest MUST also have them as well.</span>
+<span class="sd">    </span>
+<span class="sd">        :param fl_dqprop: propogate the current DQ values?</span>
+<span class="sd">        :type fl_dqprop: Python boolean (True/False)</span>
+<span class="sd">    </span>
+<span class="sd">        :param method: type of combining method to use.</span>
+<span class="sd">        :type method: string, options: &#39;average&#39;, &#39;median&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">())</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* combine the images of the input data&#39;</span><span class="p">)</span>
+                
+                <span class="c"># Calling geminiScience toolbox function combine to do the work</span>
+                <span class="c"># of converting the pixels, updating headers and logging.</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.combine&#39;</span><span class="p">)</span>
+                
+                <span class="n">adOut</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span> 
+                                              <span class="n">fl_vardq</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_vardq&#39;</span><span class="p">],</span> <span class="n">fl_dqprop</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;fl_dqprop&#39;</span><span class="p">],</span> 
+                                              <span class="n">method</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;method&#39;</span><span class="p">],</span> <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                              <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span> 
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.combine completed successfully&#39;</span><span class="p">)</span>
+            
+                <span class="c"># Reporting the outputs to the reduction context</span>
+                <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOut</span><span class="p">)</span>    
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* combining the images of the input data&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;There was a problem combining &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+    <span class="k">def</span> <span class="nf">crashReduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="s">&#39;Crashing&#39;</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+        
+    <span class="k">def</span> <span class="nf">clearCalCache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="c"># print &#39;pG61:&#39;, rc.calindfile</span>
+        <span class="n">rc</span><span class="o">.</span><span class="n">persistCalIndex</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">calindfile</span><span class="p">,</span> <span class="n">newindex</span><span class="o">=</span><span class="p">{})</span>
+        <span class="n">scals</span> <span class="o">=</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;storedcals&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">scals</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">scals</span><span class="p">):</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">scals</span><span class="p">)</span>
+            <span class="n">cachedict</span> <span class="o">=</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;cachedict&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">cachename</span> <span class="ow">in</span> <span class="n">cachedict</span><span class="p">:</span>
+                <span class="n">cachedir</span> <span class="o">=</span> <span class="n">cachedict</span><span class="p">[</span><span class="n">cachename</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cachedir</span><span class="p">):</span>                        
+                    <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">cachedir</span><span class="p">)</span>                
+        <span class="k">yield</span> <span class="n">rc</span>
+        
+<div class="viewcode-block" id="GEMINIPrimitives.display"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">rqDisplay</span><span class="p">(</span><span class="n">displayID</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;displayID&#39;</span><span class="p">])</span>           
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem displaying output&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+        </div>
+<div class="viewcode-block" id="GEMINIPrimitives.flatCorrect"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.flatCorrect">[docs]</a>    <span class="k">def</span> <span class="nf">flatCorrect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive performs a flat correction by dividing the inputs by a </span>
+<span class="sd">        processed flat similar to the way gireduce would perform this operation</span>
+<span class="sd">        but written in pure Python in the arith toolbox.</span>
+<span class="sd">          </span>
+<span class="sd">        It is currently assumed that the same flat file will be applied to all</span>
+<span class="sd">        input images.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to flat correct the inputs&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Retrieving the appropriate flat for the first of the inputs</span>
+            <span class="n">adOne</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">processedFlat</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">getCal</span><span class="p">(</span><span class="n">adOne</span><span class="p">,</span><span class="s">&#39;flat&#39;</span><span class="p">))</span>
+            
+            <span class="c"># Taking care of the case where there was no, or an invalid flat </span>
+            <span class="k">if</span> <span class="n">processedFlat</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GEMINIException</span><span class="p">(</span><span class="s">&#39;Invalid processed flat retrieved&#39;</span><span class="p">)</span>               
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling geminiScience.flatCorrect function&#39;</span><span class="p">)</span>
+            
+            <span class="n">adOuts</span> <span class="o">=</span> <span class="n">geminiScience</span><span class="o">.</span><span class="n">flatCorrect</span><span class="p">(</span><span class="n">adIns</span><span class="o">=</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">),</span>     
+                                         <span class="n">flats</span><span class="o">=</span><span class="n">processedFlat</span><span class="p">,</span> <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                         <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>           
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;geminiScience.flatCorrect completed successfully&#39;</span><span class="p">)</span>
+              
+            <span class="c"># Reporting the updated files to the reduction context</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">adOuts</span><span class="p">)</span>   
+
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* flat correcting the inputs&#39;</span><span class="p">)</span>  
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem processing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span>  
+        <span class="k">yield</span> <span class="n">rc</span>
+   </div>
+<div class="viewcode-block" id="GEMINIPrimitives.getProcessedBias"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.getProcessedBias">[docs]</a>    <span class="k">def</span> <span class="nf">getProcessedBias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A primitive to search and return the appropriate calibration bias from</span>
+<span class="sd">        a server for the given inputs.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rc</span><span class="o">.</span><span class="n">rqCal</span><span class="p">(</span><span class="s">&#39;bias&#39;</span><span class="p">,</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">))</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+        </div>
+<div class="viewcode-block" id="GEMINIPrimitives.getProcessedFlat"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.getProcessedFlat">[docs]</a>    <span class="k">def</span> <span class="nf">getProcessedFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A primitive to search and return the appropriate calibration flat from</span>
+<span class="sd">        a server for the given inputs.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rc</span><span class="o">.</span><span class="n">rqCal</span><span class="p">(</span><span class="s">&#39;flat&#39;</span><span class="p">,</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">))</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+    </div>
+<div class="viewcode-block" id="GEMINIPrimitives.getStackable"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.getStackable">[docs]</a>    <span class="k">def</span> <span class="nf">getStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will check the files in the stack lists are on disk,</span>
+<span class="sd">        and then update the inputs list to include all members of the stack </span>
+<span class="sd">        for stacking.</span>
+<span class="sd">        </span>
+<span class="sd">        :param purpose: </span>
+<span class="sd">        :type purpose: string, either: &#39;&#39; for regular image stacking, </span>
+<span class="sd">                       or &#39;fringe&#39; for fringe stacking.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="n">sidset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">purpose</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&quot;purpose&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">purpose</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">purpose</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="n">sidset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">purpose</span><span class="o">+</span><span class="n">IDFactory</span><span class="o">.</span><span class="n">generateStackableID</span><span class="p">(</span><span class="n">inp</span><span class="o">.</span><span class="n">ad</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">sidset</span><span class="p">:</span>
+                <span class="n">stacklist</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getStack</span><span class="p">(</span><span class="n">sid</span><span class="p">)</span> <span class="c">#.filelist</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Stack for stack id=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">sid</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">stacklist</span><span class="p">:</span>
+                    <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;   &#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+            <span class="k">yield</span> <span class="n">rc</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem getting stack &#39;</span><span class="o">+</span><span class="n">sid</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;stack&#39;</span><span class="p">)</span>
+
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+    </div>
+<div class="viewcode-block" id="GEMINIPrimitives.measureIQ"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.measureIQ">[docs]</a>    <span class="k">def</span> <span class="nf">measureIQ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will detect the sources in the input images and fit</span>
+<span class="sd">        both Gaussian and Moffat models to their profiles and calculate the </span>
+<span class="sd">        Image Quality and seeing from this.</span>
+<span class="sd">        </span>
+<span class="sd">        :param function: Function for centroid fitting</span>
+<span class="sd">        :type function: string, can be: &#39;moffat&#39;,&#39;gauss&#39; or &#39;both&#39;; </span>
+<span class="sd">                        Default &#39;both&#39;</span>
+<span class="sd">                        </span>
+<span class="sd">        :param display: Flag to turn on displaying the fitting to ds9</span>
+<span class="sd">        :type display: Python boolean (True/False)</span>
+<span class="sd">                       Default: True</span>
+<span class="sd">        </span>
+<span class="sd">        :param mosaic: Flag to indicate the images have been mosaic&#39;d </span>
+<span class="sd">                       (ie only 1 &#39;SCI&#39; extension in images)</span>
+<span class="sd">        :type mosaic: Python boolean (True/False)</span>
+<span class="sd">                      default: True</span>
+<span class="sd">        :param qa: flag to use a grid of sub-windows for detecting the sources in </span>
+<span class="sd">                   the image frames, rather than the entire frame all at once.</span>
+<span class="sd">        :type qa: Python boolean (True/False)</span>
+<span class="sd">                  default: True</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#@@FIXME: Detecting sources is done here as well. This </span>
+        <span class="c"># should eventually be split up into</span>
+        <span class="c"># separate primitives, i.e. detectSources and measureIQ.</span>
+        
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to detect the sources&#39;</span><span class="o">+</span>
+                       <span class="s">&#39; and measure the IQ of the inputs&#39;</span><span class="p">)</span>
+            <span class="c"># Importing getiq module to perform the source detection and IQ</span>
+            <span class="c"># measurements of the inputs</span>
+            <span class="kn">from</span> <span class="nn">iqtool.iq</span> <span class="kn">import</span> <span class="n">getiq</span>
+            
+            <span class="c"># Initializing a total time sum variable for logging purposes </span>
+            <span class="n">total_IQ_time</span> <span class="o">=</span> <span class="mi">0</span>
+            
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="c"># Check that the files being processed are in the current </span>
+                <span class="c"># working directory, as that is a requirement for getiq to work</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;The inputs to measureIQ must be in the&#39;</span><span class="o">+</span>
+                                 <span class="s">&#39; pwd for it to work correctly&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">GEMINIException</span><span class="p">(</span><span class="s">&#39;inputs to measureIQ were not in pwd&#39;</span><span class="p">)</span>
+                    
+                <span class="c"># Start time for measuring IQ of current file</span>
+                <span class="n">st</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling getiq.gemiq for input &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                
+                <span class="c"># Calling the gemiq function to detect the sources and then</span>
+                <span class="c"># measure the IQ of the current image </span>
+                <span class="n">iqdata</span> <span class="o">=</span> <span class="n">getiq</span><span class="o">.</span><span class="n">gemiq</span><span class="p">(</span> <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;function&#39;</span><span class="p">],</span> 
+                                      <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">display</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;display&#39;</span><span class="p">],</span> 
+                                      <span class="n">mosaic</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;mosaic&#39;</span><span class="p">],</span> <span class="n">qa</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;qa&#39;</span><span class="p">])</span>
+                
+                <span class="c"># End time for measuring IQ of current file</span>
+                <span class="n">et</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="n">total_IQ_time</span> <span class="o">=</span> <span class="n">total_IQ_time</span> <span class="o">+</span> <span class="p">(</span><span class="n">et</span> <span class="o">-</span> <span class="n">st</span><span class="p">)</span>
+                <span class="c"># Logging the amount of time spent measuring the IQ </span>
+                <span class="n">log</span><span class="o">.</span><span class="n">stdinfo</span><span class="p">(</span><span class="s">&#39;MeasureIQ time: &#39;</span><span class="o">+</span><span class="nb">repr</span><span class="p">(</span><span class="n">et</span> <span class="o">-</span> <span class="n">st</span><span class="p">),</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;IQ&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~&#39;</span><span class="o">*</span><span class="mi">45</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;format&#39;</span><span class="p">)</span>
+                
+                <span class="c"># iqdata is list of tuples with image quality metrics</span>
+                <span class="c"># (ellMean, ellSig, fwhmMean, fwhmSig)</span>
+                <span class="c"># First check if it is empty (ie. gemiq failed in someway)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">iqdata</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Problem Measuring IQ Statistics, &#39;</span><span class="o">+</span>
+                                <span class="s">&#39;none reported&#39;</span><span class="p">)</span>
+                <span class="c"># If it all worked, then format the output and log it</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># Formatting this output for printing or logging                </span>
+                    <span class="n">fnStr</span> <span class="o">=</span> <span class="s">&#39;Filename:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span>
+                    <span class="n">emStr</span> <span class="o">=</span> <span class="s">&#39;Ellipticity Mean:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">iqdata</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">esStr</span> <span class="o">=</span> <span class="s">&#39;Ellipticity Sigma:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">iqdata</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">fmStr</span> <span class="o">=</span> <span class="s">&#39;FWHM Mean:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">iqdata</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+                    <span class="n">fsStr</span> <span class="o">=</span> <span class="s">&#39;FWHM Sigma:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">iqdata</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">])</span>
+                    <span class="n">sStr</span> <span class="o">=</span> <span class="s">&#39;Seeing:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">iqdata</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+                    <span class="n">psStr</span> <span class="o">=</span> <span class="s">&#39;PixelScale:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">pixel_scale</span><span class="p">())</span>
+                    <span class="n">vStr</span> <span class="o">=</span> <span class="s">&#39;VERSION:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;None&#39;</span> <span class="c">#$$$$$ made on ln12 of ReductionsObjectRequest.py, always &#39;None&#39; it seems.</span>
+                    <span class="n">tStr</span> <span class="o">=</span> <span class="s">&#39;TIMESTAMP:&#39;</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+                    <span class="c"># Create final formated string</span>
+                    <span class="n">finalStr</span> <span class="o">=</span> <span class="s">&#39;-&#39;</span><span class="o">*</span><span class="mi">45</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">fnStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">emStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">esStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span>\
+                                    <span class="o">+</span><span class="n">fmStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">fsStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">sStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">psStr</span><span class="o">+</span>\
+                                    <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">vStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="n">tStr</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span><span class="s">&#39;-&#39;</span><span class="o">*</span><span class="mi">45</span>
+                    <span class="c"># Log final string</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">stdinfo</span><span class="p">(</span><span class="n">finalStr</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;IQ&#39;</span><span class="p">)</span>
+                    
+            <span class="c"># Logging the total amount of time spent measuring the IQ of all</span>
+            <span class="c"># the inputs</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">stdinfo</span><span class="p">(</span><span class="s">&#39;Total measureIQ time: &#39;</span><span class="o">+</span><span class="nb">repr</span><span class="p">(</span><span class="n">total_IQ_time</span><span class="p">),</span> 
+                        <span class="n">category</span><span class="o">=</span><span class="s">&#39;IQ&#39;</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* measuring the IQ of the inputs&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;There was a problem combining &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+ </div>
+    <span class="k">def</span> <span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="n">rc</span><span class="o">.</span><span class="n">requestPause</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+ 
+    <span class="k">def</span> <span class="nf">setContext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="n">rc</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">localparms</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">rc</span>   
+       
+<div class="viewcode-block" id="GEMINIPrimitives.setStackable"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.setStackable">[docs]</a>    <span class="k">def</span> <span class="nf">setStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will update the lists of files to be stacked</span>
+<span class="sd">        that have the same observationID with the current inputs.</span>
+<span class="sd">        This file is cached between calls to reduce, thus allowing</span>
+<span class="sd">        for one-file-at-a-time processing.</span>
+<span class="sd">        </span>
+<span class="sd">        :param purpose: </span>
+<span class="sd">        :type purpose: string, either: &#39;&#39; for regular image stacking, </span>
+<span class="sd">                       or &#39;fringe&#39; for fringe stacking.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to update/create the stack&#39;</span><span class="p">)</span>
+            <span class="c"># Requesting for the reduction context to perform an update</span>
+            <span class="c"># to the stack cache file (or create it) with the current inputs.</span>
+            <span class="n">purpose</span> <span class="o">=</span> <span class="n">rc</span><span class="p">[</span><span class="s">&quot;purpose&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">purpose</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">purpose</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+                
+            <span class="n">rc</span><span class="o">.</span><span class="n">rqStackUpdate</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span> <span class="n">purpose</span><span class="p">)</span>
+            <span class="c"># Writing the files in the stack to disk if not all ready there</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;writing &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="o">+</span>\
+                                 <span class="s">&#39; to disk&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;stack&#39;</span><span class="p">)</span>
+                    <span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* updating/creating the stack&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem writing stack for files &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">(),</span>
+                         <span class="n">category</span><span class="o">=</span><span class="s">&#39;stack&#39;</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+    </div>
+<div class="viewcode-block" id="GEMINIPrimitives.showCals"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.showCals">[docs]</a>    <span class="k">def</span> <span class="nf">showCals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;showcals&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;all&#39;</span><span class="p">:</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c"># print &#39;pG256: showcals=all&#39;, repr (rc.calibrations)</span>
+            <span class="k">for</span> <span class="n">calkey</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">calibrations</span><span class="p">:</span>
+                <span class="n">num</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">calibrations</span><span class="p">[</span><span class="n">calkey</span><span class="p">],</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;calibrations&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;There are no calibrations in the cache.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">adr</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="n">sid</span> <span class="o">=</span> <span class="n">IDFactory</span><span class="o">.</span><span class="n">generateAstroDataID</span><span class="p">(</span><span class="n">adr</span><span class="o">.</span><span class="n">ad</span><span class="p">)</span>
+                <span class="n">num</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">calkey</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">calibrations</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">calkey</span> <span class="p">:</span>
+                        <span class="n">num</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">calibrations</span><span class="p">[</span><span class="n">calkey</span><span class="p">],</span> 
+                                     <span class="n">category</span><span class="o">=</span><span class="s">&#39;calibrations&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">num</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;There are no calibrations in the cache.&#39;</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">rc</span></div>
+    <span class="n">ptusage_showCals</span><span class="o">=</span><span class="s">&#39;Used to show calibrations currently in cache for inputs.&#39;</span>
+
+<div class="viewcode-block" id="GEMINIPrimitives.showInputs"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.showInputs">[docs]</a>    <span class="k">def</span> <span class="nf">showInputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Inputs:&#39;</span><span class="p">,</span><span class="n">category</span><span class="o">=</span><span class="s">&#39;inputs&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">inf</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;  &#39;</span><span class="o">+</span><span class="n">inf</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;inputs&#39;</span><span class="p">)</span>  
+        <span class="k">yield</span> <span class="n">rc</span>  </div>
+    <span class="n">showFiles</span> <span class="o">=</span> <span class="n">showInputs</span>
+
+<div class="viewcode-block" id="GEMINIPrimitives.showParameters"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.showParameters">[docs]</a>    <span class="k">def</span> <span class="nf">showParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="n">rcparams</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">paramNames</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;show&#39;</span><span class="p">]):</span>
+            <span class="n">toshows</span> <span class="o">=</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;show&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">toshow</span> <span class="ow">in</span> <span class="n">toshows</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">toshow</span> <span class="ow">in</span> <span class="n">rcparams</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">toshow</span><span class="o">+</span><span class="s">&#39; = &#39;</span><span class="o">+</span><span class="nb">repr</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="n">toshow</span><span class="p">]),</span> 
+                                 <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">toshow</span><span class="o">+</span><span class="s">&#39; is not set&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">rcparams</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">param</span><span class="o">+</span><span class="s">&#39; = &#39;</span><span class="o">+</span><span class="nb">repr</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="n">param</span><span class="p">]),</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+        
+        <span class="c"># print &#39;all&#39;,repr(rc.parmDictByTag(&#39;showParams&#39;, &#39;all&#39;))</span>
+        <span class="c"># print &#39;iraf&#39;,repr(rc.parmDictByTag(&#39;showParams&#39;, &#39;iraf&#39;))</span>
+        <span class="c"># print &#39;test&#39;,repr(rc.parmDictByTag(&#39;showParams&#39;, &#39;test&#39;))</span>
+        <span class="c"># print &#39;sdf&#39;,repr(rc.parmDictByTag(&#39;showParams&#39;, &#39;sdf&#39;))</span>
+
+        <span class="c"># print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))</span>
+        <span class="k">yield</span> <span class="n">rc</span>  
+         </div>
+<div class="viewcode-block" id="GEMINIPrimitives.showStackable"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.showStackable">[docs]</a>    <span class="k">def</span> <span class="nf">showStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will log the list of files in the stacking list matching</span>
+<span class="sd">        the current inputs and &#39;purpose&#39; value.  </span>
+<span class="sd">        </span>
+<span class="sd">        :param purpose: </span>
+<span class="sd">        :type purpose: string, either: &#39;&#39; for regular image stacking, </span>
+<span class="sd">                       or &#39;fringe&#39; for fringe stacking.</span>
+<span class="sd">                       </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="n">sidset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">purpose</span> <span class="o">=</span> <span class="n">rc</span><span class="p">[</span><span class="s">&quot;purpose&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">purpose</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">purpose</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="c"># print &quot;pG710&quot;</span>
+        <span class="k">if</span> <span class="n">purpose</span> <span class="o">==</span> <span class="s">&quot;all&quot;</span><span class="p">:</span>
+            <span class="n">allsids</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getStackIDs</span><span class="p">()</span>
+            <span class="c"># print &quot;pG713:&quot;, repr(allsids)</span>
+            <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">allsids</span><span class="p">:</span>
+                <span class="n">sidset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sid</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>   
+            <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="n">sidset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">purpose</span><span class="o">+</span><span class="n">IDFactory</span><span class="o">.</span><span class="n">generateStackableID</span><span class="p">(</span><span class="n">inp</span><span class="o">.</span><span class="n">ad</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">sidset</span><span class="p">:</span>
+            <span class="n">stacklist</span> <span class="o">=</span> <span class="n">rc</span><span class="o">.</span><span class="n">getStack</span><span class="p">(</span><span class="n">sid</span><span class="p">)</span> <span class="c">#.filelist</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Stack for stack id=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">sid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stacklist</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">stacklist</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;    &#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&quot;    no datasets in list&quot;</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+            </div>
+    <span class="k">def</span> <span class="nf">sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]:</span>
+            <span class="n">dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dur</span> <span class="o">=</span> <span class="mf">5.</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Sleeping for </span><span class="si">%f</span><span class="s"> seconds&#39;</span> <span class="o">%</span> <span class="n">dur</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">dur</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+             
+<div class="viewcode-block" id="GEMINIPrimitives.standardizeHeaders"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.standardizeHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive updates and adds the important header keywords</span>
+<span class="sd">        for the input MEFs. First the general headers for Gemini will </span>
+<span class="sd">        be update/created, followed by those that are instrument specific.</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>   
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to standardize the headers&#39;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Standardizing observatory general headers&#39;</span><span class="p">)</span>            
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;calling gemt.stdObsHdrs for &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">stdObsHdrs</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Completed standardizing the headers for &#39;</span><span class="o">+</span>
+                           <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+   
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Observatory headers fixed&#39;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling standardizeInstrumentHeaders primitive&#39;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Standardizing instrument specific headers&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Calling standarizeInstrumentHeaders primitive</span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s">&#39;standardizeInstrumentHeaders(logVerbose=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;)&#39;</span><span class="p">)</span> 
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Instrument specific headers fixed&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Updating the file name with the postpend/outsuffix  and timestamps </span>
+            <span class="c"># for this primitive and then reporting the new file to the </span>
+            <span class="c"># reduction context </span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="c"># Adding a GEM-TLM (automatic) and STDHDRS time stamps </span>
+                <span class="c"># to the PHU</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;STDHDRS&#39;</span><span class="p">,</span><span class="n">stomp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> 
+                                                   <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                                   <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;File name updated to &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="c"># Updating logger with updated/added time stamps</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;************************************************&#39;</span>
+                             <span class="p">,</span><span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;file = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~&#39;</span>
+                             <span class="p">,</span> <span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;PHU keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;GEM-TLM = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GEM-TLM&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;STDHDRS = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;STDHDRS&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;------------------------------------------------&#39;</span>
+                             <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>    
+                <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* standardizing the headers&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem preparing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+                                 </div>
+<div class="viewcode-block" id="GEMINIPrimitives.standardizeStructure"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.standardizeStructure">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeStructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive ensures the MEF structure is ready for further </span>
+<span class="sd">        processing, through adding the MDF if necessary and the needed </span>
+<span class="sd">        keywords to the headers.  First the MEF&#39;s will be checked for the </span>
+<span class="sd">        general Gemini structure requirements and then the instrument specific</span>
+<span class="sd">        ones if needed. If the data requires a MDF to be attached, use the </span>
+<span class="sd">        &#39;addMDF&#39; flag to make this happen </span>
+<span class="sd">        (eg. standardizeStructure(addMDF=True)).</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param addMDF: A flag to turn on/off appending the appropriate MDF </span>
+<span class="sd">                       file to the inputs.</span>
+<span class="sd">        :type addMDF: Python boolean (True/False)</span>
+<span class="sd">                      default: True</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to standardize the structure of input data&#39;</span><span class="p">)</span>
+            
+            <span class="c">#$$$$ MAYBE SET THIS TO FALSE IF GMOS_IMAGE AND TRUE IF GMOS_SPEC?$$$$$$$</span>
+            <span class="c"># Add the MDF if not set to false</span>
+            <span class="k">if</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;addMDF&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling attachMDF primitive&#39;</span><span class="p">)</span>
+                <span class="c"># Calling the attachMDF primitive</span>
+                <span class="n">rc</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s">&#39;attachMDF(logVerbose=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Successfully returned to &#39;</span><span class="o">+</span>
+                           <span class="s">&#39;standardizeStructure from the attachMDF primitive&#39;</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.stdObsStruct on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">gemt</span><span class="o">.</span><span class="n">stdObsStruct</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Completed standardizing the structure for &#39;</span><span class="o">+</span>
+                           <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                
+                <span class="c"># Adding a GEM-TLM (automatic) and STDSTRUC time stamps </span>
+                <span class="c"># to the PHU</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;STDSTRUC&#39;</span><span class="p">,</span><span class="n">stomp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="c"># Updating the file name with the postpend/outsuffix for this   </span>
+                <span class="c"># primitive and then reporting the new file to the reduction </span>
+                <span class="c"># context</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> 
+                                                   <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                                   <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;File name updated to &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="c"># Updating logger with updated/added time stamps</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;************************************************&#39;</span>
+                             <span class="p">,</span><span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;file = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~&#39;</span>
+                             <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;PHU keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;GEM-TLM = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GEM-TLM&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;STDSTRUC = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;STDSTRUC&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;------------------------------------------------&#39;</span>
+                             <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>  
+                <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+   
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* standardizing the structure of input data&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem preparing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+        </div>
+<div class="viewcode-block" id="GEMINIPrimitives.storeProcessedBias"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.storeProcessedBias">[docs]</a>    <span class="k">def</span> <span class="nf">storeProcessedBias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This should be a primitive that interacts with the calibration system </span>
+<span class="sd">        (MAYBE) but that isn&#39;t up and running yet. Thus, this will just strip </span>
+<span class="sd">        the extra postfixes to create the &#39;final&#39; name for the </span>
+<span class="sd">        makeProcessedBias outputs and write them to disk in a storedcals folder.</span>
+<span class="sd">        </span>
+<span class="sd">        :param clob: Write over any previous file with the same name that</span>
+<span class="sd">                     all ready exists?</span>
+<span class="sd">        :type clob: Python boolean (True/False)</span>
+<span class="sd">                    default: False</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>  
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to store the processed bias by writing &#39;</span><span class="o">+</span>
+                       <span class="s">&#39;it to disk&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="c"># Updating the file name with the postpend/outsuffix for this</span>
+                <span class="c"># primitive and then reporting the new file to the reduction </span>
+                <span class="c"># context</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> 
+                                                   <span class="n">postpend</span><span class="o">=</span><span class="s">&#39;_preparedbias&#39;</span><span class="p">,</span> 
+                                                   <span class="n">strip</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
+                                                   <span class="n">verbose</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;File name updated to &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                
+                <span class="c"># Adding a GBIAS time stamp to the PHU</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;GBIAS&#39;</span><span class="p">,</span> 
+                              <span class="n">comment</span><span class="o">=</span><span class="s">&#39;fake key to trick CL that GBIAS was ran&#39;</span><span class="p">)</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;File written to = &#39;</span><span class="o">+</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;storedbiases&#39;</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span>
+                             <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;storedbiases&#39;</span><span class="p">],</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">),</span> 
+                         <span class="n">clobber</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;clob&#39;</span><span class="p">])</span>
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* storing the processed bias on disk&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem storing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+   </div>
+<div class="viewcode-block" id="GEMINIPrimitives.storeProcessedFlat"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.storeProcessedFlat">[docs]</a>    <span class="k">def</span> <span class="nf">storeProcessedFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This should be a primitive that interacts with the calibration </span>
+<span class="sd">        system (MAYBE) but that isn&#39;t up and running yet. Thus, this will </span>
+<span class="sd">        just strip the extra postfixes to create the &#39;final&#39; name for the </span>
+<span class="sd">        makeProcessedFlat outputs and write them to disk in a storedcals folder.</span>
+<span class="sd">        </span>
+<span class="sd">        :param clob: Write over any previous file with the same name that</span>
+<span class="sd">                     all ready exists?</span>
+<span class="sd">        :type clob: Python boolean (True/False)</span>
+<span class="sd">                    default: False</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>   
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to store the processed flat by writing it to disk&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="c"># Updating the file name with the postpend/outsuffix for this</span>
+                <span class="c"># primitive and then reporting the new file to the reduction </span>
+                <span class="c"># context</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> 
+                                                   <span class="n">postpend</span><span class="o">=</span><span class="s">&#39;_preparedflat&#39;</span><span class="p">,</span> 
+                                                   <span class="n">strip</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
+                                                   <span class="n">verbose</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;File name updated to &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;File written to = &#39;</span><span class="o">+</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;storedflats&#39;</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;/&#39;</span>
+                             <span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;storedflats&#39;</span><span class="p">],</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">),</span>
+                         <span class="n">clobber</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;clob&#39;</span><span class="p">])</span>
+                
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* storing the processed flat on disk&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem storing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+        </div>
+    <span class="k">def</span> <span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        
+        <span class="n">elap</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;lastTime&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]:</span>
+            <span class="n">td</span> <span class="o">=</span> <span class="n">cur</span> <span class="o">-</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;lastTime&#39;</span><span class="p">]</span>
+            <span class="n">elap</span> <span class="o">=</span> <span class="s">&#39; (</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">td</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Time:&#39;</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">elap</span><span class="p">)</span>
+        
+        <span class="n">rc</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;lastTime&#39;</span><span class="p">:</span><span class="n">cur</span><span class="p">})</span>
+        <span class="k">yield</span> <span class="n">rc</span>
+
+<div class="viewcode-block" id="GEMINIPrimitives.validateData"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.validateData">[docs]</a>    <span class="k">def</span> <span class="nf">validateData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This primitive will ensure the data is not corrupted or in an odd </span>
+<span class="sd">        format that will affect later steps in the reduction process.  </span>
+<span class="sd">        It will call a function to take care of the general Gemini issues </span>
+<span class="sd">        and then one for the instrument specific ones. If there are issues </span>
+<span class="sd">        with the data, the flag &#39;repair&#39; can be used to turn on the feature to </span>
+<span class="sd">        repair it or not (eg. validateData(repair=True))</span>
+<span class="sd">        (this feature is not coded yet).</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param repair: A flag to turn on/off repairing the data if there is a</span>
+<span class="sd">                       problem with it. </span>
+<span class="sd">                       Note: this feature does not work yet.</span>
+<span class="sd">        :type repair: Python boolean (True/False)</span>
+<span class="sd">                      default: True</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>           
+            <span class="k">if</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;repair&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+               <span class="c"># This should repair the file if it is broken, but this function</span>
+               <span class="c"># isn&#39;t coded yet and would require some sort of flag set while </span>
+               <span class="c"># checking the data to tell this to perform the corrections</span>
+               <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Sorry, but the repair feature of validateData&#39;</span> <span class="o">+</span>
+                            <span class="s">&#39; is not available yet&#39;</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to validate the input data&#39;</span><span class="p">)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling validateInstrumentData primitive&#39;</span><span class="p">)</span>
+            <span class="c"># Calling the validateInstrumentData primitive </span>
+            <span class="n">rc</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s">&#39;validateInstrumentData(logVerbose=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;Successfully returned to validateData&#39;</span><span class="o">+</span>
+                       <span class="s">&#39; from the validateInstrumentData primitive&#39;</span><span class="p">)</span> 
+            
+            <span class="c"># Updating the file name with the postpend/outsuffix  and timestamps </span>
+            <span class="c"># for this primitive and then reporting the new file to the </span>
+            <span class="c"># reduction context </span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="c"># Adding a GEM-TLM (automatic) and VALDATA time stamps </span>
+                <span class="c"># to the PHU</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;VALDATA&#39;</span><span class="p">,</span><span class="n">stomp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;calling gemt.gemt.fileNameUpdater on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>        
+                <span class="n">ad</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> 
+                                                   <span class="n">postpend</span><span class="o">=</span><span class="s">&#39;_validated&#39;</span><span class="p">,</span> 
+                                                   <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>                
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;File name updated to &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="c"># Updating logger with updated/added time stamps</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;************************************************&#39;</span>
+                             <span class="p">,</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;File = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~&#39;</span>
+                             <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;PHU keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;GEM-TLM = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GEM-TLM&#39;</span><span class="p">),</span> 
+                              <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;VALDATA = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;VALDATA&#39;</span><span class="p">),</span> 
+                             <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;------------------------------------------------&#39;</span>
+                             <span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>  
+                <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span> 
+                        
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* validating input data&#39;</span><span class="p">)</span>                
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Problem preparing one of  &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GEMINIPrimitives.writeOutputs"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.writeOutputs">[docs]</a>    <span class="k">def</span> <span class="nf">writeOutputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A primitive that may be called by a recipe at any stage to</span>
+<span class="sd">        write the outputs to disk.</span>
+<span class="sd">        If postpend is set during the call to writeOutputs, any previous </span>
+<span class="sd">        postpends will be striped and replaced by the one provided.</span>
+<span class="sd">        examples: </span>
+<span class="sd">        writeOutputs(postpend= &#39;_string&#39;), writeOutputs(prepend= &#39;_string&#39;) </span>
+<span class="sd">        or if you have a full file name in mind for a SINGLE file being </span>
+<span class="sd">        ran through Reduce you may use writeOutputs(outfilename=&#39;name.fits&#39;).</span>
+<span class="sd">        </span>
+<span class="sd">        :param strip: Strip the previously postpended strings off file name?</span>
+<span class="sd">        :type strip: Python boolean (True/False)</span>
+<span class="sd">                     default: False</span>
+<span class="sd">        </span>
+<span class="sd">        :param clobber: Write over any previous file with the same name that</span>
+<span class="sd">                        all ready exists?</span>
+<span class="sd">        :type clobber: Python boolean (True/False)</span>
+<span class="sd">                       default: False</span>
+<span class="sd">        </span>
+<span class="sd">        :param postpend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type postpend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param prepend: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type prepend: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param outfilename: The full filename you wish the file to be written to.</span>
+<span class="sd">                            Note: this only works if there is ONLY ONE file in the inputs.</span>
+<span class="sd">        :type outfilename: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logVerbose: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*STARTING* to write the outputs&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Logging current values of postpend and prepend</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;postpend = &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">]))</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;prepend = &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;prepend&#39;</span><span class="p">]))</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;strip = &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;strip&#39;</span><span class="p">]))</span>
+            
+            <span class="k">if</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;prepend&#39;</span><span class="p">]:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;The input will have &#39;</span><span class="o">+</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;prepend&#39;</span><span class="p">]</span><span class="o">+</span><span class="s">&#39; prepended&#39;</span><span class="o">+</span>
+                             <span class="s">&#39; and &#39;</span><span class="o">+</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">]</span><span class="o">+</span><span class="s">&#39; postpended onto it&#39;</span><span class="p">)</span>
+                
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="c"># If the value of &#39;postpend&#39; was set, then set the file name </span>
+                <span class="c"># to be written to disk to be postpended by it</span>
+                <span class="k">if</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">]:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    <span class="n">ad</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> 
+                                        <span class="n">postpend</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;postpend&#39;</span><span class="p">],</span> 
+                                        <span class="n">strip</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;strip&#39;</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logVerbose&#39;</span><span class="p">]))</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;File name updated to &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    <span class="n">outfilename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    
+                <span class="c"># If the value of &#39;prepend&#39; was set, then set the file name </span>
+                <span class="c"># to be written to disk to be prepended by it</span>
+                <span class="k">if</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;prepend&#39;</span><span class="p">]:</span>
+                    <span class="n">infilename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    <span class="n">outfilename</span> <span class="o">=</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;prepend&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">infilename</span>
+                    
+                <span class="c"># If the &#39;outfilename&#39; was set, set the file name of the file </span>
+                <span class="c"># file to be written to this</span>
+                <span class="k">elif</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;outfilename&#39;</span><span class="p">]:</span>
+                    <span class="c"># Check that there is not more than one file to be written</span>
+                    <span class="c"># to this file name, if so throw exception</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">))</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;More than one file was requested to be&#39;</span><span class="o">+</span>
+                                     <span class="s">&#39;written to the same name &#39;</span><span class="o">+</span>
+                                     <span class="n">rc</span><span class="p">[</span><span class="s">&#39;outfilename&#39;</span><span class="p">])</span>
+                        <span class="k">raise</span> <span class="n">GEMINIException</span><span class="p">(</span><span class="s">&#39;More than one file was &#39;</span><span class="o">+</span>
+                                     <span class="s">&#39;requested to be written to the same&#39;</span><span class="o">+</span>
+                                     <span class="s">&#39;name&#39;</span><span class="o">+</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;outfilename&#39;</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">outfilename</span> <span class="o">=</span> <span class="n">rc</span><span class="p">[</span><span class="s">&#39;outfilename&#39;</span><span class="p">]</span>   
+                <span class="c"># If no changes to file names are requested then write inputs</span>
+                <span class="c"># to their current file names</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">outfilename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span> 
+                    <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;not changing the file name to be written&#39;</span><span class="o">+</span>
+                    <span class="s">&#39; from its current name&#39;</span><span class="p">)</span> 
+                    
+                <span class="c"># Finally, write the file to the name that was decided </span>
+                <span class="c"># upon above</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;writing to file = &#39;</span><span class="o">+</span><span class="n">outfilename</span><span class="p">)</span>      
+                <span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">outfilename</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;clobber&#39;</span><span class="p">])</span>     
+                <span class="c">#^ AstroData checks if the output exists and raises an exception</span>
+                <span class="c">#rc.reportOutput(ad)</span>
+            
+            <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;*FINISHED* writing the outputs&#39;</span><span class="p">)</span>   
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;There was a problem writing one of &#39;</span><span class="o">+</span><span class="n">rc</span><span class="o">.</span><span class="n">inputsAsStr</span><span class="p">())</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>   
+         </div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
