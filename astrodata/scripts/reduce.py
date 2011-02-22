@@ -830,6 +830,12 @@ for infiles in allinputs: #for dealing with multiple sets of files.
 
                 if (options.writeInt == True):       #$$$$$ to be removed after writeIntermediate thing works correctly
                         co.update({"writeInt":True})  #$$$$$ to be removed after writeIntermediate thing works correctly
+                        
+                 
+                # Putting the log verbosity set with the --verbose parser option 
+                # into the global dict for use throughout the primitives.
+                co.update({'logVerbose':options.verbose}) #$$$$$$$$$ right place to do this??       
+                        
                 # print "r352:", repr(co.userParams.userParamDict)
                 if (useTK):
                     while cw.bReady == False:
