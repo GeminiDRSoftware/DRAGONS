@@ -1348,6 +1348,8 @@ n informed of the issue and
         try:
             hdus = self.getHDUList()
             retval = hdus[0].header[key]
+            if(isinstance(retval, pyfits.core.Undefined)):
+                retval = None
             self.relhdul()
             return retval
         except KeyError:
