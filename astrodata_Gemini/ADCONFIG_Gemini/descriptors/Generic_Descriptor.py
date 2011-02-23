@@ -10,6 +10,8 @@ from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGenericKeyDict import stdkeyDictGeneric
 
 class Generic_DescriptorCalc(Calculator):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictGeneric)
     
     def ut_date(self, dataset, **args):
         """
