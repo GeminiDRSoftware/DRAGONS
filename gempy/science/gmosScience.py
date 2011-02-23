@@ -86,8 +86,11 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
 
     log.status('**STARTING** the overscanSubtract function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+

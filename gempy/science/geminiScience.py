@@ -62,8 +62,11 @@ def adu_to_electrons(adIns=None, outNames=None, postpend=None, logName='',
         
     log.status('**STARTING** the ADUtoElectrons function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -248,9 +251,13 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=N
         
     log.status('**STARTING** the addDQ function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if len(adIns)!= len(outNames):
-            if postpend==None:
+        if isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
@@ -456,8 +463,11 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, postpend=None
         
     log.status('**STARTING** the addBPM function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -673,8 +683,11 @@ def add_var(adIns, outNames=None, postpend=None, logName='', verbose=1,
         
     log.status('**STARTING** the addVAR function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -853,8 +866,11 @@ def flat_correct(adIns, flats=None, outNames=None, postpend=None, logName='', ve
         
     log.status('**STARTING** the flatCorrect function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -998,8 +1014,11 @@ def overscan_trim(adIns, outNames=None, postpend=None, logName='', verbose=1,
         
     log.status('**STARTING** the overscanTrim function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -1177,8 +1196,11 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
 
     log.status('**STARTING** the combine function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -1386,8 +1408,11 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
 
     log.status('**STARTING** the biasCorrect function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -1635,8 +1660,11 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
 
     log.status('**STARTING** the mosaicDetectors function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
@@ -1838,8 +1866,11 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
 
     log.status('**STARTING** the normalizeFlat function')
     
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
     if (adIns!=None) and (outNames!=None):
-        if isinstance(adIns,list) and isinstance(outNames,list):
+        if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if postpend==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
