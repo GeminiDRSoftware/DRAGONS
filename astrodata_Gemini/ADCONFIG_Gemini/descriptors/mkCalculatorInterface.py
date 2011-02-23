@@ -1,10 +1,13 @@
+from descriptorDescriptionDict import descriptorDescDict
+
 class DescriptorDescriptor:
     name = None
+    description = None
     
     thunkfuncbuff = """
     def %(name)s(self, **args):
         \"\"\"
-        Return the %(name)s value for generic data
+        %(description)s
         \"\"\"
         try:
             self._lazyloadCalculator()
@@ -34,9 +37,9 @@ class DescriptorDescriptor:
     """
     def __init__(self, name = None):
         self.name = name
-        
+        self.description = descriptorDescDict[name]
     def funcbody(self):
-        ret = self.thunkfuncbuff % { "name":self.name}
+        ret = self.thunkfuncbuff % { "name":self.name, 'description':self.description}
         return ret
         
 DD = DescriptorDescriptor
