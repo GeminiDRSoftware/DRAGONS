@@ -397,7 +397,7 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=N
         raise ('An error occurred while trying to run addDQ')
     
 
-def add_bpm(adIns=None, BPMs=None, outNames=None, postpend=None, logName='', 
+def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, postpend=None, logName='', 
                                                     verbose=1, noLogFile=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
@@ -424,6 +424,11 @@ def add_bpm(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
        Note: If there is multiple inputs and one BPM provided, then the
        same BPM will be applied to all inputs; else the BPMs list  
        must match the length of the inputs.
+           
+    :param matchSize: A flag to use zeros and the key 'DETSEC' of the 'SCI'
+                      extensions to match the size of the BPM arrays to those of
+                       fo the 'SCI' data arrays.
+    :type matchSize: Python boolean (True/False). Default: False.
                       
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
@@ -506,29 +511,35 @@ def add_bpm(adIns=None, BPMs=None, outNames=None, postpend=None, logName='',
                                      +str(sciExt.extver())+' of BPM file '+
                                      BPMfilename)
                         
-                        # Getting the data section from the header and 
-                        # converting to an integer list
-                        datasecStr = sciExt.data_section()
-                        datasecList = gemt.secStrToIntList(datasecStr) 
-                        dsl = datasecList
-                        datasecShape = (dsl[3]-dsl[2]+1, dsl[1]-dsl[0]+1)
+                        # Matching size of BPM array to that of the SCI data array
+                        if matchSize:
+                            # Getting the data section from the header and 
+                            # converting to an integer list
+                            datasecStr = sciExt.data_section()
+                            datasecList = gemt.secStrToIntList(datasecStr) 
+                            dsl = datasecList
+                            datasecShape = (dsl[3]-dsl[2]+1, dsl[1]-dsl[0]+1)
+                            
+                            # Creating a zeros array the same size as SCI array
+                            # for this extension
+                            BPMArrayOut = np.zeros(sciExt.data.shape, 
+                                                   dtype=np.int16)
+        
+                            # Loading up zeros array with data from BPM array
+                            # if the sizes match then there is no change, else
+                            # output BPM array will be 'padded with zeros' or 
+                            # 'not bad pixels' to match SCI's size.
+                            if BPMArrayIn.shape==datasecShape:
+                                BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
+                                                                        BPMArrayIn
+                            elif BPMArrayIn.shape==BPMArrayOut.shape:
+                                BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
+                                    BPMArrayIn[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]]
                         
-                        # Creating a zeros array the same size as SCI array
-                        # for this extension
-                        BPMArrayOut = np.zeros(sciExt.data.shape, 
-                                               dtype=np.int16)
-    
-                        # Loading up zeros array with data from BPM array
-                        # if the sizes match then there is no change, else
-                        # output BPM array will be 'padded with zeros' or 
-                        # 'not bad pixels' to match SCI's size.
-                        if BPMArrayIn.shape==datasecShape:
-                            BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
-                                                                    BPMArrayIn
-                        elif BPMArrayIn.shape==BPMArrayOut.shape:
-                            BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
-                                BPMArrayIn[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]]
-                        
+                        # Don't match size
+                        else:
+                            BPMArrayOut = BPMArrayIn
+                            
                         # Creating a header for the BPM array and updating
                         # further updating to this header will take place in 
                         # addDQ primitive
@@ -1306,7 +1317,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
         # Return the outputs (list or single, matching adIns)
         return adOut
     except:
-        raise ('An error occurred while trying to run combine')
+        raise #('An error occurred while trying to run combine')
                 
                 
                 
