@@ -37,6 +37,12 @@ class DescriptorDescriptor:
     """
     def __init__(self, name = None):
         self.name = name
+        try:
+            desc = descriptorDescDict[name]
+        except:
+            desc = 'No description of this descriptor exists yet in the '+\
+                    'descriptorDescriptionDict'
+        
         self.description = descriptorDescDict[name]
     def funcbody(self):
         ret = self.thunkfuncbuff % { "name":self.name, 'description':self.description}
