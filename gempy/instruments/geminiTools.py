@@ -182,16 +182,17 @@ def observationMode(ad):
     none of these types, then None is returned.
     """
     types = ad.getTypes()
-    if 'IMAGE' in types:
-        return 'IMAGE'
-    elif 'IFU' in types:
-        return 'IFU'
-    elif 'MOS' in types:
-        return 'MOS'
-    elif 'LONGSLIT' in types:
-        return 'LONGSLIT'
-    else:
-        return None
+    try:
+        if 'IMAGE' in types:
+            return 'IMAGE'
+        elif 'IFU' in types:
+            return 'IFU'
+        elif 'MOS' in types:
+            return 'MOS'
+        elif 'LONGSLIT' in types:
+            return 'LONGSLIT'
+    except:
+        raise 'Input '+ad.filename+' is not of type IMAGE or IFU or MOS or LONGSLIT.'
     
 def pyrafBoolean(pythonBool):
     """
@@ -257,8 +258,6 @@ def stdObsHdrs(ad, verbose=1):
     ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale(), 
                       'Pixel scale in Y in arcsec/pixel')
     ad.phuSetKeyValue('NEXTEND', len(ad) , 'Number of extensions')
-    ad.phuSetKeyValue('OBSMODE', observationMode(ad) , 
-                      'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
     ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , 
                       'Exposure time for each coadd frame')
     # Retrieving the number of coadds using the coadds descriptor 
@@ -289,7 +288,6 @@ def stdObsHdrs(ad, verbose=1):
     log.fullinfo('NSCIEXT = '+str(ad.phuGetKeyValue('NSCIEXT')), category='header' )
     log.fullinfo('PIXSCALE = '+str(ad.phuGetKeyValue('PIXSCALE')), category='header' )
     log.fullinfo('NEXTEND = '+str(ad.phuGetKeyValue('NEXTEND')), category='header' )
-    log.fullinfo('OBSMODE = '+ad.phuGetKeyValue('OBSMODE'), category='header' )
     log.fullinfo('COADDEXP = '+str(ad.phuGetKeyValue('COADDEXP')), category='header' )
     log.fullinfo('EXPTIME = '+str(ad.phuGetKeyValue('EXPTIME')), category='header' )
     log.fullinfo('ORIGNAME = '+ad.phuGetKeyValue('ORIGNAME'), category='header')
@@ -506,6 +504,23 @@ class CLManager(object):
                 retval = val
         return retval
     
+    def obsmodeAdd(self,ad):
+        """This is an internally used function to add the 'OBSMODE' key to the 
+           inputs for use by IRAF routines in the GMOS package.
+        """
+        if 'GMOS' in ad.getTypes():
+            ad.phuSetKeyValue('OBSMODE', observationMode(ad) , 
+                      'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
+        return ad    
+    
+    def obsmodeDel(self,ad):
+        """This is an internally used function to delete the 'OBSMODE' key from
+           the outputs from IRAF routines in the GMOS package.
+        """
+        if 'GMOS' in ad.getTypes():
+            del ad.getPHU().header['OBSMODE']
+        return ad
+        
     def preCLNames(self):
         """Just a function to return the 'private' member 
             variable _preCLfilenames.
@@ -515,7 +530,8 @@ class CLManager(object):
    
     def preCLwrites(self):
         """ The function that writes the files in memory to disk with temporary 
-            names and saves the original names in a list.
+            names and saves the original names in a list.  The 'OBSMODE' phu
+            key will also be added if needed here.
         
         """
         if self.outNames is None:
@@ -523,6 +539,8 @@ class CLManager(object):
             self.outNames = self.outNamesMaker()
         
         for ad in self.inputs:            
+            # Adding the 'OBSMODE' phu key if needed
+            ad = self.obsmodeAdd(ad)
             # Load up the preCLfilenames list with the input's filename
             self._preCLfilenames.append(ad.filename)
             # Strip off all postfixes and prepend filename with a unique prefix
@@ -538,7 +556,8 @@ class CLManager(object):
         """  This function takes care of loading the output files the IRAF
             routine wrote to disk back into memory with the appropriate name.  
             Then it will delete all the temporary files created by the 
-            CLManager.
+            CLManager.  If the 'OBSMODE' phu key was added during preCLwrites,
+            then it will be deleted here.
         
         """
         # Do the appropriate wrapping up for combine type primitives
@@ -553,9 +572,16 @@ class CLManager(object):
             
             # Renaming the IRAF written file to the name we want
             os.rename(cloutname, outName )
+            
+            # Loading the renamed file into AstroData
+            ad = AstroData(outName)
+            
+            # Removing the 'OBSMODE' phu key if it is in there
+            ad = self.obsmodeDel(ad)
+            
             # Reporting the renamed file to the reduction context and thus
             # bringing it into memory
-            self.adOuts.append(AstroData(outName))
+            self.adOuts.append(ad)
             
             # Deleting the renamed file from disk
             os.remove(outName)
@@ -592,9 +618,15 @@ class CLManager(object):
                 # Renaming the IRAF written file to the name we want
                 os.rename(cloutname, self.outNames[i] )
                 
+                # Loading the renamed file into AstroData
+                ad = AstroData(outName)
+                
+                # Removing the 'OBSMODE' phu key if it is in there
+                ad = self.obsmodeDel(ad)
+                
                 # Reporting the renamed file to the reduction context and thus
                 # bringing it into memory
-                self.adOuts.append(AstroData(outName))
+                self.adOuts.append(ad)
                 # Clearing file written for CL input
                 os.remove(outName) 
                 # clearing renamed file output by CL
