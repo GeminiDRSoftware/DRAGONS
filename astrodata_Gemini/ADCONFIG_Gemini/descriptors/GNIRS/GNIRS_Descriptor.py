@@ -26,22 +26,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.getLookupTable('Gemini/GNIRS/GNIRSConfigDict',
                                    'gnirsConfigDict')
     
-    def central_wavelength(self, dataset, **args):
-        """
-        Return the central_wavelength value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the central wavelength (nanometers)
-        """
-        hdu = dataset.hdulist
-        central_wavelength = \
-            hdu[0].header[stdkeyDictGNIRS['key_central_wavelength']]
-        
-        ret_central_wavelength = float(central_wavelength)
-        
-        return ret_central_wavelength
-    
     def decker(self, dataset, stripID=False, pretty=False, **args):
         """
         Return the decker value for GNIRS

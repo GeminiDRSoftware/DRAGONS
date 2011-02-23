@@ -25,37 +25,6 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.getLookupTable('Gemini/NIFS/NIFSConfigDict',
                                    'nifsConfigDict')
     
-    def camera(self, dataset, **args):
-        """
-        Return the camera value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the camera used to acquire the data
-        """
-        hdu = dataset.hdulist
-        camera = hdu[0].header[stdkeyDictNIFS['key_camera']]
-        
-        ret_camera = str(camera)
-        
-        return ret_camera
-    
-    def central_wavelength(self, dataset, **args):
-        """
-        Return the central_wavelength value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the central wavelength (nanometers)
-        """
-        hdu = dataset.hdulist
-        central_wavelength = \
-            hdu[0].header[stdkeyDictNIFS['key_central_wavelength']]
-        
-        ret_central_wavelength = float(central_wavelength)
-        
-        return ret_central_wavelength
-    
     def disperser(self, dataset, stripID = False, pretty=False, **args):
         """
         Return the disperser value for NIFS
@@ -127,22 +96,6 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_filter_name
     
-    def focal_plane_mask(self, dataset, **args):
-        """
-        Return the focal_plane_mask value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the focal plane mask used to acquire the data
-        """
-        hdu = dataset.hdulist
-        focal_plane_mask = \
-            hdu[0].header[stdkeyDictNIFS['key_focal_plane_mask']]
-        
-        ret_focal_plane_mask = str(focal_plane_mask)
-        
-        return ret_focal_plane_mask
-    
     def gain(self, dataset, **args):
         """
         Return the gain value for NIFS
@@ -203,22 +156,6 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_non_linear_level
     
     nifsArrayDict = None
-    
-    def observation_epoch(self, dataset, **args):
-        """
-        Return the observation_epoch value for NIFS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the observing epoch
-        """
-        hdu = dataset.hdulist
-        observation_epoch = \
-            hdu[0].header[stdkeyDictNIFS['key_observation_epoch']]
-        
-        ret_observation_epoch = str(observation_epoch)
-        
-        return ret_observation_epoch
     
     def pixel_scale(self, dataset, **args):
         """

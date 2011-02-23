@@ -15,21 +15,6 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         pass
-    
-    def camera(self, dataset, **args):
-        """
-        Return the camera value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the camera used to acquire the data
-        """
-        hdu = dataset.hdulist
-        camera = hdu[0].header[stdkeyDictNICI['key_camera']]
-
-        ret_camera = str(camera)
-        
-        return ret_camera
         
     def exposure_time(self, dataset, **args):
         """
@@ -65,22 +50,6 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_filter_name
     
-    def focal_plane_mask(self, dataset, **args):
-        """
-        Return the focal_plane_mask value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the focal plane mask used to acquire the data
-        """
-        hdu = dataset.hdulist
-        focal_plane_mask = \
-            hdu[0].header[stdkeyDictNICI['key_focal_plane_mask']]
-
-        ret_focal_plane_mask = str(focal_plane_mask)
-                        
-        return ret_focal_plane_mask
-    
     def pixel_scale(self, dataset, **args):
         """
         Return the pixel_scale value for NICI
@@ -93,17 +62,3 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_pixel_scale
     
-    def pupil_mask(self, dataset, **args):
-        """
-        Return the pupil_mask value for NICI
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the pupil mask used to acquire data
-        """
-        hdu = dataset.hdulist
-        pupil_mask = hdu[0].header[stdkeyDictNICI['key_pupil_mask']]
-
-        ret_pupil_mask = str(pupil_mask)
-        
-        return ret_pupil_mask

@@ -35,39 +35,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_central_wavelength
     
-    def coadds(self, dataset, **args):
-        """
-        Return the coadds value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the coadds
-        """
-        hdu = dataset.hdulist
-        coadds = hdu[0].header[stdkeyDictMICHELLE['key_coadds']]
-        
-        return coadds
-    
-    def disperser(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the disperser value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID from the
-        returned disperser name
-        @param pretty: set to True to return a meaningful disperser name
-        @rtype: string
-        @return: the disperser / grating used to acquire the data
-        """
-        # The Michelle components don't have component IDs so we just ignore
-        # the stripID and pretty options
-        hdu = dataset.hdulist
-        disperser = hdu[0].header[stdkeyDictMICHELLE['key_disperser']]
-        
-        ret_disperser = str(disperser)
-        
-        return ret_disperser
-    
     def exposure_time(self, dataset, **args):
         """
         Return the exposure_time value for MICHELLE
@@ -107,50 +74,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_filter_name = str(filter)
         
         return ret_filter_name
-    
-    def focal_plane_mask(self, dataset, **args):
-        """
-        Return the focal_plane_mask value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the focal plane mask used to acquire the data
-        """
-        hdu = dataset.hdulist
-        focal_plane_mask = \
-            hdu[0].header[stdkeyDictMICHELLE['key_focal_plane_mask']]
-        
-        ret_focal_plane_mask = str(focal_plane_mask)
-        
-        return ret_focal_plane_mask
-    
-    def pixel_scale(self, dataset, **args):
-        """
-        Return the pixel_scale value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the pixel scale (arcsec/pixel)
-        """
-        hdu = dataset.hdulist
-        pixel_scale = hdu[0].header[stdkeyDictMICHELLE['key_pixel_scale']]
-        
-        ret_pixel_scale = float(pixel_scale)
-        
-        return ret_pixel_scale
-    
-    def read_mode(self, dataset, **args):
-        """
-        Return the read_mode value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the read mode string
-        """
-        hdu = dataset.hdulist
-        read_mode = hdu[0].header[stdkeyDictMICHELLE['key_read_mode']]
-        
-        return read_mode
     
     def ut_date(self, dataset, **args):
         """

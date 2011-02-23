@@ -19,34 +19,6 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
     def __init__(self):
         pass
     
-    def central_wavelength(self, dataset, **args):
-        """
-        Return the central_wavelength value for PHOENIX
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the central wavelength (nanometers)
-        """
-        hdu = dataset.hdulist
-        central_wavelength = \
-            hdu[0].header[stdkeyDictPHOENIX['key_central_wavelength']]
-        
-        ret_central_wavelength = float(central_wavelength)
-        
-        # This attempts to calculate the cwave from the grating position
-        #m = re.match('encoder (-*\d*)', string)
-        #if(m):
-        #enc = m.group(1)
-        # The phoenix grating equation, drop the cubic term for now
-        # http://www.noao.edu/ngsc/phoenix/instruman.html#grating
-        #c = 8573129-enc
-        #b = -402584.5
-        #a = 6355.8478
-        #thing = sqrt((b*b)-(4*a*c))
-        #theta = (-1.0*b + thing)/(2*a)
-        
-        return ret_central_wavelength
-    
     def dec(self, dataset, **args):
         """
         Return the dec value for PHOENIX
@@ -60,24 +32,6 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_dec = float(GemCalcUtil.degsextodec(dec))
         
         return ret_dec
-    
-    def disperser(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the disperser value for PHOENIX
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID from the
-        returned disperser name
-        @param pretty: set to True to return a meaningful disperser name
-        @rtype: string
-        @return: the disperser / grating used to acquire the data
-        """
-        hdu = dataset.hdulist
-        disperser = hdu[0].header[globalStdkeyDict['key_disperser']]
-        
-        ret_disperser = str(disperser)
-        
-        return ret_disperser
     
     def exposure_time(self, dataset, **args):
         """
@@ -112,22 +66,6 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_filter_name = str(filter_name)
         
         return ret_filter_name
-    
-    def focal_plane_mask(self, dataset, **args):
-        """
-        Return the focal_plane_mask value for PHOENIX
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the focal plane mask used to acquire the data
-        """
-        hdu = dataset.hdulist
-        focal_plane_mask = \
-            hdu[0].header[stdkeyDictPHOENIX['key_focal_plane_mask']]
-
-        ret_focal_plane_mask = str(focal_plane_mask)
-        
-        return ret_focal_plane_mask
     
     def ra(self, dataset, **args):
         """

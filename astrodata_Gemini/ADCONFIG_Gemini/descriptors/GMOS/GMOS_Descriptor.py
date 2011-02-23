@@ -81,21 +81,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_amp_read_area
     
-    def camera(self, dataset, **args):
-        """
-        Return the camera value for GMOS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the camera used to acquire the data
-        """
-        hdu = dataset.hdulist
-        camera = hdu[0].header[stdkeyDictGMOS['key_camera']]
-        
-        ret_camera = str(camera)
-        
-        return ret_camera
-    
     def central_wavelength(self, dataset, **args):
         """
         Return the central_wavelength value for GMOS

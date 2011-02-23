@@ -17,21 +17,6 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
     def __init__(self):
         pass
     
-    def camera(self, dataset, **args):
-        """
-        Return the camera value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the camera used to acquire the data
-        """
-        hdu = dataset.hdulist
-        camera = hdu[0].header[stdkeyDictTRECS['key_camera']]
-        
-        ret_camera = str(camera)
-        
-        return ret_camera
-    
     def central_wavelength(self, dataset, **args):
         """
         Return the central_wavelength value for TRECS
@@ -51,36 +36,6 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_central_wavelength = None
         
         return ret_central_wavelength
-    
-    def disperser(self, dataset, **args):
-        """
-        Return the disperser value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the disperser / grating used to acquire the data
-        """
-        hdu = dataset.hdulist
-        disperser = hdu[0].header[stdkeyDictTRECS['key_disperser']]
-        
-        ret_disperser = str(disperser)
-        
-        return ret_disperser
-    
-    def exposure_time(self, dataset, **args):
-        """
-        Return the exposure_time value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the total exposure time of the observation (seconds)
-        """
-        hdu = dataset.hdulist
-        exposure_time = hdu[0].header[stdkeyDictTRECS['key_exposure_time']]
-        
-        ret_exposure_time = float(exposure_time)
-        
-        return ret_exposure_time
     
     def filter_name(self, dataset, **args):
         """
@@ -120,22 +75,6 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_filter_name
     
-    def focal_plane_mask(self, dataset, **args):
-        """
-        Return the focal_plane_mask value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the focal plane mask used to acquire the data
-        """
-        hdu = dataset.hdulist
-        focal_plane_mask = \
-            hdu[0].header[stdkeyDictTRECS['key_focal_plane_mask']]
-        
-        ret_focal_plane_mask = str(focal_plane_mask)
-        
-        return ret_focal_plane_mask
-    
     def gain(self, dataset, **args):
         """
         Return the gain value for TRECS
@@ -167,21 +106,6 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_pixel_scale = 0.089
         
         return ret_pixel_scale
-    
-    def pupil_mask(self, dataset, **args):
-        """
-        Return the pupil_mask value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the pupil mask used to acquire data
-        """
-        hdu = dataset.hdulist
-        pupil_mask = hdu[0].header[stdkeyDictTRECS['key_pupil_mask']]
-        
-        ret_pupil_mask = str(pupil_mask)
-        
-        return ret_pupil_mask
     
     def dispersion(self, dataset, **args):
         """

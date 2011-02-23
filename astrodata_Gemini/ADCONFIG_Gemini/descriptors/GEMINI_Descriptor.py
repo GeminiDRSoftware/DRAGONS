@@ -50,23 +50,6 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             ret_crpa = float(crpa)
 
         return ret_crpa
-
-
-
-    def data_label(self, dataset, **args):
-        """
-        Return the data_label value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the DHS data label of the observation
-        """
-        hdu = dataset.hdulist
-        data_label = hdu[0].header[globalStdkeyDict['key_data_label']]
-        
-        ret_data_label = str(data_label)
-        
-        return ret_data_label
     
     def detector_x_bin(self, dataset, **args):
         """
@@ -115,36 +98,6 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             ret_local_time = None
         
         return ret_local_time
-    
-    def observation_id(self, dataset, **args):
-        """
-        Return the observation_id for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the observation ID / data label of the observation
-        """
-        hdu = dataset.hdulist
-        observation_id = hdu[0].header[globalStdkeyDict['key_observation_id']]
-        
-        ret_observation_id = str(observation_id)
-        
-        return ret_observation_id
-    
-    def program_id(self, dataset, **args):
-        """
-        Return the program_id value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the Gemini science program ID of the observation
-        """
-        hdu = dataset.hdulist
-        program_id = hdu[0].header[globalStdkeyDict['key_program_id']]
-        
-        ret_program_id = str(program_id)
-        
-        return ret_program_id
     
     def qa_state(self, dataset, **args):
         """
