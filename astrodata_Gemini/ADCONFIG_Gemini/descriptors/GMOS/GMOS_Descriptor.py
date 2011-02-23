@@ -15,6 +15,8 @@ from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictGMOS)
     
     gmosampsGain = None
     gmosampsGainBefore20060831 = None

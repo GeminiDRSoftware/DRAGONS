@@ -12,6 +12,8 @@ from StandardGNIRSKeyDict import stdkeyDictGNIRS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictGNIRS)
     
     gnirsArrayDict = None
     gnirsConfigDict = None

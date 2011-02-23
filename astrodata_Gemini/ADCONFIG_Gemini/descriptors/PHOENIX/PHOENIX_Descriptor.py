@@ -13,6 +13,8 @@ from StandardPHOENIXKeyDict import stdkeyDictPHOENIX
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictPHOENIX)
     
     def __init__(self):
         pass

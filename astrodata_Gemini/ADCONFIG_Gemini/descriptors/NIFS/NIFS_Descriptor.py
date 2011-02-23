@@ -11,6 +11,8 @@ from StandardNIFSKeyDict import stdkeyDictNIFS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictNIFS)
     
     nifsArrayDict = None
     nifsConfigDict = None    

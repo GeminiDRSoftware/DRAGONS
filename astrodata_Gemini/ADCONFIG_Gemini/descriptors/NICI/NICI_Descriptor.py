@@ -10,6 +10,8 @@ from StandardNICIKeyDict import stdkeyDictNICI
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictNICI)
     
     def __init__(self):
         pass

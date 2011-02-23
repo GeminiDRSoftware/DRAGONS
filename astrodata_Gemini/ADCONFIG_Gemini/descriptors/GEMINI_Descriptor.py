@@ -12,7 +12,9 @@ from StandardGEMINIKeyDict import stdkeyDictGEMINI
 from Generic_Descriptor import Generic_DescriptorCalc
 
 class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
-    
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictGEMINI)
+
     def airmass(self, dataset, **args):
         """
         Return the airmass value for GEMINI data

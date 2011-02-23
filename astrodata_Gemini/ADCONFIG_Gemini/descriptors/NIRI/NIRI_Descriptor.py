@@ -12,6 +12,8 @@ from StandardNIRIKeyDict import stdkeyDictNIRI
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictNIRI)
     
     niriFilternameMapConfig = None
     niriFilternameMap = {}

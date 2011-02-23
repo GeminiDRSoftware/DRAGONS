@@ -11,6 +11,8 @@ from StandardMICHELLEKeyDict import stdkeyDictMICHELLE
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
+    # Updating the global key dict with the local dict of this descriptor class
+    globalStdkeyDict.update(stdkeyDictMICHELLE)
     
     def __init__(self):
         pass
