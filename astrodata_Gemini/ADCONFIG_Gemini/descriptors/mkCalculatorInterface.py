@@ -41,8 +41,7 @@ class DescriptorDescriptor:
         try:
             desc = descriptorDescDict[name]
         except:
-            desc = 'No description of this descriptor exists yet in the '+\
-                    'descriptorDescriptionDict'
+            desc = 'Return the %(name)s value for generic data'%{'name':name}
         self.description = desc
         
     def funcbody(self):

@@ -9,7 +9,7 @@ class CalculatorInterface:
 
     def airmass(self, **args):
         """
-        Return the airmass value for generic data
+        description of what it does
         """
         try:
             self._lazyloadCalculator()
