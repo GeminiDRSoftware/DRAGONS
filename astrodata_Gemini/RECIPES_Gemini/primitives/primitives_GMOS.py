@@ -95,7 +95,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug('Calling geminiScience.addBPM function')
             
             adOuts = geminiScience.add_bpm(adIns=rc.getInputs(style='AD'), 
-                                         BPMs=BPMlist, postpend=rc['postpend'], 
+                                         BPMs=BPMlist,matchSize=True, postpend=rc['postpend'], 
                                          verbose=int(rc['logVerbose']))           
             
             log.status('geminiScience.addBPM completed successfully')
