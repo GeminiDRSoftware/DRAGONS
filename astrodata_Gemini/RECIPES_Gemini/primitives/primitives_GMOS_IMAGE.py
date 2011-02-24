@@ -230,24 +230,30 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     
                 # Renaming CL outputs and loading them back into memory 
                 # and cleaning up the intermediate temp files written to disk
-                ad = clm.finishCL(combine=True)  
+                adOuts = clm.finishCL(combine=True)  
+                
+                # There is only one at this point so no need to perform a loop
+                # CLmanager outputs a list always, so take the 0th
+                adOut = adOuts[0]
                 
                 # Adding a GEM-TLM (automatic) and FRINGE time stamps 
                 # to the PHU
-                ad.historyMark(key='FRINGE',stomp=False)
+                adOut.historyMark(key='FRINGE',stomp=False)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
                              ,'header')
-                log.fullinfo('file = '+ad.filename, category='header')
+                log.fullinfo('file = '+adOut.filename, category='header')
                 log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
                              , 'header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header')
-                log.fullinfo('FRINGE = '+ad.phuGetKeyValue('FRINGE'), 
+                log.fullinfo('FRINGE = '+adOut.phuGetKeyValue('FRINGE'), 
                              category='header')
                 log.fullinfo('------------------------------------------------'
-                             , category='header')        
+                             , category='header')      
+                
+                rc.reportOutput(adOut)  
                 
                 log.status('*FINISHED* creating the fringe image')
         except:
