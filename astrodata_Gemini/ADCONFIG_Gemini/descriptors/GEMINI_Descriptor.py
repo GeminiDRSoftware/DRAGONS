@@ -220,6 +220,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
  
         # Maybe there's an MJD_OBS header we can use
         try:
+            #print "Trying to use MJD_OBS"
             mjd = hdu[0].header['MJD_OBS']
             if(mjd > 1):
                 mjdzero = datetime.datetime(1858, 11, 17, 0, 0, 0, 0, None)
@@ -232,6 +233,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
 
         # Maybe there's an OBSSTART header we can use
         try:
+            #print "Trying to use OBSSTART"
             obsstart = hdu[0].header['OBSSTART'].strip()
             if(obsstart):
                 ut_datetime = dateutil.parser.parse(obsstart)
@@ -245,13 +247,22 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # If we didn't get a utdate, can we parse it from the framename header if there is one, or the filename?
         if(not utdate_hdr):
             try:
+                #print "Desperately trying FRMNAME, filename etc"
                 for string in [hdu[1].header['FRMNAME'], os.path.basename(dataset.filename)]:
-                    year = string[1:5]
-                    month = string[5:7]
-                    day = string[7:9]
-                    uddate_hdr = "%s-%s-%s" % (year, month, day)
-                    #print "Guessed utdate from %s: %s" % (string, utdate_hdr)
-                    break
+                    try:
+                        #print "... Trying to Parse: %s" % string
+                        year = string[1:5]
+                        y = int(year)
+                        month = string[5:7]
+                        m = int(month)
+                        day = string[7:9]
+                        d = int(day)
+                        if(( y > 1999) and (m < 13) and (d < 32)):
+                            utdate_hdr = "%s-%s-%s" % (year, month, day)
+                            #print "Guessed utdate from %s: %s" % (string, utdate_hdr)
+                            break
+                    except (KeyError, ValueError, IndexError):
+                        pass
             except (KeyError, ValueError, IndexError):
                 pass
 
