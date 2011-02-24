@@ -16,7 +16,7 @@ from gempy.instruments import geminiTools  as gemt
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
-def adu_to_electrons(adIns=None, outNames=None, postpend=None, logName='', 
+def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='', 
                                                     verbose=1, noLogFile=False):
     """
     This function will convert the inputs from having pixel values in ADU to 
@@ -39,10 +39,10 @@ def adu_to_electrons(adIns=None, outNames=None, postpend=None, logName='',
     :type outNames: 
         String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: 
-        string to postpend on the end of the input filenames 
+    :param suffix: 
+        string to add on the end of the input filenames 
         (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -68,11 +68,11 @@ def adu_to_electrons(adIns=None, outNames=None, postpend=None, logName='',
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -141,27 +141,27 @@ def adu_to_electrons(adIns=None, outNames=None, postpend=None, logName='',
                 # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
                 adOut.historyMark(key='ADU2ELEC', stomp=False)
                 
-                # Updating the file name with the postpend for this
+                # Updating the file name with the suffix for this
                 # function and then reporting the new file 
-                if postpend!=None:
+                if suffix!=None:
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
-                elif postpend==None:
+                elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
                             adOut.filename = outNames[count]
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and postpend parameters can not BOTH\
+                        raise('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -192,7 +192,7 @@ def adu_to_electrons(adIns=None, outNames=None, postpend=None, logName='',
         raise('An error occurred while trying to run ADUtoElectrons')
     
     
-def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=None, 
+def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=None, 
                                     logName='', verbose=1, noLogFile=False):
     """
     This function will create a numpy array for the data quality 
@@ -228,10 +228,10 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=N
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: 
-       string to postpend on the end of the input filenames 
+    :param suffix: 
+       string to add on the end of the input filenames 
        (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -257,11 +257,11 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=N
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -363,27 +363,27 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=N
                              category='header')
                 log.fullinfo('-'*50, category='header')
                 
-                # Updating the file name with the postpend for this
+                # Updating the file name with the suffix for this
                 # function and then reporting the new file 
-                if postpend!=None:
+                if suffix!=None:
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
-                elif postpend==None:
+                elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
                             adOut.filename = outNames[count]
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and postpend parameters can not BOTH\
+                        raise('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -404,7 +404,7 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, postpend=N
         raise ('An error occurred while trying to run addDQ')
     
 
-def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, postpend=None, logName='', 
+def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, logName='', 
                                                     verbose=1, noLogFile=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
@@ -440,10 +440,10 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, postpend=None
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: 
-         string to postpend on the end of the input filenames 
+    :param suffix: 
+         string to add on the end of the input filenames 
          (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -469,11 +469,11 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, postpend=None
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
                    
     if BPMs==None:
         raise('There must be at least one BPM provided, the "BPMs" parameter must not be None.')
@@ -599,27 +599,27 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, postpend=None
                              category='header')
                 log.fullinfo('-'*50, category='header')
                 
-                # Updating the file name with the postpend for this
+                # Updating the file name with the suffix for this
                 # function and then reporting the new file 
-                if postpend!=None:
+                if suffix!=None:
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
-                elif postpend==None:
+                elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
                             adOut.filename = outNames[count]
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and postpend parameters can not BOTH\
+                        raise('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -640,7 +640,7 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, postpend=None
         raise ('An error occurred while trying to run addBPM')
     
 
-def add_var(adIns, outNames=None, postpend=None, logName='', verbose=1, 
+def add_var(adIns, outNames=None, suffix=None, logName='', verbose=1, 
                                                             noLogFile=False):
     """
     This function uses numpy to calculate the variance of each SCI frame
@@ -660,10 +660,10 @@ def add_var(adIns, outNames=None, postpend=None, logName='', verbose=1,
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: 
-        string to postpend on the end of the input filenames 
+    :param suffix: 
+        string to add on the end of the input filenames 
         (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -689,11 +689,11 @@ def add_var(adIns, outNames=None, postpend=None, logName='', verbose=1,
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -780,27 +780,27 @@ def add_var(adIns, outNames=None, postpend=None, logName='', verbose=1,
                              category='header')
                 log.fullinfo('-'*50, category='header')
                 
-                # Updating the file name with the postpend for this
+                # Updating the file name with the suffix for this
                 # function and then reporting the new file 
-                if postpend!=None:
+                if suffix!=None:
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
-                elif postpend==None:
+                elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
                             adOut.filename = outNames[count]
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and postpend parameters can not BOTH\
+                        raise('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -821,7 +821,7 @@ def add_var(adIns, outNames=None, postpend=None, logName='', verbose=1,
         raise ('An error occurred while trying to run addVAR')
     
     
-def flat_correct(adIns, flats=None, outNames=None, postpend=None, logName='', verbose=1, 
+def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', verbose=1, 
                                                             noLogFile=False):
     """
     This function performs a flat correction by dividing the inputs by  
@@ -845,9 +845,9 @@ def flat_correct(adIns, flats=None, outNames=None, postpend=None, logName='', ve
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: string to postpend on the end of the input filenames 
+    :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -872,11 +872,11 @@ def flat_correct(adIns, flats=None, outNames=None, postpend=None, logName='', ve
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     if flats==None:
         raise('There must be at least one processed flat provided, the "flats" parameter must not be None.')
@@ -929,27 +929,27 @@ def flat_correct(adIns, flats=None, outNames=None, postpend=None, logName='', ve
                              category='header')
                 log.fullinfo('-'*50, category='header')  
                 
-                # Updating the file name with the postpend for this
+                # Updating the file name with the suffix for this
                 # function and then reporting the new file 
-                if postpend!=None:
+                if suffix!=None:
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
-                elif postpend==None:
+                elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
                             adOut.filename = outNames[count]
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and postpend parameters can not BOTH\
+                        raise('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -970,7 +970,7 @@ def flat_correct(adIns, flats=None, outNames=None, postpend=None, logName='', ve
     except:
         raise ('An error occurred while trying to run flatCorrect')
     
-def overscan_trim(adIns, outNames=None, postpend=None, logName='', verbose=1, 
+def overscan_trim(adIns, outNames=None, suffix=None, logName='', verbose=1, 
                                                             noLogFile=False):
     """
     This function uses AstroData to trim the overscan region 
@@ -988,9 +988,9 @@ def overscan_trim(adIns, outNames=None, postpend=None, logName='', verbose=1,
     :type outNames: String, either a single or a list of strings of same length
                     as adIns.
     
-    :param postpend: string to postpend on the end of the input filenames 
+    :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -1020,11 +1020,11 @@ def overscan_trim(adIns, outNames=None, postpend=None, logName='', verbose=1,
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -1096,27 +1096,27 @@ def overscan_trim(adIns, outNames=None, postpend=None, logName='', verbose=1,
                 log.fullinfo('OVERTRIM = '+adOut.phuGetKeyValue('OVERTRIM')+'\n', 
                              category='header') 
                 
-                # Updating the file name with the postpend for this
+                # Updating the file name with the suffix for this
                 # function and then reporting the new file 
-                if postpend!=None:
+                if suffix!=None:
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          postpend=postpend, 
+                                                          suffix=suffix, 
                                                           strip=False, verbose=verbose)
-                elif postpend==None:
+                elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
                             adOut.filename = outNames[count]
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and postpend parameters can not BOTH\
+                        raise('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -1141,7 +1141,7 @@ def overscan_trim(adIns, outNames=None, postpend=None, logName='', verbose=1,
 
 
 def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average', 
-            outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+            outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
     """
     This function will average and combine the SCI extensions of the 
     inputs. It takes all the inputs and creates a list of them and 
@@ -1175,9 +1175,9 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     :type outNames: String, either a single or a list of strings of same length
                     as adIns.
     
-    :param postpend: string to postpend on the end of the input filenames 
+    :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -1202,11 +1202,11 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -1239,7 +1239,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(adIns=adIns, outNames=outNames, postpend=postpend, 
+                clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
                                    funcName='combine', logName=logName, verbose=verbose, 
                                    noLogFile=noLogFile)
                 
@@ -1344,7 +1344,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 
 def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
-                outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+                outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
     """
     This function will subtract the biases from the inputs using the 
     CL script gireduce.
@@ -1385,10 +1385,10 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: 
-           string to postpend on the end of the input filenames 
+    :param suffix: 
+           string to add on the end of the input filenames 
            (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -1414,11 +1414,11 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -1466,7 +1466,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                 
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(adIns=ad, outNames=outName, postpend=postpend,  
+                clm=gemt.CLManager(adIns=ad, outNames=outName, suffix=suffix,  
                                    funcName='biasCorrect', logName=logName, 
                                    verbose=verbose, noLogFile=noLogFile)
                 
@@ -1504,7 +1504,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                     clSoftcodedParams = {
                        # pyrafBoolean converts the python booleans to pyraf ones
                        'fl_trim'    :gemt.pyrafBoolean('fl_trim'),
-                       'outpref'    :postpend,
+                       'outpref'    :suffix,
                        'fl_over'    :gemt.pyrafBoolean('fl_over'),
                        'fl_vardq'   :gemt.pyrafBoolean('fl_vardq')
                                        }
@@ -1603,7 +1603,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                 
                 
 def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
-                outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+                outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
     """
     This function will mosaic the SCI frames of the input images, 
     along with the VAR and DQ frames if they exist.  
@@ -1639,9 +1639,9 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: string to postpend on the end of the input filenames 
+    :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -1666,11 +1666,11 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None: 
@@ -1700,7 +1700,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
             
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(adIns=adIns, outNames=outNames, postpend=postpend, 
+            clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
                                funcName='mosaicDetectors', logName=logName, 
                                verbose=verbose, noLogFile=noLogFile)
             
@@ -1726,7 +1726,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                 clSoftcodedParams = {
                   # pyrafBoolean converts the python booleans to pyraf ones
                   'fl_paste'    :gemt.pyrafBoolean(fl_paste),
-                  'outpref'     :postpend,
+                  'outpref'     :suffix,
                   'geointer'    :interp_function,
                                   }
                 # Grabbing the default params dict and updating it with 
@@ -1808,7 +1808,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                 
                 
 def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
-                outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+                outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
     """
     This function will combine the input flats (adIns) and then normalize them 
     using the CL script giflat.
@@ -1844,10 +1844,10 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend:
-            string to postpend on the end of the input filenames 
+    :param suffix:
+            string to add on the end of the input filenames 
             (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -1872,11 +1872,11 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None: 
@@ -1906,7 +1906,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(adIns=adIns, outNames=outNames, postpend=postpend, 
+            clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
                                funcName='normalizeFlat', logName=logName, 
                                verbose=verbose, noLogFile=noLogFile)
             

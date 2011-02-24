@@ -18,7 +18,7 @@ from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
-            outNames=None, postpend=None, logName='', verbose=1, noLogFile=False):
+            outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
     """
     This function uses the CL script gireduce to subtract the overscan 
     from the input images.
@@ -67,8 +67,8 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length as adIns.
     
-    :param postpend: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
-    :type postpend: string
+    :param suffix: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
+    :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -92,11 +92,11 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
     if (adIns!=None) and (outNames!=None):
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
-                if postpend==None:
+                if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "postpend" was passed in')
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None: 
@@ -126,7 +126,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(adIns=adIns, outNames=outNames, postpend=postpend, 
+            clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
                                funcName='overscanSubtract', logName=logName,  
                                    verbose=verbose, noLogFile=noLogFile)
             
@@ -162,7 +162,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 clSoftcodedParams = {
                    # pyrafBoolean converts the python booleans to pyraf ones
                    'fl_trim'    :gemt.pyrafBoolean(fl_trim),
-                   'outpref'    :postpend,
+                   'outpref'    :suffix,
                    'fl_vardq'   :fl_vardq,
                    'nbiascontam':nbiascontam
                                    }

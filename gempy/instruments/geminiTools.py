@@ -92,10 +92,10 @@ def biassecStrTonbiascontam(biassec, ad):
                   'nbiascontam, so using default value = 4')
         return 4 
 
-def fileNameUpdater(adIn=None, infilename='', postpend='', prepend='' , strip=False, verbose=1):
+def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='' , strip=False, verbose=1):
     """ This function is for updating the file names of astrodata objects.
         
-        It can be used in a few different ways.  For simple post/prepending of
+        It can be used in a few different ways.  For simple post/pre pending of
         the infilename string, there is no need to define adIn or strip. The 
         current filename for adIn will be used if infilename is not defined. 
         The examples below should make the main uses clear.
@@ -110,25 +110,25 @@ def fileNameUpdater(adIn=None, infilename='', postpend='', prepend='' , strip=Fa
     @param infilename: filename to be updated
     @type infilename: string
     
-    @param postpend: string to put between end of current filename and the 
+    @param suffix: string to put between end of current filename and the 
                     extension 
-    @type postpend: string
+    @type suffix: string
     
-    @param prepend: string to put at the beginning of a filename
-    @type prepend: string
+    @param prefix: string to put at the beginning of a filename
+    @type prefix: string
     
     @param strip: Boolean to signal that the original filename of the astrodata
                   object prior to processing should be used. adIn MUST be 
                   defined for this to work.
     @type strip: Boolean
     
-    ex. fileNameUpdater(adIn=myAstrodataObject, postpend='_prepared', strip=True)
+    ex. fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
         result: 'N20020214S022_prepared.fits'
         
-        fileNameUpdater(infilename='N20020214S022_prepared.fits', postpend='_biasCorrected')
+        fileNameUpdater(infilename='N20020214S022_prepared.fits', suffix='_biasCorrected')
         result: 'N20020214S022_prepared_biasCorrected.fits'
         
-        fileNameUpdater(adIn=myAstrodataObject, prepend='testversion_')
+        fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
         result: 'testversion_N20020214S022.fits'
     
     """
@@ -162,7 +162,7 @@ def fileNameUpdater(adIn=None, infilename='', postpend='', prepend='' , strip=Fa
         (name,filetype) = os.path.splitext(phuOrigFilename)
         
     # Create output filename
-    outFileName = prepend+name+postpend+filetype
+    outFileName = prefix+name+suffix+filetype
     return outFileName
     
 
@@ -369,7 +369,7 @@ class CLManager(object):
     _preCLfilenames = [] 
     # Preparing other 'global' objects to be accessed throughout this class
     prefix = None
-    postpend = None
+    suffix = None
     listname = None
     templog = None
     outNames = None
@@ -379,7 +379,7 @@ class CLManager(object):
     log=None
     verbose=1
      
-    def __init__(self, adIns=None, outNames=None, postpend=None, funcName=None,
+    def __init__(self, adIns=None, outNames=None, suffix=None, funcName=None,
                  logName=None, verbose=1, noLogFile=None):
         """This instantiates all the globally accessible variables and prepares
            the inputs for use in CL scripts by temporarily writing them to 
@@ -402,7 +402,7 @@ class CLManager(object):
             self.log = gemLog.getGeminiLog(logName=logName, verbose=verbose, 
                                            noLogFile=noLogFile)
             self.verbose=verbose
-            self.postpend = postpend
+            self.suffix = suffix
             self._preCLcachestorenames = []
             self._preCLfilenames = []
             self.outNames = outNames
@@ -414,17 +414,17 @@ class CLManager(object):
             self.templog = tempfile.NamedTemporaryFile() 
             
     def outNamesMaker(self):
-        """ A function to apply the provided postpend value to the end of 
+        """ A function to apply the provided suffix value to the end of 
             each input filename and add to a list for use to name the output
             files with.
         """
         if isinstance(self.inputs,list):
             outNames=[]
             for ad in self.inputs:
-                outNames.append(fileNameUpdater(adIn=ad, postpend=self.postpend, 
+                outNames.append(fileNameUpdater(adIn=ad, suffix=self.suffix, 
                                                                 strip=False, verbose= self.verbose))
         else:
-            outNames = [fileNameUpdater(adIn=ad, postpend=self.postpend, strip=False, verbose= self.verbose)]
+            outNames = [fileNameUpdater(adIn=ad, suffix=self.suffix, strip=False, verbose= self.verbose)]
         return outNames
     
     def cacheStoreNames(self):
@@ -435,11 +435,11 @@ class CLManager(object):
         
     def combineOutname(self):
         """ This creates the output name for combine type IRAF tasks to write 
-            the combined output file to.  Uses the postpend value and
+            the combined output file to.  Uses the suffix value and
         
         """
         #@@ REFERENCE IMAGE: for output name
-        return self.postpend+self._preCLcachestorenames[0]
+        return self.suffix+self._preCLcachestorenames[0]
          
     def finishCL(self, combine=False): 
         """ Performs all the finalizing steps after CL script is ran. 
@@ -543,8 +543,8 @@ class CLManager(object):
             ad = self.obsmodeAdd(ad)
             # Load up the preCLfilenames list with the input's filename
             self._preCLfilenames.append(ad.filename)
-            # Strip off all postfixes and prepend filename with a unique prefix
-            name = fileNameUpdater(adIn=ad, prepend=self.prefix, strip=True, verbose= self.verbose)
+            # Strip off all postfixes and prefix filename with a unique prefix
+            name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, verbose= self.verbose)
             # store the unique name in preCLcachestorenames for later reference
             self._preCLcachestorenames.append(name)
             # Log the name of this temporary file being written to disk
@@ -566,7 +566,7 @@ class CLManager(object):
             # single file and thus no looping is required here.
             
             # The name that IRAF wrote the output to
-            cloutname = self.postpend+self._preCLcachestorenames[0]
+            cloutname = self.suffix+self._preCLcachestorenames[0]
             # The name we want the file to be
             outName = self.outNames[0] 
             
@@ -610,7 +610,7 @@ class CLManager(object):
                 # Name of file written to disk for input to CL script
                 storename = self._preCLcachestorenames[i]  
                 # Name of file CL wrote to disk
-                cloutname = self.postpend + storename 
+                cloutname = self.suffix + storename 
                 
                 # Name I want the file to be dictated by outNames
                 outName = self.outNames[i]
