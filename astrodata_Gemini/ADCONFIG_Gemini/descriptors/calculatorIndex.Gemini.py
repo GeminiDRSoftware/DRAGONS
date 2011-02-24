@@ -26,4 +26,6 @@ calculatorIndex = {
     "NIRI":"NIRI_Descriptor.NIRI_DescriptorCalc()",
     "PHOENIX":"PHOENIX_Descriptor.PHOENIX_DescriptorCalc()",
     "TRECS":"TRECS_Descriptor.TRECS_DescriptorCalc()",
+    "OSCIR":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
+    "HOKUPAAQUIRC":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
     }
