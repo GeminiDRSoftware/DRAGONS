@@ -201,7 +201,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     'fl_vardq'      :gemt.pyrafBoolean(rc['fl_vardq']),
                     'combine'       :rc['method'],
                     'reject'        :'none',
-                    'outpref'       :rc['postpend'],
                                     }
                 # Grabbing the default parameters dictionary and updating 
                 # it with the two above dictionaries
@@ -213,10 +212,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 log.fullinfo('\nParameters set by the CLManager or dictated by '+
                          'the definition of the primitive:\n', 
                          category='parameters')
-                gemt.LogDictParams(clPrimParams)
+                gemt.logDictParams(clPrimParams)
                 log.fullinfo('\nUser adjustable parameters in the parameters '+
                              'file:\n', category='parameters')
-                gemt.LogDictParams(clSoftcodedParams)
+                gemt.logDictParams(clSoftcodedParams)
                 
                 log.debug('Calling the gifringe CL script for input list '+
                               clm.inputList())
