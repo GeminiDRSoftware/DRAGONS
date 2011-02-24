@@ -74,34 +74,3 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_filter_name = str(filter)
         
         return ret_filter_name
-    
-    def ut_date(self, dataset, **args):
-        """
-        Return the ut_date value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the UT date of the observation (YYYY-MM-DD)
-        """
-        hdu = dataset.hdulist
-        ut_date = hdu[0].header[stdkeyDictMICHELLE['key_ut_date']]
-        
-        # Validate the result. The definition is taken from the FITS
-        # standard document v3.0. Must be YYYY-MM-DD or
-        # YYYY-MM-DDThh:mm:ss[.sss]. Here I also do some very basic checks
-        # like ensuring the first digit of the month is 0 or 1, but I
-        # don't do cleverer checks like 01<=M<=12. nb. seconds ss > 59 is
-        # valid when leap seconds occur.
-        
-        match1 = re.match('\d\d\d\d-[01]\d-[0123]\d', ut_date)
-        match2 = re.match('(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)', ut_date)
-        
-        if match1:
-            ret_ut_date = str(ut_date)
-        elif match2:
-            ret_ut_date = str(match2.group(1))
-        else:
-            ret_ut_date = None
-        
-        return ret_ut_date
-
