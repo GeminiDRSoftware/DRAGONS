@@ -1567,6 +1567,36 @@ class CalculatorInterface:
                 self.noneMsg = str(sys.exc_info()[1])
                 return None
     
+    def ut_datetime(self, **args):
+        """
+        Return the ut_datetime value for generic data
+        """
+        try:
+            self._lazyloadCalculator()
+            #print hasattr( self.descriptorCalculator, "ut_datetime")
+            if not hasattr( self.descriptorCalculator, "ut_datetime"):
+                key = "key_"+"ut_datetime"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+            retval = self.descriptorCalculator.ut_datetime(self, **args)
+            if "asString" in args and args["asString"]==True:
+                from datetime import datetime
+                from astrodata.adutils.gemutil import stdDateString
+                if isinstance(a, datetime):                    
+                    retval = stdDateString(a)
+                else:
+                    retval = str(retval)
+            return retval
+        except:
+            if self.descriptorCalculator.throwExceptions == True:
+                raise
+            else:
+            #print "NONE BY EXCEPTION"
+                self.noneMsg = str(sys.exc_info()[1])
+                return None
+    
     def ut_time(self, **args):
         """
         Return the ut_time value for generic data
