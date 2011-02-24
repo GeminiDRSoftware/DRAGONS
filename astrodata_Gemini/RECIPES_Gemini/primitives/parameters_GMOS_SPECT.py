@@ -19,7 +19,7 @@
               "note2":"pause doesn't need a 'message' parameter"
             }
            },
-    "attachMDF":{"outsuffix":
+    "attachMDF":{"suffix":
                           {
                            'default': '_mdf' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,

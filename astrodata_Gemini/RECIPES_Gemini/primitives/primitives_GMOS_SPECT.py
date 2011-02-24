@@ -109,7 +109,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 ad.append(moredata=admdf)  
                 log.status(ad.info(),'status')
                 
-                ad.filename=gemt.fileNameUpdater(ad.filename,postpend=rc["outsuffix"], strip=False)
+                ad.filename=gemt.fileNameUpdater(ad.filename,postpend=rc["suffix"], strip=False)
                 rc.reportOutput(ad)
                 
                 log.status('finished adding the MDF','status')

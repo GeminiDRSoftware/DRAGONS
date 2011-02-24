@@ -1,4 +1,4 @@
-{       'addBPM': {'postpend':
+{       'addBPM': {'suffix':
                           {
                            'default': '_bpm' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
@@ -28,7 +28,7 @@
                           'type': 'bool',
                           'userOverride':True    
                            },
-                          'postpend':
+                          'suffix':
                           {
                            'default': '_biassub' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
@@ -37,7 +37,7 @@
                            }
                           },
         'flatCorrect':{
-                       'postpend':
+                       'suffix':
                        {
                         'default': '_flatcorrected' , 
                           'recipeOverride': True,
@@ -54,7 +54,7 @@
                           'userOverride':True,  
                           'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            },
-                  'postpend':
+                  'suffix':
                        {
                         'default': '_mosaic' , 
                           'recipeOverride': True,
@@ -98,7 +98,7 @@
                           'userOverride':True,  
                           'tag':['cl_iraf','ui_advanced'], #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                            },
-                          'postpend':
+                          'suffix':
                           {
                            'default': '_normalized' , #value to be post pended to this primitives outputs (used by CLManager not CL directly for this prim)
                           'recipeOverride': True,
@@ -121,7 +121,7 @@
                           'type': 'bool',
                           'userOverride':True    
                            },
-                          'postpend':
+                          'suffix':
                           {
                            'default': '_oversubed' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,
@@ -136,7 +136,7 @@
                             'userOverride':True
                             }
                         },
-        'overscanTrim':{'postpend':
+        'overscanTrim':{'suffix':
                           {
                            'default': '_overtrimd' , #value to be post pended to this primitives outputs
                           'recipeOverride': True,

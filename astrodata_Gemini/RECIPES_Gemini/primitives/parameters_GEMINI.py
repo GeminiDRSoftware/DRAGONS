@@ -1,4 +1,4 @@
-{   'addDQ':{'postpend':
+{   'addDQ':{'suffix':
                    {
                     'default': '_dq' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -20,7 +20,7 @@
                       'userOverride':True                                      
                      }
                     },   
-    'addVAR':{'postpend':
+    'addVAR':{'suffix':
                    {
                     'default': '_var' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -28,7 +28,7 @@
                       'userOverride':False 
                     }
                     },
-    'ADUtoElectrons':{'postpend':
+    'ADUtoElectrons':{'suffix':
                       {
                     'default': '_aduToElect' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -37,7 +37,7 @@
                        }
                       },
 
-    'combine':{'postpend':
+    'combine':{'suffix':
                    {
                     'default': '_comb' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -67,7 +67,7 @@
                     },   
                     },
                     
-     'flatCorrect':{'postpend':
+     'flatCorrect':{'suffix':
                    {
                     'default': '_comb' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -164,7 +164,7 @@
                     },               
                     },
     
-    'standardizeHeaders':{'postpend':
+    'standardizeHeaders':{'suffix':
                    {
                     'default': '_headers' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -172,7 +172,7 @@
                       'userOverride':False 
                     }     
                           },
-    'standardizeStructure':{'postpend':
+    'standardizeStructure':{'suffix':
                    {
                     'default': '_struct' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -205,7 +205,7 @@
                                }
                               } ,
                                             
-    'validateData':{'postpend':
+    'validateData':{'suffix':
                    {
                     'default': '_validated' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -234,14 +234,14 @@
                       'type': 'bool',
                       'userOverride':True 
                      },
-                     'postpend':
+                     'suffix':
                      {
                      'default': '' , 
                       'recipeOverride': True,
                       'type': 'str',
                       'userOverride':True 
                      },
-                     'prepend':
+                     'prefix':
                      {
                      'default': '' , 
                       'recipeOverride': True,

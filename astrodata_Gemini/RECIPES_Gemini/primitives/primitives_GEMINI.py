@@ -51,9 +51,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         2=value is non linear, 4=pixel is saturated)
         
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_nonlinear: Flag to turn checking for nonlinear pixels on/off
         :type fl_nonLinear: Python boolean (True/False), default is True
@@ -87,7 +87,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             adOuts = geminiScience.add_dq(adIns=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
-                                         postpend=rc['postpend'], verbose=int(rc['logVerbose']))    
+                                         suffix=rc['suffix'], verbose=int(rc['logVerbose']))    
            
             log.status('geminiScience.addDQ completed successfully')
             
@@ -108,9 +108,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         The calculation will follow the formula:
         variance = (read noise/gain)2 + max(data,0.0)/gain
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param logVerbose: Verbosity setting for log messages to the screen.
         :type logVerbose: int. 
@@ -130,7 +130,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.debug('Calling geminiScience.addVAR')
             
             adOuts = geminiScience.add_var(adIns=rc.getInputs(style='AD'), 
-                                         postpend=rc['postpend'], 
+                                         suffix=rc['suffix'], 
                                          verbose=int(rc['logVerbose']))    
            
             log.status('geminiScience.addVAR completed successfully')
@@ -149,9 +149,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         This primitive will convert the inputs from having pixel 
         units of ADU to electrons.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param logVerbose: Verbosity setting for log messages to the screen.
         :type logVerbose: int. 
@@ -170,7 +170,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.debug('Calling geminiScience.ADUtoElectrons')
             
             adOuts = geminiScience.ADUtoElectrons(adIns=rc.getInputs(style='AD'), 
-                                                  postpend=rc['postpend'], 
+                                                  suffix=rc['suffix'], 
                                                   verbose=int(rc['logVerbose']))    
            
             log.status('geminiScience.ADUtoElectrons completed successfully')
@@ -194,9 +194,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         combined SCI frames and the DQ frames are propagated through 
         to the final file.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_vardq: Create variance and data quality frames?
         :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
@@ -230,7 +230,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
                 adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), 
                                               fl_vardq=rc['fl_vardq'], fl_dqprop=rc['fl_dqprop'], 
-                                              method=rc['method'], postpend=rc['postpend'], 
+                                              method=rc['method'], suffix=rc['suffix'], 
                                               verbose=int(rc['logVerbose'])) 
                 
                 log.status('geminiScience.combine completed successfully')
@@ -289,9 +289,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         It is currently assumed that the same flat file will be applied to all
         input images.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param logVerbose: Verbosity setting for log messages to the screen.
         :type logVerbose: int. 
@@ -316,7 +316,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.debug('Calling geminiScience.flatCorrect function')
             
             adOuts = geminiScience.flat_correct(adIns=rc.getInputs(style='AD'),     
-                                         flats=processedFlat, postpend=rc['postpend'], 
+                                         flats=processedFlat, suffix=rc['suffix'], 
                                          verbose=int(rc['logVerbose']))           
             
             log.status('geminiScience.flatCorrect completed successfully')
@@ -456,7 +456,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 et = time.time()
                 total_IQ_time = total_IQ_time + (et - st)
                 # Logging the amount of time spent measuring the IQ 
-                log.stdinfo('MeasureIQ time: '+repr(et - st), category='IQ')
+                log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
                 log.fullinfo('~'*45, category='format')
                 
                 # iqdata is list of tuples with image quality metrics
@@ -486,7 +486,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     
             # Logging the total amount of time spent measuring the IQ of all
             # the inputs
-            log.stdinfo('Total measureIQ time: '+repr(total_IQ_time), 
+            log.debug('Total measureIQ time: '+repr(total_IQ_time), 
                         category='IQ')
             
             log.status('*FINISHED* measuring the IQ of the inputs')
@@ -685,9 +685,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         for the input MEFs. First the general headers for Gemini will 
         be update/created, followed by those that are instrument specific.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param logVerbose: Verbosity setting for log messages to the screen.
         :type logVerbose: int. 
@@ -715,7 +715,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             rc.run('standardizeInstrumentHeaders(logVerbose='+str(rc['logVerbose'])+')') 
             log.status('Instrument specific headers fixed')
             
-            # Updating the file name with the postpend/outsuffix  and timestamps 
+            # Updating the file name with the suffix/outsuffix  and timestamps 
             # for this primitive and then reporting the new file to the 
             # reduction context 
             for ad in rc.getInputs(style='AD'):
@@ -724,7 +724,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 ad.historyMark(key='STDHDRS',stomp=False)
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend=rc['postpend'], 
+                                                   suffix=rc['suffix'], 
                                                    strip=False, verbose= int(rc['logVerbose']))
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
@@ -758,9 +758,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         'addMDF' flag to make this happen 
         (eg. standardizeStructure(addMDF=True)).
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param addMDF: A flag to turn on/off appending the appropriate MDF 
                        file to the inputs.
@@ -797,12 +797,12 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # Adding a GEM-TLM (automatic) and STDSTRUC time stamps 
                 # to the PHU
                 ad.historyMark(key='STDSTRUC',stomp=False)
-                # Updating the file name with the postpend/outsuffix for this   
+                # Updating the file name with the suffix for this   
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend=rc['postpend'], 
+                                                   suffix=rc['suffix'], 
                                                    strip=False, verbose= int(rc['logVerbose']))
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
@@ -851,12 +851,12 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*STARTING* to store the processed bias by writing '+
                        'it to disk')
             for ad in rc.getInputs(style='AD'):
-                # Updating the file name with the postpend/outsuffix for this
+                # Updating the file name with the suffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend='_preparedbias', 
+                                                   suffix='_preparedbias', 
                                                    strip=True, 
                                                    verbose= int(rc['logVerbose']))
                 log.status('File name updated to '+ad.filename)
@@ -900,12 +900,12 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:   
             log.status('*STARTING* to store the processed flat by writing it to disk')
             for ad in rc.getInputs(style='AD'):
-                # Updating the file name with the postpend/outsuffix for this
+                # Updating the file name with the suffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend='_preparedflat', 
+                                                   suffix='_preparedflat', 
                                                    strip=True, 
                                                    verbose= int(rc['logVerbose']))
                 log.status('File name updated to '+ad.filename)
@@ -944,9 +944,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         repair it or not (eg. validateData(repair=True))
         (this feature is not coded yet).
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param repair: A flag to turn on/off repairing the data if there is a
                        problem with it. 
@@ -979,7 +979,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('Successfully returned to validateData'+
                        ' from the validateInstrumentData primitive') 
             
-            # Updating the file name with the postpend/outsuffix  and timestamps 
+            # Updating the file name with the suffix  and timestamps 
             # for this primitive and then reporting the new file to the 
             # reduction context 
             for ad in rc.getInputs(style='AD'):
@@ -988,7 +988,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 ad.historyMark(key='VALDATA',stomp=False)
                 log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend='_validated', 
+                                                   suffix='_validated', 
                                                    strip=False, verbose= int(rc['logVerbose']))                
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
@@ -1016,14 +1016,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         A primitive that may be called by a recipe at any stage to
         write the outputs to disk.
-        If postpend is set during the call to writeOutputs, any previous 
-        postpends will be striped and replaced by the one provided.
+        If suffix is set during the call to writeOutputs, any previous 
+        suffixs will be striped and replaced by the one provided.
         examples: 
-        writeOutputs(postpend= '_string'), writeOutputs(prepend= '_string') 
+        writeOutputs(suffix= '_string'), writeOutputs(prefix= '_string') 
         or if you have a full file name in mind for a SINGLE file being 
         ran through Reduce you may use writeOutputs(outfilename='name.fits').
         
-        :param strip: Strip the previously postpended strings off file name?
+        :param strip: Strip the previously suffixed strings off file name?
         :type strip: Python boolean (True/False)
                      default: False
         
@@ -1032,13 +1032,13 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type clobber: Python boolean (True/False)
                        default: False
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
-        :param prepend: Value to be post pended onto each input name(s) to 
+        :param prefix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type prepend: string
+        :type prefix: string
         
         :param outfilename: The full filename you wish the file to be written to.
                             Note: this only works if there is ONLY ONE file in the inputs.
@@ -1056,31 +1056,31 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             log.status('*STARTING* to write the outputs')
             
-            # Logging current values of postpend and prepend
-            log.status('postpend = '+str(rc['postpend']))
-            log.status('prepend = '+str(rc['prepend']))
+            # Logging current values of suffix and prefix
+            log.status('suffix = '+str(rc['suffix']))
+            log.status('prefix = '+str(rc['prefix']))
             log.status('strip = '+str(rc['strip']))
             
-            if rc['postpend'] and rc['prepend']:
-                log.critical('The input will have '+rc['prepend']+' prepended'+
-                             ' and '+rc['postpend']+' postpended onto it')
+            if rc['suffix'] and rc['prefix']:
+                log.critical('The input will have '+rc['prefix']+' pre pended'+
+                             ' and '+rc['suffix']+' post pended onto it')
                 
             for ad in rc.getInputs(style='AD'):
-                # If the value of 'postpend' was set, then set the file name 
+                # If the value of 'suffix' was set, then set the file name 
                 # to be written to disk to be postpended by it
-                if rc['postpend']:
+                if rc['suffix']:
                     log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                     ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                        postpend=rc['postpend'], 
+                                        suffix=rc['suffix'], 
                                         strip=rc['strip'], verbose= int(rc['logVerbose']))
                     log.status('File name updated to '+ad.filename)
                     outfilename = os.path.basename(ad.filename)
                     
-                # If the value of 'prepend' was set, then set the file name 
-                # to be written to disk to be prepended by it
-                if rc['prepend']:
+                # If the value of 'prefix' was set, then set the file name 
+                # to be written to disk to be pre pended by it
+                if rc['prefix']:
                     infilename = os.path.basename(ad.filename)
-                    outfilename = rc['prepend']+infilename
+                    outfilename = rc['prefix']+infilename
                     
                 # If the 'outfilename' was set, set the file name of the file 
                 # file to be written to this

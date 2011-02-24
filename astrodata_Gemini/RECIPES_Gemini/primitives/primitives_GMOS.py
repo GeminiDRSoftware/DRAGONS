@@ -55,9 +55,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         for specialized BPM processing to be done in the instrument specific
         primitive sets where it belongs.                          
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param logVerbose: Verbosity setting for log messages to the screen.
         :type logVerbose: int. 
@@ -95,7 +95,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug('Calling geminiScience.addBPM function')
             
             adOuts = geminiScience.add_bpm(adIns=rc.getInputs(style='AD'), 
-                                         BPMs=BPMlist,matchSize=True, postpend=rc['postpend'], 
+                                         BPMs=BPMlist,matchSize=True, suffix=rc['suffix'], 
                                          verbose=int(rc['logVerbose']))           
             
             log.status('geminiScience.addBPM completed successfully')
@@ -120,9 +120,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         in the future by replacing the use of the gireduce
         with a Python routine to do the bias subtraction.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_over: Subtract the overscan?
         :type fl_over: Python boolean (True/False), default is False
@@ -169,7 +169,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOuts = geminiScience.bias_correct(adIns=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-                                         postpend=rc['postpend'], verbose=int(rc['logVerbose']))           
+                                         suffix=rc['suffix'], verbose=int(rc['logVerbose']))           
             
             log.status('geminiScience.biasCorrect completed successfully')
                 
@@ -359,9 +359,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive will mosaic the SCI frames of the input images, 
         along with the VAR and DQ frames if they exist.  
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_paste: Paste images instead of mosaic?
         :type fl_paste: Python boolean (True/False), default is False
@@ -391,7 +391,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adOuts = geminiScience.mosaic_detectors(adIns=rc.getInputs(style='AD'), 
                                         fl_paste=rc['fl_paste'], interp_function=rc['interp_function'], 
-                                        fl_vardq='AUTO', postpend=rc['postpend'], 
+                                        fl_vardq='AUTO', suffix=rc['suffix'], 
                                         verbose=int(rc['logVerbose']))           
             
             log.status('geminiScience.mosaicDetectors completed successfully')
@@ -415,9 +415,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         future by replacing giflat with a Python equivilent with more 
         appropriate options for the recipe system.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_over: Subtract the overscan level from the frames?
         :type fl_over: Python boolean (True/False)
@@ -452,7 +452,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adOuts = geminiScience.normalize_flat(adIns=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-                                        fl_vardq='AUTO', postpend=rc['postpend'], 
+                                        fl_vardq='AUTO', suffix=rc['suffix'], 
                                         verbose=int(rc['logVerbose']))           
             
             log.status('geminiScience.normalizeFlat completed successfully')
@@ -472,9 +472,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_trim: Trim the overscan region from the frames?
         :type fl_trim: Python boolean (True/False)
@@ -508,7 +508,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adOuts = gmosScience.overscan_subtract(adIns=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], biassec=rc['biassec'], 
-                                        fl_vardq='AUTO', postpend=rc['postpend'], 
+                                        fl_vardq='AUTO', suffix=rc['suffix'], 
                                         verbose=int(rc['logVerbose']))           
             
             log.status('gmosScience.overscanSubtract completed successfully')
@@ -529,9 +529,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive uses AstroData to trim the overscan region 
         from the input images and update their headers.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param logVerbose: Verbosity setting for log messages to the screen.
         :type logVerbose: int. 
@@ -548,7 +548,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug('Calling geminiScience.overscanTrim function')
             
             adOuts = geminiScience.overscan_trim(adIns=rc.getInputs(style='AD'),     
-                                                        postpend=rc['postpend'], 
+                                                        suffix=rc['suffix'], 
                                                         verbose= int(rc['logVerbose']))           
             
             log.status('geminiScience.overscanTrim completed successfully')

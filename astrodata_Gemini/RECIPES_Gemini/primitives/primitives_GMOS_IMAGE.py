@@ -44,9 +44,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         It utilizes the Python re-written version of cl script girmfringe to 
         do the work.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_statscale: Scale by statistics rather than exposure time
         :type fl_statscale: Boolean
@@ -115,12 +115,12 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 log.fullinfo('------------------------------------------------'
                              , category='header')
                 
-                # Updating the file name with the postpend/outsuffix for this
+                # Updating the file name with the suffix for this
                 # primitive and then reporting the new file to the reduction 
                 # context
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 adOut.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   postpend=rc['postpend'], 
+                                                   suffix=rc['suffix'], 
                                                    strip=False)
                 log.status('File name updated to '+adOut.filename)
                 rc.reportOutput(adOut)        
@@ -138,9 +138,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         This primitive will create a single fringe image from all the inputs.
         It utilizes the CL script gifringe to create the fringe image.
         
-        :param postpend: Value to be post pended onto each input name(s) to 
+        :param suffix: Value to be post pended onto each input name(s) to 
                          create the output name(s).
-        :type postpend: string
+        :type suffix: string
         
         :param fl_vardq: Create variance and data quality frames?
         :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
@@ -171,7 +171,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
                 clm=gemt.CLManager(adIns=rc.getInputs(style='AD'), 
-                                   postpend=rc['postpend'],  
+                                   suffix=rc['suffix'],  
                                    funcName='makeFringeFrame', 
                                    verbose=int(rc['logVerbose']))
     

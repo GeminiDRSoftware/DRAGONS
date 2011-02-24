@@ -1,5 +1,5 @@
 {  'fringeCorrect': {
-                'postpend':
+                'suffix':
                    {
                     'default': '_fringecorrected' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
@@ -31,7 +31,7 @@
                      },  
                     },   
     'makeFringeFrame': {
-                'postpend':
+                'suffix':
                    {
                     'default': '_fringe' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
