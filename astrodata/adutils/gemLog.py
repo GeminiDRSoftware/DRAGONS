@@ -12,7 +12,7 @@ class GeminiLogger(object):
     It is based on the Python logging object.
     
     Logging levels chart:
-level#, verbose,  level,          includes (current rough outline)
+level#, logLevel,  level,          includes (current rough outline)
 
  10       10      debug           engineering, programmer debugging
  15       6       fullinfo        details, input parameters, header changes
@@ -30,9 +30,9 @@ level#, verbose,  level,          includes (current rough outline)
     @param logName: Name of the file the log messages will be written to
     @type logName: string
     
-    @param verbose: verbosity setting for the lowest level of messages to 
+    @param logLevel: verbosity setting for the lowest level of messages to 
                     print to the screen.
-    @type verbose: integer from 0-10 following above chart
+    @type logLevel: integer from 0-10 following above chart
     
     @param debug: Flag for showing debug level messages
     @type debug: python boolean (True/False)
@@ -45,15 +45,15 @@ level#, verbose,  level,          includes (current rough outline)
     
     """
     logger = None
-    def __init__(self, logName=None, verbose=1, debug=False, noLogFile=False, allOff=False):
-        # Setting verbose and noFile accordingly if allOff is turned on
+    def __init__(self, logName=None, logLevel=1, debug=False, noLogFile=False, allOff=False):
+        # Setting logLevel and noFile accordingly if allOff is turned on
         if allOff:
-            verbose=0
+            logLevel=0
             noLogFile=True
         
         # Save verbosity setting for log to a private variable to allow for 
         # changing the value in future calls. 
-        self._verbose=verbose
+        self._logLevel=logLevel
         
         # If noLogFile=True, then set the log file as 'null'
         if noLogFile:
@@ -102,23 +102,23 @@ level#, verbose,  level,          includes (current rough outline)
             ch.setLevel(FULLINFO)
             fh.setLevel(logging.DEBUG)
             
-        # Set console handler depending on value provided on verbose value
+        # Set console handler depending on value provided on logLevel value
         else:
-            if (verbose == 10):
+            if (logLevel == 10):
                 ch.setLevel(logging.DEBUG)
-            elif (verbose == 6):
+            elif (logLevel == 6):
                 ch.setLevel(FULLINFO)
-            elif (verbose == 5):
+            elif (logLevel == 5):
                 ch.setLevel(STDINFO)
-            elif (verbose == 4):
+            elif (logLevel == 4):
                 ch.setLevel(STATUS)
-            elif (verbose == 3):
+            elif (logLevel == 3):
                 ch.setLevel(logging.WARNING)
-            elif (verbose == 2):
+            elif (logLevel == 2):
                 ch.setLevel(logging.ERROR)
-            elif (verbose == 1):
+            elif (logLevel == 1):
                 ch.setLevel(logging.CRITICAL)
-            elif (verbose==0):
+            elif (logLevel==0):
                 #ie. 'MAX' out the level so it is above all existing log levels
                 ch.setLevel(100)
             else:
@@ -160,11 +160,11 @@ level#, verbose,  level,          includes (current rough outline)
         """
         return self._logName
     
-    def verbosity(self):
-        """Just a function to return the 'private' member variable _verbose
+    def levelChecker(self):
+        """Just a function to return the 'private' member variable _logLevel
         to allow checking what the current verbosity of this logger object is.        
         """     
-        return self._verbose
+        return self._logLevel
     
     def defaultCategory(self, level=None, category=None):
         """
@@ -400,7 +400,7 @@ def checkHandlers(log, remove=True):
         else:
             return False    
 
-def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=False):
+def getGeminiLog(logName=None , logLevel=1, debug=False, noLogFile=False, allOff=False):
     """ The function called to retrieve the desired logger object.
         This can be a new one, and thus getGeminiLog will create one to be 
         returned, else it will return the requested one based on the 
@@ -412,14 +412,14 @@ def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=
     
     _geminiLogger = None
     
-    if verbose==None:
-        verbose=1
+    if logLevel==None:
+        logLevel=1
         
     # No logger list (ie, not even one log object) exists, so create one
     if not _listOfLoggers:
         #print 'GL415: creating new logger' #$$$$$$$$$$$$$$$$$$$$$
         _listOfLoggers = []
-        _geminiLogger = GeminiLogger(logName=logName, verbose=verbose, 
+        _geminiLogger = GeminiLogger(logName=logName, logLevel=logLevel, 
                                      debug=debug, noLogFile=noLogFile, 
                                      allOff=allOff)
         _listOfLoggers.append(_geminiLogger)
@@ -435,10 +435,10 @@ def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=
             # The log you requested is found in list
             if log.logname() == logName:
                 #print 'GL432: using old logger'
-                if verbose!=log.verbosity():
-                    #print 'GL445: updating verbosity of existing log to '+str(verbose)
+                if logLevel!=log.levelChecker():
+                    #print 'GL445: updating verbosity of existing log to '+str(logLevel)
                     _geminiLogger = GeminiLogger(logName=logName, 
-                                         verbose=verbose, debug=debug, 
+                                         logLevel=logLevel, debug=debug, 
                                          noLogFile=noLogFile, allOff=allOff)
                     log = _geminiLogger
                 else:
@@ -446,7 +446,7 @@ def getGeminiLog(logName=None , verbose=1, debug=False, noLogFile=False, allOff=
         # The log you requested is not there, so create it and add it to list. 
         if not _geminiLogger:
             #print 'GL436: creating new logger but list was there'
-            _geminiLogger = GeminiLogger(logName=logName, verbose=verbose, 
+            _geminiLogger = GeminiLogger(logName=logName, logLevel=logLevel, 
                                          debug=debug, noLogFile=noLogFile, 
                                          allOff=allOff)
             _listOfLoggers.append(_geminiLogger)
