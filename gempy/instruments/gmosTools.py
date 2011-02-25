@@ -5,7 +5,7 @@ import os
 import pyfits as pf
 import numpy as np
 from copy import deepcopy
-
+import time
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 
@@ -71,7 +71,7 @@ class GIRMFRINGEException:
 # There was talk about generalizing this module to work on all imaging data
 # rather than just GMOS images, this is left as a task to look into later.
 def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='', 
-               scale=0.0):                
+               scale=0.0, logLevel=1):                
                 
     """Scale and subtract a fringe frame from GMOS gireduced image.
     
@@ -94,6 +94,8 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
     @type scale: real 
     
     """    
+    log=gemLog.getGeminiLog(logLevel=logLevel)
+    
     ut = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
     
     # Mimics the cl log using the new Gemini Logger gemlog.py 
@@ -188,12 +190,15 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
         # Logging the scale value being used                
         log.stdinfo('The scale value being applied to the fringe '+
                         'frames is '+str(scale))    
-               
+        # format line in logger to indicate end of parameters being used
+        log.fullinfo('-'*45)
+           
         # Calculating the output based on 
         # output image frame = input image frame - (scale * fringe frame)
-    
+        log.debug('calling fringe.mult(scale)')
         # Using the mult function from the arith toolbox as it takes care of VAR and DQs        
-        scaledFringe = fringe.mult(scale)    
+        scaledFringe = fringe.mult(scale)  
+        log.debug('calling inimage.sub(scaledFringe)')  
         # Using the sub function from the arith toolbox as it takes care of VAR and DQs 
         outImage = inimage.sub(scaledFringe)
         
