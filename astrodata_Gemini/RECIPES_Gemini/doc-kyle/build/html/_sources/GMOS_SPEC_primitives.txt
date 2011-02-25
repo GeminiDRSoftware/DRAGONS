@@ -1,0 +1,5 @@
+GMOS_SPEC Primitives
+=====================
+
+.. automodule:: primitives_GMOS_SPEC
+   :members: 
