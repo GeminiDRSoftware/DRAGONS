@@ -28,4 +28,5 @@ calculatorIndex = {
     "TRECS":"TRECS_Descriptor.TRECS_DescriptorCalc()",
     "OSCIR":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
     "HOKUPAAQUIRC":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
+    "HRWFS":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
     }
