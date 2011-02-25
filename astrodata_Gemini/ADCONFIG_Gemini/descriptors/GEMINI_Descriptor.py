@@ -246,25 +246,26 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
 
         # If we didn't get a utdate, can we parse it from the framename header if there is one, or the filename?
         if(not utdate_hdr):
+            #print "Desperately trying FRMNAME, filename etc"
             try:
-                #print "Desperately trying FRMNAME, filename etc"
-                for string in [hdu[1].header['FRMNAME'], os.path.basename(dataset.filename)]:
-                    try:
-                        #print "... Trying to Parse: %s" % string
-                        year = string[1:5]
-                        y = int(year)
-                        month = string[5:7]
-                        m = int(month)
-                        day = string[7:9]
-                        d = int(day)
-                        if(( y > 1999) and (m < 13) and (d < 32)):
-                            utdate_hdr = "%s-%s-%s" % (year, month, day)
-                            #print "Guessed utdate from %s: %s" % (string, utdate_hdr)
-                            break
-                    except (KeyError, ValueError, IndexError):
-                        pass
+                frmname = hdu[1].header['FRMNAME']
             except (KeyError, ValueError, IndexError):
-                pass
+                frmname = ''
+            for string in [frmname, os.path.basename(dataset.filename)]:
+                try:
+                    #print "... Trying to Parse: %s" % string
+                    year = string[1:5]
+                    y = int(year)
+                    month = string[5:7]
+                    m = int(month)
+                    day = string[7:9]
+                    d = int(day)
+                    if(( y > 1999) and (m < 13) and (d < 32)):
+                        utdate_hdr = "%s-%s-%s" % (year, month, day)
+                        #print "Guessed utdate from %s: %s" % (string, utdate_hdr)
+                        break
+                except (KeyError, ValueError, IndexError):
+                    pass
 
         # If we didn't get a uttime, assume midnight
         if(not uttime_hdr):
