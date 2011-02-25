@@ -7,13 +7,13 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments import geminiTools  as gemt
 from astrodata.adutils import gemLog
 
-def CLDefaultParamsDict(CLscript, verbose=1):
+def CLDefaultParamsDict(CLscript, logLevel=1):
     """
     A function to return a dictionary full of all the default parameters 
     for each CL script used so far in the Recipe System.
     
     """
-    log = gemLog.getGeminiLog(verbose=verbose)
+    log = gemLog.getGeminiLog(logLevel=logLevel)
     
     # loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
@@ -69,8 +69,8 @@ def CLDefaultParamsDict(CLscript, verbose=1):
             'fl_dqprop'  :no,            # Propagate all DQ values?
             'verbose'    :yes,           # Verbose output?
             'status'     :0,             # Exit status (0=good)
-            'Stdout'     :gemt.IrafStdout(verbose=verbose),
-            'Stderr'     :gemt.IrafStdout(verbose=verbose)
+            'Stdout'     :gemt.IrafStdout(logLevel=logLevel),
+            'Stderr'     :gemt.IrafStdout(logLevel=logLevel)
                        }
         
     if CLscript == 'gireduce':
@@ -125,8 +125,8 @@ def CLDefaultParamsDict(CLscript, verbose=1):
             'logfile'    :'',                # Logfile
             'verbose'    :yes,               # Verbose?
             'status'     :0,                 # Exit status (0=good)
-            'Stdout'     :gemt.IrafStdout(verbose=verbose),
-            'Stderr'     :gemt.IrafStdout(verbose=verbose)
+            'Stdout'     :gemt.IrafStdout(logLevel=logLevel),
+            'Stderr'     :gemt.IrafStdout(logLevel=logLevel)
                            }
         
     if CLscript == 'giflat':
@@ -180,8 +180,8 @@ def CLDefaultParamsDict(CLscript, verbose=1):
             'low_reject' :3.0,           # Low sigma rejection factor.
             'high_reject':3.0,           # High sigma rejection factor.
             'niterate'   :2,             # Number of rejection iterations.
-            'Stdout'      :gemt.IrafStdout(verbose=verbose),
-            'Stderr'      :gemt.IrafStdout(verbose=verbose)
+            'Stdout'      :gemt.IrafStdout(logLevel=logLevel),
+            'Stderr'      :gemt.IrafStdout(logLevel=logLevel)
                        }    
           
     if CLscript == 'gmosaic':
@@ -210,8 +210,8 @@ def CLDefaultParamsDict(CLscript, verbose=1):
             'fl_real'    :no,                     # Convert file to real before transforming
             'verbose'    :yes,                    # Verbose
             'status'     :0,                      # Exit status (0=good)
-            'Stdout'     :gemt.IrafStdout(verbose=verbose),
-            'Stderr'     :gemt.IrafStdout(verbose=verbose)
+            'Stdout'     :gemt.IrafStdout(logLevel=logLevel),
+            'Stderr'     :gemt.IrafStdout(logLevel=logLevel)
                        }
     
     if CLscript == 'gdisplay':
@@ -237,8 +237,8 @@ def CLDefaultParamsDict(CLscript, verbose=1):
             'gaindb'        :'default',         # Database with gain data
             'verbose'       :yes,               # Verbose
             'status'        :0,                 # Exit status (0=good)
-            'Stdout'        :gemt.IrafStdout(verbose=verbose), 
-            'Stderr'        :gemt.IrafStdout(verbose=verbose)  
+            'Stdout'        :gemt.IrafStdout(logLevel=logLevel), 
+            'Stderr'        :gemt.IrafStdout(logLevel=logLevel)  
                        }
     
     if CLscript == 'gifringe':
@@ -272,7 +272,7 @@ def CLDefaultParamsDict(CLscript, verbose=1):
             'glogpars'  : '',             # Logging preferences
             'verbose'   : yes,            # Verbose output
             'status'    : 0,              # Exit status (0=good)
-            'Stdout'    :gemt.IrafStdout(verbose=verbose),
-            'Stderr'    :gemt.IrafStdout(verbose=verbose)
+            'Stdout'    :gemt.IrafStdout(logLevel=logLevel),
+            'Stderr'    :gemt.IrafStdout(logLevel=logLevel)
                        }
     return defaultParams
