@@ -27,6 +27,11 @@ class GMOS_SPECTException:
         return self.message
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
+    """
+    This is the class of all primitives for the GMOS_SPECT level of the type 
+    hierarchy tree.  It inherits all the primitives to the level above
+    , 'GMOSPrimitives'.
+    """
     astrotype = "GMOS_SPECT"
     
     def init(self, rc):
@@ -41,11 +46,11 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         '''
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try: 
@@ -76,11 +81,11 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         '''
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:           
@@ -120,11 +125,11 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         '''
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:        
