@@ -271,7 +271,10 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
     :type adIns: Astrodata objects, either a single or a list of objects
     
     :param fringes: Astrodata input fringe(s)
-    :type fringes: Astrodata objects, either a single or a list of objects
+    :type fringes: AstroData objects in a list, or a single instance.
+                   Note: If there is multiple inputs and one fringe provided, then the
+                   same fringe will be applied to all inputs; else the fringes   
+                   list must match the length of the inputs.
     
     :param fl_statscale: Scale by statistics rather than exposure time
     :type fl_statscale: Boolean
@@ -338,10 +341,19 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
             
             for ad in adIns:
                 
+                # Setting up the fringe correctly
+                if (isinstance(fringes,list)) and (len(fringes)>1):
+                    fringe = fringes[count]
+                elif (isinstance(fringes,list)) and (len(fringes)==1):
+                    # Not sure if I need this check, but can't hurt
+                    fringe = fringes[0]
+                else:
+                    fringe = fringes
+                        
                 # Loading up a dictionary with the input parameters for rmImgFringe
                 paramDict = {
                              'inimage'        :ad,
-                             'fringe'         :fringes[count],
+                             'fringe'         :fringe,
                              'fl_statscale'   :fl_statscale,
                              'statsec'        :statsec,
                              'scale'          :scale,
