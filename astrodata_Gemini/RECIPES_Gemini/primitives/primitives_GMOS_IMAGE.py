@@ -9,6 +9,7 @@ from astrodata.data import AstroData
 from primitives_GEMINI import GEMINIPrimitives
 from primitives_GEMINI import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
+from gempy.science import gmosScience
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.instruments import girmfringe
@@ -62,11 +63,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try: 
@@ -78,52 +79,19 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             fringe = rc.getInputs(style='AD')[0]
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
-            for ad in rc.getInputs(style='AD'):
+            log.debug('Calling gmosScience.fringe_correct function')
+            
+            adOuts = gmosScience.fringe_correct(adIns=rc.getInputs(style='AD'), 
+                                         fringes=fringe,
+                                         fl_statscale=rc['fl_statscale'],
+                                         statsec=rc['statsec'], scale=rc['scale'],
+                                         suffix=rc['suffix'], 
+                                         logLevel=int(rc['logLevel']))           
+            
+            log.status('gmosScience.fringe_correct completed successfully')
                 
-                # Loading up a dictionary with the input parameters for girmfringe
-                paramDict = {
-                             'inimage'        :ad,
-                             'fringe'         :fringe,
-                             'fl_statscale'   :rc['fl_statscale'],
-                             'statsec'        :rc['statsec'],
-                             'scale'          :rc['scale'],
-                             }
-                
-                # Logging values set in the parameters dictionary above
-                log.fullinfo('\nParameters being used for girmfringe '+
-                             'function:\n')
-                gemt.logDictParams(paramDict)
-                
-                # Calling the girmfringe function to perform the fringe 
-                # corrections, this function will return the corrected image as
-                # an AstroData instance
-                adOut = girmfringe.girmfringe(**paramDict)
-                
-                # Adding GEM-TLM(automatic) and RMFRINGE time stamps to the PHU     
-                adOut.historyMark(key='RMFRINGE', stomp=False)    
-                
-                log.fullinfo('************************************************'
-                             ,'header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             ,'header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('RMFRINGE = '+adOut.phuGetKeyValue('RMFRINGE'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')
-                
-                # Updating the file name with the suffix for this
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                adOut.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   suffix=rc['suffix'], 
-                                                   strip=False)
-                log.status('File name updated to '+adOut.filename)
-                rc.reportOutput(adOut)        
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)              
                 
             log.status('*FINISHED* fringe correcting the input data')
             
@@ -153,11 +121,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         
