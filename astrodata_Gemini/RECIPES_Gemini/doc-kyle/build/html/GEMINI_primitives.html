@@ -67,31 +67,6 @@ Structures.py module raise.</p>
 the hierarchy tree.  It inherits all the primitives to the level above
 , &#8216;PrimitiveSet&#8217;.</p>
 <dl class="method">
-<dt id="primitives_GEMINI.GEMINIPrimitives.ADUtoElectrons">
-<tt class="descname">ADUtoElectrons</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.ADUtoElectrons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.ADUtoElectrons" title="Permalink to this definition">¶</a></dt>
-<dd><p>This primitive will convert the inputs from having pixel 
-units of ADU to electrons.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
-create the output name(s).</li>
-<li><strong>logVerbose</strong> (<em>int. 
-This value can be set for each primitive individually 
-in a recipe only (ie. not in the parameter file). 
-If no value is specified during the recipe, the value 
-set during the call to reduce or its default (2) will 
-be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
 <dt id="primitives_GEMINI.GEMINIPrimitives.addDQ">
 <tt class="descname">addDQ</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.addDQ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.addDQ" title="Permalink to this definition">¶</a></dt>
 <dd><p>This primitive will create a numpy array for the data quality 
@@ -105,11 +80,11 @@ frame. The value of a pixel will be the sum of the following:
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>fl_nonlinear</strong> &#8211; Flag to turn checking for nonlinear pixels on/off</li>
 <li><strong>fl_saturated</strong> (<em>Python boolean (True/False), default is True</em>) &#8211; Flag to turn checking for saturated pixels on/off</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -134,9 +109,34 @@ variance = (read noise/gain)2 + max(data,0.0)/gain</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
+This value can be set for each primitive individually 
+in a recipe only (ie. not in the parameter file). 
+If no value is specified during the recipe, the value 
+set during the call to reduce or its default (2) will 
+be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="primitives_GEMINI.GEMINIPrimitives.adu_to_electrons">
+<tt class="descname">adu_to_electrons</tt><big>(</big><em>rc</em><big>)</big><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.adu_to_electrons" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will convert the inputs from having pixel 
+units of ADU to electrons.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -163,7 +163,7 @@ to the final file.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
 it automatically if there are VAR and DQ frames in the inputs.
@@ -172,7 +172,7 @@ and DQ frames exist, so, if the first does, then the
 rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
 <li><strong>fl_dqprop</strong> (<em>Python boolean (True/False)</em>) &#8211; propogate the current DQ values?</li>
 <li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median&#8217;.</em>) &#8211; type of combining method to use.</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -192,7 +192,7 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -216,9 +216,9 @@ input images.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -258,7 +258,7 @@ for stacking.</p>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>purpose</strong> (<em>string, either: &#8216;&#8217; for regular image stacking, 
 or &#8216;fringe&#8217; for fringe stacking.</em>) &#8211; </li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -292,7 +292,7 @@ default: True</em>) &#8211; Flag to indicate the images have been mosaic&#8217;d
 <li><strong>qa</strong> (<em>Python boolean (True/False)
 default: True</em>) &#8211; flag to use a grid of sub-windows for detecting the sources in 
 the image frames, rather than the entire frame all at once.</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -319,7 +319,7 @@ for one-file-at-a-time processing.</p>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>purpose</strong> (<em>string, either: &#8216;&#8217; for regular image stacking, 
 or &#8216;fringe&#8217; for fringe stacking.</em>) &#8211; </li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -339,7 +339,7 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -357,7 +357,7 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -375,7 +375,7 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -393,7 +393,7 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -416,7 +416,7 @@ the current inputs and &#8216;purpose&#8217; value.</p>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>purpose</strong> (<em>string, either: &#8216;&#8217; for regular image stacking, 
 or &#8216;fringe&#8217; for fringe stacking.</em>) &#8211; </li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -440,9 +440,9 @@ be update/created, followed by those that are instrument specific.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -470,12 +470,12 @@ ones if needed. If the data requires a MDF to be attached, use the
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>addMDF</strong> (<em>Python boolean (True/False)
 default: True</em>) &#8211; A flag to turn on/off appending the appropriate MDF 
 file to the inputs.</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -503,7 +503,7 @@ makeProcessedBias outputs and write them to disk in a storedcals folder.</p>
 <li><strong>clob</strong> (<em>Python boolean (True/False)
 default: False</em>) &#8211; Write over any previous file with the same name that
 all ready exists?</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -531,7 +531,7 @@ makeProcessedFlat outputs and write them to disk in a storedcals folder.</p>
 <li><strong>clob</strong> (<em>Python boolean (True/False)
 default: False</em>) &#8211; Write over any previous file with the same name that
 all ready exists?</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -559,13 +559,13 @@ repair it or not (eg. validateData(repair=True))
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>repair</strong> (<em>Python boolean (True/False)
 default: True</em>) &#8211; A flag to turn on/off repairing the data if there is a
 problem with it. 
 Note: this feature does not work yet.</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -583,10 +583,10 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
 <tt class="descname">writeOutputs</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GEMINI.html#GEMINIPrimitives.writeOutputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.writeOutputs" title="Permalink to this definition">¶</a></dt>
 <dd><p>A primitive that may be called by a recipe at any stage to
 write the outputs to disk.
-If postpend is set during the call to writeOutputs, any previous 
-postpends will be striped and replaced by the one provided.
+If suffix is set during the call to writeOutputs, any previous 
+suffixs will be striped and replaced by the one provided.
 examples: 
-writeOutputs(postpend= &#8216;_string&#8217;), writeOutputs(prepend= &#8216;_string&#8217;) 
+writeOutputs(suffix= &#8216;_string&#8217;), writeOutputs(prefix= &#8216;_string&#8217;) 
 or if you have a full file name in mind for a SINGLE file being 
 ran through Reduce you may use writeOutputs(outfilename=&#8217;name.fits&#8217;).</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -595,17 +595,17 @@ ran through Reduce you may use writeOutputs(outfilename=&#8217;name.fits&#8217;)
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>strip</strong> (<em>Python boolean (True/False)
-default: False</em>) &#8211; Strip the previously postpended strings off file name?</li>
+default: False</em>) &#8211; Strip the previously suffixed strings off file name?</li>
 <li><strong>clobber</strong> (<em>Python boolean (True/False)
 default: False</em>) &#8211; Write over any previous file with the same name that
 all ready exists?</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
-<li><strong>prepend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>prefix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>outfilename</strong> (<em>string</em>) &#8211; The full filename you wish the file to be written to.
 Note: this only works if there is ONLY ONE file in the inputs.</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 

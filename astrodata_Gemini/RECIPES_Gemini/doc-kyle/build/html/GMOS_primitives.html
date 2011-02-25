@@ -86,9 +86,9 @@ primitive sets where it belongs.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -115,7 +115,7 @@ with a Python routine to do the bias subtraction.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>fl_over</strong> (<em>Python boolean (True/False), default is False</em>) &#8211; Subtract the overscan?</li>
 <li><strong>fl_trim</strong> (<em>Python boolean (True/False), default is False. 
@@ -126,7 +126,7 @@ it automatically if there are VAR and DQ frames in the inputs.
 NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR 
 and DQ frames exist, so, if the first does, then the 
 rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -149,7 +149,7 @@ before this primitive is called.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -173,7 +173,7 @@ than my oversimplified checking the bining alone.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -198,7 +198,7 @@ the binning alone.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -219,12 +219,12 @@ along with the VAR and DQ frames if they exist.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>fl_paste</strong> (<em>Python boolean (True/False), default is False</em>) &#8211; Paste images instead of mosaic?</li>
 <li><strong>interp_function</strong> (<em>string, options: &#8216;linear&#8217;, &#8216;nearest&#8217;, &#8216;poly3&#8217;, 
 &#8216;poly5&#8217;, &#8216;spine3&#8217;, &#8216;sinc&#8217;.</em>) &#8211; Type of interpolation function to use accross the chip gaps</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -251,7 +251,7 @@ appropriate options for the recipe system.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>fl_over</strong> (<em>Python boolean (True/False)</em>) &#8211; Subtract the overscan level from the frames?</li>
 <li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
@@ -259,7 +259,7 @@ create the output name(s).</li>
 it automatically if there are VAR and DQ frames in the inputs.
 NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
 so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -282,7 +282,7 @@ from the input images.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
 <li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
 <li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
@@ -290,7 +290,7 @@ it automatically if there are VAR and DQ frames in the inputs.
 NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
 so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
 <li><strong>biassec</strong> (<em>string. default: &#8216;[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]&#8217; is ideal for 2x2 GMOS data.</em>) &#8211; biassec parameter of format &#8216;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#8217;</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -313,9 +313,9 @@ from the input images and update their headers.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>postpend</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
 create the output name(s).</li>
-<li><strong>logVerbose</strong> (<em>int. 
+<li><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -338,7 +338,7 @@ specific.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 
@@ -358,7 +358,7 @@ specific data checks for all input files.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logVerbose</strong> (<em>int. 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
 This value can be set for each primitive individually 
 in a recipe only (ie. not in the parameter file). 
 If no value is specified during the recipe, the value 

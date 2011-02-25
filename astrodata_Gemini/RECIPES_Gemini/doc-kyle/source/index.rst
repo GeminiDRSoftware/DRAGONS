@@ -28,6 +28,14 @@ GMOS_IMAGE Primitives
    
    GMOS_IMAGE_primitives.rst   
    
+GMOS_SPECT Primitives
+===================== 
+
+.. toctree::
+   :maxdepth: 1   
+   
+   GMOS_SPECT_primitives.rst  
+   
 ========
 RECIPES:
 ========  
