@@ -12,6 +12,7 @@ from copy import deepcopy
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from gempy.instruments import geminiTools  as gemt
+from gempy.instruments import gmosTools  as gmost
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
@@ -45,8 +46,8 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
         vs the column based used right now, add the model, nbiascontam, ... params to the 
         functions inputs so the user can choose them for themselves.
 
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
+    :param adIns: Astrodata inputs to be converted to Electron pixel units
+    :type adIns: Astrodata objects, either a single or a list of objects
     
     :param fl_trim: Trim the overscan region from the frames?
     :type fl_trim: Python boolean (True/False)
@@ -80,6 +81,8 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
          to the logfile if it is not turned off.
     :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
 
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
     """
 
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
@@ -101,8 +104,12 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
     try:
         if adIns!=None: 
             # loading and bringing the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader()  
-                
+            pyraf, gemini, yes, no = pyrafLoader() 
+             
+            # Creating empty list of ad's to be returned that will be filled below
+            if len(adIns)>1:
+                adOuts=[]
+                    
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
                 if isinstance(adIns,list):
@@ -216,10 +223,10 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                     adOut.historyMark(key='OVERSUB', stomp=False)  
                     
                     # Updating logger with new GEM-TLM time stamp value
-                    log.fullinfo('************************************************'
+                    log.fullinfo('*'*50
                                  , category='header')
                     log.fullinfo('File = '+adOut.filename, category='header')
-                    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                    log.fullinfo('~'*50
                                  , category='header')
                     log.fullinfo('PHU keywords updated/added:\n', 'header')
                     log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
@@ -245,6 +252,167 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
         raise #('An error occurred while trying to run overscanSubtract') 
                 
                 
+def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
+            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+    """
+    This function uses the gmosTools function rmImgFringe to subtract the fringe 
+    frames from the input images.
+    
+    String representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+
+    FOR FUTURE
+        This function has many GMOS dependencies that would be great to work out
+        so that this could be made a more general function (say at the Gemini level).
+    
+    :param adIns: Astrodata input(s) to be fringe corrected
+    :type adIns: Astrodata objects, either a single or a list of objects
+    
+    :param fringes: Astrodata input fringe(s)
+    :type fringes: Astrodata objects, either a single or a list of objects
+    
+    :param fl_statscale: Scale by statistics rather than exposure time
+    :type fl_statscale: Boolean
+    
+    :param statsec: image section used to determine the scale factor 
+                    if fl_statsec=True
+    :type statsec: string of format '[EXTNAME,EXTVER][x1:x2,y1:y2]'
+                   default: If CCDSUM = '1 1' :[SCI,2][100:1900,100:4500]'
+                   If CCDSUM = '2 2' : [SCI,2][100:950,100:2250]'
+    
+    :param scale: Override auto-scaling if not 0.0
+    :type scale: real
+        
+    :param LogFile: A boolean to make it so no log file is created
+    :type LogFile: Python boolean (True/False)
+
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length as adIns.
+    
+    :param suffix: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
+    
+    :param logLevel: 
+         verbosity setting for the log messages to screen,
+         default is 'critical' messages only.
+         Note: independent of logLevel setting, all messages always go 
+         to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
+    """
+
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+
+    log.status('**STARTING** the overscanSubtract function')
+    
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+        
+    if not isinstance(fringes,list):
+        fringes=[fringes]
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')                
                 
+    try:
+        if adIns!=None: 
+            # Set up counter for looping through outNames/BPMs lists
+            count=0
+            
+            # Creating empty list of ad's to be returned that will be filled below
+            if len(adIns)>1:
+                adOuts=[]
+            
+            for ad in adIns:
                 
+                # Loading up a dictionary with the input parameters for rmImgFringe
+                paramDict = {
+                             'inimage'        :ad,
+                             'fringe'         :fringes[count],
+                             'fl_statscale'   :fl_statscale,
+                             'statsec'        :statsec,
+                             'scale'          :scale,
+                             'logLevel'       :logLevel
+                             }
+                
+                # Logging values set in the parameters dictionary above
+                log.fullinfo('\nParameters being used for rmImgFringe '+
+                             'function:\n')
+                gemt.logDictParams(paramDict)
+                
+                # Calling the rmImgFringe function to perform the fringe 
+                # corrections, this function will return the corrected image as
+                # an AstroData instance
+                adOut = gmost.rmImgFringe(**paramDict)
+                
+                # Adding GEM-TLM(automatic) and RMFRINGE time stamps to the PHU     
+                adOut.historyMark(key='RMFRINGE', stomp=False)    
+                adOut.filename = ad.filename
+                
+                log.fullinfo('*'*50
+                             ,'header')
+                log.fullinfo('file = '+ad.filename, category='header')
+                log.fullinfo('~'*50
+                             ,'header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                             category='header')
+                log.fullinfo('RMFRINGE = '+adOut.phuGetKeyValue('RMFRINGE'), 
+                             category='header')
+                log.fullinfo('-'*50
+                             , category='header')
+                
+                # Updating the file name with the suffix for this
+                # function and then reporting the new file 
+                if suffix!=None:
+                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
+                    if outNames!=None:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                              infilename=outNames[count],
+                                                          suffix=suffix, 
+                                                          strip=False, logLevel=logLevel)
+                    else:
+                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
+                                                          suffix=suffix, 
+                                                          strip=False, logLevel=logLevel)
+                elif suffix==None:
+                    if outNames!=None:
+                        if len(outNames)>1: 
+                            adOut.filename = outNames[count]
+                        else:
+                            adOut.filename = outNames
+                    else:
+                        raise('outNames and suffix parameters can not BOTH\
+                                                                    be None')
+                        
+                log.status('File name updated to '+adOut.filename)
+                
+                if (isinstance(adIns,list)) and (len(adIns)>1):
+                    adOuts.append(adOut)
+                else:
+                    adOuts = adOut
+                    
+                count=count+1
+                
+        else:
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the fringe_correct function')
+        # Return the outputs (list or single, matching adIns)
+        return adOuts
+    except:
+        raise #('An error occurred while trying to run fringe_correct')
                 
