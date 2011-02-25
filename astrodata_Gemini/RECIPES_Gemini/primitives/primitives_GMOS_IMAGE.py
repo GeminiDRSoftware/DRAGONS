@@ -60,15 +60,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         :param scale: Override auto-scaling if not 0.0
         :type scale: real
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try: 
             log.status('*STARTING* to fringe correct the images')
             
@@ -151,15 +151,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         :param method: type of combining method to use on the fringe frames.
         :type method: string, options: 'average', 'median
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
@@ -173,7 +173,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 clm=gemt.CLManager(adIns=rc.getInputs(style='AD'), 
                                    suffix=rc['suffix'],  
                                    funcName='makeFringeFrame', 
-                                   verbose=int(rc['logVerbose']))
+                                   logLevel=int(rc['logLevel']))
     
                 # Creating a dictionary of the parameters set by the CLManager  
                 # or the definition of the primitive 
@@ -186,10 +186,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     'logfile'     :clm.logfile(),  
                     # This is actually in the default dict but wanted to 
                     # show it again       
-                    'Stdout'      :gemt.IrafStdout(verbose=int(rc['logVerbose'])), 
+                    'Stdout'      :gemt.IrafStdout(logLevel=int(rc['logLevel'])), 
                     # This is actually in the default dict but wanted to 
                     # show it again    
-                    'Stderr'      :gemt.IrafStdout(verbose=int(rc['logVerbose'])),
+                    'Stderr'      :gemt.IrafStdout(logLevel=int(rc['logLevel'])),
                     # This is actually in the default dict but wanted to 
                     # show it again     
                     'verbose'     :yes                    
@@ -204,7 +204,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                     }
                 # Grabbing the default parameters dictionary and updating 
                 # it with the two above dictionaries
-                clParamsDict = CLDefaultParamsDict('gifringe', verbose=int(rc['logVerbose']))
+                clParamsDict = CLDefaultParamsDict('gifringe', logLevel=int(rc['logLevel']))
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
                 
@@ -261,15 +261,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             raise 
         yield rc  
 
-def CLDefaultParamsDict(CLscript, verbose=1):
+def CLDefaultParamsDict(CLscript, logLevel=1):
     """
     A function to return a dictionary full of all the default parameters 
     for each CL script used so far in the Recipe System.
     
-    :param verbose: Verbosity setting for log messages to the screen.
-    :type logVerbose: int. Default: 1
+    :param logLevel: Verbosity setting for log messages to the screen.
+    :type logLevel: int. Default: 1
     """
-    log = gemLog.getGeminiLog(verbose=verbose)
+    log = gemLog.getGeminiLog(logLevel=logLevel)
     
     # loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
@@ -313,7 +313,7 @@ def CLDefaultParamsDict(CLscript, verbose=1):
             'glogpars'  : '',             # Logging preferences
             'verbose'   : yes,            # Verbose output
             'status'    : 0,              # Exit status (0=good)
-            'Stdout'    :gemt.IrafStdout(verbose=verbose),
-            'Stderr'    :gemt.IrafStdout(verbose=verbose)
+            'Stdout'    :gemt.IrafStdout(logLevel=logLevel),
+            'Stderr'    :gemt.IrafStdout(logLevel=logLevel)
                        }
         return defaultParams

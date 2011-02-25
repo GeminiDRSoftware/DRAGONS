@@ -61,15 +61,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :param fl_saturated: Flag to turn checking for saturated pixels on/off
         :type fl_saturated: Python boolean (True/False), default is True
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try: 
             log.status('*STARTING* to add the DQ frame(s) to the input data')
             
@@ -87,7 +87,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             adOuts = geminiScience.add_dq(adIns=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
-                                         suffix=rc['suffix'], verbose=int(rc['logVerbose']))    
+                                         suffix=rc['suffix'], logLevel=int(rc['logLevel']))    
            
             log.status('geminiScience.addDQ completed successfully')
             
@@ -112,15 +112,15 @@ class GEMINIPrimitives(GENERALPrimitives):
                          create the output name(s).
         :type suffix: string
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
             
@@ -131,7 +131,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOuts = geminiScience.add_var(adIns=rc.getInputs(style='AD'), 
                                          suffix=rc['suffix'], 
-                                         verbose=int(rc['logVerbose']))    
+                                         logLevel=int(rc['logLevel']))    
            
             log.status('geminiScience.addVAR completed successfully')
             
@@ -153,15 +153,15 @@ class GEMINIPrimitives(GENERALPrimitives):
                          create the output name(s).
         :type suffix: string
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             log.status('*STARTING* to convert the pixel values from '+
                        'ADU to electrons')
@@ -171,7 +171,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOuts = geminiScience.ADUtoElectrons(adIns=rc.getInputs(style='AD'), 
                                                   suffix=rc['suffix'], 
-                                                  verbose=int(rc['logVerbose']))    
+                                                  logLevel=int(rc['logLevel']))    
            
             log.status('geminiScience.ADUtoElectrons completed successfully')
             
@@ -211,15 +211,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :param method: type of combining method to use.
         :type method: string, options: 'average', 'median'.
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """        
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* combine the images of the input data')
@@ -231,7 +231,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), 
                                               fl_vardq=rc['fl_vardq'], fl_dqprop=rc['fl_dqprop'], 
                                               method=rc['method'], suffix=rc['suffix'], 
-                                              verbose=int(rc['logVerbose'])) 
+                                              logLevel=int(rc['logLevel'])) 
                 
                 log.status('geminiScience.combine completed successfully')
             
@@ -264,15 +264,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         
     def display(self, rc):
         """
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             rc.rqDisplay(displayID=rc['displayID'])           
         except:
@@ -293,15 +293,15 @@ class GEMINIPrimitives(GENERALPrimitives):
                          create the output name(s).
         :type suffix: string
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             log.status('*STARTING* to flat correct the inputs')
             
@@ -317,7 +317,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOuts = geminiScience.flat_correct(adIns=rc.getInputs(style='AD'),     
                                          flats=processedFlat, suffix=rc['suffix'], 
-                                         verbose=int(rc['logVerbose']))           
+                                         logLevel=int(rc['logLevel']))           
             
             log.status('geminiScience.flatCorrect completed successfully')
               
@@ -358,15 +358,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type purpose: string, either: '' for regular image stacking, 
                        or 'fringe' for fringe stacking.
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         sidset = set()
         purpose=rc["purpose"]
         if purpose==None:
@@ -410,8 +410,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type qa: Python boolean (True/False)
                   default: True
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
@@ -422,7 +422,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # should eventually be split up into
         # separate primitives, i.e. detectSources and measureIQ.
         
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             log.status('*STARTING* to detect the sources'+
                        ' and measure the IQ of the inputs')
@@ -449,7 +449,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # Calling the gemiq function to detect the sources and then
                 # measure the IQ of the current image 
                 iqdata = getiq.gemiq( ad.filename, function=rc['function'], 
-                                      verbose=True, display=rc['display'], 
+                                      logLevel=True, display=rc['display'], 
                                       mosaic=rc['mosaic'], qa=rc['qa'])
                 
                 # End time for measuring IQ of current file
@@ -514,15 +514,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type purpose: string, either: '' for regular image stacking, 
                        or 'fringe' for fringe stacking.
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             log.status('*STARTING* to update/create the stack')
             # Requesting for the reduction context to perform an update
@@ -548,15 +548,15 @@ class GEMINIPrimitives(GENERALPrimitives):
     
     def showCals(self, rc):
         """
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         if str(rc['showcals']).lower() == 'all':
             num = 0
             # print 'pG256: showcals=all', repr (rc.calibrations)
@@ -581,15 +581,15 @@ class GEMINIPrimitives(GENERALPrimitives):
 
     def showInputs(self, rc):
         """
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         log.fullinfo('Inputs:',category='inputs')
         for inf in rc.inputs:
             log.fullinfo('  '+inf.filename, category='inputs')  
@@ -598,15 +598,15 @@ class GEMINIPrimitives(GENERALPrimitives):
 
     def showParameters(self, rc):
         """
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         rcparams = rc.paramNames()
         if (rc['show']):
             toshows = rc['show'].split(':')
@@ -637,15 +637,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type purpose: string, either: '' for regular image stacking, 
                        or 'fringe' for fringe stacking.
                        
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         sidset = set()
         purpose = rc["purpose"]
         if purpose == None:
@@ -670,7 +670,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
             
     def sleep(self, rc):
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         if rc['duration']:
             dur = float(rc['duration'])
         else:
@@ -689,21 +689,21 @@ class GEMINIPrimitives(GENERALPrimitives):
                          create the output name(s).
         :type suffix: string
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:   
             log.status('*STARTING* to standardize the headers')
             log.status('Standardizing observatory general headers')            
             for ad in rc.getInputs(style='AD'):
                 log.debug('calling gemt.stdObsHdrs for '+ad.filename)
-                gemt.stdObsHdrs(ad, verbose=int(rc['logVerbose']))
+                gemt.stdObsHdrs(ad, logLevel=int(rc['logLevel']))
                 log.status('Completed standardizing the headers for '+
                            ad.filename)
    
@@ -712,7 +712,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('Standardizing instrument specific headers')
             
             # Calling standarizeInstrumentHeaders primitive
-            rc.run('standardizeInstrumentHeaders(logVerbose='+str(rc['logVerbose'])+')') 
+            rc.run('standardizeInstrumentHeaders(logLevel='+str(rc['logLevel'])+')') 
             log.status('Instrument specific headers fixed')
             
             # Updating the file name with the suffix/outsuffix  and timestamps 
@@ -725,7 +725,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix=rc['suffix'], 
-                                                   strip=False, verbose= int(rc['logVerbose']))
+                                                   strip=False, logLevel= int(rc['logLevel']))
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -767,15 +767,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type addMDF: Python boolean (True/False)
                       default: True
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             log.status('*STARTING* to standardize the structure of input data')
             
@@ -784,7 +784,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             if rc['addMDF'] is True:
                 log.debug('Calling attachMDF primitive')
                 # Calling the attachMDF primitive
-                rc.run('attachMDF(logVerbose='+str(rc['logVerbose'])+')')
+                rc.run('attachMDF(logLevel='+str(rc['logLevel'])+')')
                 log.status('Successfully returned to '+
                            'standardizeStructure from the attachMDF primitive')
 
@@ -803,7 +803,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix=rc['suffix'], 
-                                                   strip=False, verbose= int(rc['logVerbose']))
+                                                   strip=False, logLevel= int(rc['logLevel']))
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -838,15 +838,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type clob: Python boolean (True/False)
                     default: False
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:  
             log.status('*STARTING* to store the processed bias by writing '+
                        'it to disk')
@@ -858,7 +858,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix='_preparedbias', 
                                                    strip=True, 
-                                                   verbose= int(rc['logVerbose']))
+                                                   logLevel= int(rc['logLevel']))
                 log.status('File name updated to '+ad.filename)
                 
                 # Adding a GBIAS time stamp to the PHU
@@ -888,15 +888,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type clob: Python boolean (True/False)
                     default: False
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:   
             log.status('*STARTING* to store the processed flat by writing it to disk')
             for ad in rc.getInputs(style='AD'):
@@ -907,7 +907,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix='_preparedflat', 
                                                    strip=True, 
-                                                   verbose= int(rc['logVerbose']))
+                                                   logLevel= int(rc['logLevel']))
                 log.status('File name updated to '+ad.filename)
                 
                 log.fullinfo('File written to = '+rc['storedflats']+'/'
@@ -922,7 +922,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
         
     def time(self, rc):
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         cur = datetime.now()
         
         elap = ''
@@ -954,15 +954,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type repair: Python boolean (True/False)
                       default: True
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:           
             if rc['repair'] is True:
                # This should repair the file if it is broken, but this function
@@ -975,7 +975,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.debug('Calling validateInstrumentData primitive')
             # Calling the validateInstrumentData primitive 
-            rc.run('validateInstrumentData(logVerbose='+str(rc['logVerbose'])+')')
+            rc.run('validateInstrumentData(logLevel='+str(rc['logLevel'])+')')
             log.status('Successfully returned to validateData'+
                        ' from the validateInstrumentData primitive') 
             
@@ -989,7 +989,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix='_validated', 
-                                                   strip=False, verbose= int(rc['logVerbose']))                
+                                                   strip=False, logLevel= int(rc['logLevel']))                
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -1044,15 +1044,15 @@ class GEMINIPrimitives(GENERALPrimitives):
                             Note: this only works if there is ONLY ONE file in the inputs.
         :type outfilename: string
         
-        :param logVerbose: Verbosity setting for log messages to the screen.
-        :type logVerbose: int. 
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: int. 
                           This value can be set for each primitive individually 
                           in a recipe only (ie. not in the parameter file). 
                           If no value is specified during the recipe, the value 
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(verbose=int(rc['logVerbose']))
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
             log.status('*STARTING* to write the outputs')
             
@@ -1072,7 +1072,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                     ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                         suffix=rc['suffix'], 
-                                        strip=rc['strip'], verbose= int(rc['logVerbose']))
+                                        strip=rc['strip'], logLevel= int(rc['logLevel']))
                     log.status('File name updated to '+ad.filename)
                     outfilename = os.path.basename(ad.filename)
                     
