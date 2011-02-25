@@ -63,11 +63,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try: 
@@ -114,11 +114,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
@@ -155,11 +155,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
@@ -213,11 +213,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """        
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
@@ -270,11 +270,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
@@ -299,11 +299,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
@@ -364,11 +364,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         sidset = set()
@@ -416,11 +416,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         #@@FIXME: Detecting sources is done here as well. This 
         # should eventually be split up into
@@ -430,72 +430,23 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             log.status('*STARTING* to detect the sources'+
                        ' and measure the IQ of the inputs')
-            # Importing getiq module to perform the source detection and IQ
-            # measurements of the inputs
-            from iqtool.iq import getiq
             
-            # Initializing a total time sum variable for logging purposes 
-            total_IQ_time = 0
+            log.debug('Calling geminiScience.measure_iq function')
             
-            for ad in rc.getInputs(style='AD'):
-                # Check that the files being processed are in the current 
-                # working directory, as that is a requirement for getiq to work
-                if os.path.dirname(ad.filename) != '':
-                    log.critical('The inputs to measureIQ must be in the'+
-                                 ' pwd for it to work correctly')
-                    raise GEMINIException('inputs to measureIQ were not in pwd')
-                    
-                # Start time for measuring IQ of current file
-                st = time.time()
-                
-                log.debug('Calling getiq.gemiq for input '+ad.filename)
-                
-                # Calling the gemiq function to detect the sources and then
-                # measure the IQ of the current image 
-                iqdata = getiq.gemiq( ad.filename, function=rc['function'], 
-                                      logLevel=True, display=rc['display'], 
-                                      mosaic=rc['mosaic'], qa=rc['qa'])
-                
-                # End time for measuring IQ of current file
-                et = time.time()
-                total_IQ_time = total_IQ_time + (et - st)
-                # Logging the amount of time spent measuring the IQ 
-                log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
-                log.fullinfo('~'*45, category='format')
-                
-                # iqdata is list of tuples with image quality metrics
-                # (ellMean, ellSig, fwhmMean, fwhmSig)
-                # First check if it is empty (ie. gemiq failed in someway)
-                if len(iqdata) == 0:
-                    log.warning('Problem Measuring IQ Statistics, '+
-                                'none reported')
-                # If it all worked, then format the output and log it
-                else:
-                    # Formatting this output for printing or logging                
-                    fnStr = 'Filename:'.ljust(19)+ad.filename
-                    emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
-                    esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
-                    fmStr = 'FWHM Mean:'.ljust(19)+str(iqdata[0][2])
-                    fsStr = 'FWHM Sigma:'.ljust(19)+str(iqdata[0][3])
-                    sStr = 'Seeing:'.ljust(19)+str(iqdata[0][2])
-                    psStr = 'PixelScale:'.ljust(19)+str(ad.pixel_scale())
-                    vStr = 'VERSION:'.ljust(19)+'None' #$$$$$ made on ln12 of ReductionsObjectRequest.py, always 'None' it seems.
-                    tStr = 'TIMESTAMP:'.ljust(19)+str(datetime.now())
-                    # Create final formated string
-                    finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'\
-                                    +fmStr+'\n'+fsStr+'\n'+sStr+'\n'+psStr+\
-                                    '\n'+vStr+'\n'+tStr+'\n'+'-'*45
-                    # Log final string
-                    log.stdinfo(finalStr, category='IQ')
-                    
-            # Logging the total amount of time spent measuring the IQ of all
-            # the inputs
-            log.debug('Total measureIQ time: '+repr(total_IQ_time), 
-                        category='IQ')
+            geminiScience.measure_iq(adIns=rc.getInputs(style='AD'),
+                                     function=rc['function'],
+                                     display=rc['display'],
+                                     mosaic=rc['mosaic'], qa=rc['qa'],
+                                     logLevel=int(rc['logLevel']))
+            
+            log.status('geminiScience.measure_iq completed successfully')
+              
+            # Reporting the original files through to the reduction context
+            rc.reportOutput(rc.getInputs(style='AD'))           
             
             log.status('*FINISHED* measuring the IQ of the inputs')
         except:
-            log.critical('There was a problem combining '+rc.inputsAsStr())
+            log.critical('There was a problem measuring the IQ of '+rc.inputsAsStr())
             raise 
         yield rc
  
@@ -520,11 +471,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
@@ -554,11 +505,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         if str(rc['showcals']).lower() == 'all':
@@ -587,11 +538,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         log.fullinfo('Inputs:',category='inputs')
@@ -604,11 +555,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         rcparams = rc.paramNames()
@@ -643,11 +594,11 @@ class GEMINIPrimitives(GENERALPrimitives):
                        
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         sidset = set()
@@ -695,11 +646,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:   
@@ -773,11 +724,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
@@ -844,11 +795,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:  
@@ -894,11 +845,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:   
@@ -960,11 +911,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:           
@@ -1050,11 +1001,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+                        This value can be set for each primitive individually 
+                        in a recipe only (ie. not in the parameter file). 
+                        If no value is specified during the recipe, the value 
+                        set during the call to reduce or its default (2) will 
+                        be used.
         """
         log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
         try:
