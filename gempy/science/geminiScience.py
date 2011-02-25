@@ -60,7 +60,7 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
-    log.status('**STARTING** the ADUtoElectrons function')
+    log.status('**STARTING** the adu_to_electrons function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -185,11 +185,11 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
                 count=count+1
         else:
             raise('The parameter "adIns" must not be None')
-        log.status('**FINISHED** the ADUtoElectrons function')
+        log.status('**FINISHED** the adu_to_electrons function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise('An error occurred while trying to run ADUtoElectrons')
+        raise('An error occurred while trying to run adu_to_electrons')
     
     
 def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=None, 
@@ -249,7 +249,7 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
-    log.status('**STARTING** the addDQ function')
+    log.status('**STARTING** the add_dq function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -397,11 +397,11 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
         else:
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the addDQ function')
+        log.status('**FINISHED** the add_dq function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run addDQ')
+        raise ('An error occurred while trying to run add_dq')
     
 
 def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, logName='', 
@@ -461,7 +461,7 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
-    log.status('**STARTING** the addBPM function')
+    log.status('**STARTING** the add_bpm function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -633,11 +633,11 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
         else:
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the addBPM function')
+        log.status('**FINISHED** the add_bpm function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run addBPM')
+        raise ('An error occurred while trying to run add_bpm')
     
 
 def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
@@ -681,7 +681,7 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
-    log.status('**STARTING** the addVAR function')
+    log.status('**STARTING** the add_var function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -814,11 +814,11 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         else:
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the addVAR function')
+        log.status('**FINISHED** the add_var function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run addVAR')
+        raise ('An error occurred while trying to run add_var')
     
     
 def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logLevel=1, 
@@ -864,7 +864,7 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
-    log.status('**STARTING** the flatCorrect function')
+    log.status('**STARTING** the flat_correct function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -963,12 +963,12 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
         else:
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the flatCorrect function')
+        log.status('**FINISHED** the flat_correct function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run flatCorrect')
+        raise ('An error occurred while trying to run flat_correct')
     
 def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
@@ -1012,7 +1012,7 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         # Use default logName 'gemini.log'
         log=gemLog.getGeminiLog(logLevel=logLevel, noLogFile=noLogFile)
         
-    log.status('**STARTING** the overscanTrim function')
+    log.status('**STARTING** the overscan_trim function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -1130,12 +1130,12 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         else:
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the overscanTrim function')
+        log.status('**FINISHED** the overscan_trim function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run overscanTrim')
+        raise ('An error occurred while trying to run overscan_trim')
     
 ################################## CL Based functions #########################
 
@@ -1406,7 +1406,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
-    log.status('**STARTING** the biasCorrect function')
+    log.status('**STARTING** the bias_correct function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -1593,12 +1593,12 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
             log.critical('The parameter "adIns" must not be None')
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the biasCorrect function')
+        log.status('**FINISHED** the bias_correct function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise #('An error occurred while trying to run biasCorrect')    
+        raise ('An error occurred while trying to run bias_correct')    
                 
                 
                 
@@ -1658,7 +1658,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
-    log.status('**STARTING** the mosaicDetectors function')
+    log.status('**STARTING** the mosaic_detectors function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -1799,12 +1799,12 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
             log.critical('The parameter "adIns" must not be None')
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the mosaicDetectors function')
+        log.status('**FINISHED** the mosaic_detectors function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run mosaicDetectors') 
+        raise ('An error occurred while trying to run mosaic_detectors') 
                 
                 
 def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
@@ -1864,7 +1864,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     
     log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
-    log.status('**STARTING** the normalizeFlat function')
+    log.status('**STARTING** the normalize_flat function')
     
     if not isinstance(adIns,list):
         adIns=[adIns]
@@ -1997,12 +1997,12 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             log.critical('The parameter "adIns" must not be None')
             raise('The parameter "adIns" must not be None')
         
-        log.status('**FINISHED** the normalizeFlat function')
+        log.status('**FINISHED** the normalize_flat function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run normalizeFlat') 
+        raise ('An error occurred while trying to run normalize_flat') 
                 
                        
                 
