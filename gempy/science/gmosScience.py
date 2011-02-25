@@ -190,7 +190,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                              category='parameters')
                 # Loop through the parameters in the clSoftcodedParams 
                 # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams)
+                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                 
                 log.debug('Calling the gireduce CL script for inputs '+
                       clm.inputsAsStr())
@@ -223,11 +223,9 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                     adOut.historyMark(key='OVERSUB', stomp=False)  
                     
                     # Updating logger with new GEM-TLM time stamp value
-                    log.fullinfo('*'*50
-                                 , category='header')
+                    log.fullinfo('*'*50, category='header')
                     log.fullinfo('File = '+adOut.filename, category='header')
-                    log.fullinfo('~'*50
-                                 , category='header')
+                    log.fullinfo('~'*50, category='header')
                     log.fullinfo('PHU keywords updated/added:\n', 'header')
                     log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                                   category='header')
@@ -255,9 +253,11 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
 def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
             outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
-    This function uses the gmosTools function rmImgFringe to subtract the fringe 
-    frames from the input images.
+    This primitive will scale and subtract the fringe frame from the inputs.
+    It utilizes the Python re-written version of cl script girmfringe now called
+    rmImgFringe in gmosTools to do the work.
     
+    NOTE:
     String representing the name of the log file to write all log messages to
     can be defined, or a default of 'gemini.log' will be used.  If the file
     all ready exists in the directory you are working in, then this file will 
@@ -363,7 +363,7 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
                 # Logging values set in the parameters dictionary above
                 log.fullinfo('\nParameters being used for rmImgFringe '+
                              'function:\n')
-                gemt.logDictParams(paramDict)
+                gemt.logDictParams(paramDict,logLevel=logLevel)
                 
                 # Calling the rmImgFringe function to perform the fringe 
                 # corrections, this function will return the corrected image as
@@ -374,18 +374,15 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
                 adOut.historyMark(key='RMFRINGE', stomp=False)    
                 adOut.filename = ad.filename
                 
-                log.fullinfo('*'*50
-                             ,'header')
+                log.fullinfo('*'*50,'header')
                 log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~'*50
-                             ,'header')
+                log.fullinfo('~'*50,'header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header')
                 log.fullinfo('RMFRINGE = '+adOut.phuGetKeyValue('RMFRINGE'), 
                              category='header')
-                log.fullinfo('-'*50
-                             , category='header')
+                log.fullinfo('-'*50, category='header')
                 
                 # Updating the file name with the suffix for this
                 # function and then reporting the new file 
@@ -426,5 +423,204 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise #('An error occurred while trying to run fringe_correct')
+        raise ('An error occurred while trying to run fringe_correct')
+    
+def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median', 
+            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+    """
+    This function will create and return a single fringe image from all the inputs.
+    It utilizes the CL script gifringe to create the fringe image.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    :param adIns: Astrodata inputs to be combined
+    :type adIns: Astrodata objects, either a single or a list of objects
+    
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+                    it automatically if there are VAR and DQ frames in the inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
+                    so, if the first does, then the rest MUST also have them as well.
+    
+    :param method: type of combining method to use.
+    :type method: string, options: 'average', 'median'.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    :param suffix: string to add on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
+    
+    :param logLevel: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of logLevel setting, all messages always go 
+                    to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
+    """
+    
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+
+    log.status('**STARTING** the make_fringe_frame_imaging function')
+    
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
+    if (adIns!=None) and (outNames!=None):
+        if isinstance(outNames,list):
+            if len(adIns)!= len(outNames):
+                if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+    
+    try:
+        if adIns!=None:
+            # Set up counter for looping through outNames list
+            count=0
+            
+            # Ensuring there is more than one input to make a fringe frame from
+            if (isinstance(adIns,list)) and (len(adIns)>1):
                 
+                # loading and bringing the pyraf related modules into the name-space
+                pyraf, gemini, yes, no = pyrafLoader() 
+                 
+                # Creating empty list of ad's to be returned that will be filled below
+                if len(adIns)>1:
+                    adOuts=[]
+                        
+                # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
+                if fl_vardq=='AUTO':
+                    if isinstance(adIns,list):
+                        if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                            fl_vardq=yes
+                        else:
+                            fl_vardq=no
+                    else:
+                        if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                            fl_vardq=yes
+                        else:
+                            fl_vardq=no
+                else:
+                    if fl_vardq:
+                        fl_vardq=yes
+                    elif fl_vardq==False:
+                        fl_vardq=no
+                
+                # To clean up log and screen if multiple inputs
+                log.fullinfo('+'*50, category='format')                                 
+                    
+                # Preparing input files, lists, parameters... for input to 
+                # the CL script
+                clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
+                                   funcName='makeFringeFrame', logName=logName,  
+                                       logLevel=logLevel, noLogFile=noLogFile)
+                
+                # Check the status of the CLManager object, True=continue, False= issue warning
+                if clm.status:                     
+                
+                    # Parameters set by the gemt.CLManager or the definition 
+                    # of the primitive 
+                    clPrimParams = {
+                        # Retrieving the inputs as a list from the CLManager
+                        'inimages'    :clm.inputList(),
+                        # Maybe allow the user to override this in the future. 
+                        'outimage'    :clm.combineOutname(), 
+                        # This returns a unique/temp log file for IRAF  
+                        'logfile'     :clm.logfile(),  
+                        # This is actually in the default dict but wanted to 
+                        # show it again       
+                        'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+                        # This is actually in the default dict but wanted to 
+                        # show it again    
+                        'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
+                        # This is actually in the default dict but wanted to 
+                        # show it again     
+                        'verbose'     :yes                    
+                                  }
+        
+                    # Creating a dictionary of the parameters from the Parameter 
+                    # file adjustable by the user
+                    clSoftcodedParams = {
+                        'fl_vardq'      :gemt.pyrafBoolean(fl_vardq),
+                        'combine'       :method,
+                        'reject'        :'none',
+                                        }
+                    # Grabbing the default parameters dictionary and updating 
+                    # it with the two above dictionaries
+                    clParamsDict = CLDefaultParamsDict('gifringe', logLevel=logLevel)
+                    clParamsDict.update(clPrimParams)
+                    clParamsDict.update(clSoftcodedParams)
+                    
+                    # Logging the values in the soft and prim parameter dictionaries
+                    log.fullinfo('\nParameters set by the CLManager or dictated by '+
+                             'the definition of the primitive:\n', 
+                             category='parameters')
+                    gemt.logDictParams(clPrimParams,logLevel=logLevel)
+                    log.fullinfo('\nUser adjustable parameters in the parameters '+
+                                 'file:\n', category='parameters')
+                    gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+                    
+                    log.debug('Calling the gifringe CL script for input list '+
+                                  clm.inputList())
+                    
+                    gemini.gifringe(**clParamsDict)
+                    
+                    if gemini.gifringe.status:
+                        log.critical('gifringe failed for inputs '+rc.inputsAsStr())
+                        raise GMOS_IMAGEException('gifringe failed')
+                    else:
+                        log.status('Exited the gifringe CL script successfully')
+                        
+                    # Renaming CL outputs and loading them back into memory 
+                    # and cleaning up the intermediate temp files written to disk
+                    adOuts = clm.finishCL(combine=True)  
+                    
+                    # There is only one at this point so no need to perform a loop
+                    # CLmanager outputs a list always, so take the 0th
+                    adOut = adOuts[0]
+                    
+                    # Adding a GEM-TLM (automatic) and FRINGE time stamps 
+                    # to the PHU
+                    adOut.historyMark(key='FRINGE',stomp=False)
+                    # Updating logger with updated/added time stamps
+                    log.fullinfo('*'*50,'header')
+                    log.fullinfo('file = '+adOut.filename, category='header')
+                    log.fullinfo('~'*50, 'header')
+                    log.fullinfo('PHU keywords updated/added:\n', category='header')
+                    log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+                                 category='header')
+                    log.fullinfo('FRINGE = '+adOut.phuGetKeyValue('FRINGE'), 
+                                 category='header')
+                    log.fullinfo('-'*50, category='header')
+                else:
+                    log.critical('One of the inputs has not been prepared,\
+                    the combine function can only work on prepared data.')
+                    raise('One of the inputs was not prepared')
+        else:
+            log.critical('The parameter "adIns" must not be None')
+            raise('The parameter "adIns" must not be None')
+        
+        log.status('**FINISHED** the make_fringe_frame_imaging function')
+        
+        # Return the outputs (list or single, matching adIns)
+        return adOut
+    except:
+        raise #('An error occurred while trying to run make_fringe_frame_imaging')
+    
+    
+    
+    
