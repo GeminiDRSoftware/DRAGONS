@@ -129,12 +129,33 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return qa_state
     
-    def ut_datetime(self, dataset, **args):
+    def ut_date(self, dataset, **args):
+        """
+        Return the ut_date value for GEMINI data
+        @param dataset: the data set
+        @type dataset: AstroData
+        @rtype: datetime.date
+        @returns: the UT DATE at the start of the observation
+
+        This function calls ut_datetime(strict=True, dateonly=True)
+        so will return a valid UT DATE if possible.
+        """
+        return self.ut_datetime(dataset, strict=True, dateonly=True)
+
+    def ut_datetime(self, dataset, strict = False, dateonly = False, timeonly = False, **args):
         """
         Return the ut_datetime value for GEMINI data
         @param dataset: the data set
         @type dataset: AstroData
-        @rtype: datetime.datetime
+        @param strict: if set to True, will not try to guess date or time
+        @type strict: Bool
+        @param dateonly: if set to True, will return a datetime.date
+        @type dateonly: Bool
+        @param timeonly: if set to True, will return a datetime.time
+        @param timeonly: Bool
+        @rtype: datetime.datetime  (dateonly = False and timeonly = False)
+        @rtype: datetime.time (timeonly = True)
+        @rtype: datetime.date (dateonly = True)
         @returns: the UT date and time at the start of the observation
 
         This descriptor attempts to figure out the datetime
@@ -148,9 +169,20 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         interfaces, lack standard headers. Also the format and occurence of
         various headers has changed over time, even on the same instrument.
         
+        If strict is set to True, then we only determine the date or time 
+        from valid FITS keywords, and we cannot determine it, we return None
+
+        If dateonly or timeonly are set to True, then we return a datetime.date
+        or datetime.time object respectively, containing only the date or time
+        respectively. These two interplay with strict in the sense that if we are 
+        in strict mode and can determine a date but not a time, then this function will
+        return None unless the dateonly flag is set, in which case it will return the valid
+        date. the dateonly and timeonly flags are intended for use by the ut_date and
+        ut_time descriptors.
+
         """
         hdu = dataset.hdulist
- 
+
         # First, we try and figure out the date, looping through several
         # header keywords that might tell us. DATE-OBS can also give us a full
         # date-time combination, so we check for this too.
@@ -187,6 +219,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # OK, at this point, utdate_hdr should contain either an empty string
         # or a valid date string, ie YYYY-MM-DD
 
+        # If that's all we need, return it now
+        if(utdate_hdr and dateonly):
+            ut_datetime = dateutil.parser.parse(utdate_hdr+" 00:00:00")
+            return ut_datetime.date()
+
         # Get and validate the ut time header, if present. We try several
         # header keywords that might contain a ut time.
         for kw in [globalStdkeyDict['key_ut_time'], 'UT', 'TIME-OBS']:
@@ -207,6 +244,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # OK, at this point, uttime_hdr should contain either an empty string
         # or a valid UT time string, ie HH:MM:SS[.S...]
           
+        # If that's all we need, parse it and return it now
+        if(uttime_hdr and timeonly):
+            ut_datetime = dateutil.parser.parse("2000-01-01 "+uttime_hdr)
+            return ut_datetime.time()
+
         # OK, if we got both a date and a time, then we can go ahead
         # and stick them together then parse them into a datetime object
         if(utdate_hdr and uttime_hdr):
@@ -223,10 +265,15 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             #print "Trying to use MJD_OBS"
             mjd = hdu[0].header['MJD_OBS']
             if(mjd > 1):
+                # MJD zero is 1858-11-17T00:00:00.000 UTC
                 mjdzero = datetime.datetime(1858, 11, 17, 0, 0, 0, 0, None)
                 mjddelta = datetime.timedelta(mjd)
                 ut_datetime = mjdzero + mjddelta
                 #print "determined ut_datetime from MJD_OBS"
+                if(dateonly):
+                    return ut_datetime.date()
+                if(timeonly):
+                    return ut_datetime.time()
                 return ut_datetime
         except KeyError:
             pass
@@ -238,11 +285,17 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             if(obsstart):
                 ut_datetime = dateutil.parser.parse(obsstart)
                 #print "Did it by OBSSTART"
+                if(dateonly):
+                    return ut_datetime.date()
+                if(timeonly):
+                    return ut_datetime.time()
                 return ut_datetime
         except KeyError:
             pass
 
-        # OK, now we're getting desperate
+        # OK, now we're getting a desperate. If we're in strict mode, we give up now
+        if(strict):
+            return None
 
         # If we didn't get a utdate, can we parse it from the framename header if there is one, or the filename?
         if(not utdate_hdr):
@@ -272,7 +325,18 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             #print "Assuming midnight. Bleah."
             uttime_hdr = "00:00:00"
 
-        # Again, if we've got a utdate and a ut
+
+        # OK, if all we wanted was a date, and we've got it, return it now
+        if(utdate_hdr and dateonly):
+            ut_datetime = dateutil.parser.parse(utdate_hdr+" 00:00:00")
+            return ut_datetime.date()
+
+        # OK, if all we wanted was a time, and we've got it, return it now
+        if(uttime_hdr and timeonly):
+            ut_datetime = dateutil.parser.parse("2000-01-01 "+uttime_hdr)
+            return ut_datetime.time()
+
+        # If we've got a utdate and a uttime, return it
         if(utdate_hdr and uttime_hdr):
             datetime_str = "%sT%s" % (utdate_hdr, uttime_hdr)
             #print "Got both a utdate and a uttime and made: %s" % datetime_str
@@ -282,30 +346,18 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Well, if we get here, we really have no idea
         return None
 
-
     def ut_time(self, dataset, **args):
         """
         Return the ut_time value for GEMINI data
         @param dataset: the data set
         @type dataset: AstroData
-        @rtype: string
-        @returns: the UT at the start of the observation (HH:MM:SS.S)
+        @rtype: datetime.time
+        @returns: the UT TIME at the start of the observation
+
+        This function calls ut_datetime(strict=True, timeonly=True)
+        so will return a valid UT TIME if possible.
         """
-        hdu = dataset.hdulist
-        ut_time = hdu[0].header[globalStdkeyDict['key_ut_time']]
-        
-        # Validate the result.
-        # The assumption is that the standard mandates HH:MM:SS[.S] 
-        # We don't enforce the number of decimal places
-        # These are somewhat basic checks, it's not completely rigorous
-        # Note that seconds can be > 59 when leap seconds occurs
-        
-        if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', ut_time):
-            ret_ut_time = str(ut_time)
-        else:
-            ret_ut_time = None
-        
-        return ret_ut_time
+        return self.ut_datetime(dataset, strict=True, timeonly=True)
     
     def wavefront_sensor(self, dataset, **args):
         """
