@@ -1290,7 +1290,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     log.fullinfo('\nParameters adjustable by the user:', category='parameters')
                     # Loop through the parameters in the clSoftcodedParams dictionary
                     # and log them
-                    gemt.logDictParams(clSoftcodedParams)
+                    gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                     
                     log.debug('Calling the gemcombine CL script for input list '+
                               clm.inputList())
@@ -1339,7 +1339,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
         # Return the outputs (list or single, matching adIns)
         return adOut
     except:
-        raise #('An error occurred while trying to run combine')
+        raise ('An error occurred while trying to run combine')
                 
                 
                 
@@ -1525,7 +1525,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                                  category='parameters')
                     # Loop through the parameters in the clSoftcodedParams 
                     # dictionary and log them
-                    gemt.logDictParams(clSoftcodedParams)
+                    gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                     
                     log.debug('calling the gireduce CL script for inputs '+
                                                             clm.inputsAsStr())
@@ -1746,7 +1746,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                              category='parameters')
                 # Loop through the parameters in the clSoftcodedParams 
                 # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams)
+                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                 
                 log.debug('calling the gmosaic CL script for inputs '+
                                                         clm.inputsAsStr())
@@ -1952,7 +1952,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                              category='parameters')
                 # Loop through the parameters in the clSoftcodedParams 
                 # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams)
+                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                 
                 log.debug('Calling the giflat CL script for inputs list '+
                       clm.inputList())
