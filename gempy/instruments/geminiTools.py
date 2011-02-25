@@ -92,7 +92,7 @@ def biassecStrTonbiascontam(biassec, ad):
                   'nbiascontam, so using default value = 4')
         return 4 
 
-def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='' , strip=False, verbose=1):
+def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='' , strip=False, logLevel=1):
     """ This function is for updating the file names of astrodata objects.
         
         It can be used in a few different ways.  For simple post/pre pending of
@@ -132,7 +132,7 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='' , strip=False
         result: 'testversion_N20020214S022.fits'
     
     """
-    log=gemLog.getGeminiLog(verbose=verbose) 
+    log=gemLog.getGeminiLog(logLevel=logLevel) 
 
     # Check there is a name to update
     if infilename=='':
@@ -166,12 +166,12 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='' , strip=False
     return outFileName
     
 
-def logDictParams(indict, verbose=1):
+def logDictParams(indict, logLevel=1):
     """ A function to log the parameters in a provided dictionary.  Main use
     is to log the values in the dictionaries of parameters for function 
     calls using the ** method.
     """
-    log=gemLog.getGeminiLog(verbose=verbose)
+    log=gemLog.getGeminiLog(logLevel=logLevel)
     for key in indict:
         log.fullinfo(repr(key)+' = '+repr(indict[key]), 
                      category='parameters')
@@ -237,7 +237,7 @@ def secStrToIntList(string):
     retl.append(int(Xs[1]))
     return retl
 
-def stdObsHdrs(ad, verbose=1):
+def stdObsHdrs(ad, logLevel=1):
     """ This function is used by standardizeHeaders in primitives_GEMINI.
         
         It will update the PHU header keys NSCIEXT, PIXSCALE
@@ -251,7 +251,7 @@ def stdObsHdrs(ad, verbose=1):
         @type ad: an AstroData instance
     
     """
-    log=gemLog.getGeminiLog(verbose=verbose) 
+    log=gemLog.getGeminiLog(logLevel=logLevel) 
     # Keywords that are updated/added for all Gemini PHUs 
     ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
                       'Number of science extensions')
@@ -327,7 +327,7 @@ def stdObsHdrs(ad, verbose=1):
         log.fullinfo('---------------------------------------------------', 
                      category='header')
 
-def stdObsStruct(ad, verbose=1):
+def stdObsStruct(ad, logLevel=1):
     """ This function is used by standardizeStructure in primitives_GEMINI.
     
         It currently checks that the SCI extensions header key EXTNAME = 'SCI' 
@@ -337,7 +337,7 @@ def stdObsStruct(ad, verbose=1):
         @type ad: an AstroData instance
     
     """
-    log=gemLog.getGeminiLog(verbose=verbose)    
+    log=gemLog.getGeminiLog(logLevel=logLevel)    
     # Formatting so logger looks organized for these messages
     log.fullinfo('****************************************************', 
                  category='header') 
@@ -377,10 +377,10 @@ class CLManager(object):
     adOuts = None
     status = None
     log=None
-    verbose=1
+    logLevel=1
      
     def __init__(self, adIns=None, outNames=None, suffix=None, funcName=None,
-                 logName=None, verbose=1, noLogFile=None):
+                 logName=None, logLevel=1, noLogFile=None):
         """This instantiates all the globally accessible variables and prepares
            the inputs for use in CL scripts by temporarily writing them to 
            disk with temp names.
@@ -399,9 +399,9 @@ class CLManager(object):
         # the caller to not proceed further.
         if self.status:
             # Get the REAL log file object
-            self.log = gemLog.getGeminiLog(logName=logName, verbose=verbose, 
+            self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
                                            noLogFile=noLogFile)
-            self.verbose=verbose
+            self.logLevel=logLevel
             self.suffix = suffix
             self._preCLcachestorenames = []
             self._preCLfilenames = []
@@ -422,9 +422,9 @@ class CLManager(object):
             outNames=[]
             for ad in self.inputs:
                 outNames.append(fileNameUpdater(adIn=ad, suffix=self.suffix, 
-                                                                strip=False, verbose= self.verbose))
+                                                                strip=False, logLevel= self.logLevel))
         else:
-            outNames = [fileNameUpdater(adIn=ad, suffix=self.suffix, strip=False, verbose= self.verbose)]
+            outNames = [fileNameUpdater(adIn=ad, suffix=self.suffix, strip=False, logLevel= self.logLevel)]
         return outNames
     
     def cacheStoreNames(self):
@@ -544,7 +544,7 @@ class CLManager(object):
             # Load up the preCLfilenames list with the input's filename
             self._preCLfilenames.append(ad.filename)
             # Strip off all postfixes and prefix filename with a unique prefix
-            name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, verbose= self.verbose)
+            name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, logLevel= self.logLevel)
             # store the unique name in preCLcachestorenames for later reference
             self._preCLcachestorenames.append(name)
             # Log the name of this temporary file being written to disk
@@ -664,10 +664,10 @@ class IrafStdout():
     """
     log=None
     
-    def __init__(self, verbose=1):
+    def __init__(self, logLevel=1):
         """ A function that is needed IRAF but not used in our wrapping its
         scripts"""
-        self.log = gemLog.getGeminiLog(verbose=verbose)
+        self.log = gemLog.getGeminiLog(logLevel=logLevel)
     
     def write(self, out):
         """ This function converts the IRAF console prints to logger calls.

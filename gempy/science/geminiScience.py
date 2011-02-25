@@ -17,7 +17,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='', 
-                                                    verbose=1, noLogFile=False):
+                                                    logLevel=1, noLogFile=False):
     """
     This function will convert the inputs from having pixel values in ADU to 
     that of electrons by use of the arith 'toolbox'.
@@ -47,18 +47,18 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: 
+    :param logLevel: 
          verbosity setting for the log messages to screen,
          default is 'critical' messages only.
-         Note: independent of verbose setting, all messages always go 
+         Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
     log.status('**STARTING** the ADUtoElectrons function')
     
@@ -149,11 +149,11 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -193,7 +193,7 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
     
     
 def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=None, 
-                                    logName='', verbose=1, noLogFile=False):
+                                    logName='', logLevel=1, noLogFile=False):
     """
     This function will create a numpy array for the data quality 
     of each SCI frame of the input data. This will then have a 
@@ -236,18 +236,18 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: 
+    :param logLevel: 
          verbosity setting for the log messages to screen,
          default is 'critical' messages only.
-         Note: independent of verbose setting, all messages always go 
+         Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
     log.status('**STARTING** the addDQ function')
     
@@ -371,11 +371,11 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -405,7 +405,7 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
     
 
 def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, logName='', 
-                                                    verbose=1, noLogFile=False):
+                                                    logLevel=1, noLogFile=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
     The BPM will be added as frames matching that of the SCI frames and ensure
@@ -448,18 +448,18 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: 
+    :param logLevel: 
           verbosity setting for the log messages to screen,
           default is 'critical' messages only.
-          Note: independent of verbose setting, all messages always go 
+          Note: independent of logLevel setting, all messages always go 
           to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
     log.status('**STARTING** the addBPM function')
     
@@ -607,11 +607,11 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -640,7 +640,7 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
         raise ('An error occurred while trying to run addBPM')
     
 
-def add_var(adIns, outNames=None, suffix=None, logName='', verbose=1, 
+def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
     """
     This function uses numpy to calculate the variance of each SCI frame
@@ -668,18 +668,18 @@ def add_var(adIns, outNames=None, suffix=None, logName='', verbose=1,
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: 
+    :param logLevel: 
         verbosity setting for the log messages to screen,
         default is 'critical' messages only.
-        Note: independent of verbose setting, all messages always go 
+        Note: independent of logLevel setting, all messages always go 
         to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
     log.status('**STARTING** the addVAR function')
     
@@ -788,11 +788,11 @@ def add_var(adIns, outNames=None, suffix=None, logName='', verbose=1,
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -821,7 +821,7 @@ def add_var(adIns, outNames=None, suffix=None, logName='', verbose=1,
         raise ('An error occurred while trying to run addVAR')
     
     
-def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', verbose=1, 
+def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
     """
     This function performs a flat correction by dividing the inputs by  
@@ -852,17 +852,17 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', verb
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: verbosity setting for the log messages to screen,
+    :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
+                    Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
         
     log.status('**STARTING** the flatCorrect function')
     
@@ -937,11 +937,11 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', verb
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -970,7 +970,7 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', verb
     except:
         raise ('An error occurred while trying to run flatCorrect')
     
-def overscan_trim(adIns, outNames=None, suffix=None, logName='', verbose=1, 
+def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
     """
     This function uses AstroData to trim the overscan region 
@@ -995,22 +995,22 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', verbose=1,
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: verbosity setting for the log messages to screen,
+    :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
+                    Note: independent of logLevel setting, all messages always go 
                           to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
     if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, verbose=verbose, 
+        log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
                                 noLogFile=noLogFile)
     else:
         # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(verbose=verbose, noLogFile=noLogFile)
+        log=gemLog.getGeminiLog(logLevel=logLevel, noLogFile=noLogFile)
         
     log.status('**STARTING** the overscanTrim function')
     
@@ -1104,11 +1104,11 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', verbose=1,
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                               infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, verbose=verbose)
+                                                          strip=False, logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -1141,7 +1141,7 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', verbose=1,
 
 
 def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average', 
-            outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
+            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will average and combine the SCI extensions of the 
     inputs. It takes all the inputs and creates a list of them and 
@@ -1182,17 +1182,17 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: verbosity setting for the log messages to screen,
+    :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
+                    Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
     log.status('**STARTING** the combine function')
     
@@ -1240,7 +1240,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
                 clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
-                                   funcName='combine', logName=logName, verbose=verbose, 
+                                   funcName='combine', logName=logName, logLevel=logLevel, 
                                    noLogFile=noLogFile)
                 
                 # Check the status of the CLManager object, True=continue, False= issue warning
@@ -1257,10 +1257,10 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                         'logfile'     :clm.logfile(),  
                         # This is actually in the default dict but wanted to 
                         # show it again       
-                        'Stdout'      :gemt.IrafStdout(verbose=verbose), 
+                        'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
                         # This is actually in the default dict but wanted to 
                         # show it again    
-                        'Stderr'      :gemt.IrafStdout(verbose=verbose),
+                        'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
                         # This is actually in the default dict but wanted to 
                         # show it again     
                         'verbose'     :yes,    
@@ -1277,7 +1277,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                                         }
                     # Grabbing the default parameters dictionary and updating 
                     # it with the two above dictionaries
-                    clParamsDict = CLDefaultParamsDict('gemcombine', verbose=verbose)
+                    clParamsDict = CLDefaultParamsDict('gemcombine', logLevel=logLevel)
                     clParamsDict.update(clPrimParams)
                     clParamsDict.update(clSoftcodedParams)
                     
@@ -1285,7 +1285,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     log.fullinfo('\nParameters set automatically:', category='parameters')
                     # Loop through the parameters in the clPrimParams dictionary
                     # and log them
-                    gemt.logDictParams(clPrimParams, verbose=verbose)
+                    gemt.logDictParams(clPrimParams, logLevel=logLevel)
                     
                     log.fullinfo('\nParameters adjustable by the user:', category='parameters')
                     # Loop through the parameters in the clSoftcodedParams dictionary
@@ -1344,7 +1344,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 
 def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
-                outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
+                outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will subtract the biases from the inputs using the 
     CL script gireduce.
@@ -1393,18 +1393,18 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: 
+    :param logLevel: 
           verbosity setting for the log messages to screen,
           default is 'critical' messages only.
-          Note: independent of verbose setting, all messages always go 
+          Note: independent of logLevel setting, all messages always go 
           to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
     log.status('**STARTING** the biasCorrect function')
     
@@ -1468,7 +1468,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                 # the CL script
                 clm=gemt.CLManager(adIns=ad, outNames=outName, suffix=suffix,  
                                    funcName='biasCorrect', logName=logName, 
-                                   verbose=verbose, noLogFile=noLogFile)
+                                   logLevel=logLevel, noLogFile=noLogFile)
                 
                 # Check the status of the CLManager object, True=continue, False= issue warning
                 if clm.status:               
@@ -1493,9 +1493,9 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                       # this input file
                       'bias'        :processedBias,   
                       # This is actually in the default dict but wanted to show it again  
-                      'Stdout'      :gemt.IrafStdout(verbose=verbose), 
+                      'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
                       # This is actually in the default dict but wanted to show it again
-                      'Stderr'      :gemt.IrafStdout(verbose=verbose), 
+                      'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
                       # This is actually in the default dict but wanted to show it again
                       'verbose'     :yes                
                                   }
@@ -1510,7 +1510,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                                        }
                     # Grabbing the default params dict and updating it 
                     # with the two above dicts
-                    clParamsDict = CLDefaultParamsDict('gireduce', verbose=verbose)
+                    clParamsDict = CLDefaultParamsDict('gireduce', logLevel=logLevel)
                     clParamsDict.update(clPrimParams)
                     clParamsDict.update(clSoftcodedParams)
                 
@@ -1519,7 +1519,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                                  category='parameters')
                     # Loop through the parameters in the clPrimParams dictionary
                     # and log them
-                    gemt.logDictParams(clPrimParams, verbose=verbose)
+                    gemt.logDictParams(clPrimParams, logLevel=logLevel)
                     
                     log.fullinfo('\nParameters adjustable by the user:', 
                                  category='parameters')
@@ -1603,7 +1603,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                 
                 
 def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
-                outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
+                outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will mosaic the SCI frames of the input images, 
     along with the VAR and DQ frames if they exist.  
@@ -1646,17 +1646,17 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: verbosity setting for the log messages to screen,
+    :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
+                    Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
     log.status('**STARTING** the mosaicDetectors function')
     
@@ -1702,7 +1702,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
             # the CL script
             clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
                                funcName='mosaicDetectors', logName=logName, 
-                               verbose=verbose, noLogFile=noLogFile)
+                               logLevel=logLevel, noLogFile=noLogFile)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status: 
@@ -1716,9 +1716,9 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                   # This returns a unique/temp log file for IRAF 
                   'logfile'     :clm.logfile(),
                   # This is actually in the default dict but wanted to show it again     
-                  'Stdout'      :gemt.IrafStdout(verbose=verbose), 
+                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
                   # This is actually in the default dict but wanted to show it again
-                  'Stderr'      :gemt.IrafStdout(verbose=verbose), 
+                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
                   # This is actually in the default dict but wanted to show it again
                   'verbose'     :yes                
                               }
@@ -1731,7 +1731,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                                   }
                 # Grabbing the default params dict and updating it with 
                 # the two above dicts
-                clParamsDict = CLDefaultParamsDict('gmosaic', verbose=verbose)
+                clParamsDict = CLDefaultParamsDict('gmosaic', logLevel=logLevel)
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)      
                     
@@ -1740,7 +1740,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                              category='parameters')
                 # Loop through the parameters in the clPrimParams dictionary
                 # and log them
-                gemt.logDictParams(clPrimParams, verbose=verbose)
+                gemt.logDictParams(clPrimParams, logLevel=logLevel)
                 
                 log.fullinfo('\nParameters adjustable by the user:', 
                              category='parameters')
@@ -1808,7 +1808,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                 
                 
 def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
-                outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
+                outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will combine the input flats (adIns) and then normalize them 
     using the CL script giflat.
@@ -1852,17 +1852,17 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: verbosity setting for the log messages to screen,
+    :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of verbose setting, all messages always go 
+                    Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
     log.status('**STARTING** the normalizeFlat function')
     
@@ -1908,7 +1908,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             # the CL script
             clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
                                funcName='normalizeFlat', logName=logName, 
-                               verbose=verbose, noLogFile=noLogFile)
+                               logLevel=logLevel, noLogFile=noLogFile)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:                 
@@ -1922,9 +1922,9 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                   # This returns a unique/temp log file for IRAF  
                   'logfile'     :clm.logfile(),         
                   # This is actually in the default dict but wanted to show it again
-                  'Stdout'      :gemt.IrafStdout(verbose=verbose),   
+                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel),   
                   # This is actually in the default dict but wanted to show it again  
-                  'Stderr'      :gemt.IrafStdout(verbose=verbose), 
+                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
                   # This is actually in the default dict but wanted to show it again    
                   'verbose'     :yes                    
                               }
@@ -1937,7 +1937,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                                    }
                 # Grabbing the default params dict and updating it 
                 # with the two above dicts
-                clParamsDict = CLDefaultParamsDict('giflat', verbose=verbose)
+                clParamsDict = CLDefaultParamsDict('giflat', logLevel=logLevel)
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
                 
@@ -1946,7 +1946,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                              category='parameters')
                 # Loop through the parameters in the clPrimParams dictionary
                 # and log them
-                gemt.logDictParams(clPrimParams, verbose=verbose)
+                gemt.logDictParams(clPrimParams, logLevel=logLevel)
                 
                 log.fullinfo('\nParameters adjustable by the user:', 
                              category='parameters')

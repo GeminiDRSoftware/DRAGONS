@@ -4,7 +4,7 @@
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 
-def stdInstHdrs(ad, verbose=1):  
+def stdInstHdrs(ad, logLevel=1):  
     """ A function used by StandardizeInstrumentHeaders in primitives_GMOS.
         
         It currently just adds the DISPAXIS header key to the SCI extensions.
@@ -15,7 +15,7 @@ def stdInstHdrs(ad, verbose=1):
     # Do the stuff to the headers that is for the MOS, those for IMAGE are 
     # taken care of with stdObsHdrs all ready 
     
-        log=gemLog.getGeminiLog(verbose=verbose)
+        log=gemLog.getGeminiLog(logLevel=logLevel)
     
         # Formatting so logger looks organized for these messages
         log.fullinfo('****************************************************', 
@@ -33,14 +33,14 @@ def stdInstHdrs(ad, verbose=1):
             log.fullinfo('---------------------------------------------------',
                          'header')
 
-def valInstData(ad, verbose=1):  
+def valInstData(ad, logLevel=1):  
     """A function used by validateInstrumentData in primitives_GMOS.
     
         It currently just checks if there are 1, 3, 6 or 12 SCI extensions 
         in the input. 
     
     """
-    log=gemLog.getGeminiLog(verbose=verbose)
+    log=gemLog.getGeminiLog(logLevel=logLevel)
     length=ad.countExts('SCI')
     # If there are 1, 3, 6, or 12 extensions, all good, if not log a critical 
     # message and raise an exception

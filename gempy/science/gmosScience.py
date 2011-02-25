@@ -18,7 +18,7 @@ from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
-            outNames=None, suffix=None, logName='', verbose=1, noLogFile=False):
+            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function uses the CL script gireduce to subtract the overscan 
     from the input images.
@@ -73,16 +73,16 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param verbose: 
+    :param logLevel: 
          verbosity setting for the log messages to screen,
          default is 'critical' messages only.
-         Note: independent of verbose setting, all messages always go 
+         Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type verbose: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
 
     """
 
-    log=gemLog.getGeminiLog(logName=logName, verbose=verbose, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
 
     log.status('**STARTING** the overscanSubtract function')
     
@@ -128,7 +128,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
             # the CL script
             clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
                                funcName='overscanSubtract', logName=logName,  
-                                   verbose=verbose, noLogFile=noLogFile)
+                                   logLevel=logLevel, noLogFile=noLogFile)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:                     
@@ -142,9 +142,9 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                   'logfile'     :clm.logfile(),      
                   'fl_over'     :yes, 
                   # This is actually in the default dict but wanted to show it again
-                  'Stdout'      :gemt.IrafStdout(verbose=verbose), 
+                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
                   # This is actually in the default dict but wanted to show it again
-                  'Stderr'      :gemt.IrafStdout(verbose=verbose), 
+                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
                   # This is actually in the default dict but wanted to show it again
                   'verbose'     :yes                
                               }
@@ -168,7 +168,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                                    }
                 # Grabbing the default params dict and updating it with 
                 # the two above dicts
-                clParamsDict = CLDefaultParamsDict('gireduce', verbose=verbose)
+                clParamsDict = CLDefaultParamsDict('gireduce', logLevel=logLevel)
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
                 
@@ -177,7 +177,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                              category='parameters')
                 # Loop through the parameters in the clPrimParams dictionary
                 # and log them
-                gemt.logDictParams(clPrimParams, verbose=verbose)
+                gemt.logDictParams(clPrimParams, logLevel=logLevel)
                 
                 log.fullinfo('\nParameters adjustable by the user:', 
                              category='parameters')
