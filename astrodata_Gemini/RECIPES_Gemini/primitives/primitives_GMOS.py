@@ -133,11 +133,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                        reduce command line call, only in the parameter file.
         
         :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                        it automatically if there are VAR and DQ frames in the inputs.
-                        NOTE: 'AUTO' uses the first input to determine if VAR 
-                        and DQ frames exist, so, if the first does, then the 
-                        rest MUST also have them as well.
+        :type fl_vardq: Python boolean (True/False)
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
@@ -426,11 +422,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         :type fl_trim: Python boolean (True/False)
         
         :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                        it automatically if there are VAR and DQ frames in the inputs.
-                        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                        so, if the first does, then the rest MUST also have them as well.
-            
+        :type fl_vardq: Python boolean (True/False)
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: int. 
@@ -480,10 +472,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         :type fl_trim: Python boolean (True/False)
         
         :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                        it automatically if there are VAR and DQ frames in the inputs.
-                        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                        so, if the first does, then the rest MUST also have them as well.
+        :type fl_vardq: Python boolean (True/False)
             
         :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
         :type biassec: string. default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' is ideal for 2x2 GMOS data.
