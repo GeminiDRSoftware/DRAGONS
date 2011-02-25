@@ -24,8 +24,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -54,8 +54,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -84,8 +84,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -114,8 +114,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -144,8 +144,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -174,8 +174,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -204,8 +204,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -234,8 +234,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -264,8 +264,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -294,8 +294,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -324,8 +324,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -354,8 +354,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -384,8 +384,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -414,8 +414,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -444,8 +444,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -474,8 +474,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -504,8 +504,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -534,8 +534,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -564,8 +564,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -594,8 +594,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -624,8 +624,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -654,8 +654,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -684,8 +684,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -714,8 +714,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -744,8 +744,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -774,8 +774,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -804,8 +804,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -834,8 +834,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -864,8 +864,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -894,8 +894,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -924,8 +924,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -954,8 +954,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -984,8 +984,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1014,8 +1014,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1044,8 +1044,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1074,8 +1074,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1104,8 +1104,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1134,8 +1134,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1164,8 +1164,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1194,8 +1194,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1224,8 +1224,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1254,8 +1254,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1284,8 +1284,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1314,8 +1314,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1344,8 +1344,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1374,8 +1374,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1404,8 +1404,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1434,8 +1434,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1464,8 +1464,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1494,8 +1494,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1524,8 +1524,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1554,8 +1554,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1584,8 +1584,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1614,8 +1614,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1644,8 +1644,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1674,8 +1674,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1704,8 +1704,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1734,8 +1734,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
@@ -1764,8 +1764,8 @@ class CalculatorInterface:
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
-                if isinstance(a, datetime):                    
-                    retval = stdDateString(a)
+                if isinstance(retval, datetime):
+                    retval = stdDateString(retval)
                 else:
                     retval = str(retval)
             return retval
