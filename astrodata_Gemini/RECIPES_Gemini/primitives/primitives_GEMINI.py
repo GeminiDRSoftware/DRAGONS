@@ -233,12 +233,16 @@ class GEMINIPrimitives(GENERALPrimitives):
                                               method=rc['method'], suffix=rc['suffix'], 
                                               logLevel=int(rc['logLevel'])) 
                 
-                log.status('geminiScience.combine completed successfully')
-            
-                # Reporting the outputs to the reduction context
-                rc.reportOutput(adOut)    
+                log.status('geminiScience.combine completed successfully')   
                 
-                log.status('*FINISHED* combining the images of the input data')
+            else:
+                log.status('makeFringeFrame was called with only one input, '+\
+                           'so it just passed the inputs through without doing'+\
+                           ' anything to them.')
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)
+            
+            log.status('*FINISHED* combining the images of the input data')
         except:
             log.critical('There was a problem combining '+rc.inputsAsStr())
             raise 
