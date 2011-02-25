@@ -111,10 +111,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         :type suffix: string
         
         :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                        it automatically if there are VAR and DQ frames in the inputs.
-                        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                        so, if the first does, then the rest MUST also have them as well.
+        :type fl_vardq: Python boolean (True/False)
         
         :param method: type of combining method to use on the fringe frames.
         :type method: string, options: 'average', 'median
@@ -127,103 +124,32 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
-        
-        # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
-        
+        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))        
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* to create a fringe frame from the inputs')
     
-                # Preparing input files, lists, parameters... for input to 
-                # the CL script
-                clm=gemt.CLManager(adIns=rc.getInputs(style='AD'), 
-                                   suffix=rc['suffix'],  
-                                   funcName='makeFringeFrame', 
-                                   logLevel=int(rc['logLevel']))
-    
-                # Creating a dictionary of the parameters set by the CLManager  
-                # or the definition of the primitive 
-                clPrimParams = {
-                    # Retrieving the inputs as a list from the CLManager
-                    'inimages'    :clm.inputList(),
-                    # Maybe allow the user to override this in the future. 
-                    'outimage'    :clm.combineOutname(), 
-                    # This returns a unique/temp log file for IRAF  
-                    'logfile'     :clm.logfile(),  
-                    # This is actually in the default dict but wanted to 
-                    # show it again       
-                    'Stdout'      :gemt.IrafStdout(logLevel=int(rc['logLevel'])), 
-                    # This is actually in the default dict but wanted to 
-                    # show it again    
-                    'Stderr'      :gemt.IrafStdout(logLevel=int(rc['logLevel'])),
-                    # This is actually in the default dict but wanted to 
-                    # show it again     
-                    'verbose'     :yes                    
-                              }
-    
-                # Creating a dictionary of the parameters from the Parameter 
-                # file adjustable by the user
-                clSoftcodedParams = {
-                    'fl_vardq'      :gemt.pyrafBoolean(rc['fl_vardq']),
-                    'combine'       :rc['method'],
-                    'reject'        :'none',
-                                    }
-                # Grabbing the default parameters dictionary and updating 
-                # it with the two above dictionaries
-                clParamsDict = CLDefaultParamsDict('gifringe', logLevel=int(rc['logLevel']))
-                clParamsDict.update(clPrimParams)
-                clParamsDict.update(clSoftcodedParams)
+                log.debug('Calling gmosScience.make_fringe_frame_imaging function')
+            
+                adOuts = gmosScience.make_fringe_frame_imaging(adIns=rc.getInputs(style='AD'), 
+                                             fl_vardq=rc['fl_vardq'],
+                                             method=rc['method'],
+                                             suffix=rc['suffix'], 
+                                             logLevel=int(rc['logLevel']))           
                 
-                # Logging the values in the soft and prim parameter dictionaries
-                log.fullinfo('\nParameters set by the CLManager or dictated by '+
-                         'the definition of the primitive:\n', 
-                         category='parameters')
-                gemt.logDictParams(clPrimParams)
-                log.fullinfo('\nUser adjustable parameters in the parameters '+
-                             'file:\n', category='parameters')
-                gemt.logDictParams(clSoftcodedParams)
-                
-                log.debug('Calling the gifringe CL script for input list '+
-                              clm.inputList())
-                
-                gemini.gifringe(**clParamsDict)
-                
-                if gemini.gifringe.status:
-                    log.critical('gifringe failed for inputs '+rc.inputsAsStr())
-                    raise GMOS_IMAGEException('gifringe failed')
-                else:
-                    log.status('Exited the gifringe CL script successfully')
+                log.status('gmosScience.make_fringe_frame_imaging completed successfully')
                     
-                # Renaming CL outputs and loading them back into memory 
-                # and cleaning up the intermediate temp files written to disk
-                adOuts = clm.finishCL(combine=True)  
+                # Reporting the updated files to the reduction context
+                rc.reportOutput(adOuts)              
                 
-                # There is only one at this point so no need to perform a loop
-                # CLmanager outputs a list always, so take the 0th
-                adOut = adOuts[0]
-                
-                # Adding a GEM-TLM (automatic) and FRINGE time stamps 
-                # to the PHU
-                adOut.historyMark(key='FRINGE',stomp=False)
-                # Updating logger with updated/added time stamps
-                log.fullinfo('************************************************'
-                             ,'header')
-                log.fullinfo('file = '+adOut.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , 'header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('FRINGE = '+adOut.phuGetKeyValue('FRINGE'), 
-                             category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')      
-                
-                rc.reportOutput(adOut)  
-                
-                log.status('*FINISHED* creating the fringe image')
+            else:
+                log.status('makeFringeFrame was called with only one input, '+\
+                           'so it just passed the inputs through without doing'+\
+                           ' anything to them.')
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOuts)
+            
+            log.status('*FINISHED* creating the fringe image')
         except:
             log.critical("Problem creating fringe from "+rc.inputsAsStr())
             raise 
