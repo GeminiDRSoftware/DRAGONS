@@ -9,7 +9,8 @@ import os
 import pyfits as pf
 import numpy as np
 from copy import deepcopy
-
+import time
+from datetime import datetime
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from gempy.instruments import geminiTools  as gemt
@@ -2004,8 +2005,181 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     except:
         raise ('An error occurred while trying to run normalize_flat') 
                 
-                       
+def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
+               keepDats=False, logName='', logLevel=1, noLogFile=False):
+    """
+    This function will detect the sources in the input images and fit
+    both Gaussian and Moffat models to their profiles and calculate the 
+    Image Quality and seeing from this.
+    
+    Since the resultant parameters are formatted into one nice string and 
+    normally recorded in a logger message, the returned dictionary of these 
+    parameters may be ignored. BUT, if the user wishes to completely shut off
+    the logging, then the returned dictionary of the results can be useful.
+    The dictionary's format is:
+    {adIn1.filename:formatted results string for adIn1, 
+    adIn2.filename:formatted results string for adIn2,...}
+    
+    There are also .dat files that result from this function written to the 
+    current working directory under the names 'measure_iq'+adIn.filename+'.dat'.
+    ex: input filename 'N20100311S0090.fits', 
+    .dat filename 'measure_iqN20100311S0090.dat'
+    
+    NOTE:
+    A string representing the name of the log file to write all log messages to
+    can be defined, or a default of 'gemini.log' will be used.  If the file
+    all ready exists in the directory you are working in, then this file will 
+    have the log messages during this function added to the end of it.
+    
+    :param adIns: Astrodata inputs to have their image quality measured
+    :type adIns: Astrodata objects, either a single or a list of objects
+    
+    :param function: Function for centroid fitting
+    :type function: string, can be: 'moffat','gauss' or 'both'; 
+                    Default 'both'
+                    
+    :param display: Flag to turn on displaying the fitting to ds9
+    :type display: Python boolean (True/False)
+                   Default: True
+    
+    :param mosaic: Flag to indicate the images have been mosaic'd 
+                   (ie only 1 'SCI' extension in images)
+    :type mosaic: Python boolean (True/False)
+                  default: True
+    :param qa: flag to use a grid of sub-windows for detecting the sources in 
+               the image frames, rather than the entire frame all at once.
+    :type qa: Python boolean (True/False)
+              default: True
+    
+    :param keepDats: flag to keep the .dat files that provide detailed results found
+               while measuring the input's image quality.
+    :type keepDats: Python boolean (True/False)
+                    default: False
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length
+                    as adIns.
+    
+    :param suffix: string to add on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: string
+    
+    :param logLevel: verbosity setting for the log messages to screen,
+                    default is 'critical' messages only.
+                    Note: independent of logLevel setting, all messages always go 
+                          to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+    :param noLogFile: A boolean to make it so no log file is created
+    :type noLogFile: Python boolean (True/False)
+    """
+    
+    if logName!='':
+        log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                                noLogFile=noLogFile)
+    else:
+        # Use default logName 'gemini.log'
+        log=gemLog.getGeminiLog(logLevel=logLevel, noLogFile=noLogFile)
+        
+    log.status('**STARTING** the measure_iq function')
+    
+    if not isinstance(adIns,list):
+        adIns=[adIns]
+    
+    try:
+        if adIns!=None:
+            # Importing getiq module to perform the source detection and IQ
+            # measurements of the inputs
+            from iqtool.iq import getiq
+            
+            # Initializing a total time sum variable for logging purposes 
+            total_IQ_time = 0
+            
+            # Creating dictionary for output strings to be returned in
+            outDict = {}
+            
+            # Loop through the inputs to perform the non-linear and saturated
+            # pixel searches of the SCI frames to update the BPM frames into
+            # full DQ frames. 
+            for ad in adIns:                     
+                # Writing the input to disk under a temp name in the current 
+                # working directory for getiq to use to be deleted after getiq
+                tmpWriteName = 'measure_iq'+os.path.basename(ad.filename)
+                log.fullinfo('The inputs to measureIQ must be in the'+
+                             ' current working directory for it to work '+\
+                             'correctly, so writting it temperarily to file '+
+                             tmpWriteName)
+                ad.write(tmpWriteName, rename=False)
                 
+                # Start time for measuring IQ of current file
+                st = time.time()
+                
+                log.debug('Calling getiq.gemiq for input '+ad.filename)
+                
+                # Calling the gemiq function to detect the sources and then
+                # measure the IQ of the current image 
+                iqdata = getiq.gemiq(tmpWriteName, function=function, 
+                                      verbose=True, display=display, 
+                                      mosaic=mosaic, qa=qa)
+                
+                # End time for measuring IQ of current file
+                et = time.time()
+                total_IQ_time = total_IQ_time + (et - st)
+                # Logging the amount of time spent measuring the IQ 
+                log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
+                log.fullinfo('~'*45, category='format')
+                
+                # If input was writen to temp file on disk, delete it
+                if os.path.exists(tmpWriteName):
+                    os.remove(tmpWriteName)
+                
+                # Deleting the .dat file from disk if requested
+                if not keepDats:
+                    datName = os.path.splitext(name)[0]+'.dat'
+                    os.remove(datName)
+                    
+                # iqdata is list of tuples with image quality metrics
+                # (ellMean, ellSig, fwhmMean, fwhmSig)
+                # First check if it is empty (ie. gemiq failed in someway)
+                if len(iqdata) == 0:
+                    log.warning('Problem Measuring IQ Statistics, '+
+                                'none reported')
+                # If it all worked, then format the output and log it
+                else:
+                    # Formatting this output for printing or logging                
+                    fnStr = 'Filename:'.ljust(19)+ad.filename
+                    emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
+                    esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
+                    fmStr = 'FWHM Mean:'.ljust(19)+str(iqdata[0][2])
+                    fsStr = 'FWHM Sigma:'.ljust(19)+str(iqdata[0][3])
+                    sStr = 'Seeing:'.ljust(19)+str(iqdata[0][2])
+                    psStr = 'PixelScale:'.ljust(19)+str(ad.pixel_scale())
+                    vStr = 'VERSION:'.ljust(19)+'None' #$$$$$ made on ln12 of ReductionsObjectRequest.py, always 'None' it seems.
+                    tStr = 'TIMESTAMP:'.ljust(19)+str(datetime.now())
+                    # Create final formated string
+                    finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'\
+                                    +fmStr+'\n'+fsStr+'\n'+sStr+'\n'+psStr+\
+                                    '\n'+vStr+'\n'+tStr+'\n'+'-'*45
+                    # Log final string
+                    log.stdinfo(finalStr, category='IQ')
+                    
+                    # appending formated string to the output dictionary
+                    outDict[ad.filename] = finalStr
+                    
+            # Logging the total amount of time spent measuring the IQ of all
+            # the inputs
+            log.debug('Total measureIQ time: '+repr(total_IQ_time), 
+                        category='IQ')
+            
+            #returning complete dictionary for use by the user if desired
+            return outDict
+        else:
+            raise('The parameter "adIns" must not be None')
+    except:
+        raise #('An error occurred while trying to run measure_iq')
                 
                 
                 
