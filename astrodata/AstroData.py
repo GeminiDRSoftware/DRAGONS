@@ -601,8 +601,8 @@ integrates other functionality.
     def infostr(self, asHTML = False):
         """
         :param asHTML: boolean that indicates if the string should be HTML
-                    formatted or not
-        :type fname: bool
+                       formatted or not
+        :type asHTML: bool
         
         The infostr(..) function is used to get a string ready for display
         either as plain text or HTML.  It provides AstroData-relative
