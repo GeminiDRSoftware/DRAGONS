@@ -9,7 +9,7 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 import tempfile
 
-def biassecStrTonbiascontam(biassec, ad):
+def biassecStrTonbiascontam(ad, biassec, logLevel=1):
     """ 
     This function works with nbiascontam() of the CLManager. 
     It will find the largest horizontal difference between biassec and 
@@ -23,7 +23,7 @@ def biassecStrTonbiascontam(biassec, ad):
     @type ad: AstroData instance
     
     """
-    log=gemLog.getGeminiLog() 
+    log=gemLog.getGeminiLog(logLevel=logLevel) 
     try:
         # Split up the input triple list into three separate ones
         ccdStrList = biassec.split('],[')
@@ -175,6 +175,28 @@ def logDictParams(indict, logLevel=1):
     for key in indict:
         log.fullinfo(repr(key)+' = '+repr(indict[key]), 
                      category='parameters')
+        
+def nbiascontam(adIns, biassec=None, logLevel=1):
+        """This function will find the largest difference between the horizontal 
+        component of every BIASSEC value and those of the biassec parameter. 
+        The returned value will be that difference as an integer and it will be
+        used as the value for the nbiascontam parameter used in the gireduce 
+        call of the overscanSubtract primitive.
+        
+        """
+        
+        # Prepare a stored value to be compared between the inputs
+        retval=0
+        # Loop through the inputs
+        for ad in adIns:
+            # Pass the retrieved value to biassecStrToBiasContam function
+            # to do the work in finding the difference of the biassec's
+            val = biassecStrTonbiascontam(ad, biassec, logLevel=logLevel)
+            # Check if value returned for this input is larger. Keep the largest
+            if val > retval:
+                retval = val
+        return retval
+    
 def observationMode(ad):
     """ 
     A basic function to determine if the input is one of 
@@ -482,27 +504,6 @@ class CLManager(object):
         
         """
         return self.templog.name
-        
-    def nbiascontam(self, biassec=None):
-        """This function will find the largest difference between the horizontal 
-        component of every BIASSEC value and those of the biassec parameter. 
-        The returned value will be that difference as an integer and it will be
-        used as the value for the nbiascontam parameter used in the gireduce 
-        call of the overscanSubtract primitive.
-        
-        """
-        
-        # Prepare a stored value to be compared between the inputs
-        retval=0
-        # Loop through the inputs
-        for ad in self.inputs:
-            # Pass the retrieved value to biassecStrToBiasContam function
-            # to do the work in finding the difference of the biassec's
-            val = biassecStrTonbiascontam(biassec, ad)
-            # Check if value returned for this input is larger. Keep the largest
-            if val > retval:
-                retval = val
-        return retval
     
     def obsmodeAdd(self,ad):
         """This is an internally used function to add the 'OBSMODE' key to the 

@@ -164,7 +164,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 
                 # Taking care of the biasec->nbiascontam param
                 if not biassec == '':
-                    nbiascontam = clm.nbiascontam(biassec=biassec)
+                    nbiascontam = gemt.nbiascontam(adIns=adIns, biassec=biassec, logLevel=logLevel)
                     log.fullinfo('nbiascontam parameter was updated to = '+
                                  str(nbiascontam))
                 else: 
