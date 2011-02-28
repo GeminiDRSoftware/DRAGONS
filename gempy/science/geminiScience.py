@@ -74,6 +74,12 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -259,6 +265,12 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
@@ -471,6 +483,12 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
@@ -695,6 +713,12 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None:
@@ -878,6 +902,12 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
     
     if flats==None:
         raise('There must be at least one processed flat provided, the "flats" parameter must not be None.')
@@ -1022,6 +1052,12 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
@@ -1204,6 +1240,12 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
@@ -1416,6 +1458,12 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
@@ -1672,6 +1720,12 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None: 
@@ -1874,6 +1928,12 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+

@@ -100,6 +100,12 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
     
     try:
         if adIns!=None: 
@@ -328,7 +334,13 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')                
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')               
                 
     try:
         if adIns!=None: 
@@ -482,6 +494,12 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
+                   raise ('Then length of the inputs, '+str(len(adIns))+
+                       ', did not match the length of the outputs, '+
+                       str(len(outNames))+
+                       ' AND no value of "suffix" was passed in')
+        if isInstance(outNames,str) and len(adIns)>1:
+            if suffix==None:
                    raise ('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
