@@ -738,7 +738,7 @@ integrates other functionality.
             if len(hdl) == 2:
                 retv = hdl[1].header
             else:
-                print "numexts = %d" % len(hdl)
+                #print "numexts = %d" % len(hdl)
                 raise gdExcept()
 
             self.relhdul()
@@ -901,8 +901,10 @@ n informed of the issue and
         if True:
             hdu = self.hdulist[1]
             nheader = hdu.header
-            nheader.update("extname", name, "added by AstroData")
-            nheader.update("extver", ver, "added by AstroData")
+            kafter = 'GCOUNT'
+            if nheader.get('TFIELDS'): kafter = 'TFIELDS'
+            nheader.update("extname", name, "added by AstroData", after=kafter)
+            nheader.update("extver", ver, "added by AstroData", after='EXTNAME')
             hdu.name = name
             hdu._extver = ver
             # print "AD553:", repr(hdu.__class__)
@@ -1029,7 +1031,9 @@ n informed of the issue and
 
                 for i in range(1, l):
                     hdu = hdul[i]
-                    hdu.header.update("EXTNAME", "SCI", "added by AstroData", after='GCOUNT')
+                    kafter = 'GCOUNT'
+                    if hdu.header.get('TFIELDS'): kafter = 'TFIELDS'
+                    hdu.header.update("EXTNAME", "SCI", "added by AstroData", after=kafter)
                     hdu.header.update("EXTVER", i, "added by AstroData", after='EXTNAME')
                     hdu.name = SCI
                     hdu._extver = i
