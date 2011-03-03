@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
    
-=================================
-Welcome to gempy's documentation!
-=================================
+========================
+User Level Functions
+========================
 
 Gemini 'User Level Function':
 =============================
@@ -39,6 +39,32 @@ Contents:
    
    developers_notes.rst
 
+============================
+Toolboxes/Library functions:
+============================
+
+GeminiTools:
+============
+
+Contents:
+
+.. toctree::
+   :maxdepth: 1
+
+.. automodule:: gempy.instruments.geminiTools
+   :members:
+   
+GmosTools:
+============
+
+Contents:
+
+.. toctree::
+   :maxdepth: 1
+
+.. automodule:: gempy.instruments.gmosTools
+   :members:   
+   
 
 Indices and tables
 ==================

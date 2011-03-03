@@ -16,11 +16,11 @@ def biassecStrTonbiascontam(ad, biassec, logLevel=1):
     BIASSEC for each SCI extension in a single input.  This value will 
     be the new bias contamination value for use in IRAF scripts.
     
-    @param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
-    @type biassec: string  
+    :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+    :type biassec: string  
     
-    @param ad: AstroData instance to calculate the bias contamination for
-    @type ad: AstroData instance
+    :param ad: AstroData instance to calculate the bias contamination for
+    :type ad: AstroData instance
     
     """
     log=gemLog.getGeminiLog(logLevel=logLevel) 
@@ -92,44 +92,47 @@ def biassecStrTonbiascontam(ad, biassec, logLevel=1):
                   'nbiascontam, so using default value = 4')
         return 4 
 
-def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='' , strip=False, logLevel=1):
-    """ This function is for updating the file names of astrodata objects.
+def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False,
+                     logLevel=1):
+    """
+    This function is for updating the file names of astrodata objects.
+    It can be used in a few different ways.  For simple post/pre pending of
+    the infilename string, there is no need to define adIn or strip. The 
+    current filename for adIn will be used if infilename is not defined. 
+    The examples below should make the main uses clear.
         
-        It can be used in a few different ways.  For simple post/pre pending of
-        the infilename string, there is no need to define adIn or strip. The 
-        current filename for adIn will be used if infilename is not defined. 
-        The examples below should make the main uses clear.
-        
-    Note: 1.if the input filename has a path, the returned value will have
-          path stripped off of it.
-          2. if strip is set to True, then adIn must be defined.
+    Note: 
+    1.if the input filename has a path, the returned value will have
+    path stripped off of it.
+    2. if strip is set to True, then adIn must be defined.
           
-    @param adIn: input astrodata instance having its filename being updated
-    @type adIn: astrodata object
+    :param adIn: input astrodata instance having its filename being updated
+    :type adIn: astrodata object
     
-    @param infilename: filename to be updated
-    @type infilename: string
+    :param infilename: filename to be updated
+    :type infilename: string
     
-    @param suffix: string to put between end of current filename and the 
-                    extension 
-    @type suffix: string
+    :param suffix: string to put between end of current filename and the 
+                   extension 
+    :type suffix: string
     
-    @param prefix: string to put at the beginning of a filename
-    @type prefix: string
+    :param prefix: string to put at the beginning of a filename
+    :type prefix: string
     
-    @param strip: Boolean to signal that the original filename of the astrodata
+    :param strip: Boolean to signal that the original filename of the astrodata
                   object prior to processing should be used. adIn MUST be 
                   defined for this to work.
-    @type strip: Boolean
+    :type strip: Boolean
     
-    ex. fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
-        result: 'N20020214S022_prepared.fits'
+    ex. 
+    fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
+    result: 'N20020214S022_prepared.fits'
         
-        fileNameUpdater(infilename='N20020214S022_prepared.fits', suffix='_biasCorrected')
-        result: 'N20020214S022_prepared_biasCorrected.fits'
+    fileNameUpdater(infilename='N20020214S022_prepared.fits', suffix='_biasCorrected')
+    result: 'N20020214S022_prepared_biasCorrected.fits'
         
-        fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
-        result: 'testversion_N20020214S022.fits'
+    fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
+    result: 'testversion_N20020214S022.fits'
     
     """
     log=gemLog.getGeminiLog(logLevel=logLevel) 
@@ -165,7 +168,33 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='' , strip=False
     outFileName = prefix+name+suffix+filetype
     return outFileName
     
-
+def listFileMaker(self, list=None, listName=None):
+        """ 
+        This function creates a list file of the input to IRAF.
+        If the list requested all ready exists on disk, then it's filename
+        pre pended by '@' is returned.
+        This function is utilized by the CLManager. 
+        
+        :param list: list of filenames to be written to a list file.
+        :type list: list of strings
+        
+        :param listName: Name of file list is to be written to.
+        :type listName: string
+        """
+        try:
+            if listName==None:
+                raise "listName can not be None, please provide a string"
+            elif os.path.exists(listName):
+                return '@'+listName
+            else:
+                fh = open(listName, 'w')
+                for item in list:
+                    fh.writelines(item + '\n')                    
+                fh.close()
+                return "@" + listName
+        except:
+            raise "Could not write inlist file for stacking." 
+        
 def logDictParams(indict, logLevel=1):
     """ A function to log the parameters in a provided dictionary.  Main use
     is to log the values in the dictionaries of parameters for function 
@@ -238,8 +267,8 @@ def secStrToIntList(string):
     """ A function to convert a string representing a list of integers to 
         an actual list of integers.
         
-        @param string: string to be converted
-        @type string: string of format '[#1:#2,#3:#4]'
+        :param string: string to be converted
+        :type string: string of format '[#1:#2,#3:#4]'
         
         returns list of ints [#1,#2,#3,#4]
     
@@ -269,8 +298,8 @@ def stdObsHdrs(ad, logLevel=1):
         In the SCI extensions the header keys GAIN, PIXSCALE, RDNOISE, BUNIT,
         NONLINEA, SATLEVEL and EXPTIME will be updated.
         
-        @param ad: astrodata instance to perform header key updates on
-        @type ad: an AstroData instance
+        :param ad: astrodata instance to perform header key updates on
+        :type ad: an AstroData instance
     
     """
     log=gemLog.getGeminiLog(logLevel=logLevel) 
@@ -355,8 +384,8 @@ def stdObsStruct(ad, logLevel=1):
         It currently checks that the SCI extensions header key EXTNAME = 'SCI' 
         and EXTVER matches that of descriptor values 
         
-        @param ad: astrodata instance to perform header key updates on
-        @type ad: an AstroData instance
+        :param ad: astrodata instance to perform header key updates on
+        :type ad: an AstroData instance
     
     """
     log=gemLog.getGeminiLog(logLevel=logLevel)    
@@ -378,125 +407,426 @@ def stdObsStruct(ad, logLevel=1):
         log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), category='header' )
         log.fullinfo('---------------------------------------------------', 
                      category='header') 
+        
+#---------------------------------OBJECTS/CLASES--------------------------------
 
 class CLManager(object):
     """This is a class that will take care of all the preparation and wrap-up 
         tasks needed when writing a primitive that wraps a IRAF CL routine.
         
     """
-    # The version of the names for input to the CL script
-    _preCLcachestorenames = [] 
     # The original names of the files at the start of the 
     # primitive which called CLManager
-    _preCLfilenames = [] 
+    _preCLimagenames = None
+    _preCLrefnames = None
+    # The version of the names for input to the CL script
+    imageInsCLdiskNames = None
+    refInsCLdiskNames = None
+    arrayInsCLdiskNames = None
     # Preparing other 'global' objects to be accessed throughout this class
     prefix = None
     suffix = None
-    listname = None
+    imageIns = None
+    arrayIns = None
+    refIns = None
+    imageInsListName = None
+    refInsListName = None
+    arrayInsListName = None
     templog = None
-    outNames = None
+    imageOuts = None
+    refOuts = None
+    arrayOuts = None
+    numArrayOuts = None
+    imageOutsNames = None
+    refOutsNames = None
+    arrayOutsNames = None
+    imageOutsListName = None
+    refOutsListName = None
+    arrayOutsListName = None
     funcName = None
-    adOuts = None
     status = None
+    combinedImages = None
+    fmt = '%s'
+    arrayOutsdtype = 'str'
     log=None
     logLevel=1
      
-    def __init__(self, adIns=None, outNames=None, suffix=None, funcName=None,
-                 logName=None, logLevel=1, noLogFile=None):
-        """This instantiates all the globally accessible variables and prepares
-           the inputs for use in CL scripts by temporarily writing them to 
-           disk with temp names.
+    def __init__(self, imageIns=None, refIns=None, arrayIns=None, suffix=None,  
+                  imageOutsNames=None, refOutsNames=None, numArrayOuts=None,
+                 combinedImages=False, funcName=None, fmt='%s',
+                 arrayOutsdtype='str', logName=None, logLevel=1, 
+                 noLogFile=False):
         """
-        if isinstance(adIns,list):
-            self.inputs = adIns
-        else:
-            self.inputs = [adIns]
-        # Check that the inputs have been prepared, if not then CL scripts might
+        This instantiates all the globally accessible variables and prepares
+        the inputs for use in CL scripts by temporarily writing them to 
+        disk with temporary names.  
+        
+        By using temporary filenames for the on disk copies 
+        of the inputs, we avoid name collisions.
+       
+        NOTE: all input images must have been prepared.
+        
+        :param imageIns: Input image(s). 
+        :type imageIns: astrodata object(s); Either as single instance, a list of them, or None.
+        
+        :param refIns: Input reference image(s). This may be used for any second set of input images.
+        :type adIns: astrodata object(s); Either as single instance, a list of them, or None.
+        
+        :param arrayIns: Input array(s) of object locations in the images of 
+                         adIns.
+        :type arrayIns: numpy array(s) OR Python lists-of-lists with string or int/float/double elements; 
+                        Either list of input arrays or None.
+                        Format: 
+                        [[[list1-x1,list1-y1,...],[list1-x2,list1-y2,...],...],
+                        [[list2-x1,list2-y1],[list2-x2,list2-y2,...],...],...]
+        
+        :param suffix: Desired suffix to be added to input filenames to create the output names.
+                       Use this option if not using the imageOutsNames/refOutsNames parameters for 
+                       the output names.
+        :type suffix: String
+        
+        :param imageOutsNames: Desired final name(s) of output image(s) from IRAF.
+        :type imageOutsNames: String(s); Either a single string, a list of them of length matching the 
+                             expected number of output images from IRAF, or None. If None,
+                             the list will be populated automatically by use of the 'combinedImages' 
+                             flag and post pending the 'suffix' parameter onto the input image names.
+                             
+                        
+        :param refOutsNames: Desired final name(s) of output reference image(s) from IRAF. 
+                            These could be used to name any second set of output images.
+        :type refOutsNames: String(s); Either a single string, a list of them of length matching the 
+                           expected number of output reference images from IRAF, or None.
+                           If None, no reference image outputs from IRAF will be handled by the CLManager.         
+        
+        :param numArrayOuts: The number of expected arrays to be output by IRAF.
+                             The output array names will be automatically created
+                             and stored in the publicly accessible variable
+                             'arrayOutsNames'.
+        :type numArrayOuts: int or None.
+                            If 0 or None, no array outputs from IRAF will be handled by the CLManager.
+        
+        :param combinedImages: A flag to indicated that the input images of imageIns
+                               will be combined to form one single image output from IRAF.
+                               The use of this parameter is optional and is  
+                               overrided by providing imageOutsNames. 
+        :type combinedImages: Python boolean (True/False)
+        
+        :param funcName: Name of the Python function using the CLManager. This is used
+                         to name the temporary files on disk for input to IRAF, so using 
+                         the function name makes it easier to track down any errors that might occur.
+        :type funcName: String
+        
+        :param fmt: format to be used for writing the elements of the arrays in 
+                    arrayIns to their text files on disk.
+        :type fmt: numpy format string. Default: '%s'.
+                   Refer to the numpy.savetxt description for more information. 
+                   url: http://docs.scipy.org/doc/numpy/reference/generated/numpy.savetxt.html#r230
+        
+        :param arrayOutsdtype: dtype for arrays loaded into arrayOuts from text
+                               files output by IRAF.
+        :type arrayOutsdtype: Python types ('str','bool','float','int'..) OR
+                              numpy data-types. Refer to Data type objects description
+                              from numpy found at:
+                              url: http://docs.scipy.org/doc/numpy/user/basics.types.html#
+        
+        :param logName: Name of the log file to write log messages to, if noLogFile=False.
+        :type logName: String
+        
+        :param logLevel: verbosity setting for the log messages to screen,
+                         default is 'critical' messages only.
+                         Note: independent of logLevel setting, all messages always go 
+                         to the logfile if it is not turned off.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    
+        :param noLogFile: A boolean to make it so no log file is created
+        :type noLogFile: Python boolean (True/False)
+        """
+        # Casting the two types of input images to lists for internal use, if not None
+        if imageIns!=None:
+            if isinstance(imageIns,list):
+                self.imageIns = imageIns
+            else:
+                self.imageIns = [imageIns]
+        if refIns!=None:  
+            if isinstance(refIns,list):
+                self.refIns = refIns
+            else:
+                self.refIns = [refIns]
+        # Check that the inputs have been prepared, else then CL scripts might
         # not work correctly.
         self.status = True
-        for ad in self.inputs:
-            if (ad.phuGetKeyValue('GPREPARE')==None) and (ad.phuGetKeyValue('PREPARED')==None):
-                self.status = False
+        if imageIns!=None:
+            for ad in self.imageIns:
+                if (ad.phuGetKeyValue('GPREPARE')==None) and \
+                   (ad.phuGetKeyValue('PREPARED')==None):
+                    self.status = False
+        if refIns!=None:
+            for ad in self.refIns:
+                if (ad.phuGetKeyValue('GPREPARE')==None) and \
+                   (ad.phuGetKeyValue('PREPARED')==None):
+                    self.status = False
         # All inputs prepared, then continue, else the False status will trigger
         # the caller to not proceed further.
         if self.status:
             # Get the REAL log file object
             self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
                                            noLogFile=noLogFile)
-            self.logLevel=logLevel
+            self.logLevel = logLevel
             self.suffix = suffix
-            self._preCLcachestorenames = []
-            self._preCLfilenames = []
-            self.outNames = outNames
+            if imageIns!=None:
+                self._preCLimagenames = []
+                self.imageInsCLdiskNames = []
+            if refIns!=None:
+                self._preCLrefnames = []
+                self.refInsCLdiskNames = []
+            if arrayIns!=None:
+                self.arrayInsCLdiskNames = []
+            self.imageOutsNames = imageOutsNames
+            self.refOutsNames = refOutsNames
+            self.combinedImages = combinedImages
             self.funcName = funcName
-            self.adOuts = []
+            self.arrayIns = arrayIns
+            self.numArrayOuts = numArrayOuts
+            self.fmt = fmt
+            self.arrayOutsdtype = arrayOutsdtype
             self.prefix = self.uniquePrefix()
             self.preCLwrites()
             # Create a temporary log file object
             self.templog = tempfile.NamedTemporaryFile() 
-            
-    def outNamesMaker(self):
-        """ A function to apply the provided suffix value to the end of 
-            each input filename and add to a list for use to name the output
-            files with.
-        """
-        if isinstance(self.inputs,list):
-            outNames=[]
-            for ad in self.inputs:
-                outNames.append(fileNameUpdater(adIn=ad, suffix=self.suffix, 
-                                                                strip=False, logLevel= self.logLevel))
-        else:
-            outNames = [fileNameUpdater(adIn=ad, suffix=self.suffix, strip=False, logLevel= self.logLevel)]
-        return outNames
-    
-    def cacheStoreNames(self):
-        """ Just a function to return the 'private' member variable 
-         _preCLcachestorenames.
-        """
-        return self._preCLcachestorenames
-        
-    def combineOutname(self):
-        """ This creates the output name for combine type IRAF tasks to write 
-            the combined output file to.  Uses the suffix value and
-        
-        """
-        #@@ REFERENCE IMAGE: for output name
-        return self.suffix+self._preCLcachestorenames[0]
          
     def finishCL(self, combine=False): 
-        """ Performs all the finalizing steps after CL script is ran. 
-         This is currently just an alias for postCLloads and might have 
-         more functionality in the future.
+        """ 
+         Performs all the finalizing steps after CL script is ran. 
          
-         """    
-        self.postCLloads(combine)
-        return self.adOuts  
+        """    
+        imageOuts, refOuts, arrayOuts = self.postCLloads()
+        return (imageOuts, refOuts, arrayOuts) 
           
-    def inputsAsStr(self):
-        """ This returns the list of temporary file names written to disk for 
-            the input files in the form of a list joined by commas for passing
-            into IRAF.
+    def imageInsFiles(self, type=''):
+        """
+        The function to get the temporary files written to disk for the imageIns
+        as either a string (or comma-separated string if input was a list), a 
+        list of the filenames, or a list file.  These files are required to 
+        be on disk by IRAF and the file names are automatically created when 
+        the CLManager is instantiated based on the 'funcName' parameter and 
+        the original file names of the 'imageIns' astrodata objects.
+        
+        :param type: Desired form of the temp filenames on disk for imageIns.
+        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+                    'list' for filenames as strings in a python list, or
+                    'listFile' for a IRAF type list file.
+        """
+        if type!='':
+            if type=='string':
+                return ','.join(self.imageInsCLdiskNames)
+            if type=='list':
+                return self.imageInsCLdiskNames
+            if type=='listFile':
+                imageInsListName = listFileMaker(list=self.imageInsCLdiskNames,
+                                    listName='imageList'+str(os.getpid())+self.funcName)
+                self.imageInsListName = imageInsListName
+                return imageInsListName
+        else:
+            self.log.error('Parameter "type" must not be an empty string'+
+                           '; choose either "string","list" or "listFile"')
+            
+    def imageOutsFiles(self, type=''):
+        """
+        This function is used to return the names of the images written to disk 
+        by IRAF in the form desired to pass into the IRAF routine call.
+        The names of these files can either be defined using
+        the 'imageOutsNames' parameter set during the CLManager initial call, or
+        automatically created in one of two ways:
+        1. Combine case: triggered by,
+        imageOutsNames=None, combinedImages=True, suffix=<any string>.
+        Then imageOutsNames will be a list with only the filename from the first 
+        input of imageIns post pended by the value of suffix.
+        2. Non-combine case: triggered by,
+        imageOutsNames=None, combinedImages=False, suffix=<any string>.
+        Then imageOutsNames will be a list with each file name of the imageIns  
+        post pended by the value of suffix.
+        
+        This function is simply for 'convenience' and can be ignored as long
+        as the imageOutsNames is set properly and its filenames are passed into 
+        IRAF properly.
+        
+        :param type: Desired form of the filenames on disk for imageOutsNames.
+        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+                    'list' for filenames as strings in a python list, or
+                    'listFile' for a IRAF type list file.
         
         """
-        return ','.join(self._preCLcachestorenames)
-    
-    def inputList(self):
-        """ This creates a list file of the inputs for use in combine type
-        primitives.
-        """
-        try:
-            filename = 'List'+str(os.getpid())+self.funcName
-            if os.path.exists(filename):
-                return filename
+        # Loading up the imageOutsNames list if not done yet and params are set 
+        # correctly, else error log message
+        if self.imageOutsNames==None:
+            self.imageOutsNames = []
+            if self.combinedImages and (self.suffix!=None):
+                name = fileNameUpdater(adIn=self.imageIns[0], 
+                                       suffix=self.suffix, 
+                                       logLevel=self.logLevel)
+                self.imageOutsNames.append(name)
+            elif (not self.combinedImages) and (self.suffix!=None):
+                for ad in self.imageIns:
+                    name = fileNameUpdater(adIn=ad, suffix=self.suffix, 
+                                           logLevel=self.logLevel)
+                    self.imageOutsNames.append(name) 
             else:
-                fh = open(filename, 'w')
-                for item in self._preCLcachestorenames:
-                    fh.writelines(item + '\n')                    
-                fh.close()
-                self.listname = filename
-                return "@" + self.listname
-        except:
-            raise "Could not write inlist file for stacking." 
+                self.log.error('The "automatic" setting of imageOutsNames can only work'+
+                        'if at least the suffix parameter is set')       
+        # returning the imageOutsNames contents in the form requested, else error
+        # log messsage
+        if type!='':
+            if type=='string':
+                return ','.join(self.imageOutsNames)
+            if type=='list':
+                return self.imageOutsNames
+            if type=='listFile':
+                imageOutsListName = listFileMaker(list=self.imageOutsNames,
+                                    listName='imageOutsList'+str(os.getpid())+self.funcName)
+                self.imageOutsListName = imageOutsListName
+                return imageOutsListName
+        else:
+            self.log.error('Parameter "type" must not be an empty string'+
+                           '; choose either "string","list" or "listFile"')
+                
+    def refOutsFiles(self, type=''):
+        """
+        This function is used to return the names of the reference images written 
+        to disk by IRAF in the form desired to pass into the IRAF routine call.
+        The names of these files can either be defined using
+        the 'refOutsNames' parameter set during the CLManager initial call, or
+        automatically created in one way:
+        Triggered by, refOutsNames=None and suffix=<any string>.
+        Then refOutsNames will be a list with each file name of the refIns  
+        post pended by the value of suffix.
+        
+        This function is simply for 'convenience' and can be ignored as long
+        as the refOutsNames is set properly and its filenames are passed into 
+        IRAF properly.
+        
+        :param type: Desired form of the filenames on disk for refOutsNames.
+        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+                    'list' for filenames as strings in a python list, or
+                    'listFile' for a IRAF type list file.
+        
+        """
+        # Loading up the refOutsNames list if not done yet and params are set 
+        # correctly, else error log message
+        if self.refOutsNames==None:
+            self.refOutsNames = []
+            if (self.suffix!=None):
+                for ad in self.refIns:
+                    name = fileNameUpdater(adIn=ad, suffix=self.suffix, 
+                                           logLevel=self.logLevel)
+                    self.refOutsNames.append(name) 
+            else:
+                self.log.error('The "automatic" setting of refOutsNames can only work'+
+                        'if at least the suffix parameter is set')       
+        # returning the refOutsNames contents in the form requested, else error
+        # log messsage
+        if type!='':
+            if type=='string':
+                return ','.join(self.refOutsNames)
+            if type=='list':
+                return self.refOutsNames
+            if type=='listFile':
+                refOutsListName = listFileMaker(list=self.refOutsNames,
+                                    listName='refOutsList'+str(os.getpid())+self.funcName)
+                self.refOutsListName = refOutsListName
+                return refOutsListName
+        else:
+            self.log.error('Parameter "type" must not be an empty string'+
+                           '; choose either "string","list" or "listFile"')             
+                
+        
+    def refInsFiles(self, type=''):
+        """
+        The function to get the temporary files written to disk for the refIns
+        as either a string (or comma-separated string if input was a list), a 
+        list of the filenames, or a list file. These files are required to 
+        be on disk by IRAF and the file names are automatically created when 
+        the CLManager is instantiated based on the 'funcName' parameter and 
+        the original file names of the 'refIns' astrodata objects.
+        
+        :param type: Desired form of the temp filenames on disk for refIns.
+        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+                    'list' for filenames as strings in a python list, or
+                    'listFile' for a IRAF type list file.
+        """
+        if type!='':
+            if type=='string':
+                return ','.join(self.refInsCLdiskNames)
+            if type=='list':
+                return self.refInsCLdiskNames
+            if type=='listFile':
+                refInsListName = listFileMaker(list=self.refInsCLdiskNames,
+                                    listName='refList'+str(os.getpid())+self.funcName)
+                self.refInsListName = refInsListName
+                return refInsListName
+        else:
+            self.log.error('Parameter "type" must not be an empty string'+
+                           '; choose either "string","list" or "listFile"')  
+             
+    def arrayInsFiles(self, type=''):
+        """
+        The function to get the temporary files written to disk for the arrayIns
+        as either a string (or comma-separated string if input was a list), a 
+        list of the filenames, or a list file. These files are required to 
+        be on disk by IRAF and the file names are automatically created when 
+        the CLManager is instantiated based on the 'funcName' parameter and 
+        the array location in the 'arrayIns' list.
+        
+        :param type: Desired form of the temp filenames on disk for arrayIns.
+        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+                    'list' for filenames as strings in a python list, or
+                    'listFile' for a IRAF type list file.
+        """
+        if type!='':
+            if type=='string':
+                return ','.join(self.arrayInsCLdiskNames)
+            if type=='list':
+                return self.arrayInsCLdiskNames
+            if type=='listFile':
+                arrayInsListName = listFileMaker(self.arrayInsCLdiskNames,
+                                                    listName='arrayList'+str(os.getpid())+self.funcName)
+                self.arrayInsListName = arrayInsListName
+        else:
+            self.log.error('Parameter "type" must not be an empty string'+
+                           '; choose either "string","list" or "listFile"')    
+    
+    def arrayOutsFiles(self, type=''):
+        """
+        This function is used to return the names of the array files written 
+        to disk by IRAF in the form desired to pass into the IRAF routine call.
+        The names of these files is automatically produced simply based
+        on the funcName parameter, the string '_arrayOut_' and the integer value
+        of the arrays location in the arrayOuts list.
+        
+        This function is simply for 'convenience' and can be ignored as long
+        as the filenames in the CLManger.array are passed into 
+        IRAF properly.
+        
+        :param type: Desired form of the filenames on disk for refOutsNames.
+        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+                    'list' for filenames as strings in a python list, or
+                    'listFile' for a IRAF type list file.
+        
+        """
+        # returning the arrayOutsNames contents in the form requested, else error
+        # log messsage
+        if type!='':
+            if type=='string':
+                return ','.join(self.arrayOutsNames)
+            if type=='list':
+                return self.arrayOutsNames
+            if type=='listFile':
+                arrayOutsListName = listFileMaker(list=self.arrayOutsNames,
+                                    listName='arrayOutsList'+str(os.getpid())+self.funcName)
+                self.arrayOutsListName = arrayOutsListName
+                return arrayOutsListName
+        else:
+            self.log.error('Parameter "type" must not be an empty string'+
+                           '; choose either "string","list" or "listFile"')
            
     def logfile(self):
         """ A function to return the name of the unique temporary log file to 
@@ -505,7 +835,7 @@ class CLManager(object):
         """
         return self.templog.name
     
-    def obsmodeAdd(self,ad):
+    def obsmodeAdd(ad):
         """This is an internally used function to add the 'OBSMODE' key to the 
            inputs for use by IRAF routines in the GMOS package.
         """
@@ -514,141 +844,186 @@ class CLManager(object):
                       'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
         return ad    
     
-    def obsmodeDel(self,ad):
+    def obsmodeDel(ad):
         """This is an internally used function to delete the 'OBSMODE' key from
            the outputs from IRAF routines in the GMOS package.
         """
         if 'GMOS' in ad.getTypes():
             del ad.getPHU().header['OBSMODE']
         return ad
-        
-    def preCLNames(self):
-        """Just a function to return the 'private' member 
-            variable _preCLfilenames.
-        
-        """
-        return self._preCLfilenames
    
     def preCLwrites(self):
         """ The function that writes the files in memory to disk with temporary 
-            names and saves the original names in a list.  The 'OBSMODE' phu
-            key will also be added if needed here.
+            names and saves the original and temporary names in lists and 
+            fills out the output file name lists for any output arrays if needed.  
+            The 'OBSMODE' PHU key will also be added to all input GMOS images
+            of imageIns and refIns.
         
         """
-        if self.outNames is None:
-            # load up a outNames list for use in postCLloads
-            self.outNames = self.outNamesMaker()
-        
-        for ad in self.inputs:            
-            # Adding the 'OBSMODE' phu key if needed
-            ad = self.obsmodeAdd(ad)
-            # Load up the preCLfilenames list with the input's filename
-            self._preCLfilenames.append(ad.filename)
-            # Strip off all postfixes and prefix filename with a unique prefix
-            name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, logLevel= self.logLevel)
-            # store the unique name in preCLcachestorenames for later reference
-            self._preCLcachestorenames.append(name)
-            # Log the name of this temporary file being written to disk
-            self.log.fullinfo('Temporary file on disk for input to CL: '+name)
-            # Write this file to disk with its unique filename 
-            ad.write(name, rename=False)
+        # preparing the input filenames for temperary input image files to 
+        # IRAF if needed along with saving the original astrodata filenames    
+        if self.imageIns!=None:
+            for ad in self.imageIns:            
+                # Adding the 'OBSMODE' phu key if needed
+                ad = self.obsmodeAdd(ad)
+                # Load up the _preCLcacheimagenames list with the input's filename
+                self._preCLimagenames.append(ad.filename)
+                # Strip off all postfixes and prefix filename with a unique prefix
+                name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, 
+                                       logLevel= self.logLevel)
+                # store the unique name in imageInsCLdiskNames for later reference
+                self.imageInsCLdiskNames.append(name)
+                # Log the name of this temporary file being written to disk
+                self.log.fullinfo('Temporary image file on disk for input to CL: '+name)
+                # Write this file to disk with its unique filename 
+                ad.write(name, rename=False)
+        # preparing the input filenames for temperary input ref image files to 
+        # IRAF if needed along with saving the original astrodata filenames
+        if self.refIns!=None:
+            for ad in self.refIns:            
+                # Adding the 'OBSMODE' phu key if needed
+                ad = self.obsmodeAdd(ad)
+                # Load up the _preCLcacheimagenames list with the input's filename
+                self._preCLrefnames.append(ad.filename)
+                # Strip off all postfixes and prefix filename with a unique prefix
+                name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, logLevel= self.logLevel)
+                # store the unique name in refInsCLdiskNames for later reference
+                self.refInsCLdiskNames.append(name)
+                # Log the name of this temporary file being written to disk
+                self.log.fullinfo('Temporary ref file on disk for input to CL: '+name)
+                # Write this file to disk with its unique filename 
+                ad.write(name, rename=False)
+        # preparing the input filenames for temperary input array files to 
+        # IRAF if needed          
+        if self.arrayIns!=None:
+            count=1
+            for array in self.arrayIns:
+                # creating temp name for array
+                name = self.prefix+'_arrayIn_'+str(count)+'.txt'
+                # store the unique name in arrayInsCLdiskNames for later reference
+                self.arrayInsCLdiskNames.append(name)
+                # Log the name of this temporary file being written to disk
+                self.log.fullinfo('Temporary ref file on disk for input to CL: '+name)
+                # Write this array to text file on disk with its unique filename 
+                numpy.savetxt(name, array, fmt=self.fmt)
+        # preparing the output filenames for temperary output array files from 
+        # IRAF if needed        
+        if (self.numArrayOuts!=None) and (self.numArrayOuts!=0):
+            # create empty list of array file names to be loaded in loop below
+            self.arrayOutsNames = []
+            for count in range(1,self.numArrayOuts+1):
+                # Create name of output array file
+                name = self.prefix+'_arrayOut_'+str(count)+'.txt'
+                # store the unique name in arrayOutsNames for later reference
+                self.arrayOutsNames.append(name)
+                # Log the name of this temporary file being written to disk
+                self.log.fullinfo('Temporary ref file on disk for input to CL: '+name)
                      
-    def postCLloads(self,combine=False):
-        """  This function takes care of loading the output files the IRAF
-            routine wrote to disk back into memory with the appropriate name.  
-            Then it will delete all the temporary files created by the 
-            CLManager.  If the 'OBSMODE' phu key was added during preCLwrites,
-            then it will be deleted here.
+    def postCLloads(self):
+        """ This function takes care of loading the image, reference and/or 
+            array files output by IRAF back into memory and deleting those disk 
+            files. 
+            Then it will delete ALL the temporary files created by the 
+            CLManager.  If the 'OBSMODE' phu key was added during preCLwrites
+            to the imageIns and/or refIns, then it will be deleted here.
         
         """
-        # Do the appropriate wrapping up for combine type primitives
-        if combine is True:
-            # If a combine type CL function is called, the output will be a 
-            # single file and thus no looping is required here.
-            
-            # The name that IRAF wrote the output to
-            cloutname = self.suffix+self._preCLcachestorenames[0]
-            # The name we want the file to be
-            outName = self.outNames[0] 
-            
-            # Renaming the IRAF written file to the name we want
-            os.rename(cloutname, outName )
-            
-            # Loading the renamed file into AstroData
-            ad = AstroData(outName)
-            
-            # Removing the 'OBSMODE' phu key if it is in there
-            ad = self.obsmodeDel(ad)
-            
-            # Reporting the renamed file to the reduction context and thus
-            # bringing it into memory
-            self.adOuts.append(ad)
-            
-            # Deleting the renamed file from disk
-            os.remove(outName)
-            # Removing the list file of the inputs 
-            os.remove(self.listname)
-            # Close, and thus delete, the temporary log object needed by IRAF
-            self.templog.close() 
-            # Logging files that were affected during wrap-up
-            self.log.fullinfo('CL outputs '+cloutname+' was renamed on disk to:\n'+
-                         outName)
-            self.log.fullinfo(outName+' was loaded into memory')
-            self.log.fullinfo(outName+' was deleted from disk')
-            self.log.fullinfo('Temporary list '+self.listname+' was deleted from disk')
-            self.log.fullinfo('Temporary log '+self.templog.name+' was deleted from disk')
-            # Removing the temporary files on disk that were inputs to IRAF
-            for i in range(0, len(self._preCLcachestorenames)):
-                # Name of file written to disk for input to CL script
-                storename = self._preCLcachestorenames[i]  
-                # Clearing renamed file ouput by CL
-                os.remove(storename) 
-                self.log.fullinfo(storename+' was deleted from disk')
-                
-        # Do the appropriate wrapping up for non-combine type primitives        
-        elif combine is False:
-            for i in range(0, len(self._preCLcachestorenames)):
-                # Name of file written to disk for input to CL script
-                storename = self._preCLcachestorenames[i]  
-                # Name of file CL wrote to disk
-                cloutname = self.suffix + storename 
-                
-                # Name I want the file to be dictated by outNames
-                outName = self.outNames[i]
-                
-                # Renaming the IRAF written file to the name we want
-                os.rename(cloutname, self.outNames[i] )
-                
-                # Loading the renamed file into AstroData
-                ad = AstroData(outName)
-                
+        # Loading any output images into imageOuts and 
+        # killing off any disk files caused by them
+        if self.imageOutsNames!=None:
+            self.log.fullinfo('loading output images into imageOuts and'+\
+                              ' removing temporary files from disk.')
+            for name in self.imageOutsNames:
+                # Loading the file into an astrodata object
+                ad = AstroData(name)
                 # Removing the 'OBSMODE' phu key if it is in there
                 ad = self.obsmodeDel(ad)
-                
-                # Reporting the renamed file to the reduction context and thus
-                # bringing it into memory
-                self.adOuts.append(ad)
-                # Clearing file written for CL input
-                os.remove(outName) 
-                # clearing renamed file output by CL
-                os.remove(storename) 
-                # Close, and thus delete, the temporary log needed by IRAF
-                self.templog.close()
-                # Logging files that were affected during wrap-up
-                self.log.fullinfo('CL outputs '+cloutname+
-                             ' was renamed on disk to:\n '+outName)
-                self.log.fullinfo(outName+' was loaded into memory')
-                self.log.fullinfo(outName+' was deleted from disk')
-                self.log.fullinfo(storename+' was deleted from disk')
-         
-    def rmStackFiles(self):
-        """A function to remove the filenames written to disk by 
-            setStackable.
-        
-        """
-        for file in self._preCLfilenames:
-            self.log.fullinfo('Removing file '+file+' from disk')
-            os.remove(file)
+                # appending the astrodata object to the imageOuts list to be
+                # returned
+                self.imageOuts.append(ad)
+                # Deleting the file from disk
+                os.remove(name)
+                self.log.fullinfo(name+' was loaded into memory')
+                self.log.fullinfo(name+' was deleted from disk')
+            if self.imageOutsListName!=None:
+                os.remove(self.imageOutsListName)
+                self.log.fullinfo('Temporary list '+self.imageOutsListName+
+                                  ' was deleted from disk')
+        # Loading any output images into imageOuts and 
+        # killing off any disk files caused by them
+        if self.refOutsNames!=None:
+            self.log.fullinfo('loading output reference images into refOuts'+\
+                              ' and removing temporary files from disk.')
+            for name in self.refOutsNames:
+                # Loading the file into an astrodata object
+                ad = AstroData(name)
+                # Removing the 'OBSMODE' phu key if it is in there
+                ad = self.obsmodeDel(ad)
+                # appending the astrodata object to the refOuts list to be
+                # returned
+                self.refOuts.append(ad)
+                # Deleting the file from disk
+                os.remove(name)
+                self.log.fullinfo(name+' was loaded into memory')
+                self.log.fullinfo(name+' was deleted from disk')
+            if self.refOutsListName!=None:
+                os.remove(self.refOutsListName)
+                self.log.fullinfo('Temporary list '+self.refOutsListName+
+                                  ' was deleted from disk') 
+        # Loading any output arrays into arrayOuts and 
+        # killing off any disk files caused by them 
+        if self.arrayOutsNames!=None:
+            self.log.fullinfo('loading output reference array into arrayOuts'+\
+                              ' and removing temporary files from disk.')
+            for name in self.arrayOutsNames:
+                # Loading the file into an array
+                ary = numpy.loadtxt(name, dtype=self.arrayOutsdtype)
+                # appending the array to the arrayOuts list to be returned
+                self.arrayOuts.append(ary)
+                # Deleting the file from disk
+                os.remove(name)
+                self.log.fullinfo(name+' was loaded into memory')
+                self.log.fullinfo(name+' was deleted from disk')
+            if self.arrayOutsListName!=None:
+                os.remove(self.arrayOutsListName)
+                self.log.fullinfo('Temporary list '+self.arrayOutsListName+
+                                  ' was deleted from disk') 
+        # Killing off any disk files associated with imageIns
+        if imageIns!=None:
+            self.log.fullinfo('Removing temporary files associated with '+\
+                              'imageIns from disk')
+            for name in self.imageInsCLdiskNames:
+                # Deleting the file from disk
+                os.remove(name)
+                self.log.fullinfo(name+' was deleted from disk')
+            if self.imageInsListName!=None:
+                os.remove(self.imageInsListName)
+                self.log.fullinfo('Temporary list '+self.imageInsListName+
+                                  ' was deleted from disk') 
+         # Killing off any disk files associated with refIns
+        if refIns!=None:
+            self.log.fullinfo('Removing temporary files associated with '+\
+                              'refIns from disk')
+            for name in self.refInsCLdiskNames:
+                # Deleting the file from disk
+                os.remove(name)
+                self.log.fullinfo(name+' was deleted from disk')
+            if self.refInsListName!=None:
+                os.remove(self.refInsListName)
+                self.log.fullinfo('Temporary list '+self.refInsListName+
+                                  ' was deleted from disk') 
+         # Killing off any disk files associated with arrayIns
+        if arrayIns!=None:
+            self.log.fullinfo('Removing temporary files associated with '+\
+                              'arrayIns from disk')
+            for name in self.arrayInsCLdiskNames:
+                # Deleting the file from disk
+                os.remove(name)
+                self.log.fullinfo(name+' was deleted from disk')
+            if self.arrayInsListName!=None:
+                os.remove(self.arrayInsListName)
+                self.log.fullinfo('Temporary list '+self.arrayInsListName+
+                                  ' was deleted from disk') 
             
     def uniquePrefix(self):
         """ uses the primitive name and the process ID to create a unique

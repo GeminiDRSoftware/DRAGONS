@@ -447,7 +447,7 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
            
     :param matchSize: A flag to use zeros and the key 'DETSEC' of the 'SCI'
                       extensions to match the size of the BPM arrays to those of
-                       fo the 'SCI' data arrays.
+                      for the 'SCI' data arrays.
     :type matchSize: Python boolean (True/False). Default: False.
                       
     :param outNames: filenames of output(s)
@@ -1029,7 +1029,7 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
                     Note: independent of logLevel setting, all messages always go 
-                          to the logfile if it is not turned off.
+                    to the logfile if it is not turned off.
     :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created
@@ -2112,7 +2112,7 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
               default: True
     
     :param keepDats: flag to keep the .dat files that provide detailed results found
-               while measuring the input's image quality.
+                     while measuring the input's image quality.
     :type keepDats: Python boolean (True/False)
                     default: False
     
@@ -2128,9 +2128,9 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
     :type logName: string
     
     :param logLevel: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always go 
-                          to the logfile if it is not turned off.
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if it is not turned off.
     :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
     
     :param noLogFile: A boolean to make it so no log file is created

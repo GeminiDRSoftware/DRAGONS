@@ -11,7 +11,6 @@ from astrodata.AstroData import AstroData
 
 def stdInstHdrs(ad, logLevel=1):  
     """ A function used by StandardizeInstrumentHeaders in primitives_GMOS.
-        
         It currently just adds the DISPAXIS header key to the SCI extensions.
     
     """
@@ -64,7 +63,8 @@ class GIRMFRINGEException:
         """This constructor takes a message to print to the user."""
         self.message = msg
     def __str__(self):
-        """This str conversion member returns the message given by the user 
+        """
+        This str conversion member returns the message given by the user 
         (or the default message) when the exception is not caught."""
         return self.message
 
@@ -75,23 +75,23 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
                 
     """Scale and subtract a fringe frame from GMOS gireduced image.
     
-    @param inimage: Input image
-    @type inimage: AstroData instance
+    :param inimage: Input image
+    :type inimage: AstroData instance
     
-    @param fringe: Fringe Frame
-    @type fringe: AstroData instance
+    :param fringe: Fringe Frame
+    :type fringe: AstroData instance
     
-    @param fl_statscale: Scale by statistics rather than exposure time
-    @type fl_statscale: Boolean
+    :param fl_statscale: Scale by statistics rather than exposure time
+    :type fl_statscale: Boolean
     
-    @param statsec: image section used to determine the scale factor 
+    :param statsec: image section used to determine the scale factor 
                     if fl_statsec=True
-    @type statsec: string of format '[EXTNAME,EXTVER][x1:x2,y1:y2]'
-    @default statsec: If CCDSUM = '1 1' :[SCI,2][100:1900,100:4500]'
+    :type statsec: string of format '[EXTNAME,EXTVER][x1:x2,y1:y2]'
+    :default statsec: If CCDSUM = '1 1' :[SCI,2][100:1900,100:4500]'
                       If CCDSUM = '2 2' : [SCI,2][100:950,100:2250]'
                       
-    @param scale: Override auto-scaling if not 0.0
-    @type scale: real 
+    :param scale: Override auto-scaling if not 0.0
+    :type scale: real 
     
     """    
     log=gemLog.getGeminiLog(logLevel=logLevel)
