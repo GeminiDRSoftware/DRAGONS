@@ -420,7 +420,7 @@ class CLManager(object):
     """
     # The original names of the files at the start of the 
     # primitive which called CLManager
-    _preCLimagenames = None
+    _preCLimageNames = None
     _preCLrefnames = None
     # The version of the names for input to the CL script
     imageInsCLdiskNames = None
@@ -606,7 +606,7 @@ class CLManager(object):
             self.suffix = suffix
             # start up global lists
             if imageIns!=None:
-                self._preCLimagenames = []
+                self._preCLimageNames = []
                 self.imageInsCLdiskNames = []
             if refIns!=None:
                 self._preCLrefnames = []
@@ -892,7 +892,13 @@ class CLManager(object):
         if 'GMOS' in ad.getTypes():
             del ad.getPHU().header['OBSMODE']
         return ad
-   
+    
+    def preCLimageNames(self):
+        """Just a simple function to return the value of the private member
+           variable _preCLimageNames that is a list of the filenames of imageIns.
+        """
+        return self._preCLimageNames
+    
     def preCLwrites(self):
         """ The function that writes the files in memory to disk with temporary 
             names and saves the original and temporary names in lists and 
@@ -907,8 +913,8 @@ class CLManager(object):
             for ad in self.imageIns:            
                 # Adding the 'OBSMODE' phu key if needed
                 ad = self.obsmodeAdd(ad)
-                # Load up the _preCLimagenames list with the input's filename
-                self._preCLimagenames.append(ad.filename)
+                # Load up the _preCLimageNames list with the input's filename
+                self._preCLimageNames.append(ad.filename)
                 # Strip off all postfixes and prefix filename with a unique prefix
                 name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, 
                                        logLevel= self.logLevel)
