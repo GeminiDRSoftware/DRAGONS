@@ -240,7 +240,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                            'so it just passed the inputs through without doing'+\
                            ' anything to them.')
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)
+            rc.reportOutput(adOut)
             
             log.status('*FINISHED* combining the images of the input data')
         except:
