@@ -1229,7 +1229,8 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                              noLogFile=noLogFile)
 
     log.status('**STARTING** the combine function')
     
@@ -1282,9 +1283,10 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
-                                   funcName='combine', logName=logName, logLevel=logLevel, 
-                                   noLogFile=noLogFile)
+                clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, 
+                                   suffix=suffix, funcName='combine', 
+                                   combinedImages=True, logName=logName,  
+                                   logLevel=logLevel, noLogFile=noLogFile)
                 
                 # Check the status of the CLManager object, True=continue, False= issue warning
                 if clm.status:
@@ -1293,11 +1295,11 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     # or the definition of the primitive 
                     clPrimParams = {
                         # Retrieving the inputs as a list from the CLManager
-                        'input'       :clm.inputList(),
+                        'input'       :clm.imageInsFiles(type='listFile'),
                         # Maybe allow the user to override this in the future. 
-                        'output'      :clm.combineOutname(), 
+                        'output'      :clm.imageOutsFiles(type='string'), 
                         # This returns a unique/temp log file for IRAF  
-                        'logfile'     :clm.logfile(),  
+                        'logfile'     :clm.templog.name,  
                         # This is actually in the default dict but wanted to 
                         # show it again       
                         'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
@@ -1336,13 +1338,13 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                     
                     log.debug('Calling the gemcombine CL script for input list '+
-                              clm.inputList())
+                              clm.imageInsFiles(type='listFile'))
                     
                     gemini.gemcombine(**clParamsDict)
                     
                     if gemini.gemcombine.status:
                         log.critical('gemcombine failed for inputs '+
-                                     clm.inputsAsStr())
+                                     clm.imageInsFiles(type='string'))
                         raise ('gemcombine failed')
                     else:
                         log.status('Exited the gemcombine CL script successfully')
@@ -1350,11 +1352,11 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     
                     # Renaming CL outputs and loading them back into memory 
                     # and cleaning up the intermediate temp files written to disk
-                    adOuts = clm.finishCL(combine=True) 
+                    imageOuts, refOuts, arrayOuts = clm.finishCL() 
                 
                     # There is only one at this point so no need to perform a loop
                     # CLmanager outputs a list always, so take the 0th
-                    adOut = adOuts[0]
+                    adOut = imageOuts[0]
                     
                     # Adding a GEM-TLM (automatic) and COMBINE time stamps 
                     # to the PHU
