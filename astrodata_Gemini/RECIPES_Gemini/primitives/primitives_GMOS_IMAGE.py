@@ -147,7 +147,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                            'so it just passed the inputs through without doing'+\
                            ' anything to them.')
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)
+            rc.reportOutput(rc.getInputs(style='AD'))
             
             log.status('*FINISHED* creating the fringe image')
         except:

@@ -236,11 +236,11 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.status('geminiScience.combine completed successfully')   
                 
             else:
-                log.status('makeFringeFrame was called with only one input, '+\
+                log.status('combine was called with only one input, '+\
                            'so it just passed the inputs through without doing'+\
                            ' anything to them.')
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOut)
+            rc.reportOutput(rc.getInputs(style='AD'))
             
             log.status('*FINISHED* combining the images of the input data')
         except:
