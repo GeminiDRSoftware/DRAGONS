@@ -139,7 +139,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
+            clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, suffix=suffix, 
                                funcName='overscanSubtract', logName=logName,  
                                    logLevel=logLevel, noLogFile=noLogFile)
             
@@ -149,10 +149,11 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 # Parameters set by the gemt.CLManager or the definition 
                 # of the primitive 
                 clPrimParams = {
-                  'inimages'    :clm.inputsAsStr(),
-                  'gp_outpref'  :clm.uniquePrefix(),
+                  'inimages'    :clm.imageInsFiles(type='string'),
+                  'gp_outpref'  :clm.prefix,
+                  'outimages'   :clm.imageOutsFiles(type='string'),
                   # This returns a unique/temp log file for IRAF
-                  'logfile'     :clm.logfile(),      
+                  'logfile'     :clm.templog.name,      
                   'fl_over'     :yes, 
                   # This is actually in the default dict but wanted to show it again
                   'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
@@ -199,20 +200,24 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                 
                 log.debug('Calling the gireduce CL script for inputs '+
-                      clm.inputsAsStr())
+                      clm.imageInsFiles(type='string'))
             
                 gemini.gmos.gireduce(**clParamsDict)
                 
                 if gemini.gmos.gireduce.status:
                     log.critical('gireduce failed for inputs '+
-                                 clm.inputsAsStr())
+                                 clm.imageInsFiles(type='string'))
                     raise ('gireduce failed')
                 else:
                     log.status('Exited the gireduce CL script successfully')
                 
                 # Renaming CL outputs and loading them back into memory, and 
                 # cleaning up the intermediate tmp files written to disk
-                adOuts = clm.finishCL()
+                # refOuts and arrayOuts are None here
+                imageOuts, refOuts, arrayOuts = clm.finishCL() 
+                
+                # Renaming for symmetry
+                adOuts=imageOuts
                 
                 # Wrap up logging
                 i=0
@@ -221,7 +226,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                     if adOut.phuGetKeyValue('GIREDUCE'): 
                         # If gireduce was ran, then log the changes to the files 
                         # it made
-                        log.fullinfo('\nFile '+clm.preCLNames()[i]+
+                        log.fullinfo('\nFile '+clm.preCLimageNames()[i]+
                                      ' had its overscan subracted successfully')
                         log.fullinfo('New file name is: '+adOut.filename)
                     i = i+1
@@ -543,9 +548,10 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                     
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(adIns=adIns, outNames=outNames, suffix=suffix, 
-                                   funcName='makeFringeFrame', logName=logName,  
-                                       logLevel=logLevel, noLogFile=noLogFile)
+                clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, suffix=suffix, 
+                                   funcName='makeFringeFrame', combinedImages=True, 
+                                   logName=logName, logLevel=logLevel,  
+                                    noLogFile=noLogFile)
                 
                 # Check the status of the CLManager object, True=continue, False= issue warning
                 if clm.status:                     
@@ -554,11 +560,11 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                     # of the primitive 
                     clPrimParams = {
                         # Retrieving the inputs as a list from the CLManager
-                        'inimages'    :clm.inputList(),
+                        'inimages'    :clm.imageInsFiles(type='listFile'),
                         # Maybe allow the user to override this in the future. 
-                        'outimage'    :clm.combineOutname(), 
+                        'outimage'    :clm.imageOutsFiles(type='string'), 
                         # This returns a unique/temp log file for IRAF  
-                        'logfile'     :clm.logfile(),  
+                        'logfile'     :clm.templog.name,  
                         # This is actually in the default dict but wanted to 
                         # show it again       
                         'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
@@ -593,7 +599,7 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                     gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                     
                     log.debug('Calling the gifringe CL script for input list '+
-                                  clm.inputList())
+                                  clm.imageInsFiles(type='listFile'))
                     
                     gemini.gifringe(**clParamsDict)
                     
@@ -605,8 +611,12 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                         
                     # Renaming CL outputs and loading them back into memory 
                     # and cleaning up the intermediate temp files written to disk
-                    adOuts = clm.finishCL(combine=True)  
+                    # refOuts and arrayOuts are None here
+                    imageOuts, refOuts, arrayOuts = clm.finishCL() 
                     
+                    # Renaming for symmetry
+                    adOuts=imageOuts
+                
                     # There is only one at this point so no need to perform a loop
                     # CLmanager outputs a list always, so take the 0th
                     adOut = adOuts[0]
@@ -637,7 +647,7 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
         # Return the outputs (list or single, matching adIns)
         return adOut
     except:
-        raise #('An error occurred while trying to run make_fringe_frame_imaging')
+        raise ('An error occurred while trying to run make_fringe_frame_imaging')
     
     
     
