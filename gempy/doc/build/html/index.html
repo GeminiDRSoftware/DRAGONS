@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="gempy v0.1 documentation" href="#" /> 
+    <link rel="top" title="gempy v0.1 documentation" href="#" />
+    <link rel="next" title="Random notes to be organized in FUTURE:" href="developers_notes.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,6 +35,9 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="developers_notes.html" title="Random notes to be organized in FUTURE:"
+             accesskey="N">next</a> |</li>
         <li><a href="#">gempy v0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -45,14 +49,569 @@
             
   <div class="section" id="welcome-to-gempy-s-documentation">
 <h1>Welcome to gempy&#8217;s documentation!<a class="headerlink" href="#welcome-to-gempy-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="gemini-user-level-function">
+<h2>Gemini &#8216;User Level Function&#8217;:<a class="headerlink" href="#gemini-user-level-function" title="Permalink to this headline">¶</a></h2>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<span class="target" id="module-gempy.science.geminiScience"></span><dl class="function">
+<dt id="gempy.science.geminiScience.add_bpm">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">add_bpm</tt><big>(</big><em>adIns=None</em>, <em>BPMs=None</em>, <em>matchSize=False</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.add_bpm" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
+The BPM will be added as frames matching that of the SCI frames and ensure
+the BPM&#8217;s data array is the same size as that of the SCI data array.  If the 
+SCI array is larger (say SCI&#8217;s were overscan trimmed, but BPMs were not), the
+BPMs will have their arrays padded with zero&#8217;s to match the sizes and use the 
+data_section descriptor on the SCI data arrays to ensure the match is
+a correct fit.  There must be a matching number of DQ extensions in the BPM 
+as the input the BPM frames are to be added to 
+(ie. if input has 3 SCI extensions, the BPM must have 3 DQ extensions).</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be converted to Electron pixel units</li>
+<li><strong>BPMs</strong> (<em>AstroData objects in a list, or a single instance.
+Note: If there is multiple inputs and one BPM provided, then the
+same BPM will be applied to all inputs; else the BPMs list  
+must match the length of the inputs.</em>) &#8211; The BPM(s) to be added to the input(s).</li>
+<li><strong>matchSize</strong> (<em>Python boolean (True/False). Default: False.</em>) &#8211; A flag to use zeros and the key &#8216;DETSEC&#8217; of the &#8216;SCI&#8217;
+extensions to match the size of the BPM arrays to those of
+for the &#8216;SCI&#8217; data arrays.</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.add_dq">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">add_dq</tt><big>(</big><em>adIns</em>, <em>fl_nonlinear=True</em>, <em>fl_saturated=True</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.add_dq" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will create a numpy array for the data quality 
+of each SCI frame of the input data. This will then have a 
+header created and append to the input using AstroData as a DQ 
+frame. The value of a pixel will be the sum of the following: 
+(0=good, 1=bad pixel (found in bad pixel mask), 
+2=value is non linear, 4=pixel is saturated)</p>
+<dl class="docutils">
+<dt>NOTE: For every SCI extension of the inputs, a matching BPM extension must</dt>
+<dd>also exist to be updated with the non-linear and saturated pixels from
+the SCI data array for creation of the DQ array.
+ie. for now, no BPM extensions=this function will crash</dd>
+<dt>NOTE:</dt>
+<dd>FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
+TO PASS IT IN...</dd>
+</dl>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
+<li><strong>fl_nonlinear</strong> &#8211; Flag to turn checking for nonlinear pixels on/off</li>
+<li><strong>fl_saturated</strong> (<em>Python boolean (True/False), default is True</em>) &#8211; Flag to turn checking for saturated pixels on/off</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.add_var">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">add_var</tt><big>(</big><em>adIns</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.add_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function uses numpy to calculate the variance of each SCI frame
+in the input files and appends it as a VAR frame using AstroData.</p>
+<p>The calculation will follow the formula:
+variance = (read noise/gain)2 + max(data,0.0)/gain</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.adu_to_electrons">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">adu_to_electrons</tt><big>(</big><em>adIns=None</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.adu_to_electrons" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will convert the inputs from having pixel values in ADU to 
+that of electrons by use of the arith &#8216;toolbox&#8217;.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<dl class="docutils">
+<dt>Note: </dt>
+<dd>the SCI extensions of the input AstroData objects must have &#8216;GAIN&#8217;
+header key values available to multiply them by for conversion to 
+e- units.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be converted to Electron pixel units</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.bias_correct">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">bias_correct</tt><big>(</big><em>adIns</em>, <em>biases=None</em>, <em>fl_vardq='AUTO'</em>, <em>fl_trim=False</em>, <em>fl_over=False</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.bias_correct" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will subtract the biases from the inputs using the 
+CL script gireduce.</p>
+<p>WARNING: The gireduce script used here replaces the previously 
+calculated DQ frames with its own versions.  This may be corrected 
+in the future by replacing the use of the gireduce
+with a Python routine to do the bias subtraction.</p>
+<p>NOTE: The inputs to this function MUST be prepared.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be bias subtracted</li>
+<li><strong>biases</strong> (<em>AstroData objects in a list, or a single instance.
+Note: If there is multiple inputs and one bias provided, then the
+same bias will be applied to all inputs; else the biases   
+list must match the length of the inputs.</em>) &#8211; The bias(es) to divide the input(s) by.</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the input(s).</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
+<li><strong>fl_over</strong> (<em>Python boolean (True/False)</em>) &#8211; Subtract the overscan level from the frames?</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.combine">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">combine</tt><big>(</big><em>adIns</em>, <em>fl_vardq=True</em>, <em>fl_dqprop=True</em>, <em>method='average'</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#combine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.combine" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will average and combine the SCI extensions of the 
+inputs. It takes all the inputs and creates a list of them and 
+then combines each of their SCI extensions together to create 
+average combination file. New VAR frames are made from these 
+combined SCI frames and the DQ frames are propagated through 
+to the final file.
+NOTE: The inputs to this function MUST be prepared.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be combined</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
+so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>fl_dqprop</strong> (<em>Python boolean (True/False)</em>) &#8211; propogate the current DQ values?</li>
+<li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median&#8217;.</em>) &#8211; type of combining method to use.</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length
+as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.flat_correct">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">flat_correct</tt><big>(</big><em>adIns</em>, <em>flats=None</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.flat_correct" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function performs a flat correction by dividing the inputs by  
+processed flats, similar to the way gireduce would perform this operation
+but written in pure python in the arith toolbox.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
+<li><strong>flats</strong> (<em>AstroData objects in a list, or a single instance.
+Note: If there is multiple inputs and one flat provided, then the
+same flat will be applied to all inputs; else the flats   
+list must match the length of the inputs.</em>) &#8211; The flat(s) to divide the input(s) by.</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.measure_iq">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">measure_iq</tt><big>(</big><em>adIns</em>, <em>function='both'</em>, <em>display=True</em>, <em>mosaic=True</em>, <em>qa=True</em>, <em>keepDats=False</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.measure_iq" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will detect the sources in the input images and fit
+both Gaussian and Moffat models to their profiles and calculate the 
+Image Quality and seeing from this.</p>
+<p>Since the resultant parameters are formatted into one nice string and 
+normally recorded in a logger message, the returned dictionary of these 
+parameters may be ignored. BUT, if the user wishes to completely shut off
+the logging, then the returned dictionary of the results can be useful.
+The dictionary&#8217;s format is:
+{adIn1.filename:formatted results string for adIn1, 
+adIn2.filename:formatted results string for adIn2,...}</p>
+<p>There are also .dat files that result from this function written to the 
+current working directory under the names &#8216;measure_iq&#8217;+adIn.filename+&#8217;.dat&#8217;.
+ex: input filename &#8216;N20100311S0090.fits&#8217;, 
+.dat filename &#8216;measure_iqN20100311S0090.dat&#8217;</p>
+<p>NOTE:
+A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have their image quality measured</li>
+<li><strong>function</strong> (<em>string, can be: &#8216;moffat&#8217;,&#8217;gauss&#8217; or &#8216;both&#8217;; 
+Default &#8216;both&#8217;</em>) &#8211; Function for centroid fitting</li>
+<li><strong>display</strong> (<em>Python boolean (True/False)
+Default: True</em>) &#8211; Flag to turn on displaying the fitting to ds9</li>
+<li><strong>mosaic</strong> (<em>Python boolean (True/False)
+default: True</em>) &#8211; Flag to indicate the images have been mosaic&#8217;d 
+(ie only 1 &#8216;SCI&#8217; extension in images)</li>
+<li><strong>qa</strong> (<em>Python boolean (True/False)
+default: True</em>) &#8211; flag to use a grid of sub-windows for detecting the sources in 
+the image frames, rather than the entire frame all at once.</li>
+<li><strong>keepDats</strong> (<em>Python boolean (True/False)
+default: False</em>) &#8211; flag to keep the .dat files that provide detailed results found
+while measuring the input&#8217;s image quality.</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length
+as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.mosaic_detectors">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">mosaic_detectors</tt><big>(</big><em>adIns</em>, <em>fl_paste=False</em>, <em>interp_function='linear'</em>, <em>fl_vardq='AUTO'</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.mosaic_detectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will mosaic the SCI frames of the input images, 
+along with the VAR and DQ frames if they exist.</p>
+<p>WARNING: The gmosaic script used here replaces the previously 
+calculated DQ frames with its own versions.  This may be corrected 
+in the future by replacing the use of the gmosaic
+with a Python routine to do the frame mosaicing.</p>
+<p>NOTE: The inputs to this function MUST be prepared.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to mosaic the extensions of</li>
+<li><strong>fl_paste</strong> (<em>Python boolean (True/False)</em>) &#8211; Paste images instead of mosaic?</li>
+<li><strong>interp_function</strong> (<em>string, options: &#8216;linear&#8217;, &#8216;nearest&#8217;, &#8216;poly3&#8217;, 
+&#8216;poly5&#8217;, &#8216;spine3&#8217;, &#8216;sinc&#8217;.</em>) &#8211; type of interpolation algorithm to use for between the chip gaps.</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
+so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Also mosaic VAR and DQ frames?</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.normalize_flat">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">normalize_flat</tt><big>(</big><em>adIns</em>, <em>fl_trim=False</em>, <em>fl_over=False</em>, <em>fl_vardq='AUTO'</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.normalize_flat" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will combine the input flats (adIns) and then normalize them 
+using the CL script giflat.</p>
+<p>WARNING: The giflat script used here replaces the previously 
+calculated DQ frames with its own versions.  This may be corrected 
+in the future by replacing the use of the giflat
+with a Python routine to do the flat normalizing.</p>
+<p>NOTE: The inputs to this function MUST be prepared.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata input flat(s) to be combined and normalized</li>
+<li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
+<li><strong>fl_over</strong> (<em>Python boolean (True/False)</em>) &#8211; Subtract the overscan level from the frames?</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
+so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.geminiScience.overscan_trim">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">overscan_trim</tt><big>(</big><em>adIns</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.geminiScience.overscan_trim" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function uses AstroData to trim the overscan region 
+from the input images and update their headers.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length
+as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="gmos-user-level-functions">
+<h2>Gmos &#8216;User Level Functions&#8217;:<a class="headerlink" href="#gmos-user-level-functions" title="Permalink to this headline">¶</a></h2>
 <p>Contents:</p>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
 </div>
 <span class="target" id="module-gempy.science.gmosScience"></span><dl class="function">
-<dt id="gempy.science.gmosScience.overscanSubtract">
-<tt class="descclassname">gempy.science.gmosScience.</tt><tt class="descname">overscanSubtract</tt><big>(</big><em>adIns, fl_trim=False, fl_vardq='AUTO', biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]', outNames=None, postpend=None, logName='', verbose=1, noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/gmosScience.html#overscanSubtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.gmosScience.overscanSubtract" title="Permalink to this definition">¶</a></dt>
+<dt id="gempy.science.gmosScience.fringe_correct">
+<tt class="descclassname">gempy.science.gmosScience.</tt><tt class="descname">fringe_correct</tt><big>(</big><em>adIns</em>, <em>fringes</em>, <em>fl_statscale=False</em>, <em>scale=0.0</em>, <em>statsec=''</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.gmosScience.fringe_correct" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will scale and subtract the fringe frame from the inputs.
+It utilizes the Python re-written version of cl script girmfringe now called
+rmImgFringe in gmosTools to do the work.</p>
+<p>NOTE:
+String representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<dl class="docutils">
+<dt>FOR FUTURE</dt>
+<dd>This function has many GMOS dependencies that would be great to work out
+so that this could be made a more general function (say at the Gemini level).</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata input(s) to be fringe corrected</li>
+<li><strong>fringes</strong> (<em>AstroData objects in a list, or a single instance.
+Note: If there is multiple inputs and one fringe provided, then the
+same fringe will be applied to all inputs; else the fringes   
+list must match the length of the inputs.</em>) &#8211; Astrodata input fringe(s)</li>
+<li><strong>fl_statscale</strong> (<em>Boolean</em>) &#8211; Scale by statistics rather than exposure time</li>
+<li><strong>statsec</strong> (<em>string of format &#8216;[EXTNAME,EXTVER][x1:x2,y1:y2]&#8217;
+default: If CCDSUM = &#8216;1 1&#8217; :[SCI,2][100:1900,100:4500]&#8217;
+If CCDSUM = &#8216;2 2&#8217; : [SCI,2][100:950,100:2250]&#8217;</em>) &#8211; image section used to determine the scale factor 
+if fl_statsec=True</li>
+<li><strong>scale</strong> (<em>real</em>) &#8211; Override auto-scaling if not 0.0</li>
+<li><strong>LogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.gmosScience.make_fringe_frame_imaging">
+<tt class="descclassname">gempy.science.gmosScience.</tt><tt class="descname">make_fringe_frame_imaging</tt><big>(</big><em>adIns</em>, <em>fl_vardq='AUTO'</em>, <em>method='median'</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>logName=''</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.gmosScience.make_fringe_frame_imaging" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will create and return a single fringe image from all the inputs.
+It utilizes the CL script gifringe to create the fringe image.</p>
+<p>NOTE: The inputs to this function MUST be prepared.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be combined</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the inputs.
+NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
+so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median&#8217;.</em>) &#8211; type of combining method to use.</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length
+as adIns.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gempy.science.gmosScience.overscan_subtract">
+<tt class="descclassname">gempy.science.gmosScience.</tt><tt class="descname">overscan_subtract</tt><big>(</big><em>adIns, fl_trim=False, fl_vardq='AUTO', biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]', outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False</em><big>)</big><a class="headerlink" href="#gempy.science.gmosScience.overscan_subtract" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function uses the CL script gireduce to subtract the overscan 
 from the input images.</p>
 <dl class="docutils">
@@ -82,7 +641,7 @@ functions inputs so the user can choose them for themselves.</dd>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be converted to Electron pixel units</li>
 <li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
 <li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
 it automatically if there are VAR and DQ frames in the inputs.
@@ -91,410 +650,12 @@ so, if the first does, then the rest MUST also have them as well.</em>) &#8211; 
 <li><strong>LogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
 <li><strong>biassec</strong> (<em>string. default: &#8216;[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]&#8217; is ideal for 2x2 GMOS data.</em>) &#8211; biassec parameter of format &#8216;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#8217;</li>
 <li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.</li>
 <li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
 default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
+Note: independent of logLevel setting, all messages always go 
 to the logfile if it is not turned off.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<span class="target" id="module-gempy.science.geminiScience"></span><dl class="function">
-<dt id="gempy.science.geminiScience.ADUtoElectrons">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">ADUtoElectrons</tt><big>(</big><em>adIns=None</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#ADUtoElectrons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.ADUtoElectrons" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will convert the inputs from having pixel values in ADU to 
-that of electrons by use of the arith &#8216;toolbox&#8217;.</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<dl class="docutils">
-<dt>Note: </dt>
-<dd>the SCI extensions of the input AstroData objects must have &#8216;GAIN&#8217;
-header key values available to multiply them by for conversion to 
-e- units.</dd>
-</dl>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be converted to Electron pixel units</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.addBPM">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">addBPM</tt><big>(</big><em>adIns=None</em>, <em>BPMs=None</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#addBPM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.addBPM" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
-The BPM will be added as frames matching that of the SCI frames and ensure
-the BPM&#8217;s data array is the same size as that of the SCI data array.  If the 
-SCI array is larger (say SCI&#8217;s were overscan trimmed, but BPMs were not), the
-BPMs will have their arrays padded with zero&#8217;s to match the sizes and use the 
-data_section descriptor on the SCI data arrays to ensure the match is
-a correct fit.  There must be a matching number of DQ extensions in the BPM 
-as the input the BPM frames are to be added to 
-(ie. if input has 3 SCI extensions, the BPM must have 3 DQ extensions).</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be converted to Electron pixel units</li>
-<li><strong>BPMs</strong> (<em>AstroData objects in a list, or a single instance.
-Note: If there is multiple inputs and one BPM provided, then the
-same BPM will be applied to all inputs; else the BPMs list  
-must match the length of the inputs.</em>) &#8211; The BPM(s) to be added to the input(s).</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.addDQ">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">addDQ</tt><big>(</big><em>adIns</em>, <em>fl_nonlinear=True</em>, <em>fl_saturated=True</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#addDQ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.addDQ" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will create a numpy array for the data quality 
-of each SCI frame of the input data. This will then have a 
-header created and append to the input using AstroData as a DQ 
-frame. The value of a pixel will be the sum of the following: 
-(0=good, 1=bad pixel (found in bad pixel mask), 
-2=value is non linear, 4=pixel is saturated)</p>
-<dl class="docutils">
-<dt>NOTE: For every SCI extension of the inputs, a matching BPM extension must</dt>
-<dd>also exist to be updated with the non-linear and saturated pixels from
-the SCI data array for creation of the DQ array.
-ie. for now, no BPM extensions=this function will crash</dd>
-<dt>NOTE:</dt>
-<dd>FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
-TO PASS IT IN...</dd>
-</dl>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
-<li><strong>fl_nonlinear</strong> &#8211; Flag to turn checking for nonlinear pixels on/off</li>
-<li><strong>fl_saturated</strong> (<em>Python boolean (True/False), default is True</em>) &#8211; Flag to turn checking for saturated pixels on/off</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.addVAR">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">addVAR</tt><big>(</big><em>adIns</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#addVAR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.addVAR" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function uses numpy to calculate the variance of each SCI frame
-in the input files and appends it as a VAR frame using AstroData.</p>
-<p>The calculation will follow the formula:
-variance = (read noise/gain)2 + max(data,0.0)/gain</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.biasCorrect">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">biasCorrect</tt><big>(</big><em>adIns</em>, <em>biases=None</em>, <em>fl_vardq='AUTO'</em>, <em>fl_trim=False</em>, <em>fl_over=False</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#biasCorrect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.biasCorrect" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will subtract the biases from the inputs using the 
-CL script gireduce.</p>
-<p>WARNING: The gireduce script used here replaces the previously 
-calculated DQ frames with its own versions.  This may be corrected 
-in the future by replacing the use of the gireduce
-with a Python routine to do the bias subtraction.</p>
-<p>NOTE: The inputs to this function MUST be prepared.</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be bias subtracted</li>
-<li><strong>biases</strong> (<em>AstroData objects in a list, or a single instance.
-Note: If there is multiple inputs and one bias provided, then the
-same bias will be applied to all inputs; else the biases   
-list must match the length of the inputs.</em>) &#8211; The bias(es) to divide the input(s) by.</li>
-<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
-it automatically if there are VAR and DQ frames in the input(s).</em>) &#8211; Create variance and data quality frames?</li>
-<li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
-<li><strong>fl_over</strong> (<em>Python boolean (True/False)</em>) &#8211; Subtract the overscan level from the frames?</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.combine">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">combine</tt><big>(</big><em>adIns</em>, <em>fl_vardq=True</em>, <em>fl_dqprop=True</em>, <em>method='average'</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#combine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.combine" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will average and combine the SCI extensions of the 
-inputs. It takes all the inputs and creates a list of them and 
-then combines each of their SCI extensions together to create 
-average combination file. New VAR frames are made from these 
-combined SCI frames and the DQ frames are propagated through 
-to the final file.
-NOTE: The inputs to this function MUST be prepared.</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be combined</li>
-<li><strong>fl_vardq</strong> &#8211; Create variance and data quality frames?</li>
-<li><strong>fl_dqprop</strong> (<em>Python boolean (True/False)</em>) &#8211; propogate the current DQ values?</li>
-<li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median&#8217;.</em>) &#8211; type of combining method to use.</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length
-as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; <p>verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go</p>
-<blockquote>
-<div>to the logfile if it is not turned off.</div></blockquote>
-</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.flatCorrect">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">flatCorrect</tt><big>(</big><em>adIns</em>, <em>flats=None</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#flatCorrect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.flatCorrect" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function performs a flat correction by dividing the inputs by  
-processed flats, similar to the way gireduce would perform this operation
-but written in pure python in the arith toolbox.</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
-<li><strong>flats</strong> (<em>AstroData objects in a list, or a single instance.
-Note: If there is multiple inputs and one flat provided, then the
-same flat will be applied to all inputs; else the flats   
-list must match the length of the inputs.</em>) &#8211; The flat(s) to divide the input(s) by.</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.mosaicDetectors">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">mosaicDetectors</tt><big>(</big><em>adIns</em>, <em>fl_paste=False</em>, <em>interp_function='linear'</em>, <em>fl_vardq='AUTO'</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#mosaicDetectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.mosaicDetectors" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will mosaic the SCI frames of the input images, 
-along with the VAR and DQ frames if they exist.</p>
-<p>WARNING: The gmosaic script used here replaces the previously 
-calculated DQ frames with its own versions.  This may be corrected 
-in the future by replacing the use of the gmosaic
-with a Python routine to do the frame mosaicing.</p>
-<p>NOTE: The inputs to this function MUST be prepared.</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to mosaic the extensions of</li>
-<li><strong>fl_paste</strong> (<em>Python boolean (True/False)</em>) &#8211; Paste images instead of mosaic?</li>
-<li><strong>interp_function</strong> (<em>string, options: &#8216;linear&#8217;, &#8216;nearest&#8217;, &#8216;poly3&#8217;, 
-&#8216;poly5&#8217;, &#8216;spine3&#8217;, &#8216;sinc&#8217;.</em>) &#8211; type of interpolation algorithm to use for between the chip gaps.</li>
-<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
-it automatically if there are VAR and DQ frames in the inputs.
-NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
-so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Also mosaic VAR and DQ frames?</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.normalizeFlat">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">normalizeFlat</tt><big>(</big><em>adIns</em>, <em>fl_trim=False</em>, <em>fl_over=False</em>, <em>fl_vardq='AUTO'</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#normalizeFlat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.normalizeFlat" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will combine the input flats (adIns) and then normalize them 
-using the CL script giflat.</p>
-<p>WARNING: The giflat script used here replaces the previously 
-calculated DQ frames with its own versions.  This may be corrected 
-in the future by replacing the use of the giflat
-with a Python routine to do the flat normalizing.</p>
-<p>NOTE: The inputs to this function MUST be prepared.</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata input flat(s) to be combined and normalized</li>
-<li><strong>fl_trim</strong> (<em>Python boolean (True/False)</em>) &#8211; Trim the overscan region from the frames?</li>
-<li><strong>fl_over</strong> (<em>Python boolean (True/False)</em>) &#8211; Subtract the overscan level from the frames?</li>
-<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
-it automatically if there are VAR and DQ frames in the inputs.
-NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
-so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go 
-to the logfile if it is not turned off.</li>
-<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="gempy.science.geminiScience.overscanTrim">
-<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">overscanTrim</tt><big>(</big><em>adIns</em>, <em>outNames=None</em>, <em>postpend=None</em>, <em>logName=''</em>, <em>verbose=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="_modules/gempy/science/geminiScience.html#overscanTrim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.overscanTrim" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function uses AstroData to trim the overscan region 
-from the input images and update their headers.</p>
-<p>A string representing the name of the log file to write all log messages to
-can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
-all ready exists in the directory you are working in, then this file will 
-have the log messages during this function added to the end of it.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>adIns</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
-<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length
-as adIns.</em>) &#8211; filenames of output(s)</li>
-<li><strong>postpend</strong> (<em>string</em>) &#8211; string to postpend on the end of the input filenames 
-(or outNames if not None) for the output filenames.</li>
-<li><strong>logName</strong> (<em>string</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>verbose</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen</em>) &#8211; <p>verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of verbose setting, all messages always go</p>
-<blockquote>
-<div>to the logfile if it is not turned off.</div></blockquote>
-</li>
 <li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
 </ul>
 </td>
@@ -504,13 +665,23 @@ Note: independent of verbose setting, all messages always go</p>
 </dd></dl>
 
 </div>
+<div class="section" id="additional-notes-for-developers">
+<h2>Additional notes for developers<a class="headerlink" href="#additional-notes-for-developers" title="Permalink to this headline">¶</a></h2>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developers_notes.html">Random notes to be organized in FUTURE:</a></li>
+</ul>
+</div>
+</div>
 <div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
 <li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
 <li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
 </ul>
+</div>
 </div>
 
 
@@ -522,11 +693,23 @@ Note: independent of verbose setting, all messages always go</p>
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Welcome to gempy&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#gemini-user-level-function">Gemini &#8216;User Level Function&#8217;:</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#gmos-user-level-functions">Gmos &#8216;User Level Functions&#8217;:</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#additional-notes-for-developers">Additional notes for developers</a><ul>
 </ul>
 </li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
+</li>
+</ul>
 
+  <h4>Next topic</h4>
+  <p class="topless"><a href="developers_notes.html"
+                        title="next chapter">Random notes to be organized in FUTURE:</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/index.txt"
@@ -558,6 +741,9 @@ Note: independent of verbose setting, all messages always go</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="developers_notes.html" title="Random notes to be organized in FUTURE:"
+             >next</a> |</li>
         <li><a href="#">gempy v0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>

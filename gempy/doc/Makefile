@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = /data1/sphinx/sphinx-build
+SPHINXBUILD   = /home/kmede/workspace/sphinx/sphinx-build
 PAPER         =
 BUILDDIR      = build
 
