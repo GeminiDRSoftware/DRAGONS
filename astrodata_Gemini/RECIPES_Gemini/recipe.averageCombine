@@ -6,4 +6,4 @@
 #showInputs
 getStackable
 #showInputs
-combine(method="average", outpref="_avgcomb")
+combine(method="average", suffix="_avgcomb")
