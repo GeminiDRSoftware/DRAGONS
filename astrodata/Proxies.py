@@ -70,9 +70,23 @@ class ReduceServer(object):
             print '^C received, shutting down server'
             server.socket.close()
 
-def startADCC():
+def startADCC(callerlockfile = None):
+    import tempfile
+    import os
+    
+    if callerlockfile == None:
+        
+        clf = tempfile.NamedTemporaryFile("w", prefix = "clf4pid"+str(os.getpid()))
+        clfn = clf.name
+        clf.close()
+        
+    else:
+        clfn = callerlockfile
+        
+    
     from time import sleep
     racefile = ".adcc/racefile.py"
+    
     logdir = ".autologs"
     if not os.path.exists(logdir):
         os.mkdir(logdir)
@@ -96,6 +110,7 @@ def startADCC():
                 "--invoked",
                 #"--reduce-port", "%d" % reduceServer.listenport,
                 "--reduce-pid", "%d" % os.getpid(),
+                "--startup-report", clfn,
                 ]
 
     pid = subprocess.Popen( prsargs, 
@@ -104,7 +119,9 @@ def startADCC():
                             ).pid
 
     # wait for adccinfo
-    if not os.path.exists(racefile):
+    while not os.path.exists(clfn):
+        # print "P123:waiting for", clfn
+        os.path.remove(clfn)
         sleep(1)
         
     return pid
@@ -140,6 +157,8 @@ class PRSProxy(object):
     def getADCC(cls, reduceServer = None, checkOnce = False):
         # note: the correct ADCC will store it's info in .adcc/adccinfo.py
         racefile = ".adcc/adccinfo.py"
+        if not os.path.exists(racefile):
+            raise "SYSTEM ERROR: ADCC not found after being started"
         infof = file(racefile)
         infos = infof.read()
         infof.close()

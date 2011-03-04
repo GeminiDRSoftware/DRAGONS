@@ -19,6 +19,13 @@ from copy import copy
 from astrodata.adutils.reduceutils.CmdQueue import TSCmdQueue
 from astrodata.StackKeeper import StackKeeper
 
+if False:
+    print "ADCC22: SLEEPING for a test, remove if still present"
+    print str(time.time())
+    time.sleep(10)
+
+    print str(time.time())
+    print "ADCC24: done sleeping"
 # @@DEPEND: PIL
 try:
     import PIL
@@ -43,6 +50,8 @@ parser.add_option("-i", "--invoked", dest = "invoked", action = "store_true",
             help = """Used by processes that invoke prsproxy, so that PRS proxy knows
             when to exit. If not present, the prsproxy registers itself and will
             only exit by user control (or by os-level signal).""")
+parser.add_option("--startup-report", dest = "adccsrn", default = None, 
+            help = """Specify a file name for the adcc startup report""")
 parser.add_option("--preload", dest = "preload", action = "store_true",
             default = False,
             help = """Useful in proxy mode, where some information otherwise produced
@@ -85,6 +94,20 @@ def numpy2im(ad):
     newdata = numpy.uint32(data)
     im = Image.fromarray(newdata, mode="I")
     return im
+    
+def writeADCCSR(filename, vals=None):
+    if filename == None:
+        print "adcc93: no filename for sr"
+        return
+    else:
+        print "adcc95: startup report going to",filename
+    sr = open(filename, "w+")
+    if vals == None:
+        sr.write("ADCC ALREADY RUNNING\n")
+    else:
+        sr.write(repr(vals))
+    
+        
     
 stackKeeper = StackKeeper(local=True)
 # -------------------
@@ -147,7 +170,7 @@ class ReduceInstanceManager(object):
         return retval
         
     def stackIDsGet(self, cachefile = None):
-        print "adcc153:"
+        # print "adcc153:"
         retval = self.stackKeeper.getStackIDs(cachefile)
         return retval
         
@@ -240,17 +263,20 @@ def get_version():
     return version
     
 racefile = ".adcc/adccinfo.py"
+# caller lock file name
+clfn = options.adccsrn
 adccdir = getPersistDir()
 if os.path.exists(racefile):
-    print "ADCC250: adcc already has lockfile"
+    print "ADCC263: adcc already has lockfile"
     from astrodata.Proxies import PRSProxy
     adcc = PRSProxy.getADCC(checkOnce = True)
     if adcc == None:
-        print "ADCC248: no adcc running, clearing lockfile"
+        print "ADCC267: no adcc running, clearing lockfile"
         os.remove(racefile)
     else:
-        print "ADCC252: adcc instance found running, halting"
+        print "ADCC270: adcc instance found running, halting"
         adcc.unregister()
+        writeADCCSR(clfn)
         sys.exit()
 
 # note: we here try to get a unique port starting at the standard port
@@ -267,9 +293,12 @@ while findingPort:
 vals = { "xmlrpc_port": options.listenport,
         "http_port":options.httpport,
         "pid":os.getpid()}
+        
+#write racefile and ADCC Startup Report
 ports = file(racefile, "w")
 ports.write(repr(vals))
 ports.close()
+writeADCCSR(clfn, vals=vals)
 
 server.register_function(get_version, "get_version")
 server.register_function(calibrationSearch, "calibrationSearch")

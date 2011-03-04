@@ -651,7 +651,7 @@ else:
             
     # note: this clause might be best placed elsewhere (earlier)
     if len(nl) == 0:
-        log.warning("No files, and no astrotype, quiting...")
+        log.warning("No files...")
         allinputs = [None]
     else:
         allinputs = [nl]

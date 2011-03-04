@@ -1403,7 +1403,7 @@ class RecipeLibrary(object):
     def retrieveRecipe(self, name, astrotype=None):
         # @@NAMING: uses "recipe.TYPE" and recipe for recipe.ALL
         cri = centralRecipeIndex
-        
+        #print "RM1406:", repr(astrotype)
         if astrotype:
             akey = name + "." + astrotype
             key = name 
@@ -1430,7 +1430,7 @@ class RecipeLibrary(object):
 
         rfile = file(fname, "r")
         rtext = rfile.read()
-        #print "RM718:", rtext
+        # print "RM1433:", rtext
         return rtext
             
     def retrieveReductionObject(self, dataset=None, astrotype=None):
