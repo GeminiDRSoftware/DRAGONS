@@ -157,8 +157,9 @@ parser.add_option("--addprimset", dest = "primsetname", default = None,
                   help="Use to add user supplied primitives to the reduction object.")
 parser.add_option("--debug",dest='debug', default=False, action="store_true",
                   help="debug will set verbosity for console and log file to the extremely high developers debug level.")
-parser.add_option("--logLevel",dest='logLevel', default=2, type='int',
-                  help="logLevel will set the verbosity level for the console; 0=none, 6=highest.")
+parser.add_option("--logLevel",dest='logLevel', default=2, type='string',
+                  help="logLevel will set the verbosity level for the console; Either the message type or its logLevel "+\
+                  "integer equivalent,  0='none'=none, 6='fullinfo'=highest.")
 parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
                   help="name of log; default is 'gemini.log'.") 
 parser.add_option("--noLogFile",dest='noLogFile', default=False, action="store_true",
@@ -186,18 +187,18 @@ terminal.forceWidth = options.forceWidth
 terminal.forceHeight = options.forceHeight
 
 if options.recipename == "USER":
-    options.logLevel=6
+    options.logLevel = 6
 
 if options.invoked:
     options.logLevel = 6
     
 #---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
-log = gemLog.getGeminiLog(logName=options.logName,logLevel=options.logLevel,debug=options.debug, noLogFile=options.noLogFile, allOff=options.logAllOff)
+log = gemLog.getGeminiLog(logName=options.logName,logLevel=options.logLevel,debug=options.debug, 
+                          noLogFile=options.noLogFile, allOff=options.logAllOff)
 #-------------------------------------------------------------------------
 
 if options.invoked:
     opener = "reduce started in adcc mode (--invoked)"
-    #options.logLevel = 6
     log.status("."*len(opener))
     log.status(opener)
     log.status("."*len(opener))
