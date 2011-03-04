@@ -452,7 +452,7 @@ class CLManager(object):
     combinedImages = None
     fmt = '%s'
     arrayOutsdtype = 'str'
-    arrayOutsdelimiter = ' '
+    arrayOutsdelimiter = None
     templog = None
     log=None
     logLevel=1
@@ -460,7 +460,7 @@ class CLManager(object):
     def __init__(self, imageIns=None, refIns=None, arrayIns=None, suffix=None,  
                   imageOutsNames=None, refOutsNames=None, numArrayOuts=None,
                  combinedImages=False, funcName=None, fmt='%s',
-                 arrayOutsdtype='str', arrayOutsdelimiter=' ', logName=None,  
+                 arrayOutsdtype='str', arrayOutsdelimiter=None, logName=None,  
                  logLevel=1, noLogFile=False):
         """
         This instantiates all the globally accessible variables (within the 
@@ -559,8 +559,8 @@ class CLManager(object):
         :param arrayOutsdelimiter: the string used to separate the values when
                                   loading the text files output by IRAF into 
                                   the arrays of arrayOuts.
-        :type arrayOutsdelimiter: String, Default: ' '. 
-                                 Another common option is '\n'
+        :type arrayOutsdelimiter: String, Default: None which indicates to use whitespace. 
+                                  Another common option is '\n'
         
         :param logName: Name of the log file to write log messages to, 
                         if noLogFile=False.
