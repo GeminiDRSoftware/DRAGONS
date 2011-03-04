@@ -452,6 +452,7 @@ class CLManager(object):
     combinedImages = None
     fmt = '%s'
     arrayOutsdtype = 'str'
+    arrayOutsdelimiter = ' '
     templog = None
     log=None
     logLevel=1
@@ -459,8 +460,8 @@ class CLManager(object):
     def __init__(self, imageIns=None, refIns=None, arrayIns=None, suffix=None,  
                   imageOutsNames=None, refOutsNames=None, numArrayOuts=None,
                  combinedImages=False, funcName=None, fmt='%s',
-                 arrayOutsdtype='str', logName=None, logLevel=1, 
-                 noLogFile=False):
+                 arrayOutsdtype='str', arrayOutsdelimiter=' ', logName=None,  
+                 logLevel=1, noLogFile=False):
         """
         This instantiates all the globally accessible variables (within the 
         CLManager class) and prepares the inputs for use in CL scripts by 
@@ -555,6 +556,12 @@ class CLManager(object):
                               description from numpy found at:
                               url: http://docs.scipy.org/doc/numpy/user/basics.types.html#
         
+        :param arrayOutsdelimiter: the string used to separate the values when
+                                  loading the text files output by IRAF into 
+                                  the arrays of arrayOuts.
+        :type arrayOutsdelimiter: String, Default: ' '. 
+                                 Another common option is '\n'
+        
         :param logName: Name of the log file to write log messages to, 
                         if noLogFile=False.
         :type logName: String
@@ -622,6 +629,7 @@ class CLManager(object):
             self.numArrayOuts = numArrayOuts
             self.fmt = fmt
             self.arrayOutsdtype = arrayOutsdtype
+            self.arrayOutsdelimiter = arrayOutsdelimiter
             # now that everything is loaded to global make the uniquePrefix
             self.prefix = 'tmp'+ str(os.getpid())+self.funcName
             # now the preCLwrites can load up the input lists and write 
@@ -1034,7 +1042,8 @@ class CLManager(object):
                               ' and removing temporary files from disk.')
             for name in self.arrayOutsNames:
                 # Loading the file into an array
-                ary = np.loadtxt(name, dtype=self.arrayOutsdtype)
+                ary = np.loadtxt(name, dtype=self.arrayOutsdtype, 
+                                 delimiter=self.arrayOutsdelimiter)
                 # appending the array to the arrayOuts list to be returned
                 self.arrayOuts.append(ary)
                 # Deleting the file from disk
