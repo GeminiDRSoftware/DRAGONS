@@ -8,40 +8,42 @@ _listOfLoggers = None
 
 class GeminiLogger(object):
     """
-    This is a logger object for use in the Gemini recipe system.  
+    This is a logger object for use througout the Gemini recipe system and 
+    associated User Level Functions and toolboxes.  
     It is based on the Python logging object.
     
     Logging levels chart:
-level#, logLevel,  level,          includes (current rough outline)
+    
+    level#, logLevel,  level,        includes (current rough outline)
 
- 10       10      debug           engineering, programmer debugging
- 15       6       fullinfo        details, input parameters, header changes
- 20               info
- 21       5       stdinfo         science info eg. background level
- 25       4       status          start processing/end, # of files, 
-                                  name of inputs/output files
- 30       3       warning    
- 40       2       error    
- 50       1       critical
-          0       (quiet)
+    10       10      debug           engineering, programmer debugging
+    15       6       fullinfo        details, input parameters, header changes
+    20               info
+    21       5       stdinfo         science info eg. background level
+    25       4       status          start processing/end, # of files, 
+                                     name of inputs/output files
+    30       3       warning    
+    40       2       error    
+    50       1       critical
+             0       none
     note: level 'info' exists, but it is not being used in the
     Recipe Systems logging standards
     
-    @param logName: Name of the file the log messages will be written to
-    @type logName: string
+    :param logName: Name of the file the log messages will be written to
+    :type logName: string
     
-    @param logLevel: verbosity setting for the lowest level of messages to 
-                    print to the screen.
-    @type logLevel: integer from 0-10 following above chart
+    :param logLevel: verbosity setting for the lowest level of messages to 
+                     print to the screen.
+    :type logLevel: integer from 0-10 following above chart
     
-    @param debug: Flag for showing debug level messages
-    @type debug: python boolean (True/False)
+    :param debug: Flag for showing debug level messages
+    :type debug: python boolean (True/False)
     
-    @param noLogFile: Flag for stopping a log file from being created
-    @type noLogFile: python boolean (True/False)
+    :param noLogFile: Flag for stopping a log file from being created
+    :type noLogFile: python boolean (True/False)
     
-    @param allOff: Flag to turn off all messages to the screen or file
-    @type allOff: python boolean (True/False)
+    :param allOff: Flag to turn off all messages to the screen or file
+    :type allOff: python boolean (True/False)
     
     """
     logger = None
@@ -154,14 +156,16 @@ level#, logLevel,  level,          includes (current rough outline)
         self._debugDefaultCategory = 'debug'
         
     def logname(self):
-        """Just a function to return the 'private' member variable _logName
+        """
+        Just a function to return the 'private' member variable _logName
         to allow checking if logger with the same file name exists all ready
         
         """
         return self._logName
     
     def levelChecker(self):
-        """Just a function to return the 'private' member variable _logLevel
+        """
+        Just a function to return the 'private' member variable _logLevel
         to allow checking what the current verbosity of this logger object is.        
         """     
         return self._logLevel
@@ -177,12 +181,12 @@ level#, logLevel,  level,          includes (current rough outline)
          defaultCategory. 
          ie log.defaultCategory(level='ALL', category='tulips')
          
-         @param level: level to edit the default category for. 
+         :param level: level to edit the default category for. 
                        eg. fullinfo, stdinfo, status...
-         @type level: string
+         :type level: string
          
-         @param level: new default value for the levels category
-         @type level: string
+         :param level: new default value for the levels category
+         :type level: string
          
         """
         if level == 'ALL':
@@ -406,7 +410,10 @@ def getGeminiLog(logName=None , logLevel=1, debug=False, noLogFile=False, allOff
         returned, else it will return the requested one based on the 
         parameter 'logName' in the call.
         
-        """
+    """
+    # Converting logLevel to its int value if needed
+    logLevel = logLevelConverter(logLevel=logLevel)
+ 
     # Retrieve the list of loggers
     global _listOfLoggers
     
@@ -455,4 +462,47 @@ def getGeminiLog(logName=None , logLevel=1, debug=False, noLogFile=False, allOff
     # ready there.             
     return _geminiLogger
 
+def logLevelConverter(logLevel=None):
+    """
+    A basic function to map log message types (ie. error, warning, status...)
+    to the integer logLevel equivalents to allow the user to pass in either 
+    for the logLevel parameters of gemLog.
+    Simply pass in the string for the message type and the matching integer 
+    will be returned.
+    
+    :param logLevel: The logLevel value to be converted to an integer, if not 
+                     one all ready.
+    :type logLevel: String
+    """
+    # Set up dictionary
+    levelDict=  {'none':0,
+                 'quiet':0,
+                 'critical':1,
+                 'error':2,
+                 'warning':3,
+                 'status':4,
+                 'stdinfo':5,
+                 'fullinfo':6,
+                 'debug':10
+                 }
+    # Take care of both cases, logLevel is a string or int and perform checks
+    # then return the appropriate int value.
+    try:
+        if isinstance(logLevel,str):
+            if logLevel.isdigit():
+                logLevel=int(logLevel)
+                if (logLevel>=0 and logLevel<=6) or logLevel==10:
+                    return logLevel
+            else:
+                return levelDict[logLevel]
+        elif isinstance(logLevel, int):
+            if (logLevel>=0 and logLevel<=6) or logLevel==10:
+                return logLevel
+    except:       
+        raise 'logLevel= '+str(logLevel)+' was not a valid input. Please '+\
+                ' enter a logLevel value that is either an integer between '+\
+                '0-6, 10 for debug, or one of the strings: none, quiet, '+\
+                'critical, error, warning, status, stdinfo, fullinfo or debug.'
+    
+    
     
