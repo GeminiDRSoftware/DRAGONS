@@ -69,7 +69,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try: 
             log.status('*STARTING* to fringe correct the images')
             
@@ -86,7 +86,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                          fl_statscale=rc['fl_statscale'],
                                          statsec=rc['statsec'], scale=rc['scale'],
                                          suffix=rc['suffix'], 
-                                         logLevel=int(rc['logLevel']))           
+                                         logLevel=rc['logLevel'])           
             
             log.status('gmosScience.fringe_correct completed successfully')
                 
@@ -124,7 +124,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))        
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])        
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* to create a fringe frame from the inputs')
@@ -135,7 +135,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                              fl_vardq=rc['fl_vardq'],
                                              method=rc['method'],
                                              suffix=rc['suffix'], 
-                                             logLevel=int(rc['logLevel']))           
+                                             logLevel=rc['logLevel'])           
                 
                 log.status('gmosScience.make_fringe_frame_imaging completed successfully')
                     

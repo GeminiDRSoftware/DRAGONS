@@ -67,7 +67,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to add the BPM frame(s) to the input data')
             
@@ -96,7 +96,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adOuts = geminiScience.add_bpm(adIns=rc.getInputs(style='AD'), 
                                          BPMs=BPMlist,matchSize=True, suffix=rc['suffix'], 
-                                         logLevel=int(rc['logLevel']))           
+                                         logLevel=rc['logLevel'])           
             
             log.status('geminiScience.addBPM completed successfully')
                 
@@ -146,7 +146,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 #        # Loading and bringing the pyraf related modules into the name-space
 #        pyraf, gemini, yes, no = pyrafLoader()
         
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to subtract the bias from the inputs')
             
@@ -165,7 +165,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOuts = geminiScience.bias_correct(adIns=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-                                         suffix=rc['suffix'], logLevel=int(rc['logLevel']))           
+                                         suffix=rc['suffix'], logLevel=rc['logLevel'])           
             
             log.status('geminiScience.biasCorrect completed successfully')
                 
@@ -192,7 +192,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                               set during the call to reduce or its default (2) will 
                               be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             #from astrodata.adutils.future import gemDisplay
             #ds = gemDisplay.getDisplayService()
@@ -221,7 +221,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
                 # Grabbing the default parameters dictionary and updating 
                 # it with the above dictionary
-                clParamsDict = CLDefaultParamsDict('gdisplay',logLevel=int(rc['logLevel']))
+                clParamsDict = CLDefaultParamsDict('gdisplay',logLevel=rc['logLevel'])
                 clParamsDict.update(clPrimParams)
                 
                 # Logging the values in the prim parameter dictionaries
@@ -277,7 +277,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             packagePath = sys.argv[0].split('gemini_python')[0]
             calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
@@ -322,7 +322,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             packagePath=sys.argv[0].split('gemini_python')[0]
             calPath='gemini_python/test_data/test_cal_files/processed_flats/'
@@ -374,7 +374,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         
         # loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
@@ -388,7 +388,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOuts = geminiScience.mosaic_detectors(adIns=rc.getInputs(style='AD'), 
                                         fl_paste=rc['fl_paste'], interp_function=rc['interp_function'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
-                                        logLevel=int(rc['logLevel']))           
+                                        logLevel=rc['logLevel'])           
             
             log.status('geminiScience.mosaicDetectors completed successfully')
                 
@@ -432,7 +432,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
@@ -445,7 +445,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOuts = geminiScience.normalize_flat(adIns=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
-                                        logLevel=int(rc['logLevel']))           
+                                        logLevel=rc['logLevel'])           
             
             log.status('geminiScience.normalizeFlat completed successfully')
                 
@@ -486,7 +486,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
         
@@ -498,7 +498,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOuts = gmosScience.overscan_subtract(adIns=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], biassec=rc['biassec'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
-                                        logLevel=int(rc['logLevel']))           
+                                        logLevel=rc['logLevel'])           
             
             log.status('gmosScience.overscanSubtract completed successfully')
                 
@@ -530,7 +530,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to trim the overscan region from the input data')
             
@@ -538,7 +538,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adOuts = geminiScience.overscan_trim(adIns=rc.getInputs(style='AD'),     
                                                         suffix=rc['suffix'], 
-                                                        logLevel= int(rc['logLevel']))           
+                                                        logLevel= rc['logLevel'])           
             
             log.status('geminiScience.overscanTrim completed successfully')
               
@@ -566,11 +566,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:                                          
             for ad in rc.getInputs(style='AD'): 
                 log.debug('Calling gmost.stdInstHdrs for '+ad.filename) 
-                gmost.stdInstHdrs(ad, logLevel=int(rc['logLevel'])) 
+                gmost.stdInstHdrs(ad, logLevel=rc['logLevel']) 
                 log.status('Completed standardizing instrument headers for '+
                            ad.filename)
                     
@@ -593,11 +593,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                           set during the call to reduce or its default (2) will 
                           be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gmost.valInstData for '+ad.filename)
-                gmost.valInstData(ad, logLevel=int(rc['logLevel']))
+                gmost.valInstData(ad, logLevel=rc['logLevel'])
                 log.status('Completed validating instrument data for '+
                            ad.filename)
                 

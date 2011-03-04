@@ -52,7 +52,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         '''
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try: 
             for ad in rc.getInputs(style="AD"): 
                 log.status('calling stdInstHdrs','status')
@@ -87,7 +87,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         '''
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:           
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
@@ -131,7 +131,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         '''
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:        
             for ad in rc.getInputs(style="AD"):
                 log.status('validating data for file = '+ad.filename,'status')

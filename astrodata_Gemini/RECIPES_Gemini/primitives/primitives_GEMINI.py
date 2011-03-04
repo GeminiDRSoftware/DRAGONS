@@ -69,7 +69,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try: 
             log.status('*STARTING* to add the DQ frame(s) to the input data')
             
@@ -87,7 +87,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             adOuts = geminiScience.add_dq(adIns=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
-                                         suffix=rc['suffix'], logLevel=int(rc['logLevel']))    
+                                         suffix=rc['suffix'], logLevel=rc['logLevel'])    
            
             log.status('geminiScience.addDQ completed successfully')
             
@@ -120,7 +120,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.fullinfo('*STARTING* to add the VAR frame(s) to the input data')
             
@@ -131,7 +131,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOuts = geminiScience.add_var(adIns=rc.getInputs(style='AD'), 
                                          suffix=rc['suffix'], 
-                                         logLevel=int(rc['logLevel']))    
+                                         logLevel=rc['logLevel'])    
            
             log.status('geminiScience.addVAR completed successfully')
             
@@ -161,7 +161,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to convert the pixel values from '+
                        'ADU to electrons')
@@ -171,7 +171,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOuts = geminiScience.ADUtoElectrons(adIns=rc.getInputs(style='AD'), 
                                                   suffix=rc['suffix'], 
-                                                  logLevel=int(rc['logLevel']))    
+                                                  logLevel=rc['logLevel'])    
            
             log.status('geminiScience.ADUtoElectrons completed successfully')
             
@@ -219,7 +219,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """        
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* combine the images of the input data')
@@ -231,7 +231,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), 
                                               fl_vardq=rc['fl_vardq'], fl_dqprop=rc['fl_dqprop'], 
                                               method=rc['method'], suffix=rc['suffix'], 
-                                              logLevel=int(rc['logLevel'])) 
+                                              logLevel=rc['logLevel']) 
                 
                 log.status('geminiScience.combine completed successfully')   
                 
@@ -276,7 +276,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             rc.rqDisplay(displayID=rc['displayID'])           
         except:
@@ -305,7 +305,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to flat correct the inputs')
             
@@ -321,7 +321,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOuts = geminiScience.flat_correct(adIns=rc.getInputs(style='AD'),     
                                          flats=processedFlat, suffix=rc['suffix'], 
-                                         logLevel=int(rc['logLevel']))           
+                                         logLevel=rc['logLevel'])           
             
             log.status('geminiScience.flatCorrect completed successfully')
               
@@ -370,7 +370,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         sidset = set()
         purpose=rc["purpose"]
         if purpose==None:
@@ -426,7 +426,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # should eventually be split up into
         # separate primitives, i.e. detectSources and measureIQ.
         
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to detect the sources'+
                        ' and measure the IQ of the inputs')
@@ -437,7 +437,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                      function=rc['function'],
                                      display=rc['display'],
                                      mosaic=rc['mosaic'], qa=rc['qa'],
-                                     logLevel=int(rc['logLevel']))
+                                     logLevel=rc['logLevel'])
             
             log.status('geminiScience.measure_iq completed successfully')
               
@@ -477,7 +477,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to update/create the stack')
             # Requesting for the reduction context to perform an update
@@ -511,7 +511,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         if str(rc['showcals']).lower() == 'all':
             num = 0
             # print 'pG256: showcals=all', repr (rc.calibrations)
@@ -544,7 +544,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         log.fullinfo('Inputs:',category='inputs')
         for inf in rc.inputs:
             log.fullinfo('  '+inf.filename, category='inputs')  
@@ -561,7 +561,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         rcparams = rc.paramNames()
         if (rc['show']):
             toshows = rc['show'].split(':')
@@ -600,7 +600,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         sidset = set()
         purpose = rc["purpose"]
         if purpose == None:
@@ -625,7 +625,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
             
     def sleep(self, rc):
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         if rc['duration']:
             dur = float(rc['duration'])
         else:
@@ -652,13 +652,13 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:   
             log.status('*STARTING* to standardize the headers')
             log.status('Standardizing observatory general headers')            
             for ad in rc.getInputs(style='AD'):
                 log.debug('calling gemt.stdObsHdrs for '+ad.filename)
-                gemt.stdObsHdrs(ad, logLevel=int(rc['logLevel']))
+                gemt.stdObsHdrs(ad, logLevel=rc['logLevel'])
                 log.status('Completed standardizing the headers for '+
                            ad.filename)
    
@@ -680,7 +680,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix=rc['suffix'], 
-                                                   strip=False, logLevel= int(rc['logLevel']))
+                                                   strip=False, logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -730,7 +730,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to standardize the structure of input data')
             
@@ -758,7 +758,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix=rc['suffix'], 
-                                                   strip=False, logLevel= int(rc['logLevel']))
+                                                   strip=False, logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -801,7 +801,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:  
             log.status('*STARTING* to store the processed bias by writing '+
                        'it to disk')
@@ -813,7 +813,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix='_preparedbias', 
                                                    strip=True, 
-                                                   logLevel= int(rc['logLevel']))
+                                                   logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 
                 # Adding a GBIAS time stamp to the PHU
@@ -851,7 +851,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:   
             log.status('*STARTING* to store the processed flat by writing it to disk')
             for ad in rc.getInputs(style='AD'):
@@ -862,7 +862,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix='_preparedflat', 
                                                    strip=True, 
-                                                   logLevel= int(rc['logLevel']))
+                                                   logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 
                 log.fullinfo('File written to = '+rc['storedflats']+'/'
@@ -877,7 +877,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
         
     def time(self, rc):
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         cur = datetime.now()
         
         elap = ''
@@ -917,7 +917,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:           
             if rc['repair'] is True:
                # This should repair the file if it is broken, but this function
@@ -944,7 +944,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix='_validated', 
-                                                   strip=False, logLevel= int(rc['logLevel']))                
+                                                   strip=False, logLevel= rc['logLevel'])                
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -1007,7 +1007,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                         set during the call to reduce or its default (2) will 
                         be used.
         """
-        log = gemLog.getGeminiLog(logLevel=int(rc['logLevel']))
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to write the outputs')
             
@@ -1027,7 +1027,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                     ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                         suffix=rc['suffix'], 
-                                        strip=rc['strip'], logLevel= int(rc['logLevel']))
+                                        strip=rc['strip'], logLevel= rc['logLevel'])
                     log.status('File name updated to '+ad.filename)
                     outfilename = os.path.basename(ad.filename)
                     
