@@ -171,7 +171,10 @@ class ReductionContext(dict):
             except KeyError:
                 return None
         
-        retval = self.convertParmToVal(arg, value)
+        if value == None:
+            retval = None
+        else:
+            retval = self.convertParmToVal(arg, value)
         return retval
        
     def convertParmToVal(self, parmname, value):
