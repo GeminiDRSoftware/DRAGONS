@@ -25,9 +25,10 @@ class GeminiLogger(object):
     30       3       warning    
     40       2       error    
     50       1       critical
-             0       none
+             0       none            
+             
     note: level 'info' exists, but it is not being used in the
-    Recipe Systems logging standards
+    Recipe Systems logging standards.
     
     :param logName: Name of the file the log messages will be written to
     :type logName: string
@@ -42,7 +43,8 @@ class GeminiLogger(object):
     :param noLogFile: Flag for stopping a log file from being created
     :type noLogFile: python boolean (True/False)
     
-    :param allOff: Flag to turn off all messages to the screen or file
+    :param allOff: Flag to turn off all messages to the screen or file and 
+                   to not make a log file. ie, completely ignore all messages.
     :type allOff: python boolean (True/False)
     
     """
@@ -405,11 +407,16 @@ def checkHandlers(log, remove=True):
             return False    
 
 def getGeminiLog(logName=None , logLevel=1, debug=False, noLogFile=False, allOff=False):
-    """ The function called to retrieve the desired logger object.
-        This can be a new one, and thus getGeminiLog will create one to be 
-        returned, else it will return the requested one based on the 
-        parameter 'logName' in the call.
+    """ 
+    The function called to retrieve the desired logger object.
+    This can be a new one, and thus getGeminiLog will create one to be 
+    returned, else it will return the requested one based on the 
+    parameter 'logName' in the call.
         
+    :param logLevel: verbosity setting for the lowest level of messages to 
+                     print to the screen.
+    :type logLevel: integer from 0-6, or 10 following above chart, or the message
+                    level as a string (ie. 'critical', 'status', 'fullinfo'...)
     """
     # Converting logLevel to its int value if needed
     logLevel = logLevelConverter(logLevel=logLevel)
@@ -472,7 +479,8 @@ def logLevelConverter(logLevel=None):
     
     :param logLevel: The logLevel value to be converted to an integer, if not 
                      one all ready.
-    :type logLevel: String
+    :type logLevel: integer from 0-6, or 10 following above chart, or the message
+                    level as a string (ie. 'critical', 'status', 'fullinfo'...)
     """
     # Set up dictionary
     levelDict=  {'none':0,
