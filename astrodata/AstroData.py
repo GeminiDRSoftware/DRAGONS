@@ -63,6 +63,9 @@ class ADNOTFOUND(ADExcept):
 class ADREADONLY(ADExcept):
     pass
     
+class ADBADARGS(ADExcept):
+    pass
+    
 class ADBADARGUMENT(ADExcept):
     pass
     
@@ -1038,7 +1041,7 @@ n informed of the issue and
                     hdu.name = SCI
                     hdu._extver = i
                     
-    def write(self, filename = None, clobber = False, rename=True):
+    def write(self, filename = None, clobber = False, rename=None):
         """
         :param fname: file name to write to, optional if instance already has
                       name, which might not be the case for new AstroData
@@ -1060,17 +1063,29 @@ n informed of the issue and
         throws an exception if the file already exists.
 
         """
-        if filename != None:
-            self.filename = filename
+        
         if (self.mode == "readonly"):
-            raise ADREADONLY("Cannot use AstroData.write(..) on this instance, "
-                             "file opened in readonly mode, either open for "
-                             "update/writing or rename the file.")
+            if rename == True  or rename == None:
+                if filename != None or filename != self.filename:
+                    raise ADREADONLY("Cannot use AstroData.write(..) on this instance, "
+                                 "file opened in readonly mode, either open for "
+                                 "update/writing or rename the file.")
+            else:
+                if filename == None or filename == self.filename:
+                    raise ADREADONLY("Attemt to write out readonly AstroData instance.")
+        
+        if rename == None:
+            if filename == None:
+                rename = False
+            else:
+                rename = True
+            
 
         fname = filename
         hdul = self.gethdul()
         if fname == None:
-            rename = False
+            if rename == True:
+                raise ADBADARGS("Option rename=True but filename is None")
             fname = self.filename
         else:
             if rename == True:
@@ -1082,6 +1097,7 @@ n informed of the issue and
             # perhaps create tempfile name and use it?
             raise gdExcept()
            
+        
         if os.path.exists(fname):
             if clobber:
                 os.remove(fname)
