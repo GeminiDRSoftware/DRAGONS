@@ -16,11 +16,19 @@ def biassecStrTonbiascontam(ad, biassec, logLevel=1):
     BIASSEC for each SCI extension in a single input.  This value will 
     be the new bias contamination value for use in IRAF scripts.
     
+    :param ad: AstroData instance to calculate the bias contamination for
+    :type ad: AstroData instance
+    
     :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
     :type biassec: string  
     
-    :param ad: AstroData instance to calculate the bias contamination for
-    :type ad: AstroData instance
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     """
     log=gemLog.getGeminiLog(logLevel=logLevel) 
@@ -124,6 +132,14 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False,
                   defined for this to work.
     :type strip: Boolean
     
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
+    
     ex. 
     fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
     result: 'N20020214S022_prepared.fits'
@@ -201,6 +217,19 @@ def logDictParams(indict, logLevel=1):
     """ A function to log the parameters in a provided dictionary.  Main use
     is to log the values in the dictionaries of parameters for function 
     calls using the ** method.
+    
+    :param indict: Dictionary full of parameters/settings to be recorded as 
+                   fullinfo log messages.
+    :type indict: dictionary. 
+                  ex. {'param1':param1_value, 'param2':param2_value,...}
+    
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     """
     log=gemLog.getGeminiLog(logLevel=logLevel)
     for key in indict:
@@ -208,25 +237,39 @@ def logDictParams(indict, logLevel=1):
                      category='parameters')
         
 def nbiascontam(adIns, biassec=None, logLevel=1):
-        """This function will find the largest difference between the horizontal 
-        component of every BIASSEC value and those of the biassec parameter. 
-        The returned value will be that difference as an integer and it will be
-        used as the value for the nbiascontam parameter used in the gireduce 
-        call of the overscanSubtract primitive.
+    """
+    This function will find the largest difference between the horizontal 
+    component of every BIASSEC value and those of the biassec parameter. 
+    The returned value will be that difference as an integer and it will be
+    used as the value for the nbiascontam parameter used in the gireduce 
+    call of the overscanSubtract primitive.
+    
+    :param adIns: AstroData instance(s) to calculate the bias contamination for
+    :type adIns: AstroData instance in a list
+    
+    :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+    :type biassec: string 
+    
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
+    """
         
-        """
-        
-        # Prepare a stored value to be compared between the inputs
-        retval=0
-        # Loop through the inputs
-        for ad in adIns:
-            # Pass the retrieved value to biassecStrToBiasContam function
-            # to do the work in finding the difference of the biassec's
-            val = biassecStrTonbiascontam(ad, biassec, logLevel=logLevel)
-            # Check if value returned for this input is larger. Keep the largest
-            if val > retval:
-                retval = val
-        return retval
+    # Prepare a stored value to be compared between the inputs
+    retval=0
+    # Loop through the inputs
+    for ad in adIns:
+        # Pass the retrieved value to biassecStrToBiasContam function
+        # to do the work in finding the difference of the biassec's
+        val = biassecStrTonbiascontam(ad, biassec, logLevel=logLevel)
+        # Check if value returned for this input is larger. Keep the largest
+        if val > retval:
+            retval = val
+    return retval
     
 def observationMode(ad):
     """ 
@@ -291,18 +334,26 @@ def secStrToIntList(string):
     return retl
 
 def stdObsHdrs(ad, logLevel=1):
-    """ This function is used by standardizeHeaders in primitives_GEMINI.
+    """ 
+    This function is used by standardizeHeaders in primitives_GEMINI.
         
-        It will update the PHU header keys NSCIEXT, PIXSCALE
-        NEXTEND, OBSMODE, COADDEXP, EXPTIME and NCOADD plus it will add 
-        a time stamp for GPREPARE to indicate that the file has be prepared.
-        
-        In the SCI extensions the header keys GAIN, PIXSCALE, RDNOISE, BUNIT,
-        NONLINEA, SATLEVEL and EXPTIME will be updated.
-        
-        :param ad: astrodata instance to perform header key updates on
-        :type ad: an AstroData instance
+    It will update the PHU header keys NSCIEXT, PIXSCALE
+    NEXTEND, OBSMODE, COADDEXP, EXPTIME and NCOADD plus it will add 
+    a time stamp for GPREPARE to indicate that the file has be prepared.
     
+    In the SCI extensions the header keys GAIN, PIXSCALE, RDNOISE, BUNIT,
+    NONLINEA, SATLEVEL and EXPTIME will be updated.
+    
+    :param ad: astrodata instance to perform header key updates on
+    :type ad: an AstroData instance
+    
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                OR the message level as a string (ie. 'critical', 'status', 
+                'fullinfo'...)
     """
     log=gemLog.getGeminiLog(logLevel=logLevel) 
     # Keywords that are updated/added for all Gemini PHUs 
@@ -381,14 +432,22 @@ def stdObsHdrs(ad, logLevel=1):
                      category='header')
 
 def stdObsStruct(ad, logLevel=1):
-    """ This function is used by standardizeStructure in primitives_GEMINI.
+    """ 
+    This function is used by standardizeStructure in primitives_GEMINI.
     
-        It currently checks that the SCI extensions header key EXTNAME = 'SCI' 
-        and EXTVER matches that of descriptor values 
+    It currently checks that the SCI extensions header key EXTNAME = 'SCI' 
+    and EXTVER matches that of descriptor values 
         
-        :param ad: astrodata instance to perform header key updates on
-        :type ad: an AstroData instance
+    :param ad: astrodata instance to perform header key updates on
+    :type ad: an AstroData instance
     
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                OR the message level as a string (ie. 'critical', 'status', 
+                'fullinfo'...)
     """
     log=gemLog.getGeminiLog(logLevel=logLevel)    
     # Formatting so logger looks organized for these messages
@@ -570,7 +629,9 @@ class CLManager(object):
                          default is 'critical' messages only.
                          Note: independent of logLevel setting, all messages always go 
                          to the logfile if noLogFile=False.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
         :param noLogFile: A boolean to make it so no log file is created
         :type noLogFile: Python boolean (True/False)

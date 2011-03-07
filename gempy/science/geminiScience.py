@@ -66,7 +66,9 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
           default is 'critical' messages only.
           Note: independent of logLevel setting, all messages always go 
           to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -307,7 +309,9 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -508,7 +512,9 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         default is 'critical' messages only.
         Note: independent of logLevel setting, all messages always go 
         to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -697,7 +703,9 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -897,7 +905,9 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
           default is 'critical' messages only.
           Note: independent of logLevel setting, all messages always go 
           to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -1157,7 +1167,9 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     default is 'critical' messages only.
                     Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -1359,7 +1371,9 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
                     default is 'critical' messages only.
                     Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -1545,7 +1559,9 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
                      to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -1703,7 +1719,9 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                     default is 'critical' messages only.
                     Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -1919,7 +1937,9 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                     default is 'critical' messages only.
                     Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -2107,7 +2127,9 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
                     default is 'critical' messages only.
                     Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)

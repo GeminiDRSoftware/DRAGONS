@@ -10,9 +10,20 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 
 def stdInstHdrs(ad, logLevel=1):  
-    """ A function used by StandardizeInstrumentHeaders in primitives_GMOS.
-        It currently just adds the DISPAXIS header key to the SCI extensions.
+    """ 
+    A function used by StandardizeInstrumentHeaders in primitives_GMOS.
+    It currently just adds the DISPAXIS header key to the SCI extensions.
     
+    :param ad: input astrodata instance to have its headers standardized
+    :type ad: a single astrodata instance
+    
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     """
     # Adding the missing/needed keywords into the headers
     if not ad.isType('GMOS_IMAGE'):
@@ -38,11 +49,22 @@ def stdInstHdrs(ad, logLevel=1):
                          'header')
 
 def valInstData(ad, logLevel=1):  
-    """A function used by validateInstrumentData in primitives_GMOS.
+    """
+    A function used by validateInstrumentData in primitives_GMOS.
     
-        It currently just checks if there are 1, 3, 6 or 12 SCI extensions 
-        in the input. 
+    It currently just checks if there are 1, 3, 6 or 12 SCI extensions 
+    in the input. 
     
+    :param ad: input astrodata instance to validate
+    :type ad: a single astrodata instance
+    
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     """
     log=gemLog.getGeminiLog(logLevel=logLevel)
     length=ad.countExts('SCI')
@@ -71,9 +93,9 @@ class GIRMFRINGEException:
 # There was talk about generalizing this module to work on all imaging data
 # rather than just GMOS images, this is left as a task to look into later.
 def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='', 
-               scale=0.0, logLevel=1):                
-                
-    """Scale and subtract a fringe frame from GMOS gireduced image.
+               scale=0.0, logLevel=1):                         
+    """
+    Scale and subtract a fringe frame from GMOS gireduced image.
     
     :param inimage: Input image
     :type inimage: AstroData instance
@@ -92,6 +114,14 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
                       
     :param scale: Override auto-scaling if not 0.0
     :type scale: real 
+    
+    :param logLevel: Verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     
     """    
     log=gemLog.getGeminiLog(logLevel=logLevel)
@@ -224,8 +254,6 @@ def statsecConverter(statsecStr):
         
         return extname.upper(), int(extver), int(x1), int(x2), int(y1), int(y2)
     except: 
-        log.critical('An problem occured trying to convert the statsecStr '+
-                     statsecStr+' into its useful components')
         raise GIRMFRINGEException('An problem occured trying to convert the statsecStr '+
                      statsecStr+' into its useful components')         
 #----------------------------------------------------------------------------       

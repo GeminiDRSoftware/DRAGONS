@@ -79,7 +79,9 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
 
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -316,7 +318,9 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
 
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -482,8 +486,9 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                     default is 'critical' messages only.
                     Note: independent of logLevel setting, all messages always go 
                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen
-    
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
