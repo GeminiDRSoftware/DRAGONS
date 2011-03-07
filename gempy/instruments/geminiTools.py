@@ -352,8 +352,8 @@ def stdObsHdrs(ad, logLevel=1):
                      Note: independent of logLevel setting, all messages always go 
                      to the logfile if noLogFile=False.
     :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                OR the message level as a string (ie. 'critical', 'status', 
-                'fullinfo'...)
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     """
     log=gemLog.getGeminiLog(logLevel=logLevel) 
     # Keywords that are updated/added for all Gemini PHUs 
@@ -446,8 +446,8 @@ def stdObsStruct(ad, logLevel=1):
                      Note: independent of logLevel setting, all messages always go 
                      to the logfile if noLogFile=False.
     :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                OR the message level as a string (ie. 'critical', 'status', 
-                'fullinfo'...)
+                    OR the message level as a string (ie. 'critical', 'status', 
+                    'fullinfo'...)
     """
     log=gemLog.getGeminiLog(logLevel=logLevel)    
     # Formatting so logger looks organized for these messages
@@ -509,17 +509,13 @@ class CLManager(object):
     funcName = None
     status = None
     combinedImages = None
-    fmt = '%s'
-    arrayOutsdtype = 'str'
-    arrayOutsdelimiter = None
     templog = None
     log=None
     logLevel=1
      
     def __init__(self, imageIns=None, refIns=None, arrayIns=None, suffix=None,  
                   imageOutsNames=None, refOutsNames=None, numArrayOuts=None,
-                 combinedImages=False, funcName=None, fmt='%s',
-                 arrayOutsdtype='str', arrayOutsdelimiter=None, logName=None,  
+                 combinedImages=False, funcName=None, logName=None,  
                  logLevel=1, noLogFile=False):
         """
         This instantiates all the globally accessible variables (within the 
@@ -550,11 +546,11 @@ class CLManager(object):
                          Use the arrayInsFiles function to return the file names
                          for the temporary disk file versions of these inputs
                          in any desired form for input to IRAF.
-        :type arrayIns: numpy array(s) OR Python lists-of-lists with string or int/float/double elements; 
+        :type arrayIns: Python list-of-lists with each element of an array being 
+                        an entire line to be written to an input file for IRAF; 
                         Either list of input arrays or None.
                         Format: 
-                        [[[list1-x1,list1-y1,...],[list1-x2,list1-y2,...],...],
-                        [[list2-x1,list2-y1],[list2-x2,list2-y2,...],...],...]
+                        [[list1-line1,list1-line2,...],[list2-line2,list2-line2,...],...]
                         another way of looking at it if lists are objects:
                         [LIST1, LIST2,...]
                         Even if only a single list is to be passed in, it MUST  
@@ -602,25 +598,6 @@ class CLManager(object):
                          the function name makes it easier to track down any errors that might occur.
         :type funcName: String
         
-        :param fmt: Format to be used for writing the elements of the arrays in 
-                    arrayIns to their text files on disk.
-        :type fmt: numpy format string. Default: '%s' (ie. as strings).
-                   Refer to the numpy.savetxt description for more information. 
-                   url: http://docs.scipy.org/doc/numpy/reference/generated/numpy.savetxt.html#r230
-        
-        :param arrayOutsdtype: data-type for arrays loaded into arrayOuts from 
-                               text files output by IRAF.
-        :type arrayOutsdtype: Python types ('str','bool','float','int'..) OR
-                              numpy data-types. Refer to Data type objects 
-                              description from numpy found at:
-                              url: http://docs.scipy.org/doc/numpy/user/basics.types.html#
-        
-        :param arrayOutsdelimiter: the string used to separate the values when
-                                  loading the text files output by IRAF into 
-                                  the arrays of arrayOuts.
-        :type arrayOutsdelimiter: String, Default: None which indicates to use whitespace. 
-                                  Another common option is '\n'
-        
         :param logName: Name of the log file to write log messages to, 
                         if noLogFile=False.
         :type logName: String
@@ -630,8 +607,8 @@ class CLManager(object):
                          Note: independent of logLevel setting, all messages always go 
                          to the logfile if noLogFile=False.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                        OR the message level as a string (ie. 'critical', 'status', 
+                        'fullinfo'...)
     
         :param noLogFile: A boolean to make it so no log file is created
         :type noLogFile: Python boolean (True/False)
@@ -688,9 +665,6 @@ class CLManager(object):
             self.funcName = funcName
             self.arrayIns = arrayIns
             self.numArrayOuts = numArrayOuts
-            self.fmt = fmt
-            self.arrayOutsdtype = arrayOutsdtype
-            self.arrayOutsdelimiter = arrayOutsdelimiter
             # now that everything is loaded to global make the uniquePrefix
             self.prefix = 'tmp'+ str(os.getpid())+self.funcName
             # now the preCLwrites can load up the input lists and write 
@@ -1025,7 +999,11 @@ class CLManager(object):
                 self.log.fullinfo('Temporary ref file on disk for input to CL: '
                                   +name)
                 # Write this array to text file on disk with its unique filename 
-                np.savetxt(name, array, fmt=self.fmt)
+                fout = open(name,'w')
+                for line in array:
+                    fout.write(line)
+                fout.close()
+                
                 count=count+1
         # preparing the output filenames for temperary output array files from 
         # IRAF if needed, no writing here that is done by IRAF.
@@ -1102,11 +1080,13 @@ class CLManager(object):
             self.log.fullinfo('Loading output reference array into arrayOuts'+\
                               ' and removing temporary files from disk.')
             for name in self.arrayOutsNames:
-                # Loading the file into an array
-                ary = np.loadtxt(name, dtype=self.arrayOutsdtype, 
-                                 delimiter=self.arrayOutsdelimiter)
+                # read in input array txt file to an array with each line
+                # of the file is an element of the array, ie a list of lines.
+                fin = open(name,'r')
+                lineList = fin.readlines()
+                fin.close()                
                 # appending the array to the arrayOuts list to be returned
-                self.arrayOuts.append(ary)
+                self.arrayOuts.append(lineList)
                 # Deleting the file from disk
                 os.remove(name)
                 self.log.fullinfo(name+' was loaded into memory')
