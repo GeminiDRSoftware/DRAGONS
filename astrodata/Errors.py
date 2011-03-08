@@ -38,3 +38,31 @@ class DescriptorListError(Error):
     used, but isn't
     """
     message = "Please use asList=True to obtain a list"
+
+class PrimitiveError(Error):
+    """
+    Exception raised for general errors inside of a primitive.
+    """
+    message = 'An error occurred during a primitive'
+    
+class ScienceError(Error):
+    """
+    Exception raised for general errors inside of a user level 'science' function.
+    """
+    message = 'An error occurred during a user level "science" function'   
+
+class ToolboxError(Error):
+    """
+    Exception raised for general errors inside of a "toolbox" function.
+    """
+    message = 'An error occurred during a "toolbox" function'
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
