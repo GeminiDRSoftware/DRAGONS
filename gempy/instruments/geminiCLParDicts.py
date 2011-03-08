@@ -6,6 +6,7 @@
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments import geminiTools  as gemt
 from astrodata.adutils import gemLog
+from astrodata.Errors import ToolboxError
 
 def CLDefaultParamsDict(CLscript, logLevel=1):
     """
@@ -25,7 +26,7 @@ def CLDefaultParamsDict(CLscript, logLevel=1):
                         (CLscript != 'gdisplay') and (CLscript != 'gifringe'):
         log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
-        raise GEMINIException('The CLscript '+CLscript+
+        raise ToolboxError('The CLscript '+CLscript+
                               ' does not have a default'+' dictionary')
         
     if CLscript == 'gemcombine':

@@ -5,9 +5,10 @@ import os
 
 import pyfits as pf
 import numpy as np
+import tempfile
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
-import tempfile
+from astrodata.Errors import ToolboxError
 
 def biassecStrTonbiascontam(ad, biassec, logLevel=1):
     """ 
@@ -201,7 +202,7 @@ def listFileMaker(list=None, listName=None):
         """
         try:
             if listName==None:
-                raise "listName can not be None, please provide a string"
+                raise ToolboxError("listName can not be None, please provide a string")
             elif os.path.exists(listName):
                 return listName
             else:
@@ -211,7 +212,7 @@ def listFileMaker(list=None, listName=None):
                 fh.close()
                 return listName
         except:
-            raise "Could not write inlist file for stacking." 
+            raise ToolboxError("Could not write inlist file for stacking.") 
         
 def logDictParams(indict, logLevel=1):
     """ A function to log the parameters in a provided dictionary.  Main use
@@ -288,7 +289,8 @@ def observationMode(ad):
         elif 'LONGSLIT' in types:
             return 'LONGSLIT'
     except:
-        raise 'Input '+ad.filename+' is not of type IMAGE or IFU or MOS or LONGSLIT.'
+        raise ToolboxError('Input '+ad.filename+
+                            ' is not of type IMAGE or IFU or MOS or LONGSLIT.')
     
 def pyrafBoolean(pythonBool):
     """

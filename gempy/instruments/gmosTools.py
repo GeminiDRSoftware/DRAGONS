@@ -8,6 +8,7 @@ from copy import deepcopy
 import time
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
+from astrodata.Errors import ToolboxError
 
 def stdInstHdrs(ad, logLevel=1):  
     """ 
@@ -75,20 +76,10 @@ def valInstData(ad, logLevel=1):
     else: 
         log.critical('There are NOT 1, 3, 6 or 12 extensions in file = '+
                      ad.filename)
-        raise 'Error occurred in valInstData for input '+ad.filename
+        raise ToolboxError('Error occurred in valInstData for input '+
+                           ad.filename)
 
 #------------- GMOS_IMAGE fringe removal funcs ---------------------------  
-class GIRMFRINGEException:
-    """ This is the general exception class for use with the 
-    """
-    def __init__(self, msg='Exception Raised in Recipe System'):
-        """This constructor takes a message to print to the user."""
-        self.message = msg
-    def __str__(self):
-        """
-        This str conversion member returns the message given by the user 
-        (or the default message) when the exception is not caught."""
-        return self.message
 
 # There was talk about generalizing this module to work on all imaging data
 # rather than just GMOS images, this is left as a task to look into later.
@@ -143,7 +134,7 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
     if (fringe.countExts('SCI') != inimage.countExts('SCI')):
         log.critical('Number of SCI EXT is NOT the same between '+ 
                      inimage.filename + ' and ' + fringe.filename)            
-        raise GIRMFRINGEException('CRITICAL, science extension match '+
+        raise ToolboxError('CRITICAL, science extension match '+
                                   'failure between' + inimage.filename + 
                                   fringe.filename)
                 
@@ -172,7 +163,7 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
             log.critical('The CCD X and Y binning for the input image '+inimage.filename+
                          ' and the input fringe '+fringe.filename+ 
                          ' do not match.')
-            raise GIRMFRINGEException('The CCD X and Y binning for the input image '+inimage.filename+
+            raise ToolboxError('The CCD X and Y binning for the input image '+inimage.filename+
                          ' and the input fringe '+fringe.filename+ 
                          ' do not match.')
     
@@ -235,7 +226,7 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
     else:
         log.critical('The input image '+inimage.filename+' and fringe '+
                      fringe.filename+' had arrays of different sizes')                  
-        raise GIRMFRINGEException('CRITICAL, The input image '+inimage.filename+' and fringe '+
+        raise ToolboxError('CRITICAL, The input image '+inimage.filename+' and fringe '+
                      fringe.filename+' had arrays of different sizes')  
     
     log.fullinfo('', category='format')          
@@ -254,6 +245,6 @@ def statsecConverter(statsecStr):
         
         return extname.upper(), int(extver), int(x1), int(x2), int(y1), int(y2)
     except: 
-        raise GIRMFRINGEException('An problem occured trying to convert the statsecStr '+
+        raise ToolboxError('An problem occured trying to convert the statsecStr '+
                      statsecStr+' into its useful components')         
 #----------------------------------------------------------------------------       
