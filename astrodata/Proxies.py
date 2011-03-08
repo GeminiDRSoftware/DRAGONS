@@ -121,9 +121,9 @@ def startADCC(callerlockfile = None):
     # wait for adccinfo
     while not os.path.exists(clfn):
         # print "P123:waiting for", clfn
-        os.path.remove(clfn)
         sleep(1)
         
+    os.remove(clfn)
     return pid
                                         
 class PRSProxy(object):
