@@ -13,8 +13,9 @@ import time
 from datetime import datetime
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
-from gempy.instruments import geminiTools  as gemt
 from astrodata.adutils.gemutil import pyrafLoader
+from astrodata.Errors import ScienceError
+from gempy.instruments import geminiTools  as gemt
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, logName='', 
@@ -85,19 +86,19 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
                    
     if BPMs==None:
-        raise('There must be at least one BPM provided, the "BPMs" parameter must not be None.')
+        raise ScienceError('There must be at least one BPM provided, the "BPMs" parameter must not be None.')
                    
     try:
         # Ensure there are inputs to work on and BPMs to add to the inputs
@@ -240,7 +241,7 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and suffix parameters can not BOTH\
+                        raise ScienceError('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -252,13 +253,13 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
 
                 count=count+1
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the add_bpm function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run add_bpm')
+        raise ScienceError('An error occurred while trying to run add_bpm')
     
 def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=None, 
                                     logName='', logLevel=1, noLogFile=False):
@@ -328,13 +329,13 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -459,7 +460,7 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and suffix parameters can not BOTH\
+                        raise ScienceError('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -471,13 +472,13 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
 
                 count=count+1
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the add_dq function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run add_dq')
+        raise ScienceError('An error occurred while trying to run add_dq')
 
 def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
@@ -531,13 +532,13 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -647,7 +648,7 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and suffix parameters can not BOTH\
+                        raise ScienceError('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -659,13 +660,13 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
 
                 count=count+1
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the add_var function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run add_var')
+        raise ScienceError('An error occurred while trying to run add_var')
 
 def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='', 
                                                     logLevel=1, noLogFile=False):
@@ -722,13 +723,13 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -820,7 +821,7 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and suffix parameters can not BOTH\
+                        raise ScienceError('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -843,12 +844,12 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
 
                 count=count+1
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         log.status('**FINISHED** the adu_to_electrons function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise('An error occurred while trying to run adu_to_electrons')
+        raise ScienceError('An error occurred while trying to run adu_to_electrons')
 
 def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
                 outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
@@ -924,13 +925,13 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -1052,7 +1053,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                     if gemini.gmos.gireduce.status:
                         log.critical('gireduce failed for inputs '+
                                      clm.imageInsFiles(type='string'))
-                        raise ('gireduce failed')
+                        raise ScienceError('gireduce failed')
                     else:
                         log.status('Exited the gireduce CL script successfully')
                         
@@ -1105,21 +1106,21 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                 else:
                     log.critical('One of the inputs has not been prepared,\
                     the combine function can only work on prepared data.')
-                    raise('One of the inputs was not prepared')
+                    raise ScienceError('One of the inputs was not prepared')
                 
             log.warning('The CL script gireduce REPLACED the previously '+
                         'calculated DQ frames')
         
         else:
             log.critical('The parameter "adIns" must not be None')
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the bias_correct function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run bias_correct')     
+        raise ScienceError('An error occurred while trying to run bias_correct')     
     
 def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average', 
             outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
@@ -1187,13 +1188,13 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -1291,7 +1292,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     if gemini.gemcombine.status:
                         log.critical('gemcombine failed for inputs '+
                                      clm.imageInsFiles(type='string'))
-                        raise ('gemcombine failed')
+                        raise ScienceError('gemcombine failed')
                     else:
                         log.status('Exited the gemcombine CL script successfully')
                     
@@ -1324,17 +1325,17 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 else:
                     log.critical('One of the inputs has not been prepared,\
                     the combine function can only work on prepared data.')
-                    raise('One of the inputs was not prepared')
+                    raise ScienceError('One of the inputs was not prepared')
         else:
             log.critical('The parameter "adIns" must not be None')
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the combine function')
         
         # Return the outputs (list or single, matching adIns)
         return adOut
     except:
-        raise ('An error occurred while trying to run combine')
+        raise ScienceError('An error occurred while trying to run combine')
                 
 def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
@@ -1390,19 +1391,19 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     if flats==None:
-        raise('There must be at least one processed flat provided, the "flats" parameter must not be None.')
+        raise ScienceError('There must be at least one processed flat provided, the "flats" parameter must not be None.')
     
     try:
         if adIns!=None:
@@ -1472,7 +1473,7 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and suffix parameters can not BOTH\
+                        raise ScienceError('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -1484,14 +1485,14 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
 
                 count=count+1
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the flat_correct function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run flat_correct')
+        raise ScienceError('An error occurred while trying to run flat_correct')
                 
 def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
                keepDats=False, logName='', logLevel=1, noLogFile=False):
@@ -1667,9 +1668,9 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
             #returning complete dictionary for use by the user if desired
             return outDict
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
     except:
-        raise ('An error occurred while trying to run measure_iq')                              
+        raise ScienceError('An error occurred while trying to run measure_iq')                              
                 
 def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
                 outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
@@ -1738,13 +1739,13 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -1834,7 +1835,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                 if gemini.gmos.gmosaic.status:
                     log.critical('gireduce failed for inputs '+
                                  clm.imageInsFiles(type='string'))
-                    raise ('gmosaic failed')
+                    raise ScienceError('gmosaic failed')
                 else:
                     log.status('Exited the gmosaic CL script successfully')    
                     
@@ -1875,18 +1876,18 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
             else:
                     log.critical('One of the inputs has not been prepared,\
                     the mosaicDetectors function can only work on prepared data.')
-                    raise('One of the inputs was not prepared')
+                    raise ScienceError('One of the inputs was not prepared')
                 
         else:
             log.critical('The parameter "adIns" must not be None')
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the mosaic_detectors function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run mosaic_detectors') 
+        raise ScienceError('An error occurred while trying to run mosaic_detectors') 
                 
 def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
                 outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
@@ -1956,13 +1957,13 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -2052,7 +2053,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                 if gemini.giflat.status:
                     log.critical('giflat failed for inputs '+
                                  clm.imageInsFiles(type='string'))
-                    raise ('giflat failed')
+                    raise ScienceError('giflat failed')
                 else:
                     log.status('Exited the giflat CL script successfully')
                 
@@ -2085,18 +2086,18 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             else:
                 log.critical('One of the inputs has not been prepared,\
                 the normalizeFlat function can only work on prepared data.')
-                raise('One of the inputs was not prepared')
+                raise ScienceError('One of the inputs was not prepared')
                 
         else:
             log.critical('The parameter "adIns" must not be None')
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the normalize_flat function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run normalize_flat')    
+        raise ScienceError('An error occurred while trying to run normalize_flat')    
     
 def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
@@ -2151,13 +2152,13 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -2252,7 +2253,7 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and suffix parameters can not BOTH\
+                        raise ScienceError('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -2264,14 +2265,14 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
 
                 count=count+1
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the overscan_trim function')
         
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run overscan_trim')
+        raise ScienceError('An error occurred while trying to run overscan_trim')
 
 
 

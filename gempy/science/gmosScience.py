@@ -9,11 +9,12 @@ import pyfits as pf
 import numpy as np
 from copy import deepcopy
 
-from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
+from astrodata.adutils import gemLog
+from astrodata.adutils.gemutil import pyrafLoader
+from astrodata.Errors import ScienceError
 from gempy.instruments import geminiTools  as gemt
 from gempy.instruments import gmosTools  as gmost
-from astrodata.adutils.gemutil import pyrafLoader
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 
@@ -98,13 +99,13 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -209,7 +210,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 if gemini.gmos.gireduce.status:
                     log.critical('gireduce failed for inputs '+
                                  clm.imageInsFiles(type='string'))
-                    raise ('gireduce failed')
+                    raise ScienceError('gireduce failed')
                 else:
                     log.status('Exited the gireduce CL script successfully')
                 
@@ -249,11 +250,11 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
             else:
                 log.critical('One of the inputs has not been prepared,\
                 the overscanSubtract function can only work on prepared data.')
-                raise('One of the inputs was not prepared')
+                raise ScienceError('One of the inputs was not prepared')
                 
         else:
             log.critical('The parameter "adIns" must not be None')
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the overscanSubtract function')
         
@@ -340,13 +341,13 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')               
@@ -425,7 +426,7 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
                         else:
                             adOut.filename = outNames
                     else:
-                        raise('outNames and suffix parameters can not BOTH\
+                        raise ScienceError('outNames and suffix parameters can not BOTH\
                                                                     be None')
                         
                 log.status('File name updated to '+adOut.filename)
@@ -438,13 +439,13 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
                 count=count+1
                 
         else:
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the fringe_correct function')
         # Return the outputs (list or single, matching adIns)
         return adOuts
     except:
-        raise ('An error occurred while trying to run fringe_correct')
+        raise ScienceError('An error occurred while trying to run fringe_correct')
     
 def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median', 
             outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
@@ -504,13 +505,13 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
         if isinstance(outNames,list):
             if len(adIns)!= len(outNames):
                 if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adIns)>1:
             if suffix==None:
-                   raise ('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -642,17 +643,17 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                 else:
                     log.critical('One of the inputs has not been prepared,\
                     the combine function can only work on prepared data.')
-                    raise('One of the inputs was not prepared')
+                    raise ScienceError('One of the inputs was not prepared')
         else:
             log.critical('The parameter "adIns" must not be None')
-            raise('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adIns" must not be None')
         
         log.status('**FINISHED** the make_fringe_frame_imaging function')
         
         # Return the outputs (list or single, matching adIns)
         return adOut
     except:
-        raise ('An error occurred while trying to run make_fringe_frame_imaging')
+        raise ScienceError('An error occurred while trying to run make_fringe_frame_imaging')
     
     
     
