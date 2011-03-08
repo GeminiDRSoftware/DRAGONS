@@ -5,6 +5,7 @@ import sys, StringIO, os
 from astrodata.adutils import gemLog
 from astrodata import Descriptors
 from astrodata.data import AstroData
+from astrodata.Errors import PrimitiveError
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from primitives_GMOS import GMOSPrimitives, pyrafLoader
@@ -14,22 +15,6 @@ import primitives_GMOS
 import numpy as np
 import pyfits as pf
 import shutil
-
-log=gemLog.getGeminiLog()
-
-class GMOS_LS_ARCException:
-    """ This is the general exception the classes and functions in the
-    Structures.py module raise.
-    
-    """
-    def __init__(self, message='Exception Raised in Recipe System'):
-        """This constructor takes a message to print to the user."""
-        self.message = message
-    def __str__(self):
-        """This str conversion member returns the message given 
-        by the user (or the default message)
-        when the exception is not caught."""
-        return self.message
 
 class GMOS_LS_ARCPrimitives(GMOSPrimitives):
     """ 
@@ -45,12 +30,13 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
         return rc
      
     def gtransform(self, rc):
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
             print "Starting gtrans GMOS_LS_ARC"
             #gtrans.gtrans.Gtrans('gsN20011222S027.fits',minsep=4,ntmax=50)
             #gg = gtrans.Gtrans(rc.inputsAsStr(), minsep=4,ntmax=50)
 
         except:
-            raise GMOSException("Problem with gtransform")
+            raise PrimitiveError("Problem with gtransform")
 
         yield rc

@@ -6,6 +6,7 @@ from astrodata.adutils import gemLog
 from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
+from astrodata.Errors import PrimitiveError
 from primitives_GEMINI import GEMINIPrimitives
 from primitives_GEMINI import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
@@ -13,18 +14,7 @@ from gempy.science import gmosScience
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.instruments import girmfringe
-
-class GMOS_IMAGEException:
-    """ This is the general exception the classes and functions in the
-    Structures.py module raise.
-    """
-    def __init__(self, msg="Exception Raised in Recipe System"):
-        """This constructor takes a message to print to the user."""
-        self.message = msg
-    def __str__(self):
-        """This str conversion member returns the message given by the user (or the default message)
-        when the exception is not caught."""
-        return self.message
+from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
     """
@@ -35,7 +25,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     astrotype = "GMOS_IMAGE"
     
     def init(self, rc):
-        
         GMOSPrimitives.init(self, rc)
         return rc
         
@@ -97,7 +86,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             
         except:
             log.critical("Problem subtracting fringe from "+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError("Problem subtracting fringe from "+
+                                 rc.inputsAsStr())
 
         yield rc 
     
@@ -131,83 +121,30 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
                 log.debug('Calling gmosScience.make_fringe_frame_imaging function')
             
-                adOuts = gmosScience.make_fringe_frame_imaging(adIns=rc.getInputs(style='AD'), 
+                adOuts = gmosScience.make_fringe_frame_imaging(
+                                                adIns=rc.getInputs(style='AD'), 
                                              fl_vardq=rc['fl_vardq'],
                                              method=rc['method'],
                                              suffix=rc['suffix'], 
                                              logLevel=rc['logLevel'])           
                 
-                log.status('gmosScience.make_fringe_frame_imaging completed successfully')
+                log.status('gmosScience.make_fringe_frame_imaging completed'+
+                           ' successfully')
                     
                 # Reporting the updated files to the reduction context
                 rc.reportOutput(adOuts)              
                 
             else:
-                log.status('makeFringeFrame was called with only one input, '+\
-                           'so it just passed the inputs through without doing'+\
-                           ' anything to them.')
+                log.status('makeFringeFrame was called with only one input, '+
+                           'so it just passed the inputs through without '+
+                           'doing anything to them.')
             # Reporting the updated files to the reduction context
             rc.reportOutput(rc.getInputs(style='AD'))
             
             log.status('*FINISHED* creating the fringe image')
         except:
             log.critical("Problem creating fringe from "+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError("Problem creating fringe from "+
+                                 rc.inputsAsStr())
         yield rc  
 
-def CLDefaultParamsDict(CLscript, logLevel=1):
-    """
-    A function to return a dictionary full of all the default parameters 
-    for each CL script used so far in the Recipe System.
-    
-    :param logLevel: Verbosity setting for log messages to the screen.
-    :type logLevel: int. Default: 1
-    """
-    log = gemLog.getGeminiLog(logLevel=logLevel)
-    
-    # loading and bringing the pyraf related modules into the name-space
-    pyraf, gemini, yes, no = pyrafLoader()
-    
-    # Ensuring that if a invalide CLscript was requested, that a critical
-    # log message be made and exception raised.
-    if (CLscript != 'gifringe'):
-        log.critical('The CLscript '+CLscript+' does not have a default'+
-                     ' dictionary')
-        raise GMOS_IMAGEException('The CLscript '+CLscript+
-                              ' does not have a default'+' dictionary')
-        
-    if CLscript == 'gifringe':
-        defaultParams = {
-            'inimages'  :'',              # Input GMOS images
-            'outimage'  : '',             # Output fringe frame
-            'typezero'  : 'mean',         # Operation to determine the sky level or zero point
-            'skysec'    : 'default',      # Zero point statistics section
-            'skyfile'   : '',             # File with zero point values for each input image
-            'key_zero'  : 'OFFINT',       # Keyword for zero level
-            'msigma'    : 4.0,            # Sigma threshold above sky for mask
-            'bpm'       : '',             # Name of bad pixel mask file or image
-            'combine'   : 'median',       # Combination operation
-            'reject'    : 'avsigclip',    # Rejection algorithm
-            'scale'     : 'none',         # Image scaling
-            'weight'    : 'none',         # Image Weights
-            'statsec'   : '[*,*]',        # Statistics section for image scaling
-            'expname'   : 'EXPTIME',      # Exposure time header keyword for image scaling
-            'nlow'      : 1,              # minmax: Number of low pixels to reject
-            'nhigh'     : 1,              # minmax: Number of high pixels to reject
-            'nkeep'     : 0,              # Minimum to keep or maximum to reject
-            'mclip'     : yes,            # Use median in sigma clipping algorithms?
-            'lsigma'    : 3.0,            # Lower sigma clipping factor
-            'hsigma'    : 3.0,            # Upper sigma clipping factor
-            'sigscale'  : 0.1,            # Tolerance for sigma clipping scaling correction
-            'sci_ext'   : 'SCI',          # Name of science extension
-            'var_ext'   : 'VAR',          # Name of variance extension
-            'dq_ext'    : 'DQ',           # Name of data quality extension
-            'fl_vardq'  : no,             # Make variance and data quality planes?
-            'logfile'   : '',             # Name of the logfile
-            'glogpars'  : '',             # Logging preferences
-            'verbose'   : yes,            # Verbose output
-            'status'    : 0,              # Exit status (0=good)
-            'Stdout'    :gemt.IrafStdout(logLevel=logLevel),
-            'Stderr'    :gemt.IrafStdout(logLevel=logLevel)
-                       }
-        return defaultParams

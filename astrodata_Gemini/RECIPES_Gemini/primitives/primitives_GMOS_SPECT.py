@@ -8,23 +8,9 @@ from astrodata.adutils import gemLog
 from astrodata import IDFactory
 from astrodata import Descriptors
 from astrodata.data import AstroData
-
+from astrodata.Errors import PrimitiveError
 from gempy.instruments import geminiTools  as gemt
 from gempy.instruments import gmosTools  as gmost
-
-log=gemLog.getGeminiLog()
-
-class GMOS_SPECTException:
-    """ This is the general exception the classes and functions in the
-    Structures.py module raise.
-    """
-    def __init__(self, msg="Exception Raised in Recipe System"):
-        """This constructor takes a message to print to the user."""
-        self.message = msg
-    def __str__(self):
-        """This str conversion member returns the message given by the user (or the default message)
-        when the exception is not caught."""
-        return self.message
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """
@@ -55,14 +41,14 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try: 
             for ad in rc.getInputs(style="AD"): 
-                log.status('calling stdInstHdrs','status')
+                log.debug('calling stdInstHdrs for '+ad.filename)
                 gmost.stdInstHdrs(ad) 
                 
-                log.status('instrument headers fixed','status') 
+                log.status('instrument headers fixed') 
                 
         except:
-            log.critical("Problem preparing the image.",'critical')
-            raise 
+            log.critical("Problem preparing the image.")
+            raise PrimitiveError("Problem preparing the image.")
         
         yield rc
 
@@ -91,13 +77,13 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         try:           
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
-                log.status('file having MDF attached= '+infilename,'status')
+                log.status('file having MDF attached= '+infilename)
                 
                 pathname = 'kyles_test_images/' #$$$$ HARDCODED FOR NOW, TILL FIX COMES FROM CRAIG
                 maskname = ad.phuGetKeyValue("MASKNAME")
                 log.stdinfo("maskname = "+maskname,'stdinfo')
                 inMDFname = 'kyles_test_images/'+maskname +'.fits'
-                log.status('input MDF file = '+inMDFname,'status')
+                log.status('input MDF file = '+inMDFname)
                 admdf = AstroData(inMDFname)
                 admdf.renameExt('MDF',1)  #$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER??
                 admdf.extSetKeyValue(len(admdf)-1,'EXTNAME', 'MDF',"Extension name" )
@@ -107,15 +93,17 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 log.debug(admdf.info())
                 
                 ad.append(moredata=admdf)  
-                log.status(ad.info(),'status')
+                log.status(ad.info())
                 
-                ad.filename=gemt.fileNameUpdater(ad.filename,suffix=rc["suffix"], strip=False)
+                ad.filename=gemt.fileNameUpdater(ad.filename,
+                                                 suffix=rc["suffix"], 
+                                                 strip=False)
                 rc.reportOutput(ad)
                 
-                log.status('finished adding the MDF','status')
+                log.status('finished adding the MDF')
         except:
-            log.critical("Problem preparing the image.", 'critical')
-            raise 
+            log.critical("Problem preparing the image.")
+            raise PrimitiveError("Problem preparing the image.")
         yield rc
 
     def validateInstrumentData(self,rc):
@@ -134,12 +122,12 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:        
             for ad in rc.getInputs(style="AD"):
-                log.status('validating data for file = '+ad.filename,'status')
+                log.debug('calling gmost.valInstData for '+ad.filename)
                 gmost.valInstData(ad)
-                log.status('data validated for file = '+ad.filename,'status')
+                log.status('data validated for file = '+ad.filename)
                 
         except:
-            log.critical("Problem preparing the image.",'critical')
-            raise 
+            log.critical('Problem validating one of  '+rc.inputsAsStr())
+            raise PrimitiveError('Problem validating one of  '+rc.inputsAsStr())
         yield rc
 

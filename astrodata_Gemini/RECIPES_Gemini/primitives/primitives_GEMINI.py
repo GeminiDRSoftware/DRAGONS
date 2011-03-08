@@ -11,22 +11,7 @@ from datetime import datetime
 import shutil
 from primitives_GENERAL import GENERALPrimitives
 from astrodata.adutils.gemutil import pyrafLoader
-
-#log = gemLog.getGeminiLog()
-
-class GEMINIException:
-    """ This is the general exception the classes and functions in the
-    Structures.py module raise.
-    
-    """
-    def __init__(self, message='Exception Raised in Recipe System'):
-        """This constructor takes a message to print to the user."""
-        self.message = message
-    def __str__(self):
-        """This str conversion member returns the message given by the 
-        user (or the default message)
-        when the exception is not caught."""
-        return self.message
+from astrodata.Errors import PrimitiveError
 
 class GEMINIPrimitives(GENERALPrimitives):
     """ 
@@ -87,7 +72,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             adOuts = geminiScience.add_dq(adIns=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
-                                         suffix=rc['suffix'], logLevel=rc['logLevel'])    
+                                         suffix=rc['suffix'], 
+                                         logLevel=rc['logLevel'])    
            
             log.status('geminiScience.addDQ completed successfully')
             
@@ -97,7 +83,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*FINISHED* adding the DQ frame(s) to the input data')
         except:
             log.critical('Problem adding the DQ to one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem adding the DQ to one of '+
+                                 rc.inputsAsStr())
         yield rc
     
     def addVAR(self,rc):
@@ -141,7 +128,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*FINISHED* adding the VAR frame(s) to the input data')
         except:
             log.critical('Problem adding the VAR to one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem adding the VAR to one of '+
+                                 rc.inputsAsStr())
         yield rc 
     
     def adu_to_electrons(self,rc):
@@ -182,7 +170,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         except:
             log.critical('Problem converting the pixel units of one of '+
                          rc.inputsAsStr())
-            raise
+            raise PrimitiveError('Problem converting the pixel units of one of '+
+                         rc.inputsAsStr())
         yield rc
             
     def combine(self,rc):
@@ -229,8 +218,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling geminiScience.combine')
                 
                 adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), 
-                                              fl_vardq=rc['fl_vardq'], fl_dqprop=rc['fl_dqprop'], 
-                                              method=rc['method'], suffix=rc['suffix'], 
+                                              fl_vardq=rc['fl_vardq'], 
+                                              fl_dqprop=rc['fl_dqprop'], 
+                                              method=rc['method'], 
+                                              suffix=rc['suffix'], 
                                               logLevel=rc['logLevel']) 
                 
                 log.status('geminiScience.combine completed successfully')   
@@ -245,7 +236,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*FINISHED* combining the images of the input data')
         except:
             log.critical('There was a problem combining '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('There was a problem combining '+rc.inputsAsStr())
         yield rc
 
     def crashReduce(self, rc):
@@ -281,7 +272,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             rc.rqDisplay(displayID=rc['displayID'])           
         except:
             log.critical('Problem displaying output')
-            raise 
+            raise PrimitiveError('Problem displaying output')
         yield rc
         
     def flatCorrect(self,rc):
@@ -331,7 +322,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*FINISHED* flat correcting the inputs')  
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise  
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         yield rc
    
     def getProcessedBias(self,rc):
@@ -387,8 +378,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             yield rc
         except:
             log.critical('Problem getting stack '+sid, category='stack')
-
-            raise 
+            raise PrimitiveError('Problem getting stack '+sid, category='stack')
         yield rc
     
     def measureIQ(self,rc):
@@ -446,8 +436,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.status('*FINISHED* measuring the IQ of the inputs')
         except:
-            log.critical('There was a problem measuring the IQ of '+rc.inputsAsStr())
-            raise 
+            log.critical('There was a problem measuring the IQ of '+
+                         rc.inputsAsStr())
+            raise PrimitiveError('There was a problem measuring the IQ of '+
+                                 rc.inputsAsStr())
         yield rc
  
     def pause(self, rc):
@@ -498,7 +490,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         except:
             log.critical('Problem writing stack for files '+rc.inputsAsStr(),
                          category='stack')
-            raise
+            raise PrimitiveError('Problem writing stack for files '+
+                                 rc.inputsAsStr(), category='stack')
         yield rc
     
     def showCals(self, rc):
@@ -680,7 +673,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix=rc['suffix'], 
-                                                   strip=False, logLevel= rc['logLevel'])
+                                                   strip=False, 
+                                                   logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -699,8 +693,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
             log.status('*FINISHED* standardizing the headers')
         except:
-            log.critical('Problem preparing one of '+rc.inputsAsStr())
-            raise 
+            log.critical('Problem standardizing the headers for one of '+
+                         rc.inputsAsStr())
+            raise PrimitiveError('Problem standardizing the headers for one of '+
+                         rc.inputsAsStr())
         yield rc
                                  
     def standardizeStructure(self,rc):
@@ -734,7 +730,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             log.status('*STARTING* to standardize the structure of input data')
             
-            #$$$$ MAYBE SET THIS TO FALSE IF GMOS_IMAGE AND TRUE IF GMOS_SPEC?$$$$$$$
+            #$$$$ MAYBE SET THIS TO FALSE IF GMOS_IMAGE AND TRUE IF GMOS_SPEC?$
             # Add the MDF if not set to false
             if rc['addMDF'] is True:
                 log.debug('Calling attachMDF primitive')
@@ -758,7 +754,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix=rc['suffix'], 
-                                                   strip=False, logLevel= rc['logLevel'])
+                                                   strip=False, 
+                                                   logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
                 log.fullinfo('************************************************'
@@ -777,8 +774,10 @@ class GEMINIPrimitives(GENERALPrimitives):
    
             log.status('*FINISHED* standardizing the structure of input data')
         except:
-            log.critical('Problem preparing one of '+rc.inputsAsStr())
-            raise 
+            log.critical('Problem standardizing the structure for one of '+
+                         rc.inputsAsStr())
+            raise PrimitiveError('Problem standardizing the structure for one of '+
+                         rc.inputsAsStr())
         yield rc
         
     def storeProcessedBias(self,rc):
@@ -828,7 +827,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*FINISHED* storing the processed bias on disk')
         except:
             log.critical('Problem storing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem storing one of '+rc.inputsAsStr())
         yield rc
    
     def storeProcessedFlat(self,rc):
@@ -853,7 +852,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:   
-            log.status('*STARTING* to store the processed flat by writing it to disk')
+            log.status('*STARTING* to store the processed flat by writing '+
+            'it to disk')
             for ad in rc.getInputs(style='AD'):
                 # Updating the file name with the suffix for this
                 # primitive and then reporting the new file to the reduction 
@@ -873,7 +873,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*FINISHED* storing the processed flat on disk')
         except:
             log.critical('Problem storing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem storing one of '+rc.inputsAsStr())
         yield rc
         
     def time(self, rc):
@@ -944,27 +944,28 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
                 ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                                    suffix='_validated', 
-                                                   strip=False, logLevel= rc['logLevel'])                
+                                                   strip=False, 
+                                                   logLevel= rc['logLevel'])                
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
-                log.fullinfo('************************************************'
+                log.fullinfo('*'*50
                              ,'header')
                 log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                log.fullinfo('~'*50
                              , category='header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                               category='header')
                 log.fullinfo('VALDATA = '+ad.phuGetKeyValue('VALDATA'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'
+                log.fullinfo('-'*50
                              , category='header')  
                 rc.reportOutput(ad) 
                         
             log.status('*FINISHED* validating input data')                
         except:
-            log.critical('Problem preparing one of  '+rc.inputsAsStr())
-            raise 
+            log.critical('Problem validating one of  '+rc.inputsAsStr())
+            raise PrimitiveError('Problem preparing one of  '+rc.inputsAsStr())
         yield rc
 
     def writeOutputs(self,rc):
@@ -1027,7 +1028,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.debug('calling gemt.fileNameUpdater on '+ad.filename)
                     ad.filename = gemt.fileNameUpdater(adIn=ad, 
                                         suffix=rc['suffix'], 
-                                        strip=rc['strip'], logLevel= rc['logLevel'])
+                                        strip=rc['strip'], 
+                                        logLevel= rc['logLevel'])
                     log.status('File name updated to '+ad.filename)
                     outfilename = os.path.basename(ad.filename)
                     
@@ -1063,11 +1065,12 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.status('writing to file = '+outfilename)      
                 ad.write(filename=outfilename, clobber=rc['clobber'])     
                 #^ AstroData checks if the output exists and raises an exception
-                #rc.reportOutput(ad)
+                
             
             log.status('*FINISHED* writing the outputs')   
         except:
             log.critical('There was a problem writing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('There was a problem writing one of '+
+                                 rc.inputsAsStr())
         yield rc   
          

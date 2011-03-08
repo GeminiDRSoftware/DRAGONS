@@ -1,30 +1,17 @@
 import sys, StringIO, os
 
-from astrodata.adutils import gemLog
 from astrodata import Descriptors
+from astrodata.adutils import gemLog
+from astrodata.adutils.gemutil import pyrafLoader
+from astrodata.ConfigSpace import lookupPath
 from astrodata.data import AstroData
+from astrodata.Errors import PrimitiveError
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.science import geminiScience
 from gempy.science import gmosScience
 from primitives_GEMINI import GEMINIPrimitives
-from astrodata.adutils.gemutil import pyrafLoader
 import shutil
-from astrodata.ConfigSpace import lookupPath
-
-class GMOSException:
-    """ This is the general exception the classes and functions in the
-    Structures.py module raise.
-    
-    """
-    def __init__(self, message='Exception Raised in Recipe System'):
-        """This constructor takes a message to print to the user."""
-        self.message = message
-    def __str__(self):
-        """This str conversion member returns the message given 
-        by the user (or the default message)
-        when the exception is not caught."""
-        return self.message
 
 class GMOSPrimitives(GEMINIPrimitives):
     """ 
@@ -106,7 +93,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* adding the BPM to the inputs') 
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise  
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
             
         yield rc       
         
@@ -175,7 +162,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* subtracting the bias from the input flats')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
             
         yield rc
 
@@ -239,7 +226,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     if gemini.gmos.gdisplay.status:
                         log.critical('gdisplay failed for input '+
                                      inputRecord.filename)
-                        raise GMOSException('gdisplay failed')
+                        raise PrimitiveError('gdisplay failed')
                     else:
                         log.status('Exited the gdisplay CL script successfully')
                         
@@ -257,7 +244,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* displaying the images of the input data')
         except:
             log.critical('There was a problem displaying '+rc.inputsAsStr())
-            raise     
+            raise PrimitiveError('There was a problem displaying '+
+                                 rc.inputsAsStr())
         yield rc
 
     def localGetProcessedBias(self,rc):
@@ -301,7 +289,7 @@ class GMOSPrimitives(GEMINIPrimitives):
            
         except:
             log.critical('Problem preparing one of '+rc.inputsAsStr())
-            raise
+            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
         yield rc
    
     def localGetProcessedFlat(self,rc):
@@ -346,7 +334,7 @@ class GMOSPrimitives(GEMINIPrimitives):
            
         except:
             log.critical('Problem retrieving one of '+rc.inputsAsStr())
-            raise
+            raise PrimitiveError('Problem retrieving one of '+rc.inputsAsStr())
         
         yield rc
 
@@ -398,7 +386,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* mosaicing the input images')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise   
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         yield rc
 
     def normalizeFlat(self, rc):
@@ -455,7 +443,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* combining and normalizing the input flats')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
             
         yield rc
 
@@ -509,7 +497,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                        'input data')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         
         yield rc    
 
@@ -548,7 +536,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* trimming the overscan region from the input data')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         
         yield rc
          
@@ -576,7 +564,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     
         except:
             log.critical('Problem preparing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
         
         yield rc 
     
@@ -603,7 +591,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
         except:
             log.critical('Problem preparing one of '+rc.inputsAsStr())
-            raise 
+            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
         
         yield rc
 

@@ -4,28 +4,13 @@ from sets import Set
 import time
 from astrodata.ReductionObjects import PrimitiveSet
 from astrodata.adutils import gemLog
+from astrodata.Errors import PrimitiveError
 from astrodata import IDFactory
 from gempy.instruments import geminiTools  as gemt
 import numpy as np
 import pyfits as pf
 from datetime import datetime
 import shutil
-
-log = gemLog.getGeminiLog()
-
-class GPException:
-    """ This is the general exception the classes and functions in the
-    primitives_GENERAL.py module.
-    
-    """
-    def __init__(self, message='Exception Raised in General Primitive'):
-        """This constructor takes a message to print to the user."""
-        self.message = message
-    def __str__(self):
-        """This str conversion member returns the message given by the 
-        user (or the default message)
-        when the exception is not caught."""
-        return self.message
 
 class GENERALPrimitives(PrimitiveSet):
     """ 
@@ -41,6 +26,7 @@ class GENERALPrimitives(PrimitiveSet):
     init.pt_hide = True
     
     def addInputs(self, rc):
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         import glob as gl
         if rc["files"] == None:
             glob = "./*.fits"
@@ -71,6 +57,7 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
         
     def listDir(self,rc):
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         if rc["dir"] == None:
             thedir = "."
         else:   
