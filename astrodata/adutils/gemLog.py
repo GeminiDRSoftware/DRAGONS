@@ -3,7 +3,7 @@ import sys, os
 
 import logging
 import traceback as tb
-
+from astrodata.Errors import Error
 _listOfLoggers = None
 
 class GeminiLogger(object):
@@ -507,10 +507,10 @@ def logLevelConverter(logLevel=None):
             if (logLevel>=0 and logLevel<=6) or logLevel==10:
                 return logLevel
     except:       
-        raise 'logLevel= '+str(logLevel)+' was not a valid input. Please '+\
-                ' enter a logLevel value that is either an integer between '+\
-                '0-6, 10 for debug, or one of the strings: none, quiet, '+\
-                'critical, error, warning, status, stdinfo, fullinfo or debug.'
+        raise Error('logLevel= '+str(logLevel)+' was not a valid input. Please'+
+                ' enter a logLevel value that is either an integer between '+
+                '0-6, 10 for debug, or one of the strings: none, quiet, '+
+                'critical, error, warning, status, stdinfo, fullinfo or debug.')
     
     
     
