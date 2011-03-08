@@ -14,6 +14,9 @@ class Error(Exception):
         if message != None:
             self.message = message
             
+    def __repr__(self):
+        return self.__class__.__name__+"(%s)" % repr(self.message)
+            
 class CalcError(Error):
     """
     Exception raised for instances when the keyword is found but the value of
