@@ -14,6 +14,7 @@ from gemconstants import *
 import Calculator
 
 from astrodata.adutils import arith
+from astrodata import Errors
 
 try:
     from CalculatorInterface import CalculatorInterface
@@ -1369,10 +1370,20 @@ n informed of the issue and
             hdus = self.getHDUList()
             retval = hdus[0].header[key]
             if(isinstance(retval, pyfits.core.Undefined)):
-                retval = None
+                raise Errors.UndefinedKeyError()
+            if (retval=='') or (retval==' '):
+                raise Errors.EmptyKeyError()
             self.relhdul()
             return retval
         except KeyError:
+            self.relhdul()
+            return None
+        except Errors.EmptyKeyError:
+            print Errors.EmptyKeyError()
+            self.relhdul()
+            return None
+        except Errors.UndefinedKeyError:
+            print Errors.UndefinedKeyError()
             self.relhdul()
             return None
     phuValue = phuGetKeyValue
