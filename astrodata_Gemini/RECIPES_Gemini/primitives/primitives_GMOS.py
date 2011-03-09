@@ -81,14 +81,14 @@ class GMOSPrimitives(GEMINIPrimitives):
    
             log.debug('Calling geminiScience.addBPM function')
             
-            adOuts = geminiScience.add_bpm(adIns=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.add_bpm(adInputs=rc.getInputs(style='AD'), 
                                          BPMs=BPMlist,matchSize=True, suffix=rc['suffix'], 
                                          logLevel=rc['logLevel'])           
             
             log.status('geminiScience.addBPM completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)   
+            rc.reportOutput(adOutputs)   
                 
             log.status('*FINISHED* adding the BPM to the inputs') 
         except:
@@ -149,7 +149,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('Using bias '+processedBias+' to correct the inputs')
             log.debug('Calling geminiScience.biasCorrect function')
             
-            adOuts = geminiScience.bias_correct(adIns=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.bias_correct(adInputs=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                          suffix=rc['suffix'], logLevel=rc['logLevel'])           
@@ -157,7 +157,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('geminiScience.biasCorrect completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)   
+            rc.reportOutput(adOutputs)   
             
             log.status('*FINISHED* subtracting the bias from the input flats')
         except:
@@ -373,7 +373,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling geminiScience.mosaicDetectors function')
             
-            adOuts = geminiScience.mosaic_detectors(adIns=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.mosaic_detectors(adInputs=rc.getInputs(style='AD'), 
                                         fl_paste=rc['fl_paste'], interp_function=rc['interp_function'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
                                         logLevel=rc['logLevel'])           
@@ -381,7 +381,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('geminiScience.mosaicDetectors completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts) 
+            rc.reportOutput(adOutputs) 
                 
             log.status('*FINISHED* mosaicing the input images')
         except:
@@ -430,7 +430,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling geminiScience.normalizeFlat function')
             
-            adOuts = geminiScience.normalize_flat(adIns=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.normalize_flat(adInputs=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
                                         logLevel=rc['logLevel'])           
@@ -438,7 +438,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('geminiScience.normalizeFlat completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)
+            rc.reportOutput(adOutputs)
         
             log.status('*FINISHED* combining and normalizing the input flats')
         except:
@@ -483,7 +483,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling gmosScience.overscanSubtract function')
             
-            adOuts = gmosScience.overscan_subtract(adIns=rc.getInputs(style='AD'), 
+            adOutputs = gmosScience.overscan_subtract(adInputs=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], biassec=rc['biassec'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
                                         logLevel=rc['logLevel'])           
@@ -491,7 +491,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('gmosScience.overscanSubtract completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)
+            rc.reportOutput(adOutputs)
             
             log.status('*FINISHED* subtracting the overscan from the '+
                        'input data')
@@ -524,14 +524,14 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling geminiScience.overscanTrim function')
             
-            adOuts = geminiScience.overscan_trim(adIns=rc.getInputs(style='AD'),     
+            adOutputs = geminiScience.overscan_trim(adInputs=rc.getInputs(style='AD'),     
                                                         suffix=rc['suffix'], 
                                                         logLevel= rc['logLevel'])           
             
             log.status('geminiScience.overscanTrim completed successfully')
               
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)   
+            rc.reportOutput(adOutputs)   
                 
             log.status('*FINISHED* trimming the overscan region from the input data')
         except:

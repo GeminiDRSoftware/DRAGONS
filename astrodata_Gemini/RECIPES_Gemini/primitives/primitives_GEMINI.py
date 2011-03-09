@@ -69,7 +69,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # of converting the pixels, updating headers and logging.
             log.debug('Calling geminiScience.addDQ')
 
-            adOuts = geminiScience.add_dq(adIns=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.add_dq(adInputs=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
                                          suffix=rc['suffix'], 
@@ -78,7 +78,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('geminiScience.addDQ completed successfully')
             
             # Reporting the outputs to the reduction context
-            rc.reportOutput(adOuts)          
+            rc.reportOutput(adOutputs)          
                 
             log.status('*FINISHED* adding the DQ frame(s) to the input data')
         except:
@@ -116,14 +116,14 @@ class GEMINIPrimitives(GENERALPrimitives):
             # of converting the pixels, updating headers and logging.
             log.debug('Calling geminiScience.addVAR')
             
-            adOuts = geminiScience.add_var(adIns=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.add_var(adInputs=rc.getInputs(style='AD'), 
                                          suffix=rc['suffix'], 
                                          logLevel=rc['logLevel'])    
            
             log.status('geminiScience.addVAR completed successfully')
             
             # Reporting the outputs to the reduction context
-            rc.reportOutput(adOuts)            
+            rc.reportOutput(adOutputs)            
                 
             log.status('*FINISHED* adding the VAR frame(s) to the input data')
         except:
@@ -157,14 +157,14 @@ class GEMINIPrimitives(GENERALPrimitives):
             # of converting the pixels, updating headers and logging.
             log.debug('Calling geminiScience.ADUtoElectrons')
             
-            adOuts = geminiScience.ADUtoElectrons(adIns=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.ADUtoElectrons(adInputs=rc.getInputs(style='AD'), 
                                                   suffix=rc['suffix'], 
                                                   logLevel=rc['logLevel'])    
            
             log.status('geminiScience.ADUtoElectrons completed successfully')
             
             # Reporting the outputs to the reduction context
-            rc.reportOutput(adOuts)   
+            rc.reportOutput(adOutputs)   
             
             log.status('*FINISHED* converting the pixel units to electrons')
         except:
@@ -217,7 +217,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # of converting the pixels, updating headers and logging.
                 log.debug('Calling geminiScience.combine')
                 
-                adOut = geminiScience.combine(adIns=rc.getInputs(style='AD'), 
+                adOut = geminiScience.combine(adInputs=rc.getInputs(style='AD'), 
                                               fl_vardq=rc['fl_vardq'], 
                                               fl_dqprop=rc['fl_dqprop'], 
                                               method=rc['method'], 
@@ -306,18 +306,18 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             # Taking care of the case where there was no, or an invalid flat 
             if processedFlat.countExts('SCI')==0:
-                raise GEMINIException('Invalid processed flat retrieved')               
+                raise PrimitiveError('Invalid processed flat retrieved')               
             
             log.debug('Calling geminiScience.flatCorrect function')
             
-            adOuts = geminiScience.flat_correct(adIns=rc.getInputs(style='AD'),     
+            adOutputs = geminiScience.flat_correct(adInputs=rc.getInputs(style='AD'),     
                                          flats=processedFlat, suffix=rc['suffix'], 
                                          logLevel=rc['logLevel'])           
             
             log.status('geminiScience.flatCorrect completed successfully')
               
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)   
+            rc.reportOutput(adOutputs)   
 
             log.status('*FINISHED* flat correcting the inputs')  
         except:
@@ -423,7 +423,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.debug('Calling geminiScience.measure_iq function')
             
-            geminiScience.measure_iq(adIns=rc.getInputs(style='AD'),
+            geminiScience.measure_iq(adInputs=rc.getInputs(style='AD'),
                                      function=rc['function'],
                                      display=rc['display'],
                                      mosaic=rc['mosaic'], qa=rc['qa'],

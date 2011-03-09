@@ -70,7 +70,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             
             log.debug('Calling gmosScience.fringe_correct function')
             
-            adOuts = gmosScience.fringe_correct(adIns=rc.getInputs(style='AD'), 
+            adOutputs = gmosScience.fringe_correct(adInputs=rc.getInputs(style='AD'), 
                                          fringes=fringe,
                                          fl_statscale=rc['fl_statscale'],
                                          statsec=rc['statsec'], scale=rc['scale'],
@@ -80,7 +80,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             log.status('gmosScience.fringe_correct completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOuts)              
+            rc.reportOutput(adOutputs)              
                 
             log.status('*FINISHED* fringe correcting the input data')
             
@@ -121,8 +121,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
                 log.debug('Calling gmosScience.make_fringe_frame_imaging function')
             
-                adOuts = gmosScience.make_fringe_frame_imaging(
-                                                adIns=rc.getInputs(style='AD'), 
+                adOutputs = gmosScience.make_fringe_frame_imaging(
+                                                adInputs=rc.getInputs(style='AD'), 
                                              fl_vardq=rc['fl_vardq'],
                                              method=rc['method'],
                                              suffix=rc['suffix'], 
@@ -132,7 +132,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                            ' successfully')
                     
                 # Reporting the updated files to the reduction context
-                rc.reportOutput(adOuts)              
+                rc.reportOutput(adOutputs)              
                 
             else:
                 log.status('makeFringeFrame was called with only one input, '+
