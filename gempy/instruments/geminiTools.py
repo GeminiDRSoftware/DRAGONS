@@ -1135,7 +1135,129 @@ class CLManager(object):
                                   ' was deleted from disk') 
                 
         return (self.imageOuts, self.refOuts, self.arrayOuts)
+
+class ScienceManager():
+    """
+    A manager class to take hold functions for performing input checks, naming,
+    log instantiation... code that is repeated throughout all the 'user level
+    functions' in the gempy libraries (currently those functions in 
+    science/geminiScience.py and gmosScience.py).
+    """
+    # Set up global variables 
+    adInputs = None
+    outNames = None
+    suffix = None
+    funcName = None
+    logLevel = 1
+    log = None    
     
+    def __init__(self, adInputs, outNames=None, suffix=None, funcName=None,
+                 logName='', logLevel=1, noLogFile=False):
+        """
+        This will load up the global variables to use throughout the manager
+        functions and instantiate the logger object for use in here and 
+        back in the 'user level function' that is utilizing this manager.
+        
+        :param adInputs: Astrodata inputs to have DQ extensions added to
+        :type adInputs: Astrodata objects, either a single or a list of objects
+        
+        :param outNames: filenames of output(s)
+        :type outNames: String, either a single or a list of strings of same 
+                        length as adInputs.
+        
+        :param suffix: string to add on the end of the input filenames 
+                        (or outNames if not None) for the output filenames.
+        :type suffix: string
+        
+        :param funcName: Name of the Python function using the ScienceManager.
+        :type funcName: String
+        
+        :param logName: Name of the log file, default is 'gemini.log'
+        :type logName: string
+        
+        :param logLevel: verbosity setting for the log messages to screen,
+                        default is 'critical' messages only.
+                        Note: independent of logLevel setting, all messages   
+                        always go to the logfile if it is not turned off.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        
+        :param noLogFile: A boolean to make it so no log file is created
+        :type noLogFile: Python boolean (True/False)
+        """
+        
+        self.adInputs = adInputs
+        self.outNames = outNames
+        self.suffix = suffix
+        self.funcName = funcName
+        self.logLevel = logLevel
+        self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                                       noLogFile=noLogFile)
+        
+    def startUp(self):
+        """
+        This function is to perform the input checks and fill out the outNames
+        parameter if needed
+        """
+        try:
+            # raise if funcName=None as it needs to be a valid string
+            if self.funcName==None:
+                raise ToolboxError()
+            
+            self.log.status('**STARTING** the '+funcName+' function')
+    
+            if not isinstance(self.adInputs,list):
+                self.adInputs=[self.adInputs]
+            if self.outNames==None:
+                self.outNames = []
+            if (not isinstance(self.outNames,list)):
+                self.outNames = [self.outNames]
+                
+            if (self.adInputs!=None) and (self.outNames!=None):
+                if isinstance(self.outNames,list):
+                    if len(self.adInputs)!= len(self.outNames):
+                        if self.suffix==None:
+                           raise ToolboxError('Then length of the inputs, '+
+                                              str(len(self.adInputs))+
+                               ', did not match the length of the outputs, '+
+                               str(len(self.outNames))+
+                               ' AND no value of "suffix" was passed in')
+                if isInstance(self.outNames,str) and len(self.adInputs)>1:
+                    if self.suffix==None:
+                           raise ToolboxError('Then length of the inputs, '+
+                                              str(len(self.adInputs))+
+                               ', did not match the length of the outputs, '+
+                               str(len(self.outNames))+
+                               ' AND no value of "suffix" was passed in')
+                
+            # Checking the current outNames and loading it up if needed
+            if len(self.outNames)!=len(self.adInputs):
+                for ad in self.adInputs:
+                    if self.suffix!=None:
+                        self.log.debug('Calling gemt.fileNameUpdater on '+
+                                       ad.filename)
+                       
+                        outName = gemt.fileNameUpdater(
+                                                      infilename=ad.filename,
+                                                      suffix=self.suffix, 
+                                                      strip=False, 
+                                                      logLevel=self.logLevel)
+                    else:
+                        raise ToolboxError('outNames and suffix parameters \
+                                                        can not BOTH be None')
+                    self.outNames.append(outName)
+                    count = count+1
+                
+            # return the now checked and loaded up (if needed) adInputs and 
+            # outNames
+            return self.adInputs, self.outNames
+            
+        except ToolboxError:
+            raise ToolboxError()
+        
+        
+        
 class IrafStdout():
     """  This is a class to act as the standard output for the IRAF 
         routines that instead of printing its messages to the screen,
