@@ -20,19 +20,20 @@ from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
-            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+            outNames=None, suffix=None, logName='gemini.log', 
+                                                logLevel=1, noLogFile=False):
     """
     This function uses the CL script gireduce to subtract the overscan 
     from the input images.
     
     WARNING: 
-        The gireduce script used here replaces the previously 
-        calculated DQ frames with its own versions.  This may be corrected 
-        in the future by replacing the use of the gireduce
-        with a Python routine to do the overscan subtraction.
+    The gireduce script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the gireduce
+    with a Python routine to do the overscan subtraction.
 
     note
-        The inputs to this function MUST be prepared.
+    The inputs to this function MUST be prepared.
 
     String representing the name of the log file to write all log messages to
     can be defined, or a default of 'gemini.log' will be used.  If the file
@@ -40,12 +41,13 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
     have the log messages during this function added to the end of it.
 
     FOR FUTURE
-        This function has many GMOS dependencies that would be great to work out
-        so that this could be made a more general function (say at the Gemini level).
-        In the future the parameters can be looked into and the CL script can be 
-        upgraded to handle things like row based overscan calculations/fitting/modeling... 
-        vs the column based used right now, add the model, nbiascontam, ... params to the 
-        functions inputs so the user can choose them for themselves.
+    This function has many GMOS dependencies that would be great to work out
+    so that this could be made a more general function (say at the Gemini level)
+    .  In the future the parameters can be looked into and the CL script can be 
+    upgraded to handle things like row based overscan calculations/fitting/
+    modeling... vs the column based used right now, add the model, nbiascontam,
+    ... params to the functions inputs so the user can choose them for 
+    themselves.
 
     :param adInputs: Astrodata inputs to be converted to Electron pixel units
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -57,19 +59,23 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
     :type fl_vardq: 
         Python boolean (True/False), OR string 'AUTO' to do 
         it automatically if there are VAR and DQ frames in the inputs.
-        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-        so, if the first does, then the rest MUST also have them as well.
+        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames  
+        exist, so, if the first does, then the rest MUST also have them as well.
         
     :param LogFile: A boolean to make it so no log file is created
     :type LogFile: Python boolean (True/False)
 
     :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
-    :type biassec: string. default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' is ideal for 2x2 GMOS data.
+    :type biassec: string. 
+                   default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
+                   is ideal for 2x2 GMOS data.
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
     
-    :param suffix: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
+    :param suffix: string to postpend on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
     :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
@@ -80,15 +86,16 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical', 
+                    'status', 'fullinfo'...)
 
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
 
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
 
     log.status('**STARTING** the overscanSubtract function')
     
@@ -99,13 +106,15 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -121,7 +130,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                     
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')\
+                                                ==adInputs[0].countExts('SCI'):
                     fl_vardq=yes
                 else:
                     fl_vardq=no
@@ -136,9 +146,10 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                 
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
-                               funcName='overscanSubtract', logName=logName,  
-                                   logLevel=logLevel, noLogFile=noLogFile)
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                               suffix=suffix, funcName='overscanSubtract',   
+                               logName=logName, logLevel=logLevel, 
+                               noLogFile=noLogFile)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:                     
@@ -162,7 +173,9 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                 
                 # Taking care of the biasec->nbiascontam param
                 if not biassec == '':
-                    nbiascontam = gemt.nbiascontam(adInputs=adInputs, biassec=biassec, logLevel=logLevel)
+                    nbiascontam = gemt.nbiascontam(adInputs=adInputs, 
+                                                   biassec=biassec, 
+                                                   logLevel=logLevel)
                     log.fullinfo('nbiascontam parameter was updated to = '+
                                  str(nbiascontam))
                 else: 
@@ -179,7 +192,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                                    }
                 # Grabbing the default params dict and updating it with 
                 # the two above dicts
-                clParamsDict = CLDefaultParamsDict('gireduce', logLevel=logLevel)
+                clParamsDict = CLDefaultParamsDict('gireduce', 
+                                                   logLevel=logLevel)
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
                 
@@ -237,8 +251,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                     log.fullinfo('PHU keywords updated/added:\n', 'header')
                     log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                                   category='header')
-                    log.fullinfo('OVERSUB = '+adOut.phuGetKeyValue('OVERSUB')+'\n', 
-                                  category='header')
+                    log.fullinfo('OVERSUB = '+adOut.phuGetKeyValue('OVERSUB')+
+                                 '\n', category='header')
                 
                 
             else:
@@ -259,7 +273,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                 
                 
 def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
-            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+            outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
+            noLogFile=False):
     """
     This primitive will scale and subtract the fringe frame from the inputs.
     It utilizes the Python re-written version of cl script girmfringe now called
@@ -272,17 +287,18 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
     have the log messages during this function added to the end of it.
 
     FOR FUTURE
-        This function has many GMOS dependencies that would be great to work out
-        so that this could be made a more general function (say at the Gemini level).
+    This function has many GMOS dependencies that would be great to work out
+    so that this could be made a more general function (say at the Gemini level)
+    .
     
     :param adInputs: Astrodata input(s) to be fringe corrected
     :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fringes: Astrodata input fringe(s)
     :type fringes: AstroData objects in a list, or a single instance.
-                   Note: If there is multiple inputs and one fringe provided, then the
-                   same fringe will be applied to all inputs; else the fringes   
-                   list must match the length of the inputs.
+                   Note: If there is multiple inputs and one fringe provided, 
+                   then the same fringe will be applied to all inputs; else the   
+                   fringes list must match the length of the inputs.
     
     :param fl_statscale: Scale by statistics rather than exposure time
     :type fl_statscale: Boolean
@@ -300,9 +316,11 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
     :type LogFile: Python boolean (True/False)
 
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same 
+                    length as adInputs.
     
-    :param suffix: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
+    :param suffix: string to postpend on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
     :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
@@ -313,15 +331,16 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything 
+                    to screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
 
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
 
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
 
     log.status('**STARTING** the overscanSubtract function')
     
@@ -335,13 +354,15 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')               
@@ -406,13 +427,15 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                              infilename=outNames[count],
+                                                          infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -420,8 +443,8 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
                         else:
                             adOut.filename = outNames
                     else:
-                        raise ScienceError('outNames and suffix parameters can not BOTH\
-                                                                    be None')
+                        raise ScienceError('outNames and suffix parameters \
+                                                        can not BOTH be None')
                         
                 log.status('File name updated to '+adOut.filename)
                 
@@ -439,13 +462,15 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
-        raise ScienceError('An error occurred while trying to run fringe_correct')
+        raise ScienceError('An error occurred while trying to run \
+                                                                fringe_correct')
     
 def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median', 
-            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+            outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
+                                                            noLogFile=False):
     """
-    This function will create and return a single fringe image from all the inputs.
-    It utilizes the CL script gifringe to create the fringe image.
+    This function will create and return a single fringe image from all the 
+    inputs.  It utilizes the CL script gifringe to create the fringe image.
     
     NOTE: The inputs to this function MUST be prepared. 
 
@@ -459,9 +484,11 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
     
     :param fl_vardq: Create variance and data quality frames?
     :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the inputs.
-                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                    so, if the first does, then the rest MUST also have them as well.
+                    it automatically if there are VAR and DQ frames in the 
+                    inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ  
+                    frames exist, so, if the first does, then the rest MUST also 
+                    have them as well.
     
     :param method: type of combining method to use.
     :type method: string, options: 'average', 'median'.
@@ -479,16 +506,17 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always go 
-                    to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                    Note: independent of logLevel setting, all messages always  
+                    go to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
 
     log.status('**STARTING** the make_fringe_frame_imaging function')
     
@@ -499,13 +527,15 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -527,7 +557,8 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                         
                 # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                    if adInputs[0].countExts('VAR')==\
+                    adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
@@ -542,10 +573,10 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                     
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
-                                   funcName='makeFringeFrame', combinedImages=True, 
-                                   logName=logName, logLevel=logLevel,  
-                                    noLogFile=noLogFile)
+                clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                                   suffix=suffix, funcName='makeFringeFrame', 
+                                   combinedImages=True, logName=logName,   
+                                   logLevel=logLevel, noLogFile=noLogFile)
                 
                 # Check the status of the CLManager object, True=continue, False= issue warning
                 if clm.status:                     
@@ -579,17 +610,18 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                                         }
                     # Grabbing the default parameters dictionary and updating 
                     # it with the two above dictionaries
-                    clParamsDict = CLDefaultParamsDict('gifringe', logLevel=logLevel)
+                    clParamsDict = CLDefaultParamsDict('gifringe', 
+                                                       logLevel=logLevel)
                     clParamsDict.update(clPrimParams)
                     clParamsDict.update(clSoftcodedParams)
                     
                     # Logging the values in the soft and prim parameter dictionaries
-                    log.fullinfo('\nParameters set by the CLManager or dictated by '+
-                             'the definition of the primitive:\n', 
+                    log.fullinfo('\nParameters set by the CLManager or  '+
+                             'dictated by the definition of the primitive:\n', 
                              category='parameters')
                     gemt.logDictParams(clPrimParams,logLevel=logLevel)
-                    log.fullinfo('\nUser adjustable parameters in the parameters '+
-                                 'file:\n', category='parameters')
+                    log.fullinfo('\nUser adjustable parameters in the '+
+                                 'parameters file:\n', category='parameters')
                     gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                     
                     log.debug('Calling the gifringe CL script for input list '+
@@ -598,7 +630,8 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                     gemini.gifringe(**clParamsDict)
                     
                     if gemini.gifringe.status:
-                        log.critical('gifringe failed for inputs '+rc.inputsAsStr())
+                        log.critical('gifringe failed for inputs '+
+                                     rc.inputsAsStr())
                         raise GMOS_IMAGEException('gifringe failed')
                     else:
                         log.status('Exited the gifringe CL script successfully')
@@ -622,7 +655,8 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                     log.fullinfo('*'*50,'header')
                     log.fullinfo('file = '+adOut.filename, category='header')
                     log.fullinfo('~'*50, 'header')
-                    log.fullinfo('PHU keywords updated/added:\n', category='header')
+                    log.fullinfo('PHU keywords updated/added:\n', 
+                                 category='header')
                     log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                                  category='header')
                     log.fullinfo('FRINGE = '+adOut.phuGetKeyValue('FRINGE'), 
@@ -641,7 +675,8 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
         # Return the outputs (list or single, matching adInputs)
         return adOut
     except:
-        raise ScienceError('An error occurred while trying to run make_fringe_frame_imaging')
+        raise ScienceError('An error occurred while trying to run \
+                                                    make_fringe_frame_imaging')
     
     
     

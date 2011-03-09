@@ -18,15 +18,15 @@ from astrodata.Errors import ScienceError
 from gempy.instruments import geminiTools  as gemt
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
-def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=None, logName='', 
-                                                    logLevel=1, noLogFile=False):
+def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,  
+                suffix=None, logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
     The BPM will be added as frames matching that of the SCI frames and ensure
     the BPM's data array is the same size as that of the SCI data array.  If the 
-    SCI array is larger (say SCI's were overscan trimmed, but BPMs were not), the
-    BPMs will have their arrays padded with zero's to match the sizes and use the 
-    data_section descriptor on the SCI data arrays to ensure the match is
+    SCI array is larger (say SCI's were overscan trimmed, but BPMs were not), 
+    theBPMs will have their arrays padded with zero's to match the sizes and use  
+    the data_section descriptor on the SCI data arrays to ensure the match is
     a correct fit.  There must be a matching number of DQ extensions in the BPM 
     as the input the BPM frames are to be added to 
     (ie. if input has 3 SCI extensions, the BPM must have 3 DQ extensions).
@@ -52,7 +52,8 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
     :type matchSize: Python boolean (True/False). Default: False.
                       
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same 
+                    length as adInputs.
     
     :param suffix: 
          string to add on the end of the input filenames 
@@ -67,15 +68,16 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
           default is 'critical' messages only.
           Note: independent of logLevel setting, all messages always go 
           to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
         
     log.status('**STARTING** the add_bpm function')
     
@@ -86,19 +88,22 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
                    
     if BPMs==None:
-        raise ScienceError('There must be at least one BPM provided, the "BPMs" parameter must not be None.')
+        raise ScienceError('There must be at least one BPM provided, the \
+                                        "BPMs" parameter must not be None.')
                    
     try:
         # Ensure there are inputs to work on and BPMs to add to the inputs
@@ -139,7 +144,8 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
                         # logging the BPM file being used for this SCI extension
                         log.fullinfo('SCI extension number '+
                                      str(sciExt.extver())+', of file '+
-                                     adOut.filename+ ' is matched to DQ extension '
+                                     adOut.filename+ 
+                                     ' is matched to DQ extension '
                                      +str(sciExt.extver())+' of BPM file '+
                                      BPMfilename)
                         
@@ -163,7 +169,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
                             # 'not bad pixels' to match SCI's size.
                             if BPMArrayIn.shape==datasecShape:
                                 BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
-                                                                        BPMArrayIn
+                                                                    BPMArrayIn
                             elif BPMArrayIn.shape==BPMArrayOut.shape:
                                 BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
                                     BPMArrayIn[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]]
@@ -203,11 +209,13 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
                         log.debug('Appending new BPM HDU onto the file '+ 
                                   adOut.filename)
                         adOut.append(bpmAD)
-                        log.status('Appending BPM complete for '+ adOut.filename)
+                        log.status('Appending BPM complete for '+ 
+                                   adOut.filename)
             
                 # If BPM frames exist, send a critical message to the logger
                 else:
-                    log.critical('BPM frames all ready exist for '+adOut.filename+
+                    log.critical('BPM frames all ready exist for '+
+                                 adOut.filename+
                                  ', so addBPM will add new ones')
                     
                 # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
@@ -227,13 +235,15 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                              infilename=outNames[count],
+                                                          infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -241,8 +251,8 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
                         else:
                             adOut.filename = outNames
                     else:
-                        raise ScienceError('outNames and suffix parameters can not BOTH\
-                                                                    be None')
+                        raise ScienceError('outNames and suffix parameters \
+                                                         can not BOTH be None')
                         
                 log.status('File name updated to '+adOut.filename)
             
@@ -261,8 +271,8 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=Non
     except:
         raise ScienceError('An error occurred while trying to run add_bpm')
     
-def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=None, 
-                                    logName='', logLevel=1, noLogFile=False):
+def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, 
+                suffix=None, logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will create a numpy array for the data quality 
     of each SCI frame of the input data. This will then have a 
@@ -271,14 +281,15 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
     (0=good, 1=bad pixel (found in bad pixel mask), 
     2=value is non linear, 4=pixel is saturated)
     
-    NOTE: For every SCI extension of the inputs, a matching BPM extension must
-          also exist to be updated with the non-linear and saturated pixels from
-          the SCI data array for creation of the DQ array.
-          ie. for now, no BPM extensions=this function will crash
+    NOTE: 
+    For every SCI extension of the inputs, a matching BPM extension must
+    also exist to be updated with the non-linear and saturated pixels from
+    the SCI data array for creation of the DQ array.
+    ie. for now, no BPM extensions=this function will crash
           
     NOTE:
-        FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
-        TO PASS IT IN...
+    FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
+    TO PASS IT IN...
     
     A string representing the name of the log file to write all log messages to
     can be defined, or a default of 'gemini.log' will be used.  If the file
@@ -295,7 +306,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
     :type fl_saturated: Python boolean (True/False), default is True
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
     
     :param suffix: 
        string to add on the end of the input filenames 
@@ -310,15 +322,16 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
         
     log.status('**STARTING** the add_dq function')
     
@@ -329,13 +342,15 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -390,14 +405,16 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
                         if (linear is not None) and (fl_nonlinear): 
                             log.debug('Performing an np.where to find '+
                                       'non-linear pixels for extension '+
-                                      str(sciExt.extver())+' of '+adOut.filename)
+                                      str(sciExt.extver())+' of '+
+                                      adOut.filename)
                             nonLinArray = np.where(sciExt.data>linear,2,0)
                             log.status('Done calculating array of non-linear'+
                                        ' pixels')
                         if (saturated is not None) and (fl_saturated):
                             log.debug('Performing an np.where to find '+
                                       'saturated pixels for extension '+
-                                      str(sciExt.extver())+' of '+adOut.filename)
+                                      str(sciExt.extver())+' of '+
+                                      adOut.filename)
                             saturatedArray = np.where(sciExt.data>saturated,4,0)
                             log.status('Done calculating array of saturated'+
                                        ' pixels') 
@@ -424,7 +441,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
                         
                 # If DQ frames exist, send a critical message to the logger
                 else:
-                    log.critical('DQ frames all ready exist for '+adOut.filename+
+                    log.critical('DQ frames all ready exist for '+
+                                 adOut.filename+
                                  ', so addDQ will not calculate new ones')
                     
                 # Adding GEM-TLM (automatic) and ADDDQ time stamps to the PHU
@@ -446,13 +464,15 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                              infilename=outNames[count],
+                                                          infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -460,8 +480,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
                         else:
                             adOut.filename = outNames
                     else:
-                        raise ScienceError('outNames and suffix parameters can not BOTH\
-                                                                    be None')
+                        raise ScienceError('outNames and suffix parameters \
+                                                        can not BOTH be None')
                         
                 log.status('File name updated to '+adOut.filename)
             
@@ -480,8 +500,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=
     except:
         raise ScienceError('An error occurred while trying to run add_dq')
 
-def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1, 
-                                                            noLogFile=False):
+def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',  
+                                                logLevel=1, noLogFile=False):
     """
     This function uses numpy to calculate the variance of each SCI frame
     in the input files and appends it as a VAR frame using AstroData.
@@ -498,7 +518,8 @@ def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
     :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
     
     :param suffix: 
         string to add on the end of the input filenames 
@@ -513,15 +534,16 @@ def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
         default is 'critical' messages only.
         Note: independent of logLevel setting, all messages always go 
         to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
         
     log.status('**STARTING** the add_var function')
     
@@ -532,13 +554,15 @@ def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -612,7 +636,8 @@ def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
                 # If VAR frames all ready existed, 
                 # make a critical message in the logger
                 else:
-                    log.critical('VAR frames all ready exist for '+adOut.filename+
+                    log.critical('VAR frames all ready exist for '+
+                                 adOut.filename+
                                  ', so addVAR will not calculate new ones')
                 
                 # Adding GEM-TLM(automatic) and ADDVAR time stamps to the PHU     
@@ -634,13 +659,15 @@ def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                              infilename=outNames[count],
+                                                          infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -648,8 +675,8 @@ def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
                         else:
                             adOut.filename = outNames
                     else:
-                        raise ScienceError('outNames and suffix parameters can not BOTH\
-                                                                    be None')
+                        raise ScienceError('outNames and suffix parameters \
+                                                        can not BOTH be None')
                         
                 log.status('File name updated to '+adOut.filename)
             
@@ -668,8 +695,8 @@ def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
     except:
         raise ScienceError('An error occurred while trying to run add_var')
 
-def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='', 
-                                                    logLevel=1, noLogFile=False):
+def adu_to_electrons(adInputs=None, outNames=None, suffix=None,  
+                            logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will convert the inputs from having pixel values in ADU to 
     that of electrons by use of the arith 'toolbox'.
@@ -704,15 +731,16 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='',
          default is 'critical' messages only.
          Note: independent of logLevel setting, all messages always go 
          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
         
     log.status('**STARTING** the adu_to_electrons function')
     
@@ -723,13 +751,15 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='',
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -765,7 +795,8 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='',
                     # Updating this SCI extension's header keys
                     ext.header.update('GAINORIG', gainorig, 
                                        'Gain prior to unit conversion (e-/ADU)')
-                    ext.header.update('GAIN', 1.0, 'Physical units is electrons') 
+                    ext.header.update('GAIN', 1.0, 
+                                      'Physical units is electrons') 
                     ext.header.update('BUNIT','electrons' , 'Physical units')
                     # Logging the changes to the header keys
                     log.fullinfo('SCI extension number '+str(ext.extver())+
@@ -807,13 +838,15 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='',
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                              infilename=outNames[count],
+                                                          infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -821,8 +854,8 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='',
                         else:
                             adOut.filename = outNames
                     else:
-                        raise ScienceError('outNames and suffix parameters can not BOTH\
-                                                                    be None')
+                        raise ScienceError('outNames and suffix parameters \
+                                                        can not BOTH be None')
                         
                 log.status('File name updated to '+adOut.filename)
                 
@@ -849,10 +882,12 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='',
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
-        raise ScienceError('An error occurred while trying to run adu_to_electrons')
+        raise ScienceError('An error occurred while trying to run \
+                                                            adu_to_electrons')
 
-def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
-                outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
+                fl_over=False, outNames=None, suffix=None, logName='gemini.log', 
+                                                logLevel=1, noLogFile=False):
     """
     This function will subtract the biases from the inputs using the 
     CL script gireduce.
@@ -891,7 +926,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
     :type fl_over: Python boolean (True/False)
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
     
     :param suffix: 
            string to add on the end of the input filenames 
@@ -906,15 +942,16 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
           default is 'critical' messages only.
           Note: independent of logLevel setting, all messages always go 
           to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical', 
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
 
     log.status('**STARTING** the bias_correct function')
     
@@ -925,13 +962,15 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -964,7 +1003,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
                 
                 # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                    if adInputs[0].countExts('VAR')==\
+                    adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
@@ -1022,7 +1062,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
                                        }
                     # Grabbing the default params dict and updating it 
                     # with the two above dicts
-                    clParamsDict = CLDefaultParamsDict('gireduce', logLevel=logLevel)
+                    clParamsDict = CLDefaultParamsDict('gireduce', 
+                                                       logLevel=logLevel)
                     clParamsDict.update(clPrimParams)
                     clParamsDict.update(clSoftcodedParams)
                 
@@ -1040,7 +1081,7 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
                     gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                     
                     log.debug('calling the gireduce CL script for inputs '+
-                                                            clm.imageInsFiles(type='string'))
+                                            clm.imageInsFiles(type='string'))
                 
                     gemini.gmos.gireduce(**clParamsDict)
             
@@ -1076,7 +1117,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
                     
                     # Reseting the value set by gireduce to just the filename
                     # for clarity
-                    adOut.phuSetKeyValue('BIASIM', os.path.basename(processedBias)) 
+                    adOut.phuSetKeyValue('BIASIM', 
+                                         os.path.basename(processedBias)) 
                     
                     # Updating log with new GEM-TLM value and BIASIM header keys
                     log.fullinfo('*'*50, category='header')
@@ -1117,7 +1159,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
         raise ScienceError('An error occurred while trying to run bias_correct')     
     
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
-            outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+            outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
+                                                            noLogFile=False):
     """
     This function will average and combine the SCI extensions of the 
     inputs. It takes all the inputs and creates a list of them and 
@@ -1137,9 +1180,10 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     
     :param fl_vardq: Create variance and data quality frames?
     :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the inputs.
-                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                    so, if the first does, then the rest MUST also have them as well.
+                    it automatically if there are VAR and DQ frames in the 
+                    inputs. NOTE: 'AUTO' uses the first input to determine if 
+                    VAR and DQ frames exist, so, if the first does, then the 
+                    rest MUST also have them as well.
     
     :param fl_dqprop: propogate the current DQ values?
     :type fl_dqprop: Python boolean (True/False)
@@ -1160,11 +1204,11 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always go 
-                    to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                    Note: independent of logLevel setting, all messages always  
+                    go to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -1182,13 +1226,15 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -1206,7 +1252,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                    if adInputs[0].countExts('VAR')==\
+                    adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
@@ -1257,23 +1304,26 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                                         }
                     # Grabbing the default parameters dictionary and updating 
                     # it with the two above dictionaries
-                    clParamsDict = CLDefaultParamsDict('gemcombine', logLevel=logLevel)
+                    clParamsDict = CLDefaultParamsDict('gemcombine', 
+                                                       logLevel=logLevel)
                     clParamsDict.update(clPrimParams)
                     clParamsDict.update(clSoftcodedParams)
                     
                     # Logging the parameters that were not defaults
-                    log.fullinfo('\nParameters set automatically:', category='parameters')
+                    log.fullinfo('\nParameters set automatically:', 
+                                 category='parameters')
                     # Loop through the parameters in the clPrimParams dictionary
                     # and log them
                     gemt.logDictParams(clPrimParams, logLevel=logLevel)
                     
-                    log.fullinfo('\nParameters adjustable by the user:', category='parameters')
+                    log.fullinfo('\nParameters adjustable by the user:', 
+                                 category='parameters')
                     # Loop through the parameters in the clSoftcodedParams dictionary
                     # and log them
                     gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                     
-                    log.debug('Calling the gemcombine CL script for input list '+
-                              clm.imageInsFiles(type='listFile'))
+                    log.debug('Calling the gemcombine CL script for input\
+                                     list '+clm.imageInsFiles(type='listFile'))
                     
                     gemini.gemcombine(**clParamsDict)
                     
@@ -1282,7 +1332,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                                      clm.imageInsFiles(type='string'))
                         raise ScienceError('gemcombine failed')
                     else:
-                        log.status('Exited the gemcombine CL script successfully')
+                        log.status('Exited the gemcombine CL script \
+                                                                successfully')
                     
                     
                     # Renaming CL outputs and loading them back into memory 
@@ -1304,7 +1355,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                     log.fullinfo('*'*50, category='header')
                     log.fullinfo('file = '+adOut.filename, category='header')
                     log.fullinfo('~'*50, category='header')
-                    log.fullinfo('PHU keywords updated/added:\n', category='header')
+                    log.fullinfo('PHU keywords updated/added:\n', 
+                                 category='header')
                     log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                                  category='header')
                     log.fullinfo('COMBINE = '+adOut.phuGetKeyValue('COMBINE'), 
@@ -1325,8 +1377,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     except:
         raise ScienceError('An error occurred while trying to run combine')
                 
-def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', logLevel=1, 
-                                                            noLogFile=False):
+def flat_correct(adInputs, flats=None, outNames=None, suffix=None,  
+                            logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function performs a flat correction by dividing the inputs by  
     processed flats, similar to the way gireduce would perform this operation
@@ -1347,7 +1399,8 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', l
                 list must match the length of the inputs.
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -1358,17 +1411,18 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', l
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always go 
-                    to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                    Note: independent of logLevel setting, all messages always 
+                    go to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
         
     log.status('**STARTING** the flat_correct function')
     
@@ -1379,19 +1433,22 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', l
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     if flats==None:
-        raise ScienceError('There must be at least one processed flat provided, the "flats" parameter must not be None.')
+        raise ScienceError('There must be at least one processed flat provided,\
+                             the "flats" parameter must not be None.')
     
     try:
         if adInputs!=None:
@@ -1447,13 +1504,15 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', l
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                              infilename=outNames[count],
+                                                          infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -1461,8 +1520,8 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', l
                         else:
                             adOut.filename = outNames
                     else:
-                        raise ScienceError('outNames and suffix parameters can not BOTH\
-                                                                    be None')
+                        raise ScienceError('outNames and suffix parameters \
+                                                        can not BOTH be None')
                         
                 log.status('File name updated to '+adOut.filename)
             
@@ -1483,7 +1542,8 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', l
         raise ScienceError('An error occurred while trying to run flat_correct')
                 
 def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
-               keepDats=False, logName='', logLevel=1, noLogFile=False):
+               keepDats=False, logName='gemini.log', logLevel=1, 
+               noLogFile=False):
     """
     This function will detect the sources in the input images and fit
     both Gaussian and Moffat models to their profiles and calculate the 
@@ -1528,8 +1588,8 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
     :type qa: Python boolean (True/False)
               default: True
     
-    :param keepDats: flag to keep the .dat files that provide detailed results found
-                     while measuring the input's image quality.
+    :param keepDats: flag to keep the .dat files that provide detailed results 
+                     found while measuring the input's image quality.
     :type keepDats: Python boolean (True/False)
                     default: False
     
@@ -1546,11 +1606,11 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
     
     :param logLevel: verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                     Note: independent of logLevel setting, all messages always 
+                     go to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -1660,8 +1720,9 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
     except:
         raise ScienceError('An error occurred while trying to run measure_iq')                              
                 
-def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
-                outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',  
+                fl_vardq='AUTO', outNames=None, suffix=None, 
+                logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will mosaic the SCI frames of the input images, 
     along with the VAR and DQ frames if they exist.  
@@ -1684,18 +1745,22 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
     :param fl_paste: Paste images instead of mosaic?
     :type fl_paste: Python boolean (True/False)
     
-    :param interp_function: type of interpolation algorithm to use for between the chip gaps.
+    :param interp_function: type of interpolation algorithm to use for between 
+                            the chip gaps.
     :type interp_function: string, options: 'linear', 'nearest', 'poly3', 
                            'poly5', 'spine3', 'sinc'.
     
     :param fl_vardq: Also mosaic VAR and DQ frames?
     :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the inputs.
-                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                    so, if the first does, then the rest MUST also have them as well.
+                    it automatically if there are VAR and DQ frames in the 
+                    inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and  
+                    DQ frames exist, so, if the first does, then the rest MUST 
+                    also have them as well.
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -1706,17 +1771,18 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always go 
-                    to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                    Note: independent of logLevel setting, all messages always  
+                    go to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical', 
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
 
     log.status('**STARTING** the mosaic_detectors function')
     
@@ -1727,13 +1793,15 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -1745,7 +1813,8 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
                 
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')\
+                                                ==adInputs[0].countExts('SCI'):
                     fl_vardq=yes
                 else:
                     fl_vardq=no
@@ -1760,9 +1829,10 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
             
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
-                               funcName='mosaicDetectors', logName=logName, 
-                               logLevel=logLevel, noLogFile=noLogFile)
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
+                               suffix=suffix, funcName='mosaicDetectors',  
+                               logName=logName, logLevel=logLevel, 
+                               noLogFile=noLogFile)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status: 
@@ -1810,7 +1880,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
                 gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                 
                 log.debug('calling the gmosaic CL script for inputs '+
-                                                        clm.imageInsFiles(type='string'))
+                                            clm.imageInsFiles(type='string'))
             
                 gemini.gmos.gmosaic(**clParamsDict)
         
@@ -1849,15 +1919,16 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
                     log.fullinfo('*'*50, category='header')
                     log.fullinfo('File = '+ad.filename, category='header')
                     log.fullinfo('~'*50, category='header')
-                    log.fullinfo('PHU keywords updated/added:\n', category='header')
+                    log.fullinfo('PHU keywords updated/added:\n', 
+                                 category='header')
                     log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                                  category='header')
                     log.fullinfo('MOSAIC = '+ad.phuGetKeyValue('MOSAIC')+'\n', 
                                  category='header')    
                 
             else:
-                    log.critical('One of the inputs has not been prepared,\
-                    the mosaicDetectors function can only work on prepared data.')
+                    log.critical('One of the inputs has not been prepared, the\
+                     mosaicDetectors function can only work on prepared data.')
                     raise ScienceError('One of the inputs was not prepared')
                 
         else:
@@ -1869,13 +1940,15 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
-        raise ScienceError('An error occurred while trying to run mosaic_detectors') 
+        raise ScienceError('An error occurred while trying to run \
+                                                            mosaic_detectors') 
                 
 def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
-                outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
+                outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
+                noLogFile=False):
     """
-    This function will combine the input flats (adInputs) and then normalize them 
-    using the CL script giflat.
+    This function will combine the input flats (adInputs) and then normalize  
+    them using the CL script giflat.
     
     WARNING: The giflat script used here replaces the previously 
     calculated DQ frames with its own versions.  This may be corrected 
@@ -1900,13 +1973,16 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     
     :param fl_vardq: Create variance and data quality frames?
     :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the inputs.
-                    NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames exist, 
-                    so, if the first does, then the rest MUST also have them as well.
+                    it automatically if there are VAR and DQ frames in the 
+                    inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and  
+                    DQ frames exist, so, if the first does, then the rest MUST 
+                    also have them as well.
     
         
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adInputs.
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
     
     :param suffix:
             string to add on the end of the input filenames 
@@ -1918,17 +1994,18 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always go 
-                    to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                    Note: independent of logLevel setting, all messages always  
+                    go to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, noLogFile=noLogFile)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                            noLogFile=noLogFile)
 
     log.status('**STARTING** the normalize_flat function')
     
@@ -1939,13 +2016,15 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -1957,7 +2036,8 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                 
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')\
+                                                ==adInputs[0].countExts('SCI'):
                     fl_vardq=yes
                 else:
                     fl_vardq=no
@@ -1972,10 +2052,10 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
-                               funcName='normalizeFlat', logName=logName, 
-                               combinedImages=True, logLevel=logLevel, 
-                               noLogFile=noLogFile)
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                               suffix=suffix, funcName='normalizeFlat', 
+                               logName=logName, combinedImages=True, 
+                               logLevel=logLevel, noLogFile=noLogFile)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:                 
@@ -2073,10 +2153,11 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
-        raise ScienceError('An error occurred while trying to run normalize_flat')    
+        raise ScienceError('An error occurred while trying to run \
+                                                                normalize_flat')    
     
-def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1, 
-                                                            noLogFile=False):
+def overscan_trim(adInputs, outNames=None, suffix=None, logName='gemini.log', 
+                                                logLevel=1,  noLogFile=False):
     """
     This function uses AstroData to trim the overscan region 
     from the input images and update their headers.
@@ -2102,11 +2183,11 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always go 
-                    to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
+                    Note: independent of logLevel setting, all messages always  
+                    go to the logfile if it is not turned off.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen. OR the message level as a string (ie. 'critical',  
+                    'status', 'fullinfo'...)
     
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
@@ -2128,13 +2209,15 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
         if isinstance(outNames,list):
             if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
         if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
+                   raise ScienceError('Then length of the inputs, '+
+                                      str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -2206,8 +2289,8 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
                 log.fullinfo('PHU keywords updated/added:\n', 'header')
                 log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
                              category='header') 
-                log.fullinfo('OVERTRIM = '+adOut.phuGetKeyValue('OVERTRIM')+'\n', 
-                             category='header') 
+                log.fullinfo('OVERTRIM = '+adOut.phuGetKeyValue('OVERTRIM')+ 
+                             '\n', category='header') 
                 
                 # Updating the file name with the suffix for this
                 # function and then reporting the new file 
@@ -2215,13 +2298,15 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
                     log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
                     if outNames!=None:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                              infilename=outNames[count],
+                                                          infilename=outNames[count],
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                     else:
                         adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
                                                           suffix=suffix, 
-                                                          strip=False, logLevel=logLevel)
+                                                          strip=False, 
+                                                          logLevel=logLevel)
                 elif suffix==None:
                     if outNames!=None:
                         if len(outNames)>1: 
@@ -2229,8 +2314,8 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
                         else:
                             adOut.filename = outNames
                     else:
-                        raise ScienceError('outNames and suffix parameters can not BOTH\
-                                                                    be None')
+                        raise ScienceError('outNames and suffix parameters \
+                                                        can not BOTH be None')
                         
                 log.status('File name updated to '+adOut.filename)
             
@@ -2248,7 +2333,8 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1,
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
-        raise ScienceError('An error occurred while trying to run overscan_trim')
+        raise ScienceError('An error occurred while trying to run \
+                                                                overscan_trim')
 
 
 
