@@ -18,7 +18,7 @@ from astrodata.Errors import ScienceError
 from gempy.instruments import geminiTools  as gemt
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
-def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, logName='', 
+def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, suffix=None, logName='', 
                                                     logLevel=1, noLogFile=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
@@ -36,8 +36,8 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
           
-    :param adIns: Astrodata inputs to be converted to Electron pixel units
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to be converted to Electron pixel units
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param BPMs: The BPM(s) to be added to the input(s).
     :type BPMs: 
@@ -52,7 +52,7 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
     :type matchSize: Python boolean (True/False). Default: False.
                       
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: 
          string to add on the end of the input filenames 
@@ -79,20 +79,20 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
         
     log.status('**STARTING** the add_bpm function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -102,16 +102,16 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
                    
     try:
         # Ensure there are inputs to work on and BPMs to add to the inputs
-        if (adIns!=None) and (BPMs!=None):
+        if (adInputs!=None) and (BPMs!=None):
             # Set up counter for looping through outNames/BPMs lists
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
             
             # Do the work on each ad in the inputs
-            for ad in adIns:
+            for ad in adInputs:
                 # Getting the right BPM for this input
                 if isinstance(BPMs, list):
                     if len(BPMs)>1:
@@ -246,22 +246,22 @@ def add_bpm(adIns=None, BPMs=None, matchSize=False, outNames=None, suffix=None, 
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if (isinstance(adIns,list)) and (len(adIns)>1):
-                    adOuts.append(adOut)
+                if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                    adOutputs.append(adOut)
                 else:
-                    adOuts = adOut
+                    adOutputs = adOut
 
                 count=count+1
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the add_bpm function')
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run add_bpm')
     
-def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=None, 
+def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=None, 
                                     logName='', logLevel=1, noLogFile=False):
     """
     This function will create a numpy array for the data quality 
@@ -285,8 +285,8 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to have DQ extensions added to
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fl_nonlinear: Flag to turn checking for nonlinear pixels on/off
     :type fl_nonLinear: Python boolean (True/False), default is True
@@ -295,7 +295,7 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
     :type fl_saturated: Python boolean (True/False), default is True
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: 
        string to add on the end of the input filenames 
@@ -322,37 +322,37 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
         
     log.status('**STARTING** the add_dq function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
             
             # Loop through the inputs to perform the non-linear and saturated
             # pixel searches of the SCI frames to update the BPM frames into
             # full DQ frames. 
-            for ad in adIns:                
+            for ad in adInputs:                
                 # Check if DQ extensions all ready exist for this file
                 if not ad['DQ']:
                     # Making a deepcopy of the input to work on
@@ -465,22 +465,22 @@ def add_dq(adIns, fl_nonlinear=True, fl_saturated=True,outNames=None, suffix=Non
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if (isinstance(adIns,list)) and (len(adIns)>1):
-                    adOuts.append(adOut)
+                if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                    adOutputs.append(adOut)
                 else:
-                    adOuts = adOut
+                    adOutputs = adOut
 
                 count=count+1
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the add_dq function')
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run add_dq')
 
-def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
+def add_var(adInputs, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
     """
     This function uses numpy to calculate the variance of each SCI frame
@@ -494,11 +494,11 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to have DQ extensions added to
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: 
         string to add on the end of the input filenames 
@@ -525,37 +525,37 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         
     log.status('**STARTING** the add_var function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
             
             # Loop through the inputs to perform the non-linear and saturated
             # pixel searches of the SCI frames to update the BPM frames into
             # full DQ frames. 
-            for ad in adIns:   
+            for ad in adInputs:   
                 # Making a deepcopy of the input to work on
                 # (ie. a truly new+different object that is a complete copy of the input)
                 adOut = deepcopy(ad)
@@ -653,22 +653,22 @@ def add_var(adIns, outNames=None, suffix=None, logName='', logLevel=1,
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if (isinstance(adIns,list)) and (len(adIns)>1):
-                    adOuts.append(adOut)
+                if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                    adOutputs.append(adOut)
                 else:
-                    adOuts = adOut
+                    adOutputs = adOut
 
                 count=count+1
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the add_var function')
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run add_var')
 
-def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='', 
+def adu_to_electrons(adInputs=None, outNames=None, suffix=None, logName='', 
                                                     logLevel=1, noLogFile=False):
     """
     This function will convert the inputs from having pixel values in ADU to 
@@ -684,12 +684,12 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
       header key values available to multiply them by for conversion to 
       e- units.
           
-    :param adIns: Astrodata inputs to be converted to Electron pixel units
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to be converted to Electron pixel units
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param outNames: filenames of output(s)
     :type outNames: 
-        String, either a single or a list of strings of same length as adIns.
+        String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: 
         string to add on the end of the input filenames 
@@ -716,35 +716,35 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
         
     log.status('**STARTING** the adu_to_electrons function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
             
             # Do the work on each ad in the inputs
-            for ad in adIns:
+            for ad in adInputs:
                 log.fullinfo('calling ad.mult on '+ad.filename)
                 
                 # mult in this primitive will multiply the SCI frames by the
@@ -837,21 +837,21 @@ def adu_to_electrons(adIns=None, outNames=None, suffix=None, logName='',
                              category='header')
                 log.fullinfo('-'*50, category='header')
                 
-                if (isinstance(adIns,list)) and (len(adIns)>1):
-                    adOuts.append(adOut)
+                if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                    adOutputs.append(adOut)
                 else:
-                    adOuts = adOut
+                    adOutputs = adOut
 
                 count=count+1
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         log.status('**FINISHED** the adu_to_electrons function')
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run adu_to_electrons')
 
-def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
+def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=False, 
                 outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will subtract the biases from the inputs using the 
@@ -869,8 +869,8 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to be bias subtracted
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to be bias subtracted
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param biases: The bias(es) to divide the input(s) by.
     :type biases: 
@@ -891,7 +891,7 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
     :type fl_over: Python boolean (True/False)
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: 
            string to add on the end of the input filenames 
@@ -918,39 +918,39 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
 
     log.status('**STARTING** the bias_correct function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if isinstance(adIns,list) and (len(adIns)>1):
-                adOuts = []
+            if isinstance(adInputs,list) and (len(adInputs)>1):
+                adOutputs = []
                 
             # loading and bringing the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader()
                 
             # Performing work in a loop, so that different biases may be
             # used for each input as gireduce only allows one bias input per run.
-            for ad in adIns:
+            for ad in adInputs:
                 
                 # To clean up log and screen if multiple inputs
                 log.fullinfo('+'*50, category='format')    
@@ -964,13 +964,13 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                 
                 # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if isinstance(adIns,list):
-                        if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                    if isinstance(adInputs,list):
+                        if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                             fl_vardq=yes
                         else:
                             fl_vardq=no
                     else:
-                        if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                        if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
                             fl_vardq=yes
                         else:
                             fl_vardq=no
@@ -1063,11 +1063,11 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                     imageOuts, refOuts, arrayOuts = clm.finishCL() 
                     
                     # Renaming for symmetry
-                    adOuts=imageOuts
+                    adOutputs=imageOuts
                     
                     # There is only one at this point so no need to perform a loop
                     # CLmanager outputs a list always, so take the 0th
-                    adOut = adOuts[0]
+                    adOut = adOutputs[0]
                     
                     # Varifying gireduce was actually ran on the file
                     # then logging file names of successfully reduced files
@@ -1096,10 +1096,10 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                     log.fullinfo('BIASIM = '+adOut.phuGetKeyValue('BIASIM')+'\n', 
                                  category='header')
                     
-                    if (isinstance(adIns,list)) and (len(adIns)>1):
-                        adOuts.append(adOut)
+                    if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                        adOutputs.append(adOut)
                     else:
-                        adOuts = adOut
+                        adOutputs = adOut
                
                     count = count+1
                     
@@ -1112,17 +1112,17 @@ def bias_correct(adIns, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=Fals
                         'calculated DQ frames')
         
         else:
-            log.critical('The parameter "adIns" must not be None')
-            raise ScienceError('The parameter "adIns" must not be None')
+            log.critical('The parameter "adInputs" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the bias_correct function')
         
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run bias_correct')     
     
-def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average', 
+def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
             outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will average and combine the SCI extensions of the 
@@ -1138,8 +1138,8 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to be combined
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to be combined
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fl_vardq: Create variance and data quality frames?
     :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
@@ -1155,7 +1155,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
     
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+                    as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -1181,44 +1181,44 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
 
     log.status('**STARTING** the combine function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Ensuring there is more than one input to combine
-            if (isinstance(adIns,list)) and (len(adIns)>1):
+            if (isinstance(adInputs,list)) and (len(adInputs)>1):
                 
                 # loading and bringing the pyraf related modules into the name-space
                 pyraf, gemini, yes, no = pyrafLoader()
                 
                 # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if isinstance(adIns,list):
-                        if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                    if isinstance(adInputs,list):
+                        if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                             fl_vardq=yes
                         else:
                             fl_vardq=no
                     else:
-                        if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                        if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
                             fl_vardq=yes
                         else:
                             fl_vardq=no
@@ -1230,7 +1230,7 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, 
+                clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
                                    suffix=suffix, funcName='combine', 
                                    combinedImages=True, logName=logName,  
                                    logLevel=logLevel, noLogFile=noLogFile)
@@ -1303,11 +1303,11 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     imageOuts, refOuts, arrayOuts = clm.finishCL() 
                 
                     # Renaming for symmetry
-                    adOuts=imageOuts
+                    adOutputs=imageOuts
                 
                     # There is only one at this point so no need to perform a 
                     # loop CLmanager outputs a list always, so take the 0th
-                    adOut = adOuts[0]
+                    adOut = adOutputs[0]
                     
                     # Adding a GEM-TLM (automatic) and COMBINE time stamps 
                     # to the PHU
@@ -1327,17 +1327,17 @@ def combine(adIns, fl_vardq=True, fl_dqprop=True, method='average',
                     the combine function can only work on prepared data.')
                     raise ScienceError('One of the inputs was not prepared')
         else:
-            log.critical('The parameter "adIns" must not be None')
-            raise ScienceError('The parameter "adIns" must not be None')
+            log.critical('The parameter "adInputs" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the combine function')
         
-        # Return the outputs (list or single, matching adIns)
+        # Return the outputs (list or single, matching adInputs)
         return adOut
     except:
         raise ScienceError('An error occurred while trying to run combine')
                 
-def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logLevel=1, 
+def flat_correct(adInputs, flats=None, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
     """
     This function performs a flat correction by dividing the inputs by  
@@ -1349,8 +1349,8 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to have DQ extensions added to
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param flats: The flat(s) to divide the input(s) by.
     :type flats: AstroData objects in a list, or a single instance.
@@ -1359,7 +1359,7 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
                 list must match the length of the inputs.
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -1384,20 +1384,20 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
         
     log.status('**STARTING** the flat_correct function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
@@ -1406,18 +1406,18 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
         raise ScienceError('There must be at least one processed flat provided, the "flats" parameter must not be None.')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
             
             # Loop through the inputs to perform the non-linear and saturated
             # pixel searches of the SCI frames to update the BPM frames into
             # full DQ frames. 
-            for ad in adIns:                   
+            for ad in adInputs:                   
                 # To clean up log and screen if multiple inputs
                 log.fullinfo('+'*50, category='format')    
     
@@ -1478,23 +1478,23 @@ def flat_correct(adIns, flats=None, outNames=None, suffix=None, logName='', logL
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if (isinstance(adIns,list)) and (len(adIns)>1):
-                    adOuts.append(adOut)
+                if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                    adOutputs.append(adOut)
                 else:
-                    adOuts = adOut
+                    adOutputs = adOut
 
                 count=count+1
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the flat_correct function')
         
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run flat_correct')
                 
-def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
+def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
                keepDats=False, logName='', logLevel=1, noLogFile=False):
     """
     This function will detect the sources in the input images and fit
@@ -1520,8 +1520,8 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to have their image quality measured
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to have their image quality measured
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param function: Function for centroid fitting
     :type function: string, can be: 'moffat','gauss' or 'both'; 
@@ -1547,7 +1547,7 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
     
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+                    as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -1577,11 +1577,11 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
         
     log.status('**STARTING** the measure_iq function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Importing getiq module to perform the source detection and IQ
             # measurements of the inputs
             from iqtool.iq import getiq
@@ -1595,7 +1595,7 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
             # Loop through the inputs to perform the non-linear and saturated
             # pixel searches of the SCI frames to update the BPM frames into
             # full DQ frames. 
-            for ad in adIns:                     
+            for ad in adInputs:                     
                 # Writing the input to disk under a temp name in the current 
                 # working directory for getiq to use to be deleted after getiq
                 tmpWriteName = 'measure_iq'+os.path.basename(ad.filename)
@@ -1668,11 +1668,11 @@ def measure_iq(adIns, function='both', display=True, mosaic=True, qa=True,
             #returning complete dictionary for use by the user if desired
             return outDict
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
     except:
         raise ScienceError('An error occurred while trying to run measure_iq')                              
                 
-def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
+def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vardq='AUTO', 
                 outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will mosaic the SCI frames of the input images, 
@@ -1690,8 +1690,8 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to mosaic the extensions of
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to mosaic the extensions of
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fl_paste: Paste images instead of mosaic?
     :type fl_paste: Python boolean (True/False)
@@ -1707,7 +1707,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                     so, if the first does, then the rest MUST also have them as well.
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -1732,38 +1732,38 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
 
     log.status('**STARTING** the mosaic_detectors function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None: 
+        if adInputs!=None: 
             # loading and bringing the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader()  
                 
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if isinstance(adIns,list):
-                    if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                if isinstance(adInputs,list):
+                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
                 else:
-                    if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                    if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
@@ -1778,7 +1778,7 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
             
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, suffix=suffix, 
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
                                funcName='mosaicDetectors', logName=logName, 
                                logLevel=logLevel, noLogFile=noLogFile)
             
@@ -1846,11 +1846,11 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                 imageOuts, refOuts, arrayOuts = clm.finishCL()   
                 
                 # Renaming for symmetry
-                adOuts=imageOuts
+                adOutputs=imageOuts
                     
                 # Wrap up logging
                 i=0
-                for ad in adOuts:
+                for ad in adOutputs:
                     log.fullinfo('-'*50, category='header')
                     
                     # Varifying gireduce was actually ran on the file
@@ -1879,20 +1879,20 @@ def mosaic_detectors(adIns, fl_paste=False, interp_function='linear', fl_vardq='
                     raise ScienceError('One of the inputs was not prepared')
                 
         else:
-            log.critical('The parameter "adIns" must not be None')
-            raise ScienceError('The parameter "adIns" must not be None')
+            log.critical('The parameter "adInputs" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the mosaic_detectors function')
         
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run mosaic_detectors') 
                 
-def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
+def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
                 outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
-    This function will combine the input flats (adIns) and then normalize them 
+    This function will combine the input flats (adInputs) and then normalize them 
     using the CL script giflat.
     
     WARNING: The giflat script used here replaces the previously 
@@ -1907,8 +1907,8 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata input flat(s) to be combined and normalized
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata input flat(s) to be combined and normalized
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fl_trim: Trim the overscan region from the frames?
     :type fl_trim: Python boolean (True/False)
@@ -1924,7 +1924,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     
         
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix:
             string to add on the end of the input filenames 
@@ -1950,38 +1950,38 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
 
     log.status('**STARTING** the normalize_flat function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None: 
+        if adInputs!=None: 
             # loading and bringing the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader()  
                 
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if isinstance(adIns,list):
-                    if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                if isinstance(adInputs,list):
+                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
                 else:
-                    if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                    if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
@@ -1996,7 +1996,7 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, suffix=suffix, 
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
                                funcName='normalizeFlat', logName=logName, 
                                combinedImages=True, logLevel=logLevel, 
                                noLogFile=noLogFile)
@@ -2063,11 +2063,11 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                 imageOuts, refOuts, arrayOuts = clm.finishCL()
             
                 # Renaming for symmetry
-                adOuts=imageOuts
+                adOutputs=imageOuts
                     
                 # There is only one at this point so no need to perform a loop
                 # CLmanager outputs a list always, so take the 0th
-                adOut = adOuts[0]
+                adOut = adOutputs[0]
                 
                 # Adding GEM-TLM (automatic) and GIFLAT time stamps to the PHU
                 adOut.historyMark(key='GIFLAT', stomp=False)
@@ -2089,17 +2089,17 @@ def normalize_flat(adIns, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                 raise ScienceError('One of the inputs was not prepared')
                 
         else:
-            log.critical('The parameter "adIns" must not be None')
-            raise ScienceError('The parameter "adIns" must not be None')
+            log.critical('The parameter "adInputs" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the normalize_flat function')
         
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run normalize_flat')    
     
-def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1, 
+def overscan_trim(adInputs, outNames=None, suffix=None, logName='', logLevel=1, 
                                                             noLogFile=False):
     """
     This function uses AstroData to trim the overscan region 
@@ -2110,12 +2110,12 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to have DQ extensions added to
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+                    as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -2145,37 +2145,37 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
         
     log.status('**STARTING** the overscan_trim function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
             
             # Loop through the inputs to perform the non-linear and saturated
             # pixel searches of the SCI frames to update the BPM frames into
             # full DQ frames. 
-            for ad in adIns:  
+            for ad in adInputs:  
                 # Making a deepcopy of the input to work on
                 # (ie. a truly new+different object that is a complete copy of the input)
                 adOut = deepcopy(ad)
@@ -2258,19 +2258,19 @@ def overscan_trim(adIns, outNames=None, suffix=None, logName='', logLevel=1,
                         
                 log.status('File name updated to '+adOut.filename)
             
-                if (isinstance(adIns,list)) and (len(adIns)>1):
-                    adOuts.append(adOut)
+                if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                    adOutputs.append(adOut)
                 else:
-                    adOuts = adOut
+                    adOutputs = adOut
 
                 count=count+1
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the overscan_trim function')
         
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run overscan_trim')
 

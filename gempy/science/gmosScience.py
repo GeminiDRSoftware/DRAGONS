@@ -18,7 +18,7 @@ from gempy.instruments import gmosTools  as gmost
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 
-def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO', 
+def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
             outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
@@ -47,8 +47,8 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
         vs the column based used right now, add the model, nbiascontam, ... params to the 
         functions inputs so the user can choose them for themselves.
 
-    :param adIns: Astrodata inputs to be converted to Electron pixel units
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to be converted to Electron pixel units
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fl_trim: Trim the overscan region from the frames?
     :type fl_trim: Python boolean (True/False)
@@ -67,7 +67,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
     :type biassec: string. default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' is ideal for 2x2 GMOS data.
     
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
     :type suffix: string
@@ -92,42 +92,42 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
 
     log.status('**STARTING** the overscanSubtract function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None: 
+        if adInputs!=None: 
             # loading and bringing the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader() 
              
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
                     
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if isinstance(adIns,list):
-                    if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                if isinstance(adInputs,list):
+                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
                 else:
-                    if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                    if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
                         fl_vardq=yes
                     else:
                         fl_vardq=no
@@ -142,7 +142,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, suffix=suffix, 
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
                                funcName='overscanSubtract', logName=logName,  
                                    logLevel=logLevel, noLogFile=noLogFile)
             
@@ -168,7 +168,7 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 
                 # Taking care of the biasec->nbiascontam param
                 if not biassec == '':
-                    nbiascontam = gemt.nbiascontam(adIns=adIns, biassec=biassec, logLevel=logLevel)
+                    nbiascontam = gemt.nbiascontam(adInputs=adInputs, biassec=biassec, logLevel=logLevel)
                     log.fullinfo('nbiascontam parameter was updated to = '+
                                  str(nbiascontam))
                 else: 
@@ -220,11 +220,11 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 imageOuts, refOuts, arrayOuts = clm.finishCL() 
                 
                 # Renaming for symmetry
-                adOuts=imageOuts
+                adOutputs=imageOuts
                 
                 # Wrap up logging
                 i=0
-                for adOut in adOuts:
+                for adOut in adOutputs:
                     # Verifying gireduce was actually ran on the file
                     if adOut.phuGetKeyValue('GIREDUCE'): 
                         # If gireduce was ran, then log the changes to the files 
@@ -253,18 +253,18 @@ def overscan_subtract(adIns, fl_trim=False, fl_vardq='AUTO',
                 raise ScienceError('One of the inputs was not prepared')
                 
         else:
-            log.critical('The parameter "adIns" must not be None')
-            raise ScienceError('The parameter "adIns" must not be None')
+            log.critical('The parameter "adInputs" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the overscanSubtract function')
         
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise #('An error occurred while trying to run overscanSubtract') 
                 
                 
-def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
+def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
             outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This primitive will scale and subtract the fringe frame from the inputs.
@@ -281,8 +281,8 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
         This function has many GMOS dependencies that would be great to work out
         so that this could be made a more general function (say at the Gemini level).
     
-    :param adIns: Astrodata input(s) to be fringe corrected
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata input(s) to be fringe corrected
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fringes: Astrodata input fringe(s)
     :type fringes: AstroData objects in a list, or a single instance.
@@ -306,7 +306,7 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
     :type LogFile: Python boolean (True/False)
 
     :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length as adIns.
+    :type outNames: String, either a single or a list of strings of same length as adInputs.
     
     :param suffix: string to postpend on the end of the input filenames (or outNames if not None) for the output filenames.
     :type suffix: string
@@ -331,37 +331,37 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
 
     log.status('**STARTING** the overscanSubtract function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
         
     if not isinstance(fringes,list):
         fringes=[fringes]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')               
                 
     try:
-        if adIns!=None: 
+        if adInputs!=None: 
             # Set up counter for looping through outNames/BPMs lists
             count=0
             
             # Creating empty list of ad's to be returned that will be filled below
-            if len(adIns)>1:
-                adOuts=[]
+            if len(adInputs)>1:
+                adOutputs=[]
             
-            for ad in adIns:
+            for ad in adInputs:
                 
                 # Setting up the fringe correctly
                 if (isinstance(fringes,list)) and (len(fringes)>1):
@@ -431,23 +431,23 @@ def fringe_correct(adIns, fringes, fl_statscale=False, scale=0.0, statsec='',
                         
                 log.status('File name updated to '+adOut.filename)
                 
-                if (isinstance(adIns,list)) and (len(adIns)>1):
-                    adOuts.append(adOut)
+                if (isinstance(adInputs,list)) and (len(adInputs)>1):
+                    adOutputs.append(adOut)
                 else:
-                    adOuts = adOut
+                    adOutputs = adOut
                     
                 count=count+1
                 
         else:
-            raise ScienceError('The parameter "adIns" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the fringe_correct function')
-        # Return the outputs (list or single, matching adIns)
-        return adOuts
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run fringe_correct')
     
-def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median', 
+def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median', 
             outNames=None, suffix=None, logName='', logLevel=1, noLogFile=False):
     """
     This function will create and return a single fringe image from all the inputs.
@@ -460,8 +460,8 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
-    :param adIns: Astrodata inputs to be combined
-    :type adIns: Astrodata objects, either a single or a list of objects
+    :param adInputs: Astrodata inputs to be combined
+    :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param fl_vardq: Create variance and data quality frames?
     :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
@@ -474,7 +474,7 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
     
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length
-                    as adIns.
+                    as adInputs.
     
     :param suffix: string to add on the end of the input filenames 
                     (or outNames if not None) for the output filenames.
@@ -498,48 +498,48 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
 
     log.status('**STARTING** the make_fringe_frame_imaging function')
     
-    if not isinstance(adIns,list):
-        adIns=[adIns]
+    if not isinstance(adInputs,list):
+        adInputs=[adInputs]
     
-    if (adIns!=None) and (outNames!=None):
+    if (adInputs!=None) and (outNames!=None):
         if isinstance(outNames,list):
-            if len(adIns)!= len(outNames):
+            if len(adInputs)!= len(outNames):
                 if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adIns)>1:
+        if isInstance(outNames,str) and len(adInputs)>1:
             if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+str(len(adIns))+
+                   raise ScienceError('Then length of the inputs, '+str(len(adInputs))+
                        ', did not match the length of the outputs, '+
                        str(len(outNames))+
                        ' AND no value of "suffix" was passed in')
     
     try:
-        if adIns!=None:
+        if adInputs!=None:
             # Set up counter for looping through outNames list
             count=0
             
             # Ensuring there is more than one input to make a fringe frame from
-            if (isinstance(adIns,list)) and (len(adIns)>1):
+            if (isinstance(adInputs,list)) and (len(adInputs)>1):
                 
                 # loading and bringing the pyraf related modules into the name-space
                 pyraf, gemini, yes, no = pyrafLoader() 
                  
                 # Creating empty list of ad's to be returned that will be filled below
-                if len(adIns)>1:
-                    adOuts=[]
+                if len(adInputs)>1:
+                    adOutputs=[]
                         
                 # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if isinstance(adIns,list):
-                        if adIns[0].countExts('VAR')==adIns[0].countExts('DQ')==adIns[0].countExts('SCI'):
+                    if isinstance(adInputs,list):
+                        if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
                             fl_vardq=yes
                         else:
                             fl_vardq=no
                     else:
-                        if adIns.countExts('VAR')==adIns.countExts('DQ')==adIns.countExts('SCI'):
+                        if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
                             fl_vardq=yes
                         else:
                             fl_vardq=no
@@ -554,7 +554,7 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                     
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
-                clm=gemt.CLManager(imageIns=adIns, imageOutsNames=outNames, suffix=suffix, 
+                clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, suffix=suffix, 
                                    funcName='makeFringeFrame', combinedImages=True, 
                                    logName=logName, logLevel=logLevel,  
                                     noLogFile=noLogFile)
@@ -621,11 +621,11 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                     imageOuts, refOuts, arrayOuts = clm.finishCL() 
                     
                     # Renaming for symmetry
-                    adOuts=imageOuts
+                    adOutputs=imageOuts
                 
                     # There is only one at this point so no need to perform a loop
                     # CLmanager outputs a list always, so take the 0th
-                    adOut = adOuts[0]
+                    adOut = adOutputs[0]
                     
                     # Adding a GEM-TLM (automatic) and FRINGE time stamps 
                     # to the PHU
@@ -645,12 +645,12 @@ def make_fringe_frame_imaging(adIns, fl_vardq='AUTO', method='median',
                     the combine function can only work on prepared data.')
                     raise ScienceError('One of the inputs was not prepared')
         else:
-            log.critical('The parameter "adIns" must not be None')
-            raise ScienceError('The parameter "adIns" must not be None')
+            log.critical('The parameter "adInputs" must not be None')
+            raise ScienceError('The parameter "adInputs" must not be None')
         
         log.status('**FINISHED** the make_fringe_frame_imaging function')
         
-        # Return the outputs (list or single, matching adIns)
+        # Return the outputs (list or single, matching adInputs)
         return adOut
     except:
         raise ScienceError('An error occurred while trying to run make_fringe_frame_imaging')
