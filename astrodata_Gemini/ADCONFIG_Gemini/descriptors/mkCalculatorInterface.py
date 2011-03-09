@@ -1,4 +1,6 @@
-from descriptorDescriptionDict import descriptorDescDict
+from descriptorDescriptionDict import descriptorDescDict, returnTypeDict
+from descriptorDescriptionDict import detailedNameDict, asDictArgDict
+from descriptorDescriptionDict import stripIDArgDict
 
 class DescriptorDescriptor:
     name = None
@@ -41,7 +43,67 @@ class DescriptorDescriptor:
         try:
             desc = descriptorDescDict[name]
         except:
-            desc = 'Return the %(name)s value for generic data'%{'name':name}
+            try:
+                rtype = returnTypeDict[name]
+            except:
+                rtype = 'string'
+            try:
+                dname = detailedNameDict[name]
+            except:
+                dname = name
+            try:
+                asDictArg = asDictArgDict[name]
+            except:
+                asDictArg = 'no'
+            try:
+                stripIDArg = stripIDArgDict[name]
+            except:
+                stripIDArg = 'no'
+
+            if stripIDArg == 'yes':
+                desc = 'Return the %(name)s value\n' % {'name':name} + \
+                       '        :param dataset: the data set\n' + \
+                       '        :type dataset: AstroData\n' + \
+                       '        :param stripID: set to True to remove the ' + \
+                       'component ID from the \n                        ' + \
+                       'returned %(name)s value\n' % {'name':name} + \
+                       '        :type stripID: Python boolean\n' + \
+                       '        :param pretty: set to True to return a ' + \
+                       'human meaningful \n' + \
+                       '                       %(name)s ' % {'name':name} + \
+                       'value\n' + \
+                       '        :type pretty: Python boolean\n' + \
+                       '        :rtype: %(rtype)s\n' % {'rtype':rtype} + \
+                       '        :return: the %(dname)s' \
+                       % {'dname':dname}
+            elif asDictArg == 'yes':
+                desc = 'Return the %(name)s value\n' % {'name':name} + \
+                       '        :param dataset: the data set\n' + \
+                       '        :type dataset: AstroData\n' + \
+                       '        :param asDict: set to True to return a ' + \
+                       'dictionary, where the number of ' + \
+                       '\n                       dictionary elements ' + \
+                       'equals the number of pixel data ' + \
+                       '\n                       extensions in the image. ' + \
+                       'The key of the dictionary is ' + \
+                       '\n                       an (EXTNAME, EXTVER) ' + \
+                       'tuple, if available. Otherwise, ' + \
+                       '\n                       the key is the integer ' + \
+                       'index of the extension.\n' + \
+                       '        :type asDict: Python boolean\n' + \
+                       '        :rtype: dictionary containing one or more ' + \
+                       '%(rtype)s(s)\n' % {'rtype':rtype} + \
+                       '        :return: the %(dname)s' \
+                       % {'dname':dname}
+
+            else:
+                desc = 'Return the %(name)s value\n' % {'name':name} + \
+                       '        :param dataset: the data set\n' + \
+                       '        :type dataset: AstroData\n' + \
+                       '        :rtype: %(rtype)s\n' % {'rtype':rtype} + \
+                       '        :return: the %(dname)s' \
+                       % {'dname':dname}
+                
         self.description = desc
         
     def funcbody(self):
@@ -111,8 +173,7 @@ descriptors =   [   DD("airmass"),
                     DD("y_offset"),
                 ]
 
-wholeout = """
-import sys
+wholeout = """import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 
