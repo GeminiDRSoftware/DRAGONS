@@ -57,7 +57,21 @@ class ToolboxError(Error):
     """
     message = 'An error occurred during a "toolbox" function'
     
+class UndefinedKeyError(Error):
+    """
+    Exception raised for errors when a PHU key has a value that is 
+    pyfits.core.Undefined
+    """
+    message = 'Key value was undefined, so returning None'
+
+class EmptyKeyError(Error):
+    """
+    Exception raised for errors when a PHU key was found to but was empty or ' '.
+    """    
+    message = 'Key value was found but was empty, so returning None'
+
     
+       
     
     
     
