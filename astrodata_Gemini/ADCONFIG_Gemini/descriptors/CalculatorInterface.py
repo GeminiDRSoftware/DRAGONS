@@ -1,4 +1,3 @@
-
 import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
@@ -9,7 +8,11 @@ class CalculatorInterface:
 
     def airmass(self, **args):
         """
-        description of what it does
+        Return the airmass value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the mean airmass of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -39,7 +42,19 @@ class CalculatorInterface:
     
     def amp_read_area(self, **args):
         """
-        Return the amp_read_area value for generic data
+        Return the amp_read_area value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more string(s)
+        :return: the composite string containing the name of the detector
+                 amplifier (ampname) and the readout area of the CCD (detsec) 
+                 used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -69,7 +84,11 @@ class CalculatorInterface:
     
     def azimuth(self, **args):
         """
-        Return the azimuth value for generic data
+        Return the azimuth value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the azimuth (in degrees between 0 and 360) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -99,7 +118,11 @@ class CalculatorInterface:
     
     def camera(self, **args):
         """
-        Return the camera value for generic data
+        Return the camera value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the camera used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -129,7 +152,12 @@ class CalculatorInterface:
     
     def cass_rotator_pa(self, **args):
         """
-        Return the cass_rotator_pa value for generic data
+        Return the cass_rotator_pa value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the cassegrain rotator position angle (in degrees between 0 
+                 and 360) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -159,7 +187,27 @@ class CalculatorInterface:
     
     def central_wavelength(self, **args):
         """
-        Return the central_wavelength value for generic data
+        Return the central_wavelength value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asMicrometers: set to True to return the central_wavelength 
+                              value in units of Micrometers
+        :type asMicrometers: Python boolean
+        :param asNanometers: set to True to return the central_wavelength 
+                             value in units of Nanometers
+        :type asNanometers: Python boolean
+        :param asAngstroms: set to True to return the central_wavelength 
+                            value in units of Angstroms
+        :type asAngstroms: Python boolean
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more float(s)
+        :return: the central wavelength (in meters by default) of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -189,7 +237,11 @@ class CalculatorInterface:
     
     def coadds(self, **args):
         """
-        Return the coadds value for generic data
+        Return the coadds value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: integer
+        :return: the number of coadds used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -219,7 +271,11 @@ class CalculatorInterface:
     
     def data_label(self, **args):
         """
-        Return the data_label value for generic data
+        Return the data_label value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the data label of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -249,7 +305,25 @@ class CalculatorInterface:
     
     def data_section(self, **args):
         """
-        Return the data_section value for generic data
+        Return the data_section value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param pretty: set to True to return a human meaningful data_section 
+                       value in the form [x1:x2,y1:y2] that uses 1-based 
+                       indexing
+        :type pretty: Python boolean
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more tuple(s) that use 0-based 
+                indexing in the form (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as 
+                default, or one or more string(s) that use 1-based indexing in 
+                the form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 
+                are integers.
+        :return: the section of the data of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -279,7 +353,11 @@ class CalculatorInterface:
     
     def dec(self, **args):
         """
-        Return the dec value for generic data
+        Return the dec value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the declination (in decimal degrees) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -309,7 +387,17 @@ class CalculatorInterface:
     
     def decker(self, **args):
         """
-        Return the decker value for generic data
+        Return the decker value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned decker value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       decker value
+        :type pretty: Python boolean
+        :rtype: string
+        :return: the decker used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -339,7 +427,25 @@ class CalculatorInterface:
     
     def detector_section(self, **args):
         """
-        Return the detector_section value for generic data
+        Return the detector_section value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param pretty: set to True to return a human meaningful 
+                       detector_section value in the form [x1:x2,y1:y2] that 
+                       uses 1-based indexing
+        :type pretty: Python boolean
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more tuple(s) that use 0-based 
+                indexing in the form (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as 
+                default, or one or more string(s) that use 1-based indexing in 
+                the form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 
+                are integers.
+        :return: the section of the data of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -369,7 +475,18 @@ class CalculatorInterface:
     
     def detector_x_bin(self, **args):
         """
-        Return the detector_x_bin value for generic data
+        Return the detector_x_bin value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more integer(s)
+        :return: the binning of the x-axis of the detector used for the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -399,7 +516,18 @@ class CalculatorInterface:
     
     def detector_y_bin(self, **args):
         """
-        Return the detector_y_bin value for generic data
+        Return the detector_y_bin value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more integer(s)
+        :return: the binning of the y-axis of the detector used for the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -429,7 +557,17 @@ class CalculatorInterface:
     
     def disperser(self, **args):
         """
-        Return the disperser value for generic data
+        Return the disperser value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned disperser value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       disperser value
+        :type pretty: Python boolean
+        :rtype: string
+        :return: the disperser used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -459,7 +597,27 @@ class CalculatorInterface:
     
     def dispersion(self, **args):
         """
-        Return the dispersion value for generic data
+        Return the dispersion value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asMicrometers: set to True to return the dispersion 
+                              value in units of Micrometers
+        :type asMicrometers: Python boolean
+        :param asNanometers: set to True to return the dispersion 
+                             value in units of Nanometers
+        :type asNanometers: Python boolean
+        :param asAngstroms: set to True to return the dispersion 
+                            value in units of Angstroms
+        :type asAngstroms: Python boolean
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more float(s)
+        :return: the dispersion (in meters per pixel by default) of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -489,7 +647,11 @@ class CalculatorInterface:
     
     def dispersion_axis(self, **args):
         """
-        Return the dispersion_axis value for generic data
+        Return the dispersion_axis value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: integer
+        :return: the dispersion axis (x = 1; y = 2; z = 3) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -519,7 +681,11 @@ class CalculatorInterface:
     
     def elevation(self, **args):
         """
-        Return the elevation value for generic data
+        Return the elevation value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the elevation (in degrees) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -549,7 +715,11 @@ class CalculatorInterface:
     
     def exposure_time(self, **args):
         """
-        Return the exposure_time value for generic data
+        Return the exposure_time value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the total exposure time (in seconds) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -579,7 +749,18 @@ class CalculatorInterface:
     
     def filter_name(self, **args):
         """
-        Return the filter_name value for generic data
+        Return the filter_name value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned filter_name value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       filter_name value
+        :type pretty: Python boolean
+        :rtype: string
+        :return: the unique, sorted filter name idenifier string used for the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -609,7 +790,17 @@ class CalculatorInterface:
     
     def focal_plane_mask(self, **args):
         """
-        Return the focal_plane_mask value for generic data
+        Return the focal_plane_mask value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned focal_plane_mask value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       focal_plane_mask value
+        :type pretty: Python boolean
+        :rtype: string
+        :return: the focal plane mask used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -639,7 +830,17 @@ class CalculatorInterface:
     
     def gain(self, **args):
         """
-        Return the gain value for generic data
+        Return the gain value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more float(s)
+        :return: the gain (in electrons per ADU) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -669,7 +870,17 @@ class CalculatorInterface:
     
     def grating(self, **args):
         """
-        Return the grating value for generic data
+        Return the grating value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned grating value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       grating value
+        :type pretty: Python boolean
+        :rtype: string
+        :return: the grating used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -699,7 +910,11 @@ class CalculatorInterface:
     
     def gain_setting(self, **args):
         """
-        Return the gain_setting value for generic data
+        Return the gain_setting value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the gain setting of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -729,7 +944,11 @@ class CalculatorInterface:
     
     def instrument(self, **args):
         """
-        Return the instrument value for generic data
+        Return the instrument value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the instrument used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -759,7 +978,11 @@ class CalculatorInterface:
     
     def local_time(self, **args):
         """
-        Return the local_time value for generic data
+        Return the local_time value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the local time (in HH:MM:SS.S) at the start of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -789,7 +1012,17 @@ class CalculatorInterface:
     
     def mdf_row_id(self, **args):
         """
-        Return the mdf_row_id value for generic data
+        Return the mdf_row_id value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more integer(s)
+        :return: the corresponding reference row in the MDF
         """
         try:
             self._lazyloadCalculator()
@@ -819,7 +1052,18 @@ class CalculatorInterface:
     
     def nod_count(self, **args):
         """
-        Return the nod_count value for generic data
+        Return the nod_count value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more integer(s)
+        :return: the number of nod and shuffle cycles in the nod and shuffle 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -849,7 +1093,18 @@ class CalculatorInterface:
     
     def nod_pixels(self, **args):
         """
-        Return the nod_pixels value for generic data
+        Return the nod_pixels value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more integer(s)
+        :return: the number of pixel rows the charge is shuffled by in the nod 
+                 and shuffle observation
         """
         try:
             self._lazyloadCalculator()
@@ -879,7 +1134,12 @@ class CalculatorInterface:
     
     def non_linear_level(self, **args):
         """
-        Return the non_linear_level value for generic data
+        Return the non_linear_level value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: integer
+        :return: the non linear level in the raw images (in ADU) of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -909,7 +1169,11 @@ class CalculatorInterface:
     
     def object(self, **args):
         """
-        Return the object value for generic data
+        Return the object value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the name of the target object observed
         """
         try:
             self._lazyloadCalculator()
@@ -939,7 +1203,12 @@ class CalculatorInterface:
     
     def observation_class(self, **args):
         """
-        Return the observation_class value for generic data
+        Return the observation_class value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the class (either 'science', 'progCal', 'partnerCal', 'acq', 
+                 'acqCal' or 'dayCal') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -969,7 +1238,11 @@ class CalculatorInterface:
     
     def observation_epoch(self, **args):
         """
-        Return the observation_epoch value for generic data
+        Return the observation_epoch value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the epoch (in years) at the start of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -999,7 +1272,11 @@ class CalculatorInterface:
     
     def observation_id(self, **args):
         """
-        Return the observation_id value for generic data
+        Return the observation_id value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the ID (e.g., GN-2011A-Q-123-45) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1029,7 +1306,12 @@ class CalculatorInterface:
     
     def observation_type(self, **args):
         """
-        Return the observation_type value for generic data
+        Return the observation_type value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the type (either 'OBJECT', 'DARK', 'FLAT', 'ARC', 'BIAS' or 
+                 'MASK') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1059,7 +1341,11 @@ class CalculatorInterface:
     
     def pixel_scale(self, **args):
         """
-        Return the pixel_scale value for generic data
+        Return the pixel_scale value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the pixel scale (in arcsec per pixel) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1089,7 +1375,17 @@ class CalculatorInterface:
     
     def prism(self, **args):
         """
-        Return the prism value for generic data
+        Return the prism value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned prism value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       prism value
+        :type pretty: Python boolean
+        :rtype: string
+        :return: the prism used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1119,7 +1415,12 @@ class CalculatorInterface:
     
     def program_id(self, **args):
         """
-        Return the program_id value for generic data
+        Return the program_id value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the Gemini program ID (e.g., GN-2011A-Q-123) of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -1149,7 +1450,11 @@ class CalculatorInterface:
     
     def pupil_mask(self, **args):
         """
-        Return the pupil_mask value for generic data
+        Return the pupil_mask value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the pupil mask used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1179,7 +1484,12 @@ class CalculatorInterface:
     
     def qa_state(self, **args):
         """
-        Return the qa_state value for generic data
+        Return the qa_state value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the quality assessment state (either 'Undefined', 'Pass', 
+                 'Usable', 'Fail' or 'CHECK') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1209,7 +1519,11 @@ class CalculatorInterface:
     
     def ra(self, **args):
         """
-        Return the ra value for generic data
+        Return the ra value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the Right Ascension (in decimal degrees) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1239,7 +1553,12 @@ class CalculatorInterface:
     
     def raw_bg(self, **args):
         """
-        Return the raw_bg value for generic data
+        Return the raw_bg value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the raw background (either '20-percentile', '50-percentile', 
+                 '80-percentile' or 'Any') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1269,7 +1588,12 @@ class CalculatorInterface:
     
     def raw_cc(self, **args):
         """
-        Return the raw_cc value for generic data
+        Return the raw_cc value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the raw cloud cover (either '50-percentile', '70-percentile', 
+                 '80-percentile', '90-percentile' or 'Any') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1299,7 +1623,12 @@ class CalculatorInterface:
     
     def raw_iq(self, **args):
         """
-        Return the raw_iq value for generic data
+        Return the raw_iq value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the raw image quality (either '20-percentile', 
+                 '70-percentile', '85-percentile' or 'Any') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1329,7 +1658,12 @@ class CalculatorInterface:
     
     def raw_wv(self, **args):
         """
-        Return the raw_wv value for generic data
+        Return the raw_wv value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the raw water vapour (either '20-percentile', 
+                 '50-percentile', '80-percentile' or 'Any') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1359,7 +1693,14 @@ class CalculatorInterface:
     
     def read_mode(self, **args):
         """
-        Return the read_mode value for generic data
+        Return the read_mode value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the read mode (either 'Very Faint Objects', 
+                 'Faint Object(s)', 'Medium Object', 'Bright Object(s)', 
+                 'Very Bright Object', 'Low Background', 'Medium Background', 
+                 'High Background' or 'Invalid') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1389,7 +1730,17 @@ class CalculatorInterface:
     
     def read_noise(self, **args):
         """
-        Return the read_noise value for generic data
+        Return the read_noise value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more float(s)
+        :return: the estimated readout noise (in electrons) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1419,7 +1770,12 @@ class CalculatorInterface:
     
     def read_speed_setting(self, **args):
         """
-        Return the read_speed_setting value for generic data
+        Return the read_speed_setting value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the read speed setting (either 'fast' or 'slow') of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -1449,7 +1805,12 @@ class CalculatorInterface:
     
     def saturation_level(self, **args):
         """
-        Return the saturation_level value for generic data
+        Return the saturation_level value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: integer
+        :return: the saturation level in the raw images (in ADU) of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -1479,7 +1840,17 @@ class CalculatorInterface:
     
     def slit(self, **args):
         """
-        Return the slit value for generic data
+        Return the slit value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned slit value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       slit value
+        :type pretty: Python boolean
+        :rtype: string
+        :return: the slit used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1509,7 +1880,11 @@ class CalculatorInterface:
     
     def telescope(self, **args):
         """
-        Return the telescope value for generic data
+        Return the telescope value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the telescope used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1539,7 +1914,11 @@ class CalculatorInterface:
     
     def ut_date(self, **args):
         """
-        Return the ut_date value for generic data
+        Return the ut_date value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the UT date at the start of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1569,7 +1948,11 @@ class CalculatorInterface:
     
     def ut_datetime(self, **args):
         """
-        Return the ut_datetime value for generic data
+        Return the ut_datetime value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the ut_datetime
         """
         try:
             self._lazyloadCalculator()
@@ -1599,7 +1982,11 @@ class CalculatorInterface:
     
     def ut_time(self, **args):
         """
-        Return the ut_time value for generic data
+        Return the ut_time value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the UT time at the start of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1629,7 +2016,13 @@ class CalculatorInterface:
     
     def wavefront_sensor(self, **args):
         """
-        Return the wavefront_sensor value for generic data
+        Return the wavefront_sensor value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the wavefront sensor (either 'AOWFS', 'OIWFS', 'PWFS1', 
+                 'PWFS2', some combination in alphebetic order separated with 
+                 an ampersand or None) used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1659,7 +2052,18 @@ class CalculatorInterface:
     
     def wavelength_reference_pixel(self, **args):
         """
-        Return the wavelength_reference_pixel value for generic data
+        Return the wavelength_reference_pixel value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param asDict: set to True to return a dictionary, where the number of 
+                       dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type asDict: Python boolean
+        :rtype: dictionary containing one or more float(s)
+        :return: the reference pixel of the central wavelength of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -1689,7 +2093,12 @@ class CalculatorInterface:
     
     def well_depth_setting(self, **args):
         """
-        Return the well_depth_setting value for generic data
+        Return the well_depth_setting value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: string
+        :return: the well depth setting (either 'Shallow', 'Deep' or 
+                 'Invalid') of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1719,7 +2128,11 @@ class CalculatorInterface:
     
     def x_offset(self, **args):
         """
-        Return the x_offset value for generic data
+        Return the x_offset value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the x offset of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1749,7 +2162,11 @@ class CalculatorInterface:
     
     def y_offset(self, **args):
         """
-        Return the y_offset value for generic data
+        Return the y_offset value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :rtype: float
+        :return: the y offset of the observation
         """
         try:
             self._lazyloadCalculator()
