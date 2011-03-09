@@ -121,16 +121,10 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                     
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if isinstance(adInputs,list):
-                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
+                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                    fl_vardq=yes
                 else:
-                    if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
+                    fl_vardq=no
             else:
                 if fl_vardq:
                     fl_vardq=yes
@@ -533,16 +527,10 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                         
                 # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if isinstance(adInputs,list):
-                        if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                            fl_vardq=yes
-                        else:
-                            fl_vardq=no
+                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                        fl_vardq=yes
                     else:
-                        if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
-                            fl_vardq=yes
-                        else:
-                            fl_vardq=no
+                        fl_vardq=no
                 else:
                     if fl_vardq:
                         fl_vardq=yes

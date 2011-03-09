@@ -964,16 +964,10 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, fl_over=F
                 
                 # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if isinstance(adInputs,list):
-                        if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                            fl_vardq=yes
-                        else:
-                            fl_vardq=no
+                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                        fl_vardq=yes
                     else:
-                        if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
-                            fl_vardq=yes
-                        else:
-                            fl_vardq=no
+                        fl_vardq=no
                 else:
                     if fl_vardq:
                         fl_vardq=yes
@@ -1212,16 +1206,10 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
                 if fl_vardq=='AUTO':
-                    if isinstance(adInputs,list):
-                        if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                            fl_vardq=yes
-                        else:
-                            fl_vardq=no
+                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                        fl_vardq=yes
                     else:
-                        if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
-                            fl_vardq=yes
-                        else:
-                            fl_vardq=no
+                        fl_vardq=no
                 else:
                     if fl_vardq:
                         fl_vardq=yes
@@ -1757,16 +1745,10 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear', fl_vard
                 
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if isinstance(adInputs,list):
-                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
+                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                    fl_vardq=yes
                 else:
-                    if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
+                    fl_vardq=no
             else:
                 if fl_vardq:
                     fl_vardq=yes
@@ -1975,16 +1957,10 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
                 
             # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
             if fl_vardq=='AUTO':
-                if isinstance(adInputs,list):
-                    if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
+                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
+                    fl_vardq=yes
                 else:
-                    if adInputs.countExts('VAR')==adInputs.countExts('DQ')==adInputs.countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
+                    fl_vardq=no
             else:
                 if fl_vardq:
                     fl_vardq=yes
