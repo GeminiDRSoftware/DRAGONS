@@ -259,19 +259,25 @@ class MyHandler(BaseHTTPRequestHandler):
              
             if parms["path"].startswith("/summary"):
                 import searcher
+                DEBSUM= False
                 
                 #break down path
                 things = parms["path"].split("/")
-                print "prsq185:", repr(things)
+                if DEBSUM:
+                    print "prsq185:", repr(things)
                 things = things[2:]
-                print "prsq187:",repr(things)
+                if DEBSUM:
+                    print "prsq187:",repr(things)
                 selection = getselection(things)
-                print "psrw188: %s\n" % repr(selection)*20
+                if DEBSUM:
+                    print "psrw188: %s\n" % repr(selection)*20
                
                 flattenParms(parms)
-                print "psrw194: %s" % repr(parms)
+                if DEBSUM:
+                    print "psrw194: %s" % repr(parms)
                 parms.update(selection)
-                print "psrw196: %s" % repr(parms)
+                if DEBSUM:
+                    print "psrw196: %s" % repr(parms)
                 
                 buff = searcher.summary(parms)
                 self.wfile.write(buff)
