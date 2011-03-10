@@ -13,8 +13,8 @@ class DescriptorDescriptor:
         \"\"\"
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "%(name)s")
-            if not hasattr( self.descriptorCalculator, "%(name)s"):
+            #print hasattr(self.descriptorCalculator, "%(name)s")
+            if not hasattr(self.descriptorCalculator, "%(name)s"):
                 key = "key_"+"%(name)s"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -107,7 +107,8 @@ class DescriptorDescriptor:
         self.description = desc
         
     def funcbody(self):
-        ret = self.thunkfuncbuff % { "name":self.name, 'description':self.description}
+        ret = self.thunkfuncbuff % {"name":self.name, \
+            'description':self.description}
         return ret
         
 DD = DescriptorDescriptor
