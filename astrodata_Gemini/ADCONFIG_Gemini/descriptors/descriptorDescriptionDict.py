@@ -80,7 +80,7 @@ descriptorDescDict = {
     'or more string(s) that use 1-based indexing in \n                the ' +
     'form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 ' +
     '\n                are integers.\n' + \
-    '        :return: the section of the data of the observation',
+    '        :return: the detector section of the observation',
     # dispersion
     'dispersion':'Return the dispersion value\n' +
     '        :param dataset: the data set\n' +
@@ -243,7 +243,6 @@ detailedNameDict = {
 
 asDictArgDict = {
     'amp_read_area':'yes',
-    'data_section':'yes',
     'detector_x_bin':'yes',
     'detector_y_bin':'yes',
     'gain':'yes',
