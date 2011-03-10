@@ -16,8 +16,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "airmass")
-            if not hasattr( self.descriptorCalculator, "airmass"):
+            #print hasattr(self.descriptorCalculator, "airmass")
+            if not hasattr(self.descriptorCalculator, "airmass"):
                 key = "key_"+"airmass"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -58,8 +58,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "amp_read_area")
-            if not hasattr( self.descriptorCalculator, "amp_read_area"):
+            #print hasattr(self.descriptorCalculator, "amp_read_area")
+            if not hasattr(self.descriptorCalculator, "amp_read_area"):
                 key = "key_"+"amp_read_area"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -92,8 +92,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "azimuth")
-            if not hasattr( self.descriptorCalculator, "azimuth"):
+            #print hasattr(self.descriptorCalculator, "azimuth")
+            if not hasattr(self.descriptorCalculator, "azimuth"):
                 key = "key_"+"azimuth"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -126,8 +126,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "camera")
-            if not hasattr( self.descriptorCalculator, "camera"):
+            #print hasattr(self.descriptorCalculator, "camera")
+            if not hasattr(self.descriptorCalculator, "camera"):
                 key = "key_"+"camera"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -161,8 +161,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "cass_rotator_pa")
-            if not hasattr( self.descriptorCalculator, "cass_rotator_pa"):
+            #print hasattr(self.descriptorCalculator, "cass_rotator_pa")
+            if not hasattr(self.descriptorCalculator, "cass_rotator_pa"):
                 key = "key_"+"cass_rotator_pa"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -211,8 +211,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "central_wavelength")
-            if not hasattr( self.descriptorCalculator, "central_wavelength"):
+            #print hasattr(self.descriptorCalculator, "central_wavelength")
+            if not hasattr(self.descriptorCalculator, "central_wavelength"):
                 key = "key_"+"central_wavelength"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -245,8 +245,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "coadds")
-            if not hasattr( self.descriptorCalculator, "coadds"):
+            #print hasattr(self.descriptorCalculator, "coadds")
+            if not hasattr(self.descriptorCalculator, "coadds"):
                 key = "key_"+"coadds"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -279,8 +279,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "data_label")
-            if not hasattr( self.descriptorCalculator, "data_label"):
+            #print hasattr(self.descriptorCalculator, "data_label")
+            if not hasattr(self.descriptorCalculator, "data_label"):
                 key = "key_"+"data_label"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -327,8 +327,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "data_section")
-            if not hasattr( self.descriptorCalculator, "data_section"):
+            #print hasattr(self.descriptorCalculator, "data_section")
+            if not hasattr(self.descriptorCalculator, "data_section"):
                 key = "key_"+"data_section"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -361,8 +361,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "dec")
-            if not hasattr( self.descriptorCalculator, "dec"):
+            #print hasattr(self.descriptorCalculator, "dec")
+            if not hasattr(self.descriptorCalculator, "dec"):
                 key = "key_"+"dec"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -401,8 +401,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "decker")
-            if not hasattr( self.descriptorCalculator, "decker"):
+            #print hasattr(self.descriptorCalculator, "decker")
+            if not hasattr(self.descriptorCalculator, "decker"):
                 key = "key_"+"decker"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -445,12 +445,12 @@ class CalculatorInterface:
                 default, or one or more string(s) that use 1-based indexing in 
                 the form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 
                 are integers.
-        :return: the section of the data of the observation
+        :return: the detector section of the observation
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "detector_section")
-            if not hasattr( self.descriptorCalculator, "detector_section"):
+            #print hasattr(self.descriptorCalculator, "detector_section")
+            if not hasattr(self.descriptorCalculator, "detector_section"):
                 key = "key_"+"detector_section"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -490,8 +490,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "detector_x_bin")
-            if not hasattr( self.descriptorCalculator, "detector_x_bin"):
+            #print hasattr(self.descriptorCalculator, "detector_x_bin")
+            if not hasattr(self.descriptorCalculator, "detector_x_bin"):
                 key = "key_"+"detector_x_bin"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -531,8 +531,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "detector_y_bin")
-            if not hasattr( self.descriptorCalculator, "detector_y_bin"):
+            #print hasattr(self.descriptorCalculator, "detector_y_bin")
+            if not hasattr(self.descriptorCalculator, "detector_y_bin"):
                 key = "key_"+"detector_y_bin"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -571,8 +571,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "disperser")
-            if not hasattr( self.descriptorCalculator, "disperser"):
+            #print hasattr(self.descriptorCalculator, "disperser")
+            if not hasattr(self.descriptorCalculator, "disperser"):
                 key = "key_"+"disperser"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -621,8 +621,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "dispersion")
-            if not hasattr( self.descriptorCalculator, "dispersion"):
+            #print hasattr(self.descriptorCalculator, "dispersion")
+            if not hasattr(self.descriptorCalculator, "dispersion"):
                 key = "key_"+"dispersion"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -655,8 +655,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "dispersion_axis")
-            if not hasattr( self.descriptorCalculator, "dispersion_axis"):
+            #print hasattr(self.descriptorCalculator, "dispersion_axis")
+            if not hasattr(self.descriptorCalculator, "dispersion_axis"):
                 key = "key_"+"dispersion_axis"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -689,8 +689,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "elevation")
-            if not hasattr( self.descriptorCalculator, "elevation"):
+            #print hasattr(self.descriptorCalculator, "elevation")
+            if not hasattr(self.descriptorCalculator, "elevation"):
                 key = "key_"+"elevation"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -723,8 +723,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "exposure_time")
-            if not hasattr( self.descriptorCalculator, "exposure_time"):
+            #print hasattr(self.descriptorCalculator, "exposure_time")
+            if not hasattr(self.descriptorCalculator, "exposure_time"):
                 key = "key_"+"exposure_time"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -764,8 +764,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "filter_name")
-            if not hasattr( self.descriptorCalculator, "filter_name"):
+            #print hasattr(self.descriptorCalculator, "filter_name")
+            if not hasattr(self.descriptorCalculator, "filter_name"):
                 key = "key_"+"filter_name"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -804,8 +804,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "focal_plane_mask")
-            if not hasattr( self.descriptorCalculator, "focal_plane_mask"):
+            #print hasattr(self.descriptorCalculator, "focal_plane_mask")
+            if not hasattr(self.descriptorCalculator, "focal_plane_mask"):
                 key = "key_"+"focal_plane_mask"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -844,8 +844,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "gain")
-            if not hasattr( self.descriptorCalculator, "gain"):
+            #print hasattr(self.descriptorCalculator, "gain")
+            if not hasattr(self.descriptorCalculator, "gain"):
                 key = "key_"+"gain"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -884,8 +884,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "grating")
-            if not hasattr( self.descriptorCalculator, "grating"):
+            #print hasattr(self.descriptorCalculator, "grating")
+            if not hasattr(self.descriptorCalculator, "grating"):
                 key = "key_"+"grating"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -918,8 +918,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "gain_setting")
-            if not hasattr( self.descriptorCalculator, "gain_setting"):
+            #print hasattr(self.descriptorCalculator, "gain_setting")
+            if not hasattr(self.descriptorCalculator, "gain_setting"):
                 key = "key_"+"gain_setting"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -952,8 +952,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "instrument")
-            if not hasattr( self.descriptorCalculator, "instrument"):
+            #print hasattr(self.descriptorCalculator, "instrument")
+            if not hasattr(self.descriptorCalculator, "instrument"):
                 key = "key_"+"instrument"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -986,8 +986,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "local_time")
-            if not hasattr( self.descriptorCalculator, "local_time"):
+            #print hasattr(self.descriptorCalculator, "local_time")
+            if not hasattr(self.descriptorCalculator, "local_time"):
                 key = "key_"+"local_time"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1026,8 +1026,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "mdf_row_id")
-            if not hasattr( self.descriptorCalculator, "mdf_row_id"):
+            #print hasattr(self.descriptorCalculator, "mdf_row_id")
+            if not hasattr(self.descriptorCalculator, "mdf_row_id"):
                 key = "key_"+"mdf_row_id"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1067,8 +1067,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "nod_count")
-            if not hasattr( self.descriptorCalculator, "nod_count"):
+            #print hasattr(self.descriptorCalculator, "nod_count")
+            if not hasattr(self.descriptorCalculator, "nod_count"):
                 key = "key_"+"nod_count"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1108,8 +1108,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "nod_pixels")
-            if not hasattr( self.descriptorCalculator, "nod_pixels"):
+            #print hasattr(self.descriptorCalculator, "nod_pixels")
+            if not hasattr(self.descriptorCalculator, "nod_pixels"):
                 key = "key_"+"nod_pixels"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1143,8 +1143,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "non_linear_level")
-            if not hasattr( self.descriptorCalculator, "non_linear_level"):
+            #print hasattr(self.descriptorCalculator, "non_linear_level")
+            if not hasattr(self.descriptorCalculator, "non_linear_level"):
                 key = "key_"+"non_linear_level"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1177,8 +1177,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "object")
-            if not hasattr( self.descriptorCalculator, "object"):
+            #print hasattr(self.descriptorCalculator, "object")
+            if not hasattr(self.descriptorCalculator, "object"):
                 key = "key_"+"object"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1212,8 +1212,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observation_class")
-            if not hasattr( self.descriptorCalculator, "observation_class"):
+            #print hasattr(self.descriptorCalculator, "observation_class")
+            if not hasattr(self.descriptorCalculator, "observation_class"):
                 key = "key_"+"observation_class"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1246,8 +1246,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observation_epoch")
-            if not hasattr( self.descriptorCalculator, "observation_epoch"):
+            #print hasattr(self.descriptorCalculator, "observation_epoch")
+            if not hasattr(self.descriptorCalculator, "observation_epoch"):
                 key = "key_"+"observation_epoch"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1280,8 +1280,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observation_id")
-            if not hasattr( self.descriptorCalculator, "observation_id"):
+            #print hasattr(self.descriptorCalculator, "observation_id")
+            if not hasattr(self.descriptorCalculator, "observation_id"):
                 key = "key_"+"observation_id"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1315,8 +1315,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "observation_type")
-            if not hasattr( self.descriptorCalculator, "observation_type"):
+            #print hasattr(self.descriptorCalculator, "observation_type")
+            if not hasattr(self.descriptorCalculator, "observation_type"):
                 key = "key_"+"observation_type"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1349,8 +1349,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "pixel_scale")
-            if not hasattr( self.descriptorCalculator, "pixel_scale"):
+            #print hasattr(self.descriptorCalculator, "pixel_scale")
+            if not hasattr(self.descriptorCalculator, "pixel_scale"):
                 key = "key_"+"pixel_scale"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1389,8 +1389,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "prism")
-            if not hasattr( self.descriptorCalculator, "prism"):
+            #print hasattr(self.descriptorCalculator, "prism")
+            if not hasattr(self.descriptorCalculator, "prism"):
                 key = "key_"+"prism"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1424,8 +1424,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "program_id")
-            if not hasattr( self.descriptorCalculator, "program_id"):
+            #print hasattr(self.descriptorCalculator, "program_id")
+            if not hasattr(self.descriptorCalculator, "program_id"):
                 key = "key_"+"program_id"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1458,8 +1458,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "pupil_mask")
-            if not hasattr( self.descriptorCalculator, "pupil_mask"):
+            #print hasattr(self.descriptorCalculator, "pupil_mask")
+            if not hasattr(self.descriptorCalculator, "pupil_mask"):
                 key = "key_"+"pupil_mask"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1493,8 +1493,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "qa_state")
-            if not hasattr( self.descriptorCalculator, "qa_state"):
+            #print hasattr(self.descriptorCalculator, "qa_state")
+            if not hasattr(self.descriptorCalculator, "qa_state"):
                 key = "key_"+"qa_state"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1527,8 +1527,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "ra")
-            if not hasattr( self.descriptorCalculator, "ra"):
+            #print hasattr(self.descriptorCalculator, "ra")
+            if not hasattr(self.descriptorCalculator, "ra"):
                 key = "key_"+"ra"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1562,8 +1562,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_bg")
-            if not hasattr( self.descriptorCalculator, "raw_bg"):
+            #print hasattr(self.descriptorCalculator, "raw_bg")
+            if not hasattr(self.descriptorCalculator, "raw_bg"):
                 key = "key_"+"raw_bg"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1597,8 +1597,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_cc")
-            if not hasattr( self.descriptorCalculator, "raw_cc"):
+            #print hasattr(self.descriptorCalculator, "raw_cc")
+            if not hasattr(self.descriptorCalculator, "raw_cc"):
                 key = "key_"+"raw_cc"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1632,8 +1632,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_iq")
-            if not hasattr( self.descriptorCalculator, "raw_iq"):
+            #print hasattr(self.descriptorCalculator, "raw_iq")
+            if not hasattr(self.descriptorCalculator, "raw_iq"):
                 key = "key_"+"raw_iq"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1667,8 +1667,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "raw_wv")
-            if not hasattr( self.descriptorCalculator, "raw_wv"):
+            #print hasattr(self.descriptorCalculator, "raw_wv")
+            if not hasattr(self.descriptorCalculator, "raw_wv"):
                 key = "key_"+"raw_wv"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1704,8 +1704,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "read_mode")
-            if not hasattr( self.descriptorCalculator, "read_mode"):
+            #print hasattr(self.descriptorCalculator, "read_mode")
+            if not hasattr(self.descriptorCalculator, "read_mode"):
                 key = "key_"+"read_mode"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1744,8 +1744,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "read_noise")
-            if not hasattr( self.descriptorCalculator, "read_noise"):
+            #print hasattr(self.descriptorCalculator, "read_noise")
+            if not hasattr(self.descriptorCalculator, "read_noise"):
                 key = "key_"+"read_noise"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1779,8 +1779,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "read_speed_setting")
-            if not hasattr( self.descriptorCalculator, "read_speed_setting"):
+            #print hasattr(self.descriptorCalculator, "read_speed_setting")
+            if not hasattr(self.descriptorCalculator, "read_speed_setting"):
                 key = "key_"+"read_speed_setting"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1814,8 +1814,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "saturation_level")
-            if not hasattr( self.descriptorCalculator, "saturation_level"):
+            #print hasattr(self.descriptorCalculator, "saturation_level")
+            if not hasattr(self.descriptorCalculator, "saturation_level"):
                 key = "key_"+"saturation_level"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1854,8 +1854,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "slit")
-            if not hasattr( self.descriptorCalculator, "slit"):
+            #print hasattr(self.descriptorCalculator, "slit")
+            if not hasattr(self.descriptorCalculator, "slit"):
                 key = "key_"+"slit"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1888,8 +1888,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "telescope")
-            if not hasattr( self.descriptorCalculator, "telescope"):
+            #print hasattr(self.descriptorCalculator, "telescope")
+            if not hasattr(self.descriptorCalculator, "telescope"):
                 key = "key_"+"telescope"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1922,8 +1922,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "ut_date")
-            if not hasattr( self.descriptorCalculator, "ut_date"):
+            #print hasattr(self.descriptorCalculator, "ut_date")
+            if not hasattr(self.descriptorCalculator, "ut_date"):
                 key = "key_"+"ut_date"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1956,8 +1956,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "ut_datetime")
-            if not hasattr( self.descriptorCalculator, "ut_datetime"):
+            #print hasattr(self.descriptorCalculator, "ut_datetime")
+            if not hasattr(self.descriptorCalculator, "ut_datetime"):
                 key = "key_"+"ut_datetime"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -1990,8 +1990,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "ut_time")
-            if not hasattr( self.descriptorCalculator, "ut_time"):
+            #print hasattr(self.descriptorCalculator, "ut_time")
+            if not hasattr(self.descriptorCalculator, "ut_time"):
                 key = "key_"+"ut_time"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -2026,8 +2026,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "wavefront_sensor")
-            if not hasattr( self.descriptorCalculator, "wavefront_sensor"):
+            #print hasattr(self.descriptorCalculator, "wavefront_sensor")
+            if not hasattr(self.descriptorCalculator, "wavefront_sensor"):
                 key = "key_"+"wavefront_sensor"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -2067,8 +2067,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "wavelength_reference_pixel")
-            if not hasattr( self.descriptorCalculator, "wavelength_reference_pixel"):
+            #print hasattr(self.descriptorCalculator, "wavelength_reference_pixel")
+            if not hasattr(self.descriptorCalculator, "wavelength_reference_pixel"):
                 key = "key_"+"wavelength_reference_pixel"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -2102,8 +2102,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "well_depth_setting")
-            if not hasattr( self.descriptorCalculator, "well_depth_setting"):
+            #print hasattr(self.descriptorCalculator, "well_depth_setting")
+            if not hasattr(self.descriptorCalculator, "well_depth_setting"):
                 key = "key_"+"well_depth_setting"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -2136,8 +2136,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "x_offset")
-            if not hasattr( self.descriptorCalculator, "x_offset"):
+            #print hasattr(self.descriptorCalculator, "x_offset")
+            if not hasattr(self.descriptorCalculator, "x_offset"):
                 key = "key_"+"x_offset"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -2170,8 +2170,8 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr( self.descriptorCalculator, "y_offset")
-            if not hasattr( self.descriptorCalculator, "y_offset"):
+            #print hasattr(self.descriptorCalculator, "y_offset")
+            if not hasattr(self.descriptorCalculator, "y_offset"):
                 key = "key_"+"y_offset"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
