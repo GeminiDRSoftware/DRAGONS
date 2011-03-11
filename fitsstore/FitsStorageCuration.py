@@ -23,11 +23,11 @@ def duplicate_datalabels(session, checkonly, exclude):
                 WHERE a.df_id != b.df_id AND
                       a.canonical = 'True' AND 
                       b.canonical = 'True' AND 
-                      a.datalab = b.datalab"""
+                      a.data_label = b.data_label"""
   if checkonly:
-    s += """ AND a.datalab LIKE '%%%s%%'""" % (checkonly)
+    s += """ AND a.data_label LIKE '%%%s%%'""" % (checkonly)
   if exclude:
-    s += """ AND a.datalab NOT LIKE '%%%s%%'""" % (exclude)
+    s += """ AND a.data_label NOT LIKE '%%%s%%'""" % (exclude)
   
   s += """ ORDER BY a.diskfile_id ASC"""
 

@@ -72,7 +72,7 @@ def handler(req):
       things.remove('nolinks')
 
     # Parse the rest of the uri here while we're at it
-    # Expect some combination of progid, obsid, date and instrument name
+    # Expect some combination of program_id, observation_id, date and instrument name
     # We put the ones we got in a dictionary
     selection=getselection(things)
 
@@ -327,16 +327,16 @@ def getselection(things):
       selection['daterange']=gemini_daterange(thing)
       recognised=True
     gp=GeminiProject(thing)
-    if(gp.progid):
-      selection['progid']=thing
+    if(gp.program_id):
+      selection['program_id']=thing
       recognised=True
     go=GeminiObservation(thing)
-    if(go.obsid):
-      selection['obsid']=thing
+    if(go.observation_id):
+      selection['observation_id']=thing
       recognised=True
     gdl=GeminiDataLabel(thing)
     if(gdl.datalabel):
-      selection['datalab']=thing
+      selection['data_label']=thing
       recognised=True
     if(gemini_instrument(thing, gmos=True)):
       selection['inst']=gemini_instrument(thing, gmos=True)
@@ -344,11 +344,11 @@ def getselection(things):
     if(gemini_fitsfilename(thing)):
       selection['filename'] = gemini_fitsfilename(thing)
       recognised=True
-    if(gemini_obstype(thing)):
-      selection['obstype']=gemini_obstype(thing)
+    if(gemini_observation_type(thing)):
+      selection['observation_type']=gemini_observation_type(thing)
       recognised=True
-    if(gemini_obsclass(thing)):
-      selection['obsclass']=gemini_obsclass(thing)
+    if(gemini_observation_class(thing)):
+      selection['observation_class']=gemini_observation_class(thing)
       recognised=True
     if(gemini_caltype(thing)):
       selection['caltype']=gemini_caltype(thing)
@@ -356,8 +356,8 @@ def getselection(things):
     if(gmos_gratingname(thing)):
       selection['gmos_grating']=gmos_gratingname(thing)
       recognised=True
-    if(gmos_fpmask(thing)):
-      selection['gmos_fpmask']=gmos_fpmask(thing)
+    if(gmos_focal_plane_mask(thing)):
+      selection['gmos_focal_plane_mask']=gmos_focal_plane_mask(thing)
       recognised=True
     if(thing=='warnings' or thing=='missing' or thing=='requires' or thing=='takenow'):
       selection['caloption']=thing
@@ -369,7 +369,7 @@ def getselection(things):
       selection['spectroscopy']=True
       recognised=True
     if(thing=='Pass' or thing=='Usable' or thing=='Fail' or thing=='Win'):
-      selection['qastate']=thing
+      selection['qa_state']=thing
       recognised=True
     if(thing=='AO' or thing=='NOTAO'):
       selection['ao']=thing
@@ -498,7 +498,7 @@ def stats(req):
  
     req.write("<h3>Last 10 days</h3><ul>")
     for i in range(10):
-      query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.utdatetime > start).filter(Header.utdatetime < end)
+      query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.ut_datetime > start).filter(Header.ut_datetime < end)
       bytes = query.one()[0]
       if(not bytes):
         bytes = 0
@@ -511,7 +511,7 @@ def stats(req):
     start = end - wdelta
     req.write("<h3>Last 6 weeks</h3><ul>")
     for i in range(6):
-      query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.utdatetime > start).filter(Header.utdatetime < end)
+      query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.ut_datetime > start).filter(Header.ut_datetime < end)
       bytes = query.one()[0]
       if(not bytes):
         bytes = 0
@@ -524,7 +524,7 @@ def stats(req):
     start = end - mdelta
     req.write("<h3>Last 6 pseudo-months</h3><ul>")
     for i in range(6):
-      query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.utdatetime > start).filter(Header.utdatetime < end)
+      query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.ut_datetime > start).filter(Header.ut_datetime < end)
       bytes = query.one()[0]
       if(not bytes):
         bytes = 0

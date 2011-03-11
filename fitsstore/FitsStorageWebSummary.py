@@ -94,7 +94,7 @@ def list_headers(session, selection, orderby):
 
   # Do we have any order by arguments?
 
-  whichorderby = ['instrument', 'datalab', 'obsclass', 'airmass', 'utdatetime', 'localtime', 'rawiq', 'rawcc', 'rawbg', 'rawwv', 'qastate', 'filter', 'exptime', 'object']
+  whichorderby = ['instrument', 'data_label', 'observation_class', 'airmass', 'ut_datetime', 'local_time', 'raw_iq', 'raw_cc', 'raw_bg', 'raw_wv', 'qa_state', 'filter_name', 'exposure_time', 'object']
   if (orderby):
     for i in range(len(orderby)):
       if '_desc' in orderby[i]:
@@ -167,8 +167,8 @@ def webhdrsummary(session, req, type, headers, links=True):
   req.write('<TR class=tr_head>')
   if(links):
     req.write('<TH>Filename <a href="%s?orderby=filename_asc">&uarr</a><a href="%s?orderby=filename_desc">&darr</a></TH>' % (myuri, myuri))
-    req.write('<TH>Data Label <a href="%s?orderby=datalab_asc">&uarr</a><a href="%s?orderby=datalab_desc">&darr</a></TH>' % (myuri, myuri))
-    req.write('<TH>UT Date Time <a href="%s?orderby=utdatetime_asc">&uarr</a><a href="%s?orderby=utdatetime_desc">&darr</a></TH>' % (myuri, myuri))
+    req.write('<TH>Data Label <a href="%s?orderby=data_label_asc">&uarr</a><a href="%s?orderby=data_label_desc">&darr</a></TH>' % (myuri, myuri))
+    req.write('<TH>UT Date Time <a href="%s?orderby=ut_datetime_asc">&uarr</a><a href="%s?orderby=ut_datetime_desc">&darr</a></TH>' % (myuri, myuri))
     req.write('<TH><abbr title="Instrument">Inst</abbr> <a href="%s?orderby=instrument_asc">&uarr</a><a href="%s?orderby=instrument_desc">&darr</a></TH>' % (myuri, myuri))
   else:
     req.write('<TH>Filename</TH>')
@@ -181,11 +181,11 @@ def webhdrsummary(session, req, type, headers, links=True):
   for w in wants:
     if w in want:
       if(w == 'obs'):
-        vals = [['ObsClass', 'Class', 'obsclass'], ['ObsType', 'Type', 'obstype'], ['Object Name', 'Object', 'object']]
+        vals = [['ObsClass', 'Class', 'observation_class'], ['ObsType', 'Type', 'observation_type'], ['Object Name', 'Object', 'object']]
       elif(w == 'expamlt'):
-        vals = [['Exposure Time', 'ExpT', 'exptime'], ['AirMass', 'AM', 'airmass'], ['Localtime', 'Lcltime', 'localtime']]
+        vals = [['Exposure Time', 'ExpT', 'exposure_time'], ['AirMass', 'AM', 'airmass'], ['Localtime', 'Lcltime', 'local_time']]
       elif(w == 'qa'):
-        vals = [['QA State', 'QA', 'qastate'], ['Raw IQ', 'IQ', 'rawiq'], ['Raw CC', 'CC', 'rawcc'], ['Raw WV', 'WV', 'rawwv'], ['Raw BG', 'BG', 'rawbg']]
+        vals = [['QA State', 'QA', 'qa_state'], ['Raw IQ', 'IQ', 'raw_iq'], ['Raw CC', 'CC', 'raw_cc'], ['Raw WV', 'WV', 'raw_wv'], ['Raw BG', 'BG', 'raw_bg']]
 
       if(links):
         for i in range(len(vals)):
@@ -222,7 +222,7 @@ def webhdrsummary(session, req, type, headers, links=True):
     req.write("<TR class=%s>" % (cs))
 
     # Parse the datalabel first
-    dl = GeminiDataLabel(h.datalab)
+    dl = GeminiDataLabel(h.data_label)
 
     # The filename cell, with the link to the full headers and the optional WMD and FITS error flags
     if(h.diskfile.fverrors):
@@ -248,17 +248,17 @@ def webhdrsummary(session, req, type, headers, links=True):
       req.write('<TD>%s %s %s</TD>' % (h.diskfile.file.filename, fve, wmd))
 
 
-    # The datalabel, parsed to link to the programid and obsid,
+    # The datalabel, parsed to link to the program_id and observation_id,
     if(dl.datalabel):
       if(links):
-        req.write('<TD><NOBR><a href="/summary/%s">%s</a>-<a href="/summary/%s">%s</a>-<a href="/summary/%s">%s</a></NOBR></TD>' % (dl.projectid, dl.projectid, dl.obsid, dl.obsnum, dl.datalabel, dl.dlnum))
+        req.write('<TD><NOBR><a href="/summary/%s">%s</a>-<a href="/summary/%s">%s</a>-<a href="/summary/%s">%s</a></NOBR></TD>' % (dl.projectid, dl.projectid, dl.observation_id, dl.obsnum, dl.datalabel, dl.dlnum))
       else:
         req.write('<TD><NOBR>%s-%s-%s</NOBR></TD>' % (dl.projectid, dl.obsnum, dl.dlnum))
     else:
-      req.write('<TD>%s</TD>' % h.datalab)
+      req.write('<TD>%s</TD>' % h.data_label)
 
-    if(h.utdatetime):
-      req.write("<TD><NORB>%s</NOBR></TD>" % (h.utdatetime.strftime("%Y-%m-%d %H:%M:%S")))
+    if(h.ut_datetime):
+      req.write("<TD><NORB>%s</NOBR></TD>" % (h.ut_datetime.strftime("%Y-%m-%d %H:%M:%S")))
     else:
       req.write("<TD>%s</TD>" % ("None"))
 
@@ -269,8 +269,8 @@ def webhdrsummary(session, req, type, headers, links=True):
 
     # Now the 'obs' part
     if('obs' in want):
-      req.write("<TD>%s</TD>" % (h.obsclass))
-      req.write("<TD>%s</TD>" % (h.obstype))
+      req.write("<TD>%s</TD>" % (h.observation_class))
+      req.write("<TD>%s</TD>" % (h.observation_type))
       if (h.object and len(h.object)>12):
         req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.object, (h.object)[0:12]))
       else:
@@ -278,16 +278,16 @@ def webhdrsummary(session, req, type, headers, links=True):
 
       if(h.spectroscopy):
         try:
-          req.write("<TD>%s : %.3f</TD>" % (h.disperser, h.cwave))
+          req.write("<TD>%s : %.3f</TD>" % (h.disperser, h.central_wavelength))
         except:
           req.write("<TD>%s : </TD>" % (h.disperser))
       else:
-        req.write("<TD>%s</TD>" % (h.filter))
+        req.write("<TD>%s</TD>" % (h.filter_name))
 
     # Now the 'expamlt' part
     if ('expamlt' in want):
       try:
-        req.write("<TD>%.2f</TD>" % h.exptime)
+        req.write("<TD>%.2f</TD>" % h.exposure_time)
       except:
         req.write("<TD></TD>")
  
@@ -296,35 +296,35 @@ def webhdrsummary(session, req, type, headers, links=True):
       except:
         req.write("<TD></TD>")
 
-      if(h.localtime):
-        req.write("<TD>%s</TD>" % (h.localtime.strftime("%H:%M:%S")))
+      if(h.local_time):
+        req.write("<TD>%s</TD>" % (h.local_time.strftime("%H:%M:%S")))
       else:
         req.write("<TD>%s</TD>" % ("None"))
 
     # Now the 'qa' part
     # Abreviate the raw XX values to 4 characters
     if('qa' in want):
-      req.write('<TD>%s</TD>' % (h.qastate))
+      req.write('<TD>%s</TD>' % (h.qa_state))
 
-      if(h.rawiq and percentilecre.match(h.rawiq)):
-        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.rawiq, h.rawiq[0:4]))
+      if(h.raw_iq and percentilecre.match(h.raw_iq)):
+        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.raw_iq, h.raw_iq[0:4]))
       else:
-        req.write('<TD>%s</TD>' % (h.rawiq))
+        req.write('<TD>%s</TD>' % (h.raw_iq))
 
-      if(h.rawcc and percentilecre.match(h.rawcc)):
-        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.rawcc, h.rawcc[0:4]))
+      if(h.raw_cc and percentilecre.match(h.raw_cc)):
+        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.raw_cc, h.raw_cc[0:4]))
       else:
-        req.write('<TD>%s</TD>' % (h.rawcc))
+        req.write('<TD>%s</TD>' % (h.raw_cc))
 
-      if(h.rawwv and percentilecre.match(h.rawwv)):
-        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.rawwv, h.rawwv[0:4]))
+      if(h.raw_wv and percentilecre.match(h.raw_wv)):
+        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.raw_wv, h.raw_wv[0:4]))
       else:
-        req.write('<TD>%s</TD>' % (h.rawwv))
+        req.write('<TD>%s</TD>' % (h.raw_wv))
  
-      if(h.rawbg and percentilecre.match(h.rawbg)):
-        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.rawbg, h.rawbg[0:4]))
+      if(h.raw_bg and percentilecre.match(h.raw_bg)):
+        req.write('<TD><abbr title="%s">%s</abbr></TD>' % (h.raw_bg, h.raw_bg[0:4]))
       else:
-        req.write('<TD>%s</TD>' % (h.rawbg))
+        req.write('<TD>%s</TD>' % (h.raw_bg))
 
     # the 'diskfiles' part
     if('diskfiles' in want):
@@ -413,13 +413,13 @@ def progsobserved(req, selection):
   session = sessionfactory()
   try:
     # the basic query in this case
-    query = session.query(Header.progid).select_from(join(Header, join(DiskFile, File)))
+    query = session.query(Header.program_id).select_from(join(Header, join(DiskFile, File)))
 
     # Add the selection criteria
     query = queryselection(query, selection)
 
     # And the group by clause
-    query = query.group_by(Header.progid)
+    query = query.group_by(Header.program_id)
 
     list = query.all()
     title = "Programs Observed: %s" % sayselection(selection)
@@ -499,37 +499,37 @@ def gmoscal(req, selection):
      # Put the results into dictionaries, which we can then combine into one html table
      sci = {}
      tlf = {}
-     for obsclass in (['science', 'dayCal']):
+     for observation_class in (['science', 'dayCal']):
 
        # The basic query for this
-       query = session.query(func.count(1), Header.filter, Gmos.xccdbin, Gmos.yccdbin).select_from(join(Gmos, join(Header, join(DiskFile, File))))
+       query = session.query(func.count(1), Header.filter_name, Gmos.detector_x_bin, Gmos.detector_y_bin).select_from(join(Gmos, join(Header, join(DiskFile, File))))
        query = query.filter(DiskFile.canonical == True)
 
        # Fudge and add the selection criteria
-       selection['obsclass']=obsclass
-       selection['obstype']='OBJECT'
+       selection['observation_class']=observation_class
+       selection['observation_type']='OBJECT'
        selection['spectroscopy']=False
        selection['inst']='GMOS'
-       if(obsclass == 'science'):
-         selection['qastate']='Win'
+       if(observation_class == 'science'):
+         selection['qa_state']='Win'
        else:
-         selection['qastate']='Pass'
+         selection['qa_state']='Pass'
          # Only select full frame dayCals
-         query = query.filter(or_(Gmos.amproa == '''["'EEV 9273-16-03, right':[1:2048,1:4608]", "'EEV 9273-20-04, right':[2049:4096,1:4608]", "'EEV 9273-20-03, left':[4097:6144,1:4608]"]''', Gmos.amproa == '''["'EEV 2037-06-03, left':[1:2048,1:4608]", "'EEV 8194-19-04, left':[2049:4096,1:4608]", "'EEV 8261-07-04, right':[4097:6144,1:4608]"]'''))
+         query = query.filter(or_(Gmos.amp_read_area == '''["'EEV 9273-16-03, right':[1:2048,1:4608]", "'EEV 9273-20-04, right':[2049:4096,1:4608]", "'EEV 9273-20-03, left':[4097:6144,1:4608]"]''', Gmos.amp_read_area == '''["'EEV 2037-06-03, left':[1:2048,1:4608]", "'EEV 8194-19-04, left':[2049:4096,1:4608]", "'EEV 8261-07-04, right':[4097:6144,1:4608]"]'''))
 
        query = queryselection(query, selection)
   
        # Knock out ENG programs
-       query = query.filter(~Header.progid.like('%ENG%'))
+       query = query.filter(~Header.program_id.like('%ENG%'))
 
        # Group by clause
-       query = query.group_by(Header.filter, Gmos.xccdbin, Gmos.yccdbin).order_by(Gmos.xccdbin, Header.filter)
+       query = query.group_by(Header.filter_name, Gmos.detector_x_bin, Gmos.detector_y_bin).order_by(Gmos.detector_x_bin, Header.filter_name)
 
        list = query.all()
 
        # Populate the dictionary
-       # as {'i-2x2':[10, 'i', '2x2'], ...}  ie [number, filter, binning]
-       if(obsclass == 'science'):
+       # as {'i-2x2':[10, 'i', '2x2'], ...}  ie [number, filter_name, binning]
+       if(observation_class == 'science'):
          dict = sci
        else:
          dict = tlf
@@ -540,23 +540,23 @@ def gmoscal(req, selection):
          dict[key]=[row[0], row[1], binning]
 
      # Make the master dictionary
-     # as {'i-2x2':[10, 20, 'i', '2x2'], ...}   [n_sci, n_tlf, filter, binning]
+     # as {'i-2x2':[10, 20, 'i', '2x2'], ...}   [n_sci, n_tlf, filter_name, binning]
      all = {}
      for key in sci.keys():
        nsci = sci[key][0]
        ntlf = 0
-       filter = sci[key][1]
+       filter_name = sci[key][1]
        binning = sci[key][2]
-       all[key] = [nsci, ntlf, filter, binning]
+       all[key] = [nsci, ntlf, filter_name, binning]
      for key in tlf.keys():
        if (key in all.keys()):
          all[key][1] = tlf[key][0]
        else:
          nsci = 0
          ntlf = tlf[key][0]
-         filter = tlf[key][1]
+         filter_name = tlf[key][1]
          binning = tlf[key][2]
-         all[key] = [nsci, ntlf, filter, binning]
+         all[key] = [nsci, ntlf, filter_name, binning]
      
      
      # Output the HTML table and links to summaries etc
@@ -609,17 +609,17 @@ def gmoscal(req, selection):
      
      oneday = datetime.timedelta(days=1)
      offset = sqlalchemy.sql.expression.literal(tzoffset - oneday, sqlalchemy.types.Interval)
-     query = session.query(func.count(1), cast((Header.utdatetime + offset), sqlalchemy.types.DATE).label('utdate'), Gmos.xccdbin, Gmos.yccdbin, Gmos.amproa).select_from(join(Gmos, join(Header, join(DiskFile, File))))
+     query = session.query(func.count(1), cast((Header.ut_datetime + offset), sqlalchemy.types.DATE).label('utdate'), Gmos.detector_x_bin, Gmos.detector_y_bin, Gmos.amp_read_area).select_from(join(Gmos, join(Header, join(DiskFile, File))))
 
      query = query.filter(DiskFile.canonical == True)
 
      # Fudge and add the selection criteria
-     selection['obstype']='BIAS'
+     selection['observation_type']='BIAS'
      selection['inst']='GMOS'
-     selection['qastate']='Pass'
+     selection['qa_state']='Pass'
      query = queryselection(query, selection)
 
-     query = query.group_by('utdate', Gmos.xccdbin, Gmos.yccdbin, Gmos.amproa).order_by('utdate', Gmos.xccdbin, Gmos.yccdbin, Gmos.amproa)
+     query = query.group_by('utdate', Gmos.detector_x_bin, Gmos.detector_y_bin, Gmos.amp_read_area).order_by('utdate', Gmos.detector_x_bin, Gmos.detector_y_bin, Gmos.amp_read_area)
 
      list = query.all()
 
@@ -1249,15 +1249,29 @@ def calmgr(req, selection):
 
       # Call the appropriate method depending what calibration type we want
       cal = None
+      if(caltype == 'bias'):
+        cal = c.bias()
+      if(caltype == 'dark'):
+        cal = c.dark()
+      if(caltype == 'flat'):
+        cal = c.flat()
+      if(caltype == 'arc'):
+        cal = c.arc()
       if(caltype == 'processed_bias'):
         cal = c.processed_bias()
       if(caltype == 'processed_flat'):
         cal = c.processed_flat()
+      if(caltype == 'processed_fringe'):
+        cal = c.processed_fringe()
+      if(caltype == 'pinhole_mask'):
+        cal = c.pinhole_mask()
+      if(caltype == 'ronchi_mask'):
+        cal = c.ronchi_mask()
 
       if(cal):
         req.write("<calibration>\n")
         req.write("<caltype>%s</caltype>\n" % caltype)
-        req.write("<datalabel>%s</datalabel>\n" % cal.datalab)
+        req.write("<datalabel>%s</datalabel>\n" % cal.data_label)
         req.write("<filename>%s</filename>\n" % cal.diskfile.file.filename)
         req.write("<md5>%s</md5>\n" % cal.diskfile.md5)
         req.write("<ccrc>%s</ccrc>\n" % cal.diskfile.ccrc)
@@ -1288,10 +1302,10 @@ def calmgr(req, selection):
       query = queryselection(query, selection)
 
       # Knock out the FAILs
-      query = query.filter(Header.qastate!='Fail')
+      query = query.filter(Header.qa_state!='Fail')
 
       # Order by date, most recent first
-      query = query.order_by(desc(Header.utdatetime))
+      query = query.order_by(desc(Header.ut_datetime))
 
       # If openquery, limit number of responses
       if(openquery(selection)):
@@ -1308,7 +1322,7 @@ def calmgr(req, selection):
         # Loop through targets frames we found
         for object in headers:
           req.write("<dataset>\n")
-          req.write("<datalabel>%s</datalabel>\n" % object.datalab)
+          req.write("<datalabel>%s</datalabel>\n" % object.data_label)
           req.write("<filename>%s</filename>\n" % object.diskfile.file.filename)
           req.write("<md5>%s</md5>\n" % object.diskfile.md5)
           req.write("<ccrc>%s</ccrc>\n" % object.diskfile.ccrc)
@@ -1327,7 +1341,7 @@ def calmgr(req, selection):
             # OK, say what we found
             req.write("<calibration>\n")
             req.write("<caltype>%s</caltype>\n" % caltype)
-            req.write("<datalabel>%s</datalabel>\n" % cal.datalab)
+            req.write("<datalabel>%s</datalabel>\n" % cal.data_label)
             req.write("<filename>%s</filename>\n" % cal.diskfile.file.filename)
             req.write("<md5>%s</md5>\n" % cal.diskfile.md5)
             req.write("<ccrc>%s</ccrc>\n" % cal.diskfile.ccrc)
@@ -1382,10 +1396,10 @@ def calibrations(req, selection):
     query = queryselection(query, selection)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
     # Order by date, most recent first
-    query = query.order_by(desc(Header.utdatetime))
+    query = query.order_by(desc(Header.ut_datetime))
 
     # If openquery, limit number of responses
     if(openquery(selection)):
@@ -1413,7 +1427,7 @@ def calibrations(req, selection):
       requires=False
       oldarc = None
 
-      html+='<H3><a href="/fullheader/%s">%s</a> - <a href="/summary/%s">%s</a></H3>' % (object.diskfile.file.filename, object.diskfile.file.filename, object.datalab, object.datalab)
+      html+='<H3><a href="/fullheader/%s">%s</a> - <a href="/summary/%s">%s</a></H3>' % (object.diskfile.file.filename, object.diskfile.file.filename, object.data_label, object.data_label)
 
       c = FitsStorageCal.get_cal_object(session, None, header=object)
       if('arc' in c.required and (caltype=='all' or caltype=='arc')):
@@ -1423,8 +1437,8 @@ def calibrations(req, selection):
         arc = c.arc(sameprog=True)
 
         if(arc):
-          html += '<H4>ARC: <a href="/fullheader/%s">%s</a> - <a href="/summary/%s">%s</a></H4>' % (arc.diskfile.file.filename, arc.diskfile.file.filename, arc.datalab, arc.datalab)
-          if(arc.utdatetime and object.utdatetime):
+          html += '<H4>ARC: <a href="/fullheader/%s">%s</a> - <a href="/summary/%s">%s</a></H4>' % (arc.diskfile.file.filename, arc.diskfile.file.filename, arc.data_label, arc.data_label)
+          if(arc.ut_datetime and object.ut_datetime):
             html += "<P>arc was taken %s object</P>" % interval_string(arc, object)
             if(abs(interval_hours(arc, object)) > 24):
               html += '<P><FONT COLOR="Red">WARNING - this is more than 1 day different</FONT></P>'
@@ -1447,8 +1461,8 @@ def calibrations(req, selection):
           # If we find a different one
           if(arc and oldarc and (arc.id != oldarc.id)):
             missing = False
-            html += '<H4>ARC: <a href="/fullheader/%s">%s</a> - <a href="/summary/%s">%s</a></H4>' % (arc.diskfile.file.filename, arc.diskfile.file.filename, arc.datalab, arc.datalab)
-            if(arc.utdatetime and object.utdatetime):
+            html += '<H4>ARC: <a href="/fullheader/%s">%s</a> - <a href="/summary/%s">%s</a></H4>' % (arc.diskfile.file.filename, arc.diskfile.file.filename, arc.data_label, arc.data_label)
+            if(arc.ut_datetime and object.ut_datetime):
               html += "<P>arc was taken %s object</P>" % interval_string(arc, object)
               if(abs(interval_hours(arc, object)) > 24):
                 html += '<P><FONT COLOR="Red">WARNING - this is more than 1 day different</FONT></P>'
@@ -1456,7 +1470,7 @@ def calibrations(req, selection):
             else:
               html += '<P><FONT COLOR="Red">Hmmm, could not determine time delta...</FONT></P>'
               warning = True
-            if(arc.progid != object.progid):
+            if(arc.program_id != object.program_id):
               html += '<P><FONT COLOR="Red">WARNING: ARC and OBJECT come from different project IDs.</FONT></P>'
               warning = True
 
@@ -1487,7 +1501,7 @@ def calibrations(req, selection):
               smallestinterval = oldinterval
           # Is the smallest interval larger than the interval between now and the science?
           now = datetime.datetime.utcnow()
-          then = object.utdatetime
+          then = object.ut_datetime
           nowinterval = now - then
           nowhours = (nowinterval.days * 24.0) + (nowinterval.seconds / 3600.0)
           if(smallestinterval > nowhours):
@@ -1495,24 +1509,12 @@ def calibrations(req, selection):
 
         html += "<HR>"
 
-      if('bias' in c.required and (caltype=='all' or caltype=='bias')):
-        requires=True
-        bias = c.bias()
-        if(bias):
-          html += "<H4>BIAS: %s - %s</H4>" % (bias.diskfile.file.filename, bias.datalab)
-        else:
-          html += '<H3><FONT COLOR="Red">NO BIAS FOUND!</FONT></H3>'
-          warning = True
-          missing = True
-
-        html += "<HR>"
-
       if('dark' in c.required and (caltype=='all' or caltype=='dark')):
         requires=True
         dark = c.dark()
         if(dark):
-          html += "<H4>DARK: %s - %s</H4>" % (dark.diskfile.file.filename, dark.datalab)
-          if(dark.utdatetime and object.utdatetime):
+          html += "<H4>DARK: %s - %s</H4>" % (dark.diskfile.file.filename, dark.data_label)
+          if(dark.ut_datetime and object.ut_datetime):
             html += "<P>dark was taken %s object</P>" % interval_string(dark, object)
             if(abs(interval_hours(dark, object)) > 120):
               html += '<P><FONT COLOR="Red">WARNING - this is more than 5 days different</FONT></P>'
@@ -1524,6 +1526,101 @@ def calibrations(req, selection):
 
       html += "<HR>"
 
+      if('bias' in c.required and (caltype=='all' or caltype=='bias')):
+        requires=True
+        bias = c.bias()
+        if(bias):
+          html += "<H4>BIAS: %s - %s</H4>" % (bias.diskfile.file.filename, bias.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO BIAS FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
+
+      if('flat' in c.required and (caltype=='all' or caltype=='flat')):
+        requires=True
+        flat = c.flat()
+        if(flat):
+          html += "<H4>FLAT: %s - %s</H4>" % (flat.diskfile.file.filename, flat.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO FLAT FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
+   
+      if('arc' in c.required and (caltype=='all' or caltype=='arc')):
+        requires=True
+        arc = c.arc()
+        if(arc):
+          html += "<H4>ARC: %s - %s</H4>" % (arc.diskfile.file.filename, arc.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO ARC FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
+   
+      if('processed_bias' in c.required and (caltype=='all' or caltype=='processed_bias')):
+        requires=True
+        processed_bias = c.processed_bias()
+        if(processed_bias):
+          html += "<H4>PROCESSED_BIAS: %s - %s</H4>" % (processed_bias.diskfile.file.filename, processed_bias.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO PROCESSED_BIAS FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
+   
+      if('processed_flat' in c.required and (caltype=='all' or caltype=='processed_flat')):
+        requires=True
+        processed_flat = c.processed_flat()
+        if(processed_flat):
+          html += "<H4>PROCESSED_FLAT: %s - %s</H4>" % (processed_flat.diskfile.file.filename, processed_flat.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO PROCESSED_FLAT FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
+   
+      if('processed_fringe' in c.required and (caltype=='all' or caltype=='processed_fringe')):
+        requires=True
+        processed_fringe = c.processed_fringe()
+        if(processed_fringe):
+          html += "<H4>PROCESSED_FRINGE: %s - %s</H4>" % (processed_fringe.diskfile.file.filename, processed_fringe.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO PROCESSED_FRINGE FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
+   
+      if('pinhole_mask' in c.required and (caltype=='all' or caltype=='pinhole_mask')):
+        requires=True
+        pinhole_mask = c.pinhole_mask()
+        if(pinhole_mask):
+          html += "<H4>PINHOLE_MASK: %s - %s</H4>" % (pinhole_mask.diskfile.file.filename, pinhole_mask.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO PINHOLE_MASK FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
+   
+      if('ronchi_mask' in c.required and (caltype=='all' or caltype=='ronchi_mask')):
+        requires=True
+        ronchi_mask = c.ronchi_mask()
+        if(ronchi_mask):
+          html += "<H4>RONCHI_MASK: %s - %s</H4>" % (ronchi_mask.diskfile.file.filename, ronchi_mask.data_label)
+        else:
+          html += '<H3><FONT COLOR="Red">NO RONCHI_MASK FOUND!</FONT></H3>'
+          warning = True
+          missing = True
+
+        html += "<HR>"
    
       caloption=None
       if('caloption' in selection):
@@ -1590,7 +1687,7 @@ def interval_hours(a, b):
   """
   Given two header objects, returns the number of hours b was taken after a
   """
-  interval = a.utdatetime - b.utdatetime
+  interval = a.ut_datetime - b.ut_datetime
   tdelta = (interval.days * 24.0) + (interval.seconds / 3600.0)
 
   return tdelta
@@ -1628,7 +1725,7 @@ def sayselection(selection):
   """
   string = ""
 
-  defs = {'progid': 'Program ID', 'obsid': 'Observation ID', 'datalab': 'Data Label', 'date': 'Date', 'daterange': 'Daterange', 'inst':'Instrument', 'obstype':'ObsType', 'obsclass': 'ObsClass', 'filename': 'Filename', 'gmos_grating': 'GMOS Grating', 'gmos_fpmask': 'GMOS FP Mask', 'caltype': 'Calibration Type', 'caloption': 'Calibration Option'}
+  defs = {'program_id': 'Program ID', 'observation_id': 'Observation ID', 'data_label': 'Data Label', 'date': 'Date', 'daterange': 'Daterange', 'inst':'Instrument', 'observation_type':'ObsType', 'observation_class': 'ObsClass', 'filename': 'Filename', 'gmos_grating': 'GMOS Grating', 'gmos_focal_plane_mask': 'GMOS FP Mask', 'caltype': 'Calibration Type', 'caloption': 'Calibration Option'}
   for key in defs:
     if key in selection:
       string += "; %s: %s" % (defs[key], selection[key])
@@ -1638,11 +1735,11 @@ def sayselection(selection):
       string += "; Spectroscopy"
     else:
       string += "; Imaging"
-  if('qastate' in selection):
-    if(selection['qastate']=='Win'):
+  if('qa_state' in selection):
+    if(selection['qa_state']=='Win'):
       string += "; QA State: Win (Pass or Usable)"
     else:
-      string += "; QA State: %s" % selection['qastate']
+      string += "; QA State: %s" % selection['qa_state']
   if('ao' in selection):
     if(selection['ao']=='AO'):
       string += "; Adaptive Optics in beam"
@@ -1670,14 +1767,14 @@ def queryselection(query, selection):
   if('canonical' in selection):
     query = query.filter(DiskFile.canonical == selection['canonical'])
 
-  if('progid' in selection):
-    query = query.filter(Header.progid==selection['progid'])
+  if('program_id' in selection):
+    query = query.filter(Header.program_id==selection['program_id'])
 
-  if('obsid' in selection):
-    query = query.filter(Header.obsid==selection['obsid'])
+  if('observation_id' in selection):
+    query = query.filter(Header.observation_id==selection['observation_id'])
 
-  if('datalab' in selection):
-    query = query.filter(Header.datalab==selection['datalab'])
+  if('data_label' in selection):
+    query = query.filter(Header.data_label==selection['data_label'])
 
   # Should we query by date?
   if('date' in selection):
@@ -1690,7 +1787,7 @@ def queryselection(query, selection):
     startdt = startdt + tzoffset - oneday
     enddt = startdt + oneday
     # check it's between these two
-    query = query.filter(Header.utdatetime >= startdt).filter(Header.utdatetime < enddt)
+    query = query.filter(Header.ut_datetime >= startdt).filter(Header.ut_datetime < enddt)
 
   # Should we query by daterange?
   if('daterange' in selection):
@@ -1712,13 +1809,13 @@ def queryselection(query, selection):
       enddt = startdt
       started = tmp
     # check it's between these two
-    query = query.filter(Header.utdatetime >= startdt).filter(Header.utdatetime <= enddt)
+    query = query.filter(Header.ut_datetime >= startdt).filter(Header.ut_datetime <= enddt)
 
-  if('obstype' in selection):
-    query = query.filter(Header.obstype==selection['obstype'])
+  if('observation_type' in selection):
+    query = query.filter(Header.observation_type==selection['observation_type'])
 
-  if('obsclass' in selection):
-    query = query.filter(Header.obsclass==selection['obsclass'])
+  if('observation_class' in selection):
+    query = query.filter(Header.observation_class==selection['observation_class'])
 
   if('inst' in selection):
     if(selection['inst']=='GMOS'):
@@ -1732,17 +1829,17 @@ def queryselection(query, selection):
   if('gmos_grating' in selection):
     query = query.filter(Header.disperser == selection['gmos_grating'])
 
-  if('gmos_fpmask' in selection):
-    query = query.filter(Header.fpmask == selection['gmos_fpmask'])
+  if('gmos_focal_plane_mask' in selection):
+    query = query.filter(Header.focal_plane_mask == selection['gmos_focal_plane_mask'])
 
   if('spectroscopy' in selection):
     query = query.filter(Header.spectroscopy == selection['spectroscopy'])
 
-  if('qastate' in selection):
-    if(selection['qastate']=='Win'):
-      query = query.filter(or_(Header.qastate=='Pass', Header.qastate=='Usable'))
+  if('qa_state' in selection):
+    if(selection['qa_state']=='Win'):
+      query = query.filter(or_(Header.qa_state=='Pass', Header.qa_state=='Usable'))
     else:
-      query = query.filter(Header.qastate==selection['qastate'])
+      query = query.filter(Header.qa_state==selection['qa_state'])
 
   if('ao' in selection):
     if(selection['ao']=='AO'):
@@ -1760,7 +1857,7 @@ def openquery(selection):
   """
   openquery = True
 
-  things = ['date', 'daterange', 'progid', 'obsid', 'datalab', 'filename']
+  things = ['date', 'daterange', 'program_id', 'observation_id', 'data_label', 'filename']
 
   for thing in things:
     if(thing in selection):
@@ -1810,7 +1907,7 @@ def curation_report(req, things):
               req.write('<tr class=tr_even>')
             else:
               req.write('<tr class=tr_odd>')
-            req.write('<td>%s</td><td><a href="/summary/%s"> %s </a></td><td><a href="/summary/%s"> %s </a></td></tr>' %  (header.diskfile.id, header.diskfile.file.filename, header.diskfile.file.filename, header.datalab, header.datalab))        
+            req.write('<td>%s</td><td><a href="/summary/%s"> %s </a></td><td><a href="/summary/%s"> %s </a></td></tr>' %  (header.diskfile.id, header.diskfile.file.filename, header.diskfile.file.filename, header.data_label, header.data_label))        
         previous_ans = this_ans
       req.write('</table>')
     else:
