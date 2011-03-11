@@ -108,11 +108,11 @@ def gemini_daterange(string):
   else:
     return ''
 
-def gemini_obstype(string):
+def gemini_observation_type(string):
   """
   A utility function for matching Gemini ObsTypes
   If the string argument matches a gemini ObsType 
-  then we return the obstype
+  then we return the observation_type
   Otherwise return an empty string
   We add the unofficial values PINHOLE for GNIRS pinhole mask observations and RONCHI for NIFS Ronchi mask observations here too
   """
@@ -122,11 +122,11 @@ def gemini_obstype(string):
     retary = string
   return retary
   
-def gemini_obsclass(string):
+def gemini_observation_class(string):
   """
   A utility function matching Gemini ObsClasses
   If the string argument matches a gemini ObsClass then we return 
-  the obsclass
+  the observation_class
   Otherwise we return an empty string
   """
   list = ['dayCal', 'partnerCal', 'acqCal', 'acq', 'science', 'progCal']
@@ -144,9 +144,9 @@ def gemini_caltype(string):
   The list of calibration types is somewhat arbitrary, it's not coupled
   to the DHS or ODB, it's more or less defined by the Fits Storage project
 
-  These should all be lower case so as to avoid conflict with gemini_obstype
+  These should all be lower case so as to avoid conflict with gemini_observation_type
   """
-  list = ['bias', 'dark', 'flat', 'arc', 'processed_bias', 'processed_flat']
+  list = ['bias', 'dark', 'flat', 'arc', 'processed_bias', 'processed_flat', 'processed_fringe', 'pinhole_mask', 'ronchi_mask']
   retary = ''
   if (string in list):
     retary = string
@@ -171,7 +171,7 @@ def gmos_gratingname(string):
   return retary
 
 gmosfpmaskcre = re.compile('^G[NS](20\d\d)[AB](.)(\d\d\d)-(\d\d)$')
-def gmos_fpmask(string):
+def gmos_focal_plane_mask(string):
   """
   A utility function matching gmos focal plane mask names. This could be expanded to
   other instruments. Most of the uses cases for this are for masks that are swapped.
@@ -179,7 +179,7 @@ def gmos_fpmask(string):
   Also it knows the form of the MOS mask names and will return a mosmask name if the string
   matches that format, even if that maskname does not actually exist
 
-  If the string matches an fpmask, we return the fpmask.
+  If the string matches an focal_plane_mask, we return the focal_plane_mask.
   """
 
   retary = ''
@@ -218,8 +218,8 @@ def gemini_fitsfilename(string):
   
 # The Gemini Data Label Class
 
-# This re matches progid-obsum-dlnum - ie a datalabel,
-# With 3 groups - progid, obsnum, dlnum
+# This re matches program_id-obsum-dlnum - ie a datalabel,
+# With 3 groups - program_id, obsnum, dlnum
 dlcre=re.compile('^((?:%s)|(?:%s))-(\d*)-(\d*)$' % (calengre, scire))
 
 class GeminiDataLabel:
@@ -234,14 +234,14 @@ class GeminiDataLabel:
                make sense of the datalabel string passed in,
                this field will be empty.
   * projectid: The Project ID
-  * obsid: The Observation ID
+  * observation_id: The Observation ID
   * obsnum: The Observation Number within the project
   * dlnum: The Dataset Number within the observation
   * project: A GeminiProject object for the project this is part of
   """
   datalabel = ''
   projectid = ''
-  obsid = ''
+  observation_id = ''
   obsnum = ''
   dlnum = ''
   project = ''
@@ -249,7 +249,7 @@ class GeminiDataLabel:
   def __init__(self, dl):
     self.datalabel = dl
     self.projectid = ''
-    self.obsid = ''
+    self.observation_id = ''
     self.obsnum = ''
     self.dlnum = ''
     if(self.datalabel):
@@ -262,7 +262,7 @@ class GeminiDataLabel:
       self.obsnum = dlm.group(2)
       self.dlnum = dlm.group(3)
       self.project = GeminiProject(self.projectid)
-      self.obsid='%s-%s' % (self.projectid, self.obsnum)
+      self.observation_id='%s-%s' % (self.projectid, self.obsnum)
     else:
       # Match failed - Null the datalabel field
       self.datalabel=''
@@ -277,29 +277,29 @@ class GeminiObservation:
   Simply instantiate the class with an observation id string
   then reference the following data members:
 
-  * obsid: The observation ID provided. If the class cannot
+  * observation_id: The observation ID provided. If the class cannot
            make sense of the string passed in, this field will
            be empty
   * project: A GeminiProject object for the project this is part of
   * obsnum: The observation numer within the project
   """
-  obsid = ''
+  observation_id = ''
   project = ''
   obsnum =''
 
-  def __init__(self, obsid):
-    if(obsid):
-      match = obscre.match(obsid)
+  def __init__(self, observation_id):
+    if(observation_id):
+      match = obscre.match(observation_id)
       if(match):
-        self.obsid = obsid
+        self.observation_id = observation_id
         self.project = GeminiProject(match.group(1))
         self.obsnum = match.group(2)
       else:
-        self.obsid = ''
+        self.observation_id = ''
         self.project=''
         self.obsnum=''
     else:
-      self.obsid = ''
+      self.observation_id = ''
 
 # This matches a program id
 progcre=re.compile(progre)
@@ -315,26 +315,26 @@ class GeminiProject:
   Simply instantiate the class with a project ID string, then
   referernce the following data members:
 
-  * progid: The program ID passed in. If the class could not 
+  * program_id: The program ID passed in. If the class could not 
             make sense of the string, this will be empty.
   * iscal: a Boolean that is true if this is a CAL project
   * iseng: a Boolean that is true if this is an ENG project
   """
-  progid = ''
+  program_id = ''
   iscal = ''
   iseng = ''
 
-  def __init__(self, progid):
-    if(progcre.match(progid)):
-      self.progid = progid
+  def __init__(self, program_id):
+    if(progcre.match(program_id)):
+      self.program_id = program_id
       self.parse()
     else:
-      self.progid=''
+      self.program_id=''
       iscal = False
       iseng = False
 
   def parse(self):
-    cem=cecre.match(self.progid)
+    cem=cecre.match(self.program_id)
     if(cem):
       caleng = cem.group(1)
       self.iseng = (caleng == 'ENG')
