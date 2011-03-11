@@ -48,7 +48,10 @@ def summary(req, type, selection, orderby, links=True):
   title = "FITS header %s table %s" % (type, sayselection(selection))
   req.write("<head>")
   req.write("<title>%s</title>" % (title))
-  req.write('<link rel="stylesheet" href="/htmldocs/table.css">')
+  if fsc_localmode:
+      req.write('<link rel="stylesheet" href="/htmldocs/FS_LOCALMODE_table.css">')
+  else:
+      req.write('<link rel="stylesheet" href="/htmldocs/table.css">')
   req.write("</head>\n")
   req.write("<body>")
   if (fits_system_status == "development"):
