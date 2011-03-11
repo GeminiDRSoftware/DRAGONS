@@ -1,0 +1,105 @@
+<html>
+<head><title>FITS storage web help page</title></head>
+<body>
+<H1>FITS storage web help page</H1>
+<P>This is the help page for the FITS storage server web interface. If you arrived here unexpectedly, chances are the
+system could not understand the request you were trying to make.</P>
+
+<P>In general, the user interface to this web system <em>is</em> the URL that you type into the address bar on your
+browser. These URLs are designed to be logical and easy to construct</P>
+
+<H2>Header Summaries</H2>
+<P>This system can provide summary tables of the fits headers of data stored on the system. These are available
+under the <a href="/summary">/summary</a> URL. Some examples are:
+<UL>
+<LI><a href="/summary">/summary</a> by itself shows the last 1000 files, newest first</LI>
+<LI><a href="/summary/20091120">/summary/20091120</a> shows the data from 20091120, in order</LI>
+<LI><a href="/summary/today">/summary/today</a> shows the data from today, in order. <a href="/summary/yesterday">yesterday</a> works too</LI>
+<LI><a href="/summary/GN-2009B-Q-51">/summary/GN-2009B-Q-51</a> shows all data for program GN-2009B-Q-51</LI>
+<LI><a href="/summary/GN-2009B-Q-51/20091123">/summary/GN-2009B-Q-51/20091123</a> or indeed <a href="/summary/20091123/GN-2009B-Q-51">/summary/20091123/GN-2009B-Q-51</a> shows all the data for GN-2009B-Q-51 taken on 20091123</LI>
+<LI><a href="/summary/20091120/NIRI">/summary/20091120/NIRI</a> shows all the files for that date using that instrument</LI>
+<LI><a href="/summary/20091120/science">/summary/20091120/science</a> shows all the files for that date with the science ObsClass. You can use any ObsClass type, ie dayCal, partnerCal, acq, acqCal, progCal, science...</LI>
+<LI><a href="/summary/20091120/OBJECT">/summary/20091120/OBJECT</a> shows all the files for that date with the OBJECT ObsType. You can use any ObsType type, ie FLAT, DARK, ARC, BIAS, OBJECT...</LI>
+</UL>
+
+<P> In fact, you can specify any combination of <em>selection criteria</em> to choose the files you would 
+like a summary of </P>
+
+<P>Some other points to note:
+<UL>
+<LI>You can add ?orderby=something arguments to the summary to change the sorting - see the urls linked via the arrows in the table headers for examples</LI>
+<LI> Any file with fitsverify errors will show - fits! after the filename, this is linked to the fitsverify report. Any non engineering file with mdIngest / wmd errors will show - md! after the filename, linked to the wmdreport</LI>
+<LI>Some items are abbreviated in the summary to save space. These are marked as abbreviations, so will usually render in your browser with a faint underline, and you can mouse over them to see the full text in a tooltip</LI>
+<LI>If you replace 'summary' with 'ssummary' you will get a short summary, which has a couple of columns dropped to make the table narrower to fit in a browser window better.</LI>
+</UL></P>
+
+<H2>Calibration Management</H2>
+<P>This system can associate certain types of calibration data with the files they are appropriate to calibrate. This can
+also be used to check that suitable calibrations exist. At the moment, the only calibration type that is fully implemented
+is GMOS ARCs. The Calibration manager is found under the <a href="/calibrations">/calibrations</a> URL.</P>
+
+<P>In the calibrations system, you use the usual <em>selection criteria</em> to specify which files you would like to find
+calibrations for. You can specify what type of calibrations you are interested in, though <tt>arc</tt> is the only
+fully supported type at this time. You can also specify the type of report you would like from the calibration manager:
+<UL>
+<LI>requires - only list files that require the given calibration type</LI>
+<LI>warnings - only list files that generate calibration warnings</LI>
+<LI>missing - only list files that are missing calibrations</LI>
+<LI>takenow - only list files where it would be benefficial to take a calibration today. These are where the calibration either does not exist, or it does exist but it was taken many days before or after the science data, and re-taking it now would provide a calibration that is closer in time to the science data than the existing calibrations.</LI>
+</UL>
+
+These options are simply added as extra elements of the URL like directories in a path.</P>
+
+<P>Some examples
+<UL>
+<LI><a href="/calibrations/GMOS-N/today/arc/takenow">/calibrations/GMOS-N/today/arc/missing</a> will list missing arc calibrations from GMOS-N data taken today</LI>
+<LI><a href="/calibrations/GMOS-N/arc/missing/GN2009BC009-04">/calibrations/GMOS-N/arc/missing/GN2009BC009-04</a> will list missing arcs for GMOS-N MOS mask GN2009BC009-04. This can of course be used to check for missing calibrations before a mask is removed from the instrument. The same works for gratings too.</LI>
+<LI><a href="/calibrations/GMOS-N/arc/20100301-20100331/takenow">/calibrations/GMOS-N/arc/20100301-20100331/takenow</a> will list arcs for GMOS-N data from march 2010 that it would be good to take or re-take today.</LI>
+</UL></P>
+
+<H2>Selection Criteria</H2>
+<P>Both the summary and calibrations systems use the same selection criteria to specify the data you are interested in. 
+These are inserted into the URL just like directories. You can use as many of these as you like, and the system will return
+data that meets all the criteria you specify. You can put them in any order.</P>
+
+<P>The selection criteria understood by the system are:
+<UL>
+<LI>A date in the form YYYYMMDD, eg 20100401. You can use today and yesterday as special literal words and they will act as you would expect.</LI>
+<LI>A date range in the form YYYYMMDD-YYYYMMDD, eg 20100401-20100420</LI>
+<LI>An instrument name, eg GMOS-N. Note GMOS will also work to imply either GMOS-N or GMOS-S</LI>
+<LI>AO to select only AO data, NOTAO to select only non-AO data</LI>
+<LI>A program ID, eg GN-2009B-Q-51</LI>
+<LI>An observation ID, eg GN-2009B-Q-51-9</LI>
+<LI>A data label, eg GN-2009B-Q-51-28-001</LI>
+<LI>An ObsType, eg OBJECT</LI>
+<LI>An ObsClass, eg science</LI>
+<LI>A filename, eg N20091028S0097.fits. It works if you leave off the .fits too</LI>
+<LI>A GMOS grating name, eg B600</LI>
+<LI>A GMOS mask name, eg GN2009BC009-04</LI>
+</UL></P>
+
+<P>You can combine these arbitrarity, for example:
+<UL>
+<LI>20091028/NIRI will select only NIRI data from the night of 20091028</LI>
+<LI>GN-2009B-Q-51/20091028 will select only GN-2009B-Q-51 data from the night of 20091028</LI>
+<LI>20100123/OBJECT/science/GN2009BC009-04 will select only science (as opposed to acq) OBJECT files from 20100123 that use the GN2009BC009-04 mask</LI>
+</UL>
+
+Note that it's possible (and indeed easy) to generate selections that will return no results, for example asking for a GMOS mask with NIRI, or asking for GMOS-N files or GN programs on the Gemini South storage systems. The system does not protect
+you from this, it simply returns no results.</P>
+
+
+<H2>Other features</H2>
+<UL>
+<LI><a href="/gmoscal">/gmoscal</a> or <a href="/gmoscal/20100801-20100901">/gmoscal/20100801-20100901</a> shows the number of GMOS biases and imaging twilight flats taken over the date range. Without a date range it defaults to the date that the DASs last did processing through to today. This can be used to help determine which imaging twilight flats need to be taken</LI>
+<LI><a href="/fullheader/N20091123S0455.fits">/fullheader/N20091123S0455.fits</a> or <a href="/fullheader/N20091123S0455">/fullheader/N20091123S0455</a> gives the full fits header of that file. The headers are read from the file on demand, they are not from the database</LI>
+<LI><a href="/fitsverify/N20091120S0003.fits">/fitsverify/N20091120S0003.fits</a> or <a href="/fitsverify/N20091120S0003">/fitsverify/N20091120S0003</a> gives the fitsverify report for that file. The filename maybe replaced by a database diskfile_id for internal links to specific diskfile instances, but these should not be used externally as the id may change</LI>
+<LI><a href="/wmdreport/N20091120S0003.fits">/wmdreport/N20091120S0003.fits</a> or <a href="/wmdreport/N20091120S0003">/wmdreport/N20091120S0003</a> gives the wmd report for that file. The filename maybe replaced by a database diskfile_id for internal links to specific diskfile instances, but these should not be used externally as the id may change</LI>
+<LI><a href="/diskfiles/20091120">/diskfiles/20091120</a> shows some lower level details from the diskfiles table. You can use all the same stuff as with /summary</LI>
+<LI><a href="/file/N20091120S0003.fits">/file/N20091120S0003.fits</a> or <a href="/file/N20091120S0003">/file/N20091120S0003</a> will stream that fitsfile to your browser. Note that your browser must have the magic authentication cookie for this to work.</LI>
+<LI><a href="/stats">/stats</a> will give some statistics from the database.</LI>
+<LI><a href="/programsobserved/20091201">/programsobserved/20091201</a> will show you which programs have datafiles from that UT night. <a href="/programsobserved">/programsobserved</a> will default to the current UT date. You can also say <a href="/programsobserved/today">/programsobserved/today</a> or <a href="/programsobserved/yesterday">/programsobserved/yesterday</a> too. In fact, all the selection criteria above work, so you can say <a href="/programsobserved/today/GMOS-N/science">/programsobserved/today/GMOS-N/science</a> etc.</LI>
+<LI><a href="/notification">/notification</a> is where you can edit and add new data notifications for data managed by this server.</LI>
+</UL>
+</body></html>
+
