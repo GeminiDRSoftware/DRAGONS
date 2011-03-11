@@ -191,34 +191,34 @@ class Header(Base):
   id = Column(Integer, primary_key=True)
   diskfile_id = Column(Integer, ForeignKey('diskfile.id'), nullable=False, index=True)
   diskfile = relation(DiskFile, order_by=id)
-  progid = Column(Text, index=True)
-  obsid = Column(Text, index=True)
-  datalab = Column(Text, index=True)
+  program_id = Column(Text, index=True)
+  observation_id = Column(Text, index=True)
+  data_label = Column(Text, index=True)
   telescope = Column(Text)
   instrument = Column(Text, index=True)
-  utdatetime = Column(DateTime(timezone=False), index=True)
-  localtime = Column(Time(timezone=False))
-  obstype = Column(Text, index=True)
-  obsclass = Column(Text, index=True)
+  ut_datetime = Column(DateTime(timezone=False), index=True)
+  local_time = Column(Time(timezone=False))
+  observation_type = Column(Text, index=True)
+  observation_class = Column(Text, index=True)
   object = Column(Text)
   ra = Column(Numeric(precision=16, scale=12))
   dec = Column(Numeric(precision=16, scale=12))
   azimuth = Column(Numeric(precision=16, scale=12))
   elevation = Column(Numeric(precision=16, scale=12))
-  crpa = Column(Numeric(precision=16, scale=12))
+  cass_rotator_pa = Column(Numeric(precision=16, scale=12))
   airmass = Column(Numeric(precision=8, scale=6))
-  filter = Column(Text)
-  exptime = Column(Numeric(precision=8, scale=4))
+  filter_name = Column(Text)
+  exposure_time = Column(Numeric(precision=8, scale=4))
   disperser = Column(Text)
-  cwave = Column(Numeric(precision=8, scale=6))
-  fpmask = Column(Text)
+  central_wavelength = Column(Numeric(precision=8, scale=6))
+  focal_plane_mask = Column(Text)
   spectroscopy = Column(Boolean)
   adaptive_optics = Column(Boolean)
-  rawiq = Column(Text)
-  rawcc = Column(Text)
-  rawwv = Column(Text)
-  rawbg = Column(Text)
-  qastate = Column(Text)
+  raw_iq = Column(Text)
+  raw_cc = Column(Text)
+  raw_wv = Column(Text)
+  raw_bg = Column(Text)
+  qa_state = Column(Text)
   release = Column(Date(TimeZone=False))
   reduction = Column(Text)
 
@@ -242,15 +242,15 @@ class Header(Base):
 
       # Basic data identification part
       try:
-        self.progid = ad.program_id()
+        self.program_id = ad.program_id()
       except (KeyError, ValueError):
         pass
       try:
-        self.obsid = ad.observation_id()
+        self.observation_id = ad.observation_id()
       except (KeyError, ValueError):
         pass
       try:
-        self.datalab = ad.data_label()
+        self.data_label = ad.data_label()
       except (KeyError, ValueError):
         pass
       try:
@@ -264,7 +264,7 @@ class Header(Base):
 
       # Date and times part
       try:
-        self.utdatetime = ad.ut_datetime()
+        self.ut_datetime = ad.ut_datetime()
       except:
         raise
 
@@ -272,21 +272,21 @@ class Header(Base):
         localtime_string = ad.local_time()
         if(localtime_string):
           # This is a bit of a hack so as to use the nice parser
-          self.localtime = dateutil.parser.parse("2000-01-01 %s" % (localtime_string)).time()
+          self.local_time = dateutil.parser.parse("2000-01-01 %s" % (localtime_string)).time()
       except (KeyError, ValueError):
         pass
 
       # Data Types
       try:
-        self.obstype = ad.observation_type()
+        self.observation_type = ad.observation_type()
         if('GNIRS_PINHOLE' in ad.types):
-          self.obstype='PINHOLE'
+          self.observation_type='PINHOLE'
         if('NIFS_RONCHI' in ad.types):
-          self.obstype='RONCHI'
+          self.observation_type='RONCHI'
       except (KeyError, ValueError):
         pass
       try:
-        self.obsclass = ad.observation_class()
+        self.observation_class = ad.observation_class()
       except (KeyError, ValueError):
         pass
       try:
@@ -310,7 +310,7 @@ class Header(Base):
       except (KeyError, ValueError, TypeError):
         pass
       try:
-        self.crpa = float(ad.cass_rotator_pa())
+        self.cass_rotator_pa = float(ad.cass_rotator_pa())
       except (KeyError, ValueError, TypeError):
         pass
       try:
@@ -318,27 +318,27 @@ class Header(Base):
       except (KeyError, ValueError, TypeError):
         pass
       try:
-        self.rawiq = ad.raw_iq()
+        self.raw_iq = ad.raw_iq()
       except (KeyError, ValueError):
         pass
       try:
-        self.rawcc = ad.raw_cc()
+        self.raw_cc = ad.raw_cc()
       except (KeyError, ValueError):
         pass
       try:
-        self.rawwv = ad.raw_wv()
+        self.raw_wv = ad.raw_wv()
       except (KeyError, ValueError):
         pass
       try:
-        self.rawbg = ad.raw_bg()
+        self.raw_bg = ad.raw_bg()
       except (KeyError, ValueError):
         pass
       try:
-        self.filter = ad.filter_name(pretty=True)
+        self.filter_name = ad.filter_name(pretty=True)
       except (KeyError, ValueError):
         pass
       try:
-        self.exptime = float(ad.exposure_time())
+        self.exposure_time = float(ad.exposure_time())
       except (KeyError, ValueError, TypeError):
         pass
       try:
@@ -346,11 +346,11 @@ class Header(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.cwave = float(ad.central_wavelength(asMicrometers=True))
+        self.central_wavelength = float(ad.central_wavelength(asMicrometers=True))
       except (KeyError, ValueError, TypeError):
         pass
       try:
-        self.fpmask = ad.focal_plane_mask(pretty=True)
+        self.focal_plane_mask = ad.focal_plane_mask(pretty=True)
       except (KeyError, ValueError):
         pass
 
@@ -365,7 +365,7 @@ class Header(Base):
   
       # Set the derived QA state and release date
       try:
-        self.qastate = ad.qa_state()
+        self.qa_state = ad.qa_state()
       except (KeyError, ValueError, AttributeError):
         pass
       try:
@@ -537,13 +537,13 @@ class Gmos(Base):
   header_id = Column(Integer, ForeignKey('header.id'), nullable=False, index=True)
   header = relation(Header, order_by=id)
   disperser = Column(Text, index=True)
-  filtername = Column(Text, index=True)
-  xccdbin = Column(Integer, index=True)
-  yccdbin = Column(Integer, index=True)
-  amproa = Column(Text, index=True)
-  readspeedmode = Column(Text, index=True)
-  gainmode = Column(Text, index=True)
-  fpmask = Column(Text, index=True)
+  filter_name = Column(Text, index=True)
+  detector_x_bin = Column(Integer, index=True)
+  detector_y_bin = Column(Integer, index=True)
+  amp_read_area = Column(Text, index=True)
+  read_speed_setting = Column(Text, index=True)
+  gain_setting = Column(Text, index=True)
+  focal_plane_mask = Column(Text, index=True)
   nodandshuffle = Column(Boolean, index=True)
   nod_count = Column(Integer, index=True)
   nod_pixels = Column(Integer, index=True)
@@ -564,31 +564,31 @@ class Gmos(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.filtername = ad.filter_name()
+        self.filter_name = ad.filter_name()
       except (KeyError, ValueError):
         pass
       try:
-        self.xccdbin = ad.detector_x_bin()
+        self.detector_x_bin = ad.detector_x_bin()
       except (KeyError, IndexError, ValueError):
         pass
       try:
-        self.yccdbin = ad.detector_y_bin()
+        self.detector_y_bin = ad.detector_y_bin()
       except (KeyError, IndexError, ValueError):
         pass
       try:
-        self.amproa = str(ad.amp_read_area(asList=True))
+        self.amp_read_area = str(ad.amp_read_area(asList=True))
       except (KeyError, IndexError, ValueError):
         pass
       try:
-        self.readspeedmode = ad.read_speed_setting()
+        self.read_speed_setting = ad.read_speed_setting()
       except (KeyError, IndexError, ValueError):
         pass
       try:
-        self.gainmode = ad.gain_setting()
+        self.gain_setting = ad.gain_setting()
       except (KeyError, IndexError, ValueError):
         pass
       try:
-        self.fpmask = ad.focal_plane_mask()
+        self.focal_plane_mask = ad.focal_plane_mask()
       except (KeyError, ValueError):
         pass
       try:
@@ -618,13 +618,13 @@ class Niri(Base):
   header_id = Column(Integer, ForeignKey('header.id'), nullable=False, index=True)
   header = relation(Header, order_by=id)
   disperser = Column(Text, index=True)
-  filtername = Column(Text, index=True)
-  readmode = Column(Text, index=True)
-  welldepthmode = Column(Text, index=True)
-  detsec = Column(Text, index=True)
+  filter_name = Column(Text, index=True)
+  read_mode = Column(Text, index=True)
+  well_depth_setting = Column(Text, index=True)
+  data_section = Column(Text, index=True)
   coadds = Column(Integer, index=True)
   camera = Column(Text, index=True)
-  fpmask = Column(Text)
+  focal_plane_mask = Column(Text)
 
   def __init__(self, header):
     self.header = header
@@ -642,19 +642,19 @@ class Niri(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.filtername = ad.filter_name()
+        self.filter_name = ad.filter_name()
       except (KeyError, ValueError):
         pass
       try:
-        self.readmode = ad.read_mode()
+        self.read_mode = ad.read_mode()
       except (KeyError, ValueError):
         pass
       try:
-        self.welldepthmode = ad.well_depth_setting()
+        self.well_depth_setting = ad.well_depth_setting()
       except (KeyError, ValueError):
         pass
       try:
-        self.detsec = ad.data_section()
+        self.data_section = ad.data_section()
       except (KeyError, ValueError):
         pass
       try:
@@ -666,7 +666,7 @@ class Niri(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.fpmask = ad.focal_plane_mask()
+        self.focal_plane_mask = ad.focal_plane_mask()
       except (KeyError, ValueError):
         pass
       ad.close()
@@ -684,12 +684,12 @@ class Gnirs(Base):
   header_id = Column(Integer, ForeignKey('header.id'), nullable=False, index=True)
   header = relation(Header, order_by=id)
   disperser = Column(Text, index=True)
-  filtername = Column(Text, index=True)
-  readmode = Column(Text, index=True)
-  welldepthmode = Column(Text, index=True)
+  filter_name = Column(Text, index=True)
+  read_mode = Column(Text, index=True)
+  well_depth_setting = Column(Text, index=True)
   coadds = Column(Integer, index=True)
   camera = Column(Text, index=True)
-  fpmask = Column(Text)
+  focal_plane_mask = Column(Text)
   
   def __init__(self, header):
     self.header = header
@@ -707,15 +707,15 @@ class Gnirs(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.filtername = ad.filter_name()
+        self.filter_name = ad.filter_name()
       except (KeyError, ValueError):
         pass
       try:
-        self.readmode = ad.read_mode()
+        self.read_mode = ad.read_mode()
       except (KeyError, ValueError):
         pass
       try:
-        self.welldepthmode = ad.well_depth_setting()
+        self.well_depth_setting = ad.well_depth_setting()
       except (KeyError, ValueError):
         pass
       try:
@@ -727,7 +727,7 @@ class Gnirs(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.fpmask = ad.focal_plane_mask()
+        self.focal_plane_mask = ad.focal_plane_mask()
       except (KeyError, ValueError):
         pass
       ad.close()
@@ -745,10 +745,10 @@ class Nifs(Base):
   header_id = Column(Integer, ForeignKey('header.id'), nullable=False, index=True)
   header = relation(Header, order_by=id)
   disperser = Column(Text, index=True)
-  filtername = Column(Text, index=True)
-  readmode = Column(Text, index=True)
+  filter_name = Column(Text, index=True)
+  read_mode = Column(Text, index=True)
   coadds = Column(Integer, index=True)
-  fpmask = Column(Text)
+  focal_plane_mask = Column(Text)
   
   def __init__(self, header):
     self.header = header
@@ -766,11 +766,11 @@ class Nifs(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.filtername = ad.filter_name()
+        self.filter_name = ad.filter_name()
       except (KeyError, ValueError):
         pass
       try:
-        self.readmode = ad.read_mode()
+        self.read_mode = ad.read_mode()
       except (KeyError, ValueError):
         pass
       try:
@@ -778,7 +778,7 @@ class Nifs(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.fpmask = ad.focal_plane_mask()
+        self.focal_plane_mask = ad.focal_plane_mask()
       except (KeyError, ValueError):
         pass
       ad.close()
@@ -796,10 +796,10 @@ class Michelle(Base):
   header_id = Column(Integer, ForeignKey('header.id'), nullable=False, index=True)
   header = relation(Header, order_by=id)
   disperser = Column(Text, index=True)
-  filtername = Column(Text, index=True)
-  readmode = Column(Text, index=True)
+  filter_name = Column(Text, index=True)
+  read_mode = Column(Text, index=True)
   coadds = Column(Integer, index=True)
-  fpmask = Column(Text)
+  focal_plane_mask = Column(Text)
   
   def __init__(self, header):
     self.header = header
@@ -817,11 +817,11 @@ class Michelle(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.filtername = ad.filter_name()
+        self.filter_name = ad.filter_name()
       except (KeyError, ValueError):
         pass
       try:
-        self.readmode = ad.read_mode()
+        self.read_mode = ad.read_mode()
       except (KeyError, ValueError):
         pass
       try:
@@ -829,7 +829,7 @@ class Michelle(Base):
       except (KeyError, ValueError):
         pass
       try:
-        self.fpmask = ad.focal_plane_mask()
+        self.focal_plane_mask = ad.focal_plane_mask()
       except (KeyError, ValueError):
         pass
       ad.close()

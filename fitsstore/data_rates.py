@@ -36,7 +36,7 @@ start = datetime.datetime.combine(today, zerohour)
 end = start + ddelta
 
 for i in range(1, ndays):
-  query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.utdatetime > start).filter(Header.utdatetime < end)
+  query = session.query(func.sum(DiskFile.size)).select_from(join(Header, DiskFile)).filter(DiskFile.present==True).filter(Header.ut_datetime > start).filter(Header.ut_datetime < end)
   bytes = query.one()[0]
   if(not bytes):
     bytes = 0

@@ -6,7 +6,7 @@ from FitsStorage import *
 import FitsStorageConfig
 import GeminiMetadataUtils
 
-def get_cal_object(session, filename, header=None, descriptors=None, types=None):
+def get_cal_object(session, filename, header=None, descriptors=None, types=None, flag=None):
   """
   This function returns an appropriate calibration object for the given dataset
   Need to pass in a sqlalchemy session that should already be open, the class will not close it
@@ -26,18 +26,18 @@ def get_cal_object(session, filename, header=None, descriptors=None, types=None)
   else:
     instrument = descriptors['instrument']
   if('GMOS' in instrument):
-    c = CalibrationGMOS(session, header, descriptors, types)
+    c = CalibrationGMOS(session, header, descriptors, types, flag)
   if(instrument == 'NIRI'):
-    c = CalibrationNIRI(session, header, descriptors, types)
+    c = CalibrationNIRI(session, header, descriptors, types, flag)
   if(instrument == 'GNIRS'):
-    c = CalibrationGNIRS(session, header, descriptors, types)
+    c = CalibrationGNIRS(session, header, descriptors, types, flag)
   if(instrument == 'NIFS'):
-    c = CalibrationNIFS(session, header, descriptors, types)
+    c = CalibrationNIFS(session, header, descriptors, types, flag)
   if(instrument == 'michelle'):
-    c = CalibrationMICHELLE(session, header, descriptors, types)
+    c = CalibrationMICHELLE(session, header, descriptors, types, flag)
   # Add other instruments here
   if(c==None):
-    c = Calibration(session, header, descriptors, types)
+    c = Calibration(session, header, descriptors, types, flag)
 
   return c
 
@@ -51,9 +51,10 @@ class Calibration():
   header = None
   descriptors = None
   types = None
+  flag = None
   required = []
 
-  def __init__(self, session, header, descriptors, types):
+  def __init__(self, session, header, descriptors, types, flag):
     """
     Initialise a calibration manager for a given header object (ie data file)
     Need to pass in an sqlalchemy session that should already be open, this class will not close it
@@ -63,6 +64,22 @@ class Calibration():
     self.header = header
     self.descriptors = descriptors
     self.types = types
+    self.flag = flag
+
+    # Populate the descriptors dictionary for header
+    if(self.descriptors==None):
+      self.flag=True
+      self.descriptors = {}
+      self.descriptors['header_id']=self.header.id
+      self.descriptors['observation_type']=self.header.observation_type
+      self.descriptors['spectroscopy']=self.header.spectroscopy
+      self.descriptors['object']=self.header.object
+      self.descriptors['instrument']=self.header.instrument
+      self.descriptors['central_wavelength']=self.header.central_wavelength
+      self.descriptors['program_id']=self.header.program_id
+      self.descriptors['ut_datetime']=self.header.ut_datetime
+      self.descriptors['exposure_time']=self.header.exposure_time
+      self.descriptors['observation_class']=self.header.observation_class
 
   def arc(self):
     return "arc method not defined for this instrument"
@@ -77,14 +94,28 @@ class CalibrationGMOS(Calibration):
   """
   gmos = None
 
-  def __init__(self, session, header, descriptors, types):
+  def __init__(self, session, header, descriptors, types, flag):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types)
+    Calibration.__init__(self, session, header, descriptors, types, flag)
 
     # if header based, Find the gmosheader
     if(header):
-      query = session.query(Gmos).filter(Gmos.header_id==self.header.id)
+      query = session.query(Gmos).filter(Gmos.header_id==self.descriptors['header_id'])
       self.gmos = query.first()
+
+    # Populate the descriptors dictionary for GMOS
+    if(self.flag):
+      self.descriptors['disperser']=self.gmos.disperser
+      self.descriptors['filter_name']=self.gmos.filter_name
+      self.descriptors['focal_plane_mask']=self.gmos.focal_plane_mask
+      self.descriptors['detector_x_bin']=self.gmos.detector_x_bin
+      self.descriptors['detector_y_bin']=self.gmos.detector_y_bin
+      self.descriptors['amp_read_area']=self.gmos.amp_read_area
+      self.descriptors['read_speed_setting']=self.gmos.read_speed_setting
+      self.descriptors['gain_setting']=self.gmos.gain_setting
+      self.descriptors['nodandshuffle']=self.gmos.nodandshuffle
+      self.descriptors['nod_count']=self.gmos.nod_count
+      self.descriptors['nod_pixels']=self.gmos.nod_pixels
 
     # Set the list of required calibrations
     self.required = self.required()
@@ -95,52 +126,57 @@ class CalibrationGMOS(Calibration):
 
     if(self.header):
       # BIASes do not require a bias. 
-      if(self.header.obstype != 'BIAS'):
+      if(self.descriptors['observation_type'] != 'BIAS'):
         list.append('bias')
+        list.append('processed_bias')
 
       # If it (is spectroscopy) and (is an OBJECT) and (is not a Twilight) then it needs an arc
-      if((self.header.spectroscopy==True) and (self.header.obstype=='OBJECT') and (self.header.object!='Twilight')):
+      if((self.descriptors['spectroscopy']==True) and (self.descriptors['observation_type']=='OBJECT') and (self.descriptors['object']!='Twilight')):
         list.append('arc')
+        #list.append('dark')
+        #list.append('flat')
+        #list.append('processed_flat')
+        #list.append('processed_fringe')
 
     return list
 
   def arc(self, sameprog=False):
     query = self.session.query(Header).select_from(join(join(Gmos, Header), DiskFile))
-    query = query.filter(Header.obstype=='ARC')
+    query = query.filter(Header.observation_type=='ARC')
 
     # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
     # Must Totally Match: Instrument, disperser
-    query = query.filter(Header.instrument==self.header.instrument).filter(Gmos.disperser==self.gmos.disperser)
+    query = query.filter(Header.instrument==self.descriptors['instrument']).filter(Gmos.disperser==self.descriptors['disperser'])
 
     # Must match filter (from KR 20100423)
-    query = query.filter(Gmos.filtername==self.gmos.filtername)
+    query = query.filter(Gmos.filter_name==self.descriptors['filter_name'])
 
-    # Must Match cwave 
-    query = query.filter(Header.cwave==self.header.cwave)
+    # Must Match central_wavelength 
+    query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
 
-    # Must match fpmask only if it's not the 5.0arcsec slit in the target, otherwise any longslit is OK
-    if(self.gmos.fpmask != '5.0arcsec'):
-      query = query.filter(Gmos.fpmask==self.gmos.fpmask)
+    # Must match focal_plane_mask only if it's not the 5.0arcsec slit in the target, otherwise any longslit is OK
+    if(self.descriptors['focal_plane_mask'] != '5.0arcsec'):
+      query = query.filter(Gmos.focal_plane_mask==self.descriptors['focal_plane_mask'])
     else:
-      query = query.filter(Gmos.fpmask.like('%arcsec'))
+      query = query.filter(Gmos.focal_plane_mask.like('%arcsec'))
 
     # Must match ccd binning
-    query = query.filter(Gmos.xccdbin==self.gmos.xccdbin).filter(Gmos.yccdbin==self.gmos.yccdbin)
+    query = query.filter(Gmos.detector_x_bin==self.descriptors['detector_x_bin']).filter(Gmos.detector_y_bin==self.descriptors['detector_y_bin'])
 
-    # The science amproa must be equal or substring of the arc amproa
-    query = query.filter(Gmos.amproa.like('%'+self.gmos.amproa+'%'))
+    # The science amp_read_area must be equal or substring of the arc amp_read_area
+    query = query.filter(Gmos.amp_read_area.like('%'+self.descriptors['amp_read_area']+'%'))
 
     # Should we insist on the program ID matching?
     if(sameprog):
-      query = query.filter(Header.progid==self.header.progid)
+      query = query.filter(Header.program_id==self.descriptors['program_id'])
 
     # Order by absolute time separation. 
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -149,29 +185,30 @@ class CalibrationGMOS(Calibration):
 
   def dark(self):
     query = self.session.query(Header).select_from(join(join(Gmos, Header), DiskFile))
-    query = query.filter(Header.obstype=='DARK')
+    query = query.filter(Header.observation_type=='DARK')
 
      # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match instrument, xccdbin, yccdbin, readspeedmode, gainmode, exptime, nodandshuffle
-    query = query.filter(Header.instrument==self.header.instrument)
-    query = query.filter(Gmos.xccdbin==self.gmos.xccdbin).filter(Gmos.yccdbin==self.gmos.yccdbin)
-    query = query.filter(Gmos.readspeedmode==self.gmos.readspeedmode).filter(Gmos.gainmode==self.gmos.gainmode)
-    query = query.filter(Header.exptime==self.header.exptime)
-    query = query.filter(Gmos.nodandshuffle==self.gmos.nodandshuffle)
-    if(self.gmos.nodandshuffle):
-      query = query.filter(Gmos.nod_count==self.gmos.nod_count)
-      query = query.filter(Gmos.nod_pixels==self.gmos.nod_pixels)
+    # Must totally match instrument, detector_x_bin, detector_y_bin, read_speed_setting, gain_setting, exposure_time, nodandshuffle
+    query = query.filter(Header.instrument==self.descriptors['instrument'])
+    query = query.filter(Gmos.detector_x_bin==self.descriptors['detector_x_bin']).filter(Gmos.detector_y_bin==self.descriptors['detector_y_bin'])
+    query = query.filter(Gmos.read_speed_setting==self.descriptors['read_speed_setting'])
+    query = query.filter(Gmos.gain_setting==self.descriptors['gain_setting'])
+    query = query.filter(Header.exposure_time==self.descriptors['exposure_time'])
+    query = query.filter(Gmos.nodandshuffle==self.descriptors['nodandshuffle'])
+    if(self.descriptors['nodandshuffle']):
+      query = query.filter(Gmos.nod_count==self.descriptors['nod_count'])
+      query = query.filter(Gmos.nod_pixels==self.descriptors['nod_pixels'])
 
-    # The science amproa must be equal or substring of the arc amproa
-    query = query.filter(Gmos.amproa.like('%'+self.gmos.amproa+'%'))
+    # The science amp_read_area must be equal or substring of the arc amp_read_area
+    query = query.filter(Gmos.amp_read_area.like('%'+self.descriptors['amp_read_area']+'%'))
 
     # Order by absolute time separation. 
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -180,24 +217,24 @@ class CalibrationGMOS(Calibration):
 
   def bias(self):
     query = self.session.query(Header).select_from(join(join(Gmos, Header), DiskFile))
-    query = query.filter(Header.obstype=='BIAS')
+    query = query.filter(Header.observation_type=='BIAS')
 
      # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match instrument, xccdbin, yccdbin, readspeedmode, gainmode
-    query = query.filter(Header.instrument==self.header.instrument)
-    query = query.filter(Gmos.xccdbin==self.gmos.xccdbin).filter(Gmos.yccdbin==self.gmos.yccdbin)
-    query = query.filter(Gmos.readspeedmode==self.gmos.readspeedmode).filter(Gmos.gainmode==self.gmos.gainmode)
+    # Must totally match instrument, detector_x_bin, detector_y_bin, read_speed_setting, gain_setting
+    query = query.filter(Header.instrument==self.descriptors['instrument'])
+    query = query.filter(Gmos.detector_x_bin==self.descriptors['detector_x_bin']).filter(Gmos.detector_y_bin==self.descriptors['detector_y_bin'])
+    query = query.filter(Gmos.read_speed_setting==self.descriptors['read_speed_setting']).filter(Gmos.gain_setting==self.descriptors['gain_setting'])
 
-    # The science amproa must be equal or substring of the arc amproa
-    query = query.filter(Gmos.amproa.like('%'+self.gmos.amproa+'%'))
+    # The science amp_read_area must be equal or substring of the arc amp_read_area
+    query = query.filter(Gmos.amp_read_area.like('%'+self.descriptors['amp_read_area']+'%'))
 
     # Order by absolute time separation. 
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -207,46 +244,31 @@ class CalibrationGMOS(Calibration):
   def processed_bias(self):
     # The basic PROCESSED_BIAS search
     query = self.session.query(Header).select_from(join(join(Gmos, Header), DiskFile))
-    query = query.filter(Header.obstype=='BIAS')
+    query = query.filter(Header.observation_type=='BIAS')
     query = query.filter(Header.reduction=='PROCESSED_BIAS')
 
     # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    if(self.descriptors==None):
-      self.descriptors = {}
-      self.descriptors['instrument']=self.header.instrument
-      self.descriptors['detector_x_bin']=self.gmos.xccdbin
-      self.descriptors['detector_y_bin']=self.gmos.yccdbin
-      self.descriptors['read_speed_mode']=self.gmos.readspeedmode
-      self.descriptors['gain_mode']=self.gmos.gainmode
-      self.descriptors['amp_read_area']=self.gmos.amproa
-      self.descriptors['ut_datetime']=self.header.utdatetime
-    else:
-      datetime_string = "%s %s" % (self.descriptors['ut_date'], self.descriptors['ut_time'])
-      self.descriptors['ut_datetime'] = dateutil.parser.parse(datetime_string)
-
-    # Must totally match instrument, xccdbin, yccdbin, readspeedmode, gainmode
+    # Must totally match instrument, detector_x_bin, detector_y_bin, read_speed_setting, gain_setting
     query = query.filter(Header.instrument==self.descriptors['instrument'])
-    query = query.filter(Gmos.xccdbin==self.descriptors['detector_x_bin'])
-    query = query.filter(Gmos.yccdbin==self.descriptors['detector_y_bin'])
-    query = query.filter(Gmos.readspeedmode==self.descriptors['read_speed_mode'])
-    query = query.filter(Gmos.gainmode==self.descriptors['gain_mode'])
+    query = query.filter(Gmos.detector_x_bin==self.descriptors['detector_x_bin']).filter(Gmos.detector_y_bin==self.descriptors['detector_y_bin'])
+    query = query.filter(Gmos.read_speed_setting==self.descriptors['read_speed_setting']).filter(Gmos.gain_setting==self.descriptors['gain_setting'])
 
-    # The science amproa must be equal or substring of the bias amproa
-    query = query.filter(Gmos.amproa.like('%'+str(self.descriptors['amp_read_area'])+'%'))
+    # The science amp_read_area must be equal or substring of the bias amp_read_area
+    query = query.filter(Gmos.amp_read_area.like('%'+str(self.descriptors['amp_read_area'])+'%'))
 
     # Order by absolute time separation.
     if fsc_localmode:
         # note: double check if this even works, we suspect it doesn't
         # but it's hard to notice as a somewhat fitting cal will be returned
         # but perhaps not the most recent.
-        query = query.order_by(func.abs(Header.utdatetime - self.header.utdatetime))
+        query = query.order_by(func.abs(Header.ut_datetime - self.descriptors['ut_datetime']))
     else:
-        query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.descriptors['ut_datetime'])).asc())
+        query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -261,24 +283,24 @@ class CalibrationGMOS(Calibration):
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match instrument, xccdbin, yccdbin, filter
-    query = query.filter(Header.instrument==self.header.instrument)
-    query = query.filter(Gmos.xccdbin==self.gmos.xccdbin).filter(Gmos.yccdbin==self.gmos.yccdbin)
-    query = query.filter(Gmos.filtername==self.gmos.filtername)
-    #query = query.filter(Gmos.readspeedmode==self.gmos.readspeedmode).filter(Gmos.gainmode==self.gmos.gainmode)
-    query = query.filter(Header.spectroscopy==self.header.spectroscopy)
-    if(self.header.spectroscopy):
-      query = query.filter(Gmos.disperser==self.gmos.disperser)
-      query = query.filter(Header.cwave==self.header.cwave)
-      query = query.filter(Gmos.fpmask==self.gmos.fpmask)
+    # Must totally match instrument, detector_x_bin, detector_y_bin, filter
+    query = query.filter(Header.instrument==self.descriptors['instrument'])
+    query = query.filter(Gmos.detector_x_bin==self.descriptors['detector_x_bin']).filter(Gmos.detector_y_bin==self.descriptors['detector_y_bin'])
+    query = query.filter(Gmos.filter_name==self.descriptors['filter_name'])
+    #query = query.filter(Gmos.read_speed_setting==self.descriptors['read_speed_setting']).filter(Gmos.gain_setting==self.descriptors['gain_setting'])
+    query = query.filter(Header.spectroscopy==self.descriptors['spectroscopy'])
+    if(self.descriptors['spectroscopy']):
+      query = query.filter(Gmos.disperser==self.descriptors['disperser'])
+      query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
+      query = query.filter(Gmos.focal_plane_mask==self.descriptors['focal_plane_mask'])
 
-    # The science amproa must be equal or substring of the flat amproa
-    query = query.filter(Gmos.amproa.like('%'+self.gmos.amproa+'%'))
+    # The science amp_read_area must be equal or substring of the flat amp_read_area
+    query = query.filter(Gmos.amp_read_area.like('%'+self.descriptors['amp_read_area']+'%'))
 
     # Order by absolute time separation.
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -293,30 +315,30 @@ class CalibrationGMOS(Calibration):
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match instrument, xccdbin, yccdbin, filter
-    query = query.filter(Header.instrument==self.header.instrument)
-    query = query.filter(Gmos.xccdbin==self.gmos.xccdbin).filter(Gmos.yccdbin==self.gmos.yccdbin)
-    query = query.filter(Gmos.filtername==self.gmos.filtername)
-    #query = query.filter(Gmos.readspeedmode==self.gmos.readspeedmode).filter(Gmos.gainmode==self.gmos.gainmode)
-    query = query.filter(Header.spectroscopy==self.header.spectroscopy)
-    if(self.header.spectroscopy):
-      query = query.filter(Gmos.disperser==self.gmos.disperser)
-      query = query.filter(Header.cwave==self.header.cwave)
-      query = query.filter(Gmos.fpmask==self.gmos.fpmask)
+    # Must totally match instrument, detector_x_bin, detector_y_bin, filter
+    query = query.filter(Header.instrument==self.descriptors['instrument'])
+    query = query.filter(Gmos.detector_x_bin==self.descriptors['detector_x_bin']).filter(Gmos.detector_y_bin==self.descriptors['detector_y_bin'])
+    query = query.filter(Gmos.filter_name==self.descriptors['filter_name'])
+    #query = query.filter(Gmos.read_speed_setting==self.descriptors['read_speed_setting']).filter(Gmos.gain_setting==self.descriptors['gain_setting'])
+    query = query.filter(Header.spectroscopy==self.descriptors['spectroscopy'])
+    if(self.descriptors['spectroscopy']):
+      query = query.filter(Gmos.disperser==self.descriptors['disperser'])
+      query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
+      query = query.filter(Gmos.focal_plane_mask==self.descriptors['focal_plane_mask'])
 
-    # The science amproa must be equal or substring of the flat amproa
-    query = query.filter(Gmos.amproa.like('%'+self.gmos.amproa+'%'))
+    # The science amp_read_area must be equal or substring of the flat amp_read_area
+    query = query.filter(Gmos.amp_read_area.like('%'+self.descriptors['amp_read_area']+'%'))
 
     # Order by absolute time separation.
     if fsc_localmode:
         # note: double check if this even works, we suspect it doesn't
         # but it's hard to notice as a somewhat fitting cal will be returned
         # but perhaps not the most recent.
-        query = query.order_by(func.abs(Header.utdatetime - self.header.utdatetime))
+        query = query.order_by(func.abs(Header.ut_datetime - self.descriptors['ut_datetime']))
     else:
-        query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.descriptors['ut_datetime'])).asc())
+        query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -331,19 +353,19 @@ class CalibrationGMOS(Calibration):
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match instrument, xccdbin, yccdbin, filter
-    query = query.filter(Header.instrument==self.header.instrument)
-    query = query.filter(Gmos.xccdbin==self.gmos.xccdbin).filter(Gmos.yccdbin==self.gmos.yccdbin)
-    query = query.filter(Gmos.filtername==self.gmos.filtername)
-    #query = query.filter(Gmos.readspeedmode==self.gmos.readspeedmode).filter(Gmos.gainmode==self.gmos.gainmode)
+    # Must totally match instrument, detector_x_bin, detector_y_bin, filter
+    query = query.filter(Header.instrument==self.descriptors['instrument'])
+    query = query.filter(Gmos.detector_x_bin==self.descriptors['detector_x_bin']).filter(Gmos.detector_y_bin==self.descriptors['detector_y_bin'])
+    query = query.filter(Gmos.filter_name==self.descriptors['filter_name'])
+    #query = query.filter(Gmos.read_speed_setting==self.descriptors['read_speed_setting']).filter(Gmos.gain_setting==self.descriptors['gain_setting'])
 
-    # The science amproa must be equal or substring of the flat amproa
-    query = query.filter(Gmos.amproa.like('%'+self.gmos.amproa+'%'))
+    # The science amp_read_area must be equal or substring of the flat amp_read_area
+    query = query.filter(Gmos.amp_read_area.like('%'+self.descriptors['amp_read_area']+'%'))
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -359,13 +381,22 @@ class CalibrationNIRI(Calibration):
   """
   niri = None
 
-  def __init__(self, session, header, descriptors, types):
+  def __init__(self, session, header, descriptors, types, flag):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types)
+    Calibration.__init__(self, session, header, descriptors, types, flag)
 
     # Find the niriheader
-    query = session.query(Niri).filter(Niri.header_id==self.header.id)
+    query = session.query(Niri).filter(Niri.header_id==self.descriptors['header_id'])
     self.niri = query.first()
+
+    # Populate the descriptors dictionary for NIRI
+    if(self.flag):
+      self.descriptors['data_section']=self.niri.data_section
+      self.descriptors['read_mode']=self.niri.read_mode
+      self.descriptors['well_depth_setting']=self.niri.well_depth_setting
+      self.descriptors['coadds']=self.niri.coadds
+      self.descriptors['filter_name']=self.niri.filter_name
+      self.descriptors['camera']=self.niri.camera
 
     # Set the list of required calibrations
     self.required = self.required()
@@ -375,7 +406,7 @@ class CalibrationNIRI(Calibration):
     list=[]
 
     # Science Imaging OBJECTs require a DARK and FLAT
-    if((self.header.obstype=='OBJECT') and (self.header.spectroscopy==False) and (self.header.obsclass=='science')):
+    if((self.descriptors['observation_type']=='OBJECT') and (self.descriptors['spectroscopy']==False) and (self.descriptors['observation_class']=='science')):
       list.append('dark')
       list.append('flat')
 
@@ -383,21 +414,21 @@ class CalibrationNIRI(Calibration):
 
   def dark(self):
     query = self.session.query(Header).select_from(join(join(Niri, Header), DiskFile))
-    query = query.filter(Header.obstype=='DARK')
+    query = query.filter(Header.observation_type=='DARK')
 
     # Search only canonical entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: detsec, readmode, welldepthmode, exptime, coadds
-    query = query.filter(Niri.detsec==self.niri.detsec)
-    query = query.filter(Niri.readmode==self.niri.readmode).filter(Niri.welldepthmode==self.niri.welldepthmode)
-    query = query.filter(Header.exptime==self.header.exptime).filter(Niri.coadds==self.niri.coadds)
+    # Must totally match: data_section, read_mode, well_depth_setting, exposure_time, coadds
+    query = query.filter(Niri.data_section==self.descriptors['data_section'])
+    query = query.filter(Niri.read_mode==self.descriptors['read_mode']).filter(Niri.well_depth_setting==self.descriptors['well_depth_setting'])
+    query = query.filter(Header.exposure_time==self.descriptors['exposure_time']).filter(Niri.coadds==self.descriptors['coadds'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -406,21 +437,23 @@ class CalibrationNIRI(Calibration):
 
   def flat(self):
     query = self.session.query(Header).select_from(join(join(Niri, Header), DiskFile))
-    query = query.filter(Header.obstype=='FLAT')
+    query = query.filter(Header.observation_type=='FLAT')
 
     # Search only canonical entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: detsec, readmode, welldepthmode, filtername, camera
-    query = query.filter(Niri.detsec==self.niri.detsec)
-    query = query.filter(Niri.readmode==self.niri.readmode).filter(Niri.welldepthmode==self.niri.welldepthmode)
-    query = query.filter(Niri.filtername==self.niri.filtername).filter(Niri.camera==self.niri.camera)
+    # Must totally match: data_section, read_mode, well_depth_setting, filter_name, camera
+    query = query.filter(Niri.data_section==self.descriptors['data_section'])
+    query = query.filter(Niri.read_mode==self.descriptors['read_mode'])
+    query = query.filter(Niri.well_depth_setting==self.descriptors['well_depth_setting'])
+    query = query.filter(Niri.filter_name==self.descriptors['filter_name'])
+    query = query.filter(Niri.camera==self.descriptors['camera'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -436,13 +469,23 @@ class CalibrationGNIRS(Calibration):
   """
   gnirs = None
 
-  def __init__(self, session, header, descriptors, types):
+  def __init__(self, session, header, descriptors, types, flag):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types)
+    Calibration.__init__(self, session, header, descriptors, types, flag)
 
     # Find the gnirsheader
-    query = session.query(Gnirs).filter(Gnirs.header_id==self.header.id)
+    query = session.query(Gnirs).filter(Gnirs.header_id==self.descriptors['header_id'])
     self.gnirs = query.first()
+
+    # Populate the descriptors dictionary for GNIRS
+    if(self.flag):
+      self.descriptors['read_mode']=self.gnirs.read_mode
+      self.descriptors['well_depth_setting']=self.gnirs.well_depth_setting
+      self.descriptors['coadds']=self.gnirs.coadds
+      self.descriptors['disperser']=self.gnirs.disperser
+      self.descriptors['focal_plane_mask']=self.gnirs.focal_plane_mask
+      self.descriptors['camera']=self.gnirs.camera
+      self.descriptors['filter_name']=self.gnirs.filter_name
 
     # Set the list of required calibrations
     self.required = self.required()
@@ -452,30 +495,33 @@ class CalibrationGNIRS(Calibration):
     list=[]
 
     # Science Imaging OBJECTs require a DARK
-    if((self.header.obstype=='OBJECT') and (self.header.spectroscopy==False)):
+    if((self.descriptors['observation_type']=='OBJECT') and (self.descriptors['spectroscopy']==False)):
       list.append('dark')
-    if((self.header.obstype=='OBJECT') and (self.header.spectroscopy==True)):
+    if((self.descriptors['observation_type']=='OBJECT') and (self.descriptors['spectroscopy']==True)):
       list.append('flat')
       list.append('arc')
+      #list.append('pinhole_mask')
 
     return list
 
   def dark(self):
     query = self.session.query(Header).select_from(join(join(Gnirs, Header), DiskFile))
-    query = query.filter(Header.obstype=='DARK')
+    query = query.filter(Header.observation_type=='DARK')
 
     # Search only canonical entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: readmode, welldepthmode, exptime, coadds
-    query = query.filter(Gnirs.readmode==self.gnirs.readmode).filter(Gnirs.welldepthmode==self.gnirs.welldepthmode)
-    query = query.filter(Header.exptime==self.header.exptime).filter(Gnirs.coadds==self.gnirs.coadds)
+    # Must totally match: read_mode, well_depth_setting, exposure_time, coadds
+    query = query.filter(Gnirs.read_mode==self.descriptors['read_mode'])
+    query = query.filter(Gnirs.well_depth_setting==self.descriptors['well_depth_setting'])
+    query = query.filter(Header.exposure_time==self.descriptors['exposure_time'])
+    query = query.filter(Gnirs.coadds==self.descriptors['coadds'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
     
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -484,25 +530,25 @@ class CalibrationGNIRS(Calibration):
 
   def flat(self):
     query = self.session.query(Header).select_from(join(join(Gnirs, Header), DiskFile))
-    query = query.filter(Header.obstype=='FLAT')
+    query = query.filter(Header.observation_type=='FLAT')
 
     # Search only canonical entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: disperser, cwave, fpmask, camera, filtername, readmode, welldepthmode
-    query = query.filter(Gnirs.disperser==self.gnirs.disperser)
-    query = query.filter(Header.cwave==self.header.cwave)
-    query = query.filter(Gnirs.fpmask==self.gnirs.fpmask)
-    query = query.filter(Gnirs.camera==self.gnirs.camera)
-    query = query.filter(Gnirs.filtername==self.gnirs.filtername)
-    query = query.filter(Gnirs.readmode==self.gnirs.readmode)
-    query = query.filter(Gnirs.welldepthmode==self.gnirs.welldepthmode)
+    # Must totally match: disperser, central_wavelength, focal_plane_mask, camera, filter_name, read_mode, well_depth_setting
+    query = query.filter(Gnirs.disperser==self.descriptors['disperser'])
+    query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
+    query = query.filter(Gnirs.focal_plane_mask==self.descriptors['focal_plane_mask'])
+    query = query.filter(Gnirs.camera==self.descriptors['camera'])
+    query = query.filter(Gnirs.filter_name==self.descriptors['filter_name'])
+    query = query.filter(Gnirs.read_mode==self.descriptors['read_mode'])
+    query = query.filter(Gnirs.well_depth_setting==self.descriptors['well_depth_setting'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -511,23 +557,23 @@ class CalibrationGNIRS(Calibration):
 
   def arc(self, sameprog=False):
     query = self.session.query(Header).select_from(join(join(Gnirs, Header), DiskFile))
-    query = query.filter(Header.obstype=='ARC')
+    query = query.filter(Header.observation_type=='ARC')
 
     # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must Totally Match: disperser, cwave, fpmask, filtername, camera
-    query = query.filter(Gnirs.disperser==self.gnirs.disperser)
-    query = query.filter(Header.cwave==self.header.cwave)
-    query = query.filter(Gnirs.fpmask==self.gnirs.fpmask)
-    query = query.filter(Gnirs.filtername==self.gnirs.filtername)
-    query = query.filter(Gnirs.camera==self.gnirs.camera)
+    # Must Totally Match: disperser, central_wavelength, focal_plane_mask, filter_name, camera
+    query = query.filter(Gnirs.disperser==self.descriptors['disperser'])
+    query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
+    query = query.filter(Gnirs.focal_plane_mask==self.descriptors['focal_plane_mask'])
+    query = query.filter(Gnirs.filter_name==self.descriptors['filter_name'])
+    query = query.filter(Gnirs.camera==self.descriptors['camera'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -536,21 +582,21 @@ class CalibrationGNIRS(Calibration):
 
   def pinhole_mask(self):
     query = self.session.query(Header).select_from(join(join(Gnirs, Header), DiskFile))
-    query = query.filter(Header.obstype=='PINHOLE_MASK')
+    query = query.filter(Header.observation_type=='PINHOLE_MASK')
 
     # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: disperser, cwave, camera, (only for cross dispersed mode?)
-    query = query.filter(Gnirs.disperser==self.gnirs.disperser)
-    query = query.filter(Header.cwave==self.header.cwave)
-    query = query.filter(Gnirs.camera==self.gnirs.camera)
+    # Must totally match: disperser, central_wavelength, camera, (only for cross dispersed mode?)
+    query = query.filter(Gnirs.disperser==self.descriptors['disperser'])
+    query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
+    query = query.filter(Gnirs.camera==self.descriptors['camera'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -565,13 +611,21 @@ class CalibrationNIFS(Calibration):
   """
   nifs = None
 
-  def __init__(self, session, header, descriptors, types):
+  def __init__(self, session, header, descriptors, types, flag):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types)
+    Calibration.__init__(self, session, header, descriptors, types, flag)
 
     # Find the nifsheader
-    query = session.query(Nifs).filter(Nifs.header_id==self.header.id)
+    query = session.query(Nifs).filter(Nifs.header_id==self.descriptors['header_id'])
     self.nifs = query.first()
+
+    # Populate the descriptors dictionary for NIFS
+    if(self.flag):
+      self.descriptors['read_mode']=self.nifs.read_mode
+      self.descriptors['coadds']=self.nifs.coadds
+      self.descriptors['disperser']=self.nifs.disperser
+      self.descriptors['focal_plane_mask']=self.nifs.focal_plane_mask
+      self.descriptors['filter_name']=self.nifs.filter_name
 
     # Set the list of required calibrations
     self.required = self.required()
@@ -581,29 +635,33 @@ class CalibrationNIFS(Calibration):
     list=[]
 
     # Science Imaging OBJECTs require a DARK
-    if((self.header.obstype == 'OBJECT') and (self.header.spectroscopy == False) and (self.header.obsclass=='science')):
+    if((self.descriptors['observation_type'] == 'OBJECT') and (self.descriptors['spectroscopy'] == False) and (self.descriptors['observation_class']=='science')):
       list.append('dark')
+    if((self.descriptors['observation_type']=='OBJECT') and (self.descriptors['spectroscopy']==True)):
+      list.append('flat')
+      list.append('arc')
+      list.append('ronchi_mask')
 
     return list
 
   def dark(self):
     query = self.session.query(Header).select_from(join(join(Nifs, Header), DiskFile))
-    query = query.filter(Header.obstype=='DARK')
+    query = query.filter(Header.observation_type=='DARK')
 
     # Search only canonical entries
     query = query.filter(DiskFile.canonical == True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: readmode, exptime, coadds, disperser
-    query = query.filter(Nifs.readmode==self.nifs.readmode)
-    query = query.filter(Header.exptime==self.header.exptime)
-    query = query.filter(Nifs.coadds==self.nifs.coadds)
-    query = query.filter(Nifs.disperser==self.nifs.disperser)
+    # Must totally match: read_mode, exposure_time, coadds, disperser
+    query = query.filter(Nifs.read_mode==self.descriptors['read_mode'])
+    query = query.filter(Header.exposure_time==self.descriptors['exposure_time'])
+    query = query.filter(Nifs.coadds==self.descriptors['coadds'])
+    query = query.filter(Nifs.disperser==self.descriptors['disperser'])
 
     # Order by absolute time separation.
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -612,23 +670,23 @@ class CalibrationNIFS(Calibration):
 
   def flat(self):
     query = self.session.query(Header).select_from(join(join(Nifs, Header), DiskFile))
-    query = query.filter(Header.obstype=='FLAT')
+    query = query.filter(Header.observation_type=='FLAT')
 
     # Search only canonical entries
     query = query.filter(DiskFile.canonical == True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: disperser, cwave, fpmask, filter, readmode
-    query = query.filter(Nifs.disperser==self.nifs.disperser)
-    query = query.filter(Header.cwave==self.header.cwave)
-    query = query.filter(Nifs.fpmask==self.nifs.fpmask)
-    query = query.filter(Nifs.filter==self.nifs.filter)
-    query = query.filter(Nifs.readmode==self.nifs.readmode)
+    # Must totally match: disperser, central_wavelength, focal_plane_mask, filter, read_mode
+    query = query.filter(Nifs.disperser==self.descriptors['disperser'])
+    query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
+    query = query.filter(Nifs.focal_plane_mask==self.descriptors['focal_plane_mask'])
+    query = query.filter(Nifs.filter_name==self.descriptors['filter_name'])
+    query = query.filter(Nifs.read_mode==self.descriptors['read_mode'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -637,22 +695,22 @@ class CalibrationNIFS(Calibration):
 
   def arc(self, sameprog=False):
     query = self.session.query(Header).select_from(join(join(Nifs, Header), DiskFile))
-    query = query.filter(Header.obstype=='ARC')
+    query = query.filter(Header.observation_type=='ARC')
 
     # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must Totally Match: disperser, cwave, fpmask, filter
-    query = query.filter(Nifs.disperser==self.nifs.disperser)
-    query = query.filter(Header.cwave==self.header.cwave)
-    query = query.filter(Nifs.fpmask==self.nifs.fpmask)
-    query = query.filter(Nifs.filter==self.nifs.filter)
+    # Must Totally Match: disperser, central_wavelength, focal_plane_mask, filter
+    query = query.filter(Nifs.disperser==self.descriptors['disperser'])
+    query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
+    query = query.filter(Nifs.focal_plane_mask==self.descriptors['focal_plane_mask'])
+    query = query.filter(Nifs.filter_name==self.descriptors['filter_name'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -661,20 +719,20 @@ class CalibrationNIFS(Calibration):
 
   def ronchi_mask(self):
     query = self.session.query(Header).select_from(join(join(Nifs, Header), DiskFile))
-    query = query.filter(Header.obstype=='RONCHI_MASK')
+    query = query.filter(Header.observation_type=='RONCHI_MASK')
 
     # Search only the canonical (latest) entries
     query = query.filter(DiskFile.canonical==True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: disperser, cwave
-    query = query.filter(Nifs.disperser==self.nifs.disperser)
-    query = query.filter(Header.cwave==self.header.cwave)
+    # Must totally match: disperser, central_wavelength
+    query = query.filter(Nifs.disperser==self.descriptors['disperser'])
+    query = query.filter(Header.central_wavelength==self.descriptors['central_wavelength'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)
@@ -689,13 +747,18 @@ class CalibrationMICHELLE(Calibration):
   """
   michelle = None
 
-  def __init__(self, session, header, descriptors, types):
+  def __init__(self, session, header, descriptors, types, flag):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types)
+    Calibration.__init__(self, session, header, descriptors, types, flag)
 
     # Find the michelleheader
-    query = session.query(Michelle).filter(Michelle.header_id==self.header.id)
+    query = session.query(Michelle).filter(Michelle.header_id==self.descriptors['header_id'])
     self.michelle = query.first()
+
+    # Populate the descriptors dictionary for MICHELLE
+    if(self.flag):
+      self.descriptors['read_mode']=self.michelle.read_mode
+      self.descriptors['coadds']=self.michelle.coadds
 
     # Set the list of required calibrations
     self.required = self.required()
@@ -705,27 +768,28 @@ class CalibrationMICHELLE(Calibration):
     list=[]
 
     # Science Imaging OBJECTs require a DARK
-    if((self.header.obstype == 'OBJECT') and (self.header.spectroscopy == False) and (self.header.obsclass=='science')):
+    if((self.descriptors['observation_type'] == 'OBJECT') and (self.descriptors['spectroscopy'] == False) and (self.descriptors['observation_class']=='science')):
       list.append('dark')
 
     return list
 
   def dark(self):
     query = self.session.query(Header).select_from(join(join(Michelle, Header), DiskFile))
-    query = query.filter(Header.obstype=='DARK')
+    query = query.filter(Header.observation_type=='DARK')
 
     # Search only canonical entries
     query = query.filter(DiskFile.canonical == True)
 
     # Knock out the FAILs
-    query = query.filter(Header.qastate!='Fail')
+    query = query.filter(Header.qa_state!='Fail')
 
-    # Must totally match: readmode, exptime, coadds
-    query = query.filter(Michelle.readmode == self.michelle.readmode)
-    query = query.filter(Header.exptime == self.header.exptime).filter(Michelle.coadds == self.michelle.coadds)
+    # Must totally match: read_mode, exposure_time, coadds
+    query = query.filter(Michelle.read_mode == self.descriptors['read_mode'])
+    query = query.filter(Header.exposure_time == self.descriptors['exposure_time'])
+    query = query.filter(Michelle.coadds == self.descriptors['coadds'])
 
     # Order by absolute time separation
-    query = query.order_by(func.abs(extract('epoch', Header.utdatetime - self.header.utdatetime)).asc())
+    query = query.order_by(func.abs(extract('epoch', Header.ut_datetime - self.descriptors['ut_datetime'])).asc())
 
     # For now, we only want one result - the closest in time
     query = query.limit(1)

@@ -36,7 +36,7 @@ if dupdata != []:
       if previous_ans == '':
         pass
       if previous_ans != this_ans:
-        print "duplicate datalabel rows: DiskFile id = %s,  Filename = %s,  Datalabel = %s" %  (header.diskfile.id, header.diskfile.file.filename, header.datalab) 
+        print "duplicate datalabel rows: DiskFile id = %s,  Filename = %s,  Datalabel = %s" %  (header.diskfile.id, header.diskfile.file.filename, header.data_label) 
       previous_ans = this_ans
 else:
   print "No duplicate datalabel rows detected."
