@@ -1136,7 +1136,7 @@ class CLManager(object):
                 
         return (self.imageOuts, self.refOuts, self.arrayOuts)
 
-class ScienceManager():
+class ScienceFunctionManager():
     """
     A manager class to take hold functions for performing input checks, naming,
     log instantiation... code that is repeated throughout all the 'user level
@@ -1251,11 +1251,79 @@ class ScienceManager():
                 
             # return the now checked and loaded up (if needed) adInputs and 
             # outNames
-            return self.adInputs, self.outNames
+            return self.adInputs, self.outNames, self.log
             
         except ToolboxError:
             raise ToolboxError()
+    
+    def autoVardq(self, fl_vardq):
+        """
+        This is a function to perform either the 'AUTO' fl_vardq determination
+        or just to check convert the value from True->iraf.yes, False->iraf.no .
         
+        NOTE: 'AUTO' uses the first input to determine if VAR and  
+        DQ frames exist, so, if the first does, then the rest MUST 
+        also have them as well.
+        
+        :param fl_vardq: The value of the fl_vardq parameter at the start of the
+                         Python user level function.
+        :type fl_vardq: either: Python bool (True/False) or the string 'AUTO'
+        """
+        from astrodata.adutils.gemutil import pyrafLoader
+        # loading and/or bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()
+        
+        if fl_vardq=='AUTO':
+            # if there are matching numbers of VAR, DQ and SCI extensions
+            # then set to yes to ensure the outputs have VAR and DQ's as well.
+            if self.adInputs[0].countExts('VAR')==\
+                        self.adInputs[0].countExts('DQ')\
+                                            ==self.adInputs[0].countExts('SCI'):
+                fl_vardq=yes
+            else:
+                fl_vardq=no
+        else:
+            # 'AUTO' wasn't selected, so just convert the python bools to iraf
+            # yes or no.
+            if fl_vardq:
+                fl_vardq=yes
+            elif fl_vardq==False:
+                fl_vardq=no
+    
+    def wrapUp(self, adOuts=None, historyMarkKey=None):
+        """
+        The function to use at the end of a python user level function to 
+        add a historyMark timestamp to all the outputs indicating when and what
+        function was just performed on them, then logging the new historyMarkKey
+        PHU key and updated 'GEM-TLM' key values due to historyMark.
+        
+        Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
+        automatically everytime wrapUp is called.
+        
+        :param adOut: List of astrodata instance(s) to perform historyMark on.
+        :type adOut: Either a single or multiple astrodata instances in a list.
+        
+        :param historyMarkKey: The PHU header key to write the current UT time 
+        :type historyMarkKey: Under 8 character, all caps, string.
+                              If None, then only 'GEM-TLM' is added/updated.
+        """
+        for ad in adouts:
+            # Adding 'GEM-TLM' (automatic) and historyMarkKey (if not None)
+            # time stamps to the PHU
+            ad.historyMark(key=historyMarkKey, stomp=False)
+            
+            # Updating log with new GEM-TLM and GIFLAT time stamps
+            self.log.fullinfo('*'*50, category='header')
+            self.log.fullinfo('File = '+ad.filename, category='header')
+            self.log.fullinfo('~'*50, category='header')
+            self.log.fullinfo('PHU keywords updated/added:\n', 'header')
+            self.log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                              category='header')
+            if historyMarkKey!=None:
+                self.log.fullinfo(historyMarkKey+
+                                  ad.phuGetKeyValue(historyMarkKey), 
+                                  category='header')
+            self.log.fullinfo('-'*50, category='header')
         
         
 class IrafStdout():
