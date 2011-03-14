@@ -1,6 +1,7 @@
 from astrodata import Lookups
 from astrodata import Descriptors
 from astrodata import Errors
+import math
 import re
 
 from astrodata.Calculator import Calculator
@@ -15,7 +16,8 @@ from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
-    # Updating the global key dict with the local dict of this descriptor class
+    # Updating the global key dictionary with the local key dictionary
+    # associated with this descriptor class
     globalStdkeyDict.update(stdkeyDictGMOS)
     
     gmosampsGain = None
@@ -31,7 +33,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         #     Lookups.getLookupTable('Gemini/GMOS/GMOSAmpTables',
         #                            'gmosampsGainBefore20060831')
         
-        # slightly more efficiently, we can get both at once since they are in
+        # Slightly more efficient: we can get both at once since they are in
         # the same lookup space
         self.gmosampsGain, self.gmosampsGainBefore20060831 = \
             Lookups.getLookupTable('Gemini/GMOS/GMOSAmpTables',
@@ -46,19 +48,29 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_amp_read_area = {}
             for ext in dataset:
+                # Get the name of the detector amplifier (ampname) and the
+                # readout area of the CCD (detesec) from the header of each
+                # pixel data extension
                 ampname = ext.header[stdkeyDictGMOS['key_ampname']]
                 detsec = ext.header[globalStdkeyDict['key_detector_section']]
+                # Create the composite amp_read_area string
                 amp_read_area = "'%s':%s" % (ampname, detsec)
+                # Return a dictionary with the composite amp_read_area string
+                # as the value
                 ret_amp_read_area.update({(ext.extname(), \
                     ext.extver()):str(amp_read_area)})
         else:
             # Check to see whether the dataset has a single extension and if
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
+                # Get the name of the detector amplifier (ampname) and the
+                # readout area of the CCD (detesec) from the header of the
+                # single pixel data extension
                 ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
                 detsec = \
                     hdu[1].header[globalStdkeyDict['key_detector_section']]
+                # Return the composite amp_read_area string
                 ret_amp_read_area = "'%s':%s" % (ampname, detsec)
             else:
                 raise Errors.DescriptorDictError()
@@ -96,8 +108,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_central_wavelength = {}
             hdu = dataset.hdulist
+            # Get the central wavelength value from the header of the PHU
             raw_central_wavelength = \
                 hdu[0].header[stdkeyDictGMOS['key_central_wavelength']]
+            # Use the utilities function convert_units to convert the central
+            # wavelength value from the input units to the output units
             ret_central_wavelength = \
                 self.convert_units(input_units = input_units, \
                 input_value = raw_central_wavelength, \
@@ -109,29 +124,35 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_data_section = {}
             for ext in dataset:
+                # Get the data section from the header of each pixel data
+                # extension
                 raw_data_section = \
                     ext.header[globalStdkeyDict['key_data_section']]
                 if pretty:
-                    # Return a string that uses 1-based indexing
+                    # Return a dictionary with the data section string that
+                    # uses 1-based indexing as the value
                     ret_data_section.update({(ext.extname(), \
-                    ext.extver()):str(raw_data_section)})
+                        ext.extver()):str(raw_data_section)})
                 else:
-                    # Return a tuple that uses 0-based indexing
+                    # Return a dictionary with the data section tuple that
+                    # uses 0-based indexing as the value
                     data_section = self.section_to_tuple(raw_data_section)
                     ret_data_section.update({(ext.extname(), \
                         ext.extver()):data_section})
         else:
             # Check to see whether the dataset has a single extension and if
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
+                # Get the data section from the header of the single pixel
+                # data extension
                 raw_data_section = \
                     hdu[1].header[globalStdkeyDict['key_data_section']]
                 if pretty:
-                    # Return a string that uses 1-based indexing
+                    # Return the data section string that uses 1-based indexing
                     ret_data_section = raw_data_section
                 else:
-                    # Return a tuple that uses 0-based indexing
+                    # Return the data section tuple that uses 0-based indexing
                     data_section = self.section_to_tuple(raw_data_section)
                     ret_data_section = data_section
             else:
@@ -143,30 +164,38 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_detector_section = {}
             for ext in dataset:
+                # Get the detector section from the header of each pixel data
+                # extension
                 raw_detector_section = \
                     ext.header[globalStdkeyDict['key_detector_section']]
                 if pretty:
-                    # Return a string that uses 1-based indexing
+                    # Return a dictionary with the detector section string
+                    # that uses 1-based indexing as the value
                     ret_detector_section.update({(ext.extname(), \
-                    ext.extver()):str(raw_detector_section)})
+                        ext.extver()):str(raw_detector_section)})
                 else:
-                    # Return a tuple that uses 0-based indexing
+                    # Return a dictionary with the detector section tuple that
+                    # uses 0-based indexing as the value
                     detector_section = \
                         self.section_to_tuple(raw_detector_section)
                     ret_detector_section.update({(ext.extname(), \
                         ext.extver()):detector_section})
         else:
             # Check to see whether the dataset has a single extension and if
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
+                # Get the detector section from the header of the single pixel
+                # data extension
                 raw_detector_section = \
                     hdu[1].header[globalStdkeyDict['key_detector_section']]
                 if pretty:
-                    # Return a string that uses 1-based indexing
+                    # Return the detector section string that uses 1-based
+                    # indexing
                     ret_detector_section = raw_detector_section
                 else:
-                    # Return a tuple that uses 0-based indexing
+                    # Return the detector section tuple that uses 0-based
+                    # indexing
                     detector_section = \
                         self.section_to_tuple(raw_detector_section)
                     ret_detector_section = detector_section
@@ -179,17 +208,24 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_detector_x_bin = {}
             for ext in dataset:
+                # Get the ccdsum value from the header of each pixel data
+                # extension
                 ccdsum = ext.header[stdkeyDictGMOS['key_ccdsum']]
                 detector_x_bin, detector_y_bin = ccdsum.split()
+                # Return a dictionary with the binning of the x-axis integer
+                # as the value
                 ret_detector_x_bin.update({(ext.extname(), \
                     ext.extver()):int(detector_x_bin)})
         else:
             # Check to see whether the dataset has a single extension and if
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
+                # Get the ccdsum value from the header of the single pixel data
+                # extension
                 ccdsum = hdu[1].header[stdkeyDictGMOS['key_ccdsum']]
                 detector_x_bin, detector_y_bin = ccdsum.split()
+                # Return the binning of the x-axis integer
                 ret_detector_x_bin = int(detector_x_bin)
             else:
                 raise Errors.DescriptorDictError
@@ -200,17 +236,24 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_detector_y_bin = {}
             for ext in dataset:
+                # Get the ccdsum value from the header of each pixel data
+                # extension
                 ccdsum = ext.header[stdkeyDictGMOS['key_ccdsum']]
                 detector_x_bin, detector_y_bin = ccdsum.split()
+                # Return a dictionary with the binning of the y-axis integer
+                # as the value
                 ret_detector_y_bin.update({(ext.extname(), \
                     ext.extver()):int(detector_y_bin)})
         else:
             # Check to see whether the dataset has a single extension and if
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
+                # Get the ccdsum value from the header of the single pixel data
+                # extension
                 ccdsum = hdu[1].header[stdkeyDictGMOS['key_ccdsum']]
                 detector_x_bin, detector_y_bin = ccdsum.split()
+                # Return the binning of the y-axis integer
                 ret_detector_y_bin = int(detector_y_bin)
             else:
                 raise Errors.DescriptorDictError
@@ -219,6 +262,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         hdu = dataset.hdulist
+        # Get the disperser value from the header of the PHU
         disperser = hdu[0].header[stdkeyDictGMOS['key_disperser']]
         
         if pretty:
@@ -228,11 +272,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if stripID:
             if pretty:
+                # Return the stripped and pretty disperser string
                 ret_disperser = \
                     str(GemCalcUtil.removeComponentID(disperser).strip('+'))
             else:
+                # Return the stripped disperser string
                 ret_disperser = str(GemCalcUtil.removeComponentID(disperser))
         else:
+            # Return the disperser string
             ret_disperser = str(disperser)
         
         return ret_disperser
@@ -264,45 +311,60 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_dispersion = {}
             for ext in dataset:
+                # Get the dispersion value from the header of each pixel data
+                # extension
                 raw_dispersion = \
                     ext.header[stdkeyDictGMOS['key_dispersion']]
+                # Use the utilities function convert_units to convert the
+                # dispersion wavelength value from the input units to the
+                # output units                
                 dispersion = \
                     self.convert_units(input_units = input_units, \
                     input_value = raw_dispersion, \
                     output_units = output_units)
+                # Return a dictionary with the dispersion float as the value
                 ret_dispersion.update({(ext.extname(), \
                     ext.extver()):float(dispersion)})
         else:
             # Check to see whether the dataset has a single extension and if
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
+                # Get the dispersion value from the header of the single pixel
+                # data extension
                 raw_dispersion = \
                     hdu[1].header[stdkeyDictGMOS['key_dispersion']]
+                # Use the utilities function convert_units to convert the
+                # dispersion wavelength value from the input units to the
+                # output units                
                 dispersion = \
                     self.convert_units(input_units = input_units, \
                     input_value = raw_dispersion, \
                     output_units = output_units)
+                # Return the dispersion float
                 ret_dispersion = float(dispersion)
             else:
                 raise Errors.DescriptorDictError()
-
+        
         return ret_dispersion
     
     def exposure_time(self, dataset, **args):
         hdu = dataset.hdulist
+        # Get the exposure time from the header of the PHU
         exposure_time = hdu[0].header[globalStdkeyDict['key_exposure_time']]
         
         # Sanity check for times when the GMOS DC is stoned
         if exposure_time > 10000. or exposure_time < 0.:
             raise Errors.CalcError()
         else:
+            # Return the exposure time float
             ret_exposure_time = float(exposure_time)
         
         return ret_exposure_time
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         hdu = dataset.hdulist
+        # Get the two filter name values from the header of the PHU
         filter1 = hdu[0].header[stdkeyDictGMOS['key_filter1']]
         filter2 = hdu[0].header[stdkeyDictGMOS['key_filter2']]
         
@@ -310,6 +372,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             stripID = True
         
         if stripID:
+            # Strip the component ID from the two filter name values
             filter1 = GemCalcUtil.removeComponentID(filter1)
             filter2 = GemCalcUtil.removeComponentID(filter2)
         
@@ -322,75 +385,90 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if len(filters) == 0:
             ret_filter_name = 'open'
         else:
+            # Return a unique, sorted filter name identifier string with an
+            # ampersand separating each filter name
             ret_filter_name = str('&'.join(filters.sort))
         
         return ret_filter_name
     
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         hdu = dataset.hdulist
+        # Get the focal plane mask value from the header of the PHU
         focal_plane_mask = \
             hdu[0].header[stdkeyDictGMOS['key_focal_plane_mask']]
         
         if focal_plane_mask == 'None':
             ret_focal_plane_mask = 'Imaging'
         else:
+            # Return the focal plane mask string
             ret_focal_plane_mask = str(focal_plane_mask)
         
         return ret_focal_plane_mask
-
+    
     def gain(self, dataset, asDict=True, **args):
         hdu = dataset.hdulist
+        # Get the amplifier integration time (ampinteg) and the UT date from
+        # the header of the PHU
         ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
         ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
-
+        
         if asDict:
             ret_gain = {}
             for ext in dataset:
-                # Descriptors must work for all AstroData Types so
-                # check if the original gain keyword exists to use for
-                # the look-up table
+                # Check if the original gain keyword exists in the header of
+                # the pixel data extension
                 if ext.header.has_key(stdkeyDictGMOS['key_gainorig']):
                     headergain = ext.header[stdkeyDictGMOS['key_gainorig']]
                 else:
                     headergain = ext.header[globalStdkeyDict['key_gain']]
                 
+                # Get the amplifier name from the header of each pixel data
+                # extension
                 ampname = ext.header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_setting()
-                rmode = dataset.read_speed_setting()
+                # Get the gain setting and read speed setting values from the
+                # appropriate descriptors
+                gain_setting = dataset.gain_setting()
+                read_speed_setting = dataset.read_speed_setting()
                 
-                gainkey = (rmode, gmode, ampname)
+                gainkey = (read_speed_setting, gain_setting, ampname)
                 
                 if obs_ut_date > old_ut_date:
                     gain = self.gmosampsGain[gainkey]
                 else:
                     gain = self.gmosampsGainBefore20060831[gainkey]
                 
-                ret_gain.update({(ext.extname(), ext.extver()):gain})
+                # Return a dictionary with the gain float as the value
+                ret_gain.update({(ext.extname(), ext.extver()):float(gain)})
         else:
             # Check to see whether the dataset has a single extension and if
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
-                # Descriptors must work for all AstroData Types so
-                # check if the original gain keyword exists to use for
-                # the look-up table
+                # Check if the original gain keyword exists in the header of
+                # the pixel data extension
                 if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
                     headergain = hdu[1].header[stdkeyDictGMOS['key_gainorig']]
                 else:
                     headergain = hdu[1].header[globalStdkeyDict['key_gain']]
                 
+                # Get the amplifier name from the header of the single pixel
+                # data extension
                 ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_setting()
-                rmode = dataset.read_speed_setting()
+                # Get the gain setting and read speed setting values from the
+                # appropriate descriptors
+                gain_setting = dataset.gain_setting()
+                read_speed_setting = dataset.read_speed_setting()
                 
-                gainkey = (rmode, gmode, ampname)
+                gainkey = (read_speed_setting, gain_setting, ampname)
                 
                 if obs_ut_date > old_ut_date:
                     gain = self.gmosampsGain[gainkey]
                 else:
                     gain = self.gmosampsGainBefore20060831[gainkey]
+                
+                # Return the gain float
                 ret_gain = float(gain)
             else:
                 raise Errors.DescriptorDictError()
@@ -402,8 +480,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def gain_setting(self, dataset, **args):
         hdu = dataset.hdulist
-        # Descriptors must work for all AstroData Types so check
-        # if the original gain keyword exists to use for the look-up table
+        # Check if the original gain keyword exists in the header of
+        # the pixel data extension
         if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
             headergain = hdu[1].header[stdkeyDictGMOS['key_gainorig']]
         else:
@@ -427,17 +505,24 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if asDict:
                 ret_mdf_row_id = {}
                 for ext in dataset:
+                    # Get the MDF row ID from the header of each pixel data
+                    # extension
                     mdf_row_id = \
                         ext.header[globalStdkeyDict['key_mdf_row_id']]
+                    # Return a dictionary with the MDF row ID integer as the
+                    # value
                     ret_mdf_row_id.update({(ext.extname(), \
                         ext.extver()):int(mdf_row_id)})
             else:
                 # Check to see whether the dataset has a single extension and
-                # if it does, return a single string
+                # if it does, return a single value
                 if dataset.countExts('SCI') <= 1:
                     hdu = dataset.hdulist
+                    # Get the MDF row ID from the header of each pixel data
+                    # extension                    
                     mdf_row_id = \
                         hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
+                    # Return the MDF row ID integer
                     ret_mdf_row_id = int(mdf_row_id)
                 else:
                     raise Errors.DescriptorDictError()
@@ -447,7 +532,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_mdf_row_id
     
     def non_linear_level(self, dataset, **args):
-        # Set the non_linear_level to the saturation_level for GMOS
+        # Set the non linear level equal to the saturation level for GMOS
         ret_non_linear_level = dataset.saturation_level()
         
         return ret_non_linear_level
@@ -455,42 +540,54 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def pixel_scale(self, dataset, **args):
         # Should pixel_scale use asDict?
         hdu = dataset.hdulist
+        # Get the instrument value from the header of the PHU
         instrument = hdu[0].header[globalStdkeyDict['key_instrument']]
+        # Get the binning of the y-axis value from the appropriate descriptor
         detector_y_bin = dataset.detector_y_bin()
         
+        # Set the default pixel scales for GMOS-N and GMOS-S
         if instrument == 'GMOS-N':
             scale = 0.0727
         if instrument == 'GMOS-S':
             scale = 0.073
-
+        
         ret_pixel_scale = {}
+        # The binning of the y-axis is used to calculate the pixel scale
         for key, y_bin in detector_y_bin.iteritems():
+            # Return a dictionary with the pixel scale float as the value
             ret_pixel_scale.update({key:float(y_bin * scale)})
         
         return ret_pixel_scale
     
     def read_noise(self, dataset, asDict=True, **args):
         hdu = dataset.hdulist
+        # Get the amplifier integration time (ampinteg) and the UT date from
+        # the header of the PHU
         ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
         ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
+        
         if asDict:
             ret_read_noise = {}
             for ext in dataset:
-                # Descriptors must work for all AstroData Types so
-                # check if the original gain keyword exists to use for
-                # the look-up table
+                # Check if the original gain keyword exists in the header of
+                # the pixel data extension
                 if ext.header.has_key(stdkeyDictGMOS['key_gainorig']):
                     headergain = ext.header[stdkeyDictGMOS['key_gainorig']]
                 else:
                     headergain = ext.header[globalStdkeyDict['key_gain']]
                 
+                # Get the amplifier name from the header of each pixel data
+                # extension
                 ampname = ext.header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_setting()
-                rmode = dataset.read_speed_setting()
                 
-                read_noise_key = (rmode, gmode, ampname)
+                # Get the gain setting and read speed setting values from the
+                # appropriate descriptors
+                gain_setting = dataset.gain_setting()
+                read_speed_setting = dataset.read_speed_setting()
+                
+                read_noise_key = (read_speed_setting, gain_setting, ampname)
                 
                 if obs_ut_date > old_ut_date:
                     read_noise = self.gmosampsRdnoise[read_noise_key]
@@ -498,16 +595,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     read_noise = \
                         self.gmosampsRdnoiseBefore20060831[read_noise_key]
                 
+                # Return a dictionary with the read noise float as the value
                 ret_read_noise.update({(ext.extname(), \
                     ext.extver()):float(read_noise)})
         else:
             # Check to see whether the dataset has a single extension and if 
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
-                # Descriptors must work for all AstroData Types so
-                # check if the original gain keyword exists to use for
-                # the look-up table
+                # Check if the original gain keyword exists in the header of
+                # the pixel data extension
                 if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
                     headergain = \
                         hdu[1].header[stdkeyDictGMOS['key_gainorig']]
@@ -515,18 +612,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     headergain = \
                         hdu[1].header[globalStdkeyDict['key_gain']]
                 
+                # Get the amplifier name from the header of the single pixel
+                # data extension
                 ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
-                gmode = dataset.gain_setting()
-                rmode = dataset.read_speed_setting()
+                # Get the gain setting and read speed setting values from the
+                # appropriate descriptors
+                gain_setting = dataset.gain_setting()
+                read_speed_setting = dataset.read_speed_setting()
                 
-                read_noise_key = (rmode, gmode, ampname)
+                read_noise_key = (read_speed_setting, gain_setting, ampname)
                 
                 if obs_ut_date > old_ut_date:
                     read_noise = self.gmosampsRdnoise[read_noise_key]
                 else:
                     read_noise = \
                         self.gmosampsRdnoiseBefore20060831[read_noise_key]
-
+                
+                # Return the read noise float
                 ret_read_noise = float(read_noise)
             else:
                 raise Errors.DescriptorDictError()
@@ -538,6 +640,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def read_speed_setting(self, dataset, **args):
         hdu = dataset.hdulist
+        # Get the amplifier integration time (ampinteg) from the header of the
+        # PHU
         ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
         
         if ampinteg == 1000:
@@ -548,6 +652,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_read_speed_setting
     
     def saturation_level(self, dataset, **args):
+        # Return the saturation level integer
         ret_saturation_level = int(65536)
         
         return ret_saturation_level
@@ -556,19 +661,26 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_wavelength_reference_pixel = {}
             for ext in dataset:
+                # Get the reference pixel of the central wavelength from the
+                # header of each pixel data extension
                 wavelength_reference_pixel = \
                     ext.header\
                     [stdkeyDictGMOS['key_wavelength_reference_pixel']]
+                # Return a dictionary with the reference pixel of the central
+                # wavelength float as the value
                 ret_wavelength_reference_pixel.update({(ext.extname(), \
                     ext.extver()):float(wavelength_reference_pixel)})
         else:
             # Check to see whether the dataset has a single extension and if 
-            # it does, return a single string
+            # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 hdu = dataset.hdulist
+                # Get the reference pixel of the central wavelength from the
+                # header of each pixel data extension
                 wavelength_reference_pixel = \
                     hdu[1].header\
                     [stdkeyDictGMOS['key_wavelength_reference_pixel']]
+                # Return the reference pixel of the central wavelength float
                 ret_wavelength_reference_pixel = \
                     float(wavelength_reference_pixel)
             else:
@@ -597,10 +709,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         """
         # Determine the factor required to convert the input_value from the 
         # input_units to the output_units
-        power = int(self.unitDict[input_units]) - \
-            int(self.unitDict[output_units])
-        factor = float('1e' + str(power))
-
+        power = self.unitDict[input_units] - self.unitDict[output_units]
+        factor = math.pow(10, power)
+        
         # Return the converted output value
         return input_value * factor
     
