@@ -354,7 +354,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         hdu = dataset.hdulist
         ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
         # Get the UT date using the appropriate descriptor
-        ut_date = dataset.ut_date()
+        ut_date = dataset.ut_date(asString=True)
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
         
@@ -554,7 +554,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         hdu = dataset.hdulist
         ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
         # Get the UT date using the appropriate descriptor
-        ut_date = dataset.ut_date()
+        ut_date = dataset.ut_date(asString=True)
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
         
