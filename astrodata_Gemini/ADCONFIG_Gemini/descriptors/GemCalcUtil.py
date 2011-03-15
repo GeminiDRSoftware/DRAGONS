@@ -61,7 +61,7 @@ def degsextodec(string):
     
     return degs
 
-def convert_units(self, input_units, input_value, output_units):
+def convert_units(input_units, input_value, output_units):
     """
     :param input_units: the units of the value specified by input_value.
                         Possible values are 'meters', 'micrometers',
@@ -80,7 +80,7 @@ def convert_units(self, input_units, input_value, output_units):
     """
     # Determine the factor required to convert the input_value from the 
     # input_units to the output_units
-    power = self.unitDict[input_units] - self.unitDict[output_units]
+    power = unitDict[input_units] - unitDict[output_units]
     factor = math.pow(10, power)
     
     # Return the converted output value
@@ -95,7 +95,7 @@ unitDict = {
     'angstroms':-10,
            }
 
-def section_to_tuple(self, section):
+def section_to_tuple(section):
     """
     Convert the input section in the form [x1:x2,y1:y2] to a tuple in the
     form (x1 - 1, x2 - 1, y1 - 1, y2 - 1), where x1, x2, y1 and y2 are
