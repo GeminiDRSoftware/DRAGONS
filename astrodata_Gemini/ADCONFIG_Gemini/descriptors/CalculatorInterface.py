@@ -156,7 +156,7 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :rtype: float
-        :return: the cassegrain rotator position angle (in degrees between 0 
+        :return: the cassegrain rotator position angle (in degrees between -360
                  and 360) of the observation
         """
         try:
@@ -397,7 +397,7 @@ class CalculatorInterface:
                        decker value
         :type pretty: Python boolean
         :rtype: string
-        :return: the decker used for the observation
+        :return: the decker position used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1055,13 +1055,7 @@ class CalculatorInterface:
         Return the nod_count value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
-                       extensions in the image. The key of the dictionary is 
-                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
-                       the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more integer(s)
+        :rtype: integer
         :return: the number of nod and shuffle cycles in the nod and shuffle 
                  observation
         """
@@ -1096,13 +1090,7 @@ class CalculatorInterface:
         Return the nod_pixels value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
-                       extensions in the image. The key of the dictionary is 
-                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
-                       the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more integer(s)
+        :rtype: integer
         :return: the number of pixel rows the charge is shuffled by in the nod 
                  and shuffle observation
         """
@@ -1917,7 +1905,7 @@ class CalculatorInterface:
         Return the ut_date value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :rtype: datatime.date
         :return: the UT date at the start of the observation
         """
         try:
@@ -1949,10 +1937,37 @@ class CalculatorInterface:
     def ut_datetime(self, **args):
         """
         Return the ut_datetime value
+        This descriptor attempts to figure out the datetime even when the
+        headers are malformed or not present. It tries just about every header
+        combination that could allow it to determine an appropriate datetime
+        for the file in question. This makes it somewhat specific to Gemini
+        data, in that the headers it looks at, and the assumptions it makes in
+        trying to parse their values, are those known to occur in Gemini data.
+        Note that some of the early gemini data, and that taken from lower
+        level engineering interfaces, lack standard headers. Also the format
+        and occurence of various headers has changed over time, even on the
+        same instrument. If strict is set to True, the date or time are
+        determined from valid FITS keywords. If it cannot be determined, None
+        is returned. If dateonly or timeonly are set to True, then a
+        datetime.date object or datetime.time object, respectively, is
+        returned, containing only the date or time, respectively. These two
+        interplay with strict in the sense that if strict is set to True and a
+        date can be determined but not a time, then this function will return
+        None unless the dateonly flag is set, in which case it will return the
+        valid date. The dateonly and timeonly flags are intended for use by
+        the ut_date and ut_time descriptors.
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
-        :return: the ut_datetime
+        :param strict: set to True to not try to guess the date or time
+        :type strict: Python boolean
+        :param dateonly: set to True to return a datetime.date
+        :type dateonly: Python boolean
+        :param timeonly: set to True to return a datetime.time
+        :param timeonly: Python boolean
+        :rtype: datetime.datetime (dateonly=False and timeonly=False)
+        :rtype: datetime.time (timeonly=True)
+        :rtype: datetime.date (dateonly=True)
+        :return: the UT date and time at the start of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1985,7 +2000,7 @@ class CalculatorInterface:
         Return the ut_time value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :rtype: datatime.time
         :return: the UT time at the start of the observation
         """
         try:
