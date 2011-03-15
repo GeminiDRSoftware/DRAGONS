@@ -1,6 +1,6 @@
 # These exceptions allow the distinction between the None values given when a
 # descriptor either cannot find the keyword, cannot do a calculation with the
-# keyword etc.
+# keyword etc. 
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -13,23 +13,16 @@ class Error(Exception):
         
     def __repr__(self):
         return self.__class__.__name__+"(%s)" % repr(self.message)
-            
+
+# The following exceptions are listed alphabetically
+
 class CalcError(Error):
     """
     Exception raised for instances when the keyword required for calculation
-    within a descriptor function is found but the value of the keyword has an
-    invalid value (as determined by the validation code within the descriptor
-    function)
+    within a descriptor function is found but the descriptor code is unable to
+    calculate and return a value
     """
-    message = "Keyword value outside allowed range"
-    
-class ExistError(Error):
-    """
-    Exception raised for instances when the keyword doesn't exist and the
-    value hasn't yet been decided
-    """
-
-    message = "Keyword value not yet determined for this instrument"
+    message = "Descriptor unable to calculate value"
 
 class DescriptorDictError(Error):
     """
@@ -37,6 +30,50 @@ class DescriptorDictError(Error):
     used, but isn't
     """
     message = "Please use asDict=True to obtain a dictionary"
+
+class DescriptorTypeError(Error):
+    """
+    Exception raised for instances when a descriptor function cannot return a
+    value for a given AstroData Type i.e., dispersion_axis for IMAGE data
+    """
+    message = "Unable to return a value for data of this AstroData Type"
+
+class EmptyKeyError(Error):
+    """
+    Exception raised for errors when a PHU keyword was found to but was empty
+    or ' '.
+    """    
+    message = "Keyword value found but empty, so returning None"
+    
+class ExistError(Error):
+    """
+    Exception raised for instances when a descriptor doesn't exist for a
+    particular instrument
+    """
+    message = "No descriptor function exists for this instrument"
+
+class InvalidValueError(Error):
+    """
+    Exception raised for instances when the keyword required for calculation
+    within a descriptor function is found but the value of the keyword has an
+    invalid value (as determined by the validation code within the descriptor
+    function)
+    """
+    message = "Keyword value outside allowed range"
+
+class TableKeyError(Error):
+    """
+    Exception raised for instances when a key cannot be matched in a lookup
+    table
+    """
+    message = "Key not matched in lookup table"
+
+class TableValueError(Error):
+    """
+    Exception raised for instances when a value cannot be found in a lookup
+    table
+    """
+    message = "Value not found in lookup table"
 
 class PrimitiveError(Error):
     """
@@ -64,9 +101,3 @@ class UndefinedKeyError(Error):
     """
     message = "Keyword value undefined, so returning None"
 
-class EmptyKeyError(Error):
-    """
-    Exception raised for errors when a PHU keyword was found to but was empty
-    or ' '.
-    """    
-    message = "Keyword value found but empty, so returning None"
