@@ -51,12 +51,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         :type scale: real
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                        This value can be set for each primitive individually 
-                        in a recipe only (ie. not in the parameter file). 
-                        If no value is specified during the recipe, the value 
-                        set during the call to reduce or its default (2) will 
-                        be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try: 
@@ -65,7 +62,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Using the same fringe file for all the input images
             #fringe = $$$$$$$$$$$$$$$$$$$$$$$$$$$ ??? where to get it  ?????
             #$$$$$$$ TEMP $$$$$$$$$$$$
-            fringe = rc.getInputs(style='AD')[0]
+            adOne = rc.getInputs(style='AD')[0]
+            from copy import deepcopy
+            fringe = deepcopy(adOne) 
+            fringe.filename = adOne.filename
+            fringe.phuSetKeyValue('ORIGNAME',adOne.filename)
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             log.debug('Calling gmosScience.fringe_correct function')
@@ -107,12 +108,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         :type method: string, options: 'average', 'median
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                        This value can be set for each primitive individually 
-                        in a recipe only (ie. not in the parameter file). 
-                        If no value is specified during the recipe, the value 
-                        set during the call to reduce or its default (2) will 
-                        be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])        
         try:

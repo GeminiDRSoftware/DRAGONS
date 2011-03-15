@@ -47,12 +47,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         :type suffix: string
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
@@ -123,12 +120,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         :type fl_vardq: Python boolean (True/False)
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
 #        # Loading and bringing the pyraf related modules into the name-space
 #        pyraf, gemini, yes, no = pyrafLoader()
@@ -144,9 +138,17 @@ class GMOSPrimitives(GEMINIPrimitives):
             # all the same. Then gireduce can be called in a loop with 
             # one flat and one bias, this will work well with the CLManager
             # as that was how i wrote this prim originally.
-            ad = rc.getInputs(style='AD')[0]
-            processedBias = rc.getCal(ad,'bias') 
-            log.status('Using bias '+processedBias+' to correct the inputs')
+            adOne = rc.getInputs(style='AD')[0]
+            processedBias = AstroData(rc.getCal(adOne,'bias'))
+            ####################BULL CRAP FOR TESTING ########################## 
+            #from copy import deepcopy
+            #processedBias = deepcopy(adOne)
+            #processedBias.filename = 'TEMPNAMEforBIAS.fits'
+            #processedBias.phuSetKeyValue('ORIGNAME','TEMPNAMEforBIAS.fits')
+            #processedBias.historyMark(key='GBIAS', 
+            #                  comment='fake key to trick CL that GBIAS was ran')
+            ####################################################################
+            log.status('Using bias '+processedBias.filename+' to correct the inputs')
             log.debug('Calling geminiScience.biasCorrect function')
             
             adOutputs = geminiScience.bias_correct(adInputs=rc.getInputs(style='AD'), 
@@ -167,17 +169,15 @@ class GMOSPrimitives(GEMINIPrimitives):
         yield rc
 
     def display(self, rc):
-        """ This is a primitive for displaying GMOS data.
-            It utilizes the IRAF routine gdisplay and requires DS9 to be running
-            before this primitive is called.
-            
-            :param logLevel: Verbosity setting for log messages to the screen.
-            :type logLevel: int. 
-                              This value can be set for each primitive individually 
-                              in a recipe only (ie. not in the parameter file). 
-                              If no value is specified during the recipe, the value 
-                              set during the call to reduce or its default (2) will 
-                              be used.
+        """ 
+        This is a primitive for displaying GMOS data.
+        It utilizes the IRAF routine gdisplay and requires DS9 to be running
+        before this primitive is called.
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
@@ -258,12 +258,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         than my oversimplified checking the bining alone.
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
@@ -303,12 +300,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         the binning alone.
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
@@ -355,12 +349,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                                'poly5', 'spine3', 'sinc'.
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         
@@ -413,12 +404,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         :type fl_vardq: Python boolean (True/False)
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         
@@ -467,12 +455,9 @@ class GMOSPrimitives(GEMINIPrimitives):
     
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         # Loading and bringing the pyraf related modules into the name-space
@@ -511,12 +496,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         :type suffix: string
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:
@@ -536,7 +518,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* trimming the overscan region from the input data')
         except:
             log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            raise #PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         
         yield rc
          
@@ -547,12 +529,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         specific.
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:                                          
@@ -574,12 +553,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         specific data checks for all input files.
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                          This value can be set for each primitive individually 
-                          in a recipe only (ie. not in the parameter file). 
-                          If no value is specified during the recipe, the value 
-                          set during the call to reduce or its default (2) will 
-                          be used.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:

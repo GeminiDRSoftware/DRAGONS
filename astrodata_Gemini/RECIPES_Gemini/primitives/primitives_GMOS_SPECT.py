@@ -25,19 +25,16 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         return rc
 
     def standardizeInstrumentHeaders(self,rc):
-        '''
+        """
         This primitive is called by standardizeHeaders to makes the changes and 
         additions to the headers of the input files that are GMOS_SPEC 
         specific.
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                        This value can be set for each primitive individually 
-                        in a recipe only (ie. not in the parameter file). 
-                        If no value is specified during the recipe, the value 
-                        set during the call to reduce or its default (2) will 
-                        be used.
-        '''
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try: 
             for ad in rc.getInputs(style="AD"): 
@@ -53,7 +50,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         yield rc
 
     def attachMDF(self,rc):
-        '''
+        """
         This primitive is used to add an MDF if there is a MASKNAME in the   
         images PHU only. It is called by the primitive standardizeStructure
         during the prepare recipe if the parameter addMDF=True.
@@ -66,13 +63,10 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         :type suffix: string
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                        This value can be set for each primitive individually 
-                        in a recipe only (ie. not in the parameter file). 
-                        If no value is specified during the recipe, the value 
-                        set during the call to reduce or its default (2) will 
-                        be used.
-        '''
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:           
             for ad in rc.getInputs(style ='AD'):
@@ -107,18 +101,15 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         yield rc
 
     def validateInstrumentData(self,rc):
-        '''
+        """
         This primitive is called by validateData to validate the GMOS_SPEC 
         specific data checks for all input files.
         
         :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: int. 
-                        This value can be set for each primitive individually 
-                        in a recipe only (ie. not in the parameter file). 
-                        If no value is specified during the recipe, the value 
-                        set during the call to reduce or its default (2) will 
-                        be used.
-        '''
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
         log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
         try:        
             for ad in rc.getInputs(style="AD"):
