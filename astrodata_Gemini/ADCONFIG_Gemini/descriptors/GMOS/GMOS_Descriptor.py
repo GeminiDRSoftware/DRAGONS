@@ -500,7 +500,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Get the number of nod and shuffle cycles from the header of the
             # PHU
             hdu = dataset.hdulist
-            ret_nod_count = hdu[0].header[globalStdkeyDict['nod_count']]
+            ret_nod_count = hdu[0].header[globalStdkeyDict['key_nod_count']]
         else:
             raise Errors.DescriptorTypeError()
         
@@ -513,7 +513,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Get the number of pixel rows the charge is shuffled by from the
             # header of the PHU
             hdu = dataset.hdulist
-            ret_nod_pixels = hdu[0].header[globalStdkeyDict['nod_pixels']]
+            ret_nod_pixels = hdu[0].header[globalStdkeyDict['key_nod_pixels']]
         else:
             raise Errors.DescriptorTypeError()
 
