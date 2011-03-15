@@ -203,10 +203,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if pretty:
                 # Return the stripped and pretty disperser string
                 ret_disperser = \
-                    str(GemCalcUtil.removeComponentID(disperser).strip('+'))
+                    GemCalcUtil.removeComponentID(disperser).strip('+')
             else:
                 # Return the stripped disperser string
-                ret_disperser = str(GemCalcUtil.removeComponentID(disperser))
+                ret_disperser = GemCalcUtil.removeComponentID(disperser)
         else:
             # Return the disperser string
             ret_disperser = str(disperser)
@@ -488,6 +488,32 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             raise Errors.DescriptorTypeError()
         
         return ret_mdf_row_id
+
+    def nod_count(self, dataset, **args):
+        # The number of nod and shuffle cycles can only be obtained from nod
+        # and shuffle data
+        if 'NODANDSHUFFLE' in dataset.types:
+            # Get the number of nod and shuffle cycles from the header of the
+            # PHU
+            hdu = dataset.hdulist
+            ret_nod_count = hdu[0].header[globalStdkeyDict['nod_count']]
+        else:
+            raise Errors.DescriptorTypeError()
+        
+        return ret_nod_count
+    
+    def nod_pixels(self, dataset, **args):
+        # The number of pixel rows the charge is shuffled by can only be
+        # obtained from nod and shuffle data
+        if 'NODANDSHUFFLE' in dataset.types:
+            # Get the number of pixel rows the charge is shuffled by from the
+            # header of the PHU
+            hdu = dataset.hdulist
+            ret_nod_pixels = hdu[0].header[globalStdkeyDict['nod_pixels']]
+        else:
+            raise Errors.DescriptorTypeError()
+
+        return ret_nod_pixels
     
     def non_linear_level(self, dataset, **args):
         # Set the non linear level equal to the saturation level for GMOS
