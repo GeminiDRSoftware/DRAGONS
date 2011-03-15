@@ -140,8 +140,8 @@ descriptorDescDict = {
     '        :param timeonly: set to True to return a datetime.time\n' +
     '        :param timeonly: Python boolean\n' +
     '        :rtype: datetime.datetime (dateonly=False and timeonly=False)\n' +
-    '        :rtype: datetime.time (timeonly = True)\n' +
-    '        :rtype: datetime.date (dateonly = True)\n' +
+    '        :rtype: datetime.time (timeonly=True)\n' +
+    '        :rtype: datetime.date (dateonly=True)\n' +
     '        :return: the UT date and time at the start of the observation',
                       }
 
