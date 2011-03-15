@@ -28,7 +28,7 @@
                       'userOverride':False 
                     }
                     },
-    'ADUtoElectrons':{'suffix':
+    'aduToElectrons':{'suffix':
                       {
                     'default': '_aduToElect' , #value to be post pended to this primitives outputs
                       'recipeOverride': True,
