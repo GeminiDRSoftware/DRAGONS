@@ -237,7 +237,7 @@ def logDictParams(indict, logLevel=1):
         log.fullinfo(repr(key)+' = '+repr(indict[key]), 
                      category='parameters')
         
-def nbiascontam(adIns, biassec=None, logLevel=1):
+def nbiascontam(adInputs, biassec=None, logLevel=1):
     """
     This function will find the largest difference between the horizontal 
     component of every BIASSEC value and those of the biassec parameter. 
@@ -245,17 +245,18 @@ def nbiascontam(adIns, biassec=None, logLevel=1):
     used as the value for the nbiascontam parameter used in the gireduce 
     call of the overscanSubtract primitive.
     
-    :param adIns: AstroData instance(s) to calculate the bias contamination for
-    :type adIns: AstroData instance in a list
+    :param adInputs: AstroData instance(s) to calculate the bias contamination 
+    :type adInputs: AstroData instance in a list
     
     :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
     :type biassec: string 
     
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
+                     Note: independent of logLevel setting, all messages always  
+                     goto the logfile if noLogFile=False.
+    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                    screen.
                     OR the message level as a string (ie. 'critical', 'status', 
                     'fullinfo'...)
     """
@@ -263,7 +264,7 @@ def nbiascontam(adIns, biassec=None, logLevel=1):
     # Prepare a stored value to be compared between the inputs
     retval=0
     # Loop through the inputs
-    for ad in adIns:
+    for ad in adInputs:
         # Pass the retrieved value to biassecStrToBiasContam function
         # to do the work in finding the difference of the biassec's
         val = biassecStrTonbiascontam(ad, biassec, logLevel=logLevel)
@@ -1197,11 +1198,13 @@ class ScienceFunctionManager():
     outNames = None
     suffix = None
     funcName = None
+    combinedInputs = False
     logLevel = 1
     log = None    
     
-    def __init__(self, adInputs=None, outNames=None, suffix=None, funcName=None,
-                 logName='', logLevel=1, noLogFile=False):
+    def __init__(self, adInputs=None, outNames=None, suffix=None, logName='', 
+                 logLevel=1, noLogFile=False, funcName=None,
+                 combinedInputs=False):
         """
         This will load up the global variables to use throughout the manager
         functions and instantiate the logger object for use in here and 
@@ -1222,6 +1225,13 @@ class ScienceFunctionManager():
         :param funcName: Name of the Python function using this manager.
         :type funcName: String
         
+        :param combinedInputs: A flag to indicated that the input images of 
+                               adInputs will be combined to form one single 
+                               image output.
+                               The use of this parameter is optional and is  
+                               overridden by providing outNames. 
+        :type combinedInputs: Python boolean (True/False)
+        
         :param logName: Name of the log file, default is 'gemini.log'
         :type logName: string
         
@@ -1240,6 +1250,7 @@ class ScienceFunctionManager():
         self.outNames = outNames
         self.suffix = suffix
         self.funcName = funcName
+        self.combinedInputs = combinedInputs
         self.logLevel = logLevel
         self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
                                        noLogFile=noLogFile)
@@ -1281,13 +1292,14 @@ class ScienceFunctionManager():
                                      list of them.')
                     raise ToolboxError()
             
-            # Checking combinations of outNames, suffix and len(adInputs) are 
-            # valid
+            # Checking combinations of outNames, combinedInputs, suffix and 
+            # len(adInputs) are valid
             if len(self.outNames)>0:
-                if len(self.adInputs)!= len(self.outNames):
-                    self.log.critical('outNames was not None or the same \
-                                length as number of adInputs')
-                    raise ToolboxError()
+                if not self.combinedInputs:
+                    if len(self.adInputs)!= len(self.outNames):
+                        self.log.critical('outNames was not None or the same \
+                                    length as number of adInputs')
+                        raise ToolboxError()
             elif len(self.adInputs)>1:
                     if self.suffix==None:
                         self.log.critical('Both outNames and suffix were None')
@@ -1295,16 +1307,22 @@ class ScienceFunctionManager():
                 
             # Checking the current outNames and loading it up if needed
             if len(self.outNames)!=len(self.adInputs):
-                for ad in self.adInputs:
+                if self.combinedInputs:
+                    ad = self.adInputs[0]
                     self.log.debug('Calling gemt.fileNameUpdater on '+
                                    ad.filename)
-                    print ad.filename ############
-                    print self.suffix ################
-                    
                     outName = fileNameUpdater(infilename=ad.filename,
                                               suffix=self.suffix, strip=False, 
                                               logLevel=self.logLevel)
                     self.outNames.append(outName)
+                else:
+                    for ad in self.adInputs:
+                        self.log.debug('Calling gemt.fileNameUpdater on '+
+                                       ad.filename)
+                        outName = fileNameUpdater(infilename=ad.filename,
+                                                  suffix=self.suffix, strip=False, 
+                                                  logLevel=self.logLevel)
+                        self.outNames.append(outName)
                 
             # return the now checked and loaded up (if needed) adInputs, 
             # outNames and log object
