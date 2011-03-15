@@ -496,7 +496,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def nod_count(self, dataset, **args):
         # The number of nod and shuffle cycles can only be obtained from nod
         # and shuffle data
-        if 'NODANDSHUFFLE' in dataset.types:
+        if 'GMOS_NODANDSHUFFLE' in dataset.types:
             # Get the number of nod and shuffle cycles from the header of the
             # PHU
             hdu = dataset.hdulist
@@ -509,7 +509,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def nod_pixels(self, dataset, **args):
         # The number of pixel rows the charge is shuffled by can only be
         # obtained from nod and shuffle data
-        if 'NODANDSHUFFLE' in dataset.types:
+        if 'GMOS_NODANDSHUFFLE' in dataset.types:
             # Get the number of pixel rows the charge is shuffled by from the
             # header of the PHU
             hdu = dataset.hdulist
