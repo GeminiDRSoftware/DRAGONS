@@ -107,6 +107,42 @@ descriptorDescDict = {
     '        :rtype: dictionary containing one or more float(s)\n' + \
     '        :return: the dispersion (in meters per pixel by default) of ' +
     'the \n                 observation',
+    # ut_datetime
+    'ut_datetime':'Return the ut_datetime value\n' +
+    '        This descriptor attempts to figure out the datetime even when ' +
+    'the\n        headers are malformed or not present. It tries just about ' +
+    'every header\n        combination that could allow it to determine an ' +
+    'appropriate datetime\n        for the file in question. This makes it ' +
+    'somewhat specific to Gemini\n        data, in that the headers it ' +
+    'looks at, and the assumptions it makes in\n        trying to parse ' +
+    'their values, are those known to occur in Gemini data.\n        Note ' +
+    'that some of the early gemini data, and that taken from lower\n        ' +
+    'level engineering interfaces, lack standard headers. Also the format\n' +
+    '        and occurence of various headers has changed over time, even ' +
+    'on the\n        same instrument. If strict is set to True, the date or ' +
+    'time are\n        determined from valid FITS keywords. If it cannot be ' +
+    'determined, None\n        is returned. If dateonly or timeonly are set ' +
+    'to True, then a\n        datetime.date object or datetime.time object, ' +
+    'respectively, is\n        returned, containing only the date or time, ' +
+    'respectively. These two\n        interplay with strict in the sense ' +
+    'that if strict is set to True and a\n        date can be determined ' +
+    'but not a time, then this function will return\n        None unless ' +
+    'the dateonly flag is set, in which case it will return the\n        ' +
+    'valid date. The dateonly and timeonly flags are intended for use by\n' +
+    '        the ut_date and ut_time descriptors.\n' +
+    '        :param dataset: the data set\n' +
+    '        :type dataset: AstroData\n' +
+    '        :param strict: set to True to not try to guess the date or ' +
+    'time\n' +
+    '        :type strict: Python boolean\n' +
+    '        :param dateonly: set to True to return a datetime.date\n' +
+    '        :type dateonly: Python boolean\n' +
+    '        :param timeonly: set to True to return a datetime.time\n' +
+    '        :param timeonly: Python boolean\n' +
+    '        :rtype: datetime.datetime (dateonly=False and timeonly=False)\n' +
+    '        :rtype: datetime.time (timeonly = True)\n' +
+    '        :rtype: datetime.date (dateonly = True)\n' +
+    '        :return: the UT date and time at the start of the observation',
                       }
 
 # Use the returnTypeDict dictionary to change the return type of a descriptor
@@ -134,6 +170,8 @@ returnTypeDict = {
     'ra':'float',
     'read_noise':'float',
     'saturation_level':'integer',
+    'ut_date':'datatime.date',
+    'ut_time':'datatime.time',
     'wavelength_reference_pixel':'float',
     'x_offset':'float',
     'y_offset':'float',
@@ -152,11 +190,11 @@ detailedNameDict = {
     'azimuth':'azimuth (in degrees between 0 and 360) of the observation',
     'camera':'camera used for the observation',
     'cass_rotator_pa':'cassegrain rotator position angle (in degrees between '+
-        '0 \n                 and 360) of the observation',
+        '-360\n                 and 360) of the observation',
     'coadds':'number of coadds used for the observation',
     'data_label':'data label of the observation',
     'dec':'declination (in decimal degrees) of the observation',
-    'decker':'decker used for the observation',
+    'decker':'decker position used for the observation',
     'detector_x_bin':'binning of the x-axis of the detector used for the ' +
         '\n                 observation',
     'detector_y_bin':'binning of the y-axis of the detector used for the ' +
@@ -247,8 +285,6 @@ asDictArgDict = {
     'detector_y_bin':'yes',
     'gain':'yes',
     'mdf_row_id':'yes',
-    'nod_count':'yes',
-    'nod_pixels':'yes',
     'read_noise':'yes',
     'wavelength_reference_pixel':'yes',
                 }
@@ -264,7 +300,6 @@ stripIDArgDict = {
     'disperser':'yes',
     'filter_name':'yes',
     'focal_plane_mask':'yes',
-    'grating':'yes',
     'grating':'yes',
     'prism':'yes',
     'slit':'yes',
