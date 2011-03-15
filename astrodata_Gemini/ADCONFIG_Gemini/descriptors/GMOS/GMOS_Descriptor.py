@@ -46,15 +46,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_amp_read_area = {}
             for ext in dataset:
-                # Get the name of the detector amplifier (ampname) and the
-                # readout area of the CCD (detesec) from the header of each
-                # pixel data extension. The ampname keyword is defined in
-                # the local key dictionary (stdkeyDictGMOS) but is read from
-                # the updated global key dictionary (globalStdkeyDict)
+                # Get the name of the detector amplifier (ampname) from the
+                # header of each pixel data extension. The ampname keyword is
+                # defined in the local key dictionary (stdkeyDictGMOS) but is
+                # read from the updated global key dictionary
+                # (globalStdkeyDict)
                 ampname = ext.header[globalStdkeyDict['key_ampname']]
-                detsec = ext.header[globalStdkeyDict['key_detector_section']]
+                # Get the readout area of the CCD (detsec) using the
+                # appropriate descriptor
+                detsec = ext.detector_section(pretty=True, asDict=False)
                 # Create the composite amp_read_area string
                 amp_read_area = "'%s':%s" % (ampname, detsec)
+
                 # Return a dictionary with the composite amp_read_area string
                 # as the value
                 ret_amp_read_area.update({(ext.extname(), \
@@ -63,15 +66,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Check to see whether the dataset has a single extension and if
             # it does, return a single value
             if dataset.countExts('SCI') <= 1:
-                # Get the name of the detector amplifier (ampname) and the
-                # readout area of the CCD (detesec) from the header of the
-                # single pixel data extension. The ampname keyword is defined
-                # in the local key dictionary (stdkeyDictGMOS) but is read from
-                # the updated global key dictionary (globalStdkeyDict)
+                # Get the name of the detector amplifier (ampname) from the
+                # header of the single pixel data extension. The ampname
+                # keyword is defined in the local key dictionary
+                # (stdkeyDictGMOS) but is read from the updated global key
+                # dictionary (globalStdkeyDict)
                 hdu = dataset.hdulist
                 ampname = hdu[1].header[globalStdkeyDict['key_ampname']]
-                detsec = \
-                    hdu[1].header[globalStdkeyDict['key_detector_section']]
+                # Get the readout area of the CCD (detsec) using the
+                # appropriate descriptor
+                detsec = hdu[1].detector_section(pretty=True, asDict=False)
                 # Return the composite amp_read_area string
                 ret_amp_read_area = "'%s':%s" % (ampname, detsec)
             else:
@@ -107,7 +111,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # data (when the keyword will be in the pixel data extensions)
             return 'asDict for central_wavelength not yet implemented'
         else:
-            ret_central_wavelength = {}
             # Get the central wavelength value from the header of the PHU. The
             # central wavelength keyword is defined in the local key
             # dictionary (stdkeyDictGMOS) but is read from the updated global
@@ -350,7 +353,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # key dictionary (globalStdkeyDict)
         hdu = dataset.hdulist
         ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
-        ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
+        # Get the UT date using the appropriate descriptor
+        ut_date = dataset.ut_date()
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
         
@@ -373,7 +377,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # read from the updated global key dictionary
                 # (globalStdkeyDict)
                 ampname = ext.header[globalStdkeyDict['key_ampname']]
-                # Get the gain setting and read speed setting values from the
+                # Get the gain setting and read speed setting values using the
                 # appropriate descriptors
                 gain_setting = dataset.gain_setting()
                 read_speed_setting = dataset.read_speed_setting()
@@ -409,7 +413,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # (stdkeyDictGMOS) but is read from the updated global key
                 # dictionary (globalStdkeyDict)
                 ampname = hdu[1].header[globalStdkeyDict['key_ampname']]
-                # Get the gain setting and read speed setting values from the
+                # Get the gain setting and read speed setting values using the
                 # appropriate descriptors
                 gain_setting = dataset.gain_setting()
                 read_speed_setting = dataset.read_speed_setting()
@@ -523,10 +527,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def pixel_scale(self, dataset, **args):
         # Should pixel_scale use asDict?
-        # Get the instrument value from the header of the PHU
-        hdu = dataset.hdulist
-        instrument = hdu[0].header[globalStdkeyDict['key_instrument']]
-        # Get the binning of the y-axis value from the appropriate descriptor
+        # Get the instrument and the binning of the y-axis values using the 
+        # appropriate descriptors
+        instrument = dataset.instrument()
         detector_y_bin = dataset.detector_y_bin()
         
         # Set the default pixel scales for GMOS-N and GMOS-S
@@ -550,7 +553,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # key dictionary (globalStdkeyDict)
         hdu = dataset.hdulist
         ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
-        ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
+        # Get the UT date using the appropriate descriptor
+        ut_date = dataset.ut_date()
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
         
@@ -574,7 +578,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # (globalStdkeyDict)
                 ampname = ext.header[globalStdkeyDict['key_ampname']]
                 
-                # Get the gain setting and read speed setting values from the
+                # Get the gain setting and read speed setting values using the
                 # appropriate descriptors
                 gain_setting = dataset.gain_setting()
                 read_speed_setting = dataset.read_speed_setting()
@@ -613,7 +617,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # (stdkeyDictGMOS) but is read from the updated global key
                 # dictionary (globalStdkeyDict)
                 ampname = hdu[1].header[globalStdkeyDict['key_ampname']]
-                # Get the gain setting and read speed setting values from the
+                # Get the gain setting and read speed setting values using the
                 # appropriate descriptors
                 gain_setting = dataset.gain_setting()
                 read_speed_setting = dataset.read_speed_setting()
