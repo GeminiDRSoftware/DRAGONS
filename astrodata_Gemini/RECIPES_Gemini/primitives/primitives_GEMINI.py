@@ -132,7 +132,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                  rc.inputsAsStr())
         yield rc 
     
-    def adu_to_electrons(self,rc):
+    def aduToElectrons(self,rc):
         """
         This primitive will convert the inputs from having pixel 
         units of ADU to electrons.
@@ -157,11 +157,12 @@ class GEMINIPrimitives(GENERALPrimitives):
             # of converting the pixels, updating headers and logging.
             log.debug('Calling geminiScience.ADUtoElectrons')
             
-            adOutputs = geminiScience.ADUtoElectrons(adInputs=rc.getInputs(style='AD'), 
+            adOutputs = geminiScience.adu_to_electrons(
+                                            adInputs=rc.getInputs(style='AD'), 
                                                   suffix=rc['suffix'], 
                                                   logLevel=rc['logLevel'])    
            
-            log.status('geminiScience.ADUtoElectrons completed successfully')
+            log.status('geminiScience.adu_to_electrons completed successfully')
             
             # Reporting the outputs to the reduction context
             rc.reportOutput(adOutputs)   
@@ -170,8 +171,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         except:
             log.critical('Problem converting the pixel units of one of '+
                          rc.inputsAsStr())
-            raise PrimitiveError('Problem converting the pixel units of one of '+
-                         rc.inputsAsStr())
+            raise #PrimitiveError('Problem converting the pixel units of one of '+
+                  #       rc.inputsAsStr())
         yield rc
             
     def combine(self,rc):
@@ -677,18 +678,15 @@ class GEMINIPrimitives(GENERALPrimitives):
                                                    logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
-                log.fullinfo('************************************************'
-                             ,category='header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , 'header')
+                log.fullinfo('~'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                              category='header')
                 log.fullinfo('STDHDRS = '+ad.phuGetKeyValue('STDHDRS'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')    
+                log.fullinfo('-'*50, category='header')    
                 rc.reportOutput(ad)
                 
             log.status('*FINISHED* standardizing the headers')
@@ -758,18 +756,15 @@ class GEMINIPrimitives(GENERALPrimitives):
                                                    logLevel= rc['logLevel'])
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
-                log.fullinfo('************************************************'
-                             ,category='header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-                             , category='header')
+                log.fullinfo('~'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                              category='header')
                 log.fullinfo('STDSTRUC = '+ad.phuGetKeyValue('STDSTRUC'), 
                              category='header')
-                log.fullinfo('------------------------------------------------'
-                             , category='header')  
+                log.fullinfo('-'*50, category='header')  
                 rc.reportOutput(ad)
    
             log.status('*FINISHED* standardizing the structure of input data')
@@ -948,18 +943,15 @@ class GEMINIPrimitives(GENERALPrimitives):
                                                    logLevel= rc['logLevel'])                
                 log.status('File name updated to '+ad.filename)
                 # Updating logger with updated/added time stamps
-                log.fullinfo('*'*50
-                             ,'header')
+                log.fullinfo('*'*50, category='header')
                 log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~'*50
-                             , category='header')
+                log.fullinfo('~'*50, category='header')
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                               category='header')
                 log.fullinfo('VALDATA = '+ad.phuGetKeyValue('VALDATA'), 
                              category='header')
-                log.fullinfo('-'*50
-                             , category='header')  
+                log.fullinfo('-'*50, category='header')  
                 rc.reportOutput(ad) 
                         
             log.status('*FINISHED* validating input data')                
