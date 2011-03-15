@@ -151,7 +151,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return the binning of the x-axis integer
                 ret_detector_x_bin = int(detector_x_bin)
             else:
-                raise Errors.DescriptorDictError
+                raise Errors.DescriptorDictError()
         
         return ret_detector_x_bin
     
@@ -160,8 +160,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_detector_y_bin = {}
             for ext in dataset:
                 # Get the ccdsum value from the header of each pixel data
-                # extension
-                ccdsum = ext.header[stdkeyDictGMOS['key_ccdsum']]
+                # extension. The ccdsum keyword is defined in the local key
+                # dictionary (stdkeyDictGMOS) but is read from the updated
+                # global key dictionary (globalStdkeyDict)
+                ccdsum = ext.header[globalStdkeyDict['key_ccdsum']]
                 detector_x_bin, detector_y_bin = ccdsum.split()
                 # Return a dictionary with the binning of the y-axis integer
                 # as the value
@@ -172,21 +174,25 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 # Get the ccdsum value from the header of the single pixel data
-                # extension
+                # extension. The ccdsum keyword is defined in the local key
+                # dictionary (stdkeyDictGMOS) but is read from the updated
+                # global key dictionary (globalStdkeyDict)
                 hdu = dataset.hdulist
-                ccdsum = hdu[1].header[stdkeyDictGMOS['key_ccdsum']]
+                ccdsum = hdu[1].header[globalStdkeyDict['key_ccdsum']]
                 detector_x_bin, detector_y_bin = ccdsum.split()
                 # Return the binning of the y-axis integer
                 ret_detector_y_bin = int(detector_y_bin)
             else:
-                raise Errors.DescriptorDictError
+                raise Errors.DescriptorDictError()
         
         return ret_detector_y_bin
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
-        # Get the disperser value from the header of the PHU
+        # Get the disperser value from the header of the PHU. The disperser
+        # keyword is defined in the local key dictionary (stdkeyDictGMOS) but
+        # is read from the updated global key dictionary (globalStdkeyDict)
         hdu = dataset.hdulist
-        disperser = hdu[0].header[stdkeyDictGMOS['key_disperser']]
+        disperser = hdu[0].header[globalStdkeyDict['key_disperser']]
         
         if pretty:
             # If pretty=True, use stripID then additionally remove the
@@ -235,9 +241,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_dispersion = {}
             for ext in dataset:
                 # Get the dispersion value from the header of each pixel data
-                # extension
+                # extension. The dispersion keyword is defined in the local
+                # key dictionary (stdkeyDictGMOS) but is read from the updated
+                # global key dictionary (globalStdkeyDict)
                 raw_dispersion = \
-                    ext.header[stdkeyDictGMOS['key_dispersion']]
+                    ext.header[globalStdkeyDict['key_dispersion']]
                 # Use the utilities function convert_units to convert the
                 # dispersion wavelength value from the input units to the
                 # output units                
@@ -252,10 +260,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 # Get the dispersion value from the header of the single pixel
-                # data extension
+                # data extension. The dispersion keyword is defined in the
+                # local key dictionary (stdkeyDictGMOS) but is read from the
+                # updated global key dictionary (globalStdkeyDict)
                 hdu = dataset.hdulist
                 raw_dispersion = \
-                    hdu[1].header[stdkeyDictGMOS['key_dispersion']]
+                    hdu[1].header[globalStdkeyDict['key_dispersion']]
                 # Use the utilities function convert_units to convert the
                 # dispersion wavelength value from the input units to the
                 # output units                
@@ -284,10 +294,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_exposure_time
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
-        # Get the two filter name values from the header of the PHU
+        # Get the two filter name values from the header of the PHU. The two
+        # filter name keywords are defined in the local key dictionary
+        # (stdkeyDictGMOS) but are read from the updated global key dictionary
+        # (globalStdkeyDict)
         hdu = dataset.hdulist
-        filter1 = hdu[0].header[stdkeyDictGMOS['key_filter1']]
-        filter2 = hdu[0].header[stdkeyDictGMOS['key_filter2']]
+        filter1 = hdu[0].header[globalStdkeyDict['key_filter1']]
+        filter2 = hdu[0].header[globalStdkeyDict['key_filter2']]
         
         if pretty:
             stripID = True
@@ -314,10 +327,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_filter_name
     
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
-        # Get the focal plane mask value from the header of the PHU
+        # Get the focal plane mask value from the header of the PHU. The focal
+        # plane mask keyword is defined in the local key dictionary
+        # (stdkeyDictGMOS) but is read from the updated global key dictionary
+        # (globalStdkeyDict)
         hdu = dataset.hdulist
         focal_plane_mask = \
-            hdu[0].header[stdkeyDictGMOS['key_focal_plane_mask']]
+            hdu[0].header[globalStdkeyDict['key_focal_plane_mask']]
         
         if focal_plane_mask == 'None':
             ret_focal_plane_mask = 'Imaging'
@@ -329,9 +345,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def gain(self, dataset, asDict=True, **args):
         # Get the amplifier integration time (ampinteg) and the UT date from
-        # the header of the PHU
+        # the header of the PHU. The ampinteg keyword is defined in the local
+        # key dictionary (stdkeyDictGMOS) but is read from the updated global
+        # key dictionary (globalStdkeyDict)
         hdu = dataset.hdulist
-        ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
+        ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
         ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
@@ -339,16 +357,22 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_gain = {}
             for ext in dataset:
-                # Check if the original gain keyword exists in the header of
-                # the pixel data extension
-                if ext.header.has_key(stdkeyDictGMOS['key_gainorig']):
-                    headergain = ext.header[stdkeyDictGMOS['key_gainorig']]
+                # Check if the original gain (gainorig) keyword exists in the
+                # header of the pixel data extension. The gainorig keyword is
+                # defined in the local key dictionary (stdkeyDictGMOS) but is
+                # read from the updated global key dictionary
+                # (globalStdkeyDict)
+                if ext.header.has_key(globalStdkeyDict['key_gainorig']):
+                    headergain = ext.header[globalStdkeyDict['key_gainorig']]
                 else:
                     headergain = ext.header[globalStdkeyDict['key_gain']]
                 
-                # Get the amplifier name from the header of each pixel data
-                # extension
-                ampname = ext.header[stdkeyDictGMOS['key_ampname']]
+                # Get the name of the detector amplifier (ampname) from the
+                # header of each pixel data extension. The ampname keyword is
+                # defined in the local key dictionary (stdkeyDictGMOS) but is
+                # read from the updated global key dictionary
+                # (globalStdkeyDict)
+                ampname = ext.header[globalStdkeyDict['key_ampname']]
                 # Get the gain setting and read speed setting values from the
                 # appropriate descriptors
                 gain_setting = dataset.gain_setting()
@@ -367,17 +391,24 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Check to see whether the dataset has a single extension and if
             # it does, return a single value
             if dataset.countExts('SCI') <= 1:
-                # Check if the original gain keyword exists in the header of
-                # the pixel data extension
+                # Check if the original gain (gainorig) keyword exists in the
+                # header of the pixel data extension. The gainorig keyword is
+                # defined in the local key dictionary (stdkeyDictGMOS) but is
+                # read from the updated global key dictionary
+                # (globalStdkeyDict)
                 hdu = dataset.hdulist
-                if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
-                    headergain = hdu[1].header[stdkeyDictGMOS['key_gainorig']]
+                if hdu[1].header.has_key(globalStdkeyDict['key_gainorig']):
+                    headergain = \
+                        hdu[1].header[globalStdkeyDict['key_gainorig']]
                 else:
                     headergain = hdu[1].header[globalStdkeyDict['key_gain']]
                 
-                # Get the amplifier name from the header of the single pixel
-                # data extension
-                ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
+                # Get the name of the detector amplifier (ampname) from the
+                # header of the single pixel data extension. The ampname
+                # keyword is defined in the local key dictionary
+                # (stdkeyDictGMOS) but is read from the updated global key
+                # dictionary (globalStdkeyDict)
+                ampname = hdu[1].header[globalStdkeyDict['key_ampname']]
                 # Get the gain setting and read speed setting values from the
                 # appropriate descriptors
                 gain_setting = dataset.gain_setting()
@@ -401,11 +432,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     gmosampsGainBefore20060831 = None
     
     def gain_setting(self, dataset, **args):
-        # Check if the original gain keyword exists in the header of
-        # the pixel data extension
+        # Check if the original gain (gainorig) keyword exists in the header
+        # of the pixel data extension. The gainorig keyword is defined in the
+        # local key dictionary (stdkeyDictGMOS) but is read from the updated
+        # global key dictionary (globalStdkeyDict)
         hdu = dataset.hdulist
-        if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
-            headergain = hdu[1].header[stdkeyDictGMOS['key_gainorig']]
+        if hdu[1].header.has_key(globalStdkeyDict['key_gainorig']):
+            headergain = hdu[1].header[globalStdkeyDict['key_gainorig']]
         else:
             headergain = hdu[1].header[globalStdkeyDict['key_gain']]
         
@@ -423,10 +456,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # when it is past the given data reduction point - TO BE DONE!
         
         # Check if the images is prepared, and not an image
-        if ('IMAGE' not in dataset.types) and ('PREPARED' in dataset.types):
+        if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
             if asDict:
                 ret_mdf_row_id = {}
-                for ext in dataset:
+                # Since this spectroscopic data has been prepared, it will
+                # have an MDF attached, so just loop over the science
+                # extensions
+                for ext in dataset['SCI']:
                     # Get the MDF row ID from the header of each pixel data
                     # extension
                     mdf_row_id = \
@@ -449,7 +485,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 else:
                     raise Errors.DescriptorDictError()
         else:
-            ret_mdf_row_id = None
+            raise Errors.DescriptorTypeError()
         
         return ret_mdf_row_id
     
@@ -483,9 +519,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def read_noise(self, dataset, asDict=True, **args):
         # Get the amplifier integration time (ampinteg) and the UT date from
-        # the header of the PHU
+        # the header of the PHU. The ampinteg keyword is defined in the local
+        # key dictionary (stdkeyDictGMOS) but is read from the updated global
+        # key dictionary (globalStdkeyDict)
         hdu = dataset.hdulist
-        ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
+        ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
         ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
@@ -493,16 +531,22 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_read_noise = {}
             for ext in dataset:
-                # Check if the original gain keyword exists in the header of
-                # the pixel data extension
-                if ext.header.has_key(stdkeyDictGMOS['key_gainorig']):
-                    headergain = ext.header[stdkeyDictGMOS['key_gainorig']]
+                # Check if the original gain (gainorig) keyword exists in the
+                # header of the pixel data extension. The gainorig keyword is
+                # defined in the local key dictionary (stdkeyDictGMOS) but is
+                # read from the updated global key dictionary
+                # (globalStdkeyDict)
+                if ext.header.has_key(globalStdkeyDict['key_gainorig']):
+                    headergain = ext.header[globalStdkeyDict['key_gainorig']]
                 else:
                     headergain = ext.header[globalStdkeyDict['key_gain']]
                 
-                # Get the amplifier name from the header of each pixel data
-                # extension
-                ampname = ext.header[stdkeyDictGMOS['key_ampname']]
+                # Get the name of the detector amplifier (ampname) from the
+                # header of each pixel data extension. The ampname keyword is
+                # defined in the local key dictionary (stdkeyDictGMOS) but is
+                # read from the updated global key dictionary
+                # (globalStdkeyDict)
+                ampname = ext.header[globalStdkeyDict['key_ampname']]
                 
                 # Get the gain setting and read speed setting values from the
                 # appropriate descriptors
@@ -524,19 +568,25 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Check to see whether the dataset has a single extension and if 
             # it does, return a single value
             if dataset.countExts('SCI') <= 1:
-                # Check if the original gain keyword exists in the header of
-                # the pixel data extension
+                # Check if the original gain (gainorig) keyword exists in the
+                # header of the pixel data extension. The gainorig keyword is
+                # defined in the local key dictionary (stdkeyDictGMOS) but is
+                # read from the updated global key dictionary
+                # (globalStdkeyDict)
                 hdu = dataset.hdulist
-                if hdu[1].header.has_key(stdkeyDictGMOS['key_gainorig']):
+                if hdu[1].header.has_key(globalStdkeyDict['key_gainorig']):
                     headergain = \
-                        hdu[1].header[stdkeyDictGMOS['key_gainorig']]
+                        hdu[1].header[globalStdkeyDict['key_gainorig']]
                 else:
                     headergain = \
                         hdu[1].header[globalStdkeyDict['key_gain']]
                 
-                # Get the amplifier name from the header of the single pixel
-                # data extension
-                ampname = hdu[1].header[stdkeyDictGMOS['key_ampname']]
+                # Get the name of the detector amplifier (ampname) from the
+                # header of the single pixel data extension. The ampname
+                # keyword is defined in the local key dictionary
+                # (stdkeyDictGMOS) but is read from the updated global key
+                # dictionary (globalStdkeyDict)
+                ampname = hdu[1].header[globalStdkeyDict['key_ampname']]
                 # Get the gain setting and read speed setting values from the
                 # appropriate descriptors
                 gain_setting = dataset.gain_setting()
@@ -562,9 +612,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def read_speed_setting(self, dataset, **args):
         # Get the amplifier integration time (ampinteg) from the header of the
-        # PHU
+        # PHU. The ampinteg keyword is defined in the local key dictionary
+        # (stdkeyDictGMOS) but is read from the updated global key dictionary
+        # (globalStdkeyDict)
         hdu = dataset.hdulist
-        ampinteg = hdu[0].header[stdkeyDictGMOS['key_ampinteg']]
+        ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
         
         if ampinteg == 1000:
             ret_read_speed_setting = 'fast'
@@ -584,10 +636,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_wavelength_reference_pixel = {}
             for ext in dataset:
                 # Get the reference pixel of the central wavelength from the
-                # header of each pixel data extension
+                # header of each pixel data extension. The reference pixel of
+                # the central wavelength keyword is defined in the local key
+                # dictionary (stdkeyDictGMOS) but is read from the updated
+                # global key dictionary (globalStdkeyDict)
                 wavelength_reference_pixel = \
                     ext.header\
-                    [stdkeyDictGMOS['key_wavelength_reference_pixel']]
+                    [globalStdkeyDict['key_wavelength_reference_pixel']]
                 # Return a dictionary with the reference pixel of the central
                 # wavelength float as the value
                 ret_wavelength_reference_pixel.update({(ext.extname(), \
@@ -597,11 +652,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # it does, return a single value
             if dataset.countExts('SCI') <= 1:
                 # Get the reference pixel of the central wavelength from the
-                # header of each pixel data extension
+                # header of the single pixel data extension. The reference
+                # pixel of the central wavelength keyword is defined in the
+                # local key dictionary (stdkeyDictGMOS) but is read from the
+                # updated global key dictionary (globalStdkeyDict)
                 hdu = dataset.hdulist
                 wavelength_reference_pixel = \
                     hdu[1].header\
-                    [stdkeyDictGMOS['key_wavelength_reference_pixel']]
+                    [globalStdkeyDict['key_wavelength_reference_pixel']]
                 # Return the reference pixel of the central wavelength float
                 ret_wavelength_reference_pixel = \
                     float(wavelength_reference_pixel)
