@@ -140,10 +140,10 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
                 
     # Setting statsec to the correct default value if needed (assumes square binning)
     if (statsec == '') and fl_statscale:
-        imagexbin = inimage[('SCI',2)].detector_x_bin()
-        fringexbin = fringe[('SCI',2)].detector_x_bin()
-        imageybin = inimage[('SCI',2)].detector_y_bin()
-        fringeybin = fringe[('SCI',2)].detector_y_bin()
+        imagexbin = inimage[('SCI',2)].detector_x_bin(pretty=True, asDict=False)
+        fringexbin = fringe[('SCI',2)].detector_x_bin(pretty=True, asDict=False)
+        imageybin = inimage[('SCI',2)].detector_y_bin(pretty=True, asDict=False)
+        fringeybin = fringe[('SCI',2)].detector_y_bin(pretty=True, asDict=False)
         # Ensuring images are square binned and image binning = fringe binning
         if imagexbin == fringexbin == imageybin == fringeybin:
             # Setting to default value for 1x1 images and logging value
