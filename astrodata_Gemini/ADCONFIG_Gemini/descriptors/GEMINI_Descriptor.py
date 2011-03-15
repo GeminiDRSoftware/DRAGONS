@@ -1,5 +1,6 @@
 from astrodata import Lookups
 from astrodata import Descriptors
+from astrodata import Errors
 
 from astrodata.Calculator import Calculator
 
@@ -15,108 +16,295 @@ from StandardGEMINIKeyDict import stdkeyDictGEMINI
 from Generic_Descriptor import Generic_DescriptorCalc
 
 class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
-    # Updating the global key dict with the local dict of this descriptor class
+    # Updating the global key dictionary with the local key dictionary
+    # associated with this descriptor class
     globalStdkeyDict.update(stdkeyDictGEMINI)
 
     def airmass(self, dataset, **args):
-        """
-        Return the airmass value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the mean airmass for the observation
-        """
+        # Get the airmass value from the header of the PHU
         hdu = dataset.hdulist
         airmass = hdu[0].header[globalStdkeyDict['key_airmass']]
-        
-        if airmass < 0.0:
-            ret_airmass = None
+
+        # Validate the airmass value
+        if airmass < 1.0:
+            raise Errors.InvalidValueError()
         else:
             ret_airmass = float(airmass)
         
         return ret_airmass
+
+    def amp_read_area(self, dataset, **args):
+        # The amp_read_area descriptor is only specific to GMOS data. The code
+        # below will be replaced with the GMOS specific amp_read_area
+        # descriptor function located in GMOS/GMOS_Descriptor.py for data with
+        # an AstroData Type of 'GMOS'. For all other Gemini data, raise an
+        # exception if this descriptor is called.
+        raise Errors.ExistError()
     
     def cass_rotator_pa(self, dataset, **args):
-        """
-        Return the cassegrain rotator position angle value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the crpa for the observation
-        """
+        # Get the cassegrain rotator position angle from the header of the PHU
         hdu = dataset.hdulist
         crpa = hdu[0].header[globalStdkeyDict['key_cass_rotator_pa']]
 
-        if (crpa < -999.0) or (crpa > 999.0):
-            ret_crpa = None
+        # Validate the cassegrain rotator position angle value
+        if (crpa < -360.0) or (crpa > 360.0):
+            raise Errors.InvalidValueError()
         else:
             ret_crpa = float(crpa)
 
         return ret_crpa
     
-    def detector_x_bin(self, dataset, **args):
+    def central_wavelength(self, dataset, asMicrometers=False, \
+        asNanometers=False, asAngstroms=False, asDict=False, **args):
+        # For most Gemini data, the central wavelength is recorded in
+        # micrometers
+        input_units = 'micrometers'
+        
+        # Determine the output units to use
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = 'micrometers'
+            if asNanometers:
+                output_units = 'nanometers'
+            if asAngstroms:
+                output_units = 'angstroms'
+        else:
+            # Either none of the unit arguments were set to True or more than
+            # one of the unit arguments was set to True. In either case,
+            # return the central wavelength in the default units of meters
+            output_units = 'meters'
+        
+        if asDict:
+            # This is used when obtaining the central wavelength from processed
+            # data (when the keyword will be in the pixel data extensions)
+            return 'asDict for central_wavelength not yet implemented'
+        else:
+            # Get the central wavelength value from the header of the PHU.
+            hdu = dataset.hdulist
+            raw_central_wavelength = \
+                hdu[0].header[globalStdkeyDict['key_central_wavelength']]
+            # Use the utilities function convert_units to convert the central
+            # wavelength value from the input units to the output units
+            ret_central_wavelength = \
+                GemCalcUtil.convert_units(input_units=input_units, \
+                input_value=raw_central_wavelength, output_units=output_units)
+        
+        return ret_central_wavelength
+    
+    def data_section(self, dataset, pretty=False, asDict=True, **args):
+        if asDict:
+            ret_data_section = {}
+            for ext in dataset:
+                # Get the data section from the header of each pixel data
+                # extension
+                raw_data_section = \
+                    ext.header[globalStdkeyDict['key_data_section']]
+                if pretty:
+                    # Return a dictionary with the data section string that
+                    # uses 1-based indexing as the value
+                    ret_data_section.update({(ext.extname(), \
+                        ext.extver()):str(raw_data_section)})
+                else:
+                    # Return a dictionary with the data section tuple that
+                    # uses 0-based indexing as the value
+                    data_section = \
+                        GemCalcUtil.section_to_tuple(raw_data_section)
+                    ret_data_section.update({(ext.extname(), \
+                        ext.extver()):data_section})
+        else:
+            # Check to see whether the dataset has a single extension and if
+            # it does, return a single value
+            if dataset.countExts('SCI') <= 1:
+                # Get the data section from the header of the single pixel
+                # data extension
+                hdu = dataset.hdulist
+                raw_data_section = \
+                    hdu[1].header[globalStdkeyDict['key_data_section']]
+                if pretty:
+                    # Return the data section string that uses 1-based indexing
+                    ret_data_section = raw_data_section
+                else:
+                    # Return the data section tuple that uses 0-based indexing
+                    data_section = \
+                        GemCalcUtil.section_to_tuple(raw_data_section)
+                    ret_data_section = data_section
+            else:
+                raise Errors.DescriptorDictError()
+        
+        return ret_data_section
+    
+    def decker(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the detector_x_bin value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the binning of the detector x-axis
+        In GNIRS, the decker is used to basically mask off the ends of the
+        slit to create the short slits used in the cross dispersed modes.
         """
-        ret_detector_x_bin = int(1)
+        # Get the decker position from the header of the PHU
+        hdu = dataset.hdulist
+        decker = hdu[0].header[globalStdkeyDict['key_decker']]
+        
+        if pretty:
+            stripID = True
+        
+        if stripID:
+            # Strip the component ID from the decker position value
+            ret_decker = GemCalcUtil.removeComponentID(decker)
+        
+        return ret_decker
+    
+    def detector_section(self, dataset, pretty=False, asDict=True, **args):
+        if asDict:
+            ret_detector_section = {}
+            for ext in dataset:
+                # Get the detector section from the header of each pixel data
+                # extension
+                raw_detector_section = \
+                    ext.header[globalStdkeyDict['key_detector_section']]
+                if pretty:
+                    # Return a dictionary with the detector section string
+                    # that uses 1-based indexing as the value
+                    ret_detector_section.update({(ext.extname(), \
+                        ext.extver()):str(raw_detector_section)})
+                else:
+                    # Return a dictionary with the detector section tuple that
+                    # uses 0-based indexing as the value
+                    detector_section = \
+                        GemCalcUtil.section_to_tuple(raw_detector_section)
+                    ret_detector_section.update({(ext.extname(), \
+                        ext.extver()):detector_section})
+        else:
+            # Check to see whether the dataset has a single extension and if
+            # it does, return a single value
+            if dataset.countExts('SCI') <= 1:
+                # Get the detector section from the header of the single pixel
+                # data extension
+                hdu = dataset.hdulist
+                raw_detector_section = \
+                    hdu[1].header[globalStdkeyDict['key_detector_section']]
+                if pretty:
+                    # Return the detector section string that uses 1-based
+                    # indexing
+                    ret_detector_section = raw_detector_section
+                else:
+                    # Return the detector section tuple that uses 0-based
+                    # indexing
+                    detector_section = \
+                        GemCalcUtil.section_to_tuple(raw_detector_section)
+                    ret_detector_section = detector_section
+            else:
+                raise Errors.DescriptorDictError()
+        
+        return ret_detector_section
+    
+    def detector_x_bin(self, dataset, asDict=True, **args):
+        if asDict:
+            ret_detector_x_bin = {}
+            for ext in dataset:
+                # Return a dictionary with the binning of the x-axis integer
+                # (set to 1 as default for Gemini data) as the value
+                ret_detector_x_bin.update({(ext.extname(), \
+                    ext.extver()):int(1)})
+        else:
+            # Check to see whether the dataset has a single extension and if
+            # it does, return a single value
+            if dataset.countExts('SCI') <= 1:
+                # Return the binning of the x-axis integer
+                hdu = dataset.hdulist
+                ret_detector_x_bin = int(1)
+            else:
+                raise Errors.DescriptorDictError()
         
         return ret_detector_x_bin
     
-    def detector_y_bin(self, dataset, **args):
-        """
-        Return the detector_y_bin value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the binning of the detector y-axis
-        """
-        ret_detector_y_bin = int(1)
+    def detector_y_bin(self, dataset, asDict=True, **args):
+        if asDict:
+            ret_detector_y_bin = {}
+            for ext in dataset:
+                # Return a dictionary with the binning of the x-axis integer
+                # (set to 1 as default for Gemini data) as the value
+                ret_detector_y_bin.update({(ext.extname(), \
+                    ext.extver()):int(1)})
+        else:
+            # Check to see whether the dataset has a single extension and if
+            # it does, return a single value
+            if dataset.countExts('SCI') <= 1:
+                # Return the binning of the x-axis integer
+                hdu = dataset.hdulist
+                ret_detector_y_bin = int(1)
+            else:
+                raise Errors.DescriptorDictError()
         
         return ret_detector_y_bin
+
+    def dispersion_axis(self, dataset, asDict=True, **args):
+        # The dispersion axis can only be obtained from data that does not
+        # have an AstroData Type of IMAGE and that has been prepared (since
+        # the dispersion axis keyword is written during the prepare step)
+        if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
+            if asDict:
+                ret_dispersion_axis = {}
+                # Since this spectroscopic data have been prepared, it will
+                # have an MDF attached, so just loop over the science
+                # extensions
+                for ext in dataset['SCI']:
+                    # Get the dispersion axis from the header of each pixel
+                    # data extension
+                    dispersion_axis = \
+                        ext.header[globalStdkeyDict['key_dispersion_axis']]
+                    # Return a dictionary with the dispersion axis integer as
+                    # the value
+                    ret_dispersion_axis.update({(ext.extname(), \
+                        ext.extver()):int(dispersion_axis)})
+            else:
+                # Check to see whether the dataset has a single extension and 
+                # if it does, return a single value
+                if dataset.countExts('SCI') <= 1:
+                    # Get the dispersion axis from the header of the
+                    # single pixel data extension
+                    hdu = dataset.hdulist
+                    dispersion_axis = \
+                        hdu[1].header[globalStdkeyDict['key_dispersion_axis']]
+                    # Return the dispersion axis integer
+                    ret_dispersion_axis = int(dispersion_axis)
+                else:
+                    raise Errors.DescriptorDictError()
+        else:
+            raise Errors.DescriptorTypeError()
+        
+        return ret_dispersion_axis
     
     def local_time(self, dataset, **args):
-        """
-        Return the local_time value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the local time at the start of the observation (HH:MM:SS.S)
-        """
+        # Get the local time from the header of the PHU
         hdu = dataset.hdulist
         local_time = hdu[0].header[globalStdkeyDict['key_local_time']]
         
-        # Validate the result.
-        # The assumption is that the standard mandates HH:MM:SS[.S] 
-        # We don't enforce the number of decimal places
-        # These are somewhat basic checks, it's not completely rigorous
-        # Note that seconds can be > 59 when leap seconds occurs
-        
+        # Validate the local time value. The assumption is that the standard
+        # mandates HH:MM:SS[.S]. We don't enforce the number of decimal places.
+        # These are somewhat basic checks, it's not completely rigorous. Note
+        # that seconds can be > 59 when leap seconds occurs        
         if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', local_time):
             ret_local_time = str(local_time)
         else:
-            ret_local_time = None
+            raise Errors.InvalidValueError()
         
         return ret_local_time
     
     def qa_state(self, dataset, **args):
-        """
-        Return the qa_state for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the QA state for the observation
-        """
+        # Get the value for whether the PI requirements were met (rawpireq)
+        # and the value for the raw Gemini Quality Assessment (rawgemqa) from
+        # the header of the PHU. The rawpireq and rawgemqa keywords are
+        # defined in the local key dictionary (stdkeyDictGEMINI) but are read
+        # from the updated global key dictionary (globalStdkeyDict)
         hdu = dataset.hdulist
-        rawpireq = hdu[0].header[stdkeyDictGEMINI['key_raw_pi_requirements_met']]
-        rawgemqa = hdu[0].header[stdkeyDictGEMINI['key_raw_gemini_qa']]
+        rawpireq = \
+            hdu[0].header[globalStdkeyDict['key_raw_pi_requirements_met']]
+        rawgemqa = hdu[0].header[globalStdkeyDict['key_raw_gemini_qa']]
         
         # Calculate the derived QA state
         qa_state = "%s:%s" % (rawpireq, rawgemqa)
-        if rawpireq == 'UNKNOWN' and rawgemqa == 'UNKNOWN':
+        if rawpireq == 'UNKNOWN' or rawgemqa == 'UNKNOWN':
             qa_state = 'Undefined'
         if rawpireq.upper() == 'YES' and rawgemqa.upper() == 'USABLE':
             qa_state = 'Pass'
@@ -130,63 +318,18 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         return qa_state
     
     def ut_date(self, dataset, **args):
-        """
-        Return the ut_date value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: datetime.date
-        @returns: the UT DATE at the start of the observation
+        # Call ut_datetime(strict=True, dateonly=True) to return a valid
+        # ut_date, if possible.
+        return dataset.ut_datetime(strict=True, dateonly=True)
 
-        This function calls ut_datetime(strict=True, dateonly=True)
-        so will return a valid UT DATE if possible.
-        """
-        return self.ut_datetime(dataset, strict=True, dateonly=True)
-
-    def ut_datetime(self, dataset, strict = False, dateonly = False, timeonly = False, **args):
-        """
-        Return the ut_datetime value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param strict: if set to True, will not try to guess date or time
-        @type strict: Bool
-        @param dateonly: if set to True, will return a datetime.date
-        @type dateonly: Bool
-        @param timeonly: if set to True, will return a datetime.time
-        @param timeonly: Bool
-        @rtype: datetime.datetime  (dateonly = False and timeonly = False)
-        @rtype: datetime.time (timeonly = True)
-        @rtype: datetime.date (dateonly = True)
-        @returns: the UT date and time at the start of the observation
-
-        This descriptor attempts to figure out the datetime
-        even when headers are malformed or not present. It tries just
-        about every header combination that could allow it to determine
-        an appropriate datetime for the file in question.
-        This makes it somewhat specific to Gemini data, in that the headers
-        it looks at, and the assumptions it makes in trying to parse thier
-        values, are those known to ocurr in Gemini data. Note that some of
-        the early gemini data, and that taken from lower level engineering
-        interfaces, lack standard headers. Also the format and occurence of
-        various headers has changed over time, even on the same instrument.
-        
-        If strict is set to True, then we only determine the date or time 
-        from valid FITS keywords, and we cannot determine it, we return None
-
-        If dateonly or timeonly are set to True, then we return a datetime.date
-        or datetime.time object respectively, containing only the date or time
-        respectively. These two interplay with strict in the sense that if we are 
-        in strict mode and can determine a date but not a time, then this function will
-        return None unless the dateonly flag is set, in which case it will return the valid
-        date. the dateonly and timeonly flags are intended for use by the ut_date and
-        ut_time descriptors.
-
-        """
-        hdu = dataset.hdulist
-
+    def ut_datetime(self, dataset, strict=False, dateonly=False, \
+        timeonly=False, **args):
         # First, we try and figure out the date, looping through several
         # header keywords that might tell us. DATE-OBS can also give us a full
         # date-time combination, so we check for this too.
-        for kw in ['DATE-OBS', globalStdkeyDict['key_ut_date'], 'DATE', 'UTDATE']:
+        hdu = dataset.hdulist
+        for kw in ['DATE-OBS', globalStdkeyDict['key_ut_date'], 'DATE', \
+            'UTDATE']:
             try:
                 utdate_hdr = hdu[0].header[kw].strip()
             except KeyError:
@@ -347,32 +490,20 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         return None
 
     def ut_time(self, dataset, **args):
-        """
-        Return the ut_time value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: datetime.time
-        @returns: the UT TIME at the start of the observation
-
-        This function calls ut_datetime(strict=True, timeonly=True)
-        so will return a valid UT TIME if possible.
-        """
+        # Call ut_datetime(strict=True, timeonly=True) to return a valid
+        # ut_time, if possible.
         return self.ut_datetime(dataset, strict=True, timeonly=True)
     
     def wavefront_sensor(self, dataset, **args):
-        """
-        Return the wavefront_sensor value for GEMINI data
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @returns: the wavefront sensor used for the observation
-        """
+        # Get the AOWFS, OIWFS, PWFS1 and PWFS2 probe states (aowfs, oiwfs,
+        # pwfs1 and pwfs2, respectively) from the header of the PHU
         hdu = dataset.hdulist
         aowfs = hdu[0].header[stdkeyDictGEMINI['key_aowfs']]
         oiwfs = hdu[0].header[stdkeyDictGEMINI['key_oiwfs']]
         pwfs1 = hdu[0].header[stdkeyDictGEMINI['key_pwfs1']]
         pwfs2 = hdu[0].header[stdkeyDictGEMINI['key_pwfs2']]
         
+        # If any of the probes are guiding, add them to the list
         wavefront_sensors = []
         if aowfs == 'guiding':
             wavefront_sensors.append('AOWFS')
@@ -382,10 +513,14 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             wavefront_sensors.append('PWFS1')
         if pwfs2 == 'guiding':
             wavefront_sensors.append('PWFS2')
-        
+
         if len(wavefront_sensors) == 0:
-            ret_wavefront_sensor = None
+            # If no probes are guiding, raise an exception
+            raise Errors.CalcError()
         else:
+            # Return a unique, sorted, wavefront sensor identifier string with
+            # an ampersand separating each wavefront sensor name
+            wavefront_sensors.sort
             ret_wavefront_sensor = str('&'.join(wavefront_sensors))
         
         return ret_wavefront_sensor
