@@ -55,19 +55,17 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     :type outNames: String, either a single or a list of strings of same 
                     length as adInputs.
     
-    :param suffix: 
-         string to add on the end of the input filenames 
-         (or outNames if not None) for the output filenames.
+    :param suffix: string to add on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
     :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
-    :param logLevel: 
-          verbosity setting for the log messages to screen,
-          default is 'critical' messages only.
-          Note: independent of logLevel setting, all messages always go 
-          to the logfile if it is not turned off.
+    :param logLevel: verbosity setting for the log messages to screen,
+                     default is 'critical' messages only.
+                     Note: independent of logLevel setting, all messages always go 
+                     to the logfile if it is not turned off.
     :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                     screen. OR the message level as a string (ie. 'critical',  
                     'status', 'fullinfo'...)
@@ -75,203 +73,153 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
-    
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-        
-    log.status('**STARTING** the add_bpm function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 'add_bpm',
+                                      logName, logLevel, noLogFile)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
                    
     if BPMs==None:
-        raise ScienceError('There must be at least one BPM provided, the \
+        log.critical('There must be at least one BPM provided, the \
                                         "BPMs" parameter must not be None.')
+        raise ScienceError()
                    
     try:
-        # Ensure there are inputs to work on and BPMs to add to the inputs
-        if (adInputs!=None) and (BPMs!=None):
-            # Set up counter for looping through outNames/BPMs lists
-            count=0
-            
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
-            
-            # Do the work on each ad in the inputs
-            for ad in adInputs:
-                # Getting the right BPM for this input
-                if isinstance(BPMs, list):
-                    if len(BPMs)>1:
-                        BPM = BPMs[count]
-                    else:
-                        BPM = BPMs[0]
-                else:
-                    BPM = BPMs
-                
-                # Check if this input all ready has a BPM extension
-                if not ad['BPM']:
-                    # Making a deepcopy of the input to work on
-                    # (ie. a truly new+different object that is a complete copy of the input)
-                    adOut = deepcopy(ad)
-                    # moving the filename over as deepcopy doesn't do that
-                    adOut.filename = ad.filename
-                    
-                    # Getting the filename for the BPM and removing any paths
-                    BPMfilename = os.path.basename(BPM.filename)
-                    
-                    for sciExt in adOut['SCI']:
-                        # Extracting the matching DQ extension from the BPM 
-                        BPMArrayIn = BPM[('DQ',sciExt.extver())].data
-                        
-                        # logging the BPM file being used for this SCI extension
-                        log.fullinfo('SCI extension number '+
-                                     str(sciExt.extver())+', of file '+
-                                     adOut.filename+ 
-                                     ' is matched to DQ extension '
-                                     +str(sciExt.extver())+' of BPM file '+
-                                     BPMfilename)
-                        
-                        # Matching size of BPM array to that of the SCI data array
-                        if matchSize:
-                            # Getting the data section from the header and 
-                            # converting to an integer list
-                            datasecStr = sciExt.data_section()
-                            datasecList = gemt.secStrToIntList(datasecStr) 
-                            dsl = datasecList
-                            datasecShape = (dsl[3]-dsl[2]+1, dsl[1]-dsl[0]+1)
-                            
-                            # Creating a zeros array the same size as SCI array
-                            # for this extension
-                            BPMArrayOut = np.zeros(sciExt.data.shape, 
-                                                   dtype=np.int16)
+        # Set up counter for looping through outNames/BPMs lists
+        count=0
         
-                            # Loading up zeros array with data from BPM array
-                            # if the sizes match then there is no change, else
-                            # output BPM array will be 'padded with zeros' or 
-                            # 'not bad pixels' to match SCI's size.
-                            if BPMArrayIn.shape==datasecShape:
-                                BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
-                                                                    BPMArrayIn
-                            elif BPMArrayIn.shape==BPMArrayOut.shape:
-                                BPMArrayOut[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]] = \
-                                    BPMArrayIn[dsl[2]-1:dsl[3], dsl[0]-1:dsl[1]]
-                        
-                        # Don't match size
-                        else:
-                            BPMArrayOut = BPMArrayIn
-                            
-                        # Creating a header for the BPM array and updating
-                        # further updating to this header will take place in 
-                        # addDQ primitive
-                        BPMheader = pf.Header() 
-                        BPMheader.update('BITPIX', 16, 
-                                        'number of bits per data pixel')
-                        BPMheader.update('NAXIS', 2)
-                        BPMheader.update('PCOUNT', 0, 
-                                        'required keyword; must = 0')
-                        BPMheader.update('GCOUNT', 1, 
-                                        'required keyword; must = 1')
-                        BPMheader.update('BUNIT', 'bit', 'Physical units')
-                        BPMheader.update('BPMFILE', BPMfilename, 
-                                            'Bad Pixel Mask file name')
-                        BPMheader.update('EXTVER', sciExt.extver(), 
-                                            'Extension Version')
-                        # This extension will be renamed DQ in addDQ
-                        BPMheader.update('EXTNAME', 'BPM', 'Extension Name')
-                        
-                        # Creating an astrodata instance from the 
-                        # DQ array and header
-                        bpmAD = AstroData(header=BPMheader, data=BPMArrayOut)
-                        
-                        # Using renameExt to correctly set the EXTVER and 
-                        # EXTNAME values in the header   
-                        bpmAD.renameExt('BPM', ver=sciExt.extver())
-                        
-                        # Appending BPM astrodata instance to the input one
-                        log.debug('Appending new BPM HDU onto the file '+ 
-                                  adOut.filename)
-                        adOut.append(bpmAD)
-                        log.status('Appending BPM complete for '+ 
-                                   adOut.filename)
-            
-                # If BPM frames exist, send a critical message to the logger
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Do the work on each ad in the inputs
+        for ad in adInputs:
+            # Getting the right BPM for this input
+            if isinstance(BPMs, list):
+                if len(BPMs)>1:
+                    BPM = BPMs[count]
                 else:
-                    log.critical('BPM frames all ready exist for '+
-                                 adOut.filename+
-                                 ', so addBPM will add new ones')
-                    
-                # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
-                adOut.historyMark(key='ADDBPM', stomp=False) 
-                # Updating logger with updated/added time stamps
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'),
-                             category='header')
-                log.fullinfo('ADDBPM = '+adOut.phuGetKeyValue('ADDBPM'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')
+                    BPM = BPMs[0]
+            else:
+                BPM = BPMs
+            
+            # Check if this input all ready has a BPM extension
+            if not ad['BPM']:
+                # Making a deepcopy of the input to work on
+                # (ie. a truly new+different object that is a complete copy of the input)
+                adOut = deepcopy(ad)
+                # moving the filename over as deepcopy doesn't do that
+                # only for internal use, renamed below to final name.
+                adOut.filename = ad.filename
                 
-                # Updating the file name with the suffix for this
-                # function and then reporting the new file 
-                if suffix!=None:
-                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                    if outNames!=None:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          infilename=outNames[count],
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                    else:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                elif suffix==None:
-                    if outNames!=None:
-                        if len(outNames)>1: 
-                            adOut.filename = outNames[count]
-                        else:
-                            adOut.filename = outNames
-                    else:
-                        raise ScienceError('outNames and suffix parameters \
-                                                         can not BOTH be None')
+                # Getting the filename for the BPM and removing any paths
+                BPMfilename = os.path.basename(BPM.filename)
+                
+                for sciExt in adOut['SCI']:
+                    # Extracting the matching DQ extension from the BPM 
+                    BPMArrayIn = BPM[('DQ',sciExt.extver())].data
+                    
+                    # logging the BPM file being used for this SCI extension
+                    log.fullinfo('SCI extension number '+
+                                 str(sciExt.extver())+', of file '+
+                                 adOut.filename+ 
+                                 ' is matched to DQ extension '
+                                 +str(sciExt.extver())+' of BPM file '+
+                                 BPMfilename)
+                    
+                    # Matching size of BPM array to that of the SCI data array
+                    if matchSize:
+                        # Getting the data section from the header and as a dict
+                        # and grabbing the integer list from it, then finding
+                        # its shape
+                        datasecDict = sciExt.data_section()
+                        # NOTE: this list is zero based, like python and numpy
+                        datasecList = datasecDict[(sciExt.extname(),
+                                                   sciExt.extver())] 
+                        dsl = datasecList
+                        datasecShape = (dsl[3]-dsl[2]+1, dsl[1]-dsl[0]+1)
                         
-                log.status('File name updated to '+adOut.filename)
-            
-                if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                    adOutputs.append(adOut)
-                else:
-                    adOutputs = adOut
+                        # Creating a zeros array the same size as SCI array
+                        # for this extension
+                        BPMArrayOut = np.zeros(sciExt.data.shape, 
+                                               dtype=np.int16)
+    
+                        # Loading up zeros array with data from BPM array
+                        # if the sizes match then there is no change, else
+                        # output BPM array will be 'padded with zeros' or 
+                        # 'not bad pixels' to match SCI's size.
+                        # NOTE: first elements of arrays in python are inclusive
+                        #       while last ones are exlusive, thus a 1 must be 
+                        #       added for the final element to be included.
+                        if BPMArrayIn.shape==datasecShape:
+                            BPMArrayOut[dsl[2]:dsl[3]+1, dsl[0]:dsl[1]+1] = \
+                                                                BPMArrayIn
+                        elif BPMArrayIn.shape==BPMArrayOut.shape:
+                            BPMArrayOut[dsl[2]:dsl[3]+1, dsl[0]:dsl[1]+1] = \
+                                BPMArrayIn[dsl[2]:dsl[3]+1, dsl[0]:dsl[1]+1]
+                    
+                    # Don't match size
+                    else:
+                        BPMArrayOut = BPMArrayIn
+                        
+                    # Creating a header for the BPM array and updating
+                    # further updating to this header will take place in 
+                    # addDQ primitive
+                    BPMheader = pf.Header() 
+                    BPMheader.update('BITPIX', 16, 
+                                    'number of bits per data pixel')
+                    BPMheader.update('NAXIS', 2)
+                    BPMheader.update('PCOUNT', 0, 
+                                    'required keyword; must = 0')
+                    BPMheader.update('GCOUNT', 1, 
+                                    'required keyword; must = 1')
+                    BPMheader.update('BUNIT', 'bit', 'Physical units')
+                    BPMheader.update('BPMFILE', BPMfilename, 
+                                        'Bad Pixel Mask file name')
+                    BPMheader.update('EXTVER', sciExt.extver(), 
+                                        'Extension Version')
+                    # This extension will be renamed DQ in addDQ
+                    BPMheader.update('EXTNAME', 'BPM', 'Extension Name')
+                    
+                    # Creating an astrodata instance from the 
+                    # DQ array and header
+                    bpmAD = AstroData(header=BPMheader, data=BPMArrayOut)
+                    
+                    # Using renameExt to correctly set the EXTVER and 
+                    # EXTNAME values in the header   
+                    bpmAD.renameExt('BPM', ver=sciExt.extver())
+                    
+                    # Appending BPM astrodata instance to the input one
+                    log.debug('Appending new BPM HDU onto the file '+ 
+                              adOut.filename)
+                    adOut.append(bpmAD)
+                    log.status('Appending BPM complete for '+ adOut.filename)
+        
+            # If BPM frames exist, send a critical message to the logger
+            else:
+                log.critical('BPM frames all ready exist for '+
+                             adOut.filename+', so addBPM will add new ones')
+                
+            # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='ADDBPM')
 
-                count=count+1
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename)
+            
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count=count+1
         
         log.status('**FINISHED** the add_bpm function')
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run add_bpm')
     
-def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None, 
+def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None, 
                 suffix=None, logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will create a numpy array for the data quality 
@@ -330,172 +278,111 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True,outNames=None,
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-        
-    log.status('**STARTING** the add_dq function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 'add_dq',
+                                      logName, logLevel, noLogFile)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
-            
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
-            
-            # Loop through the inputs to perform the non-linear and saturated
-            # pixel searches of the SCI frames to update the BPM frames into
-            # full DQ frames. 
-            for ad in adInputs:                
-                # Check if DQ extensions all ready exist for this file
-                if not ad['DQ']:
-                    # Making a deepcopy of the input to work on
-                    # (ie. a truly new+different object that is a complete copy of the input)
-                    adOut = deepcopy(ad)
-                    # moving the filename over as deepcopy doesn't do that
-                    adOut.filename = ad.filename
-                    
-                    for sciExt in adOut['SCI']: 
-                        # Retrieving BPM extension 
-                        bpmAD = adOut[('BPM',sciExt.extver())]
-                        
-                        # Extracting the BPM data array for this extension
-                        BPMArray = bpmAD.data
-                        
-                        # Extracting the BPM header for this extension to be 
-                        # later converted to a DQ header
-                        dqheader = bpmAD.header
-                        
-                        # Getting the data section from the header and 
-                        # converting to an integer list
-                        datasecStr = sciExt.data_section()
-                        datasecList = gemt.secStrToIntList(datasecStr) 
-                        dsl = datasecList
-                        
-                        # Preparing the non linear and saturated pixel arrays
-                        # and their respective constants
-                        nonLinArray = np.zeros(sciExt.data.shape, 
-                                               dtype=np.int16)
-                        saturatedArray = np.zeros(sciExt.data.shape, 
-                                                  dtype=np.int16)
-                        linear = sciExt.non_linear_level()
-                        saturated = sciExt.saturation_level()
-    
-                        if (linear is not None) and (fl_nonlinear): 
-                            log.debug('Performing an np.where to find '+
-                                      'non-linear pixels for extension '+
-                                      str(sciExt.extver())+' of '+
-                                      adOut.filename)
-                            nonLinArray = np.where(sciExt.data>linear,2,0)
-                            log.status('Done calculating array of non-linear'+
-                                       ' pixels')
-                        if (saturated is not None) and (fl_saturated):
-                            log.debug('Performing an np.where to find '+
-                                      'saturated pixels for extension '+
-                                      str(sciExt.extver())+' of '+
-                                      adOut.filename)
-                            saturatedArray = np.where(sciExt.data>saturated,4,0)
-                            log.status('Done calculating array of saturated'+
-                                       ' pixels') 
-                        
-                        # Creating one DQ array from the three
-                        dqArray=np.add(BPMArray, nonLinArray, 
-                                       saturatedArray) 
-                        # Updating data array for the BPM array to be the 
-                        # newly calculated DQ array
-                        adOut[('BPM',sciExt.extver())].data = dqArray
-                        
-                        # Renaming the extension to DQ from BPM
-                        dqheader.update('EXTNAME', 'DQ', 'Extension Name')
-                        
-                        # Using renameExt to correctly set the EXTVER and 
-                        # EXTNAME values in the header   
-                        bpmAD.renameExt('DQ', ver=sciExt.extver(), force=True)
-
-                        # Logging that the name of the BPM extension was changed
-                        log.fullinfo('BPM Extension '+str(sciExt.extver())+
-                                     ' of '+adOut.filename+' had its EXTVER '+
-                                     'changed to '+
-                                     adOut[('DQ',sciExt.extver())].header['EXTNAME'])
-                        
-                # If DQ frames exist, send a critical message to the logger
-                else:
-                    log.critical('DQ frames all ready exist for '+
-                                 adOut.filename+
-                                 ', so addDQ will not calculate new ones')
-                    
-                # Adding GEM-TLM (automatic) and ADDDQ time stamps to the PHU
-                adOut.historyMark(key='ADDDQ', stomp=False) 
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:                
+            # Check if DQ extensions all ready exist for this file
+            if not ad['DQ']:
+                # Making a deepcopy of the input to work on
+                # (ie. a truly new+different object that is a complete copy of the input)
+                adOut = deepcopy(ad)
+                # moving the filename over as deepcopy doesn't do that
+                adOut.filename = ad.filename
                 
-                # updating logger with updated/added time stamps
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 
-                             category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('ADDDQ = '+adOut.phuGetKeyValue('ADDDQ'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')
-                
-                # Updating the file name with the suffix for this
-                # function and then reporting the new file 
-                if suffix!=None:
-                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                    if outNames!=None:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          infilename=outNames[count],
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                    else:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                elif suffix==None:
-                    if outNames!=None:
-                        if len(outNames)>1: 
-                            adOut.filename = outNames[count]
-                        else:
-                            adOut.filename = outNames
-                    else:
-                        raise ScienceError('outNames and suffix parameters \
-                                                        can not BOTH be None')
-                        
-                log.status('File name updated to '+adOut.filename)
-            
-                if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                    adOutputs.append(adOut)
-                else:
-                    adOutputs = adOut
+                for sciExt in adOut['SCI']: 
+                    # Retrieving BPM extension 
+                    bpmAD = adOut[('BPM',sciExt.extver())]
+                    
+                    # Extracting the BPM data array for this extension
+                    BPMArray = bpmAD.data
+                    
+                    # Extracting the BPM header for this extension to be 
+                    # later converted to a DQ header
+                    dqheader = bpmAD.header
+                    
+                    # Preparing the non linear and saturated pixel arrays
+                    # and their respective constants
+                    nonLinArray = np.zeros(sciExt.data.shape, 
+                                           dtype=np.int16)
+                    saturatedArray = np.zeros(sciExt.data.shape, 
+                                              dtype=np.int16)
+                    linear = sciExt.non_linear_level()
+                    saturated = sciExt.saturation_level()
 
-                count=count+1
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+                    if (linear is not None) and (fl_nonlinear): 
+                        log.debug('Performing an np.where to find '+
+                                  'non-linear pixels for extension '+
+                                  str(sciExt.extver())+' of '+
+                                  adOut.filename)
+                        nonLinArray = np.where(sciExt.data>linear,2,0)
+                        log.status('Done calculating array of non-linear'+
+                                   ' pixels')
+                    if (saturated is not None) and (fl_saturated):
+                        log.debug('Performing an np.where to find '+
+                                  'saturated pixels for extension '+
+                                  str(sciExt.extver())+' of '+
+                                  adOut.filename)
+                        saturatedArray = np.where(sciExt.data>saturated,4,0)
+                        log.status('Done calculating array of saturated'+
+                                   ' pixels') 
+                    
+                    # Creating one DQ array from the three
+                    dqArray=np.add(BPMArray, nonLinArray, 
+                                   saturatedArray) 
+                    # Updating data array for the BPM array to be the 
+                    # newly calculated DQ array
+                    adOut[('BPM',sciExt.extver())].data = dqArray
+                    
+                    # Renaming the extension to DQ from BPM
+                    dqheader.update('EXTNAME', 'DQ', 'Extension Name')
+                    
+                    # Using renameExt to correctly set the EXTVER and 
+                    # EXTNAME values in the header   
+                    bpmAD.renameExt('DQ', ver=sciExt.extver(), force=True)
+
+                    # Logging that the name of the BPM extension was changed
+                    log.fullinfo('BPM Extension '+str(sciExt.extver())+
+                                 ' of '+adOut.filename+' had its EXTVER '+
+                                 'changed to '+
+                                 adOut[('DQ',
+                                        sciExt.extver())].header['EXTNAME'])
+                    
+            # If DQ frames exist, send a critical message to the logger
+            else:
+                log.critical('DQ frames all ready exist for '+
+                             adOut.filename+
+                             ', so addDQ will not calculate new ones')
+                
+            # Updating GEM-TLM (automatic) and ADDDQ time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='ADDDQ')
+
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename)
+            
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count=count+1
         
         log.status('**FINISHED** the add_dq function')
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run add_dq')
@@ -542,160 +429,107 @@ def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-        
-    log.status('**STARTING** the add_var function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 'add_var',
+                                      logName, logLevel, noLogFile)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:   
+            # Making a deepcopy of the input to work on
+            # (ie. a truly new+different object that is a complete copy of the input)
+            adOut = deepcopy(ad)
+            # moving the filename over as deepcopy doesn't do that
+            adOut.filename = ad.filename
             
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')
+            # Check if there VAR frames all ready exist
+            if not adOut['VAR']:                 
+                # If VAR frames don't exist, loop through the SCI extensions 
+                # and calculate a corresponding VAR frame for it, then 
+                # append it
+                for sciExt in adOut['SCI']:
+                    # var = (read noise/gain)2 + max(data,0.0)/gain
+                    
+                    # Retrieving necessary values (read noise, gain)
+                    readNoiseDict=sciExt.read_noise()
+                    readNoise = readNoiseDict[(sciExt.extname(),
+                                               sciExt.extver())] 
+                    gainDict=sciExt.gain()
+                    gain = gainDict[(sciExt.extname(), sciExt.extver())] 
+                    # Creating (read noise/gain) constant
+                    rnOverG=readNoise/gain
+                    # Convert negative numbers (if they exist) to zeros
+                    maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
+                    # Creating max(data,0.0)/gain array
+                    maxOverGain=np.divide(maxArray,gain)
+                    # Putting it all together
+                    varArray=np.add(maxOverGain,rnOverG*rnOverG)
+                     
+                    # Creating the variance frame's header and updating it     
+                    varheader = pf.Header()
+                    varheader.update('NAXIS', 2)
+                    varheader.update('PCOUNT', 0, 
+                                     'required keyword; must = 0 ')
+                    varheader.update('GCOUNT', 1, 
+                                     'required keyword; must = 1')
+                    varheader.update('EXTNAME', 'VAR', 
+                                     'Extension Name')
+                    varheader.update('EXTVER', sciExt.extver(), 
+                                     'Extension Version')
+                    varheader.update('BITPIX', -32, 
+                                     'number of bits per data pixel')
+                    
+                    # Turning individual variance header and data 
+                    # into one astrodata instance
+                    varAD = AstroData(header=varheader, data=varArray)
+                    
+                    # Appending variance astrodata instance onto input one
+                    log.debug('Appending new VAR HDU onto the file '
+                                 +adOut.filename)
+                    adOut.append(varAD)
+                    log.status('appending VAR frame '+str(sciExt.extver())+
+                               ' complete for '+adOut.filename)
+                    
+            # If VAR frames all ready existed, 
+            # make a critical message in the logger
+            else:
+                log.critical('VAR frames all ready exist for '+
+                             adOut.filename+
+                             ', so addVAR will not calculate new ones')    
             
-            # Loop through the inputs to perform the non-linear and saturated
-            # pixel searches of the SCI frames to update the BPM frames into
-            # full DQ frames. 
-            for ad in adInputs:   
-                # Making a deepcopy of the input to work on
-                # (ie. a truly new+different object that is a complete copy of the input)
-                adOut = deepcopy(ad)
-                # moving the filename over as deepcopy doesn't do that
-                adOut.filename = ad.filename
-                
-                # To clean up log and screen if multiple inputs
-                log.fullinfo('+'*50, category='format')
-                # Check if there VAR frames all ready exist
-                if not adOut['VAR']:                 
-                    # If VAR frames don't exist, loop through the SCI extensions 
-                    # and calculate a corresponding VAR frame for it, then 
-                    # append it
-                    for sciExt in adOut['SCI']:
-                        # var = (read noise/gain)2 + max(data,0.0)/gain
-                        
-                        # Retrieving necessary values (read noise, gain)
-                        readNoise=sciExt.read_noise()
-                        gain=sciExt.gain()
-                        # Creating (read noise/gain) constant
-                        rnOverG=readNoise/gain
-                        # Convert negative numbers (if they exist) to zeros
-                        maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
-                        # Creating max(data,0.0)/gain array
-                        maxOverGain=np.divide(maxArray,gain)
-                        # Putting it all together
-                        varArray=np.add(maxOverGain,rnOverG*rnOverG)
-                         
-                        # Creating the variance frame's header and updating it     
-                        varheader = pf.Header()
-                        varheader.update('NAXIS', 2)
-                        varheader.update('PCOUNT', 0, 
-                                         'required keyword; must = 0 ')
-                        varheader.update('GCOUNT', 1, 
-                                         'required keyword; must = 1')
-                        varheader.update('EXTNAME', 'VAR', 
-                                         'Extension Name')
-                        varheader.update('EXTVER', sciExt.extver(), 
-                                         'Extension Version')
-                        varheader.update('BITPIX', -32, 
-                                         'number of bits per data pixel')
-                        
-                        # Turning individual variance header and data 
-                        # into one astrodata instance
-                        varAD = AstroData(header=varheader, data=varArray)
-                        
-                        # Appending variance astrodata instance onto input one
-                        log.debug('Appending new VAR HDU onto the file '
-                                     +adOut.filename)
-                        adOut.append(varAD)
-                        log.status('appending VAR frame '+str(sciExt.extver())+
-                                   ' complete for '+adOut.filename)
-                        
-                # If VAR frames all ready existed, 
-                # make a critical message in the logger
-                else:
-                    log.critical('VAR frames all ready exist for '+
-                                 adOut.filename+
-                                 ', so addVAR will not calculate new ones')
-                
-                # Adding GEM-TLM(automatic) and ADDVAR time stamps to the PHU     
-                adOut.historyMark(key='ADDVAR', stomp=False)    
-                
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('file = '+adOut.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('ADDVAR = '+adOut.phuGetKeyValue('ADDVAR'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')
-                
-                # Updating the file name with the suffix for this
-                # function and then reporting the new file 
-                if suffix!=None:
-                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                    if outNames!=None:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          infilename=outNames[count],
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                    else:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                elif suffix==None:
-                    if outNames!=None:
-                        if len(outNames)>1: 
-                            adOut.filename = outNames[count]
-                        else:
-                            adOut.filename = outNames
-                    else:
-                        raise ScienceError('outNames and suffix parameters \
-                                                        can not BOTH be None')
-                        
-                log.status('File name updated to '+adOut.filename)
-            
-                if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                    adOutputs.append(adOut)
-                else:
-                    adOutputs = adOut
+            # Updating GEM-TLM (automatic) and ADDVAR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='ADDVAR')
 
-                count=count+1
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename)
+            
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count=count+1
         
         log.status('**FINISHED** the add_var function')
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list
         return adOutputs
     except:
-        raise ScienceError('An error occurred while trying to run add_var')
+        raise #ScienceError('An error occurred while trying to run add_var')
 
-def adu_to_electrons(adInputs=None, outNames=None, suffix=None,  
+def adu_to_electrons(adInputs, outNames=None, suffix=None,  
                             logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will convert the inputs from having pixel values in ADU to 
@@ -707,9 +541,9 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None,
     have the log messages during this function added to the end of it.
 
     Note: 
-      the SCI extensions of the input AstroData objects must have 'GAIN'
-      header key values available to multiply them by for conversion to 
-      e- units.
+    the SCI extensions of the input AstroData objects must have 'GAIN'
+    header key values available to multiply them by for conversion to 
+    e- units.
           
     :param adInputs: Astrodata inputs to be converted to Electron pixel units
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -739,145 +573,94 @@ def adu_to_electrons(adInputs=None, outNames=None, suffix=None,
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-        
-    log.status('**STARTING** the adu_to_electrons function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      'adu_to_electrons', logName, logLevel, 
+                                      noLogFile)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Do the work on each ad in the inputs
+        for ad in adInputs:
+            log.fullinfo('calling ad.mult on '+ad.filename)
             
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
-            
-            # Do the work on each ad in the inputs
-            for ad in adInputs:
-                log.fullinfo('calling ad.mult on '+ad.filename)
-                
-                # mult in this primitive will multiply the SCI frames by the
-                # frame's gain, VAR frames by gain^2 (if they exist) and leave
-                # the DQ frames alone (if they exist).
-                log.debug('Calling ad.mult to convert pixel units from '+
-                          'ADU to electrons')
+            # mult in this primitive will multiply the SCI frames by the
+            # frame's gain, VAR frames by gain^2 (if they exist) and leave
+            # the DQ frames alone (if they exist).
+            log.debug('Calling ad.mult to convert pixel units from '+
+                      'ADU to electrons')
 
-                adOut = ad.mult(ad['SCI'].gain(asDict=True))  
-                
-                log.status('ad.mult completed converting the pixel units'+
-                           ' to electrons')              
-                
-                # Updating SCI headers
-                for ext in adOut['SCI']:
-                    # Retrieving this SCI extension's gain
-                    gainorig = ext.gain()
-                    # Updating this SCI extension's header keys
-                    ext.header.update('GAINORIG', gainorig, 
-                                       'Gain prior to unit conversion (e-/ADU)')
-                    ext.header.update('GAIN', 1.0, 
-                                      'Physical units is electrons') 
-                    ext.header.update('BUNIT','electrons' , 'Physical units')
-                    # Logging the changes to the header keys
-                    log.fullinfo('SCI extension number '+str(ext.extver())+
-                                 ' keywords updated/added:\n', 
-                                 category='header')
-                    log.fullinfo('GAINORIG = '+str(gainorig), 
-                                 category='header' )
-                    log.fullinfo('GAIN = '+str(1.0), category='header' )
-                    log.fullinfo('BUNIT = '+'electrons', category='header' )
-                    log.fullinfo('-'*50, category='header')
-                    
-                # Updating VAR headers if they exist (not updating any 
-                # DQ headers as no changes were made to them here)  
-                for ext in adOut['VAR']:
-                    # Ensure there are no GAIN and GAINORIG header keys for 
-                    # the VAR extension. No errors are thrown if they aren't 
-                    # there initially, so all good not to check ahead. 
-                    del ext.header['GAINORIG']
-                    del ext.header['GAIN']
-                    
-                    # Updating then logging the change to the BUNIT 
-                    # key in the VAR header
-                    ext.header.update('BUNIT','electrons squared' , 
-                                       'Physical units')
-                    # Logging the changes to the VAR extensions header keys
-                    log.fullinfo('VAR extension number '+str(ext.extver())+
-                                 ' keywords updated/added:\n',
-                                  category='header')
-                    log.fullinfo('BUNIT = '+'electrons squared', 
-                                 category='header' )
-                    log.fullinfo('-'*50, category='header')
+            adOut = ad.mult(ad['SCI'].gain(asDict=True))  
+            
+            log.status('ad.mult completed converting the pixel units'+
+                       ' to electrons')  
                         
-                # Adding GEM-TLM (automatic) and ADU2ELEC time stamps to PHU
-                adOut.historyMark(key='ADU2ELEC', stomp=False)
-                
-                # Updating the file name with the suffix for this
-                # function and then reporting the new file 
-                if suffix!=None:
-                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                    if outNames!=None:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          infilename=outNames[count],
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                    else:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                elif suffix==None:
-                    if outNames!=None:
-                        if len(outNames)>1: 
-                            adOut.filename = outNames[count]
-                        else:
-                            adOut.filename = outNames
-                    else:
-                        raise ScienceError('outNames and suffix parameters \
-                                                        can not BOTH be None')
-                        
-                log.status('File name updated to '+adOut.filename)
-                
-                # Updating logger with time stamps
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
+            # moving the filename over as mult doesn't do that
+            adOut.filename = ad.filename
+            
+            # Updating SCI headers
+            for sciExt in adOut['SCI']:
+                # Retrieving this SCI extension's gain
+                gainorigDict = sciExt.gain()
+                gainorig = gainorigDict[(sciExt.extname(), sciExt.extver())] 
+                # Updating this SCI extension's header keys
+                sciExt.header.update('GAINORIG', gainorig, 
+                                   'Gain prior to unit conversion (e-/ADU)')
+                sciExt.header.update('GAIN', 1.0, 
+                                  'Physical units is electrons') 
+                sciExt.header.update('BUNIT','electrons' , 'Physical units')
+                # Logging the changes to the header keys
+                log.fullinfo('SCI extension number '+str(sciExt.extver())+
+                             ' keywords updated/added:\n', 
                              category='header')
-                log.fullinfo('ADU2ELEC = '+adOut.phuGetKeyValue('ADU2ELEC'), 
-                             category='header')
+                log.fullinfo('GAINORIG = '+str(gainorig), 
+                             category='header' )
+                log.fullinfo('GAIN = '+str(1.0), category='header' )
+                log.fullinfo('BUNIT = '+'electrons', category='header' )
                 log.fullinfo('-'*50, category='header')
                 
-                if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                    adOutputs.append(adOut)
-                else:
-                    adOutputs = adOut
+            # Updating VAR headers if they exist (not updating any 
+            # DQ headers as no changes were made to them here)  
+            for varExt in adOut['VAR']:
+                # Ensure there are no GAIN and GAINORIG header keys for 
+                # the VAR extension. No errors are thrown if they aren't 
+                # there initially, so all good not to check ahead. 
+                del varExt.header['GAINORIG']
+                del varExt.header['GAIN']
+                
+                # Updating then logging the change to the BUNIT 
+                # key in the VAR header
+                varExt.header.update('BUNIT','electrons squared' , 
+                                   'Physical units')
+                # Logging the changes to the VAR extensions header keys
+                log.fullinfo('VAR extension number '+str(varExt.extver())+
+                             ' keywords updated/added:\n',
+                              category='header')
+                log.fullinfo('BUNIT = '+'electrons squared', 
+                             category='header' )
+                log.fullinfo('-'*50, category='header')
+            
+            # Updating GEM-TLM (automatic) and ADU2ELEC time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='ADU2ELEC')
 
-                count=count+1
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename)
+            
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count=count+1
+        
         log.status('**FINISHED** the adu_to_electrons function')
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
@@ -950,213 +733,165 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-
-    log.status('**STARTING** the bias_correct function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-    
-    try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
-            
-            # Creating empty list of ad's to be returned that will be filled below
-            if isinstance(adInputs,list) and (len(adInputs)>1):
-                adOutputs = []
-                
-            # loading and bringing the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader()
-                
-            # Performing work in a loop, so that different biases may be
-            # used for each input as gireduce only allows one bias input per run.
-            for ad in adInputs:
-                
-                # To clean up log and screen if multiple inputs
-                log.fullinfo('+'*50, category='format')    
-                
-                if isinstance(outNames,list) and (len(outNames)>1):
-                    outName = outNames[count]
-                elif isinstance(outNames,list) and (len(outNames)==1):
-                    outName = outNames[0]
-                else:
-                    outName = None
-                
-                # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
-                if fl_vardq=='AUTO':
-                    if adInputs[0].countExts('VAR')==\
-                    adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
-                else:
-                    if fl_vardq:
-                        fl_vardq=yes
-                    elif fl_vardq==False:
-                        fl_vardq=no
-                
-                # Preparing input files, lists, parameters... for input to 
-                # the CL script
-                clm=gemt.CLManager(imageIns=ad, imageOutsNames=outName, 
-                                   suffix=suffix,  funcName='biasCorrect', 
-                                   logName=logName, logLevel=logLevel, 
-                                   noLogFile=noLogFile)
-                
-                # Check the status of the CLManager object, True=continue, False= issue warning
-                if clm.status:               
-                    
-                    # Setting up the processedBias correctly
-                    if (isinstance(biases,list)) and (len(biases)>1):
-                        processedBias = biases[count]
-                    elif (isinstance(biases,list)) and (len(biases)==1):
-                        # Not sure if I need this check, but can't hurt
-                        processedBias = biases[0]
-                    else:
-                        processedBias = biases
-                        
-                    # Parameters set by the gemt.CLManager or the definition of the function 
-                    clPrimParams = {
-                      'inimages'    :clm.imageInsFiles(type='string'),
-                      'gp_outpref'  :clm.prefix,
-                      'outimages'   :clm.imageOutsFiles(type='string'),
-                      # This returns a unique/temp log file for IRAF 
-                      'logfile'     :clm.templog.name,     
-                      'fl_bias'     :yes,
-                      # Possibly add this to the params file so the user can override
-                      # this input file
-                      'bias'        :processedBias,   
-                      # This is actually in the default dict but wanted to show it again  
-                      'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
-                      # This is actually in the default dict but wanted to show it again
-                      'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
-                      # This is actually in the default dict but wanted to show it again
-                      'verbose'     :yes                
-                                  }
-                        
-                    # Parameters from the Parameter file adjustable by the user
-                    clSoftcodedParams = {
-                       # pyrafBoolean converts the python booleans to pyraf ones
-                       'fl_trim'    :gemt.pyrafBoolean('fl_trim'),
-                       'outpref'    :suffix,
-                       'fl_over'    :gemt.pyrafBoolean('fl_over'),
-                       'fl_vardq'   :gemt.pyrafBoolean('fl_vardq')
-                                       }
-                    # Grabbing the default params dict and updating it 
-                    # with the two above dicts
-                    clParamsDict = CLDefaultParamsDict('gireduce', 
-                                                       logLevel=logLevel)
-                    clParamsDict.update(clPrimParams)
-                    clParamsDict.update(clSoftcodedParams)
-                
-                    # Logging the parameters that were not defaults
-                    log.fullinfo('\nParameters set automatically:', 
-                                 category='parameters')
-                    # Loop through the parameters in the clPrimParams dictionary
-                    # and log them
-                    gemt.logDictParams(clPrimParams, logLevel=logLevel)
-                    
-                    log.fullinfo('\nParameters adjustable by the user:', 
-                                 category='parameters')
-                    # Loop through the parameters in the clSoftcodedParams 
-                    # dictionary and log them
-                    gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
-                    
-                    log.debug('calling the gireduce CL script for inputs '+
-                                            clm.imageInsFiles(type='string'))
-                
-                    gemini.gmos.gireduce(**clParamsDict)
-            
-                    if gemini.gmos.gireduce.status:
-                        log.critical('gireduce failed for inputs '+
-                                     clm.imageInsFiles(type='string'))
-                        raise ScienceError('gireduce failed')
-                    else:
-                        log.status('Exited the gireduce CL script successfully')
-                        
-                    # Renaming CL outputs and loading them back into memory 
-                    # and cleaning up the intermediate temp files written to disk
-                    # refOuts and arrayOuts are None here
-                    imageOuts, refOuts, arrayOuts = clm.finishCL() 
-                    
-                    # Renaming for symmetry
-                    adOutputs=imageOuts
-                    
-                    # There is only one at this point so no need to perform a loop
-                    # CLmanager outputs a list always, so take the 0th
-                    adOut = adOutputs[0]
-                    
-                    # Varifying gireduce was actually ran on the file
-                    # then logging file names of successfully reduced files
-                    if adOut.phuGetKeyValue('GIREDUCE'): 
-                        log.fullinfo('\nFile '+clm.preCLNames()[0]+
-                                     ' was bias subracted successfully')
-                        log.fullinfo('New file name is: '+adOut.filename)
-      
-                    # Updating the GEM-TLM (automatic) and BIASCORR time stamps in 
-                    # the PHU
-                    adOut.historyMark(key='BIASCORR', stomp=False)  
-                    
-                    # Reseting the value set by gireduce to just the filename
-                    # for clarity
-                    adOut.phuSetKeyValue('BIASIM', 
-                                         os.path.basename(processedBias)) 
-                    
-                    # Updating log with new GEM-TLM value and BIASIM header keys
-                    log.fullinfo('*'*50, category='header')
-                    log.fullinfo('File = '+adOut.filename, category='header')
-                    log.fullinfo('~'*50, category='header')
-                    log.fullinfo('PHU keywords updated/added:\n', 'header')
-                    log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                                 category='header')
-                    log.fullinfo('BIASCORR = '+adOut.phuGetKeyValue('BIASCORR'), 
-                                 category='header')
-                    log.fullinfo('BIASIM = '+adOut.phuGetKeyValue('BIASIM')+'\n', 
-                                 category='header')
-                    
-                    if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                        adOutputs.append(adOut)
-                    else:
-                        adOutputs = adOut
-               
-                    count = count+1
-                    
-                else:
-                    log.critical('One of the inputs has not been prepared,\
-                    the combine function can only work on prepared data.')
-                    raise ScienceError('One of the inputs was not prepared')
-                
-            log.warning('The CL script gireduce REPLACED the previously '+
-                        'calculated DQ frames')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      'bias_correct', logName, logLevel, 
+                                      noLogFile)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
         
-        else:
-            log.critical('The parameter "adInputs" must not be None')
-            raise ScienceError('The parameter "adInputs" must not be None')
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+            
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()
+            
+        # Performing work in a loop, so that different biases may be
+        # used for each input as gireduce only allows one bias input per run.
+        for ad in adInputs:
+            
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
+            
+            # Converting input True/False to yes/no or detecting fl_vardq value
+            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+            fl_vardq = sfm.autoVardq(fl_vardq)
+            
+            # Setting up the processedBias correctly
+            if (isinstance(biases,list)) and (len(biases)>1):
+                processedBias = biases[count]
+            elif (isinstance(biases,list)) and (len(biases)==1):
+                # Not sure if I need this check, but can't hurt
+                processedBias = biases[0]
+            else:
+                processedBias = biases
+                
+            
+            # Preparing input files, lists, parameters... for input to 
+            # the CL script
+            clm=gemt.CLManager(imageIns=ad, imageOutsNames=outNames[count], 
+                               refIns=processedBias, suffix=suffix,  
+                               funcName='biasCorrect', logName=logName, 
+                               logLevel=logLevel, noLogFile=noLogFile)
+            
+            # Check the status of the CLManager object, True=continue, False= issue warning
+            if clm.status:               
+                    
+                # Parameters set by the gemt.CLManager or the definition of the function 
+                clPrimParams = {
+                  'inimages'    :clm.imageInsFiles(type='string'),
+                  'gp_outpref'  :clm.prefix,
+                  'outimages'   :clm.imageOutsFiles(type='string'),
+                  # This returns a unique/temp log file for IRAF 
+                  'logfile'     :clm.templog.name,     
+                  'fl_bias'     :yes,
+                  # Possibly add this to the params file so the user can override
+                  # this input file
+                  'bias'        :clm.refInsFiles(type='string'),   
+                  # This is actually in the default dict but wanted to show it again  
+                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+                  # This is actually in the default dict but wanted to show it again
+                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+                  # This is actually in the default dict but wanted to show it again
+                  'verbose'     :yes                
+                              }
+                    
+                # Parameters from the Parameter file adjustable by the user
+                clSoftcodedParams = {
+                   # pyrafBoolean converts the python booleans to pyraf ones
+                   'fl_trim'    :gemt.pyrafBoolean(fl_trim),
+                   'outpref'    :suffix,
+                   'fl_over'    :gemt.pyrafBoolean(fl_over),
+                   'fl_vardq'   :gemt.pyrafBoolean(fl_vardq)
+                                   }
+                # Grabbing the default params dict and updating it 
+                # with the two above dicts
+                clParamsDict = CLDefaultParamsDict('gireduce',
+                                                   logLevel=logLevel)
+                clParamsDict.update(clPrimParams)
+                clParamsDict.update(clSoftcodedParams)
+            
+                # Logging the parameters that were not defaults
+                log.fullinfo('\nParameters set automatically:', 
+                             category='parameters')
+                # Loop through the parameters in the clPrimParams dictionary
+                # and log them
+                gemt.logDictParams(clPrimParams, logLevel=logLevel)
+                
+                log.fullinfo('\nParameters adjustable by the user:', 
+                             category='parameters')
+                # Loop through the parameters in the clSoftcodedParams 
+                # dictionary and log them
+                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+                
+                log.debug('calling the gireduce CL script for inputs '+
+                                        clm.imageInsFiles(type='string'))
+            
+                gemini.gmos.gireduce(**clParamsDict)
+        
+                if gemini.gmos.gireduce.status:
+                    log.critical('gireduce failed for inputs '+
+                                 clm.imageInsFiles(type='string'))
+                    raise ScienceError('gireduce failed')
+                else:
+                    log.status('Exited the gireduce CL script successfully')
+                    
+                # Renaming CL outputs and loading them back into memory 
+                # and cleaning up the intermediate temp files written to disk
+                # refOuts and arrayOuts are None here
+                imageOuts, refOuts, arrayOuts = clm.finishCL() 
+                
+                # There is only one at this point so no need to perform a loop
+                # CLmanager outputs a list always, so take the 0th
+                adOut = imageOuts[0]
+                
+                # Varifying gireduce was actually ran on the file
+                # then logging file names of successfully reduced files
+                if adOut.phuGetKeyValue('GIREDUCE'): 
+                    log.fullinfo('\nFile '+clm.preCLimageNames()[0]+
+                                 ' was bias subracted successfully')
+                    log.fullinfo('New file name is: '+adOut.filename)
+  
+                # Updating GEM-TLM (automatic) and ADU2ELEC time stamps to the PHU
+                # and updating logger with updated/added time stamps
+                sfm.markHistory(adOutputs=adOut, historyMarkKey='BIASCORR')
+
+                # Reseting the value set by gireduce to just the filename
+                # for clarity
+                adOut.phuSetKeyValue('BIASIM', 
+                                     os.path.basename(processedBias.filename)) 
+                
+                # Updating log with new BIASIM header key
+                log.fullinfo('Another PHU keywords added:\n', 'header')
+                log.fullinfo('BIASIM = '+adOut.phuGetKeyValue('BIASIM')+'\n', 
+                             category='header')
+                
+                # renaming the output ad filename
+                adOut.filename = outNames[count]
+           
+                # Appending to output list
+                adOutputs.append(adOut)
+
+                count = count+1
+                
+            else:
+                log.critical('One of the inputs has not been prepared,\
+                the combine function can only work on prepared data.')
+                raise ScienceError('One of the inputs was not prepared')
+            
+        log.warning('The CL script gireduce REPLACED the previously '+
+                    'calculated DQ frames')
         
         log.status('**FINISHED** the bias_correct function')
         
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
-        raise ScienceError('An error occurred while trying to run bias_correct')     
+        raise #ScienceError('An error occurred while trying to run bias_correct')     
     
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
             outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
@@ -1250,19 +985,10 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 # loading and bringing the pyraf related modules into the name-space
                 pyraf, gemini, yes, no = pyrafLoader()
                 
-                # Determining if gireduce should propigate the VAR and DQ frames, if 'AUTO' was chosen 
-                if fl_vardq=='AUTO':
-                    if adInputs[0].countExts('VAR')==\
-                    adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
-                else:
-                    if fl_vardq:
-                        fl_vardq=yes
-                    elif fl_vardq==False:
-                        fl_vardq=no
-                
+                # Converting input True/False to yes/no or detecting fl_vardq value
+                # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+                fl_vardq = sfm.autoVardq(fl_vardq)
+                    
                 # Preparing input files, lists, parameters... for input to 
                 # the CL script
                 clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
@@ -1811,18 +1537,9 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
             # loading and bringing the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader()  
                 
-            # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
-            if fl_vardq=='AUTO':
-                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')\
-                                                ==adInputs[0].countExts('SCI'):
-                    fl_vardq=yes
-                else:
-                    fl_vardq=no
-            else:
-                if fl_vardq:
-                    fl_vardq=yes
-                elif fl_vardq==False:
-                    fl_vardq=no
+            # Converting input True/False to yes/no or detecting fl_vardq value
+            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+            fl_vardq = sfm.autoVardq(fl_vardq)
             
             # To clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    
@@ -1908,7 +1625,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                     # Varifying gireduce was actually ran on the file
                     # then logging file names of successfully reduced files
                     if ad.phuGetKeyValue('GMOSAIC'): 
-                        log.fullinfo('\nFile '+clm.preCLNames()[i]+\
+                        log.fullinfo('\nFile '+clm.preCLimageNames()[i]+\
                                      ' mosaiced successfully')
                         log.fullinfo('New file name is: '+ad.filename)
                     i=i+1
@@ -2034,18 +1751,9 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             # loading and bringing the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader()  
                 
-            # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
-            if fl_vardq=='AUTO':
-                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')\
-                                                ==adInputs[0].countExts('SCI'):
-                    fl_vardq=yes
-                else:
-                    fl_vardq=no
-            else:
-                if fl_vardq:
-                    fl_vardq=yes
-                elif fl_vardq==False:
-                    fl_vardq=no
+            # Converting input True/False to yes/no or detecting fl_vardq value
+            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+            fl_vardq = sfm.autoVardq(fl_vardq)
             
             # To clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    

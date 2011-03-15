@@ -535,13 +535,16 @@ class CLManager(object):
                          Use the imageInsFiles function to return the file names
                          for the temporary disk file versions of these inputs
                          in any desired form for input to IRAF.
-        :type imageIns: astrodata object(s); Either as single instance, a list of them, or None.
+        :type imageIns: astrodata object(s); Either as single instance, a list 
+                        of them, or None.
         
-        :param refIns: Input reference image(s). This may be used for any second set of input images.
+        :param refIns: Input reference image(s). This may be used for any 
+                       second set of input images.
                        Use the refInsFiles function to return the file names
                        for the temporary disk file versions of these inputs
                        in any desired form for input to IRAF.
-        :type adIns: astrodata object(s); Either as single instance, a list of them, or None.
+        :type adIns: astrodata object(s); Either as single instance, a list of 
+                     them, or None.
         
         :param arrayIns: Input array(s) of object locations in the images or 
                          any other arrays needed for input to IRAF.
@@ -552,52 +555,65 @@ class CLManager(object):
                         an entire line to be written to an input file for IRAF; 
                         Either list of input arrays or None.
                         Format: 
-                        [[list1-line1,list1-line2,...],[list2-line2,list2-line2,...],...]
+                        [[list1-line1,list1-line2,...],[list2-line2,list2-line2,
+                        ...],...]
                         another way of looking at it if lists are objects:
                         [LIST1, LIST2,...]
                         Even if only a single list is to be passed in, it MUST  
                         be within another set of [].
         
-        :param suffix: Desired suffix to be added to input filenames to create the output names.
-                       Use this option if not using the imageOutsNames/refOutsNames parameters for 
+        :param suffix: Desired suffix to be added to input filenames to create 
                        the output names.
+                       Use this option if not using the imageOutsNames/
+                       refOutsNames parameters for the output names.
         :type suffix: String
         
-        :param imageOutsNames: Desired final name(s) of output image(s) from IRAF.
+        :param imageOutsNames: Desired final name(s) of output image(s) from 
+                               IRAF.
                                Use the imageOutsFiles function to return these 
                                file names in any desired form for input to IRAF.
-        :type imageOutsNames: String(s); Either a single string, a list of them of length matching the 
-                              expected number of output images from IRAF, or None. If None,
-                              the list will be populated automatically by use of the 'combinedImages' 
-                              flag and post pending the 'suffix' parameter onto the input image names.
+        :type imageOutsNames: String(s); Either a single string, a list of them 
+                              of length matching the expected number of output 
+                              images from IRAF, or None. If None, the list will 
+                              be populated automatically by use of the 
+                              'combinedImages' flag and post pending the 
+                              'suffix' parameter onto the input image names.
                              
                         
-        :param refOutsNames: Desired final name(s) of output reference image(s) from IRAF. 
-                             These could be used to name any second set of output images.
+        :param refOutsNames: Desired final name(s) of output reference image(s) 
+                             from IRAF. 
+                             These could be used to name any second set of 
+                             output images.
                              Use the refOutsFiles function to return these 
                              file names in any desired form for input to IRAF.
-        :type refOutsNames: String(s); Either a single string, a list of them of length matching the 
-                            expected number of output reference images from IRAF, or None.
-                            If None, no reference image outputs from IRAF will be handled by the CLManager.         
+        :type refOutsNames: String(s); Either a single string, a list of them of 
+                            length matching the expected number of output 
+                            reference images from IRAF, or None.
+                            If None, no reference image outputs from IRAF will 
+                            be handled by the CLManager.         
         
         :param numArrayOuts: The number of expected arrays to be output by IRAF.
-                             The output array names will be automatically created.
+                             The output array names will be automatically 
+                             created.
                              Use the arrayOutsFiles function to return these
                              file names in any desired form for input to IRAF.
         :type numArrayOuts: int or None.
-                            If 0 or None, no array outputs from IRAF will be handled by the CLManager.
+                            If 0 or None, no array outputs from IRAF will be 
+                            handled by the CLManager.
         
-        :param combinedImages: A flag to indicated that the input images of imageIns
-                               will be combined to form one single image output from IRAF.
+        :param combinedImages: A flag to indicated that the input images of 
+                               imageIns will be combined to form one single 
+                               image output from IRAF.
                                The use of this parameter is optional and is  
                                overridden by providing imageOutsNames. 
                                No parallel version of this argument exists for
                                refIns.
         :type combinedImages: Python boolean (True/False)
         
-        :param funcName: Name of the Python function using the CLManager. This is used
-                         to name the temporary files on disk for input to IRAF; so using 
-                         the function name makes it easier to track down any errors that might occur.
+        :param funcName: Name of the Python function using the CLManager. This 
+                         is used to name the temporary files on disk for input 
+                         to IRAF; so using the function name makes it easier to 
+                         track down any errors that might occur.
         :type funcName: String
         
         :param logName: Name of the log file to write log messages to, 
@@ -606,17 +622,19 @@ class CLManager(object):
         
         :param logLevel: Verbosity setting for the log messages to screen,
                          default is 'critical' messages only.
-                         Note: independent of logLevel setting, all messages always go 
-                         to the logfile if noLogFile=False.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                        OR the message level as a string (ie. 'critical', 'status', 
-                        'fullinfo'...)
+                         Note: independent of logLevel setting, all messages 
+                         always go to the logfile if noLogFile=False.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen.
+                        OR the message level as a string (ie. 'critical', 
+                        'status', 'fullinfo'...)
     
         :param noLogFile: A boolean to make it so no log file is created
         :type noLogFile: Python boolean (True/False)
         
         """
-        # Casting the two types of input images to lists for internal use, if not None
+        # Casting the two types of input images to lists for internal use, 
+        # if not None
         if imageIns!=None:
             if isinstance(imageIns,list):
                 self.imageIns = imageIns
@@ -1136,9 +1154,40 @@ class CLManager(object):
                 
         return (self.imageOuts, self.refOuts, self.arrayOuts)
 
+class IrafStdout():
+    """ This is a class to act as the standard output for the IRAF 
+        routines that instead of printing its messages to the screen,
+        it will print them to the gemlog.py logger that the primitives use
+        
+    """
+    log=None
+    
+    def __init__(self, logLevel=1):
+        """ A function that is needed IRAF but not used in our wrapping its
+            scripts
+        """
+        self.log = gemLog.getGeminiLog(logLevel=logLevel)
+    
+    def write(self, out):
+        """ This function converts the IRAF console prints to logger calls.
+            If the print has 'PANIC' in it, then it becomes a error log message,
+            else it becomes a fullinfo message.
+            
+        """
+        if 'PANIC' in out or 'ERROR' in out:
+            self.log.error(out, category='clError')
+        elif len(out) > 1:
+            self.log.fullinfo(out, category='clInfo')
+        
+    def flush(self):
+        """ A function that is needed IRAF but not used in our wrapping its
+            scripts
+        """
+        pass
+
 class ScienceFunctionManager():
     """
-    A manager class to take hold functions for performing input checks, naming,
+    A manager class to hold functions for performing input checks, naming,
     log instantiation... code that is repeated throughout all the 'user level
     functions' in the gempy libraries (currently those functions in 
     science/geminiScience.py and gmosScience.py).
@@ -1151,7 +1200,7 @@ class ScienceFunctionManager():
     logLevel = 1
     log = None    
     
-    def __init__(self, adInputs, outNames=None, suffix=None, funcName=None,
+    def __init__(self, adInputs=None, outNames=None, suffix=None, funcName=None,
                  logName='', logLevel=1, noLogFile=False):
         """
         This will load up the global variables to use throughout the manager
@@ -1159,34 +1208,34 @@ class ScienceFunctionManager():
         back in the 'user level function' that is utilizing this manager.
         
         :param adInputs: Astrodata inputs to have DQ extensions added to
-        :type adInputs: Astrodata objects, either a single or a list of objects
+        :type adInputs: Astrodata objects, either a single or a list of objects.
+                        At least one object MUST be passed in for adInputs.
         
         :param outNames: filenames of output(s)
         :type outNames: String, either a single or a list of strings of same 
                         length as adInputs.
         
-        :param suffix: string to add on the end of the input filenames 
-                        (or outNames if not None) for the output filenames.
+        :param suffix: String to add on the end of the input filenames 
+                       (or outNames if not None) for the output filenames.
         :type suffix: string
         
-        :param funcName: Name of the Python function using the ScienceManager.
+        :param funcName: Name of the Python function using this manager.
         :type funcName: String
         
         :param logName: Name of the log file, default is 'gemini.log'
         :type logName: string
         
-        :param logLevel: verbosity setting for the log messages to screen,
-                        default is 'critical' messages only.
-                        Note: independent of logLevel setting, all messages   
-                        always go to the logfile if it is not turned off.
+        :param logLevel: Verbosity setting for the log messages to screen,
+                         default is 'critical' messages only.
+                         Note: independent of logLevel setting, all messages   
+                         always go to the logfile if noLogFile=False.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         
         :param noLogFile: A boolean to make it so no log file is created
         :type noLogFile: Python boolean (True/False)
-        """
-        
+        """ 
         self.adInputs = adInputs
         self.outNames = outNames
         self.suffix = suffix
@@ -1198,63 +1247,72 @@ class ScienceFunctionManager():
     def startUp(self):
         """
         This function is to perform the input checks and fill out the outNames
-        parameter if needed
+        parameter if needed.
         """
         try:
+            # Ensuring there are inputs ads to work on, else raise
+            if self.adInputs==None:
+                self.log.critical('The parameter "adInputs" must not be None')
+                raise ToolboxError()
+            elif isinstance(self.adInputs,list):
+                if len(self.adInputs)==0:
+                    self.log.critical('The parameter "adInputs" must not be\
+                                        an empty list')
+                    raise ToolboxError()
+                
             # raise if funcName=None as it needs to be a valid string
             if self.funcName==None:
+                self.log.critical('funcName was None, must be a string.')
                 raise ToolboxError()
             
-            self.log.status('**STARTING** the '+funcName+' function')
+            self.log.status('**STARTING** the '+self.funcName+' function')
     
+            # casting the input ad's and outNames into lists 
+            # for internal use and simplified returning
             if not isinstance(self.adInputs,list):
                 self.adInputs=[self.adInputs]
             if self.outNames==None:
                 self.outNames = []
             if (not isinstance(self.outNames,list)):
-                self.outNames = [self.outNames]
-                
-            if (self.adInputs!=None) and (self.outNames!=None):
-                if isinstance(self.outNames,list):
-                    if len(self.adInputs)!= len(self.outNames):
-                        if self.suffix==None:
-                           raise ToolboxError('Then length of the inputs, '+
-                                              str(len(self.adInputs))+
-                               ', did not match the length of the outputs, '+
-                               str(len(self.outNames))+
-                               ' AND no value of "suffix" was passed in')
-                if isInstance(self.outNames,str) and len(self.adInputs)>1:
+                if isinstance(self.outNames,str):
+                    self.outNames = [self.outNames]
+                elif self.suffix==None:
+                    self.log.critical('outNames must be either a string or a \
+                                     list of them.')
+                    raise ToolboxError()
+            
+            # Checking combinations of outNames, suffix and len(adInputs) are 
+            # valid
+            if len(self.outNames)>0:
+                if len(self.adInputs)!= len(self.outNames):
+                    self.log.critical('outNames was not None or the same \
+                                length as number of adInputs')
+                    raise ToolboxError()
+            elif len(self.adInputs)>1:
                     if self.suffix==None:
-                           raise ToolboxError('Then length of the inputs, '+
-                                              str(len(self.adInputs))+
-                               ', did not match the length of the outputs, '+
-                               str(len(self.outNames))+
-                               ' AND no value of "suffix" was passed in')
+                        self.log.critical('Both outNames and suffix were None')
+                        raise ToolboxError()
                 
             # Checking the current outNames and loading it up if needed
             if len(self.outNames)!=len(self.adInputs):
                 for ad in self.adInputs:
-                    if self.suffix!=None:
-                        self.log.debug('Calling gemt.fileNameUpdater on '+
-                                       ad.filename)
-                       
-                        outName = gemt.fileNameUpdater(
-                                                      infilename=ad.filename,
-                                                      suffix=self.suffix, 
-                                                      strip=False, 
-                                                      logLevel=self.logLevel)
-                    else:
-                        raise ToolboxError('outNames and suffix parameters \
-                                                        can not BOTH be None')
+                    self.log.debug('Calling gemt.fileNameUpdater on '+
+                                   ad.filename)
+                    print ad.filename ############
+                    print self.suffix ################
+                    
+                    outName = fileNameUpdater(infilename=ad.filename,
+                                              suffix=self.suffix, strip=False, 
+                                              logLevel=self.logLevel)
                     self.outNames.append(outName)
-                    count = count+1
                 
-            # return the now checked and loaded up (if needed) adInputs and 
-            # outNames
-            return self.adInputs, self.outNames, self.log
+            # return the now checked and loaded up (if needed) adInputs, 
+            # outNames and log object
+            return (self.adInputs, self.outNames, self.log)
             
         except ToolboxError:
-            raise ToolboxError()
+            raise ToolboxError('An Error occurred during\
+                                ScienceFunctionManager.startUp')
     
     def autoVardq(self, fl_vardq):
         """
@@ -1289,10 +1347,12 @@ class ScienceFunctionManager():
                 fl_vardq=yes
             elif fl_vardq==False:
                 fl_vardq=no
+       
+        return fl_vardq
     
-    def wrapUp(self, adOuts=None, historyMarkKey=None):
+    def markHistory(self, adOutputs=None, historyMarkKey=None):
         """
-        The function to use at the end of a python user level function to 
+        The function to use near the end of a python user level function to 
         add a historyMark timestamp to all the outputs indicating when and what
         function was just performed on them, then logging the new historyMarkKey
         PHU key and updated 'GEM-TLM' key values due to historyMark.
@@ -1300,14 +1360,19 @@ class ScienceFunctionManager():
         Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
         automatically everytime wrapUp is called.
         
-        :param adOut: List of astrodata instance(s) to perform historyMark on.
-        :type adOut: Either a single or multiple astrodata instances in a list.
+        :param adOutputs: List of astrodata instance(s) to perform historyMark on.
+        :type adOutputs: Either a single or multiple astrodata instances in a list.
         
         :param historyMarkKey: The PHU header key to write the current UT time 
         :type historyMarkKey: Under 8 character, all caps, string.
                               If None, then only 'GEM-TLM' is added/updated.
         """
-        for ad in adouts:
+        # casting inputs to a list if not one all ready to make loop work right
+        if not isinstance(adOutputs,list):
+            adOutputs = [adOutputs]
+        
+        # looping though inputs to perform historyMark on each of them
+        for ad in adOutputs:
             # Adding 'GEM-TLM' (automatic) and historyMarkKey (if not None)
             # time stamps to the PHU
             ad.historyMark(key=historyMarkKey, stomp=False)
@@ -1320,38 +1385,10 @@ class ScienceFunctionManager():
             self.log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
                               category='header')
             if historyMarkKey!=None:
-                self.log.fullinfo(historyMarkKey+
+                self.log.fullinfo(historyMarkKey+' = '+
                                   ad.phuGetKeyValue(historyMarkKey), 
                                   category='header')
             self.log.fullinfo('-'*50, category='header')
         
-        
-class IrafStdout():
-    """  This is a class to act as the standard output for the IRAF 
-        routines that instead of printing its messages to the screen,
-        it will print them to the gemlog.py logger that the primitives use
-        
-    """
-    log=None
-    
-    def __init__(self, logLevel=1):
-        """ A function that is needed IRAF but not used in our wrapping its
-        scripts"""
-        self.log = gemLog.getGeminiLog(logLevel=logLevel)
-    
-    def write(self, out):
-        """ This function converts the IRAF console prints to logger calls.
-            If the print has 'PANIC' in it, then it becomes a error log message,
-            else it becomes a fullinfo message.
-            
-        """
-        if 'PANIC' in out or 'ERROR' in out:
-            self.log.error(out, category='clError')
-        elif len(out) > 1:
-            self.log.fullinfo(out, category='clInfo')
-        
-    def flush(self):
-        """ A function that is needed IRAF but not used in our wrapping its
-        scripts"""
-        pass
+
  

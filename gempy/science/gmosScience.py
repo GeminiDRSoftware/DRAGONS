@@ -128,18 +128,9 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
             if len(adInputs)>1:
                 adOutputs=[]
                     
-            # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
-            if fl_vardq=='AUTO':
-                if adInputs[0].countExts('VAR')==adInputs[0].countExts('DQ')\
-                                                ==adInputs[0].countExts('SCI'):
-                    fl_vardq=yes
-                else:
-                    fl_vardq=no
-            else:
-                if fl_vardq:
-                    fl_vardq=yes
-                elif fl_vardq==False:
-                    fl_vardq=no
+            # Converting input True/False to yes/no or detecting fl_vardq value
+            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+            fl_vardq = sfm.autoVardq(fl_vardq)
             
             # To clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')                                 
@@ -555,18 +546,9 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 if len(adInputs)>1:
                     adOutputs=[]
                         
-                # Determining if gmosaic should propigate the VAR and DQ frames, if 'AUTO' was chosen 
-                if fl_vardq=='AUTO':
-                    if adInputs[0].countExts('VAR')==\
-                    adInputs[0].countExts('DQ')==adInputs[0].countExts('SCI'):
-                        fl_vardq=yes
-                    else:
-                        fl_vardq=no
-                else:
-                    if fl_vardq:
-                        fl_vardq=yes
-                    elif fl_vardq==False:
-                        fl_vardq=no
+                # Converting input True/False to yes/no or detecting fl_vardq value
+                # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+                fl_vardq = sfm.autoVardq(fl_vardq)
                 
                 # To clean up log and screen if multiple inputs
                 log.fullinfo('+'*50, category='format')                                 
