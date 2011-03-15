@@ -15,9 +15,9 @@ def removeComponentID(instr):
     m = re.match (r"(?P<filt>.*?)_G(.*?)", instr)
     if not m:
         # There was no "_G" in the input string. Return the input string
-        ret_str = instr
+        ret_str = str(instr)
     else:
-        ret_str = m.group("filt")
+        ret_str = str(m.group("filt"))
 
     return ret_str
 
