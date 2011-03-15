@@ -94,173 +94,140 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
     :type noLogFile: Python boolean (True/False)
     """
 
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-
-    log.status('**STARTING** the overscanSubtract function')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, 
+                                      funcName='overscan_subtract') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-    
-    try:
-        if adInputs!=None: 
-            # loading and bringing the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader() 
-             
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
-                    
-            # Converting input True/False to yes/no or detecting fl_vardq value
-            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
-            fl_vardq = sfm.autoVardq(fl_vardq)
+    try: 
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader() 
+         
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+                
+        # Converting input True/False to yes/no or detecting fl_vardq value
+        # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+        fl_vardq = sfm.autoVardq(fl_vardq)
+        
+        # To clean up log and screen if multiple inputs
+        log.fullinfo('+'*50, category='format')                                 
             
-            # To clean up log and screen if multiple inputs
-            log.fullinfo('+'*50, category='format')                                 
-                
-            # Preparing input files, lists, parameters... for input to 
-            # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
-                               suffix=suffix, funcName='overscanSubtract',   
-                               logName=logName, logLevel=logLevel, 
-                               noLogFile=noLogFile)
+        # Preparing input files, lists, parameters... for input to 
+        # the CL script
+        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                           suffix=suffix, funcName='overscanSubtract',   
+                           logName=logName, logLevel=logLevel, 
+                           noLogFile=noLogFile)
+        
+        # Check the status of the CLManager object, True=continue, False= issue warning
+        if clm.status:                     
+            # Parameters set by the gemt.CLManager or the definition 
+            # of the primitive 
+            clPrimParams = {
+              'inimages'    :clm.imageInsFiles(type='string'),
+              'gp_outpref'  :clm.prefix,
+              'outimages'   :clm.imageOutsFiles(type='string'),
+              # This returns a unique/temp log file for IRAF
+              'logfile'     :clm.templog.name,      
+              'fl_over'     :yes, 
+              # This is actually in the default dict but wanted to show it again
+              'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+              # This is actually in the default dict but wanted to show it again
+              'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+              # This is actually in the default dict but wanted to show it again
+              'verbose'     :yes                
+                          }
             
-            # Check the status of the CLManager object, True=continue, False= issue warning
-            if clm.status:                     
-                
-                # Parameters set by the gemt.CLManager or the definition 
-                # of the primitive 
-                clPrimParams = {
-                  'inimages'    :clm.imageInsFiles(type='string'),
-                  'gp_outpref'  :clm.prefix,
-                  'outimages'   :clm.imageOutsFiles(type='string'),
-                  # This returns a unique/temp log file for IRAF
-                  'logfile'     :clm.templog.name,      
-                  'fl_over'     :yes, 
-                  # This is actually in the default dict but wanted to show it again
-                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
-                  # This is actually in the default dict but wanted to show it again
-                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
-                  # This is actually in the default dict but wanted to show it again
-                  'verbose'     :yes                
-                              }
-                
-                # Taking care of the biasec->nbiascontam param
-                if not biassec == '':
-                    nbiascontam = gemt.nbiascontam(adInputs=adInputs, 
-                                                   biassec=biassec, 
-                                                   logLevel=logLevel)
-                    log.fullinfo('nbiascontam parameter was updated to = '+
-                                 str(nbiascontam))
-                else: 
-                    # Do not try to calculate it, just use default value of 4.
-                    nbiascontam = 4
-                
-                # Parameters from the Parameter file that are adjustable by the user
-                clSoftcodedParams = {
-                   # pyrafBoolean converts the python booleans to pyraf ones
-                   'fl_trim'    :gemt.pyrafBoolean(fl_trim),
-                   'outpref'    :suffix,
-                   'fl_vardq'   :fl_vardq,
-                   'nbiascontam':nbiascontam
-                                   }
-                # Grabbing the default params dict and updating it with 
-                # the two above dicts
-                clParamsDict = CLDefaultParamsDict('gireduce', 
-                                                   logLevel=logLevel)
-                clParamsDict.update(clPrimParams)
-                clParamsDict.update(clSoftcodedParams)
-                
-                # Logging the parameters that were not defaults
-                log.fullinfo('\nParameters set automatically:', 
-                             category='parameters')
-                # Loop through the parameters in the clPrimParams dictionary
-                # and log them
-                gemt.logDictParams(clPrimParams, logLevel=logLevel)
-                
-                log.fullinfo('\nParameters adjustable by the user:', 
-                             category='parameters')
-                # Loop through the parameters in the clSoftcodedParams 
-                # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
-                
-                log.debug('Calling the gireduce CL script for inputs '+
-                      clm.imageInsFiles(type='string'))
+            # Taking care of the biasec->nbiascontam param
+            if not biassec == '':
+                nbiascontam = gemt.nbiascontam(adInputs, biassec, logLevel)
+                log.fullinfo('nbiascontam parameter was updated to = '+
+                             str(nbiascontam))
+            else: 
+                # Do not try to calculate it, just use default value of 4.
+                log.fullinfo('Using default nbiascontam parameter = 4')
+                nbiascontam = 4
             
-                gemini.gmos.gireduce(**clParamsDict)
-                
-                if gemini.gmos.gireduce.status:
-                    log.critical('gireduce failed for inputs '+
-                                 clm.imageInsFiles(type='string'))
-                    raise ScienceError('gireduce failed')
-                else:
-                    log.status('Exited the gireduce CL script successfully')
-                
-                # Renaming CL outputs and loading them back into memory, and 
-                # cleaning up the intermediate tmp files written to disk
-                # refOuts and arrayOuts are None here
-                imageOuts, refOuts, arrayOuts = clm.finishCL() 
-                
-                # Renaming for symmetry
-                adOutputs=imageOuts
-                
-                # Wrap up logging
-                i=0
-                for adOut in adOutputs:
-                    # Verifying gireduce was actually ran on the file
-                    if adOut.phuGetKeyValue('GIREDUCE'): 
-                        # If gireduce was ran, then log the changes to the files 
-                        # it made
-                        log.fullinfo('\nFile '+clm.preCLimageNames()[i]+
-                                     ' had its overscan subracted successfully')
-                        log.fullinfo('New file name is: '+adOut.filename)
-                    i = i+1
-                    # Updating GEM-TLM and OVERSUB time stamps in the PHU
-                    adOut.historyMark(key='OVERSUB', stomp=False)  
-                    
-                    # Updating logger with new GEM-TLM time stamp value
-                    log.fullinfo('*'*50, category='header')
-                    log.fullinfo('File = '+adOut.filename, category='header')
-                    log.fullinfo('~'*50, category='header')
-                    log.fullinfo('PHU keywords updated/added:\n', 'header')
-                    log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                                  category='header')
-                    log.fullinfo('OVERSUB = '+adOut.phuGetKeyValue('OVERSUB')+
-                                 '\n', category='header')
-                
-                
+            # Parameters from the Parameter file that are adjustable by the user
+            clSoftcodedParams = {
+               # pyrafBoolean converts the python booleans to pyraf ones
+               'fl_trim'    :gemt.pyrafBoolean(fl_trim),
+               'outpref'    :suffix,
+               'fl_vardq'   :fl_vardq,
+               'nbiascontam':nbiascontam
+                               }
+            # Grabbing the default params dict and updating it with 
+            # the two above dicts
+            clParamsDict = CLDefaultParamsDict('gireduce', 
+                                               logLevel=logLevel)
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
+            # Logging the parameters that were not defaults
+            log.fullinfo('\nParameters set automatically:', 
+                         category='parameters')
+            # Loop through the parameters in the clPrimParams dictionary
+            # and log them
+            gemt.logDictParams(clPrimParams, logLevel=logLevel)
+            
+            log.fullinfo('\nParameters adjustable by the user:', 
+                         category='parameters')
+            # Loop through the parameters in the clSoftcodedParams 
+            # dictionary and log them
+            gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+            
+            log.debug('Calling the gireduce CL script for inputs '+
+                  clm.imageInsFiles(type='string'))
+        
+            gemini.gmos.gireduce(**clParamsDict)
+            
+            if gemini.gmos.gireduce.status:
+                log.critical('gireduce failed for inputs '+
+                             clm.imageInsFiles(type='string'))
+                raise ScienceError()
             else:
-                log.critical('One of the inputs has not been prepared,\
-                the overscanSubtract function can only work on prepared data.')
-                raise ScienceError('One of the inputs was not prepared')
+                log.status('Exited the gireduce CL script successfully')
+            
+            # Renaming CL outputs and loading them back into memory, and 
+            # cleaning up the intermediate tmp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL() 
+            
+            # Renaming for symmetry
+            adOutputs=imageOuts
+            
+            # Wrap up logging
+            i=0
+            for adOut in adOutputs:
+                # Verifying gireduce was actually ran on the file
+                if adOut.phuGetKeyValue('GIREDUCE'): 
+                    # If gireduce was ran, then log the changes to the files 
+                    # it made
+                    log.fullinfo('\nFile '+clm.preCLimageNames()[i]+
+                                 ' had its overscan subracted successfully')
+                    log.fullinfo('New file name is: '+adOut.filename)
+                i = i+1
+                # Updating GEM-TLM and OVERSUB time stamps in the PHU
+                adOut.historyMark(key='OVERSUB', stomp=False)  
                 
+                # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+                # and updating logger with updated/added time stamps
+                sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERSUB')
         else:
-            log.critical('The parameter "adInputs" must not be None')
-            raise ScienceError('The parameter "adInputs" must not be None')
+            log.critical('One of the inputs has not been prepared,\
+            the overscanSubtract function can only work on prepared data.')
+            raise ScienceError()
         
-        log.status('**FINISHED** the overscanSubtract function')
+        log.status('**FINISHED** the overscan_subtract function')
         
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
-        raise #('An error occurred while trying to run overscanSubtract') 
+        raise ScienceError('An error occurred while trying to run \
+                                                            overscan_subtract') 
                 
                 
 def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
@@ -330,125 +297,65 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
     :type noLogFile: Python boolean (True/False)
     """
 
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-
-    log.status('**STARTING** the overscanSubtract function')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, 
+                                      funcName='fringe_correct') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-        
-    if not isinstance(fringes,list):
-        fringes=[fringes]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')               
-                
     try:
-        if adInputs!=None: 
-            # Set up counter for looping through outNames/BPMs lists
-            count=0
-            
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
-            
-            for ad in adInputs:
-                
-                # Setting up the fringe correctly
-                if (isinstance(fringes,list)) and (len(fringes)>1):
-                    fringe = fringes[count]
-                elif (isinstance(fringes,list)) and (len(fringes)==1):
-                    # Not sure if I need this check, but can't hurt
-                    fringe = fringes[0]
-                else:
-                    fringe = fringes
-                        
-                # Loading up a dictionary with the input parameters for rmImgFringe
-                paramDict = {
-                             'inimage'        :ad,
-                             'fringe'         :fringe,
-                             'fl_statscale'   :fl_statscale,
-                             'statsec'        :statsec,
-                             'scale'          :scale,
-                             'logLevel'       :logLevel
-                             }
-                
-                # Logging values set in the parameters dictionary above
-                log.fullinfo('\nParameters being used for rmImgFringe '+
-                             'function:\n')
-                gemt.logDictParams(paramDict,logLevel=logLevel)
-                
-                # Calling the rmImgFringe function to perform the fringe 
-                # corrections, this function will return the corrected image as
-                # an AstroData instance
-                adOut = gmost.rmImgFringe(**paramDict)
-                
-                # Adding GEM-TLM(automatic) and RMFRINGE time stamps to the PHU     
-                adOut.historyMark(key='RMFRINGE', stomp=False)    
-                adOut.filename = ad.filename
-                
-                log.fullinfo('*'*50,'header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~'*50,'header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('RMFRINGE = '+adOut.phuGetKeyValue('RMFRINGE'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')
-                
-                # Updating the file name with the suffix for this
-                # function and then reporting the new file 
-                if suffix!=None:
-                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                    if outNames!=None:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          infilename=outNames[count],
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                    else:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                elif suffix==None:
-                    if outNames!=None:
-                        if len(outNames)>1: 
-                            adOut.filename = outNames[count]
-                        else:
-                            adOut.filename = outNames
-                    else:
-                        raise ScienceError('outNames and suffix parameters \
-                                                        can not BOTH be None')
-                        
-                log.status('File name updated to '+adOut.filename)
-                
-                if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                    adOutputs.append(adOut)
-                else:
-                    adOutputs = adOut
-                    
-                count=count+1
-                
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+        # Set up counter for looping through outNames/BPMs lists
+        count=0
         
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        for ad in adInputs:
+            
+            # Setting up the fringe correctly
+            if (isinstance(fringes,list)) and (len(fringes)>1):
+                fringe = fringes[count]
+            elif (isinstance(fringes,list)) and (len(fringes)==1):
+                # Not sure if I need this check, but can't hurt
+                fringe = fringes[0]
+            else:
+                fringe = fringes
+                    
+            # Loading up a dictionary with the input parameters for rmImgFringe
+            paramDict = {
+                         'inimage'        :ad,
+                         'fringe'         :fringe,
+                         'fl_statscale'   :fl_statscale,
+                         'statsec'        :statsec,
+                         'scale'          :scale,
+                         'logLevel'       :logLevel
+                         }
+            
+            # Logging values set in the parameters dictionary above
+            log.fullinfo('\nParameters being used for rmImgFringe '+
+                         'function:\n')
+            gemt.logDictParams(paramDict,logLevel=logLevel)
+            
+            # Calling the rmImgFringe function to perform the fringe 
+            # corrections, this function will return the corrected image as
+            # an AstroData instance
+            adOut = gmost.rmImgFringe(**paramDict)
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename)
+            
+            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='RMFRINGE')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+                
         log.status('**FINISHED** the fringe_correct function')
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
@@ -506,156 +413,127 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-
-    log.status('**STARTING** the make_fringe_frame_imaging function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                       logLevel, noLogFile, 
+                                       funcName='make_fringe_frame_imaging', 
+                                       combinedInputs=True)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
-            
-            # Ensuring there is more than one input to make a fringe frame from
-            if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                
-                # loading and bringing the pyraf related modules into the name-space
-                pyraf, gemini, yes, no = pyrafLoader() 
-                 
-                # Creating empty list of ad's to be returned that will be filled below
-                if len(adInputs)>1:
-                    adOutputs=[]
-                        
-                # Converting input True/False to yes/no or detecting fl_vardq value
-                # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
-                fl_vardq = sfm.autoVardq(fl_vardq)
-                
-                # To clean up log and screen if multiple inputs
-                log.fullinfo('+'*50, category='format')                                 
-                    
-                # Preparing input files, lists, parameters... for input to 
-                # the CL script
-                clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
-                                   suffix=suffix, funcName='makeFringeFrame', 
-                                   combinedImages=True, logName=logName,   
-                                   logLevel=logLevel, noLogFile=noLogFile)
-                
-                # Check the status of the CLManager object, True=continue, False= issue warning
-                if clm.status:                     
-                
-                    # Parameters set by the gemt.CLManager or the definition 
-                    # of the primitive 
-                    clPrimParams = {
-                        # Retrieving the inputs as a list from the CLManager
-                        'inimages'    :clm.imageInsFiles(type='listFile'),
-                        # Maybe allow the user to override this in the future. 
-                        'outimage'    :clm.imageOutsFiles(type='string'), 
-                        # This returns a unique/temp log file for IRAF  
-                        'logfile'     :clm.templog.name,  
-                        # This is actually in the default dict but wanted to 
-                        # show it again       
-                        'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
-                        # This is actually in the default dict but wanted to 
-                        # show it again    
-                        'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
-                        # This is actually in the default dict but wanted to 
-                        # show it again     
-                        'verbose'     :yes                    
-                                  }
+        # Set up counter for looping through outNames list
+        count=0
         
-                    # Creating a dictionary of the parameters from the Parameter 
-                    # file adjustable by the user
-                    clSoftcodedParams = {
-                        'fl_vardq'      :gemt.pyrafBoolean(fl_vardq),
-                        'combine'       :method,
-                        'reject'        :'none',
-                                        }
-                    # Grabbing the default parameters dictionary and updating 
-                    # it with the two above dictionaries
-                    clParamsDict = CLDefaultParamsDict('gifringe', 
-                                                       logLevel=logLevel)
-                    clParamsDict.update(clPrimParams)
-                    clParamsDict.update(clSoftcodedParams)
+        # Ensuring there is more than one input to make a fringe frame from
+        if (len(adInputs)>1):
+            
+            # loading and bringing the pyraf related modules into the name-space
+            pyraf, gemini, yes, no = pyrafLoader() 
+             
+            # Creating empty list of ad's to be returned that will be filled below
+            adOutputs=[]
                     
-                    # Logging the values in the soft and prim parameter dictionaries
-                    log.fullinfo('\nParameters set by the CLManager or  '+
-                             'dictated by the definition of the primitive:\n', 
-                             category='parameters')
-                    gemt.logDictParams(clPrimParams,logLevel=logLevel)
-                    log.fullinfo('\nUser adjustable parameters in the '+
-                                 'parameters file:\n', category='parameters')
-                    gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
-                    
-                    log.debug('Calling the gifringe CL script for input list '+
-                                  clm.imageInsFiles(type='listFile'))
-                    
-                    gemini.gifringe(**clParamsDict)
-                    
-                    if gemini.gifringe.status:
-                        log.critical('gifringe failed for inputs '+
-                                     rc.inputsAsStr())
-                        raise GMOS_IMAGEException('gifringe failed')
-                    else:
-                        log.status('Exited the gifringe CL script successfully')
-                        
-                    # Renaming CL outputs and loading them back into memory 
-                    # and cleaning up the intermediate temp files written to disk
-                    # refOuts and arrayOuts are None here
-                    imageOuts, refOuts, arrayOuts = clm.finishCL() 
-                    
-                    # Renaming for symmetry
-                    adOutputs=imageOuts
+            # Converting input True/False to yes/no or detecting fl_vardq value
+            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+            fl_vardq = sfm.autoVardq(fl_vardq)
+            
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')                                 
                 
-                    # There is only one at this point so no need to perform a loop
-                    # CLmanager outputs a list always, so take the 0th
-                    adOut = adOutputs[0]
-                    
-                    # Adding a GEM-TLM (automatic) and FRINGE time stamps 
-                    # to the PHU
-                    adOut.historyMark(key='FRINGE',stomp=False)
-                    # Updating logger with updated/added time stamps
-                    log.fullinfo('*'*50,'header')
-                    log.fullinfo('file = '+adOut.filename, category='header')
-                    log.fullinfo('~'*50, 'header')
-                    log.fullinfo('PHU keywords updated/added:\n', 
-                                 category='header')
-                    log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                                 category='header')
-                    log.fullinfo('FRINGE = '+adOut.phuGetKeyValue('FRINGE'), 
-                                 category='header')
-                    log.fullinfo('-'*50, category='header')
+            # Preparing input files, lists, parameters... for input to 
+            # the CL script
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                               suffix=suffix, funcName='makeFringeFrame', 
+                               combinedImages=True, logName=logName,   
+                               logLevel=logLevel, noLogFile=noLogFile)
+            
+            # Check the status of the CLManager object, True=continue, False= issue warning
+            if clm.status:                     
+            
+                # Parameters set by the gemt.CLManager or the definition 
+                # of the primitive 
+                clPrimParams = {
+                    # Retrieving the inputs as a list from the CLManager
+                    'inimages'    :clm.imageInsFiles(type='listFile'),
+                    # Maybe allow the user to override this in the future. 
+                    'outimage'    :clm.imageOutsFiles(type='string'), 
+                    # This returns a unique/temp log file for IRAF  
+                    'logfile'     :clm.templog.name,  
+                    # This is actually in the default dict but wanted to 
+                    # show it again       
+                    'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+                    # This is actually in the default dict but wanted to 
+                    # show it again    
+                    'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
+                    # This is actually in the default dict but wanted to 
+                    # show it again     
+                    'verbose'     :yes                    
+                              }
+    
+                # Creating a dictionary of the parameters from the Parameter 
+                # file adjustable by the user
+                clSoftcodedParams = {
+                    'fl_vardq'      :gemt.pyrafBoolean(fl_vardq),
+                    'combine'       :method,
+                    'reject'        :'none',
+                                    }
+                # Grabbing the default parameters dictionary and updating 
+                # it with the two above dictionaries
+                clParamsDict = CLDefaultParamsDict('gifringe', 
+                                                   logLevel=logLevel)
+                clParamsDict.update(clPrimParams)
+                clParamsDict.update(clSoftcodedParams)
+                
+                # Logging the values in the soft and prim parameter dictionaries
+                log.fullinfo('\nParameters set by the CLManager or  '+
+                         'dictated by the definition of the primitive:\n', 
+                         category='parameters')
+                gemt.logDictParams(clPrimParams,logLevel=logLevel)
+                log.fullinfo('\nUser adjustable parameters in the '+
+                             'parameters file:\n', category='parameters')
+                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+                
+                log.debug('Calling the gifringe CL script for input list '+
+                              clm.imageInsFiles(type='listFile'))
+                
+                gemini.gifringe(**clParamsDict)
+                
+                if gemini.gifringe.status:
+                    log.critical('gifringe failed for inputs '+
+                                 rc.inputsAsStr())
+                    raise GMOS_IMAGEException('gifringe failed')
                 else:
-                    log.critical('One of the inputs has not been prepared,\
-                    the combine function can only work on prepared data.')
-                    raise ScienceError('One of the inputs was not prepared')
+                    log.status('Exited the gifringe CL script successfully')
+                    
+                # Renaming CL outputs and loading them back into memory 
+                # and cleaning up the intermediate temp files written to disk
+                # refOuts and arrayOuts are None here
+                imageOuts, refOuts, arrayOuts = clm.finishCL() 
+                
+                # Renaming for symmetry
+                adOutputs=imageOuts
+            
+                # Renaming for symmetry
+                adOutputs=imageOuts
+                
+                # Updating GEM-TLM (automatic) and COMBINE time stamps to the PHU
+                # and updating logger with updated/added time stamps
+                sfm.markHistory(adOutputs=adOutputs, historyMarkKey='FRINGE')
+            else:
+                log.critical('One of the inputs has not been prepared,\
+                the combine function can only work on prepared data.')
+                raise ScienceError('One of the inputs was not prepared')
         else:
-            log.critical('The parameter "adInputs" must not be None')
-            raise ScienceError('The parameter "adInputs" must not be None')
+            log.warning('Only one input was passed in for adInputs, so \
+                    make_fringe_frame_imaging is simply passing the inputs  \
+                    into the outputs list without doing anything to them.')
+            adOutputs = adInputs
         
         log.status('**FINISHED** the make_fringe_frame_imaging function')
         
-        # Return the outputs (list or single, matching adInputs)
-        return adOut
+        # Return the outputs list, even if there is only one output
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run \
                                                     make_fringe_frame_imaging')

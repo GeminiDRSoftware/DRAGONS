@@ -73,9 +73,10 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
+
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 'add_bpm',
-                                      logName, logLevel, noLogFile)
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, funcName='add_bpm')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
                    
@@ -148,7 +149,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                         # output BPM array will be 'padded with zeros' or 
                         # 'not bad pixels' to match SCI's size.
                         # NOTE: first elements of arrays in python are inclusive
-                        #       while last ones are exlusive, thus a 1 must be 
+                        #       while last ones are exclusive, thus a 1 must be 
                         #       added for the final element to be included.
                         if BPMArrayIn.shape==datasecShape:
                             BPMArrayOut[dsl[2]:dsl[3]+1, dsl[0]:dsl[1]+1] = \
@@ -214,7 +215,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
             count=count+1
         
         log.status('**FINISHED** the add_bpm function')
-        # Return the outputs list
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run add_bpm')
@@ -279,8 +280,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 'add_dq',
-                                      logName, logLevel, noLogFile)
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, funcName='add_dq')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
     
@@ -382,7 +383,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
             count=count+1
         
         log.status('**FINISHED** the add_dq function')
-        # Return the outputs list
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run add_dq')
@@ -428,10 +429,10 @@ def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
-    
+
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 'add_var',
-                                      logName, logLevel, noLogFile)
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, funcName='add_var')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
     
@@ -524,10 +525,10 @@ def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',
             count=count+1
         
         log.status('**FINISHED** the add_var function')
-        # Return the outputs list
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
-        raise #ScienceError('An error occurred while trying to run add_var')
+        raise ScienceError('An error occurred while trying to run add_var')
 
 def adu_to_electrons(adInputs, outNames=None, suffix=None,  
                             logName='gemini.log', logLevel=1, noLogFile=False):
@@ -574,9 +575,9 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
-                                      'adu_to_electrons', logName, logLevel, 
-                                      noLogFile)
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile,
+                                      funcName='adu_to_electrons')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
     
@@ -662,7 +663,7 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None,
             count=count+1
         
         log.status('**FINISHED** the adu_to_electrons function')
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run \
@@ -712,9 +713,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
     :type outNames: String, either a single or a list of strings of same length 
                     as adInputs.
     
-    :param suffix: 
-           string to add on the end of the input filenames 
-           (or outNames if not None) for the output filenames.
+    :param suffix: string to add on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
     :type suffix: string
     
     :param logName: Name of the log file, default is 'gemini.log'
@@ -732,11 +732,11 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
     :param noLogFile: A boolean to make it so no log file is created
     :type noLogFile: Python boolean (True/False)
     """
-    
+
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
-                                      'bias_correct', logName, logLevel, 
-                                      noLogFile)
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile,
+                                      funcName='bias_correct')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
         
@@ -856,7 +856,7 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                                  ' was bias subracted successfully')
                     log.fullinfo('New file name is: '+adOut.filename)
   
-                # Updating GEM-TLM (automatic) and ADU2ELEC time stamps to the PHU
+                # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOut, historyMarkKey='BIASCORR')
 
@@ -869,9 +869,6 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                 log.fullinfo('Another PHU keywords added:\n', 'header')
                 log.fullinfo('BIASIM = '+adOut.phuGetKeyValue('BIASIM')+'\n', 
                              category='header')
-                
-                # renaming the output ad filename
-                adOut.filename = outNames[count]
            
                 # Appending to output list
                 adOutputs.append(adOut)
@@ -881,17 +878,17 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
             else:
                 log.critical('One of the inputs has not been prepared,\
                 the combine function can only work on prepared data.')
-                raise ScienceError('One of the inputs was not prepared')
+                raise ScienceError()
             
         log.warning('The CL script gireduce REPLACED the previously '+
                     'calculated DQ frames')
         
         log.status('**FINISHED** the bias_correct function')
         
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
-        raise #ScienceError('An error occurred while trying to run bias_correct')     
+        raise ScienceError('An error occurred while trying to run bias_correct')     
     
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
             outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
@@ -949,157 +946,124 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     :type noLogFile: Python boolean (True/False)
     """
     
-    log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                              noLogFile=noLogFile)
-
-    log.status('**STARTING** the combine function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                       logLevel, noLogFile, funcName='combine', 
+                                       combinedInputs=True)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Ensuring there is more than one input to combine
+        if (len(adInputs)>1):
             
-            # Ensuring there is more than one input to combine
-            if (isinstance(adInputs,list)) and (len(adInputs)>1):
+            # loading and bringing the pyraf related modules into the name-space
+            pyraf, gemini, yes, no = pyrafLoader()
+            
+            # Converting input True/False to yes/no or detecting fl_vardq value
+            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+            fl_vardq = sfm.autoVardq(fl_vardq)
                 
-                # loading and bringing the pyraf related modules into the name-space
-                pyraf, gemini, yes, no = pyrafLoader()
+            # Preparing input files, lists, parameters... for input to 
+            # the CL script
+            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
+                               suffix=suffix, funcName='combine', 
+                               combinedImages=True, logName=logName,  
+                               logLevel=logLevel, noLogFile=noLogFile)
+            
+            # Check the status of the CLManager object, True=continue, False= issue warning
+            if clm.status:
+            
+                # Creating a dictionary of the parameters set by the CLManager  
+                # or the definition of the primitive 
+                clPrimParams = {
+                    # Retrieving the inputs as a list from the CLManager
+                    'input'       :clm.imageInsFiles(type='listFile'),
+                    # Maybe allow the user to override this in the future. 
+                    'output'      :clm.imageOutsFiles(type='string'), 
+                    # This returns a unique/temp log file for IRAF  
+                    'logfile'     :clm.templog.name,  
+                    # This is actually in the default dict but wanted to 
+                    # show it again       
+                    'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+                    # This is actually in the default dict but wanted to 
+                    # show it again    
+                    'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
+                    # This is actually in the default dict but wanted to 
+                    # show it again     
+                    'verbose'     :yes,    
+                    'reject'      :'none'                
+                              }
                 
-                # Converting input True/False to yes/no or detecting fl_vardq value
-                # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
-                fl_vardq = sfm.autoVardq(fl_vardq)
-                    
-                # Preparing input files, lists, parameters... for input to 
-                # the CL script
-                clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
-                                   suffix=suffix, funcName='combine', 
-                                   combinedImages=True, logName=logName,  
-                                   logLevel=logLevel, noLogFile=noLogFile)
+                # Creating a dictionary of the parameters from the Parameter 
+                # file adjustable by the user
+                clSoftcodedParams = {
+                    'fl_vardq'      :fl_vardq,
+                    # pyrafBoolean converts the python booleans to pyraf ones
+                    'fl_dqprop'     :gemt.pyrafBoolean(fl_dqprop),
+                    'combine'       :method,
+                                    }
+                # Grabbing the default parameters dictionary and updating 
+                # it with the two above dictionaries
+                clParamsDict = CLDefaultParamsDict('gemcombine', 
+                                                   logLevel=logLevel)
+                clParamsDict.update(clPrimParams)
+                clParamsDict.update(clSoftcodedParams)
                 
-                # Check the status of the CLManager object, True=continue, False= issue warning
-                if clm.status:
+                # Logging the parameters that were not defaults
+                log.fullinfo('\nParameters set automatically:', 
+                             category='parameters')
+                # Loop through the parameters in the clPrimParams dictionary
+                # and log them
+                gemt.logDictParams(clPrimParams, logLevel=logLevel)
                 
-                    # Creating a dictionary of the parameters set by the CLManager  
-                    # or the definition of the primitive 
-                    clPrimParams = {
-                        # Retrieving the inputs as a list from the CLManager
-                        'input'       :clm.imageInsFiles(type='listFile'),
-                        # Maybe allow the user to override this in the future. 
-                        'output'      :clm.imageOutsFiles(type='string'), 
-                        # This returns a unique/temp log file for IRAF  
-                        'logfile'     :clm.templog.name,  
-                        # This is actually in the default dict but wanted to 
-                        # show it again       
-                        'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
-                        # This is actually in the default dict but wanted to 
-                        # show it again    
-                        'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
-                        # This is actually in the default dict but wanted to 
-                        # show it again     
-                        'verbose'     :yes,    
-                        'reject'      :'none'                
-                                  }
-                    
-                    # Creating a dictionary of the parameters from the Parameter 
-                    # file adjustable by the user
-                    clSoftcodedParams = {
-                        'fl_vardq'      :fl_vardq,
-                        # pyrafBoolean converts the python booleans to pyraf ones
-                        'fl_dqprop'     :gemt.pyrafBoolean(fl_dqprop),
-                        'combine'       :method,
-                                        }
-                    # Grabbing the default parameters dictionary and updating 
-                    # it with the two above dictionaries
-                    clParamsDict = CLDefaultParamsDict('gemcombine', 
-                                                       logLevel=logLevel)
-                    clParamsDict.update(clPrimParams)
-                    clParamsDict.update(clSoftcodedParams)
-                    
-                    # Logging the parameters that were not defaults
-                    log.fullinfo('\nParameters set automatically:', 
-                                 category='parameters')
-                    # Loop through the parameters in the clPrimParams dictionary
-                    # and log them
-                    gemt.logDictParams(clPrimParams, logLevel=logLevel)
-                    
-                    log.fullinfo('\nParameters adjustable by the user:', 
-                                 category='parameters')
-                    # Loop through the parameters in the clSoftcodedParams dictionary
-                    # and log them
-                    gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
-                    
-                    log.debug('Calling the gemcombine CL script for input\
-                                     list '+clm.imageInsFiles(type='listFile'))
-                    
-                    gemini.gemcombine(**clParamsDict)
-                    
-                    if gemini.gemcombine.status:
-                        log.critical('gemcombine failed for inputs '+
-                                     clm.imageInsFiles(type='string'))
-                        raise ScienceError('gemcombine failed')
-                    else:
-                        log.status('Exited the gemcombine CL script \
-                                                                successfully')
-                    
-                    
-                    # Renaming CL outputs and loading them back into memory 
-                    # and cleaning up the intermediate temp files written to disk
-                    # refOuts and arrayOuts are None here
-                    imageOuts, refOuts, arrayOuts = clm.finishCL() 
+                log.fullinfo('\nParameters adjustable by the user:', 
+                             category='parameters')
+                # Loop through the parameters in the clSoftcodedParams dictionary
+                # and log them
+                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
                 
-                    # Renaming for symmetry
-                    adOutputs=imageOuts
+                log.debug('Calling the gemcombine CL script for input\
+                                 list '+clm.imageInsFiles(type='listFile'))
                 
-                    # There is only one at this point so no need to perform a 
-                    # loop CLmanager outputs a list always, so take the 0th
-                    adOut = adOutputs[0]
-                    
-                    # Adding a GEM-TLM (automatic) and COMBINE time stamps 
-                    # to the PHU
-                    adOut.historyMark(key='COMBINE',stomp=False)
-                    # Updating logger with updated/added time stamps
-                    log.fullinfo('*'*50, category='header')
-                    log.fullinfo('file = '+adOut.filename, category='header')
-                    log.fullinfo('~'*50, category='header')
-                    log.fullinfo('PHU keywords updated/added:\n', 
-                                 category='header')
-                    log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                                 category='header')
-                    log.fullinfo('COMBINE = '+adOut.phuGetKeyValue('COMBINE'), 
-                                 category='header')
-                    log.fullinfo('-'*50, category='header')    
+                gemini.gemcombine(**clParamsDict)
+                
+                if gemini.gemcombine.status:
+                    log.critical('gemcombine failed for inputs '+
+                                 clm.imageInsFiles(type='string'))
+                    raise ScienceError('gemcombine failed')
                 else:
-                    log.critical('One of the inputs has not been prepared,\
-                    the combine function can only work on prepared data.')
-                    raise ScienceError('One of the inputs was not prepared')
+                    log.status('Exited the gemcombine CL script \
+                                                            successfully')
+                
+                # Renaming CL outputs and loading them back into memory 
+                # and cleaning up the intermediate temp files written to disk
+                # refOuts and arrayOuts are None here
+                imageOuts, refOuts, arrayOuts = clm.finishCL() 
+            
+                # Renaming for symmetry
+                adOutputs=imageOuts
+                
+                # Updating GEM-TLM (automatic) and COMBINE time stamps to the PHU
+                # and updating logger with updated/added time stamps
+                sfm.markHistory(adOutputs=adOutputs, historyMarkKey='COMBINE')
+            else:
+                log.critical('One of the inputs has not been prepared,\
+                the combine function can only work on prepared data.')
+                raise ScienceError()
         else:
-            log.critical('The parameter "adInputs" must not be None')
-            raise ScienceError('The parameter "adInputs" must not be None')
+            log.warning('Only one input was passed in for adInputs, so combine \
+                    is simply passing the inputs into the outputs list without \
+                    doing anything to them.')
+            adOutputs = adInputs
         
         log.status('**FINISHED** the combine function')
         
-        # Return the outputs (list or single, matching adInputs)
-        return adOut
+        # Return the outputs list, even if there is only one output
+        return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run combine')
                 
@@ -1147,122 +1111,65 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None,
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-        
-    log.status('**STARTING** the flat_correct function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, 
+                                      funcName='flat_correct') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     if flats==None:
-        raise ScienceError('There must be at least one processed flat provided,\
+        log.critical('There must be at least one processed flat provided,\
                              the "flats" parameter must not be None.')
+        raise ScienceError()
     
     try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
-            
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
-            
-            # Loop through the inputs to perform the non-linear and saturated
-            # pixel searches of the SCI frames to update the BPM frames into
-            # full DQ frames. 
-            for ad in adInputs:                   
-                # To clean up log and screen if multiple inputs
-                log.fullinfo('+'*50, category='format')    
-    
-                # Getting the right flat for this input
-                if isinstance(flats, list):
-                    if len(flats)>1:
-                        processedFlat = flats[count]
-                    else:
-                        processedFlat = flats[0]
-                else:
-                    processedFlat = flats
-    
-                log.status('Input flat file being used for flat correction '
-                           +processedFlat.filename)
-                log.debug('Calling ad.div on '+ad.filename)
-                
-                adOut = ad.div(processedFlat)
-                adOut.filename = ad.filename
-                log.status('ad.div successfully flat corrected '+ad.filename)
-                
-                # Updating GEM-TLM (automatic) and FLATCORR time stamps to the 
-                # PHU
-                adOut.historyMark(key='FLATCORR', stomp=False)   
-                
-                # Updating logger with new GEM-TLM value
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('FLATCORR = '+adOut.phuGetKeyValue('FLATCORR'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')  
-                
-                # Updating the file name with the suffix for this
-                # function and then reporting the new file 
-                if suffix!=None:
-                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                    if outNames!=None:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          infilename=outNames[count],
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                    else:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                elif suffix==None:
-                    if outNames!=None:
-                        if len(outNames)>1: 
-                            adOut.filename = outNames[count]
-                        else:
-                            adOut.filename = outNames
-                    else:
-                        raise ScienceError('outNames and suffix parameters \
-                                                        can not BOTH be None')
-                        
-                log.status('File name updated to '+adOut.filename)
-            
-                if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                    adOutputs.append(adOut)
-                else:
-                    adOutputs = adOut
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:                   
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
 
-                count=count+1
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+            # Getting the right flat for this input
+            if isinstance(flats, list):
+                if len(flats)>1:
+                    processedFlat = flats[count]
+                else:
+                    processedFlat = flats[0]
+            else:
+                processedFlat = flats
+
+            log.status('Input flat file being used for flat correction '
+                       +processedFlat.filename)
+            log.debug('Calling ad.div on '+ad.filename)
+            
+            adOut = ad.div(processedFlat)
+            adOut.filename = ad.filename
+            log.status('ad.div successfully flat corrected '+ad.filename)   
+            
+            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='FLATCORR')
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename)
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count=count+1
         
         log.status('**FINISHED** the flat_correct function')
-        
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run flat_correct')
@@ -1342,107 +1249,100 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
     :type noLogFile: Python boolean (True/False)
     """
     
-    if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                                noLogFile=noLogFile)
-    else:
-        # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(logLevel=logLevel, noLogFile=noLogFile)
-        
-    log.status('**STARTING** the measure_iq function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, None, 'tmp', logName,
+                                      logLevel, noLogFile, 
+                                      funcName='measure_iq') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    # NOTE: outNames are not needed, but sfm.startUp creates them automatically.
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None:
-            # Importing getiq module to perform the source detection and IQ
-            # measurements of the inputs
-            from iqtool.iq import getiq
+        # Importing getiq module to perform the source detection and IQ
+        # measurements of the inputs
+        from iqtool.iq import getiq
+        
+        # Initializing a total time sum variable for logging purposes 
+        total_IQ_time = 0
+        
+        # Creating dictionary for output strings to be returned in
+        outDict = {}
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:                     
+            # Writing the input to disk under a temp name in the current 
+            # working directory for getiq to use to be deleted after getiq
+            tmpWriteName = 'measure_iq'+os.path.basename(ad.filename)
+            log.fullinfo('The inputs to measureIQ must be in the'+
+                         ' current working directory for it to work '+\
+                         'correctly, so writting it temperarily to file '+
+                         tmpWriteName)
+            ad.write(tmpWriteName, rename=False)
             
-            # Initializing a total time sum variable for logging purposes 
-            total_IQ_time = 0
+            # Start time for measuring IQ of current file
+            st = time.time()
             
-            # Creating dictionary for output strings to be returned in
-            outDict = {}
+            log.debug('Calling getiq.gemiq for input '+ad.filename)
             
-            # Loop through the inputs to perform the non-linear and saturated
-            # pixel searches of the SCI frames to update the BPM frames into
-            # full DQ frames. 
-            for ad in adInputs:                     
-                # Writing the input to disk under a temp name in the current 
-                # working directory for getiq to use to be deleted after getiq
-                tmpWriteName = 'measure_iq'+os.path.basename(ad.filename)
-                log.fullinfo('The inputs to measureIQ must be in the'+
-                             ' current working directory for it to work '+\
-                             'correctly, so writting it temperarily to file '+
-                             tmpWriteName)
-                ad.write(tmpWriteName, rename=False)
-                
-                # Start time for measuring IQ of current file
-                st = time.time()
-                
-                log.debug('Calling getiq.gemiq for input '+ad.filename)
-                
-                # Calling the gemiq function to detect the sources and then
-                # measure the IQ of the current image 
-                iqdata = getiq.gemiq(tmpWriteName, function=function, 
-                                      verbose=True, display=display, 
-                                      mosaic=mosaic, qa=qa)
-                
-                # End time for measuring IQ of current file
-                et = time.time()
-                total_IQ_time = total_IQ_time + (et - st)
-                # Logging the amount of time spent measuring the IQ 
-                log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
-                log.fullinfo('~'*45, category='format')
-                
-                # If input was writen to temp file on disk, delete it
-                if os.path.exists(tmpWriteName):
-                    os.remove(tmpWriteName)
-                
-                # Deleting the .dat file from disk if requested
-                if not keepDats:
-                    datName = os.path.splitext(name)[0]+'.dat'
-                    os.remove(datName)
-                    
-                # iqdata is list of tuples with image quality metrics
-                # (ellMean, ellSig, fwhmMean, fwhmSig)
-                # First check if it is empty (ie. gemiq failed in someway)
-                if len(iqdata) == 0:
-                    log.warning('Problem Measuring IQ Statistics, '+
-                                'none reported')
-                # If it all worked, then format the output and log it
-                else:
-                    # Formatting this output for printing or logging                
-                    fnStr = 'Filename:'.ljust(19)+ad.filename
-                    emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
-                    esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
-                    fmStr = 'FWHM Mean:'.ljust(19)+str(iqdata[0][2])
-                    fsStr = 'FWHM Sigma:'.ljust(19)+str(iqdata[0][3])
-                    sStr = 'Seeing:'.ljust(19)+str(iqdata[0][2])
-                    psStr = 'PixelScale:'.ljust(19)+str(ad.pixel_scale())
-                    vStr = 'VERSION:'.ljust(19)+'None' #$$$$$ made on ln12 of ReductionsObjectRequest.py, always 'None' it seems.
-                    tStr = 'TIMESTAMP:'.ljust(19)+str(datetime.now())
-                    # Create final formated string
-                    finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'\
-                                    +fmStr+'\n'+fsStr+'\n'+sStr+'\n'+psStr+\
-                                    '\n'+vStr+'\n'+tStr+'\n'+'-'*45
-                    # Log final string
-                    log.stdinfo(finalStr, category='IQ')
-                    
-                    # appending formated string to the output dictionary
-                    outDict[ad.filename] = finalStr
-                    
-            # Logging the total amount of time spent measuring the IQ of all
-            # the inputs
-            log.debug('Total measureIQ time: '+repr(total_IQ_time), 
-                        category='IQ')
+            # Calling the gemiq function to detect the sources and then
+            # measure the IQ of the current image 
+            iqdata = getiq.gemiq(tmpWriteName, function=function, 
+                                  verbose=True, display=display, 
+                                  mosaic=mosaic, qa=qa)
             
-            #returning complete dictionary for use by the user if desired
-            return outDict
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+            # End time for measuring IQ of current file
+            et = time.time()
+            total_IQ_time = total_IQ_time + (et - st)
+            # Logging the amount of time spent measuring the IQ 
+            log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
+            log.fullinfo('~'*45, category='format')
+            
+            # If input was writen to temp file on disk, delete it
+            if os.path.exists(tmpWriteName):
+                os.remove(tmpWriteName)
+            
+            # Deleting the .dat file from disk if requested
+            if not keepDats:
+                datName = os.path.splitext(tmpWriteName)[0]+'.dat'
+                os.remove(datName)
+                
+            # iqdata is list of tuples with image quality metrics
+            # (ellMean, ellSig, fwhmMean, fwhmSig)
+            # First check if it is empty (ie. gemiq failed in someway)
+            if len(iqdata) == 0:
+                log.warning('Problem Measuring IQ Statistics, '+
+                            'none reported')
+            # If it all worked, then format the output and log it
+            else:
+                # Formatting this output for printing or logging                
+                fnStr = 'Filename:'.ljust(19)+ad.filename
+                emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
+                esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
+                fmStr = 'FWHM Mean:'.ljust(19)+str(iqdata[0][2])
+                fsStr = 'FWHM Sigma:'.ljust(19)+str(iqdata[0][3])
+                sStr = 'Seeing:'.ljust(19)+str(iqdata[0][2])
+                psStr = 'PixelScale:'.ljust(19)+str(ad.pixel_scale()[('SCI',1)])
+                vStr = 'VERSION:'.ljust(19)+'None' #$$$$$ made on ln12 of ReductionsObjectRequest.py, always 'None' it seems.
+                tStr = 'TIMESTAMP:'.ljust(19)+str(datetime.now())
+                # Create final formated string
+                finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'\
+                                +fmStr+'\n'+fsStr+'\n'+sStr+'\n'+psStr+\
+                                '\n'+vStr+'\n'+tStr+'\n'+'-'*45
+                # Log final string
+                log.stdinfo(finalStr, category='IQ')
+                
+                # appending formated string to the output dictionary
+                outDict[ad.filename] = finalStr
+                
+        # Logging the total amount of time spent measuring the IQ of all
+        # the inputs
+        log.debug('Total measureIQ time: '+repr(total_IQ_time), 
+                    category='IQ')
+        
+        #returning complete dictionary for use by the user if desired
+        return outDict
     except:
         raise ScienceError('An error occurred while trying to run measure_iq')                              
                 
@@ -1507,154 +1407,120 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-
-    log.status('**STARTING** the mosaic_detectors function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, 
+                                      funcName='mosaic_detectors') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None: 
-            # loading and bringing the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader()  
-                
-            # Converting input True/False to yes/no or detecting fl_vardq value
-            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
-            fl_vardq = sfm.autoVardq(fl_vardq)
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()  
             
-            # To clean up log and screen if multiple inputs
-            log.fullinfo('+'*50, category='format')    
-            
-            # Preparing input files, lists, parameters... for input to 
-            # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
-                               suffix=suffix, funcName='mosaicDetectors',  
-                               logName=logName, logLevel=logLevel, 
-                               noLogFile=noLogFile)
-            
-            # Check the status of the CLManager object, True=continue, False= issue warning
-            if clm.status: 
-                
-                # Parameters set by the gemt.CLManager or the definition of the prim 
-                clPrimParams = {
-                  # Retrieving the inputs as a string of filenames
-                  'inimages'    :clm.imageInsFiles(type='string'),
-                  'outimages'   :clm.imageOutsFiles(type='string'),
-                  # Setting the value of FL_vardq set above
-                  'fl_vardq'    :fl_vardq,
-                  # This returns a unique/temp log file for IRAF 
-                  'logfile'     :clm.templog.name,
-                  # This is actually in the default dict but wanted to show it again     
-                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
-                  # This is actually in the default dict but wanted to show it again
-                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
-                  # This is actually in the default dict but wanted to show it again
-                  'verbose'     :yes                
+        # Converting input True/False to yes/no or detecting fl_vardq value
+        # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+        fl_vardq = sfm.autoVardq(fl_vardq)
+        
+        # To clean up log and screen if multiple inputs
+        log.fullinfo('+'*50, category='format')    
+        
+        # Preparing input files, lists, parameters... for input to 
+        # the CL script
+        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
+                           suffix=suffix, funcName='mosaicDetectors',  
+                           logName=logName, logLevel=logLevel, 
+                           noLogFile=noLogFile)
+        
+        # Check the status of the CLManager object, True=continue, False= issue warning
+        if clm.status: 
+            # Parameters set by the gemt.CLManager or the definition of the prim 
+            clPrimParams = {
+              # Retrieving the inputs as a string of filenames
+              'inimages'    :clm.imageInsFiles(type='string'),
+              'outimages'   :clm.imageOutsFiles(type='string'),
+              # Setting the value of FL_vardq set above
+              'fl_vardq'    :fl_vardq,
+              # This returns a unique/temp log file for IRAF 
+              'logfile'     :clm.templog.name,
+              # This is actually in the default dict but wanted to show it again     
+              'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+              # This is actually in the default dict but wanted to show it again
+              'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+              # This is actually in the default dict but wanted to show it again
+              'verbose'     :yes                
+                          }
+            # Parameters from the Parameter file adjustable by the user
+            clSoftcodedParams = {
+              # pyrafBoolean converts the python booleans to pyraf ones
+              'fl_paste'    :gemt.pyrafBoolean(fl_paste),
+              'outpref'     :suffix,
+              'geointer'    :interp_function,
                               }
-                # Parameters from the Parameter file adjustable by the user
-                clSoftcodedParams = {
-                  # pyrafBoolean converts the python booleans to pyraf ones
-                  'fl_paste'    :gemt.pyrafBoolean(fl_paste),
-                  'outpref'     :suffix,
-                  'geointer'    :interp_function,
-                                  }
-                # Grabbing the default params dict and updating it with 
-                # the two above dicts
-                clParamsDict = CLDefaultParamsDict('gmosaic', logLevel=logLevel)
-                clParamsDict.update(clPrimParams)
-                clParamsDict.update(clSoftcodedParams)      
-                    
-                # Logging the parameters that were not defaults
-                log.fullinfo('\nParameters set automatically:', 
-                             category='parameters')
-                # Loop through the parameters in the clPrimParams dictionary
-                # and log them
-                gemt.logDictParams(clPrimParams, logLevel=logLevel)
+            # Grabbing the default params dict and updating it with 
+            # the two above dicts
+            clParamsDict = CLDefaultParamsDict('gmosaic', logLevel=logLevel)
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)      
                 
-                log.fullinfo('\nParameters adjustable by the user:', 
-                             category='parameters')
-                # Loop through the parameters in the clSoftcodedParams 
-                # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
-                
-                log.debug('calling the gmosaic CL script for inputs '+
-                                            clm.imageInsFiles(type='string'))
+            # Logging the parameters that were not defaults
+            log.fullinfo('\nParameters set automatically:', 
+                         category='parameters')
+            # Loop through the parameters in the clPrimParams dictionary
+            # and log them
+            gemt.logDictParams(clPrimParams, logLevel=logLevel)
             
-                gemini.gmos.gmosaic(**clParamsDict)
+            log.fullinfo('\nParameters adjustable by the user:', 
+                         category='parameters')
+            # Loop through the parameters in the clSoftcodedParams 
+            # dictionary and log them
+            gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+            
+            log.debug('calling the gmosaic CL script for inputs '+
+                                        clm.imageInsFiles(type='string'))
         
-                if gemini.gmos.gmosaic.status:
-                    log.critical('gireduce failed for inputs '+
-                                 clm.imageInsFiles(type='string'))
-                    raise ScienceError('gmosaic failed')
-                else:
-                    log.status('Exited the gmosaic CL script successfully')    
-                    
-                    
-                # Renaming CL outputs and loading them back into memory 
-                # and cleaning up the intermediate temp files written to disk
-                # refOuts and arrayOuts are None here
-                imageOuts, refOuts, arrayOuts = clm.finishCL()   
-                
-                # Renaming for symmetry
-                adOutputs=imageOuts
-                    
-                # Wrap up logging
-                i=0
-                for ad in adOutputs:
-                    log.fullinfo('-'*50, category='header')
-                    
-                    # Varifying gireduce was actually ran on the file
-                    # then logging file names of successfully reduced files
-                    if ad.phuGetKeyValue('GMOSAIC'): 
-                        log.fullinfo('\nFile '+clm.preCLimageNames()[i]+\
-                                     ' mosaiced successfully')
-                        log.fullinfo('New file name is: '+ad.filename)
-                    i=i+1
-                    # Updating GEM-TLM (automatic) and MOSAIC time stamps to the PHU
-                    ad.historyMark(key='MOSAIC', stomp=False)  
-                    
-                    # Updating logger with new GEM-TLM value
-                    log.fullinfo('*'*50, category='header')
-                    log.fullinfo('File = '+ad.filename, category='header')
-                    log.fullinfo('~'*50, category='header')
-                    log.fullinfo('PHU keywords updated/added:\n', 
-                                 category='header')
-                    log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                                 category='header')
-                    log.fullinfo('MOSAIC = '+ad.phuGetKeyValue('MOSAIC')+'\n', 
-                                 category='header')    
-                
+            gemini.gmos.gmosaic(**clParamsDict)
+    
+            if gemini.gmos.gmosaic.status:
+                log.critical('gireduce failed for inputs '+
+                             clm.imageInsFiles(type='string'))
+                raise ScienceError('gmosaic failed')
             else:
-                    log.critical('One of the inputs has not been prepared, the\
-                     mosaicDetectors function can only work on prepared data.')
-                    raise ScienceError('One of the inputs was not prepared')
+                log.status('Exited the gmosaic CL script successfully')    
                 
+                
+            # Renaming CL outputs and loading them back into memory 
+            # and cleaning up the intermediate temp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL()   
+            
+            # Renaming for symmetry
+            adOutputs=imageOuts
+                
+            # Wrap up logging
+            i=0
+            for ad in adOutputs:
+                log.fullinfo('-'*50, category='header')
+                
+                # Varifying gireduce was actually ran on the file
+                # then logging file names of successfully reduced files
+                if ad.phuGetKeyValue('GMOSAIC'): 
+                    log.fullinfo('\nFile '+clm.preCLimageNames()[i]+\
+                                 ' mosaiced successfully')
+                    log.fullinfo('New file name is: '+ad.filename)
+                i=i+1
+
+                # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+                # and updating logger with updated/added time stamps
+                sfm.markHistory(adOutputs=ad, historyMarkKey='MOSAIC')
         else:
-            log.critical('The parameter "adInputs" must not be None')
-            raise ScienceError('The parameter "adInputs" must not be None')
-        
+                log.critical('One of the inputs has not been prepared, the\
+                 mosaicDetectors function can only work on prepared data.')
+                raise ScienceError('One of the inputs was not prepared')
+                
         log.status('**FINISHED** the mosaic_detectors function')
         
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run \
@@ -1721,141 +1587,103 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     :type noLogFile: Python boolean (True/False)
     """
     
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                            noLogFile=noLogFile)
-
-    log.status('**STARTING** the normalize_flat function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                       logLevel, noLogFile,  
+                                       funcName='normalize_flat', 
+                                       combinedInputs=True)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None: 
-            # loading and bringing the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader()  
-                
-            # Converting input True/False to yes/no or detecting fl_vardq value
-            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
-            fl_vardq = sfm.autoVardq(fl_vardq)
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()  
             
-            # To clean up log and screen if multiple inputs
-            log.fullinfo('+'*50, category='format')    
-            
-            # Preparing input files, lists, parameters... for input to 
-            # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
-                               suffix=suffix, funcName='normalizeFlat', 
-                               logName=logName, combinedImages=True, 
-                               logLevel=logLevel, noLogFile=noLogFile)
-            
-            # Check the status of the CLManager object, True=continue, False= issue warning
-            if clm.status:                 
-                
-                # Creating a dictionary of the parameters set by the gemt.CLManager 
-                # or the definition of the function 
-                clPrimParams = {
-                  'inflats'     :clm.imageInsFiles(type='listFile'),
-                  # Maybe allow the user to override this in the future
-                  'outflat'     :clm.imageOutsFiles(type='string'), 
-                  # This returns a unique/temp log file for IRAF  
-                  'logfile'     :clm.templog.name,         
-                  # This is actually in the default dict but wanted to show it again
-                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel),   
-                  # This is actually in the default dict but wanted to show it again  
-                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
-                  # This is actually in the default dict but wanted to show it again    
-                  'verbose'     :yes                    
-                              }
-                # Creating a dictionary of the parameters from the function call 
-                # adjustable by the user
-                clSoftcodedParams = {
-                   'fl_vardq'   :fl_vardq,
-                   'fl_over'    :gemt.pyrafBoolean(fl_over),
-                   'fl_trim'    :gemt.pyrafBoolean(fl_trim)
-                                   }
-                # Grabbing the default params dict and updating it 
-                # with the two above dicts
-                clParamsDict = CLDefaultParamsDict('giflat', logLevel=logLevel)
-                clParamsDict.update(clPrimParams)
-                clParamsDict.update(clSoftcodedParams)
-                
-                # Logging the parameters that were not defaults
-                log.fullinfo('\nParameters set automatically:', 
-                             category='parameters')
-                # Loop through the parameters in the clPrimParams dictionary
-                # and log them
-                gemt.logDictParams(clPrimParams, logLevel=logLevel)
-                
-                log.fullinfo('\nParameters adjustable by the user:', 
-                             category='parameters')
-                # Loop through the parameters in the clSoftcodedParams 
-                # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
-                
-                log.debug('Calling the giflat CL script for inputs list '+
-                      clm.imageInsFiles(type='listFile'))
-            
-                gemini.giflat(**clParamsDict)
-                
-                if gemini.giflat.status:
-                    log.critical('giflat failed for inputs '+
-                                 clm.imageInsFiles(type='string'))
-                    raise ScienceError('giflat failed')
-                else:
-                    log.status('Exited the giflat CL script successfully')
-                
-                # Renaming CL outputs and loading them back into memory 
-                # and cleaning up the intermediate temp files written to disk
-                # refOuts and arrayOuts are None here
-                imageOuts, refOuts, arrayOuts = clm.finishCL()
-            
-                # Renaming for symmetry
-                adOutputs=imageOuts
-                    
-                # There is only one at this point so no need to perform a loop
-                # CLmanager outputs a list always, so take the 0th
-                adOut = adOutputs[0]
-                
-                # Adding GEM-TLM (automatic) and GIFLAT time stamps to the PHU
-                adOut.historyMark(key='GIFLAT', stomp=False)
-                
-                # Updating log with new GEM-TLM and GIFLAT time stamps
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('GIFLAT = '+adOut.phuGetKeyValue('GIFLAT'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')     
-                
-            else:
-                log.critical('One of the inputs has not been prepared,\
-                the normalizeFlat function can only work on prepared data.')
-                raise ScienceError('One of the inputs was not prepared')
-                
-        else:
-            log.critical('The parameter "adInputs" must not be None')
-            raise ScienceError('The parameter "adInputs" must not be None')
+        # Converting input True/False to yes/no or detecting fl_vardq value
+        # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+        fl_vardq = sfm.autoVardq(fl_vardq)
         
+        # To clean up log and screen if multiple inputs
+        log.fullinfo('+'*50, category='format')    
+        
+        # Preparing input files, lists, parameters... for input to 
+        # the CL script
+        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                           suffix=suffix, funcName='normalizeFlat', 
+                           logName=logName, combinedImages=True, 
+                           logLevel=logLevel, noLogFile=noLogFile)
+        
+        # Check the status of the CLManager object, True=continue, False= issue warning
+        if clm.status:                 
+            # Creating a dictionary of the parameters set by the gemt.CLManager 
+            # or the definition of the function 
+            clPrimParams = {
+              'inflats'     :clm.imageInsFiles(type='listFile'),
+              # Maybe allow the user to override this in the future
+              'outflat'     :clm.imageOutsFiles(type='string'), 
+              # This returns a unique/temp log file for IRAF  
+              'logfile'     :clm.templog.name,         
+              # This is actually in the default dict but wanted to show it again
+              'Stdout'      :gemt.IrafStdout(logLevel=logLevel),   
+              # This is actually in the default dict but wanted to show it again  
+              'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+              # This is actually in the default dict but wanted to show it again    
+              'verbose'     :yes                    
+                          }
+            # Creating a dictionary of the parameters from the function call 
+            # adjustable by the user
+            clSoftcodedParams = {
+               'fl_vardq'   :fl_vardq,
+               'fl_over'    :gemt.pyrafBoolean(fl_over),
+               'fl_trim'    :gemt.pyrafBoolean(fl_trim)
+                               }
+            # Grabbing the default params dict and updating it 
+            # with the two above dicts
+            clParamsDict = CLDefaultParamsDict('giflat', logLevel=logLevel)
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
+            # Logging the parameters that were not defaults
+            log.fullinfo('\nParameters set automatically:', 
+                         category='parameters')
+            # Loop through the parameters in the clPrimParams dictionary
+            # and log them
+            gemt.logDictParams(clPrimParams, logLevel=logLevel)
+            
+            log.fullinfo('\nParameters adjustable by the user:', 
+                         category='parameters')
+            # Loop through the parameters in the clSoftcodedParams 
+            # dictionary and log them
+            gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+            
+            log.debug('Calling the giflat CL script for inputs list '+
+                  clm.imageInsFiles(type='listFile'))
+        
+            gemini.giflat(**clParamsDict)
+            
+            if gemini.giflat.status:
+                log.critical('giflat failed for inputs '+
+                             clm.imageInsFiles(type='string'))
+                raise ScienceError()
+            else:
+                log.status('Exited the giflat CL script successfully')
+            
+            # Renaming CL outputs and loading them back into memory 
+            # and cleaning up the intermediate temp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL()
+        
+            # Renaming for symmetry
+            adOutputs=imageOuts
+        
+            # Updating GEM-TLM (automatic) and COMBINE time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOutputs, historyMarkKey='GIFLAT')    
+        else:
+            log.critical('One of the inputs has not been prepared,\
+            the normalizeFlat function can only work on prepared data.')
+            raise ScienceError()
+                
         log.status('**FINISHED** the normalize_flat function')
         
         # Return the outputs (list or single, matching adInputs)
@@ -1901,144 +1729,93 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='gemini.log',
     :type noLogFile: Python boolean (True/False)
     """
     
-    if logName!='':
-        log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                                noLogFile=noLogFile)
-    else:
-        # Use default logName 'gemini.log'
-        log=gemLog.getGeminiLog(logLevel=logLevel, noLogFile=noLogFile)
-        
-    log.status('**STARTING** the overscan_trim function')
-    
-    if not isinstance(adInputs,list):
-        adInputs=[adInputs]
-    
-    if (adInputs!=None) and (outNames!=None):
-        if isinstance(outNames,list):
-            if len(adInputs)!= len(outNames):
-                if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
-        if isInstance(outNames,str) and len(adInputs)>1:
-            if suffix==None:
-                   raise ScienceError('Then length of the inputs, '+
-                                      str(len(adInputs))+
-                       ', did not match the length of the outputs, '+
-                       str(len(outNames))+
-                       ' AND no value of "suffix" was passed in')
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+                                      logLevel, noLogFile, 
+                                      funcName='overscan_trim') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
     
     try:
-        if adInputs!=None:
-            # Set up counter for looping through outNames list
-            count=0
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:  
+            # Making a deepcopy of the input to work on
+            # (ie. a truly new+different object that is a complete copy of the input)
+            adOut = deepcopy(ad)
+            # moving the filename over as deepcopy doesn't do that
+            adOut.filename = ad.filename
+                             
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
             
-            # Creating empty list of ad's to be returned that will be filled below
-            if len(adInputs)>1:
-                adOutputs=[]
-            
-            # Loop through the inputs to perform the non-linear and saturated
-            # pixel searches of the SCI frames to update the BPM frames into
-            # full DQ frames. 
-            for ad in adInputs:  
-                # Making a deepcopy of the input to work on
-                # (ie. a truly new+different object that is a complete copy of the input)
-                adOut = deepcopy(ad)
-                # moving the filename over as deepcopy doesn't do that
-                adOut.filename = ad.filename
-                                 
-                # To clean up log and screen if multiple inputs
-                log.fullinfo('+'*50, category='format')    
+            for sciExt in adOut['SCI']:
+                # Getting the data section from the header and as a dict
+                # and grabbing the integer list from it, then finding
+                # its shape
+                datasecDict = sciExt.data_section()
+                datasecStr = sciExt.data_section(pretty=True,asDict=False)
+                # NOTE: this list is zero based, like python and numpy
+                datasecList = datasecDict[(sciExt.extname(),sciExt.extver())] 
+                dsl = datasecList
                 
-                for sciExt in adOut['SCI']:
-                    # Converting data section string to an integer list
-                    datasecStr=sciExt.data_section()
-                    datasecList=gemt.secStrToIntList(datasecStr) 
-                    dsl=datasecList
-                    # Updating logger with the section being kept
-                    log.stdinfo('\nfor '+adOut.filename+' extension '+
-                                str(sciExt.extver())+
-                                ', keeping the data from the section '+
-                                datasecStr,'science')
-                    # Trimming the data section from input SCI array
-                    # and making it the new SCI data
-                    sciExt.data=sciExt.data[dsl[2]-1:dsl[3],dsl[0]-1:dsl[1]]
-                    # Updating header keys to match new dimensions
-                    sciExt.header['NAXIS1'] = dsl[1]-dsl[0]+1
-                    sciExt.header['NAXIS2'] = dsl[3]-dsl[2]+1
-                    newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
-                                    str(dsl[3]-dsl[2]+1)+']' 
-                    sciExt.header['DATASEC']=newDataSecStr
-                    sciExt.header.update('TRIMSEC', datasecStr, 
-                                       'Data section prior to trimming')
-                    # Updating logger with updated/added keywords to each SCI frame
-                    log.fullinfo('*'*50, category='header')
-                    log.fullinfo('File = '+adOut.filename, category='header')
-                    log.fullinfo('~'*50, category='header')
-                    log.fullinfo('SCI extension number '+str(sciExt.extver())+
-                                 ' keywords updated/added:\n', 'header')
-                    log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
-                                category='header')
-                    log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),
-                                 category='header')
-                    log.fullinfo('DATASEC= '+newDataSecStr, category='header')
-                    log.fullinfo('TRIMSEC= '+datasecStr, category='header')
-                    
-                adOut.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')    
-                # Updating the GEM-TLM value and reporting the output to the RC    
-                adOut.historyMark(key='OVERTRIM', stomp=False)                
-                
-                # Updating logger with updated/added keywords to the PHU
+                # Updating logger with the section being kept
+                log.stdinfo('\nfor '+adOut.filename+' extension '+
+                            str(sciExt.extver())+
+                            ', keeping the data from the section '+
+                            datasecStr,'science')
+                # Trimming the data section from input SCI array
+                # and making it the new SCI data
+                # NOTE: first elements of arrays in python are inclusive
+                #       while last ones are exclusive, thus a 1 must be 
+                #       added for the final element to be included.
+                sciExt.data=sciExt.data[dsl[2]:dsl[3]+1,dsl[0]:dsl[1]+1]
+                # Updating header keys to match new dimensions
+                sciExt.header['NAXIS1'] = dsl[1]-dsl[0]+1
+                sciExt.header['NAXIS2'] = dsl[3]-dsl[2]+1
+                newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
+                                str(dsl[3]-dsl[2]+1)+']' 
+                sciExt.header['DATASEC']=newDataSecStr
+                sciExt.header.update('TRIMSEC', datasecStr, 
+                                   'Data section prior to trimming')
+                # Updating logger with updated/added keywords to each SCI frame
                 log.fullinfo('*'*50, category='header')
-                log.fullinfo('file = '+adOut.filename, category='header')
+                log.fullinfo('File = '+adOut.filename, category='header')
                 log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', 'header')
-                log.fullinfo('GEM-TLM = '+adOut.phuGetKeyValue('GEM-TLM'), 
-                             category='header') 
-                log.fullinfo('OVERTRIM = '+adOut.phuGetKeyValue('OVERTRIM')+ 
-                             '\n', category='header') 
-                
-                # Updating the file name with the suffix for this
-                # function and then reporting the new file 
-                if suffix!=None:
-                    log.debug('Calling gemt.fileNameUpdater on '+adOut.filename)
-                    if outNames!=None:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          infilename=outNames[count],
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                    else:
-                        adOut.filename = gemt.fileNameUpdater(adIn=adOut, 
-                                                          suffix=suffix, 
-                                                          strip=False, 
-                                                          logLevel=logLevel)
-                elif suffix==None:
-                    if outNames!=None:
-                        if len(outNames)>1: 
-                            adOut.filename = outNames[count]
-                        else:
-                            adOut.filename = outNames
-                    else:
-                        raise ScienceError('outNames and suffix parameters \
-                                                        can not BOTH be None')
-                        
-                log.status('File name updated to '+adOut.filename)
+                log.fullinfo('SCI extension number '+str(sciExt.extver())+
+                             ' keywords updated/added:\n', 'header')
+                log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
+                            category='header')
+                log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),
+                             category='header')
+                log.fullinfo('DATASEC= '+newDataSecStr, category='header')
+                log.fullinfo('TRIMSEC= '+datasecStr, category='header')
+                    
+            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERTRIM')       
             
-                if (isinstance(adInputs,list)) and (len(adInputs)>1):
-                    adOutputs.append(adOut)
-                else:
-                    adOutputs = adOut
+            # Setting 'TRIMMED' to 'yes' in the PHU and updating the log
+            adOut.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')
+            log.fullinfo('Another PHU keywords added:\n', 'header')
+            log.fullinfo('TRIMMED = '+adOut.phuGetKeyValue('TRIMMED')+'\n', 
+                         category='header')
+            
+            # Appending to output list
+            adOutputs.append(adOut)
 
-                count=count+1
-        else:
-            raise ScienceError('The parameter "adInputs" must not be None')
+            count = count+1
         
         log.status('**FINISHED** the overscan_trim function')
         
-        # Return the outputs (list or single, matching adInputs)
+        # Return the outputs list, even if there is only one output
         return adOutputs
     except:
         raise ScienceError('An error occurred while trying to run \
