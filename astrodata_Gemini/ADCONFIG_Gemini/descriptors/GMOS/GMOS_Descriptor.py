@@ -528,12 +528,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_non_linear_level
     
-    def pixel_scale(self, dataset, **args):
-        # Should pixel_scale use asDict?
-        # Get the instrument and the binning of the y-axis values using the 
-        # appropriate descriptors
+    def pixel_scale(self, dataset, asDict=False, **args):
+        # Get the instrument value using the appropriate descriptor
         instrument = dataset.instrument()
-        detector_y_bin = dataset.detector_y_bin()
         
         # Set the default pixel scales for GMOS-N and GMOS-S
         if instrument == 'GMOS-N':
@@ -541,14 +538,33 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if instrument == 'GMOS-S':
             scale = 0.073
         
-        ret_pixel_scale = {}
-        # The binning of the y-axis is used to calculate the pixel scale
-        for key, y_bin in detector_y_bin.iteritems():
-            # Return a dictionary with the pixel scale float as the value
-            ret_pixel_scale.update({key:float(y_bin * scale)})
+        if asDict:
+            ret_pixel_scale = {}
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
+                # Get the binning of the y-axis value using the appropriate
+                # descriptor
+                detector_y_bin = dataset.detector_y_bin()
+                # The binning of the y-axis is used to calculate the pixel
+                # scale
+                for key, y_bin in detector_y_bin.iteritems():
+                    # Return a dictionary with the pixel scale float as the
+                    # value
+                    ret_pixel_scale.update({key:float(y_bin * scale)})
+        else:
+            # Check to see whether the dataset has a single extension and if
+            # it does, return a single value
+            if dataset.countExts('SCI') <= 1:
+                # Get the binning of the y-axis values using the appropriate
+                # descriptor
+                detector_y_bin = dataset.detector_y_bin(asDict=False)
+                # Return the pixel scale float
+                ret_pixel_scale = float(detector_y_bin * scale)
+            else:
+                raise Errors.DescriptorDictError()
         
         return ret_pixel_scale
-    
+
     def read_noise(self, dataset, asDict=True, **args):
         # Get the amplifier integration time (ampinteg) and the UT date from
         # the header of the PHU. The ampinteg keyword is defined in the local
