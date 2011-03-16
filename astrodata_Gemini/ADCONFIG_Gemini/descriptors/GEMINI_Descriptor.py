@@ -97,7 +97,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def data_section(self, dataset, pretty=False, asDict=True, **args):
         if asDict:
             ret_data_section = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Get the data section from the header of each pixel data
                 # extension
                 raw_data_section = \
@@ -157,7 +158,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def detector_section(self, dataset, pretty=False, asDict=True, **args):
         if asDict:
             ret_detector_section = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Get the detector section from the header of each pixel data
                 # extension
                 raw_detector_section = \
@@ -201,7 +203,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def detector_x_bin(self, dataset, asDict=True, **args):
         if asDict:
             ret_detector_x_bin = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Return a dictionary with the binning of the x-axis integer
                 # (set to 1 as default for Gemini data) as the value
                 ret_detector_x_bin.update({(ext.extname(), \
@@ -221,7 +224,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def detector_y_bin(self, dataset, asDict=True, **args):
         if asDict:
             ret_detector_y_bin = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Return a dictionary with the binning of the x-axis integer
                 # (set to 1 as default for Gemini data) as the value
                 ret_detector_y_bin.update({(ext.extname(), \
@@ -245,9 +249,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
             if asDict:
                 ret_dispersion_axis = {}
-                # Since this spectroscopic data have been prepared, it will
-                # have an MDF attached, so just loop over the science
-                # extensions
+                # Loop over the science extensions
                 for ext in dataset['SCI']:
                     # Get the dispersion axis from the header of each pixel
                     # data extension
