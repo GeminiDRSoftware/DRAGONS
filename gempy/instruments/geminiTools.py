@@ -1199,16 +1199,24 @@ class ScienceFunctionManager():
     suffix = None
     funcName = None
     combinedInputs = False
+    log = None
+    logName = None
     logLevel = 1
-    log = None    
+    noLogFile = False    
     
-    def __init__(self, adInputs=None, outNames=None, suffix=None, logName='', 
-                 logLevel=1, noLogFile=False, funcName=None,
+    def __init__(self, adInputs=None, outNames=None, suffix=None, log=None,
+                 logName=None, logLevel=1, noLogFile=False, funcName=None,
                  combinedInputs=False):
         """
         This will load up the global variables to use throughout the manager
         functions and instantiate the logger object for use in here and 
         back in the 'user level function' that is utilizing this manager.
+        
+        If a log object is passed into the 'log' parameter, then the values of
+        the logName, logLevel and noLogFile will be extracted from that log 
+        object using its built in functions and logic.  These values will then
+        be passed back during startUp() for use in the 'user level function'
+        that is utilizing this manager.  
         
         :param adInputs: Astrodata inputs to have DQ extensions added to
         :type adInputs: Astrodata objects, either a single or a list of objects.
@@ -1232,6 +1240,13 @@ class ScienceFunctionManager():
                                overridden by providing outNames. 
         :type combinedInputs: Python boolean (True/False)
         
+        :param log: logger object to send log messges to
+        :type log: A gemLog object from astrodata/adutils/gemLog.py .
+                   It is an upgraded version of the Python logger for use 
+                   with all new scripts in gemini_python/ .
+                   Note: the logName, logLevel and noLogFile are not needed if
+                   'log' parameter is defined.
+                   
         :param logName: Name of the log file, default is 'gemini.log'
         :type logName: string
         
@@ -1251,9 +1266,22 @@ class ScienceFunctionManager():
         self.suffix = suffix
         self.funcName = funcName
         self.combinedInputs = combinedInputs
-        self.logLevel = logLevel
-        self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                                       noLogFile=noLogFile)
+        # Handling the loading of the logger, OR loading of its params to be
+        # passed back to the 'user level function' in startUp()
+        if log==None:
+            self.logName = logName
+            self.logLevel = logLevel
+            self.noLogFile = noLogFile
+            self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
+                                           noLogFile=noLogFile)
+        else:
+            self.log = log
+            self.logName = log.logname()
+            self.logLevel = log.levelChecker()
+            if self.logName=='/dev/null':
+                self.noLogFile = True
+            else:
+                self.noLogFile = False
         
     def startUp(self):
         """
@@ -1325,8 +1353,9 @@ class ScienceFunctionManager():
                         self.outNames.append(outName)
                 
             # return the now checked and loaded up (if needed) adInputs, 
-            # outNames and log object
-            return (self.adInputs, self.outNames, self.log)
+            # outNames and log object with its important parameters.
+            return (self.adInputs, self.outNames, self.log, self.logName, 
+                    self.logLevel, self.noLogFile)
             
         except ToolboxError:
             raise ToolboxError('An Error occurred during\
