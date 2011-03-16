@@ -19,7 +19,8 @@ from gempy.instruments import geminiTools  as gemt
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,  
-                suffix=None, logName='gemini.log', logLevel=1, noLogFile=False):
+                suffix=None, log=None, logName='gemini.log', logLevel=1, 
+                noLogFile=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
     The BPM will be added as frames matching that of the SCI frames and ensure
@@ -47,8 +48,8 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
        must match the length of the inputs.
            
     :param matchSize: A flag to use zeros and the key 'DETSEC' of the 'SCI'
-                      extensions to match the size of the BPM arrays to those of
-                      for the 'SCI' data arrays.
+                      extensions to match the size of the BPM arrays to those 
+                      of for the 'SCI' data arrays.
     :type matchSize: Python boolean (True/False). Default: False.
                       
     :param outNames: filenames of output(s)
@@ -58,6 +59,14 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     :param suffix: string to add on the end of the input filenames 
                    (or outNames if not None) for the output filenames.
     :type suffix: string
+    
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
@@ -75,10 +84,11 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile, funcName='add_bpm')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
                    
     if BPMs==None:
         log.critical('There must be at least one BPM provided, the \
@@ -221,7 +231,8 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
         raise ScienceError('An error occurred while trying to run add_bpm')
     
 def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None, 
-                suffix=None, logName='gemini.log', logLevel=1, noLogFile=False):
+                suffix=None, log=None, logName='gemini.log', logLevel=1, 
+                noLogFile=False):
     """
     This function will create a numpy array for the data quality 
     of each SCI frame of the input data. This will then have a 
@@ -263,6 +274,14 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
        (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -280,10 +299,11 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile, funcName='add_dq')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -388,8 +408,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
     except:
         raise ScienceError('An error occurred while trying to run add_dq')
 
-def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',  
-                                                logLevel=1, noLogFile=False):
+def add_var(adInputs, outNames=None, suffix=None, log=None, 
+                            logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function uses numpy to calculate the variance of each SCI frame
     in the input files and appends it as a VAR frame using AstroData.
@@ -414,6 +434,14 @@ def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',
         (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -431,10 +459,11 @@ def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile, funcName='add_var')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -530,7 +559,7 @@ def add_var(adInputs, outNames=None, suffix=None, logName='gemini.log',
     except:
         raise ScienceError('An error occurred while trying to run add_var')
 
-def adu_to_electrons(adInputs, outNames=None, suffix=None,  
+def adu_to_electrons(adInputs, outNames=None, suffix=None, log=None,
                             logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will convert the inputs from having pixel values in ADU to 
@@ -558,6 +587,14 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None,
         (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -575,11 +612,12 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile,
                                       funcName='adu_to_electrons')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -670,8 +708,8 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None,
                                                             adu_to_electrons')
 
 def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
-                fl_over=False, outNames=None, suffix=None, logName='gemini.log', 
-                                                logLevel=1, noLogFile=False):
+                fl_over=False, outNames=None, suffix=None, log=None, 
+                    logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will subtract the biases from the inputs using the 
     CL script gireduce.
@@ -717,6 +755,14 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                    (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -734,11 +780,12 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile,
                                       funcName='bias_correct')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
         
     try:
         # Set up counter for looping through outNames list
@@ -891,8 +938,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
         raise ScienceError('An error occurred while trying to run bias_correct')     
     
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
-            outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
-                                                            noLogFile=False):
+            outNames=None, suffix=None, log=None, logName='gemini.log',
+                                                logLevel=1, noLogFile=False):
     """
     This function will average and combine the SCI extensions of the 
     inputs. It takes all the inputs and creates a list of them and 
@@ -931,6 +978,14 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -947,11 +1002,12 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                        logLevel, noLogFile, funcName='combine', 
                                        combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -1067,7 +1123,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     except:
         raise ScienceError('An error occurred while trying to run combine')
                 
-def flat_correct(adInputs, flats=None, outNames=None, suffix=None,  
+def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None, 
                             logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function performs a flat correction by dividing the inputs by  
@@ -1096,6 +1152,14 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None,
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -1112,11 +1176,12 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile, 
                                       funcName='flat_correct') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     if flats==None:
         log.critical('There must be at least one processed flat provided,\
@@ -1175,7 +1240,7 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None,
         raise ScienceError('An error occurred while trying to run flat_correct')
                 
 def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
-               keepDats=False, logName='gemini.log', logLevel=1, 
+               keepDats=False, log=None, logName='gemini.log', logLevel=1, 
                noLogFile=False):
     """
     This function will detect the sources in the input images and fit
@@ -1234,6 +1299,14 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -1250,12 +1323,13 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, None, 'tmp', logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, None, 'tmp', log, logName,
                                       logLevel, noLogFile, 
                                       funcName='measure_iq') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
+    # and the log params for later use if needed.
     # NOTE: outNames are not needed, but sfm.startUp creates them automatically.
-    adInputs, outNames, log = sfm.startUp()
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # Importing getiq module to perform the source detection and IQ
@@ -1347,7 +1421,7 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
         raise ScienceError('An error occurred while trying to run measure_iq')                              
                 
 def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',  
-                fl_vardq='AUTO', outNames=None, suffix=None, 
+                fl_vardq='AUTO', outNames=None, suffix=None, log=None,
                 logName='gemini.log', logLevel=1, noLogFile=False):
     """
     This function will mosaic the SCI frames of the input images, 
@@ -1392,6 +1466,14 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -1408,11 +1490,12 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile, 
                                       funcName='mosaic_detectors') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # loading and bringing the pyraf related modules into the name-space
@@ -1526,9 +1609,9 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
         raise ScienceError('An error occurred while trying to run \
                                                             mosaic_detectors') 
                 
-def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO', 
-                outNames=None, suffix=None, logName='gemini.log', logLevel=1, 
-                noLogFile=False):
+def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO', 
+                outNames=None, suffix=None, log=None, logName='gemini.log',  
+                logLevel=1, noLogFile=False):
     """
     This function will combine the input flats (adInputs) and then normalize  
     them using the CL script giflat.
@@ -1572,6 +1655,14 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
             (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -1588,12 +1679,13 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                        logLevel, noLogFile,  
                                        funcName='normalize_flat', 
                                        combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # loading and bringing the pyraf related modules into the name-space
@@ -1692,8 +1784,8 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False,fl_vardq='AUTO',
         raise ScienceError('An error occurred while trying to run \
                                                                 normalize_flat')    
     
-def overscan_trim(adInputs, outNames=None, suffix=None, logName='gemini.log', 
-                                                logLevel=1,  noLogFile=False):
+def overscan_trim(adInputs, outNames=None, suffix=None, log=None,  
+                            logName='gemini.log', logLevel=1,  noLogFile=False):
     """
     This function uses AstroData to trim the overscan region 
     from the input images and update their headers.
@@ -1714,6 +1806,14 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='gemini.log',
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
+    :param log: logger object to send log messges to
+    :type log: A gemLog object from astrodata/adutils/gemLog.py .
+               It is an upgraded version of the Python logger for use 
+               with all new scripts in gemini_python/ .
+               Note: the logName, logLevel and noLogFile will be automatically
+               determined from the logger object passed in to 'log' with the 
+               ScienceFunctionManager.startUp() function.
+    
     :param logName: Name of the log file, default is 'gemini.log'
     :type logName: string
     
@@ -1730,11 +1830,12 @@ def overscan_trim(adInputs, outNames=None, suffix=None, logName='gemini.log',
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, logName,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
                                       logLevel, noLogFile, 
                                       funcName='overscan_trim') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
+    # and the log params for later use if needed.
+    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
