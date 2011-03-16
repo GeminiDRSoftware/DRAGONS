@@ -1376,16 +1376,14 @@ n informed of the issue and
             self.relhdul()
             return retval
         except KeyError:
+            raise KeyError("Keyword '"+str(key)+"' not found.")
             self.relhdul()
-            return None
         except Errors.EmptyKeyError:
-            print Errors.EmptyKeyError()
+            raise Errors.EmptyKeyError()
             self.relhdul()
-            return None
         except Errors.UndefinedKeyError:
-            print Errors.UndefinedKeyError()
+            raise Errors.UndefinedKeyError()
             self.relhdul()
-            return None
     phuValue = phuGetKeyValue
     phuHeader = phuValue
     
