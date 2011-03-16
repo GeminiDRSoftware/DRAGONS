@@ -70,7 +70,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
                                          suffix=rc['suffix'], 
-                                         logLevel=rc['logLevel'])    
+                                         log=log)    
            
             log.status('geminiScience.addDQ completed successfully')
             
@@ -112,7 +112,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOutputs = geminiScience.add_var(adInputs=rc.getInputs(style='AD'), 
                                          suffix=rc['suffix'], 
-                                         logLevel=rc['logLevel'])    
+                                         log=log)    
            
             log.status('geminiScience.addVAR completed successfully')
             
@@ -151,7 +151,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             adOutputs = geminiScience.adu_to_electrons(
                                             adInputs=rc.getInputs(style='AD'), 
                                                   suffix=rc['suffix'], 
-                                                  logLevel=rc['logLevel'])    
+                                                  log=log)    
            
             log.status('geminiScience.adu_to_electrons completed successfully')
             
@@ -211,7 +211,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                               fl_dqprop=rc['fl_dqprop'], 
                                               method=rc['method'], 
                                               suffix=rc['suffix'], 
-                                              logLevel=rc['logLevel']) 
+                                              log=log) 
                 
                 log.status('geminiScience.combine completed successfully')   
                 
@@ -301,7 +301,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             adOutputs = geminiScience.flat_correct(adInputs=rc.getInputs(style='AD'),     
                                          flats=processedFlat, suffix=rc['suffix'], 
-                                         logLevel=rc['logLevel'])           
+                                         log=log)           
             
             log.status('geminiScience.flatCorrect completed successfully')
               
@@ -410,7 +410,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                      function=rc['function'],
                                      display=rc['display'],
                                      mosaic=rc['mosaic'], qa=rc['qa'],
-                                     logLevel=rc['logLevel'])
+                                     log=log)
             
             log.status('geminiScience.measure_iq completed successfully')
               

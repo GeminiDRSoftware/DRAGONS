@@ -80,7 +80,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adOutputs = geminiScience.add_bpm(adInputs=rc.getInputs(style='AD'), 
                                          BPMs=BPMlist,matchSize=True, suffix=rc['suffix'], 
-                                         logLevel=rc['logLevel'])           
+                                         log=log)           
             
             log.status('geminiScience.addBPM completed successfully')
                 
@@ -154,7 +154,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOutputs = geminiScience.bias_correct(adInputs=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-                                         suffix=rc['suffix'], logLevel=rc['logLevel'])           
+                                         suffix=rc['suffix'], log=log)           
             
             log.status('geminiScience.biasCorrect completed successfully')
                 
@@ -367,7 +367,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOutputs = geminiScience.mosaic_detectors(adInputs=rc.getInputs(style='AD'), 
                                         fl_paste=rc['fl_paste'], interp_function=rc['interp_function'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
-                                        logLevel=rc['logLevel'])           
+                                        log=log)           
             
             log.status('geminiScience.mosaicDetectors completed successfully')
                 
@@ -421,7 +421,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOutputs = geminiScience.normalize_flat(adInputs=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
-                                        logLevel=rc['logLevel'])           
+                                        log=log)           
             
             log.status('geminiScience.normalizeFlat completed successfully')
                 
@@ -471,7 +471,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             adOutputs = gmosScience.overscan_subtract(adInputs=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], biassec=rc['biassec'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'], 
-                                        logLevel=rc['logLevel'])           
+                                        log=log)           
             
             log.status('gmosScience.overscanSubtract completed successfully')
                 
@@ -508,7 +508,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adOutputs = geminiScience.overscan_trim(adInputs=rc.getInputs(style='AD'),     
                                                         suffix=rc['suffix'], 
-                                                        logLevel= rc['logLevel'])           
+                                                        log=log)           
             
             log.status('geminiScience.overscanTrim completed successfully')
               

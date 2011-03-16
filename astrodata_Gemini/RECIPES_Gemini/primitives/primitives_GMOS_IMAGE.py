@@ -76,7 +76,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                          fl_statscale=rc['fl_statscale'],
                                          statsec=rc['statsec'], scale=rc['scale'],
                                          suffix=rc['suffix'], 
-                                         logLevel=rc['logLevel'])           
+                                         log=log)           
             
             log.status('gmosScience.fringe_correct completed successfully')
                 
@@ -124,7 +124,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                              fl_vardq=rc['fl_vardq'],
                                              method=rc['method'],
                                              suffix=rc['suffix'], 
-                                             logLevel=rc['logLevel'])           
+                                             log=log)           
                 
                 log.status('gmosScience.make_fringe_frame_imaging completed'+
                            ' successfully')
