@@ -1,3 +1,5 @@
+# Author: Kyle Mede. 2010
+# Skeleton originally written by Craig Allen, callen@gemini.edu
 import sys, StringIO, os
 
 from astrodata import Descriptors

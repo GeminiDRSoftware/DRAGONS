@@ -1,4 +1,5 @@
 #Author: Kyle Mede, June 2010
+# Skeleton originally written by Craig Allen, callen@gemini.edu
 #from Reductionobjects import Reductionobject
 from primitives_GMOS import GMOSPrimitives, pyrafLoader
 # All GEMINI IRAF task wrappers.
