@@ -45,7 +45,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def amp_read_area(self, dataset, asDict=True, **args):
         if asDict:
             ret_amp_read_area = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Get the name of the detector amplifier (ampname) from the
                 # header of each pixel data extension. The ampname keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
@@ -129,7 +130,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def detector_x_bin(self, dataset, asDict=True, **args):
         if asDict:
             ret_detector_x_bin = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Get the ccdsum value from the header of each pixel data
                 # extension. The ccdsum keyword is defined in the local key
                 # dictionary (stdkeyDictGMOS) but is read from the updated
@@ -161,7 +163,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def detector_y_bin(self, dataset, asDict=True, **args):
         if asDict:
             ret_detector_y_bin = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Get the ccdsum value from the header of each pixel data
                 # extension. The ccdsum keyword is defined in the local key
                 # dictionary (stdkeyDictGMOS) but is read from the updated
@@ -242,7 +245,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if asDict:
             ret_dispersion = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Get the dispersion value from the header of each pixel data
                 # extension. The dispersion keyword is defined in the local
                 # key dictionary (stdkeyDictGMOS) but is read from the updated
@@ -360,7 +364,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if asDict:
             ret_gain = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Check if the original gain (gainorig) keyword exists in the
                 # header of the pixel data extension. The gainorig keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
@@ -463,9 +468,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
             if asDict:
                 ret_mdf_row_id = {}
-                # Since this spectroscopic data has been prepared, it will
-                # have an MDF attached, so just loop over the science
-                # extensions
+                # Loop over the science extensions
                 for ext in dataset['SCI']:
                     # Get the MDF row ID from the header of each pixel data
                     # extension
@@ -560,7 +563,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if asDict:
             ret_read_noise = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Check if the original gain (gainorig) keyword exists in the
                 # header of the pixel data extension. The gainorig keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
@@ -664,7 +668,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def wavelength_reference_pixel(self, dataset, asDict=True, **args):
         if asDict:
             ret_wavelength_reference_pixel = {}
-            for ext in dataset:
+            # Loop over the science extensions
+            for ext in dataset['SCI']:
                 # Get the reference pixel of the central wavelength from the
                 # header of each pixel data extension. The reference pixel of
                 # the central wavelength keyword is defined in the local key
