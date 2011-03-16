@@ -528,7 +528,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_non_linear_level
     
-    def pixel_scale(self, dataset, asDict=False, **args):
+    def pixel_scale(self, dataset, asDict=True, **args):
         # Get the instrument value using the appropriate descriptor
         instrument = dataset.instrument()
         
