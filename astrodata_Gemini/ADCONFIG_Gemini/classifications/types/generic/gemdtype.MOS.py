@@ -2,11 +2,12 @@ class MOS(DataClassification):
     name="MOS"
     # this a description of the intent of the classification
     # to what does the classification apply?
-    usage = '''
+    usage = """
         Applies to all MOS data which conformed to the required Gemini Generic
-        MOS Standard.
-        '''
+        MOS Standard
+        """
     parent = "SPECT"
-    requirement= ISCLASS("GMOS_MOS")
+    requirement = OR([  ISCLASS("F2_MOS"),
+                        ISCLASS("GMOS_MOS"),])
 
-newtypes.append( MOS())
+newtypes.append(MOS())
