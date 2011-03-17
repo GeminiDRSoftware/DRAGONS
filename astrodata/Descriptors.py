@@ -38,11 +38,74 @@ class DescriptorExcept:
         @rtype: string"""
         return self.message
 dExcept = DescriptorExcept
+
+class DescriptorValueBadCast(DescriptorExcept):
+    pass
+    
 # NOTE: to address the issue of Descriptors module being a singleton, instead of the 
 # approach used for the ClassificationLibrary, we use the descriptors module
 # itself as the singleton and thus these module level "globals" which serve
 # the purpose of acting as a central location for Descriptor behavior.
 firstrun = True
+
+class DescriptorValue():
+    dictVal = None
+    val = None
+    name = None
+    def __init__(self, initval, asDict = True, name = "unknown"):
+        if isinstance(initval, dict):
+            self.dictVal = initval
+            val = None
+        else:
+            self.val = initval
+            self.dictVal = {"*":initval}
+        if asDict == False:
+            try:
+                self.val = self.collapseDictVal()
+            except:
+                pass # if it fails, no problem, tell them later if they try to use it
+        self.asDict = asDict
+        self.name = name
+    def info(self):
+        retstr = """
+descriptor value for: %(name)s
+        single value: %(val)s
+          dict value: %(dictVal)s
+        """ % {"name":self.name,
+               "val": repr(self.val),
+               "dictVal":repr(self.dictVal)
+              }
+        return retstr
+        
+    def collapseDictVal(self):
+        oldvalue = None
+        for key in self.dictVal:
+            value = self.dictVal[key]
+            if oldvalue == None:
+                oldvalue = value
+            else:
+                if oldvalue != value:
+                    raise DescriptorValueBadCast(
+                        """Cannot convert value to float 
+                     """"""as it relates to multiple extensions
+                     """"""which do not have identical values
+                        """)
+        # got here then all values were identical
+        return value
+        
+    def __str__(self):
+        if self.asDict == True:
+            return str(self.dictVal)
+        else:
+            return str(self.collapseDictVal())
+    def __float__(self):
+        
+        value = self.collapseDictVal()
+        return float(value)
+    def __int__(self):
+        value = self.collapseDictVal()
+        return int(value)
+
 
 # calculatorIndexREMask used to identify descriptorIndex files
 # these files need to set descriptorIndex to a dictionary value
