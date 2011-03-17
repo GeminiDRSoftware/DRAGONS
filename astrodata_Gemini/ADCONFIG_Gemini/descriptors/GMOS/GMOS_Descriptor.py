@@ -13,6 +13,11 @@ from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
+import inspect
+# functions
+def whoami():
+    return inspect.stack()[1][3]
+
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
@@ -128,6 +133,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_central_wavelength
     
     def detector_x_bin(self, dataset, asDict=True, **args):
+        # DESCRIPTOR VALUE PROTOTYPE
+        # semi-kludge to use DescriptorValue in all cases
+        # this flag is still important to the DescriptorValue class
+        usrAsDict = asDict
+        asDict = True
+        
+        
         if asDict:
             ret_detector_x_bin = {}
             # Loop over the science extensions
@@ -158,7 +170,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             else:
                 raise Errors.DescriptorDictError()
         
-        return ret_detector_x_bin
+        # @@DESCRIPTOR VALUE PROTOTYPE
+        return Descriptors.DescriptorValue( ret_detector_x_bin, 
+                                            asDict = usrAsDict,
+                                            name = whoami())
     
     def detector_y_bin(self, dataset, asDict=True, **args):
         if asDict:
