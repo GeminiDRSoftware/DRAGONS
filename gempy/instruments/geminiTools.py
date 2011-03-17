@@ -10,7 +10,7 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ToolboxError
 
-def biassecStrTonbiascontam(ad, biassec, logLevel=1):
+def biassecStrTonbiascontam(ad, biassec, logName=None, logLevel=1):
     """ 
     This function works with nbiascontam() of the CLManager. 
     It will find the largest horizontal difference between biassec and 
@@ -23,6 +23,9 @@ def biassecStrTonbiascontam(ad, biassec, logLevel=1):
     :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
     :type biassec: string  
     
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
+    
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
@@ -32,7 +35,7 @@ def biassecStrTonbiascontam(ad, biassec, logLevel=1):
                     'fullinfo'...)
     
     """
-    log=gemLog.getGeminiLog(logLevel=logLevel) 
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel) 
     try:
         # Split up the input triple list into three separate ones
         ccdStrList = biassec.split('],[')
@@ -102,7 +105,7 @@ def biassecStrTonbiascontam(ad, biassec, logLevel=1):
         return 4 
 
 def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False,
-                     logLevel=1):
+                     logName=None, logLevel=1):
     """
     This function is for updating the file names of astrodata objects.
     It can be used in a few different ways.  For simple post/pre pending of
@@ -133,6 +136,9 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False,
                   defined for this to work.
     :type strip: Boolean
     
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
+    
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
@@ -152,7 +158,7 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False,
     result: 'testversion_N20020214S022.fits'
     
     """
-    log=gemLog.getGeminiLog(logLevel=logLevel) 
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel) 
 
     # Check there is a name to update
     if infilename=='':
@@ -214,7 +220,7 @@ def listFileMaker(list=None, listName=None):
         except:
             raise ToolboxError("Could not write inlist file for stacking.") 
         
-def logDictParams(indict, logLevel=1):
+def logDictParams(indict, logName=None, logLevel=1):
     """ A function to log the parameters in a provided dictionary.  Main use
     is to log the values in the dictionaries of parameters for function 
     calls using the ** method.
@@ -224,6 +230,9 @@ def logDictParams(indict, logLevel=1):
     :type indict: dictionary. 
                   ex. {'param1':param1_value, 'param2':param2_value,...}
     
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
+    
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
@@ -232,12 +241,12 @@ def logDictParams(indict, logLevel=1):
                     OR the message level as a string (ie. 'critical', 'status', 
                     'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logLevel=logLevel)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
     for key in indict:
         log.fullinfo(repr(key)+' = '+repr(indict[key]), 
                      category='parameters')
         
-def nbiascontam(adInputs, biassec=None, logLevel=1):
+def nbiascontam(adInputs, biassec=None, logName=None, logLevel=1):
     """
     This function will find the largest difference between the horizontal 
     component of every BIASSEC value and those of the biassec parameter. 
@@ -250,6 +259,9 @@ def nbiascontam(adInputs, biassec=None, logLevel=1):
     
     :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
     :type biassec: string 
+    
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
     
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
@@ -267,7 +279,8 @@ def nbiascontam(adInputs, biassec=None, logLevel=1):
     for ad in adInputs:
         # Pass the retrieved value to biassecStrToBiasContam function
         # to do the work in finding the difference of the biassec's
-        val = biassecStrTonbiascontam(ad, biassec, logLevel=logLevel)
+        val = biassecStrTonbiascontam(ad, biassec, logName=logName, 
+                                      logLevel=logLevel)
         # Check if value returned for this input is larger. Keep the largest
         if val > retval:
             retval = val
@@ -298,8 +311,7 @@ def pyrafBoolean(pythonBool):
     A very basic function to reduce code repetition that simply 'casts' any 
     given Python boolean into a pyraf/IRAF one for use in the CL scripts.
     
-    """
-    log=gemLog.getGeminiLog() 
+    """ 
     import pyraf
     
     # If a boolean was passed in, convert it
@@ -308,8 +320,8 @@ def pyrafBoolean(pythonBool):
     elif  not pythonBool:
         return pyraf.iraf.no
     else:
-        log.critical('DANGER DANGER Will Robinson, pythonBool passed in was '+
-        'not True or False, and thats just crazy talk :P')
+        raise ToolBoxError('DANGER DANGER Will Robinson, pythonBool passed '+
+        'in was not True or False, and thats just crazy talk :P')
 
 def secStrToIntList(string):
     """ A function to convert a string representing a list of integers to 
@@ -336,7 +348,7 @@ def secStrToIntList(string):
     retl.append(int(Xs[1]))
     return retl
 
-def stdObsHdrs(ad, logLevel=1):
+def stdObsHdrs(ad, logName=None, logLevel=1):
     """ 
     This function is used by standardizeHeaders in primitives_GEMINI.
         
@@ -350,6 +362,9 @@ def stdObsHdrs(ad, logLevel=1):
     :param ad: astrodata instance to perform header key updates on
     :type ad: an AstroData instance
     
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
+    
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
@@ -358,7 +373,7 @@ def stdObsHdrs(ad, logLevel=1):
                     OR the message level as a string (ie. 'critical', 'status', 
                     'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logLevel=logLevel) 
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel) 
     # Keywords that are updated/added for all Gemini PHUs 
     ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
                       'Number of science extensions')
@@ -386,11 +401,9 @@ def stdObsHdrs(ad, logLevel=1):
     ut = ad.historyMark(key='GPREPARE',stomp=False) 
        
     # Updating logger with updated/added keywords
-    log.fullinfo('****************************************************', 
-                 category='header')
+    log.fullinfo('*'*50, category='header')
     log.fullinfo('file = '+ad.filename, category='header')
-    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
-                 category='header')
+    log.fullinfo('~'*50, category='header')
     log.fullinfo('PHU keywords updated/added:\n', category='header')
     log.fullinfo('NSCIEXT = '+str(ad.phuGetKeyValue('NSCIEXT')), category='header' )
     log.fullinfo('PIXSCALE = '+str(ad.phuGetKeyValue('PIXSCALE')), category='header' )
@@ -399,8 +412,7 @@ def stdObsHdrs(ad, logLevel=1):
     log.fullinfo('EXPTIME = '+str(ad.phuGetKeyValue('EXPTIME')), category='header' )
     log.fullinfo('ORIGNAME = '+ad.phuGetKeyValue('ORIGNAME'), category='header')
     log.fullinfo('GEM-TLM = '+str(ad.phuGetKeyValue('GEM-TLM')), category='header' )
-    log.fullinfo('---------------------------------------------------', 
-                 category='header')
+    log.fullinfo('-'*50, category='header')
          
     # A loop to add the missing/needed keywords in the SCI extensions
     for ext in ad['SCI']:
@@ -434,7 +446,7 @@ def stdObsHdrs(ad, logLevel=1):
         log.fullinfo('---------------------------------------------------', 
                      category='header')
 
-def stdObsStruct(ad, logLevel=1):
+def stdObsStruct(ad, logName=None, logLevel=1):
     """ 
     This function is used by standardizeStructure in primitives_GEMINI.
     
@@ -444,6 +456,9 @@ def stdObsStruct(ad, logLevel=1):
     :param ad: astrodata instance to perform header key updates on
     :type ad: an AstroData instance
     
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
+    
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
@@ -452,7 +467,7 @@ def stdObsStruct(ad, logLevel=1):
                     OR the message level as a string (ie. 'critical', 'status', 
                     'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logLevel=logLevel)    
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)    
     # Formatting so logger looks organized for these messages
     log.fullinfo('****************************************************', 
                  category='header') 
@@ -513,7 +528,8 @@ class CLManager(object):
     status = None
     combinedImages = None
     templog = None
-    log=None
+    log = None
+    logName = None
     logLevel=1
      
     def __init__(self, imageIns=None, refIns=None, arrayIns=None, suffix=None,  
@@ -619,7 +635,7 @@ class CLManager(object):
         
         :param logName: Name of the log file to write log messages to, 
                         if noLogFile=False.
-        :type logName: String
+        :type logName: String, None causes default to be used., None causes default to be used.
         
         :param logLevel: Verbosity setting for the log messages to screen,
                          default is 'critical' messages only.
@@ -668,6 +684,7 @@ class CLManager(object):
             self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
                                            noLogFile=noLogFile)
             # load these to global early as they are needed below
+            self.logName = logName
             self.logLevel = logLevel
             self.suffix = suffix
             # start up global lists
@@ -764,11 +781,13 @@ class CLManager(object):
             if self.combinedImages and (self.suffix!=None):
                 name = fileNameUpdater(adIn=self.imageIns[0], 
                                        suffix=self.suffix, 
+                                       logName=self.logName,
                                        logLevel=self.logLevel)
                 self.imageOutsNames.append(name)
             elif (not self.combinedImages) and (self.suffix!=None):
                 for ad in self.imageIns:
-                    name = fileNameUpdater(adIn=ad, suffix=self.suffix, 
+                    name = fileNameUpdater(adIn=ad, suffix=self.suffix,
+                                           logName=self.logName, 
                                            logLevel=self.logLevel)
                     self.imageOutsNames.append(name) 
             else:
@@ -852,6 +871,7 @@ class CLManager(object):
             if (self.suffix!=None):
                 for ad in self.refIns:
                     name = fileNameUpdater(adIn=ad, suffix=self.suffix, 
+                                           logName=self.logName,
                                            logLevel=self.logLevel)
                     self.refOutsNames.append(name) 
             else:
@@ -981,6 +1001,7 @@ class CLManager(object):
                 self._preCLimageNames.append(ad.filename)
                 # Strip off all postfixes and prefix filename with a unique prefix
                 name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, 
+                                       logName=self.logName,
                                        logLevel= self.logLevel)
                 # store the unique name in imageInsCLdiskNames for later reference
                 self.imageInsCLdiskNames.append(name)
@@ -999,6 +1020,7 @@ class CLManager(object):
                 self._preCLrefnames.append(ad.filename)
                 # Strip off all suffixs and prefix filename with a unique prefix
                 name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, 
+                                       logName=self.logName,
                                        logLevel= self.logLevel)
                 # store the unique name in refInsCLdiskNames for later reference
                 self.refInsCLdiskNames.append(name)
@@ -1163,11 +1185,23 @@ class IrafStdout():
     """
     log=None
     
-    def __init__(self, logLevel=1):
-        """ A function that is needed IRAF but not used in our wrapping its
-            scripts
+    def __init__(self, logName=None, logLevel=1):
+        """ 
+        A function that is needed IRAF but not used in our wrapping its
+        scripts.
+            
+        :param logName: Name of the log file, default is 'gemini.log'
+        :type logName: String, None causes default to be used., None causes default to be used.
+        
+        :param logLevel: Verbosity setting for the log messages to screen,
+                         default is 'critical' messages only.
+                         Note: independent of logLevel setting, all messages   
+                         always go to the logfile if noLogFile=False.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
         """
-        self.log = gemLog.getGeminiLog(logLevel=logLevel)
+        self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
     
     def write(self, out):
         """ This function converts the IRAF console prints to logger calls.
@@ -1248,7 +1282,7 @@ class ScienceFunctionManager():
                    'log' parameter is defined.
                    
         :param logName: Name of the log file, default is 'gemini.log'
-        :type logName: string
+        :type logName: String, None causes default to be used., None causes default to be used.
         
         :param logLevel: Verbosity setting for the log messages to screen,
                          default is 'critical' messages only.
@@ -1289,7 +1323,7 @@ class ScienceFunctionManager():
         parameter if needed.
         """
         try:
-            # Ensuring there are inputs ads to work on, else raise
+            # Ensuring there are inputs ad's to work on, else raise
             if self.adInputs==None:
                 self.log.critical('The parameter "adInputs" must not be None')
                 raise ToolboxError()
@@ -1341,6 +1375,7 @@ class ScienceFunctionManager():
                                    ad.filename)
                     outName = fileNameUpdater(infilename=ad.filename,
                                               suffix=self.suffix, strip=False, 
+                                              logName=self.logName,
                                               logLevel=self.logLevel)
                     self.outNames.append(outName)
                 else:
@@ -1349,6 +1384,7 @@ class ScienceFunctionManager():
                                        ad.filename)
                         outName = fileNameUpdater(infilename=ad.filename,
                                                   suffix=self.suffix, strip=False, 
+                                                  logName=self.logName,
                                                   logLevel=self.logLevel)
                         self.outNames.append(outName)
                 

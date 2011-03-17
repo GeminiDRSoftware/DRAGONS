@@ -3,7 +3,7 @@
 #primitives that is considered generic enough to be at the 'gemini' level of
 #the hierarchy tree.
 
-import os
+import os, sys
 
 import pyfits as pf
 import numpy as np
@@ -68,7 +68,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
@@ -282,7 +282,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: 
          verbosity setting for the log messages to screen,
@@ -442,7 +442,7 @@ def add_var(adInputs, outNames=None, suffix=None, log=None,
                ScienceFunctionManager.startUp() function.
 
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: 
         verbosity setting for the log messages to screen,
@@ -595,7 +595,7 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None, log=None,
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used., None causes default to be used.
     
     :param logLevel: 
          verbosity setting for the log messages to screen,
@@ -763,7 +763,7 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: 
           verbosity setting for the log messages to screen,
@@ -839,9 +839,11 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                   # this input file
                   'bias'        :clm.refInsFiles(type='string'),   
                   # This is actually in the default dict but wanted to show it again  
-                  'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+                  'Stdout'      :gemt.IrafStdout(logName=logName,
+                                                 logLevel=logLevel), 
                   # This is actually in the default dict but wanted to show it again
-                  'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+                  'Stderr'      :gemt.IrafStdout(logName=logName,
+                                                 logLevel=logLevel), 
                   # This is actually in the default dict but wanted to show it again
                   'verbose'     :yes                
                               }
@@ -856,7 +858,7 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                                    }
                 # Grabbing the default params dict and updating it 
                 # with the two above dicts
-                clParamsDict = CLDefaultParamsDict('gireduce',
+                clParamsDict = CLDefaultParamsDict('gireduce', logName=logName,
                                                    logLevel=logLevel)
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
@@ -866,13 +868,15 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                              category='parameters')
                 # Loop through the parameters in the clPrimParams dictionary
                 # and log them
-                gemt.logDictParams(clPrimParams, logLevel=logLevel)
+                gemt.logDictParams(clPrimParams, logName=logName, 
+                                   logLevel=logLevel)
                 
                 log.fullinfo('\nParameters adjustable by the user:', 
                              category='parameters')
                 # Loop through the parameters in the clSoftcodedParams 
                 # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+                gemt.logDictParams(clSoftcodedParams, logName=logName,
+                                   logLevel=logLevel)
                 
                 log.debug('calling the gireduce CL script for inputs '+
                                         clm.imageInsFiles(type='string'))
@@ -986,7 +990,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
@@ -1043,10 +1047,12 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                     'logfile'     :clm.templog.name,  
                     # This is actually in the default dict but wanted to 
                     # show it again       
-                    'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+                    'Stdout'      :gemt.IrafStdout(logName=logName,
+                                                   logLevel=logLevel), 
                     # This is actually in the default dict but wanted to 
                     # show it again    
-                    'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
+                    'Stderr'      :gemt.IrafStdout(logName=logName,
+                                                   logLevel=logLevel),
                     # This is actually in the default dict but wanted to 
                     # show it again     
                     'verbose'     :yes,    
@@ -1064,6 +1070,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 # Grabbing the default parameters dictionary and updating 
                 # it with the two above dictionaries
                 clParamsDict = CLDefaultParamsDict('gemcombine', 
+                                                   logName=logName,
                                                    logLevel=logLevel)
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
@@ -1073,13 +1080,15 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                              category='parameters')
                 # Loop through the parameters in the clPrimParams dictionary
                 # and log them
-                gemt.logDictParams(clPrimParams, logLevel=logLevel)
+                gemt.logDictParams(clPrimParams, logName=logName, 
+                                   logLevel=logLevel)
                 
                 log.fullinfo('\nParameters adjustable by the user:', 
                              category='parameters')
                 # Loop through the parameters in the clSoftcodedParams dictionary
                 # and log them
-                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+                gemt.logDictParams(clSoftcodedParams, logName=logName, 
+                                   logLevel=logLevel)
                 
                 log.debug('Calling the gemcombine CL script for input\
                                  list '+clm.imageInsFiles(type='listFile'))
@@ -1160,7 +1169,7 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None,
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
@@ -1307,7 +1316,7 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
@@ -1363,7 +1372,9 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
             elif numExts==3:
                 mosaic = False
             else:
-                raise ScienceError()
+                raise ScienceError('The input '+ad.filename+' had '+\
+                                   str(numExts)+' SCI extensions and inputs \
+                                   with only 1 or 3 extensions are allowed')
             
             # Start time for measuring IQ of current file
             st = time.time()
@@ -1432,6 +1443,9 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
         #returning complete dictionary for use by the user if desired
         return outDict
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run measure_iq')                              
                 
 def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',  
@@ -1489,7 +1503,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
@@ -1541,9 +1555,9 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
               # This returns a unique/temp log file for IRAF 
               'logfile'     :clm.templog.name,
               # This is actually in the default dict but wanted to show it again     
-              'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+              'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
               # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+              'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
               # This is actually in the default dict but wanted to show it again
               'verbose'     :yes                
                           }
@@ -1556,7 +1570,8 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                               }
             # Grabbing the default params dict and updating it with 
             # the two above dicts
-            clParamsDict = CLDefaultParamsDict('gmosaic', logLevel=logLevel)
+            clParamsDict = CLDefaultParamsDict('gmosaic', logName=logName,
+                                               logLevel=logLevel)
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)      
                 
@@ -1565,13 +1580,14 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                          category='parameters')
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gemt.logDictParams(clPrimParams, logLevel=logLevel)
+            gemt.logDictParams(clPrimParams, logName=logName, logLevel=logLevel)
             
             log.fullinfo('\nParameters adjustable by the user:', 
                          category='parameters')
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+            gemt.logDictParams(clSoftcodedParams, logName=logName,
+                               logLevel=logLevel)
             
             log.debug('calling the gmosaic CL script for inputs '+
                                         clm.imageInsFiles(type='string'))
@@ -1678,7 +1694,7 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
@@ -1730,9 +1746,9 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
               # This returns a unique/temp log file for IRAF  
               'logfile'     :clm.templog.name,         
               # This is actually in the default dict but wanted to show it again
-              'Stdout'      :gemt.IrafStdout(logLevel=logLevel),   
+              'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel),   
               # This is actually in the default dict but wanted to show it again  
-              'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+              'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
               # This is actually in the default dict but wanted to show it again    
               'verbose'     :yes                    
                           }
@@ -1745,7 +1761,8 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
                                }
             # Grabbing the default params dict and updating it 
             # with the two above dicts
-            clParamsDict = CLDefaultParamsDict('giflat', logLevel=logLevel)
+            clParamsDict = CLDefaultParamsDict('giflat', logName=logName,
+                                               logLevel=logLevel)
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
@@ -1754,13 +1771,14 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
                          category='parameters')
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gemt.logDictParams(clPrimParams, logLevel=logLevel)
+            gemt.logDictParams(clPrimParams, logName=logName, logLevel=logLevel)
             
             log.fullinfo('\nParameters adjustable by the user:', 
                          category='parameters')
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+            gemt.logDictParams(clSoftcodedParams,logName=logName, 
+                               logLevel=logLevel)
             
             log.debug('Calling the giflat CL script for inputs list '+
                   clm.imageInsFiles(type='listFile'))
@@ -1829,7 +1847,7 @@ def overscan_trim(adInputs, outNames=None, suffix=None, log=None,
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.

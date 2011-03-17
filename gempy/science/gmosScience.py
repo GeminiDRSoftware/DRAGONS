@@ -84,7 +84,7 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: 
          verbosity setting for the log messages to screen,
@@ -140,16 +140,17 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
               'logfile'     :clm.templog.name,      
               'fl_over'     :yes, 
               # This is actually in the default dict but wanted to show it again
-              'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+              'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
               # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(logLevel=logLevel), 
+              'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
               # This is actually in the default dict but wanted to show it again
               'verbose'     :yes                
                           }
             
             # Taking care of the biasec->nbiascontam param
             if not biassec == '':
-                nbiascontam = gemt.nbiascontam(adInputs, biassec, logLevel)
+                nbiascontam = gemt.nbiascontam(adInputs, biassec, logName, 
+                                               logLevel)
                 log.fullinfo('nbiascontam parameter was updated to = '+
                              str(nbiascontam))
             else: 
@@ -167,7 +168,7 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                                }
             # Grabbing the default params dict and updating it with 
             # the two above dicts
-            clParamsDict = CLDefaultParamsDict('gireduce', 
+            clParamsDict = CLDefaultParamsDict('gireduce', logName=logName,
                                                logLevel=logLevel)
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
@@ -177,13 +178,14 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                          category='parameters')
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gemt.logDictParams(clPrimParams, logLevel=logLevel)
+            gemt.logDictParams(clPrimParams, logName=logName, logLevel=logLevel)
             
             log.fullinfo('\nParameters adjustable by the user:', 
                          category='parameters')
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+            gemt.logDictParams(clSoftcodedParams, logName=logName, 
+                               logLevel=logLevel)
             
             log.debug('Calling the gireduce CL script for inputs '+
                   clm.imageInsFiles(type='string'))
@@ -293,7 +295,7 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: 
          verbosity setting for the log messages to screen,
@@ -347,7 +349,7 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
             # Logging values set in the parameters dictionary above
             log.fullinfo('\nParameters being used for rmImgFringe '+
                          'function:\n')
-            gemt.logDictParams(paramDict,logLevel=logLevel)
+            gemt.logDictParams(paramDict, logName=logName, logLevel=logLevel)
             
             # Calling the rmImgFringe function to perform the fringe 
             # corrections, this function will return the corrected image as
@@ -420,7 +422,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                ScienceFunctionManager.startUp() function.
     
     :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: string
+    :type logName: String, None causes default to be used.
     
     :param logLevel: verbosity setting for the log messages to screen,
                     default is 'critical' messages only.
@@ -484,10 +486,10 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                     'logfile'     :clm.templog.name,  
                     # This is actually in the default dict but wanted to 
                     # show it again       
-                    'Stdout'      :gemt.IrafStdout(logLevel=logLevel), 
+                    'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
                     # This is actually in the default dict but wanted to 
                     # show it again    
-                    'Stderr'      :gemt.IrafStdout(logLevel=logLevel),
+                    'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel),
                     # This is actually in the default dict but wanted to 
                     # show it again     
                     'verbose'     :yes                    
@@ -502,7 +504,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                                     }
                 # Grabbing the default parameters dictionary and updating 
                 # it with the two above dictionaries
-                clParamsDict = CLDefaultParamsDict('gifringe', 
+                clParamsDict = CLDefaultParamsDict('gifringe', logName=logName,
                                                    logLevel=logLevel)
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
@@ -511,10 +513,12 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 log.fullinfo('\nParameters set by the CLManager or  '+
                          'dictated by the definition of the primitive:\n', 
                          category='parameters')
-                gemt.logDictParams(clPrimParams,logLevel=logLevel)
+                gemt.logDictParams(clPrimParams, logName=logName, 
+                                   logLevel=logLevel)
                 log.fullinfo('\nUser adjustable parameters in the '+
                              'parameters file:\n', category='parameters')
-                gemt.logDictParams(clSoftcodedParams,logLevel=logLevel)
+                gemt.logDictParams(clSoftcodedParams, logName=logName,
+                                   logLevel=logLevel)
                 
                 log.debug('Calling the gifringe CL script for input list '+
                               clm.imageInsFiles(type='listFile'))

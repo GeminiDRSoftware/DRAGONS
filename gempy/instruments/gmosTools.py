@@ -10,13 +10,16 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ToolboxError
 
-def stdInstHdrs(ad, logLevel=1):  
+def stdInstHdrs(ad, logName=None, logLevel=1):  
     """ 
     A function used by StandardizeInstrumentHeaders in primitives_GMOS.
     It currently just adds the DISPAXIS header key to the SCI extensions.
     
     :param ad: input astrodata instance to have its headers standardized
     :type ad: a single astrodata instance
+    
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
     
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
@@ -31,7 +34,7 @@ def stdInstHdrs(ad, logLevel=1):
     # Do the stuff to the headers that is for the MOS, those for IMAGE are 
     # taken care of with stdObsHdrs all ready 
     
-        log=gemLog.getGeminiLog(logLevel=logLevel)
+        log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
     
         # Formatting so logger looks organized for these messages
         log.fullinfo('*'*50, 
@@ -49,7 +52,7 @@ def stdInstHdrs(ad, logLevel=1):
             log.fullinfo('-'*50,
                          'header')
 
-def valInstData(ad, logLevel=1):  
+def valInstData(ad, logName=None, logLevel=1):  
     """
     A function used by validateInstrumentData in primitives_GMOS.
     
@@ -59,6 +62,9 @@ def valInstData(ad, logLevel=1):
     :param ad: input astrodata instance to validate
     :type ad: a single astrodata instance
     
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
+    
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
@@ -67,7 +73,7 @@ def valInstData(ad, logLevel=1):
                     OR the message level as a string (ie. 'critical', 'status', 
                     'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logLevel=logLevel)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
     length=ad.countExts('SCI')
     # If there are 1, 3, 6, or 12 extensions, all good, if not log a critical 
     # message and raise an exception
@@ -84,7 +90,7 @@ def valInstData(ad, logLevel=1):
 # There was talk about generalizing this module to work on all imaging data
 # rather than just GMOS images, this is left as a task to look into later.
 def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='', 
-               scale=0.0, logLevel=1):                         
+               scale=0.0, logName=None, logLevel=1):                         
     """
     Scale and subtract a fringe frame from GMOS gireduced image.
     
@@ -106,6 +112,9 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
     :param scale: Override auto-scaling if not 0.0
     :type scale: real 
     
+    :param logName: Name of the log file, default is 'gemini.log'
+    :type logName: String, None causes default to be used., None causes default to be used.
+    
     :param logLevel: Verbosity setting for the log messages to screen,
                      default is 'critical' messages only.
                      Note: independent of logLevel setting, all messages always go 
@@ -115,7 +124,7 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
                     'fullinfo'...)
     
     """    
-    log=gemLog.getGeminiLog(logLevel=logLevel)
+    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
     
     ut = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
     
