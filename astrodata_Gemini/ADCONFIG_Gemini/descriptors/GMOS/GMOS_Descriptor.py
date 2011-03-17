@@ -364,13 +364,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if asDict:
             ret_gain = {}
-            # Casting as single extension into a list so it can be iterable
-            if dataset.countExts('SCI') <= 1:
-                dataset = [dataset]
-            else:
-                dataset = dataset['SCI']
             # Loop over the science extensions
-            for ext in dataset:
+            for ext in dataset['SCI']:
                 # Check if the original gain (gainorig) keyword exists in the
                 # header of the pixel data extension. The gainorig keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
