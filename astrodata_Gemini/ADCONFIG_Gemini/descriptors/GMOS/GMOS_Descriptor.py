@@ -364,6 +364,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if asDict:
             ret_gain = {}
+            # Casting as single extension into a list so it can be iterable
+            if dataset.countExts('SCI') <= 1:
+                dataset = [dataset]
             # Loop over the science extensions
             for ext in dataset['SCI']:
                 # Check if the original gain (gainorig) keyword exists in the
