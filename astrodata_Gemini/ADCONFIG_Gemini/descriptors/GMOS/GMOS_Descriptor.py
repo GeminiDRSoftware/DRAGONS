@@ -367,8 +367,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Casting as single extension into a list so it can be iterable
             if dataset.countExts('SCI') <= 1:
                 dataset = [dataset]
+            else:
+                dataset = dataset['SCI']
             # Loop over the science extensions
-            for ext in dataset['SCI']:
+            for ext in dataset:
                 # Check if the original gain (gainorig) keyword exists in the
                 # header of the pixel data extension. The gainorig keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
@@ -387,8 +389,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 ampname = ext.header[globalStdkeyDict['key_ampname']]
                 # Get the gain setting and read speed setting values using the
                 # appropriate descriptors
-                gain_setting = dataset.gain_setting()
-                read_speed_setting = dataset.read_speed_setting()
+                gain_setting = ext.gain_setting()
+                read_speed_setting = ext.read_speed_setting()
                 
                 gainkey = (read_speed_setting, gain_setting, ampname)
                 
