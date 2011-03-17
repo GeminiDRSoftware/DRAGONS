@@ -254,7 +254,19 @@ integrates other functionality.
         headers = None
         if type(dataset) == str:
             parts = dataset.split(":")
+            # print "AD257:", repr(parts)
             if len(parts)>1:
+                if parts[0] == "file":
+                    remoteFile = False
+                    dataset = parts[1][2:]
+                else:
+                    remoteFile = True
+            else:
+                remoteFile = False
+                    
+                
+                
+            if remoteFile:
                 # then the string is an URL, retrieve it
                 import urllib
                 from urllib import urlretrieve

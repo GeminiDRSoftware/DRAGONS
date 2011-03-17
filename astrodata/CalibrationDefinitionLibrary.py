@@ -2,7 +2,8 @@ import os
 import pyfits
 from xml.dom.minidom import parse
 #------------------------------------------------------------------------------ 
-from astrodata.AstroData import AstroData
+import astrodata
+from astrodata import AstroData
 import ConfigSpace
 import Descriptors
 import gdpgutil
@@ -78,20 +79,30 @@ class CalibrationDefinitionLibrary( object ):
         for inp in inputs:
             cr = CalibrationRequest()
             # print "CDL56:", repr(inp), inp.filename, str(inp)
+            # @@REVIEW: writeInput is a bad name... you write outputs!
             if writeInput == True:
                 if os.path.exists(inp.filename):
                     # then asked to write something already on disk and we
                     # don't want to blindly clobber... throw informative error
-                    log.critical(("Overwriting %s with in-memory version " +
-                                 "to ensure a current version of the dataset" +
-                                 "is available " +
-                                 "to Calibration Service.") % inp.filename)
+                    msg = "Overwriting %s with in-memory version " + \
+                                 "to ensure a current version of the dataset" + \
+                                 "is available " + \
+                                 "to Calibration Service." 
+                    msg = msg % inp.filename
+                    log.warning(msg)
                 else:
-                    log.status(("Writing in-memory AstroData instance " +
+                    log.status("Writing in-memory AstroData instance " +
                                "to new disk file (%s) to ensure availability " +
-                               "to Calibration Service.") % inp.filename)
-                inp.write(clobber = True)
-
+                               "to Calibration Service." % inp.filename)
+                try:
+                    inp.write(clobber = True)
+                except astrodata.data.ADREADONLY:
+                    log.warning("Skipped writing dataset, as it was "
+                                "readonly input. This write "
+                                "is done to ensure the file in memory is on disk "
+                                "as the calibration system inspects the file itself. "
+                                "As the file is protected as readonly, the system will "
+                                "assume it is unchanged since loading.")
             cr.filename = inp.filename
             cr.caltype = caltype
             # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the ID

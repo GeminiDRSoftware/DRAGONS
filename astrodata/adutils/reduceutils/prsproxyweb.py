@@ -54,7 +54,7 @@ def parsepath(path):
     return rparms
 
 try:
-    from GeminiMetadataUtils import *
+    from fitsstore.GeminiMetadataUtils import *
 except:
     print "Cannot import GeminiMetadataUtils from FITSSTORE"
   
@@ -258,7 +258,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 return
              
             if parms["path"].startswith("/summary"):
-                import searcher
+                from fitsstore import searcher
                 DEBSUM= False
                 
                 #break down path
@@ -299,8 +299,11 @@ class MyHandler(BaseHTTPRequestHandler):
                         resultf = calibrationSearch(parms, fullResult = True)
                 
                 if caltype == "all":
-                    domb = minidom.parseString(resultb)
-                    domf = minidom.parseString(resultf)
+                    try:
+                        domb = minidom.parseString(resultb)
+                        domf = minidom.parseString(resultf)
+                    except:
+                        return None # can't parse input... no calibration
                     calnodefs = domf.getElementsByTagName("calibration")
                     if len(calnodefs) > 0:
                         calnodef = calnodefs[0]
@@ -332,7 +335,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 
 
             if parms["path"] == "/calsearch.xml":
-                import searcher
+                from fitsstore import searcher
                 cparms = {}
                 cparms.update(parms)
                 if "datalab" in parms:
@@ -704,7 +707,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 return
                 
             if self.path.startswith("/htmldocs"):
-                import FitsStorage
+                from fitsstore import FitsStorage
                 realpath = self.path.split('/')
                 realpath = realpath[1:]
                 dirname = os.path.dirname(FitsStorage.__file__)

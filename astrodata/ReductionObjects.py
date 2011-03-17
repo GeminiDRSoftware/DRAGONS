@@ -1,6 +1,7 @@
 import re 
 import os
 import traceback
+from astrodata import AstroData
 
 from astrodata.adutils import gemLog
 
@@ -280,6 +281,13 @@ class PrimitiveSet(object):
                 bcls.getParentModules(self, bcls, appendList)
         return appendList
 
+from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
+from astrodata.ReductionObjectRequests import CalibrationRequest,\
+        UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
+        ImageQualityRequest
+import Proxies
+usePRS = True
+prs = None
 def commandClause(ro, coi):
     global prs
     
@@ -307,12 +315,16 @@ def commandClause(ro, coi):
                     prs = Proxies.PRSProxy.getADCC()
                     
                 if usePRS:
+                    print "RO316:", repr(rq)
                     calurl = prs.calibrationSearch( rq )
                 
                 # print "r396:", calurl
                 if calurl == None:
                     # @@NOTE: should log no calibrations found
-                    raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
+                    return None
+                    # this is not fatal because perhaps there isn't a calibration
+                    # the system checks both the local and central source
+                    # raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
                     break
 
                 msg += 'A suitable %s found:\n' %(str(typ))
@@ -325,7 +337,7 @@ def commandClause(ro, coi):
                     coi.addCal(fn, typ, calfname)
                 else:
                     coi.addCal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
-                coi.persistCalIndex( calindfile )
+                coi.persistCalIndex()
                 calname = calurl
             else:
                 msg += '%s already stored.\n' %(str(typ))
@@ -404,3 +416,22 @@ def commandClause(ro, coi):
                     pointsize=0, color=204, label=pyraf.iraf.yes )
                 et = time.time()
                 #print 'RED422:', (et - st)
+
+    # note: will this throw away rq's, should throw exception?  review
+    # why do this, better to assert it IS empty than empty it!
+    # coi.clearRqs()
+    
+    #dump the reduction context object 
+    if coi['rtf']:
+        results = open( "test.result", "a" )
+        #results.write( "\t\t\t<< CONTROL LOOP " + str(controlLoopCounter" >>\n")
+        #print "\t\t\t<< CONTROL LOOP ", controlLoopCounter," >>\n"
+        #print "#" * 80
+        #controlLoopCounter += 1
+        results.write( str( coi ) )
+        results.close()
+        #print "#" * 80
+        #print "\t\t\t<< END CONTROL LOOP ", controlLoopCounter - 1," >>\n"
+        # CLEAR THE REQUEST LEAGUE
+#    if primfilter == None:
+#        raise "This is an error that should never happen, primfilter = None"

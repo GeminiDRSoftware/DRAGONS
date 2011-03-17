@@ -136,6 +136,7 @@ class PRSProxy(object):
     registered = False
     
     prsport = 53530
+    httpport = None
     reducecmds = None
     xmlrpcthread = None
     reduceServer = None
@@ -174,7 +175,8 @@ class PRSProxy(object):
 
         found = False
         newProxy = PRSProxy(reduceServer = reduceServer, port = info["xmlrpc_port"])
-           
+        newProxy.httpport = info["http_port"]
+        newProxy.localCalUrl = "http://localhost:%s/calsearch.xml" % newProxy.httpport
         if not found:
             log.info("reduce-->adcc?")
         while(not found):
@@ -344,12 +346,14 @@ class PRSProxy(object):
         if self.found == False:
             return None
         else:
+            PDEB = True
             calrqdict = calRq.asDict()
             if (PDEB):
                 print "P165:", repr(calrqdict)
             cal = self.prs.calibrationSearch(calrqdict)
             if (PDEB):
                 print "P167:", cal
+            PDEB = False
             return cal
     def get_version(self):
         self.version = self.prs.get_version()

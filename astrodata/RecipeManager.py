@@ -808,7 +808,9 @@ class ReductionContext(dict):
         
         return rets
     
-    def persistCalIndex(self, filename, newindex = None):
+    def persistCalIndex(self, filename = None, newindex = None):
+        # should call PRS!
+        return
         #print "Calibration List Before Persist:"
         #print self.calsummary()
         if newindex != None:
@@ -1089,7 +1091,7 @@ class ReductionContext(dict):
             else:
                 print "'%(tup)s', was not registered in the calibrations."
     
-    def rqCal(self, caltype, inputs=None):
+    def rqCal(self, caltype, inputs=None, source="all"):
         '''
         Create calibration requests based on raw inputs.
         
@@ -1103,9 +1105,13 @@ class ReductionContext(dict):
         else:
             addToCmdQueue = self.cdl.getCalReq(inputs, caltype, writeInput=True)
         for re in addToCmdQueue:
+            # print "RM1106:",repr(dir(re))
+            re.source = source
             self.addRq(re)
+            
     def saveCmdHistory(self):
-        print "RM1076:", repr(self.rorqs)
+        print "RM1113:", repr(self.rorqs)
+        print "RM1114:saveCmdHistorythis saves nothing atm! It's for the HTML iface"
         
         
     def rqDisplay(self, displayID=None):
@@ -1310,7 +1316,8 @@ class RecipeLibrary(object):
                 # bind the recipe to the reduction object
                 ro = self.bindRecipe(ro, name, rfunc)
             else:
-                raise RecipeExcept("type=%s, name=%s, src=%s"%(astrotype, name, src))
+                raise RecipeExcept("Error: Recipe Source Not Found\n\ttype=%s, name=%s, src=%s"
+                                    % (astrotype, name, src))
         elif dataset != None:
             gd, bnc = openIfName(dataset)
             types = gd.getTypes()

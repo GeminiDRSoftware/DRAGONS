@@ -25,12 +25,21 @@ class CalibrationRecord( ReductionContextRecord ):
     sciFilename = None
     caltype = None
     filename = None
+    source = "all"
     
-    def __init__(self, sciFilename, filename, caltype, timestamp = None):
+    def __init__(self, sciFilename, filename, caltype, timestamp = None, source="all"):
         super( CalibrationRecord, self ).__init__( timestamp )
         self.sciFilename = sciFilename
         self.filename = filename
         self.caltype = caltype
+        self.source = source
+    
+    def asDict(self):
+        retd = {"caltype": self.caltype,
+                "filename": self.filename,
+                "source": self.source
+               }
+        return retd
         
     def __str__(self):
         rets = """

@@ -462,7 +462,10 @@ usePRS = True
 
 # called once per substep (every yeild in any primitive when struck)
 # registered with the reduction object
-def commandClause(ro, coi):
+# !!!! we import this from ReductionObjects.py now
+from astrodata.ReductionObjects import commandClause
+def OLDcommandClause(ro, coi):
+
     global prs
     
     coi.processCmdReq()
@@ -803,6 +806,8 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     # create fresh context object
                     # @@TODO:possible: see if deepcopy can do this better 
                     co = ReductionContext()
+                    if options.rtf:
+                        co.update({"rtf":True})
                     #print "r739:stack index file", stkindfile
                     # @@NAME: stackIndexFile, location for persistent stack list cache
                     co.setCacheFile("stackIndexFile", stkindfile)
