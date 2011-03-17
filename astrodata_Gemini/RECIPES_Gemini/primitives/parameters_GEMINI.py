@@ -76,6 +76,18 @@
                     },               
                     },
        
+    'getCal': {
+                'source':
+                {
+                    'default':'all',
+                    'type':'str'
+                },
+                'caltype':
+                {
+                    'default': None,
+                    'type':'str'
+                }
+              },
     'getStackable':{'purpose':
                    {
                     'default': '' ,

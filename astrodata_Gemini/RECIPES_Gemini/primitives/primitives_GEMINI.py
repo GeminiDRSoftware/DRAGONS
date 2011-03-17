@@ -316,6 +316,43 @@ class GEMINIPrimitives(GENERALPrimitives):
             raise #PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         yield rc
    
+    def getCal(self,rc):
+        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        
+        caltype = rc['caltype']
+        if caltype == None:
+            caltype = "bias"
+        if caltype == None:
+        
+            log.critical('Requested a calibration no particular calibration type.')
+            raise PrimitiveError("getCal: 'caltype'was None")
+        source = rc['source']
+        if source == None:
+            source = "all"
+            
+        centralSource = False
+        localSource = False
+        if source == "all":
+            centralSource = True
+            localSource = True
+        if source == "central":
+            centralSource = True
+        if source == "local":
+            localSource = True
+
+        inps = rc.getInputsAsAstroData()
+        
+        if localSource:
+            rc.rqCal(caltype, inps, source = "local")
+            yield rc
+            for ad in inps:
+                cal = rc.getCal(ad, caltype)
+                if cal == None:
+                    print "get central"
+                else:
+                    print "got local", cal
+                    
+        
     def getProcessedBias(self,rc):
         """
         A primitive to search and return the appropriate calibration bias from
