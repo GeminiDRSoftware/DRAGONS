@@ -1238,7 +1238,7 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None,
     except:
         raise ScienceError('An error occurred while trying to run flat_correct')
                 
-def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
+def measure_iq(adInputs, function='both', display=True, qa=True,
                keepDats=False, log=None, logName='gemini.log', logLevel=1, 
                noLogFile=False):
     """
@@ -1265,6 +1265,10 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
     all ready exists in the directory you are working in, then this file will 
     have the log messages during this function added to the end of it.
     
+    Warning:
+    ALL inputs of adInputs must have either 1 SCI extension, indicating they 
+    have been mosaic'd, or 3 like a normal un-mosaic'd GMOS image.
+    
     :param adInputs: Astrodata inputs to have their image quality measured
     :type adInputs: Astrodata objects, either a single or a list of objects
     
@@ -1275,11 +1279,7 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
     :param display: Flag to turn on displaying the fitting to ds9
     :type display: Python boolean (True/False)
                    Default: True
-    
-    :param mosaic: Flag to indicate the images have been mosaic'd 
-                   (ie only 1 'SCI' extension in images)
-    :type mosaic: Python boolean (True/False)
-                  default: True
+                  
     :param qa: flag to use a grid of sub-windows for detecting the sources in 
                the image frames, rather than the entire frame all at once.
     :type qa: Python boolean (True/False)
@@ -1354,6 +1354,17 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
                          tmpWriteName)
             ad.write(tmpWriteName, rename=False)
             
+            # Automatically determine the 'mosaic' parameter for gemiq
+            # if there are 3 SCI extensions -> mosaic=False
+            # if only one -> mosaic=True, else raise error
+            numExts = ad.countExts('SCI')
+            if numExts==1:
+                mosaic = True
+            elif numExts==3:
+                mosaic = False
+            else:
+                raise ScienceError()
+            
             # Start time for measuring IQ of current file
             st = time.time()
             
@@ -1375,11 +1386,15 @@ def measure_iq(adInputs, function='both', display=True, mosaic=True, qa=True,
             # If input was writen to temp file on disk, delete it
             if os.path.exists(tmpWriteName):
                 os.remove(tmpWriteName)
+                log.fullinfo('The temporarily written to disk file, '+
+                             tmpWriteName+ ', was removed from disk.')
             
             # Deleting the .dat file from disk if requested
             if not keepDats:
                 datName = os.path.splitext(tmpWriteName)[0]+'.dat'
                 os.remove(datName)
+                log.fullinfo('The temporarily written to disk file, '+
+                             datName+ ', was removed from disk.')
                 
             # iqdata is list of tuples with image quality metrics
             # (ellMean, ellSig, fwhmMean, fwhmSig)
