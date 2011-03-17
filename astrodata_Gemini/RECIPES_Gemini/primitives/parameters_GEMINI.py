@@ -99,13 +99,6 @@
                    'type': 'bool',
                    'userOverride':True 
                     },   
-                    'mosaic':
-                   {
-                   'default': True , 
-                   'recipeOverride': True,
-                   'type': 'bool',
-                   'userOverride':True 
-                    }, 
                     'qa':
                    {
                    'default': True , # A flag to use a grid of sub-windows for detecting the sources in the image frames, rather than the entire frame all at once.

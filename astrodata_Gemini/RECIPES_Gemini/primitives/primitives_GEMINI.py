@@ -383,10 +383,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type display: Python boolean (True/False)
                        Default: True
         
-        :param mosaic: Flag to indicate the images have been mosaic'd 
-                       (ie only 1 'SCI' extension in images)
-        :type mosaic: Python boolean (True/False)
-                      default: True
         :param qa: flag to use a grid of sub-windows for detecting the sources in 
                    the image frames, rather than the entire frame all at once.
         :type qa: Python boolean (True/False)
@@ -411,7 +407,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             geminiScience.measure_iq(adInputs=rc.getInputs(style='AD'),
                                      function=rc['function'],
                                      display=rc['display'],
-                                     mosaic=rc['mosaic'], qa=rc['qa'],
+                                     qa=rc['qa'],
                                      log=log)
             
             log.status('geminiScience.measure_iq completed successfully')
@@ -1013,7 +1009,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status('*FINISHED* writing the outputs')   
         except:
             log.critical('There was a problem writing one of '+rc.inputsAsStr())
-            raise PrimitiveError('There was a problem writing one of '+
-                                 rc.inputsAsStr())
+            raise #PrimitiveError('There was a problem writing one of '+
+                  #               rc.inputsAsStr())
         yield rc   
          
