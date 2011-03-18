@@ -1387,15 +1387,18 @@ n informed of the issue and
                 raise Errors.EmptyKeyError()
             self.relhdul()
             return retval
-        except KeyError:
-            raise KeyError("Keyword '"+str(key)+"' not found.")
-            self.relhdul()
-        except Errors.EmptyKeyError:
-            raise Errors.EmptyKeyError()
-            self.relhdul()
-        except Errors.UndefinedKeyError:
-            raise Errors.UndefinedKeyError()
-            self.relhdul()
+        except:
+            self.exception_info = sys.exc_info()
+            return None
+#        except KeyError:
+#            raise KeyError("Keyword '"+str(key)+"' not found.")
+#            self.relhdul()
+#        except Errors.EmptyKeyError:
+#            raise Errors.EmptyKeyError()
+#            self.relhdul()
+#        except Errors.UndefinedKeyError:
+#            raise Errors.UndefinedKeyError()
+#            self.relhdul()
     phuValue = phuGetKeyValue
     phuHeader = phuValue
     
