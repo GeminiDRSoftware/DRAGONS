@@ -57,7 +57,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])
         try: 
             log.status('*STARTING* to fringe correct the images')
             
@@ -114,7 +114,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])        
+        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])        
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* to create a fringe frame from the inputs')

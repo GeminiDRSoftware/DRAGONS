@@ -26,7 +26,8 @@ class GENERALPrimitives(PrimitiveSet):
     init.pt_hide = True
     
     def addInputs(self, rc):
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], 
+                                  logLevel=rc['logLevel'])
         import glob as gl
         if rc["files"] == None:
             glob = "./*.fits"
@@ -57,7 +58,8 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
         
     def listDir(self,rc):
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], 
+                                  logLevel=rc['logLevel'])
         if rc["dir"] == None:
             thedir = "."
         else:   

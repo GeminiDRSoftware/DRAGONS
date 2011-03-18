@@ -53,7 +53,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to add the BPM frame(s) to the input data')
             
@@ -129,7 +129,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 #        # Loading and bringing the pyraf related modules into the name-space
 #        pyraf, gemini, yes, no = pyrafLoader()
         
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to subtract the bias from the inputs')
             
@@ -181,7 +181,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:
             #from astrodata.adutils.future import gemDisplay
             #ds = gemDisplay.getDisplayService()
@@ -264,7 +264,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:
             packagePath = sys.argv[0].split('gemini_python')[0]
             calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
@@ -306,7 +306,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:
             packagePath=sys.argv[0].split('gemini_python')[0]
             calPath='gemini_python/test_data/test_cal_files/processed_flats/'
@@ -355,7 +355,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         
         # loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
@@ -410,7 +410,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
@@ -461,7 +461,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         # Loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
         
@@ -502,7 +502,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:
             log.status('*STARTING* to trim the overscan region from the input data')
             
@@ -535,7 +535,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:                                          
             for ad in rc.getInputs(style='AD'): 
                 log.debug('Calling gmost.stdInstHdrs for '+ad.filename) 
@@ -559,7 +559,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
         try:
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gmost.valInstData for '+ad.filename)

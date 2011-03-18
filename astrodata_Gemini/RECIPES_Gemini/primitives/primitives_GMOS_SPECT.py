@@ -36,11 +36,12 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])
         try: 
             for ad in rc.getInputs(style="AD"): 
                 log.debug('calling stdInstHdrs for '+ad.filename)
-                gmost.stdInstHdrs(ad) 
+                gmost.stdInstHdrs(ad,logName=rc['logName'],
+                                  logLevel=rc['logLevel']) 
                 
                 log.status('instrument headers fixed') 
                 
@@ -68,7 +69,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])
         try:           
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
@@ -92,7 +93,9 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 
                 ad.filename=gemt.fileNameUpdater(ad.filename,
                                                  suffix=rc["suffix"], 
-                                                 strip=False)
+                                                 strip=False,
+                                                 logName=rc['logName'],
+                                                 logLevel=rc['logLevel'],)
                 rc.reportOutput(ad)
                 
                 log.status('finished adding the MDF')
@@ -111,11 +114,12 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])
         try:        
             for ad in rc.getInputs(style="AD"):
                 log.debug('calling gmost.valInstData for '+ad.filename)
-                gmost.valInstData(ad)
+                gmost.valInstData(ad, logName=rc['logName'], 
+                                  logLevel=rc['logLevel'],)
                 log.status('data validated for file = '+ad.filename)
                 
         except:
