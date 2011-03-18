@@ -88,7 +88,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             log.status('*FINISHED* fringe correcting the input data')
             
         except:
-            log.critical("Problem subtracting fringe from "+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError("Problem subtracting fringe from "+
                                  rc.inputsAsStr())
 
@@ -143,7 +146,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             
             log.status('*FINISHED* creating the fringe image')
         except:
-            log.critical("Problem creating fringe from "+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError("Problem creating fringe from "+
                                  rc.inputsAsStr())
         yield rc  

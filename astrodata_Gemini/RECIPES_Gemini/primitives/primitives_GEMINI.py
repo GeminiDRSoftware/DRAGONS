@@ -81,7 +81,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
             log.status('*FINISHED* adding the DQ frame(s) to the input data')
         except:
-            log.critical('Problem adding the DQ to one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem adding the DQ to one of '+
                                  rc.inputsAsStr())
         yield rc
@@ -123,7 +126,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
             log.status('*FINISHED* adding the VAR frame(s) to the input data')
         except:
-            log.critical('Problem adding the VAR to one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem adding the VAR to one of '+
                                  rc.inputsAsStr())
         yield rc 
@@ -162,10 +168,12 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.status('*FINISHED* converting the pixel units to electrons')
         except:
-            log.critical('Problem converting the pixel units of one of '+
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem converting the pixel units of one of '+
                          rc.inputsAsStr())
-            raise #PrimitiveError('Problem converting the pixel units of one of '+
-                  #       rc.inputsAsStr())
         yield rc
             
     def combine(self,rc):
@@ -226,7 +234,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.status('*FINISHED* combining the images of the input data')
         except:
-            log.critical('There was a problem combining '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('There was a problem combining '+rc.inputsAsStr())
         yield rc
 
@@ -259,7 +270,10 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             rc.rqDisplay(displayID=rc['displayID'])           
         except:
-            log.critical('Problem displaying output')
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem displaying output')
         yield rc
         
@@ -312,8 +326,11 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             log.status('*FINISHED* flat correcting the inputs')  
         except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise #PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         yield rc
    
     def getCal(self,rc):
@@ -402,7 +419,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.fullinfo('   '+os.path.basename(f))
             yield rc
         except:
-            log.critical('Problem getting stack '+sid, category='stack')
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem getting stack '+sid, category='stack')
         yield rc
     
@@ -454,8 +474,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.status('*FINISHED* measuring the IQ of the inputs')
         except:
-            log.critical('There was a problem measuring the IQ of '+
-                         rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('There was a problem measuring the IQ of '+
                                  rc.inputsAsStr())
         yield rc
@@ -503,8 +525,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                     
             log.status('*FINISHED* updating/creating the stack')
         except:
-            log.critical('Problem writing stack for files '+rc.inputsAsStr(),
-                         category='stack')
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem writing stack for files '+
                                  rc.inputsAsStr(), category='stack')
         yield rc
@@ -617,7 +641,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 for f in stacklist:
                     log.status('    '+os.path.basename(f))
             else:
-                log.status("    no datasets in list")
+                log.status("no datasets in list")
         yield rc
             
     def sleep(self, rc):
@@ -691,8 +715,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
             log.status('*FINISHED* standardizing the headers')
         except:
-            log.critical('Problem standardizing the headers for one of '+
-                         rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem standardizing the headers for one of '+
                          rc.inputsAsStr())
         yield rc
@@ -768,8 +794,10 @@ class GEMINIPrimitives(GENERALPrimitives):
    
             log.status('*FINISHED* standardizing the structure of input data')
         except:
-            log.critical('Problem standardizing the structure for one of '+
-                         rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem standardizing the structure for one of '+
                          rc.inputsAsStr())
         yield rc
@@ -818,7 +846,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
             log.status('*FINISHED* storing the processed bias on disk')
         except:
-            log.critical('Problem storing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem storing one of '+rc.inputsAsStr())
         yield rc
    
@@ -862,7 +893,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
             log.status('*FINISHED* storing the processed flat on disk')
         except:
-            log.critical('Problem storing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem storing one of '+rc.inputsAsStr())
         yield rc
         
@@ -949,7 +983,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                         
             log.status('*FINISHED* validating input data')                
         except:
-            log.critical('Problem validating one of  '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem preparing one of  '+rc.inputsAsStr())
         yield rc
 
@@ -1052,8 +1089,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             log.status('*FINISHED* writing the outputs')   
         except:
-            log.critical('There was a problem writing one of '+rc.inputsAsStr())
-            raise #PrimitiveError('There was a problem writing one of '+
-                  #               rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('There was a problem writing one of '+
+                                 rc.inputsAsStr())
         yield rc   
          

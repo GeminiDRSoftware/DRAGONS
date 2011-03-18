@@ -46,7 +46,10 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 log.status('instrument headers fixed') 
                 
         except:
-            log.critical("Problem preparing the image.")
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError("Problem preparing the image.")
         
         yield rc
@@ -100,7 +103,10 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 
                 log.status('finished adding the MDF')
         except:
-            log.critical("Problem preparing the image.")
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError("Problem preparing the image.")
         yield rc
 
@@ -123,7 +129,10 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 log.status('data validated for file = '+ad.filename)
                 
         except:
-            log.critical('Problem validating one of  '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem validating one of  '+rc.inputsAsStr())
         yield rc
 

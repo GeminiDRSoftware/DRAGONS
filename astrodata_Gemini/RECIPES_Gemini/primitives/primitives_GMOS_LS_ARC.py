@@ -38,6 +38,10 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
             #gg = gtrans.Gtrans(rc.inputsAsStr(), minsep=4,ntmax=50)
 
         except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError("Problem with gtransform")
 
         yield rc

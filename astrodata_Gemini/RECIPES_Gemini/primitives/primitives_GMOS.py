@@ -91,7 +91,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
             log.status('*FINISHED* adding the BPM to the inputs') 
         except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
             
         yield rc       
@@ -165,7 +168,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.status('*FINISHED* subtracting the bias from the input flats')
         except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
             
         yield rc
@@ -226,16 +232,15 @@ class GMOSPrimitives(GEMINIPrimitives):
                     gemini.gmos.gdisplay(**clParamsDict)
                     
                     if gemini.gmos.gdisplay.status:
-                        log.critical('gdisplay failed for input '+
+                        raise PrimitiveError('gdisplay failed for input '+
                                      inputRecord.filename)
-                        raise PrimitiveError('gdisplay failed')
                     else:
                         log.status('Exited the gdisplay CL script successfully')
                         
                 except:
                     # This exception should allow for a smooth exiting if there is an 
                     # error with gdisplay, most likely due to DS9 not running yet
-                    log.critical('ERROR occurred while trying to display '+str(inputRecord.filename)
+                    log.error('ERROR occurred while trying to display '+str(inputRecord.filename)
                                         +', ensure that DS9 is running and try again')
                     
                 # this version had the display id conversion code which we'll need to redo
@@ -245,7 +250,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
             log.status('*FINISHED* displaying the images of the input data')
         except:
-            log.critical('There was a problem displaying '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('There was a problem displaying '+
                                  rc.inputsAsStr())
         yield rc
@@ -287,7 +295,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.error('CCDSUM is not 1x1 or 2x2 for the input flat!!')
            
         except:
-            log.critical('Problem preparing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
         yield rc
    
@@ -329,7 +340,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.error('CCDSUM is not 1x1 or 2x2 for the input image!!')
            
         except:
-            log.critical('Problem retrieving one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem retrieving one of '+rc.inputsAsStr())
         
         yield rc
@@ -378,7 +392,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
             log.status('*FINISHED* mosaicing the input images')
         except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         yield rc
 
@@ -432,7 +449,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         
             log.status('*FINISHED* combining and normalizing the input flats')
         except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
             
         yield rc
@@ -483,7 +503,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*FINISHED* subtracting the overscan from the '+
                        'input data')
         except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         
         yield rc    
@@ -519,8 +542,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
             log.status('*FINISHED* trimming the overscan region from the input data')
         except:
-            log.critical('Problem processing one of '+rc.inputsAsStr())
-            raise #PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         
         yield rc
          
@@ -544,7 +570,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                            ad.filename)
                     
         except:
-            log.critical('Problem preparing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
         
         yield rc 
@@ -563,12 +592,15 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             for ad in rc.getInputs(style='AD'):
                 log.debug('Calling gmost.valInstData for '+ad.filename)
-                gmost.valInstData(ad, logLevel=rc['logLevel'])
+                gmost.valInstData(ad)
                 log.status('Completed validating instrument data for '+
                            ad.filename)
                 
         except:
-            log.critical('Problem preparing one of '+rc.inputsAsStr())
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
         
         yield rc
