@@ -19,7 +19,14 @@ class DescriptorDescriptor:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    return self.phuHeader(SDKD.globalStdkeyDict[key])
+                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if not keyval:
+                        if self.exception_info:
+                            raise self.exception_info[1]
+                        else:
+                            return keyval
+                    else:
+                        return keyval
             retval = self.descriptorCalculator.%(name)s(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -34,7 +41,7 @@ class DescriptorDescriptor:
                 raise
             else:
             #print "NONE BY EXCEPTION"
-                self.noneMsg = str(sys.exc_info()[1])
+                self.exception_info = sys.exc_info()
                 return None
     """
     def __init__(self, name = None):
@@ -177,6 +184,7 @@ descriptors =   [   DD("airmass"),
 wholeout = """import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
+from astrodata import Errors
 
 class CalculatorInterface:
 
