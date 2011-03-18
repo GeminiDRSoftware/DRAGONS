@@ -377,7 +377,7 @@ def stdObsHdrs(ad, logName=None, logLevel=1):
     # Keywords that are updated/added for all Gemini PHUs 
     ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
                       'Number of science extensions')
-    ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale(), 
+    ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale()[('SCI',1)], ############## THIS NEEDS TO BE FIXED WHEN A DESCRIPTOR OBJECT IS MADE FOR pixel_scale()
                       'Pixel scale in Y in arcsec/pixel')
     ad.phuSetKeyValue('NEXTEND', len(ad) , 'Number of extensions')
     ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , 
@@ -744,7 +744,7 @@ class CLManager(object):
                 self.imageInsListName = imageInsListName
                 return '@'+imageInsListName
         else:
-            self.log.error('Parameter "type" must not be an empty string'+
+            raise ToolboxError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')
             
     def imageOutsFiles(self, type=''):
@@ -811,7 +811,7 @@ class CLManager(object):
                 self.imageOutsListName = imageOutsListName
                 return '@'+imageOutsListName
         else:
-            self.log.error('Parameter "type" must not be an empty string'+
+            raise ToolboxError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')
              
     def refInsFiles(self, type=''):
@@ -839,7 +839,7 @@ class CLManager(object):
                 self.refInsListName = refInsListName
                 return '@'+refInsListName
         else:
-            self.log.error('Parameter "type" must not be an empty string'+
+            raise ToolboxError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')  
                 
     def refOutsFiles(self, type=''):
@@ -895,7 +895,7 @@ class CLManager(object):
                 self.refOutsListName = refOutsListName
                 return '@'+refOutsListName
         else:
-            self.log.error('Parameter "type" must not be an empty string'+
+            raise ToolboxError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')             
                 
     def arrayInsFiles(self, type=''):
@@ -923,7 +923,7 @@ class CLManager(object):
                 self.arrayInsListName = arrayInsListName
                 return '@'+arrayInsListName
         else:
-            self.log.error('Parameter "type" must not be an empty string'+
+            raise ToolboxError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')    
     
     def arrayOutsFiles(self, type=''):
@@ -957,7 +957,7 @@ class CLManager(object):
                 self.arrayOutsListName = arrayOutsListName
                 return '@'+arrayOutsListName
         else:
-            self.log.error('Parameter "type" must not be an empty string'+
+            raise ToolboxError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')
     
     def obsmodeAdd(self, ad):
@@ -1070,6 +1070,9 @@ class CLManager(object):
             Then it will delete ALL the temporary files created by the 
             CLManager.  If the 'OBSMODE' phu key was added during preCLwrites
             to the imageIns and/or refIns, then it will be deleted here.
+            
+            NOTE: all fits files loaded back into memory in the form of 
+            astrodata objects (adOuts, refOuts), will be in 'update' mode.
         
         """
         # Loading any output images into imageOuts and 
@@ -1080,7 +1083,7 @@ class CLManager(object):
                               ' removing temporary files from disk.')
             for name in self.imageOutsNames:
                 # Loading the file into an astrodata object
-                ad = AstroData(name)
+                ad = AstroData(name, mode='update')
                 # Removing the 'OBSMODE' phu key if it is in there
                 ad = self.obsmodeDel(ad)
                 # appending the astrodata object to the imageOuts list to be
@@ -1102,7 +1105,7 @@ class CLManager(object):
                               ' and removing temporary files from disk.')
             for name in self.refOutsNames:
                 # Loading the file into an astrodata object
-                ad = AstroData(name)
+                ad = AstroData(name, mode='update')
                 # Removing the 'OBSMODE' phu key if it is in there
                 ad = self.obsmodeDel(ad)
                 # appending the astrodata object to the refOuts list to be
@@ -1325,18 +1328,15 @@ class ScienceFunctionManager():
         try:
             # Ensuring there are inputs ad's to work on, else raise
             if self.adInputs==None:
-                self.log.critical('The parameter "adInputs" must not be None')
-                raise ToolboxError()
+                raise ToolboxError('The parameter "adInputs" must not be None')
             elif isinstance(self.adInputs,list):
                 if len(self.adInputs)==0:
-                    self.log.critical('The parameter "adInputs" must not be\
+                    raise ToolboxError('The parameter "adInputs" must not be\
                                         an empty list')
-                    raise ToolboxError()
                 
             # raise if funcName=None as it needs to be a valid string
             if self.funcName==None:
-                self.log.critical('funcName was None, must be a string.')
-                raise ToolboxError()
+                raise ToolboxError('funcName was None, must be a string.')
             
             self.log.status('**STARTING** the '+self.funcName+' function')
     
@@ -1350,22 +1350,19 @@ class ScienceFunctionManager():
                 if isinstance(self.outNames,str):
                     self.outNames = [self.outNames]
                 elif self.suffix==None:
-                    self.log.critical('outNames must be either a string or a \
+                    raise ToolboxError('outNames must be either a string or a \
                                      list of them.')
-                    raise ToolboxError()
             
             # Checking combinations of outNames, combinedInputs, suffix and 
             # len(adInputs) are valid
             if len(self.outNames)>0:
                 if not self.combinedInputs:
                     if len(self.adInputs)!= len(self.outNames):
-                        self.log.critical('outNames was not None or the same \
+                        raise ToolboxError('outNames was not None or the same \
                                     length as number of adInputs')
-                        raise ToolboxError()
             elif len(self.adInputs)>1:
                     if self.suffix==None:
-                        self.log.critical('Both outNames and suffix were None')
-                        raise ToolboxError()
+                        raise ToolboxError('Both outNames and suffix were None')
                 
             # Checking the current outNames and loading it up if needed
             if len(self.outNames)!=len(self.adInputs):
@@ -1393,7 +1390,11 @@ class ScienceFunctionManager():
             return (self.adInputs, self.outNames, self.log, self.logName, 
                     self.logLevel, self.noLogFile)
             
-        except ToolboxError:
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general ToolboxError 
+            # with message.
+            self.log.critical(repr(sys.exc_info()[1]))
             raise ToolboxError('An Error occurred during\
                                 ScienceFunctionManager.startUp')
     

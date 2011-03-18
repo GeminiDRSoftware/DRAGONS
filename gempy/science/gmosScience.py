@@ -193,9 +193,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
             gemini.gmos.gireduce(**clParamsDict)
             
             if gemini.gmos.gireduce.status:
-                log.critical('gireduce failed for inputs '+
+                raise ScienceError('gireduce failed for inputs '+
                              clm.imageInsFiles(type='string'))
-                raise ScienceError()
             else:
                 log.status('Exited the gireduce CL script successfully')
             
@@ -225,18 +224,19 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERSUB')
         else:
-            log.critical('One of the inputs has not been prepared,\
+            raise ScienceError('One of the inputs has not been prepared,\
             the overscanSubtract function can only work on prepared data.')
-            raise ScienceError()
         
         log.status('**FINISHED** the overscan_subtract function')
         
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
-                                                            overscan_subtract') 
-                
+                                                            overscan_subtract')    
                 
 def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
             outNames=None, suffix=None, log=None, logName='gemini.log', 
@@ -325,21 +325,18 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
         # Creating empty list of ad's to be returned that will be filled below
         adOutputs=[]
         
+        # Casting 'fringes' into a list if not one yet
+        if not(isinstance(fringes,list)):
+            fringes = [fringes]
+        elif fringes==None:
+            raise ScienceError('There must be at least one astrodata instance\
+                                passed in for the "fringes" parameter')
+        
         for ad in adInputs:
-            
-            # Setting up the fringe correctly
-            if (isinstance(fringes,list)) and (len(fringes)>1):
-                fringe = fringes[count]
-            elif (isinstance(fringes,list)) and (len(fringes)==1):
-                # Not sure if I need this check, but can't hurt
-                fringe = fringes[0]
-            else:
-                fringe = fringes
-                    
             # Loading up a dictionary with the input parameters for rmImgFringe
             paramDict = {
                          'inimage'        :ad,
-                         'fringe'         :fringe,
+                         'fringe'         :fringes[count].filename,
                          'fl_statscale'   :fl_statscale,
                          'statsec'        :statsec,
                          'scale'          :scale,
@@ -374,6 +371,9 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
                                                                 fringe_correct')
     
@@ -526,9 +526,8 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 gemini.gifringe(**clParamsDict)
                 
                 if gemini.gifringe.status:
-                    log.critical('gifringe failed for inputs '+
+                    raise ScienceError('gifringe failed for inputs '+
                                  rc.inputsAsStr())
-                    raise GMOS_IMAGEException('gifringe failed')
                 else:
                     log.status('Exited the gifringe CL script successfully')
                     
@@ -547,9 +546,8 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOutputs, historyMarkKey='FRINGE')
             else:
-                log.critical('One of the inputs has not been prepared,\
+                raise ScienceError('One of the inputs has not been prepared,\
                 the combine function can only work on prepared data.')
-                raise ScienceError('One of the inputs was not prepared')
         else:
             log.warning('Only one input was passed in for adInputs, so \
                     make_fringe_frame_imaging is simply passing the inputs  \
@@ -561,6 +559,9 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
                                                     make_fringe_frame_imaging')
     

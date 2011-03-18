@@ -204,9 +204,9 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                     adOut.append(bpmAD)
                     log.status('Appending BPM complete for '+ adOut.filename)
         
-            # If BPM frames exist, send a critical message to the logger
+            # If BPM frames exist, send a warning message to the logger
             else:
-                log.critical('BPM frames all ready exist for '+
+                log.warning('BPM frames all ready exist for '+
                              adOut.filename+', so addBPM will add new ones')
                 
             # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
@@ -227,6 +227,9 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run add_bpm')
     
 def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None, 
@@ -381,9 +384,9 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                                  adOut[('DQ',
                                         sciExt.extver())].header['EXTNAME'])
                     
-            # If DQ frames exist, send a critical message to the logger
+            # If DQ frames exist, send a warning message to the logger
             else:
-                log.critical('DQ frames all ready exist for '+
+                log.warning('DQ frames all ready exist for '+
                              adOut.filename+
                              ', so addDQ will not calculate new ones')
                 
@@ -405,6 +408,9 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run add_dq')
 
 def add_var(adInputs, outNames=None, suffix=None, log=None, 
@@ -532,9 +538,9 @@ def add_var(adInputs, outNames=None, suffix=None, log=None,
                                ' complete for '+adOut.filename)
                     
             # If VAR frames all ready existed, 
-            # make a critical message in the logger
+            # make a warning message in the logger
             else:
-                log.critical('VAR frames all ready exist for '+
+                log.warning('VAR frames all ready exist for '+
                              adOut.filename+
                              ', so addVAR will not calculate new ones')    
             
@@ -556,6 +562,9 @@ def add_var(adInputs, outNames=None, suffix=None, log=None,
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run add_var')
 
 def adu_to_electrons(adInputs, outNames=None, suffix=None, log=None,
@@ -703,6 +712,9 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None, log=None,
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
                                                             adu_to_electrons')
 
@@ -884,9 +896,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                 gemini.gmos.gireduce(**clParamsDict)
         
                 if gemini.gmos.gireduce.status:
-                    log.critical('gireduce failed for inputs '+
+                    raise ScienceError('gireduce failed for inputs '+
                                  clm.imageInsFiles(type='string'))
-                    raise ScienceError('gireduce failed')
                 else:
                     log.status('Exited the gireduce CL script successfully')
                     
@@ -926,9 +937,8 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                 count = count+1
                 
             else:
-                log.critical('One of the inputs has not been prepared,\
+                raise ScienceError('One of the inputs has not been prepared,\
                 the combine function can only work on prepared data.')
-                raise ScienceError()
             
         log.warning('The CL script gireduce REPLACED the previously '+
                     'calculated DQ frames')
@@ -938,6 +948,9 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run bias_correct')     
     
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
@@ -1096,9 +1109,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 gemini.gemcombine(**clParamsDict)
                 
                 if gemini.gemcombine.status:
-                    log.critical('gemcombine failed for inputs '+
+                    raise ScienceError('gemcombine failed for inputs '+
                                  clm.imageInsFiles(type='string'))
-                    raise ScienceError('gemcombine failed')
                 else:
                     log.status('Exited the gemcombine CL script \
                                                             successfully')
@@ -1115,9 +1127,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOutputs, historyMarkKey='COMBINE')
             else:
-                log.critical('One of the inputs has not been prepared,\
+                raise ScienceError('One of the inputs has not been prepared,\
                 the combine function can only work on prepared data.')
-                raise ScienceError()
         else:
             log.warning('Only one input was passed in for adInputs, so combine \
                     is simply passing the inputs into the outputs list without \
@@ -1129,6 +1140,9 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run combine')
                 
 def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None, 
@@ -1192,9 +1206,8 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None,
     adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
     
     if flats==None:
-        log.critical('There must be at least one processed flat provided,\
+        raise ScienceError('There must be at least one processed flat provided,\
                              the "flats" parameter must not be None.')
-        raise ScienceError()
     
     try:
         # Set up counter for looping through outNames list
@@ -1245,6 +1258,9 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None,
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run flat_correct')
                 
 def measure_iq(adInputs, function='both', display=True, qa=True,
@@ -1595,9 +1611,8 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
             gemini.gmos.gmosaic(**clParamsDict)
     
             if gemini.gmos.gmosaic.status:
-                log.critical('gireduce failed for inputs '+
+                raise ScienceError('gireduce failed for inputs '+
                              clm.imageInsFiles(type='string'))
-                raise ScienceError('gmosaic failed')
             else:
                 log.status('Exited the gmosaic CL script successfully')    
                 
@@ -1627,15 +1642,17 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=ad, historyMarkKey='MOSAIC')
         else:
-                log.critical('One of the inputs has not been prepared, the\
-                 mosaicDetectors function can only work on prepared data.')
-                raise ScienceError('One of the inputs was not prepared')
+            raise ScienceError('One of the inputs has not been prepared, the\
+             mosaicDetectors function can only work on prepared data.')
                 
         log.status('**FINISHED** the mosaic_detectors function')
         
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
                                                             mosaic_detectors') 
                 
@@ -1786,9 +1803,8 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
             gemini.giflat(**clParamsDict)
             
             if gemini.giflat.status:
-                log.critical('giflat failed for inputs '+
+                raise ScienceError('giflat failed for inputs '+
                              clm.imageInsFiles(type='string'))
-                raise ScienceError()
             else:
                 log.status('Exited the giflat CL script successfully')
             
@@ -1804,15 +1820,17 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
             # and updating logger with updated/added time stamps
             sfm.markHistory(adOutputs=adOutputs, historyMarkKey='GIFLAT')    
         else:
-            log.critical('One of the inputs has not been prepared,\
+            raise ScienceError('One of the inputs has not been prepared,\
             the normalizeFlat function can only work on prepared data.')
-            raise ScienceError()
                 
         log.status('**FINISHED** the normalize_flat function')
         
         # Return the outputs (list or single, matching adInputs)
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
                                                                 normalize_flat')    
     
@@ -1951,6 +1969,9 @@ def overscan_trim(adInputs, outNames=None, suffix=None, log=None,
         # Return the outputs list, even if there is only one output
         return adOutputs
     except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
                                                                 overscan_trim')
 

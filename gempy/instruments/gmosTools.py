@@ -52,7 +52,7 @@ def stdInstHdrs(ad, logName=None, logLevel=1):
             log.fullinfo('-'*50,
                          'header')
 
-def valInstData(ad, logName=None, logLevel=1):  
+def valInstData(ad):  
     """
     A function used by validateInstrumentData in primitives_GMOS.
     
@@ -62,28 +62,15 @@ def valInstData(ad, logName=None, logLevel=1):
     :param ad: input astrodata instance to validate
     :type ad: a single astrodata instance
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
     length=ad.countExts('SCI')
     # If there are 1, 3, 6, or 12 extensions, all good, if not log a critical 
     # message and raise an exception
     if length==1 or length==3 or length==6 or length==12:
         pass
     else: 
-        log.critical('There are NOT 1, 3, 6 or 12 extensions in file = '+
+        raise ToolboxError('There are NOT 1, 3, 6 or 12 extensions in file = '+
                      ad.filename)
-        raise ToolboxError('Error occurred in valInstData for input '+
-                           ad.filename)
 
 #------------- GMOS_IMAGE fringe removal funcs ---------------------------  
 
@@ -140,12 +127,9 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
     log.fullinfo('', category='format')
     
     # Ensuring the input image and fringe have the same number of SCI extensions
-    if (fringe.countExts('SCI') != inimage.countExts('SCI')):
-        log.critical('Number of SCI EXT is NOT the same between '+ 
-                     inimage.filename + ' and ' + fringe.filename)            
-        raise ToolboxError('CRITICAL, science extension match '+
-                                  'failure between' + inimage.filename + 
-                                  fringe.filename)
+    if (fringe.countExts('SCI') != inimage.countExts('SCI')):    
+        raise ToolboxError('Number of SCI EXT is NOT the same between '+ 
+                     inimage.filename + ' and ' + fringe.filename)   
                 
     # Setting statsec to the correct default value if needed (assumes square binning)
     if (statsec == '') and fl_statscale:
@@ -167,11 +151,8 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
                 log.critical('The CCD X binning '+imagexbin+
                              ' is not 1 or 2 for the input image '+
                              inimage.filename)
-        # Logging critical message and raising exception if ccd x binning doesn't match 
+        # raising exception if ccd x binning doesn't match 
         else:
-            log.critical('The CCD X and Y binning for the input image '+inimage.filename+
-                         ' and the input fringe '+fringe.filename+ 
-                         ' do not match.')
             raise ToolboxError('The CCD X and Y binning for the input image '+inimage.filename+
                          ' and the input fringe '+fringe.filename+ 
                          ' do not match.')
@@ -232,11 +213,9 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
         # Using the sub function from the arith toolbox as it takes care of VAR and DQs 
         outImage = inimage.sub(scaledFringe)
         
-    else:
-        log.critical('The input image '+inimage.filename+' and fringe '+
-                     fringe.filename+' had arrays of different sizes')                  
-        raise ToolboxError('CRITICAL, The input image '+inimage.filename+' and fringe '+
-                     fringe.filename+' had arrays of different sizes')  
+    else:          
+        raise ToolboxError('The input image '+inimage.filename+' and fringe '+
+                     fringe.filename+' had arrays of different sizes')    
     
     log.fullinfo('', category='format')          
     log.fullinfo('GIRMFRINGE done')
