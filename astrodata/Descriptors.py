@@ -77,13 +77,22 @@ class DescriptorValue():
         # do after object is set up
         self.val = self.isCollapsable() # note, tricky thing, doesn't return true, returns value
     def info(self):
+        dvstr = ""
+        keys = self.dictVal.keys()
+        keys.sort()
+        for key in keys:
+            
+            dvstr += str(key)
+            dvstr += ": "
+            dvstr += str(self.dictVal[key])
+            dvstr += "\n                      "
         retstr = """\
 descriptor value for: %(name)s
         single value: %(val)s
-          dict value: %(dictVal)s
+    extension values: %(dictVal)s
         """ % {"name":self.name,
                "val": repr(self.val),
-               "dictVal":repr(self.dictVal)
+               "dictVal":dvstr
               }
         return retstr
     
@@ -103,11 +112,12 @@ descriptor value for: %(name)s
     def collapseDictVal(self):
         value = self.isCollapsable()
         if value == None:
-            raise DescriptorValueBadCast(
-                """Cannot convert value to float 
-"""             """as it relates to multiple extensions
-"""             """which do not have identical values
-                """)
+            raise DescriptorValueBadCast("\n"
+                "Cannot convert DescriptorValue to scaler " 
+                "as the value varies across extensions \n"
+                "-------------------------------------\n"
+                + self.info()
+                )
         # got here then all values were identical
         return value
         
