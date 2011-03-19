@@ -423,6 +423,7 @@ integrates other functionality.
                 # print 'Extension "%s" does not exist' % str(ext)
                 # selector not valid
                 self.relhdul()
+                print "AD426: keyerror"
                 return None
 
             gdpart = AstroData(self, exts=[ext])
@@ -471,10 +472,11 @@ integrates other functionality.
                 # FITS standard point of view.
                 ext = self.index
             else:
-                ext = self.extensions[self.index]
+                #ext = self.extensions[self.index]
+                ext = self.index
         except IndexError:
             raise StopIteration
-        
+        #print "AD478:", self.index
         self.index += 1
         try:
             # don't be fooled by self[ext]... this creates an AstroData instance
@@ -1596,8 +1598,9 @@ n informed of the issue and
         self.relhdul()
         return 
    
-    def info(self):
-        """The info(..) function calls the pyfits.HDUList.info(..) function
+    def info(self, pyrafVersion = False):
+        """The info(..) function prints self.infostr() unless pyrafVersion is
+        set to true the pyfits.HDUList.info(..) function
         on this instance's "hdulist" member.  This function outputs information
         about the datasets HDUList to standard out. The output can be misleading
         as it displays info about the HDUList, e.g. the integer
@@ -1606,8 +1609,10 @@ n informed of the issue and
         which returns the report as a string.
         AstroData.info() is maintained for convienience and low level debugging.
         """
-        self.hdulist.info()
-        
+        if pyrafVersion:
+            self.hdulist.info()
+        else:
+            print self.infostr()       
     def displayID(self):
         import IDFactory
         return IDFactory.generateStackableID(self)
@@ -1886,7 +1891,7 @@ def prepOutput(inputAry = None, name = None, clobber = False):
      
     newhdulist = pyfits.HDUList(outlist)
     
-    retgd = AstroData(newhdulist)
+    retgd = AstroData(newhdulist, mode = "update")
 
     if name != None:
         if os.path.exists(name):
