@@ -52,7 +52,7 @@ class DescriptorValue():
     dictVal = None
     val = None
     name = None
-    def __init__(self, initval, asDict = True, name = "unknown"):
+    def __init__(self, initval, format = None, asDict = None, name = "unknown"):
         if isinstance(initval, dict):
             self.dictVal = initval
             val = None
