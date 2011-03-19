@@ -52,22 +52,32 @@ class DescriptorValue():
     dictVal = None
     val = None
     name = None
-    def __init__(self, initval, format = None, asDict = None, name = "unknown"):
+    def __init__(self, initval, format = None, asDict = None, name = "unknown", ad = None):
         if isinstance(initval, dict):
             self.dictVal = initval
             val = None
         else:
             self.val = initval
             self.dictVal = {"*":initval}
-        if asDict == False:
-            try:
-                self.val = self.collapseDictVal()
-            except:
-                pass # if it fails, no problem, tell them later if they try to use it
+        
+        #NOTE:
+        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
+        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
+        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
+        
         self.asDict = asDict
         self.name = name
+        
+        if format:
+            self.format = format
+        elif ad.descriptorFormat:
+            self.format = ad.descriptorFormat
+        else:
+            self.format = None
+        # do after object is set up
+        self.val = self.isCollapsable() # note, tricky thing, doesn't return true, returns value
     def info(self):
-        retstr = """
+        retstr = """\
 descriptor value for: %(name)s
         single value: %(val)s
           dict value: %(dictVal)s
@@ -76,8 +86,8 @@ descriptor value for: %(name)s
                "dictVal":repr(self.dictVal)
               }
         return retstr
-        
-    def collapseDictVal(self):
+    
+    def isCollapsable(self):
         oldvalue = None
         for key in self.dictVal:
             value = self.dictVal[key]
@@ -85,19 +95,47 @@ descriptor value for: %(name)s
                 oldvalue = value
             else:
                 if oldvalue != value:
-                    raise DescriptorValueBadCast(
-                        """Cannot convert value to float 
-                     """"""as it relates to multiple extensions
-                     """"""which do not have identical values
-                        """)
+                    self.val = None
+                    return None
+        # got here then all values were identical
+        self.val = value
+        return value
+    def collapseDictVal(self):
+        value = self.isCollapsable()
+        if value == None:
+            raise DescriptorValueBadCast(
+                """Cannot convert value to float 
+"""             """as it relates to multiple extensions
+"""             """which do not have identical values
+                """)
         # got here then all values were identical
         return value
         
     def __str__(self):
-        if self.asDict == True:
-            return str(self.dictVal)
-        else:
-            return str(self.collapseDictVal())
+        format = self.format
+        # do any automatic format heuristics
+        if format == None:
+            val = self.isCollapsable()
+            if val == None:
+                format = "asDict"
+            else:
+                format = "value"
+        
+        # produce known formats
+        retstr = "Unknown Format For DescriptorValue"
+        if  format == "asDict":
+            retstr = str(self.dictVal)
+        elif format == "db" or format == "value":
+            val = self.isCollapsable()
+            if val != None:
+                retstr = str(val)
+            else:
+                parts = [str(val) for val in self.dictVal.values()]
+                retstr = "+".join(parts)
+        elif format == "value":
+            val = self.isCollapsable()
+            
+        return retstr
     def __float__(self):
         
         value = self.collapseDictVal()

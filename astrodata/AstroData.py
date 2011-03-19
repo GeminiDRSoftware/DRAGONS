@@ -172,6 +172,7 @@ integrates other functionality.
     hdurefcount = 0
     mode = "readonly"
     descriptorCalculator = None
+    descriptorFormat = None
     # index is for iterator behavior
     index = 0
     # for subdata
