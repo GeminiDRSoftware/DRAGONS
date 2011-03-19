@@ -380,7 +380,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if asDict:
             ret_gain = {}
             # Loop over the science extensions
-            for ext in dataset['SCI']:
+            # dataset.info(pyrafVersion = True)
+            for ext in dataset:
+                #ext.info()
                 # Check if the original gain (gainorig) keyword exists in the
                 # header of the pixel data extension. The gainorig keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
@@ -410,6 +412,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     gain = self.gmosampsGainBefore20060831[gainkey]
                 
                 # Return a dictionary with the gain float as the value
+                # print "GM415: returning", ext.extname(), ext.extver()
                 ret_gain.update({(ext.extname(), ext.extver()):float(gain)})
         else:
             # Check to see whether the dataset has a single extension and if
