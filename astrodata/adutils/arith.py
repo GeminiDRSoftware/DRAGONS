@@ -10,10 +10,6 @@ from copy import deepcopy
 import astrodata
 from astrodata.AstroData import AstroData
 
-# LOGGER: do not log from this module, raise exception and log in caller
-# from astrodata.adutils import gemLog
-# log = gemLog.getGeminiLog() 
-
 class ArithExcept:
     def __init__(self, msg='Exception Raised in arith toolbox'):
         self.message = msg
