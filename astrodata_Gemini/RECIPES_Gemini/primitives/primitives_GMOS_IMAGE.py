@@ -15,7 +15,6 @@ from primitives_GMOS import GMOSPrimitives
 from gempy.science import gmosScience
 from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
-from gempy.instruments import girmfringe
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
