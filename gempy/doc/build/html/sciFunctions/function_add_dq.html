@@ -1,0 +1,172 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>add_dq &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Gemini ‘User Level Functions’:" href="../GEMINI_user_level_functions.html" />
+    <link rel="next" title="add_var" href="function_add_var.html" />
+    <link rel="prev" title="add_bpm" href="function_add_bpm.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="function_add_var.html" title="add_var"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="function_add_bpm.html" title="add_bpm"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GEMINI_user_level_functions.html" accesskey="U">Gemini &#8216;User Level Functions&#8217;:</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="add-dq">
+<h1>add_dq<a class="headerlink" href="#add-dq" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="gempy.science.geminiScience.add_dq">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">add_dq</tt><big>(</big><em>adInputs</em>, <em>fl_nonlinear=True</em>, <em>fl_saturated=True</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>log=None</em>, <em>logName='gemini.log'</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="../_modules/gempy/science/geminiScience.html#add_dq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.add_dq" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will create a numpy array for the data quality 
+of each SCI frame of the input data. This will then have a 
+header created and append to the input using AstroData as a DQ 
+frame. The value of a pixel will be the sum of the following: 
+(0=good, 1=bad pixel (found in bad pixel mask), 
+2=value is non linear, 4=pixel is saturated)</p>
+<p>NOTE: 
+For every SCI extension of the inputs, a matching BPM extension must
+also exist to be updated with the non-linear and saturated pixels from
+the SCI data array for creation of the DQ array.
+ie. for now, no BPM extensions=this function will crash</p>
+<p>NOTE:
+FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
+TO PASS IT IN...</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adInputs</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
+<li><strong>fl_nonlinear</strong> &#8211; Flag to turn checking for nonlinear pixels on/off</li>
+<li><strong>fl_saturated</strong> (<em>Python boolean (True/False), default is True</em>) &#8211; Flag to turn checking for saturated pixels on/off</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length 
+as adInputs.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>log</strong> (<em>A gemLog object from astrodata/adutils/gemLog.py .
+It is an upgraded version of the Python logger for use 
+with all new scripts in gemini_python/ .
+Note: the logName, logLevel and noLogFile will be automatically
+determined from the logger object passed in to &#8216;log&#8217; with the 
+ScienceFunctionManager.startUp() function.</em>) &#8211; logger object to send log messges to</li>
+<li><strong>logName</strong> (<em>String, None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to 
+screen. OR the message level as a string (ie. &#8216;critical&#8217;,  
+&#8216;status&#8217;, &#8216;fullinfo&#8217;...)</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="function_add_bpm.html"
+                        title="previous chapter">add_bpm</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="function_add_var.html"
+                        title="next chapter">add_var</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/sciFunctions/function_add_dq.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="function_add_var.html" title="add_var"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="function_add_bpm.html" title="add_bpm"
+             >previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GEMINI_user_level_functions.html" >Gemini &#8216;User Level Functions&#8217;:</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

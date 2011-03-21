@@ -1,0 +1,147 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>combine &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="combine">
+<h1>combine<a class="headerlink" href="#combine" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="gempy.science.geminiScience.combine">
+<tt class="descclassname">gempy.science.geminiScience.</tt><tt class="descname">combine</tt><big>(</big><em>adInputs</em>, <em>fl_vardq=True</em>, <em>fl_dqprop=True</em>, <em>method='average'</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>log=None</em>, <em>logName='gemini.log'</em>, <em>logLevel=1</em>, <em>noLogFile=False</em><big>)</big><a class="reference internal" href="../_modules/gempy/science/geminiScience.html#combine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.science.geminiScience.combine" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function will average and combine the SCI extensions of the 
+inputs. It takes all the inputs and creates a list of them and 
+then combines each of their SCI extensions together to create 
+average combination file. New VAR frames are made from these 
+combined SCI frames and the DQ frames are propagated through 
+to the final file.
+NOTE: The inputs to this function MUST be prepared.</p>
+<p>A string representing the name of the log file to write all log messages to
+can be defined, or a default of &#8216;gemini.log&#8217; will be used.  If the file
+all ready exists in the directory you are working in, then this file will 
+have the log messages during this function added to the end of it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adInputs</strong> (<em>Astrodata objects, either a single or a list of objects</em>) &#8211; Astrodata inputs to be combined</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
+it automatically if there are VAR and DQ frames in the 
+inputs. NOTE: &#8216;AUTO&#8217; uses the first input to determine if 
+VAR and DQ frames exist, so, if the first does, then the 
+rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>fl_dqprop</strong> (<em>Python boolean (True/False)</em>) &#8211; propogate the current DQ values?</li>
+<li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median&#8217;.</em>) &#8211; type of combining method to use.</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same length
+as adInputs.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>log</strong> (<em>A gemLog object from astrodata/adutils/gemLog.py .
+It is an upgraded version of the Python logger for use 
+with all new scripts in gemini_python/ .
+Note: the logName, logLevel and noLogFile will be automatically
+determined from the logger object passed in to &#8216;log&#8217; with the 
+ScienceFunctionManager.startUp() function.</em>) &#8211; logger object to send log messges to</li>
+<li><strong>logName</strong> (<em>String, None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to 
+screen. OR the message level as a string (ie. &#8216;critical&#8217;,  
+&#8216;status&#8217;, &#8216;fullinfo&#8217;...)</em>) &#8211; verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always  
+go to the logfile if it is not turned off.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/functions/function_combine.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

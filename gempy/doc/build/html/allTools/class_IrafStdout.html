@@ -1,0 +1,141 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>IrafStdout &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="GeminiTools" href="../GEMINI_tools.html" />
+    <link rel="next" title="ScienceFunctionManager" href="class_ScienceFunctionManager.html" />
+    <link rel="prev" title="CLManager" href="class_CLManager.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="class_ScienceFunctionManager.html" title="ScienceFunctionManager"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="class_CLManager.html" title="CLManager"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GEMINI_tools.html" accesskey="U">GeminiTools</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="irafstdout">
+<h1>IrafStdout<a class="headerlink" href="#irafstdout" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gempy.instruments.geminiTools.IrafStdout">
+<em class="property">class </em><tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">IrafStdout</tt><big>(</big><em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#IrafStdout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.IrafStdout" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a class to act as the standard output for the IRAF 
+routines that instead of printing its messages to the screen,
+it will print them to the gemlog.py logger that the primitives use</p>
+<dl class="method">
+<dt id="gempy.instruments.geminiTools.IrafStdout.flush">
+<tt class="descname">flush</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#IrafStdout.flush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.IrafStdout.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that is needed IRAF but not used in our wrapping its
+scripts</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gempy.instruments.geminiTools.IrafStdout.write">
+<tt class="descname">write</tt><big>(</big><em>out</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#IrafStdout.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.IrafStdout.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function converts the IRAF console prints to logger calls.
+If the print has &#8216;PANIC&#8217; in it, then it becomes a error log message,
+else it becomes a fullinfo message.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="class_CLManager.html"
+                        title="previous chapter">CLManager</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="class_ScienceFunctionManager.html"
+                        title="next chapter">ScienceFunctionManager</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/allTools/class_IrafStdout.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="class_ScienceFunctionManager.html" title="ScienceFunctionManager"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="class_CLManager.html" title="CLManager"
+             >previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GEMINI_tools.html" >GeminiTools</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

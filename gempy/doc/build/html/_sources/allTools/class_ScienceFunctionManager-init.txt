@@ -1,0 +1,4 @@
+__init__
+=========
+
+.. autofunction:: gempy.instruments.geminiTools.ScienceFunctionManager.__init__

@@ -1,0 +1,146 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>rmImgFringe &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="GmosTools" href="../GMOS_tools.html" />
+    <link rel="next" title="statsecConverter" href="tool_statsecConverter.html" />
+    <link rel="prev" title="valInstData" href="tool_valInstData.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tool_statsecConverter.html" title="statsecConverter"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tool_valInstData.html" title="valInstData"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GMOS_tools.html" accesskey="U">GmosTools</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="rmimgfringe">
+<h1>rmImgFringe<a class="headerlink" href="#rmimgfringe" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="gempy.instruments.gmosTools.rmImgFringe">
+<tt class="descclassname">gempy.instruments.gmosTools.</tt><tt class="descname">rmImgFringe</tt><big>(</big><em>inimage</em>, <em>fringe</em>, <em>fl_statscale=False</em>, <em>statsec=''</em>, <em>scale=0.0</em>, <em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/gmosTools.html#rmImgFringe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.gmosTools.rmImgFringe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scale and subtract a fringe frame from GMOS gireduced image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inimage</strong> (<em>AstroData instance</em>) &#8211; Input image</li>
+<li><strong>fringe</strong> (<em>AstroData instance</em>) &#8211; Fringe Frame</li>
+<li><strong>fl_statscale</strong> (<em>Boolean</em>) &#8211; Scale by statistics rather than exposure time</li>
+<li><strong>statsec</strong> (<em>string of format &#8216;[EXTNAME,EXTVER][x1:x2,y1:y2]&#8217;</em>) &#8211; image section used to determine the scale factor 
+if fl_statsec=True</li>
+<li><strong>scale</strong> (<em>real</em>) &#8211; Override auto-scaling if not 0.0</li>
+<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen.
+OR the message level as a string (ie. &#8216;critical&#8217;, &#8216;status&#8217;, 
+&#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if noLogFile=False.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Default statsec:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body"><p class="first last">If CCDSUM = &#8216;1 1&#8217; :[SCI,2][100:1900,100:4500]&#8217;
+If CCDSUM = &#8216;2 2&#8217; : [SCI,2][100:950,100:2250]&#8217;</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tool_valInstData.html"
+                        title="previous chapter">valInstData</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tool_statsecConverter.html"
+                        title="next chapter">statsecConverter</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/allTools/tool_rmImgFringe.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tool_statsecConverter.html" title="statsecConverter"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tool_valInstData.html" title="valInstData"
+             >previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GMOS_tools.html" >GmosTools</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

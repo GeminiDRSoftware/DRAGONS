@@ -1,38 +1,25 @@
-.. gempy documentation master file, created by
-   sphinx-quickstart on Mon Feb 14 22:08:51 2011.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. ALL doc by Kyle Mede, March 2010
    
 ========================
 User Level Functions
 ========================
 
-Gemini 'User Level Function':
-=============================
-
-Contents:
-
 .. toctree::
    :maxdepth: 1
 
-.. automodule:: gempy.science.geminiScience
-   :members:
+
+   GEMINI_user_level_functions.rst
    
-Gmos 'User Level Functions':
-============================
-
-Contents:
 
 .. toctree::
    :maxdepth: 1
 
-.. automodule:: gempy.science.gmosScience
-   :members:
+
+   GMOS_user_level_functions.rst
+	
 
 Additional notes for developers
-===============================
-
-Contents:
+================================
 
 .. toctree::
    :maxdepth: 1
@@ -43,27 +30,16 @@ Contents:
 Toolboxes/Library functions:
 ============================
 
-GeminiTools:
-============
+.. toctree::
+   :maxdepth: 1
 
-Contents:
+   GEMINI_tools.rst
+ 
 
 .. toctree::
    :maxdepth: 1
 
-.. automodule:: gempy.instruments.geminiTools
-   :members:
-   
-GmosTools:
-============
-
-Contents:
-
-.. toctree::
-   :maxdepth: 1
-
-.. automodule:: gempy.instruments.gmosTools
-   :members:   
+   GMOS_tools.rst
    
 
 Indices and tables

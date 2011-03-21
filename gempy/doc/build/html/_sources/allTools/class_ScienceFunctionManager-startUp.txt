@@ -1,0 +1,4 @@
+startUp
+=========
+
+.. autofunction:: gempy.instruments.geminiTools.ScienceFunctionManager.startUp

@@ -1,0 +1,141 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fileNameUpdater &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="filenameupdater">
+<h1>fileNameUpdater<a class="headerlink" href="#filenameupdater" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="gempy.instruments.geminiTools.fileNameUpdater">
+<tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">fileNameUpdater</tt><big>(</big><em>adIn=None</em>, <em>infilename=''</em>, <em>suffix=''</em>, <em>prefix=''</em>, <em>strip=False</em>, <em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#fileNameUpdater"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.fileNameUpdater" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is for updating the file names of astrodata objects.
+It can be used in a few different ways.  For simple post/pre pending of
+the infilename string, there is no need to define adIn or strip. The 
+current filename for adIn will be used if infilename is not defined. 
+The examples below should make the main uses clear.</p>
+<p>Note: 
+1.if the input filename has a path, the returned value will have
+path stripped off of it.
+2. if strip is set to True, then adIn must be defined.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adIn</strong> (<em>astrodata object</em>) &#8211; input astrodata instance having its filename being updated</li>
+<li><strong>infilename</strong> (<em>string</em>) &#8211; filename to be updated</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; string to put between end of current filename and the 
+extension</li>
+<li><strong>prefix</strong> (<em>string</em>) &#8211; string to put at the beginning of a filename</li>
+<li><strong>strip</strong> (<em>Boolean</em>) &#8211; Boolean to signal that the original filename of the astrodata
+object prior to processing should be used. adIn MUST be 
+defined for this to work.</li>
+<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen.
+OR the message level as a string (ie. &#8216;critical&#8217;, &#8216;status&#8217;, 
+&#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages always go 
+to the logfile if noLogFile=False.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>ex. 
+fileNameUpdater(adIn=myAstrodataObject, suffix=&#8217;_prepared&#8217;, strip=True)
+result: &#8216;N20020214S022_prepared.fits&#8217;</p>
+<p>fileNameUpdater(infilename=&#8217;N20020214S022_prepared.fits&#8217;, suffix=&#8217;_biasCorrected&#8217;)
+result: &#8216;N20020214S022_prepared_biasCorrected.fits&#8217;</p>
+<p>fileNameUpdater(adIn=myAstrodataObject, prefix=&#8217;<a href="#id1"><span class="problematic" id="id2">testversion_</span></a>&#8216;)
+result: &#8220;testversion_N20020214S022.fits&#8221;</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/allTools/tool_fileNameUpdater.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
