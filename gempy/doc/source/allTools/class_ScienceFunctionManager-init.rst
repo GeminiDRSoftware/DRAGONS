@@ -3,4 +3,4 @@ __init__
 
    
 .. autoclass:: gempy.instruments.geminiTools.ScienceFunctionManager
-   :members: __init__(init)
+   :members: __init__

@@ -1,6 +1,6 @@
-__init__
-=========
+markHistory
+============
 
    
 .. autoclass:: gempy.instruments.geminiTools.ScienceFunctionManager
-   :members: __init__(init)
+   :members: markHistory

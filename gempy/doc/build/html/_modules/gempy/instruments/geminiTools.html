@@ -1267,7 +1267,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 </div></div>
-<div class="viewcode-block" id="ScienceFunctionManager"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager.html#gempy.instruments.geminiTools.ScienceFunctionManager">[docs]</a><span class="k">class</span> <span class="nc">ScienceFunctionManager</span><span class="p">():</span>
+<div class="viewcode-block" id="ScienceFunctionManager"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-init.html#gempy.instruments.geminiTools.ScienceFunctionManager">[docs]</a><span class="k">class</span> <span class="nc">ScienceFunctionManager</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A manager class to hold functions for performing input checks, naming,</span>
 <span class="sd">    log instantiation... code that is repeated throughout all the &#39;user level</span>
@@ -1285,7 +1285,7 @@
     <span class="n">logLevel</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">noLogFile</span> <span class="o">=</span> <span class="bp">False</span>    
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adInputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">outNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+<div class="viewcode-block" id="ScienceFunctionManager.__init__"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-init.html#gempy.instruments.geminiTools.ScienceFunctionManager.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adInputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">outNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">logName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noLogFile</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">funcName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">combinedInputs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1363,8 +1363,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">noLogFile</span> <span class="o">=</span> <span class="bp">True</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">noLogFile</span> <span class="o">=</span> <span class="bp">False</span>
-        
-<div class="viewcode-block" id="ScienceFunctionManager.startUp"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager.html#gempy.instruments.geminiTools.ScienceFunctionManager.startUp">[docs]</a>    <span class="k">def</span> <span class="nf">startUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        </div>
+<div class="viewcode-block" id="ScienceFunctionManager.startUp"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-startUp.html#gempy.instruments.geminiTools.ScienceFunctionManager.startUp">[docs]</a>    <span class="k">def</span> <span class="nf">startUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function is to perform the input checks and fill out the outNames</span>
 <span class="sd">        parameter if needed.</span>
@@ -1442,7 +1442,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;An Error occurred during</span><span class="se">\</span>
 <span class="s">                                ScienceFunctionManager.startUp&#39;</span><span class="p">)</span>
     </div>
-<div class="viewcode-block" id="ScienceFunctionManager.autoVardq"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager.html#gempy.instruments.geminiTools.ScienceFunctionManager.autoVardq">[docs]</a>    <span class="k">def</span> <span class="nf">autoVardq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fl_vardq</span><span class="p">):</span>
+<div class="viewcode-block" id="ScienceFunctionManager.autoVardq"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-autoVardq.html#gempy.instruments.geminiTools.ScienceFunctionManager.autoVardq">[docs]</a>    <span class="k">def</span> <span class="nf">autoVardq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fl_vardq</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a function to perform either the &#39;AUTO&#39; fl_vardq determination</span>
 <span class="sd">        or just to check convert the value from True-&gt;iraf.yes, False-&gt;iraf.no .</span>
@@ -1478,7 +1478,7 @@
        
         <span class="k">return</span> <span class="n">fl_vardq</span>
     </div>
-<div class="viewcode-block" id="ScienceFunctionManager.markHistory"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager.html#gempy.instruments.geminiTools.ScienceFunctionManager.markHistory">[docs]</a>    <span class="k">def</span> <span class="nf">markHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adOutputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">historyMarkKey</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="ScienceFunctionManager.markHistory"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-markHistory.html#gempy.instruments.geminiTools.ScienceFunctionManager.markHistory">[docs]</a>    <span class="k">def</span> <span class="nf">markHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adOutputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">historyMarkKey</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The function to use near the end of a python user level function to </span>
 <span class="sd">        add a historyMark timestamp to all the outputs indicating when and what</span>
