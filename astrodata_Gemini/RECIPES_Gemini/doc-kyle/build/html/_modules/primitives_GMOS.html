@@ -32,9 +32,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -74,7 +71,7 @@
 <span class="sd">        when the exception is not caught.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
 </div>
-<div class="viewcode-block" id="GMOSPrimitives"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GMOSPrimitives</span><span class="p">(</span><span class="n">GEMINIPrimitives</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives"><a class="viewcode-back" href="../GMOS_prims/GMOS_validateInstrumentData.html#primitives_GMOS.GMOSPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GMOSPrimitives</span><span class="p">(</span><span class="n">GEMINIPrimitives</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">    This is the class of all primitives for the GMOS level of the type </span>
 <span class="sd">    hierarchy tree.  It inherits all the primitives to the level above</span>
@@ -87,7 +84,7 @@
         <span class="n">GEMINIPrimitives</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">rc</span>
      
-<div class="viewcode-block" id="GMOSPrimitives.addBPM"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.addBPM">[docs]</a>    <span class="k">def</span> <span class="nf">addBPM</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.addBPM"><a class="viewcode-back" href="../GMOS_prims/GMOS_addBPM.html#primitives_GMOS.GMOSPrimitives.addBPM">[docs]</a>    <span class="k">def</span> <span class="nf">addBPM</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive is used by the general addDQ primitive of </span>
 <span class="sd">        primitives_GEMINI to add the appropriate BPM (Bad Pixel Mask)</span>
@@ -158,7 +155,7 @@
             
         <span class="k">yield</span> <span class="n">rc</span>       
         </div>
-<div class="viewcode-block" id="GMOSPrimitives.biasCorrect"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.biasCorrect">[docs]</a>    <span class="k">def</span> <span class="nf">biasCorrect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.biasCorrect"><a class="viewcode-back" href="../GMOS_prims/GMOS_biasCorrect.html#primitives_GMOS.GMOSPrimitives.biasCorrect">[docs]</a>    <span class="k">def</span> <span class="nf">biasCorrect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will subtract the biases from the inputs using the </span>
 <span class="sd">        CL script gireduce.</span>
@@ -231,7 +228,7 @@
             
         <span class="k">yield</span> <span class="n">rc</span>
 </div>
-<div class="viewcode-block" id="GMOSPrimitives.display"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.display"><a class="viewcode-back" href="../GMOS_prims/GMOS_display.html#primitives_GMOS.GMOSPrimitives.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; This is a primitive for displaying GMOS data.</span>
 <span class="sd">            It utilizes the IRAF routine gdisplay and requires DS9 to be running</span>
 <span class="sd">            before this primitive is called.</span>
@@ -402,7 +399,7 @@
         
         <span class="k">yield</span> <span class="n">rc</span>
 </div>
-<div class="viewcode-block" id="GMOSPrimitives.mosaicDetectors"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.mosaicDetectors">[docs]</a>    <span class="k">def</span> <span class="nf">mosaicDetectors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.mosaicDetectors"><a class="viewcode-back" href="../GMOS_prims/GMOS_mosaicDetectors.html#primitives_GMOS.GMOSPrimitives.mosaicDetectors">[docs]</a>    <span class="k">def</span> <span class="nf">mosaicDetectors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will mosaic the SCI frames of the input images, </span>
 <span class="sd">        along with the VAR and DQ frames if they exist.  </span>
@@ -453,7 +450,7 @@
             <span class="k">raise</span>   
         <span class="k">yield</span> <span class="n">rc</span>
 </div>
-<div class="viewcode-block" id="GMOSPrimitives.normalizeFlat"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.normalizeFlat">[docs]</a>    <span class="k">def</span> <span class="nf">normalizeFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.normalizeFlat"><a class="viewcode-back" href="../GMOS_prims/GMOS_normalizeFlat.html#primitives_GMOS.GMOSPrimitives.normalizeFlat">[docs]</a>    <span class="k">def</span> <span class="nf">normalizeFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will combine the input flats and then normalize them </span>
 <span class="sd">        using the CL script giflat.</span>
@@ -515,7 +512,7 @@
             
         <span class="k">yield</span> <span class="n">rc</span>
 </div>
-<div class="viewcode-block" id="GMOSPrimitives.overscanSubtract"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.overscanSubtract">[docs]</a>    <span class="k">def</span> <span class="nf">overscanSubtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.overscanSubtract"><a class="viewcode-back" href="../GMOS_prims/GMOS_overscanSubtract.html#primitives_GMOS.GMOSPrimitives.overscanSubtract">[docs]</a>    <span class="k">def</span> <span class="nf">overscanSubtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive uses the CL script gireduce to subtract the overscan </span>
 <span class="sd">        from the input images.</span>
@@ -572,7 +569,7 @@
         
         <span class="k">yield</span> <span class="n">rc</span>    
 </div>
-<div class="viewcode-block" id="GMOSPrimitives.overscanTrim"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.overscanTrim">[docs]</a>    <span class="k">def</span> <span class="nf">overscanTrim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.overscanTrim"><a class="viewcode-back" href="../GMOS_prims/GMOS_overscanTrim.html#primitives_GMOS.GMOSPrimitives.overscanTrim">[docs]</a>    <span class="k">def</span> <span class="nf">overscanTrim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive uses AstroData to trim the overscan region </span>
 <span class="sd">        from the input images and update their headers.</span>
@@ -611,7 +608,7 @@
         
         <span class="k">yield</span> <span class="n">rc</span>
          </div>
-<div class="viewcode-block" id="GMOSPrimitives.standardizeInstrumentHeaders"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.standardizeInstrumentHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeInstrumentHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.standardizeInstrumentHeaders"><a class="viewcode-back" href="../GMOS_prims/GMOS_standardizeInstrumentHeaders.html#primitives_GMOS.GMOSPrimitives.standardizeInstrumentHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeInstrumentHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive is called by standardizeHeaders to makes the changes and </span>
 <span class="sd">        additions to the headers of the input files that are instrument </span>
@@ -639,7 +636,7 @@
         
         <span class="k">yield</span> <span class="n">rc</span> 
     </div>
-<div class="viewcode-block" id="GMOSPrimitives.validateInstrumentData"><a class="viewcode-back" href="../GMOS_primitives.html#primitives_GMOS.GMOSPrimitives.validateInstrumentData">[docs]</a>    <span class="k">def</span> <span class="nf">validateInstrumentData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GMOSPrimitives.validateInstrumentData"><a class="viewcode-back" href="../GMOS_prims/GMOS_validateInstrumentData.html#primitives_GMOS.GMOSPrimitives.validateInstrumentData">[docs]</a>    <span class="k">def</span> <span class="nf">validateInstrumentData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive is called by validateData to validate the instrument </span>
 <span class="sd">        specific data checks for all input files.</span>
@@ -695,9 +692,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
           <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>

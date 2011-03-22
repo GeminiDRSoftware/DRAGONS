@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>GMOS_SPECT Primitives &mdash; gempy v0.1 documentation</title>
+    <title>GMOS_SPECTPrimitives &mdash; gempy v0.1 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="gempy v0.1 documentation" href="index.html" />
-    <link rel="next" title="Lists of the available recipes" href="recipes.html" />
+    <link rel="next" title="attachMDF" href="GMOS_SPECT_prims/GMOS_SPECT_attachMDF.html" />
     <link rel="prev" title="GMOS_IMAGE Primitives" href="GMOS_IMAGE_primitives.html" /> 
   </head>
   <body>
@@ -37,7 +37,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="recipes.html" title="Lists of the available recipes"
+          <a href="GMOS_SPECT_prims/GMOS_SPECT_attachMDF.html" title="attachMDF"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="GMOS_IMAGE_primitives.html" title="GMOS_IMAGE Primitives"
@@ -51,93 +51,24 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="module-primitives_GMOS_SPECT">
-<span id="gmos-spect-primitives"></span><h1>GMOS_SPECT Primitives<a class="headerlink" href="#module-primitives_GMOS_SPECT" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
-<dt id="primitives_GMOS_SPECT.GMOS_SPECTException">
-<em class="property">class </em><tt class="descclassname">primitives_GMOS_SPECT.</tt><tt class="descname">GMOS_SPECTException</tt><big>(</big><em>msg='Exception Raised in Recipe System'</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_SPECT.html#GMOS_SPECTException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_SPECT.GMOS_SPECTException" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is the general exception the classes and functions in the
-Structures.py module raise.</p>
-</dd></dl>
-
+  <div class="section" id="gmos-spectprimitives">
+<h1>GMOS_SPECTPrimitives<a class="headerlink" href="#gmos-spectprimitives" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="primitives_GMOS_SPECT.GMOS_SPECTPrimitives">
 <em class="property">class </em><tt class="descclassname">primitives_GMOS_SPECT.</tt><tt class="descname">GMOS_SPECTPrimitives</tt><a class="reference internal" href="_modules/primitives_GMOS_SPECT.html#GMOS_SPECTPrimitives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_SPECT.GMOS_SPECTPrimitives" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is the class of all primitives for the GMOS_SPECT level of the type 
 hierarchy tree.  It inherits all the primitives to the level above
 , &#8216;GMOSPrimitives&#8217;.</p>
-<dl class="method">
-<dt id="primitives_GMOS_SPECT.GMOS_SPECTPrimitives.attachMDF">
-<tt class="descname">attachMDF</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_SPECT.html#GMOS_SPECTPrimitives.attachMDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_SPECT.GMOS_SPECTPrimitives.attachMDF" title="Permalink to this definition">¶</a></dt>
-<dd><p>This primitive is used to add an MDF if there is a MASKNAME in the   
-images PHU only. It is called by the primitive standardizeStructure
-during the prepare recipe if the parameter addMDF=True.
-<strong>*******************************************</strong>
-will be upgraded later, early testing complete
-<strong>*******************************************</strong></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
-create the output name(s).</li>
-<li><strong>logLevel</strong> (<em>int. 
-This value can be set for each primitive individually 
-in a recipe only (ie. not in the parameter file). 
-If no value is specified during the recipe, the value 
-set during the call to reduce or its default (2) will 
-be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</dd></dl>
+
+<div class="section" id="primitives">
+<h2>Primitives:<a class="headerlink" href="#primitives" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="GMOS_SPECT_prims/GMOS_SPECT_attachMDF.html">attachMDF</a></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="primitives_GMOS_SPECT.GMOS_SPECTPrimitives.standardizeInstrumentHeaders">
-<tt class="descname">standardizeInstrumentHeaders</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_SPECT.html#GMOS_SPECTPrimitives.standardizeInstrumentHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_SPECT.GMOS_SPECTPrimitives.standardizeInstrumentHeaders" title="Permalink to this definition">¶</a></dt>
-<dd><p>This primitive is called by standardizeHeaders to makes the changes and 
-additions to the headers of the input files that are GMOS_SPEC 
-specific.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
-This value can be set for each primitive individually 
-in a recipe only (ie. not in the parameter file). 
-If no value is specified during the recipe, the value 
-set during the call to reduce or its default (2) will 
-be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="primitives_GMOS_SPECT.GMOS_SPECTPrimitives.validateInstrumentData">
-<tt class="descname">validateInstrumentData</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_SPECT.html#GMOS_SPECTPrimitives.validateInstrumentData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_SPECT.GMOS_SPECTPrimitives.validateInstrumentData" title="Permalink to this definition">¶</a></dt>
-<dd><p>This primitive is called by validateData to validate the GMOS_SPEC 
-specific data checks for all input files.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. 
-This value can be set for each primitive individually 
-in a recipe only (ie. not in the parameter file). 
-If no value is specified during the recipe, the value 
-set during the call to reduce or its default (2) will 
-be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+</div>
+</div>
 </div>
 
 
@@ -146,12 +77,22 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GMOS_SPECTPrimitives</a><ul>
+<li><a class="reference internal" href="#primitives">Primitives:</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="GMOS_IMAGE_primitives.html"
                         title="previous chapter">GMOS_IMAGE Primitives</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="recipes.html"
-                        title="next chapter">Lists of the available recipes</a></p>
+  <p class="topless"><a href="GMOS_SPECT_prims/GMOS_SPECT_attachMDF.html"
+                        title="next chapter">attachMDF</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/GMOS_SPECT_primitives.txt"
@@ -184,7 +125,7 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</td>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="recipes.html" title="Lists of the available recipes"
+          <a href="GMOS_SPECT_prims/GMOS_SPECT_attachMDF.html" title="attachMDF"
              >next</a> |</li>
         <li class="right" >
           <a href="GMOS_IMAGE_primitives.html" title="GMOS_IMAGE Primitives"

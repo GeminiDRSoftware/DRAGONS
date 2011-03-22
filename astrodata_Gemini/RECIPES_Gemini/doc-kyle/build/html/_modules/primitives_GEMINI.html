@@ -32,9 +32,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
@@ -76,7 +73,7 @@
 <span class="sd">        when the exception is not caught.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
 </div>
-<div class="viewcode-block" id="GEMINIPrimitives"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GEMINIPrimitives</span><span class="p">(</span><span class="n">GENERALPrimitives</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_writeOutputs.html#primitives_GEMINI.GEMINIPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GEMINIPrimitives</span><span class="p">(</span><span class="n">GENERALPrimitives</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">    This is the class of all primitives for the GEMINI astrotype of </span>
 <span class="sd">    the hierarchy tree.  It inherits all the primitives to the level above</span>
@@ -89,7 +86,7 @@
         <span class="k">return</span> 
     <span class="n">init</span><span class="o">.</span><span class="n">pt_hide</span> <span class="o">=</span> <span class="bp">True</span>
     
-<div class="viewcode-block" id="GEMINIPrimitives.addDQ"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.addDQ">[docs]</a>    <span class="k">def</span> <span class="nf">addDQ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.addDQ"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_addDQ.html#primitives_GEMINI.GEMINIPrimitives.addDQ">[docs]</a>    <span class="k">def</span> <span class="nf">addDQ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will create a numpy array for the data quality </span>
 <span class="sd">        of each SCI frame of the input data. This will then have a </span>
@@ -148,7 +145,7 @@
             <span class="k">raise</span> 
         <span class="k">yield</span> <span class="n">rc</span>
     </div>
-<div class="viewcode-block" id="GEMINIPrimitives.addVAR"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.addVAR">[docs]</a>    <span class="k">def</span> <span class="nf">addVAR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.addVAR"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_addVAR.html#primitives_GEMINI.GEMINIPrimitives.addVAR">[docs]</a>    <span class="k">def</span> <span class="nf">addVAR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive uses numpy to calculate the variance of each SCI frame</span>
 <span class="sd">        in the input files and appends it as a VAR frame using AstroData.</span>
@@ -233,7 +230,7 @@
             <span class="k">raise</span>
         <span class="k">yield</span> <span class="n">rc</span>
             </div>
-<div class="viewcode-block" id="GEMINIPrimitives.combine"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.combine">[docs]</a>    <span class="k">def</span> <span class="nf">combine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.combine"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_combine.html#primitives_GEMINI.GEMINIPrimitives.combine">[docs]</a>    <span class="k">def</span> <span class="nf">combine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will average and combine the SCI extensions of the </span>
 <span class="sd">        inputs. It takes all the inputs and creates a list of them and </span>
@@ -310,7 +307,7 @@
                     <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">cachedir</span><span class="p">)</span>                
         <span class="k">yield</span> <span class="n">rc</span>
         
-<div class="viewcode-block" id="GEMINIPrimitives.display"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.display"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_display.html#primitives_GEMINI.GEMINIPrimitives.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
 <span class="sd">        :type logVerbose: int. </span>
@@ -328,7 +325,7 @@
             <span class="k">raise</span> 
         <span class="k">yield</span> <span class="n">rc</span>
         </div>
-<div class="viewcode-block" id="GEMINIPrimitives.flatCorrect"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.flatCorrect">[docs]</a>    <span class="k">def</span> <span class="nf">flatCorrect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.flatCorrect"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_flatCorrect.html#primitives_GEMINI.GEMINIPrimitives.flatCorrect">[docs]</a>    <span class="k">def</span> <span class="nf">flatCorrect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive performs a flat correction by dividing the inputs by a </span>
 <span class="sd">        processed flat similar to the way gireduce would perform this operation</span>
@@ -378,7 +375,7 @@
             <span class="k">raise</span>  
         <span class="k">yield</span> <span class="n">rc</span>
    </div>
-<div class="viewcode-block" id="GEMINIPrimitives.getProcessedBias"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.getProcessedBias">[docs]</a>    <span class="k">def</span> <span class="nf">getProcessedBias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.getProcessedBias"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_getProcessedBias.html#primitives_GEMINI.GEMINIPrimitives.getProcessedBias">[docs]</a>    <span class="k">def</span> <span class="nf">getProcessedBias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A primitive to search and return the appropriate calibration bias from</span>
 <span class="sd">        a server for the given inputs.</span>
@@ -387,7 +384,7 @@
         <span class="n">rc</span><span class="o">.</span><span class="n">rqCal</span><span class="p">(</span><span class="s">&#39;bias&#39;</span><span class="p">,</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">))</span>
         <span class="k">yield</span> <span class="n">rc</span>
         </div>
-<div class="viewcode-block" id="GEMINIPrimitives.getProcessedFlat"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.getProcessedFlat">[docs]</a>    <span class="k">def</span> <span class="nf">getProcessedFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.getProcessedFlat"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_getProcessedFlat.html#primitives_GEMINI.GEMINIPrimitives.getProcessedFlat">[docs]</a>    <span class="k">def</span> <span class="nf">getProcessedFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A primitive to search and return the appropriate calibration flat from</span>
 <span class="sd">        a server for the given inputs.</span>
@@ -396,7 +393,7 @@
         <span class="n">rc</span><span class="o">.</span><span class="n">rqCal</span><span class="p">(</span><span class="s">&#39;flat&#39;</span><span class="p">,</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">))</span>
         <span class="k">yield</span> <span class="n">rc</span>
     </div>
-<div class="viewcode-block" id="GEMINIPrimitives.getStackable"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.getStackable">[docs]</a>    <span class="k">def</span> <span class="nf">getStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.getStackable"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_getStackable.html#primitives_GEMINI.GEMINIPrimitives.getStackable">[docs]</a>    <span class="k">def</span> <span class="nf">getStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will check the files in the stack lists are on disk,</span>
 <span class="sd">        and then update the inputs list to include all members of the stack </span>
@@ -435,7 +432,7 @@
             <span class="k">raise</span> 
         <span class="k">yield</span> <span class="n">rc</span>
     </div>
-<div class="viewcode-block" id="GEMINIPrimitives.measureIQ"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.measureIQ">[docs]</a>    <span class="k">def</span> <span class="nf">measureIQ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.measureIQ"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_measureIQ.html#primitives_GEMINI.GEMINIPrimitives.measureIQ">[docs]</a>    <span class="k">def</span> <span class="nf">measureIQ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will detect the sources in the input images and fit</span>
 <span class="sd">        both Gaussian and Moffat models to their profiles and calculate the </span>
@@ -551,7 +548,7 @@
         <span class="n">rc</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">rc</span><span class="o">.</span><span class="n">localparms</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">rc</span>   
        
-<div class="viewcode-block" id="GEMINIPrimitives.setStackable"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.setStackable">[docs]</a>    <span class="k">def</span> <span class="nf">setStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.setStackable"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_setStackable.html#primitives_GEMINI.GEMINIPrimitives.setStackable">[docs]</a>    <span class="k">def</span> <span class="nf">setStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will update the lists of files to be stacked</span>
 <span class="sd">        that have the same observationID with the current inputs.</span>
@@ -627,7 +624,7 @@
         <span class="k">yield</span> <span class="n">rc</span></div>
     <span class="n">ptusage_showCals</span><span class="o">=</span><span class="s">&#39;Used to show calibrations currently in cache for inputs.&#39;</span>
 
-<div class="viewcode-block" id="GEMINIPrimitives.showInputs"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.showInputs">[docs]</a>    <span class="k">def</span> <span class="nf">showInputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.showInputs"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_showInputs.html#primitives_GEMINI.GEMINIPrimitives.showInputs">[docs]</a>    <span class="k">def</span> <span class="nf">showInputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
 <span class="sd">        :type logVerbose: int. </span>
@@ -644,7 +641,7 @@
         <span class="k">yield</span> <span class="n">rc</span>  </div>
     <span class="n">showFiles</span> <span class="o">=</span> <span class="n">showInputs</span>
 
-<div class="viewcode-block" id="GEMINIPrimitives.showParameters"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.showParameters">[docs]</a>    <span class="k">def</span> <span class="nf">showParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.showParameters"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_showParameters.html#primitives_GEMINI.GEMINIPrimitives.showParameters">[docs]</a>    <span class="k">def</span> <span class="nf">showParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param logVerbose: Verbosity setting for log messages to the screen.</span>
 <span class="sd">        :type logVerbose: int. </span>
@@ -676,7 +673,7 @@
         <span class="c"># print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))</span>
         <span class="k">yield</span> <span class="n">rc</span>  
          </div>
-<div class="viewcode-block" id="GEMINIPrimitives.showStackable"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.showStackable">[docs]</a>    <span class="k">def</span> <span class="nf">showStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.showStackable"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_showStackable.html#primitives_GEMINI.GEMINIPrimitives.showStackable">[docs]</a>    <span class="k">def</span> <span class="nf">showStackable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will log the list of files in the stacking list matching</span>
 <span class="sd">        the current inputs and &#39;purpose&#39; value.  </span>
@@ -727,7 +724,7 @@
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">dur</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">rc</span>
              
-<div class="viewcode-block" id="GEMINIPrimitives.standardizeHeaders"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.standardizeHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.standardizeHeaders"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_standardizeHeaders.html#primitives_GEMINI.GEMINIPrimitives.standardizeHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive updates and adds the important header keywords</span>
 <span class="sd">        for the input MEFs. First the general headers for Gemini will </span>
@@ -796,7 +793,7 @@
             <span class="k">raise</span> 
         <span class="k">yield</span> <span class="n">rc</span>
                                  </div>
-<div class="viewcode-block" id="GEMINIPrimitives.standardizeStructure"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.standardizeStructure">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeStructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.standardizeStructure"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_standardizeStructure.html#primitives_GEMINI.GEMINIPrimitives.standardizeStructure">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeStructure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive ensures the MEF structure is ready for further </span>
 <span class="sd">        processing, through adding the MDF if necessary and the needed </span>
@@ -874,7 +871,7 @@
             <span class="k">raise</span> 
         <span class="k">yield</span> <span class="n">rc</span>
         </div>
-<div class="viewcode-block" id="GEMINIPrimitives.storeProcessedBias"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.storeProcessedBias">[docs]</a>    <span class="k">def</span> <span class="nf">storeProcessedBias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.storeProcessedBias"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_storeProcessedBias.html#primitives_GEMINI.GEMINIPrimitives.storeProcessedBias">[docs]</a>    <span class="k">def</span> <span class="nf">storeProcessedBias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This should be a primitive that interacts with the calibration system </span>
 <span class="sd">        (MAYBE) but that isn&#39;t up and running yet. Thus, this will just strip </span>
@@ -924,7 +921,7 @@
             <span class="k">raise</span> 
         <span class="k">yield</span> <span class="n">rc</span>
    </div>
-<div class="viewcode-block" id="GEMINIPrimitives.storeProcessedFlat"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.storeProcessedFlat">[docs]</a>    <span class="k">def</span> <span class="nf">storeProcessedFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.storeProcessedFlat"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_storeProcessedFlat.html#primitives_GEMINI.GEMINIPrimitives.storeProcessedFlat">[docs]</a>    <span class="k">def</span> <span class="nf">storeProcessedFlat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This should be a primitive that interacts with the calibration </span>
 <span class="sd">        system (MAYBE) but that isn&#39;t up and running yet. Thus, this will </span>
@@ -982,7 +979,7 @@
         <span class="n">rc</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s">&#39;lastTime&#39;</span><span class="p">:</span><span class="n">cur</span><span class="p">})</span>
         <span class="k">yield</span> <span class="n">rc</span>
 
-<div class="viewcode-block" id="GEMINIPrimitives.validateData"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.validateData">[docs]</a>    <span class="k">def</span> <span class="nf">validateData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.validateData"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_validateData.html#primitives_GEMINI.GEMINIPrimitives.validateData">[docs]</a>    <span class="k">def</span> <span class="nf">validateData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This primitive will ensure the data is not corrupted or in an odd </span>
 <span class="sd">        format that will affect later steps in the reduction process.  </span>
@@ -1060,7 +1057,7 @@
             <span class="k">raise</span> 
         <span class="k">yield</span> <span class="n">rc</span>
 </div>
-<div class="viewcode-block" id="GEMINIPrimitives.writeOutputs"><a class="viewcode-back" href="../GEMINI_primitives.html#primitives_GEMINI.GEMINIPrimitives.writeOutputs">[docs]</a>    <span class="k">def</span> <span class="nf">writeOutputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+<div class="viewcode-block" id="GEMINIPrimitives.writeOutputs"><a class="viewcode-back" href="../GEMINI_prims/GEMINI_writeOutputs.html#primitives_GEMINI.GEMINIPrimitives.writeOutputs">[docs]</a>    <span class="k">def</span> <span class="nf">writeOutputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A primitive that may be called by a recipe at any stage to</span>
 <span class="sd">        write the outputs to disk.</span>
@@ -1194,9 +1191,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
           <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>

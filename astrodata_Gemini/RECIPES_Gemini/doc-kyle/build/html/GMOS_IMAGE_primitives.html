@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>GMOS_IMAGE Primitives &mdash; gempy v0.1 documentation</title>
+    <title>GMOS_IMAGEPrimitives &mdash; gempy v0.1 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -23,8 +23,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="gempy v0.1 documentation" href="index.html" />
-    <link rel="next" title="GMOS_SPEC Primitives" href="GMOS_SPEC_primitives.html" />
-    <link rel="prev" title="GMOS Primitives" href="GMOS_primitives.html" /> 
+    <link rel="next" title="fringeCorrect" href="GMOS_IMAGE_prims/GMOS_IMAGE_fringeCorrect.html" />
+    <link rel="prev" title="validateInstrumentData" href="GMOS_prims/GMOS_validateInstrumentData.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,13 +34,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="GMOS_SPEC_primitives.html" title="GMOS_SPEC Primitives"
+          <a href="GMOS_IMAGE_prims/GMOS_IMAGE_fringeCorrect.html" title="fringeCorrect"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="GMOS_primitives.html" title="GMOS Primitives"
+          <a href="GMOS_prims/GMOS_validateInstrumentData.html" title="validateInstrumentData"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">gempy v0.1 documentation</a> &raquo;</li> 
       </ul>
@@ -51,100 +48,25 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="module-primitives_GMOS_IMAGE">
-<span id="gmos-image-primitives"></span><h1>GMOS_IMAGE Primitives<a class="headerlink" href="#module-primitives_GMOS_IMAGE" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="primitives_GMOS_IMAGE.CLDefaultParamsDict">
-<tt class="descclassname">primitives_GMOS_IMAGE.</tt><tt class="descname">CLDefaultParamsDict</tt><big>(</big><em>CLscript</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_IMAGE.html#CLDefaultParamsDict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_IMAGE.CLDefaultParamsDict" title="Permalink to this definition">¶</a></dt>
-<dd><p>A function to return a dictionary full of all the default parameters 
-for each CL script used so far in the Recipe System.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>logLevel</strong> (<em>int. Default: 1</em>) &#8211; Verbosity setting for log messages to the screen.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="primitives_GMOS_IMAGE.GMOS_IMAGEException">
-<em class="property">class </em><tt class="descclassname">primitives_GMOS_IMAGE.</tt><tt class="descname">GMOS_IMAGEException</tt><big>(</big><em>msg='Exception Raised in Recipe System'</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_IMAGE.html#GMOS_IMAGEException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_IMAGE.GMOS_IMAGEException" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is the general exception the classes and functions in the
-Structures.py module raise.</p>
-</dd></dl>
-
+  <div class="section" id="gmos-imageprimitives">
+<h1>GMOS_IMAGEPrimitives<a class="headerlink" href="#gmos-imageprimitives" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives">
 <em class="property">class </em><tt class="descclassname">primitives_GMOS_IMAGE.</tt><tt class="descname">GMOS_IMAGEPrimitives</tt><a class="reference internal" href="_modules/primitives_GMOS_IMAGE.html#GMOS_IMAGEPrimitives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is the class of all primitives for the GMOS_IMAGE level of the type 
 hierarchy tree.  It inherits all the primitives to the level above
 , &#8216;GMOSPrimitives&#8217;.</p>
-<dl class="method">
-<dt id="primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.fringeCorrect">
-<tt class="descname">fringeCorrect</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_IMAGE.html#GMOS_IMAGEPrimitives.fringeCorrect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.fringeCorrect" title="Permalink to this definition">¶</a></dt>
-<dd><p>This primitive will scale and subtract the fringe frame from the inputs.
-It utilizes the Python re-written version of cl script girmfringe to 
-do the work.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
-create the output name(s).</li>
-<li><strong>fl_statscale</strong> (<em>Boolean</em>) &#8211; Scale by statistics rather than exposure time</li>
-<li><strong>statsec</strong> (<em>string of format &#8216;[EXTNAME,EXTVER][x1:x2,y1:y2]&#8217;
-default: If CCDSUM = &#8216;1 1&#8217; :[SCI,2][100:1900,100:4500]&#8217;
-If CCDSUM = &#8216;2 2&#8217; : [SCI,2][100:950,100:2250]&#8217;</em>) &#8211; image section used to determine the scale factor 
-if fl_statsec=True</li>
-<li><strong>scale</strong> (<em>real</em>) &#8211; Override auto-scaling if not 0.0</li>
-<li><strong>logLevel</strong> (<em>int. 
-This value can be set for each primitive individually 
-in a recipe only (ie. not in the parameter file). 
-If no value is specified during the recipe, the value 
-set during the call to reduce or its default (2) will 
-be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</dd></dl>
+
+<div class="section" id="primitives">
+<h2>Primitives:<a class="headerlink" href="#primitives" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="GMOS_IMAGE_prims/GMOS_IMAGE_fringeCorrect.html">fringeCorrect</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GMOS_IMAGE_prims/GMOS_IMAGE_makeFringeFrame.html">makeFringeFrame</a></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.makeFringeFrame">
-<tt class="descname">makeFringeFrame</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="_modules/primitives_GMOS_IMAGE.html#GMOS_IMAGEPrimitives.makeFringeFrame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.makeFringeFrame" title="Permalink to this definition">¶</a></dt>
-<dd><p>This primitive will create a single fringe image from all the inputs.
-It utilizes the CL script gifringe to create the fringe image.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
-create the output name(s).</li>
-<li><strong>fl_vardq</strong> (<em>Python boolean (True/False), OR string &#8216;AUTO&#8217; to do 
-it automatically if there are VAR and DQ frames in the inputs.
-NOTE: &#8216;AUTO&#8217; uses the first input to determine if VAR and DQ frames exist, 
-so, if the first does, then the rest MUST also have them as well.</em>) &#8211; Create variance and data quality frames?</li>
-<li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median</em>) &#8211; type of combining method to use on the fringe frames.</li>
-<li><strong>logLevel</strong> (<em>int. 
-This value can be set for each primitive individually 
-in a recipe only (ie. not in the parameter file). 
-If no value is specified during the recipe, the value 
-set during the call to reduce or its default (2) will 
-be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+</div>
+</div>
 </div>
 
 
@@ -153,12 +75,22 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GMOS_IMAGEPrimitives</a><ul>
+<li><a class="reference internal" href="#primitives">Primitives:</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
-  <p class="topless"><a href="GMOS_primitives.html"
-                        title="previous chapter">GMOS Primitives</a></p>
+  <p class="topless"><a href="GMOS_prims/GMOS_validateInstrumentData.html"
+                        title="previous chapter">validateInstrumentData</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="GMOS_SPEC_primitives.html"
-                        title="next chapter">GMOS_SPEC Primitives</a></p>
+  <p class="topless"><a href="GMOS_IMAGE_prims/GMOS_IMAGE_fringeCorrect.html"
+                        title="next chapter">fringeCorrect</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/GMOS_IMAGE_primitives.txt"
@@ -188,13 +120,10 @@ be used.</em>) &#8211; Verbosity setting for log messages to the screen.</li>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="GMOS_SPEC_primitives.html" title="GMOS_SPEC Primitives"
+          <a href="GMOS_IMAGE_prims/GMOS_IMAGE_fringeCorrect.html" title="fringeCorrect"
              >next</a> |</li>
         <li class="right" >
-          <a href="GMOS_primitives.html" title="GMOS Primitives"
+          <a href="GMOS_prims/GMOS_validateInstrumentData.html" title="validateInstrumentData"
              >previous</a> |</li>
         <li><a href="index.html">gempy v0.1 documentation</a> &raquo;</li> 
       </ul>

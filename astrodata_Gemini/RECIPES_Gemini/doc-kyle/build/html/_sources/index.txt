@@ -1,47 +1,35 @@
 .. ALL doc by Kyle Mede, February 22 2010
 
-=========== 
-PRIMITIVES:
-===========
-
-GEMINI Primitives
-=================
+================ 
+PRIMITIVES SETS:
+================
 
 .. toctree::
    :maxdepth: 1
 
    GEMINI_primitives.rst
    
-GMOS Primitives 
-===============
 
 .. toctree::
    :maxdepth: 1
 
    GMOS_primitives.rst
    
-GMOS_IMAGE Primitives
-===================== 
 
 .. toctree::
    :maxdepth: 1   
    
    GMOS_IMAGE_primitives.rst   
    
-GMOS_SPECT Primitives
-===================== 
 
 .. toctree::
    :maxdepth: 1   
    
    GMOS_SPECT_primitives.rst  
    
-========
+=========
 RECIPES:
-========  
-
-Recipes
-=======
+=========  
 
 .. toctree::
    :maxdepth: 1
@@ -49,7 +37,7 @@ Recipes
    recipes.rst
 
 ===================
-Indices and tables:
+Indices and tables
 ===================
 
 * :ref:`genindex`
