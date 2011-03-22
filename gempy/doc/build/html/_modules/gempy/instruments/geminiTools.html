@@ -55,7 +55,7 @@
 <span class="kn">from</span> <span class="nn">astrodata.AstroData</span> <span class="kn">import</span> <span class="n">AstroData</span>
 <span class="kn">from</span> <span class="nn">astrodata.Errors</span> <span class="kn">import</span> <span class="n">ToolboxError</span>
 
-<div class="viewcode-block" id="biassecStrTonbiascontam"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager.html#gempy.instruments.geminiTools.biassecStrTonbiascontam">[docs]</a><span class="k">def</span> <span class="nf">biassecStrTonbiascontam</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">biassec</span><span class="p">,</span> <span class="n">logName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="biassecStrTonbiascontam"><a class="viewcode-back" href="../../../allTools/tool_biassecStrTonbiascontam.html#gempy.instruments.geminiTools.biassecStrTonbiascontam">[docs]</a><span class="k">def</span> <span class="nf">biassecStrTonbiascontam</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">biassec</span><span class="p">,</span> <span class="n">logName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">    This function works with nbiascontam() of the CLManager. </span>
 <span class="sd">    It will find the largest horizontal difference between biassec and </span>
@@ -576,7 +576,7 @@
     <span class="n">logName</span> <span class="o">=</span> <span class="bp">None</span>
     <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span>
      
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imageIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">refIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">arrayIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>  
+<div class="viewcode-block" id="CLManager.__init__"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_init.html#gempy.instruments.geminiTools.CLManager.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imageIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">refIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">arrayIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>  
                   <span class="n">imageOutsNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">refOutsNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">numArrayOuts</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">combinedImages</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">funcName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>  
                  <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noLogFile</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
@@ -752,8 +752,8 @@
             <span class="c"># now the preCLwrites can load up the input lists and write </span>
             <span class="c"># the temp files to disk</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">preCLwrites</span><span class="p">()</span>
-         
-<div class="viewcode-block" id="CLManager.finishCL"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.finishCL">[docs]</a>    <span class="k">def</span> <span class="nf">finishCL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+         </div>
+<div class="viewcode-block" id="CLManager.finishCL"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_finishCL.html#gempy.instruments.geminiTools.CLManager.finishCL">[docs]</a>    <span class="k">def</span> <span class="nf">finishCL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
         <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">         Performs all the finalizing steps after CL script is ran. </span>
 <span class="sd">         This function is just a wrapper for postCLloads but might </span>
@@ -763,7 +763,7 @@
         <span class="n">imageOuts</span><span class="p">,</span> <span class="n">refOuts</span><span class="p">,</span> <span class="n">arrayOuts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postCLloads</span><span class="p">()</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">imageOuts</span><span class="p">,</span> <span class="n">refOuts</span><span class="p">,</span> <span class="n">arrayOuts</span><span class="p">)</span> 
           </div>
-<div class="viewcode-block" id="CLManager.imageInsFiles"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.imageInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">imageInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.imageInsFiles"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_imageInsFiles.html#gempy.instruments.geminiTools.CLManager.imageInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">imageInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The function to get the temporary files written to disk for the imageIns</span>
 <span class="sd">        as either a string (or comma-separated string if input was a list), a </span>
@@ -791,7 +791,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
                            <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>
             </div>
-<div class="viewcode-block" id="CLManager.imageOutsFiles"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.imageOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">imageOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.imageOutsFiles"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_imageOutsFiles.html#gempy.instruments.geminiTools.CLManager.imageOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">imageOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function is used to return the names of the images that will be  </span>
 <span class="sd">        written to disk by IRAF in the form desired to pass into the IRAF </span>
@@ -858,7 +858,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
                            <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>
              </div>
-<div class="viewcode-block" id="CLManager.refInsFiles"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.refInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">refInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.refInsFiles"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_refInsFiles.html#gempy.instruments.geminiTools.CLManager.refInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">refInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The function to get the temporary files written to disk for the refIns</span>
 <span class="sd">        as either a string (or comma-separated string if input was a list), a </span>
@@ -886,7 +886,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
                            <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>  
                 </div>
-<div class="viewcode-block" id="CLManager.refOutsFiles"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.refOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">refOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.refOutsFiles"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_refOutsFiles.html#gempy.instruments.geminiTools.CLManager.refOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">refOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function is used to return the names of the reference images that</span>
 <span class="sd">        will be written to disk by IRAF in the form desired to pass into the </span>
@@ -942,7 +942,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
                            <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>             
                 </div>
-<div class="viewcode-block" id="CLManager.arrayInsFiles"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.arrayInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">arrayInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.arrayInsFiles"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_arrayInsFiles.html#gempy.instruments.geminiTools.CLManager.arrayInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">arrayInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The function to get the file names for the temporary files written to </span>
 <span class="sd">        disk for the arrayIns as either a string (or comma-separated string if </span>
@@ -970,7 +970,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
                            <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>    
     </div>
-<div class="viewcode-block" id="CLManager.arrayOutsFiles"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.arrayOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">arrayOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.arrayOutsFiles"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_arrayOutsFiles.html#gempy.instruments.geminiTools.CLManager.arrayOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">arrayOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function is used to return the names of the array files to be written </span>
 <span class="sd">        to disk by IRAF in the form desired to pass into the IRAF routine call.</span>
@@ -1004,7 +1004,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
                            <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>
     </div>
-<div class="viewcode-block" id="CLManager.obsmodeAdd"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.obsmodeAdd">[docs]</a>    <span class="k">def</span> <span class="nf">obsmodeAdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.obsmodeAdd"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_obsmodeAdd.html#gempy.instruments.geminiTools.CLManager.obsmodeAdd">[docs]</a>    <span class="k">def</span> <span class="nf">obsmodeAdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This is an internally used function to add the &#39;OBSMODE&#39; key to the </span>
 <span class="sd">           inputs for use by IRAF routines in the GMOS package.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1013,7 +1013,7 @@
                       <span class="s">&#39;Observing mode (IMAGE|IFU|MOS|LONGSLIT)&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ad</span>    
     </div>
-<div class="viewcode-block" id="CLManager.obsmodeDel"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.obsmodeDel">[docs]</a>    <span class="k">def</span> <span class="nf">obsmodeDel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.obsmodeDel"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_obsmodeDel.html#gempy.instruments.geminiTools.CLManager.obsmodeDel">[docs]</a>    <span class="k">def</span> <span class="nf">obsmodeDel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This is an internally used function to delete the &#39;OBSMODE&#39; key from</span>
 <span class="sd">           the outputs from IRAF routines in the GMOS package.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1021,13 +1021,13 @@
             <span class="k">del</span> <span class="n">ad</span><span class="o">.</span><span class="n">getPHU</span><span class="p">()</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s">&#39;OBSMODE&#39;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">ad</span>
     </div>
-<div class="viewcode-block" id="CLManager.preCLimageNames"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.preCLimageNames">[docs]</a>    <span class="k">def</span> <span class="nf">preCLimageNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.preCLimageNames"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_preCLimageNames.html#gempy.instruments.geminiTools.CLManager.preCLimageNames">[docs]</a>    <span class="k">def</span> <span class="nf">preCLimageNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Just a simple function to return the value of the private member</span>
 <span class="sd">           variable _preCLimageNames that is a list of the filenames of imageIns.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preCLimageNames</span>
     </div>
-<div class="viewcode-block" id="CLManager.preCLwrites"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.preCLwrites">[docs]</a>    <span class="k">def</span> <span class="nf">preCLwrites</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.preCLwrites"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_preCLwrites.html#gempy.instruments.geminiTools.CLManager.preCLwrites">[docs]</a>    <span class="k">def</span> <span class="nf">preCLwrites</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; The function that writes the files in memory to disk with temporary </span>
 <span class="sd">            names and saves the original and temporary names in lists and </span>
 <span class="sd">            fills out the output file name lists for any output arrays if needed.  </span>
@@ -1106,7 +1106,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary ref file on disk for input to CL: &#39;</span>
                                   <span class="o">+</span><span class="n">name</span><span class="p">)</span>
                      </div>
-<div class="viewcode-block" id="CLManager.postCLloads"><a class="viewcode-back" href="../../../allTools/class_CLManager.html#gempy.instruments.geminiTools.CLManager.postCLloads">[docs]</a>    <span class="k">def</span> <span class="nf">postCLloads</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="CLManager.postCLloads"><a class="viewcode-back" href="../../../allTools/CLManager_funcs/CLM_postCLloads.html#gempy.instruments.geminiTools.CLManager.postCLloads">[docs]</a>    <span class="k">def</span> <span class="nf">postCLloads</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; This function takes care of loading the image, reference and/or </span>
 <span class="sd">            array files output by IRAF back into memory, in the form of the </span>
 <span class="sd">            imageOuts, refOuts and arrayOuts variables, and deleting those disk </span>
@@ -1232,7 +1232,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">log</span><span class="o">=</span><span class="bp">None</span>
     
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="IrafStdout.__init__"><a class="viewcode-back" href="../../../allTools/IrafStdout_funcs/IS_init.html#gempy.instruments.geminiTools.IrafStdout.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        A function that is needed IRAF but not used in our wrapping its</span>
 <span class="sd">        scripts.</span>
@@ -1249,8 +1249,8 @@
 <span class="sd">                        , &#39;status&#39;, &#39;fullinfo&#39;...)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">logName</span><span class="o">=</span><span class="n">logName</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="n">logLevel</span><span class="p">)</span>
-    
-<div class="viewcode-block" id="IrafStdout.write"><a class="viewcode-back" href="../../../allTools/class_IrafStdout.html#gempy.instruments.geminiTools.IrafStdout.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+    </div>
+<div class="viewcode-block" id="IrafStdout.write"><a class="viewcode-back" href="../../../allTools/IrafStdout_funcs/IS_write.html#gempy.instruments.geminiTools.IrafStdout.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; This function converts the IRAF console prints to logger calls.</span>
 <span class="sd">            If the print has &#39;PANIC&#39; in it, then it becomes a error log message,</span>
 <span class="sd">            else it becomes a fullinfo message.</span>
@@ -1261,13 +1261,13 @@
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;clInfo&#39;</span><span class="p">)</span>
         </div>
-<div class="viewcode-block" id="IrafStdout.flush"><a class="viewcode-back" href="../../../allTools/class_IrafStdout.html#gempy.instruments.geminiTools.IrafStdout.flush">[docs]</a>    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="IrafStdout.flush"><a class="viewcode-back" href="../../../allTools/IrafStdout_funcs/IS_flush.html#gempy.instruments.geminiTools.IrafStdout.flush">[docs]</a>    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; A function that is needed IRAF but not used in our wrapping its</span>
 <span class="sd">            scripts</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 </div></div>
-<div class="viewcode-block" id="ScienceFunctionManager"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-init.html#gempy.instruments.geminiTools.ScienceFunctionManager">[docs]</a><span class="k">class</span> <span class="nc">ScienceFunctionManager</span><span class="p">():</span>
+<div class="viewcode-block" id="ScienceFunctionManager"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager.html#gempy.instruments.geminiTools.ScienceFunctionManager">[docs]</a><span class="k">class</span> <span class="nc">ScienceFunctionManager</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A manager class to hold functions for performing input checks, naming,</span>
 <span class="sd">    log instantiation... code that is repeated throughout all the &#39;user level</span>
@@ -1285,7 +1285,7 @@
     <span class="n">logLevel</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">noLogFile</span> <span class="o">=</span> <span class="bp">False</span>    
     
-<div class="viewcode-block" id="ScienceFunctionManager.__init__"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-init.html#gempy.instruments.geminiTools.ScienceFunctionManager.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adInputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">outNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+<div class="viewcode-block" id="ScienceFunctionManager.__init__"><a class="viewcode-back" href="../../../allTools/ScienceFunctionManager_funcs/SFM_init.html#gempy.instruments.geminiTools.ScienceFunctionManager.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adInputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">outNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">logName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">logLevel</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noLogFile</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">funcName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">combinedInputs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1364,7 +1364,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">noLogFile</span> <span class="o">=</span> <span class="bp">False</span>
         </div>
-<div class="viewcode-block" id="ScienceFunctionManager.startUp"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-startUp.html#gempy.instruments.geminiTools.ScienceFunctionManager.startUp">[docs]</a>    <span class="k">def</span> <span class="nf">startUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ScienceFunctionManager.startUp"><a class="viewcode-back" href="../../../allTools/ScienceFunctionManager_funcs/SFM_startUp.html#gempy.instruments.geminiTools.ScienceFunctionManager.startUp">[docs]</a>    <span class="k">def</span> <span class="nf">startUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function is to perform the input checks and fill out the outNames</span>
 <span class="sd">        parameter if needed.</span>
@@ -1442,7 +1442,7 @@
             <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;An Error occurred during</span><span class="se">\</span>
 <span class="s">                                ScienceFunctionManager.startUp&#39;</span><span class="p">)</span>
     </div>
-<div class="viewcode-block" id="ScienceFunctionManager.autoVardq"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-autoVardq.html#gempy.instruments.geminiTools.ScienceFunctionManager.autoVardq">[docs]</a>    <span class="k">def</span> <span class="nf">autoVardq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fl_vardq</span><span class="p">):</span>
+<div class="viewcode-block" id="ScienceFunctionManager.autoVardq"><a class="viewcode-back" href="../../../allTools/ScienceFunctionManager_funcs/SFM_autoVardq.html#gempy.instruments.geminiTools.ScienceFunctionManager.autoVardq">[docs]</a>    <span class="k">def</span> <span class="nf">autoVardq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fl_vardq</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a function to perform either the &#39;AUTO&#39; fl_vardq determination</span>
 <span class="sd">        or just to check convert the value from True-&gt;iraf.yes, False-&gt;iraf.no .</span>
@@ -1478,7 +1478,7 @@
        
         <span class="k">return</span> <span class="n">fl_vardq</span>
     </div>
-<div class="viewcode-block" id="ScienceFunctionManager.markHistory"><a class="viewcode-back" href="../../../allTools/class_ScienceFunctionManager-markHistory.html#gempy.instruments.geminiTools.ScienceFunctionManager.markHistory">[docs]</a>    <span class="k">def</span> <span class="nf">markHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adOutputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">historyMarkKey</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="ScienceFunctionManager.markHistory"><a class="viewcode-back" href="../../../allTools/ScienceFunctionManager_funcs/SFM_markHistory.html#gempy.instruments.geminiTools.ScienceFunctionManager.markHistory">[docs]</a>    <span class="k">def</span> <span class="nf">markHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adOutputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">historyMarkKey</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The function to use near the end of a python user level function to </span>
 <span class="sd">        add a historyMark timestamp to all the outputs indicating when and what</span>

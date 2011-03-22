@@ -4,7 +4,7 @@ ScienceFunctionManager
   
 .. autoclass:: gempy.instruments.geminiTools.ScienceFunctionManager
    :exclude-members: 
-   :noindex:
+   
    
 Member Functions:
 =================
@@ -12,10 +12,10 @@ Member Functions:
 .. toctree::
    :maxdepth: 4
    
-   class_ScienceFunctionManager-init.rst
-   class_ScienceFunctionManager-autoVardq.rst
-   class_ScienceFunctionManager-markHistory.rst
-   class_ScienceFunctionManager-startUp.rst
+   ScienceFunctionManager_funcs/SFM_init.rst
+   ScienceFunctionManager_funcs/SFM_autoVardq.rst
+   ScienceFunctionManager_funcs/SFM_markHistory.rst
+   ScienceFunctionManager_funcs/SFM_startUp.rst
    
    
    

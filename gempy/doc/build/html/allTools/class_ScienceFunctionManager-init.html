@@ -60,6 +60,54 @@
 log instantiation... code that is repeated throughout all the &#8216;user level
 functions&#8217; in the gempy libraries (currently those functions in 
 science/geminiScience.py and gmosScience.py).</p>
+<dl class="method">
+<dt id="gempy.instruments.geminiTools.ScienceFunctionManager.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>adInputs=None</em>, <em>outNames=None</em>, <em>suffix=None</em>, <em>log=None</em>, <em>logName=None</em>, <em>logLevel=1</em>, <em>noLogFile=False</em>, <em>funcName=None</em>, <em>combinedInputs=False</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#ScienceFunctionManager.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.ScienceFunctionManager.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This will load up the global variables to use throughout the manager
+functions and instantiate the logger object for use in here and 
+back in the &#8216;user level function&#8217; that is utilizing this manager.</p>
+<p>If a log object is passed into the &#8216;log&#8217; parameter, then the values of
+the logName, logLevel and noLogFile will be extracted from that log 
+object using its built in functions and logic.  These values will then
+be passed back during startUp() for use in the &#8216;user level function&#8217;
+that is utilizing this manager.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>adInputs</strong> (<em>Astrodata objects, either a single or a list of objects.
+At least one object MUST be passed in for adInputs.</em>) &#8211; Astrodata inputs to have DQ extensions added to</li>
+<li><strong>outNames</strong> (<em>String, either a single or a list of strings of same 
+length as adInputs.</em>) &#8211; filenames of output(s)</li>
+<li><strong>suffix</strong> (<em>string</em>) &#8211; String to add on the end of the input filenames 
+(or outNames if not None) for the output filenames.</li>
+<li><strong>funcName</strong> (<em>String</em>) &#8211; Name of the Python function using this manager.</li>
+<li><strong>combinedInputs</strong> (<em>Python boolean (True/False)</em>) &#8211; A flag to indicated that the input images of 
+adInputs will be combined to form one single 
+image output.
+The use of this parameter is optional and is  
+overridden by providing outNames.</li>
+<li><strong>log</strong> (<em>A gemLog object from astrodata/adutils/gemLog.py .
+It is an upgraded version of the Python logger for use 
+with all new scripts in gemini_python/ .
+Note: the logName, logLevel and noLogFile are not needed if
+&#8216;log&#8217; parameter is defined.</em>) &#8211; logger object to send log messges to</li>
+<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to 
+screen. OR the message level as a string (ie. &#8216;critical&#8217;  
+, &#8216;status&#8217;, &#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
+default is &#8216;critical&#8217; messages only.
+Note: independent of logLevel setting, all messages   
+always go to the logfile if noLogFile=False.</li>
+<li><strong>noLogFile</strong> (<em>Python boolean (True/False)</em>) &#8211; A boolean to make it so no log file is created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 </div>
