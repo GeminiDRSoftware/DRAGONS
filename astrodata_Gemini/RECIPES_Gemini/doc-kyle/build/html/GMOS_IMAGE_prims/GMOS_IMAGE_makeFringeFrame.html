@@ -1,0 +1,144 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>makeFringeFrame &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="GMOS_IMAGEPrimitives" href="../GMOS_IMAGE_primitives.html" />
+    <link rel="next" title="GMOS_SPECTPrimitives" href="../GMOS_SPECT_primitives.html" />
+    <link rel="prev" title="GMOS_IMAGEPrimitives" href="../GMOS_IMAGE_primitives.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../GMOS_SPECT_primitives.html" title="GMOS_SPECTPrimitives"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../GMOS_IMAGE_primitives.html" title="GMOS_IMAGEPrimitives"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GMOS_IMAGE_primitives.html" accesskey="U">GMOS_IMAGEPrimitives</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="makefringeframe">
+<h1>makeFringeFrame<a class="headerlink" href="#makefringeframe" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives">
+<em class="property">class </em><tt class="descclassname">primitives_GMOS_IMAGE.</tt><tt class="descname">GMOS_IMAGEPrimitives</tt><a class="reference internal" href="../_modules/primitives_GMOS_IMAGE.html#GMOS_IMAGEPrimitives"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the class of all primitives for the GMOS_IMAGE level of the type 
+hierarchy tree.  It inherits all the primitives to the level above
+, &#8216;GMOSPrimitives&#8217;.</p>
+<dl class="method">
+<dt id="primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.makeFringeFrame">
+<tt class="descname">makeFringeFrame</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="../_modules/primitives_GMOS_IMAGE.html#GMOS_IMAGEPrimitives.makeFringeFrame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS_IMAGE.GMOS_IMAGEPrimitives.makeFringeFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>This primitive will create a single fringe image from all the inputs.
+It utilizes the CL script gifringe to create the fringe image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>suffix</strong> (<em>string</em>) &#8211; Value to be post pended onto each input name(s) to 
+create the output name(s).</li>
+<li><strong>fl_vardq</strong> (<em>Python boolean (True/False)</em>) &#8211; Create variance and data quality frames?</li>
+<li><strong>method</strong> (<em>string, options: &#8216;average&#8217;, &#8216;median</em>) &#8211; type of combining method to use on the fringe frames.</li>
+<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to 
+screen. OR the message level as a string (ie. &#8216;critical&#8217;  
+, &#8216;status&#8217;, &#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for log messages to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../GMOS_IMAGE_primitives.html"
+                        title="previous chapter">GMOS_IMAGEPrimitives</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../GMOS_SPECT_primitives.html"
+                        title="next chapter">GMOS_SPECTPrimitives</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/GMOS_IMAGE_prims/GMOS_IMAGE_makeFringeFrame.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../GMOS_SPECT_primitives.html" title="GMOS_SPECTPrimitives"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../GMOS_IMAGE_primitives.html" title="GMOS_IMAGEPrimitives"
+             >previous</a> |</li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../GMOS_IMAGE_primitives.html" >GMOS_IMAGEPrimitives</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

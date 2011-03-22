@@ -1,0 +1,13 @@
+overscanCorrect
+=================
+
+
+ ::
+
+  # This primitive will subtract the average of the overscan region and then 
+  # trim it from the science frames for all the inputs.
+
+ ::
+
+  overscanSubtract
+  overscanTrim
