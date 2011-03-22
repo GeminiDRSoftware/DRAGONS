@@ -19,14 +19,11 @@ class DescriptorDescriptor:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.%(name)s(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
