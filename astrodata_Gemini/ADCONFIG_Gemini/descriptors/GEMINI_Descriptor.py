@@ -359,7 +359,22 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 break
             else:
                 #print "did not get a date from %s: %s" % (kw, utdate_hdr)
+                pass
+
+            # Did we get a *horrible* early niri style string DD/MM/YY[Y] - YYYY = 1900 + YY[Y]?
+            match = re.match('(\d\d)/(\d\d)/(\d\d+)', utdate_hdr)
+            if(match):
+                #print "horrible niri format"
+                d = int(match.groups()[0])
+                m = int(match.groups()[1])
+                y = 1900 + int(match.groups()[2])
+                if((d > 0) and (d < 32) and (m > 0) and (m < 13) and (y>1990) and (y<2050)):
+                    #print "got a date from horrible niri format"
+                    utdate_hdr = "%d-%02d-%02d" % (y, m, d)
+                    break
+            else:
                 utdate_hdr = ''
+
 
         # OK, at this point, utdate_hdr should contain either an empty string
         # or a valid date string, ie YYYY-MM-DD
@@ -371,7 +386,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
 
         # Get and validate the ut time header, if present. We try several
         # header keywords that might contain a ut time.
-        for kw in [globalStdkeyDict['key_ut_time'], 'UT', 'TIME-OBS']:
+        for kw in [globalStdkeyDict['key_ut_time'], 'UT', 'TIME-OBS', 'STARTUT']:
             try:
                 uttime_hdr = hdu[0].header[kw].strip()
             except KeyError:
