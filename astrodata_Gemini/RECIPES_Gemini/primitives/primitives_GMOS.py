@@ -553,7 +553,7 @@ class GMOSPrimitives(GEMINIPrimitives):
     def standardizeInstrumentHeaders(self,rc):
         """
         This primitive is called by standardizeHeaders to makes the changes and 
-        additions to the headers of the input files that are instrument 
+        additions to the headers of the input files that are GMOS instrument 
         specific.
         
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -566,8 +566,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             for ad in rc.getInputs(style='AD'): 
                 log.debug('Calling gmost.stdInstHdrs for '+ad.filename) 
                 gmost.stdInstHdrs(ad, logLevel=rc['logLevel']) 
-                log.status('Completed standardizing instrument headers for '+
-                           ad.filename)
+                log.status('Completed standardizing GMOS instrument headers \
+                           for '+ad.filename)
                     
         except:
             # logging the exact message from the actual exception that was 
@@ -580,7 +580,7 @@ class GMOSPrimitives(GEMINIPrimitives):
     
     def validateInstrumentData(self,rc):
         """
-        This primitive is called by validateData to validate the instrument 
+        This primitive is called by validateData to validate the GMOS instrument 
         specific data checks for all input files.
         
         :param logLevel: Verbosity setting for log messages to the screen.
