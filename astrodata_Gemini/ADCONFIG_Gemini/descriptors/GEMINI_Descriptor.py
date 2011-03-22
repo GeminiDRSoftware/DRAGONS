@@ -85,7 +85,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # Get the central wavelength value from the header of the PHU.
             hdu = dataset.hdulist
             raw_central_wavelength = \
-                hdu[0].header[globalStdkeyDict['key_central_wavelength']]
+                float(hdu[0].header[globalStdkeyDict['key_central_wavelength']])
             # Use the utilities function convert_units to convert the central
             # wavelength value from the input units to the output units
             ret_central_wavelength = \
