@@ -340,7 +340,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         if caltype == None:
             caltype = "bias"
         if caltype == None:
-        
+            # THIS MAKES NO SENSE TO KYLE!!, WHY ==None again?
             log.critical('Requested a calibration no particular calibration type.')
             raise PrimitiveError("getCal: 'caltype'was None")
         source = rc['source']
@@ -565,6 +565,9 @@ class GEMINIPrimitives(GENERALPrimitives):
 
     def showInputs(self, rc):
         """
+        A simple primitive to show the filenames for the current inputs to 
+        this primitive.
+        
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
@@ -579,6 +582,9 @@ class GEMINIPrimitives(GENERALPrimitives):
 
     def showParameters(self, rc):
         """
+        A simple primitive to log the currently set parameters in the 
+        reduction context dictionary.
+        
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
@@ -944,7 +950,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                # This should repair the file if it is broken, but this function
                # isn't coded yet and would require some sort of flag set while 
                # checking the data to tell this to perform the corrections
-               log.critical('Sorry, but the repair feature of validateData' +
+               log.warning('Sorry, but the repair feature of validateData' +
                             ' is not available yet')
             
             log.status('*STARTING* to validate the input data')
