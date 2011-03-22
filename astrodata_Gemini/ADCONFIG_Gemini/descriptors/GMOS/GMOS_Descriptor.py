@@ -108,7 +108,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # key dictionary (globalStdkeyDict)
             hdu = dataset.hdulist
             raw_central_wavelength = \
-                hdu[0].header[globalStdkeyDict['key_central_wavelength']]
+                float(hdu[0].header[globalStdkeyDict['key_central_wavelength']])
             # Use the utilities function convert_units to convert the central
             # wavelength value from the input units to the output units
             ret_central_wavelength = \
@@ -140,9 +140,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                             format = format,
                                             name = whoami(),
                                             ad = dataset)
-    
-    def detector_y_bin(self, dataset, asDict=True, **args):
-        if asDict:
+    def detector_y_bin(self, dataset, format = None, **args):
+        # DESCRIPTOR VALUE PROTOTYPE
+        # semi-kludge to use DescriptorValue in all cases
+        # this flag is still important to the DescriptorValue class
+        if True:
             ret_detector_y_bin = {}
             # Loop over the science extensions
             for ext in dataset['SCI']:
@@ -152,27 +154,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # global key dictionary (globalStdkeyDict)
                 ccdsum = ext.header[globalStdkeyDict['key_ccdsum']]
                 detector_x_bin, detector_y_bin = ccdsum.split()
-                # Return a dictionary with the binning of the y-axis integer
+                # Return a dictionary with the binning of the x-axis integer
                 # as the value
                 ret_detector_y_bin.update({(ext.extname(), \
                     ext.extver()):int(detector_y_bin)})
-        else:
-            # Check to see whether the dataset has a single extension and if
-            # it does, return a single value
-            if dataset.countExts('SCI') <= 1:
-                # Get the ccdsum value from the header of the single pixel data
-                # extension. The ccdsum keyword is defined in the local key
-                # dictionary (stdkeyDictGMOS) but is read from the updated
-                # global key dictionary (globalStdkeyDict)
-                hdu = dataset.hdulist
-                ccdsum = hdu[1].header[globalStdkeyDict['key_ccdsum']]
-                detector_x_bin, detector_y_bin = ccdsum.split()
-                # Return the binning of the y-axis integer
-                ret_detector_y_bin = int(detector_y_bin)
-            else:
-                raise Errors.DescriptorDictError()
-        
-        return ret_detector_y_bin
+        # @@DESCRIPTOR VALUE PROTOTYPE
+        return Descriptors.DescriptorValue( ret_detector_y_bin, 
+                                            format = format,
+                                            name = whoami(),
+                                            ad = dataset)
+    
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         # Get the disperser value from the header of the PHU. The disperser
