@@ -23,14 +23,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.airmass(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -72,14 +69,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.amp_read_area(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -113,14 +107,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.azimuth(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -154,14 +145,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.camera(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -196,14 +184,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -253,14 +238,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.central_wavelength(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -294,14 +276,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.coadds(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -335,14 +314,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.data_label(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -390,14 +366,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.data_section(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -431,14 +404,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.dec(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -478,14 +448,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.decker(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -533,14 +500,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.detector_section(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -581,14 +545,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.detector_x_bin(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -629,14 +590,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.detector_y_bin(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -676,14 +634,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.disperser(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -733,14 +688,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.dispersion(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -774,14 +726,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.dispersion_axis(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -815,14 +764,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.elevation(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -856,14 +802,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.exposure_time(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -904,14 +847,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.filter_name(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -951,14 +891,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.focal_plane_mask(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -998,14 +935,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.gain(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1045,14 +979,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.grating(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1086,14 +1017,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.gain_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1127,14 +1055,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.instrument(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1168,14 +1093,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.local_time(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1215,14 +1137,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.mdf_row_id(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1257,14 +1176,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.nod_count(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1299,14 +1215,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.nod_pixels(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1341,14 +1254,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.non_linear_level(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1382,14 +1292,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.object(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1424,14 +1331,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.observation_class(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1465,14 +1369,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.observation_epoch(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1506,14 +1407,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.observation_id(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1548,14 +1446,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.observation_type(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1589,14 +1484,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.pixel_scale(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1636,14 +1528,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.prism(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1678,14 +1567,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.program_id(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1719,14 +1605,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.pupil_mask(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1761,14 +1644,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.qa_state(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1802,14 +1682,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.ra(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1844,14 +1721,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.raw_bg(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1886,14 +1760,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.raw_cc(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1928,14 +1799,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.raw_iq(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -1970,14 +1838,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.raw_wv(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2014,14 +1879,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.read_mode(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2061,14 +1923,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.read_noise(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2103,14 +1962,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.read_speed_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2145,14 +2001,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.saturation_level(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2192,14 +2045,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.slit(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2233,14 +2083,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.telescope(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2274,14 +2121,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.ut_date(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2342,14 +2186,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.ut_datetime(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2383,14 +2224,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.ut_time(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2426,14 +2264,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.wavefront_sensor(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2474,14 +2309,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2516,14 +2348,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.well_depth_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2557,14 +2386,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.x_offset(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
@@ -2598,14 +2424,11 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    keyval = self.phuHeader(SDKD.globalStdkeyDict[key])
-                    if not keyval:
-                        if self.exception_info:
+                    retval = self.phuHeader(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                        else:
-                            return keyval
-                    else:
-                        return keyval
+                    return retval
             retval = self.descriptorCalculator.y_offset(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
