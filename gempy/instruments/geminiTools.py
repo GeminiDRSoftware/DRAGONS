@@ -1205,6 +1205,12 @@ class IrafStdout():
         """
         self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
     
+    def flush(self):
+        """ A function that is needed IRAF but not used in our wrapping its
+            scripts
+        """
+        pass
+    
     def write(self, out):
         """ This function converts the IRAF console prints to logger calls.
             If the print has 'PANIC' in it, then it becomes a error log message,
@@ -1215,12 +1221,6 @@ class IrafStdout():
             self.log.error(out, category='clError')
         elif len(out) > 1:
             self.log.fullinfo(out, category='clInfo')
-        
-    def flush(self):
-        """ A function that is needed IRAF but not used in our wrapping its
-            scripts
-        """
-        pass
 
 class ScienceFunctionManager():
     """
@@ -1318,6 +1318,82 @@ class ScienceFunctionManager():
                 self.noLogFile = True
             else:
                 self.noLogFile = False
+    
+    def autoVardq(self, fl_vardq):
+        """
+        This is a function to perform either the 'AUTO' fl_vardq determination
+        or just to check convert the value from True->iraf.yes, False->iraf.no .
+        
+        NOTE: 'AUTO' uses the first input to determine if VAR and  
+        DQ frames exist, so, if the first does, then the rest MUST 
+        also have them as well.
+        
+        :param fl_vardq: The value of the fl_vardq parameter at the start of the
+                         Python user level function.
+        :type fl_vardq: either: Python bool (True/False) or the string 'AUTO'
+        """
+        from astrodata.adutils.gemutil import pyrafLoader
+        # loading and/or bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()
+        
+        if fl_vardq=='AUTO':
+            # if there are matching numbers of VAR, DQ and SCI extensions
+            # then set to yes to ensure the outputs have VAR and DQ's as well.
+            if self.adInputs[0].countExts('VAR')==\
+                        self.adInputs[0].countExts('DQ')\
+                                            ==self.adInputs[0].countExts('SCI'):
+                fl_vardq=yes
+            else:
+                fl_vardq=no
+        else:
+            # 'AUTO' wasn't selected, so just convert the python bools to iraf
+            # yes or no.
+            if fl_vardq:
+                fl_vardq=yes
+            elif fl_vardq==False:
+                fl_vardq=no
+       
+        return fl_vardq
+    
+    def markHistory(self, adOutputs=None, historyMarkKey=None):
+        """
+        The function to use near the end of a python user level function to 
+        add a historyMark timestamp to all the outputs indicating when and what
+        function was just performed on them, then logging the new historyMarkKey
+        PHU key and updated 'GEM-TLM' key values due to historyMark.
+        
+        Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
+        automatically everytime wrapUp is called.
+        
+        :param adOutputs: List of astrodata instance(s) to perform historyMark on.
+        :type adOutputs: Either a single or multiple astrodata instances in a list.
+        
+        :param historyMarkKey: The PHU header key to write the current UT time 
+        :type historyMarkKey: Under 8 character, all caps, string.
+                              If None, then only 'GEM-TLM' is added/updated.
+        """
+        # casting inputs to a list if not one all ready to make loop work right
+        if not isinstance(adOutputs,list):
+            adOutputs = [adOutputs]
+        
+        # looping though inputs to perform historyMark on each of them
+        for ad in adOutputs:
+            # Adding 'GEM-TLM' (automatic) and historyMarkKey (if not None)
+            # time stamps to the PHU
+            ad.historyMark(key=historyMarkKey, stomp=False)
+            
+            # Updating log with new GEM-TLM and GIFLAT time stamps
+            self.log.fullinfo('*'*50, category='header')
+            self.log.fullinfo('File = '+ad.filename, category='header')
+            self.log.fullinfo('~'*50, category='header')
+            self.log.fullinfo('PHU keywords updated/added:\n', 'header')
+            self.log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+                              category='header')
+            if historyMarkKey!=None:
+                self.log.fullinfo(historyMarkKey+' = '+
+                                  ad.phuGetKeyValue(historyMarkKey), 
+                                  category='header')
+            self.log.fullinfo('-'*50, category='header')
         
     def startUp(self):
         """
@@ -1396,82 +1472,5 @@ class ScienceFunctionManager():
             self.log.critical(repr(sys.exc_info()[1]))
             raise ToolboxError('An Error occurred during\
                                 ScienceFunctionManager.startUp')
-    
-    def autoVardq(self, fl_vardq):
-        """
-        This is a function to perform either the 'AUTO' fl_vardq determination
-        or just to check convert the value from True->iraf.yes, False->iraf.no .
-        
-        NOTE: 'AUTO' uses the first input to determine if VAR and  
-        DQ frames exist, so, if the first does, then the rest MUST 
-        also have them as well.
-        
-        :param fl_vardq: The value of the fl_vardq parameter at the start of the
-                         Python user level function.
-        :type fl_vardq: either: Python bool (True/False) or the string 'AUTO'
-        """
-        from astrodata.adutils.gemutil import pyrafLoader
-        # loading and/or bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
-        
-        if fl_vardq=='AUTO':
-            # if there are matching numbers of VAR, DQ and SCI extensions
-            # then set to yes to ensure the outputs have VAR and DQ's as well.
-            if self.adInputs[0].countExts('VAR')==\
-                        self.adInputs[0].countExts('DQ')\
-                                            ==self.adInputs[0].countExts('SCI'):
-                fl_vardq=yes
-            else:
-                fl_vardq=no
-        else:
-            # 'AUTO' wasn't selected, so just convert the python bools to iraf
-            # yes or no.
-            if fl_vardq:
-                fl_vardq=yes
-            elif fl_vardq==False:
-                fl_vardq=no
-       
-        return fl_vardq
-    
-    def markHistory(self, adOutputs=None, historyMarkKey=None):
-        """
-        The function to use near the end of a python user level function to 
-        add a historyMark timestamp to all the outputs indicating when and what
-        function was just performed on them, then logging the new historyMarkKey
-        PHU key and updated 'GEM-TLM' key values due to historyMark.
-        
-        Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
-        automatically everytime wrapUp is called.
-        
-        :param adOutputs: List of astrodata instance(s) to perform historyMark on.
-        :type adOutputs: Either a single or multiple astrodata instances in a list.
-        
-        :param historyMarkKey: The PHU header key to write the current UT time 
-        :type historyMarkKey: Under 8 character, all caps, string.
-                              If None, then only 'GEM-TLM' is added/updated.
-        """
-        # casting inputs to a list if not one all ready to make loop work right
-        if not isinstance(adOutputs,list):
-            adOutputs = [adOutputs]
-        
-        # looping though inputs to perform historyMark on each of them
-        for ad in adOutputs:
-            # Adding 'GEM-TLM' (automatic) and historyMarkKey (if not None)
-            # time stamps to the PHU
-            ad.historyMark(key=historyMarkKey, stomp=False)
-            
-            # Updating log with new GEM-TLM and GIFLAT time stamps
-            self.log.fullinfo('*'*50, category='header')
-            self.log.fullinfo('File = '+ad.filename, category='header')
-            self.log.fullinfo('~'*50, category='header')
-            self.log.fullinfo('PHU keywords updated/added:\n', 'header')
-            self.log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                              category='header')
-            if historyMarkKey!=None:
-                self.log.fullinfo(historyMarkKey+' = '+
-                                  ad.phuGetKeyValue(historyMarkKey), 
-                                  category='header')
-            self.log.fullinfo('-'*50, category='header')
-        
 
  
