@@ -36,15 +36,13 @@ class DescriptorDescriptor:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     """
     def __init__(self, name = None):
         self.name = name
