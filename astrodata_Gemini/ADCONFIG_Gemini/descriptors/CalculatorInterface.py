@@ -27,8 +27,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.airmass(self, **args)
+            else:
+                retval = self.descriptorCalculator.airmass(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -38,12 +38,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def amp_read_area(self, **args):
         """
@@ -73,8 +76,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.amp_read_area(self, **args)
+            else:
+                retval = self.descriptorCalculator.amp_read_area(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -84,12 +87,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def azimuth(self, **args):
         """
@@ -111,8 +117,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.azimuth(self, **args)
+            else:
+                retval = self.descriptorCalculator.azimuth(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -122,12 +128,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def camera(self, **args):
         """
@@ -149,8 +158,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.camera(self, **args)
+            else:
+                retval = self.descriptorCalculator.camera(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -160,12 +169,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def cass_rotator_pa(self, **args):
         """
@@ -188,8 +200,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
+            else:
+                retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -199,12 +211,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def central_wavelength(self, **args):
         """
@@ -242,8 +257,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.central_wavelength(self, **args)
+            else:
+                retval = self.descriptorCalculator.central_wavelength(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -253,12 +268,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def coadds(self, **args):
         """
@@ -280,8 +298,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.coadds(self, **args)
+            else:
+                retval = self.descriptorCalculator.coadds(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -291,12 +309,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def data_label(self, **args):
         """
@@ -318,8 +339,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.data_label(self, **args)
+            else:
+                retval = self.descriptorCalculator.data_label(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -329,12 +350,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def data_section(self, **args):
         """
@@ -370,8 +394,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.data_section(self, **args)
+            else:
+                retval = self.descriptorCalculator.data_section(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -381,12 +405,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def dec(self, **args):
         """
@@ -408,8 +435,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.dec(self, **args)
+            else:
+                retval = self.descriptorCalculator.dec(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -419,12 +446,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def decker(self, **args):
         """
@@ -452,8 +482,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.decker(self, **args)
+            else:
+                retval = self.descriptorCalculator.decker(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -463,12 +493,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def detector_section(self, **args):
         """
@@ -504,8 +537,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.detector_section(self, **args)
+            else:
+                retval = self.descriptorCalculator.detector_section(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -515,12 +548,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def detector_x_bin(self, **args):
         """
@@ -549,8 +585,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.detector_x_bin(self, **args)
+            else:
+                retval = self.descriptorCalculator.detector_x_bin(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -560,12 +596,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def detector_y_bin(self, **args):
         """
@@ -594,8 +633,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.detector_y_bin(self, **args)
+            else:
+                retval = self.descriptorCalculator.detector_y_bin(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -605,12 +644,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def disperser(self, **args):
         """
@@ -638,8 +680,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.disperser(self, **args)
+            else:
+                retval = self.descriptorCalculator.disperser(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -649,12 +691,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def dispersion(self, **args):
         """
@@ -692,8 +737,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.dispersion(self, **args)
+            else:
+                retval = self.descriptorCalculator.dispersion(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -703,12 +748,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def dispersion_axis(self, **args):
         """
@@ -730,8 +778,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.dispersion_axis(self, **args)
+            else:
+                retval = self.descriptorCalculator.dispersion_axis(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -741,12 +789,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def elevation(self, **args):
         """
@@ -768,8 +819,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.elevation(self, **args)
+            else:
+                retval = self.descriptorCalculator.elevation(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -779,12 +830,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def exposure_time(self, **args):
         """
@@ -806,8 +860,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.exposure_time(self, **args)
+            else:
+                retval = self.descriptorCalculator.exposure_time(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -817,12 +871,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def filter_name(self, **args):
         """
@@ -851,8 +908,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.filter_name(self, **args)
+            else:
+                retval = self.descriptorCalculator.filter_name(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -862,12 +919,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def focal_plane_mask(self, **args):
         """
@@ -895,8 +955,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.focal_plane_mask(self, **args)
+            else:
+                retval = self.descriptorCalculator.focal_plane_mask(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -906,12 +966,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def gain(self, **args):
         """
@@ -939,8 +1002,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.gain(self, **args)
+            else:
+                retval = self.descriptorCalculator.gain(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -950,12 +1013,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def grating(self, **args):
         """
@@ -983,8 +1049,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.grating(self, **args)
+            else:
+                retval = self.descriptorCalculator.grating(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -994,12 +1060,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def gain_setting(self, **args):
         """
@@ -1021,8 +1090,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.gain_setting(self, **args)
+            else:
+                retval = self.descriptorCalculator.gain_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1032,12 +1101,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def instrument(self, **args):
         """
@@ -1059,8 +1131,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.instrument(self, **args)
+            else:
+                retval = self.descriptorCalculator.instrument(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1070,12 +1142,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def local_time(self, **args):
         """
@@ -1097,8 +1172,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.local_time(self, **args)
+            else:
+                retval = self.descriptorCalculator.local_time(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1108,12 +1183,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def mdf_row_id(self, **args):
         """
@@ -1141,8 +1219,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.mdf_row_id(self, **args)
+            else:
+                retval = self.descriptorCalculator.mdf_row_id(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1152,12 +1230,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def nod_count(self, **args):
         """
@@ -1180,8 +1261,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.nod_count(self, **args)
+            else:
+                retval = self.descriptorCalculator.nod_count(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1191,12 +1272,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def nod_pixels(self, **args):
         """
@@ -1219,8 +1303,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.nod_pixels(self, **args)
+            else:
+                retval = self.descriptorCalculator.nod_pixels(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1230,12 +1314,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def non_linear_level(self, **args):
         """
@@ -1258,8 +1345,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.non_linear_level(self, **args)
+            else:
+                retval = self.descriptorCalculator.non_linear_level(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1269,12 +1356,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def object(self, **args):
         """
@@ -1296,8 +1386,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.object(self, **args)
+            else:
+                retval = self.descriptorCalculator.object(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1307,12 +1397,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def observation_class(self, **args):
         """
@@ -1335,8 +1428,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.observation_class(self, **args)
+            else:
+                retval = self.descriptorCalculator.observation_class(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1346,12 +1439,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def observation_epoch(self, **args):
         """
@@ -1373,8 +1469,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.observation_epoch(self, **args)
+            else:
+                retval = self.descriptorCalculator.observation_epoch(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1384,12 +1480,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def observation_id(self, **args):
         """
@@ -1411,8 +1510,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.observation_id(self, **args)
+            else:
+                retval = self.descriptorCalculator.observation_id(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1422,12 +1521,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def observation_type(self, **args):
         """
@@ -1450,8 +1552,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.observation_type(self, **args)
+            else:
+                retval = self.descriptorCalculator.observation_type(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1461,12 +1563,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def pixel_scale(self, **args):
         """
@@ -1488,8 +1593,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.pixel_scale(self, **args)
+            else:
+                retval = self.descriptorCalculator.pixel_scale(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1499,12 +1604,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def prism(self, **args):
         """
@@ -1532,8 +1640,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.prism(self, **args)
+            else:
+                retval = self.descriptorCalculator.prism(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1543,12 +1651,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def program_id(self, **args):
         """
@@ -1571,8 +1682,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.program_id(self, **args)
+            else:
+                retval = self.descriptorCalculator.program_id(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1582,12 +1693,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def pupil_mask(self, **args):
         """
@@ -1609,8 +1723,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.pupil_mask(self, **args)
+            else:
+                retval = self.descriptorCalculator.pupil_mask(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1620,12 +1734,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def qa_state(self, **args):
         """
@@ -1648,8 +1765,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.qa_state(self, **args)
+            else:
+                retval = self.descriptorCalculator.qa_state(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1659,12 +1776,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def ra(self, **args):
         """
@@ -1686,8 +1806,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.ra(self, **args)
+            else:
+                retval = self.descriptorCalculator.ra(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1697,12 +1817,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def raw_bg(self, **args):
         """
@@ -1725,8 +1848,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.raw_bg(self, **args)
+            else:
+                retval = self.descriptorCalculator.raw_bg(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1736,12 +1859,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def raw_cc(self, **args):
         """
@@ -1764,8 +1890,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.raw_cc(self, **args)
+            else:
+                retval = self.descriptorCalculator.raw_cc(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1775,12 +1901,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def raw_iq(self, **args):
         """
@@ -1803,8 +1932,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.raw_iq(self, **args)
+            else:
+                retval = self.descriptorCalculator.raw_iq(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1814,12 +1943,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def raw_wv(self, **args):
         """
@@ -1842,8 +1974,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.raw_wv(self, **args)
+            else:
+                retval = self.descriptorCalculator.raw_wv(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1853,12 +1985,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def read_mode(self, **args):
         """
@@ -1883,8 +2018,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.read_mode(self, **args)
+            else:
+                retval = self.descriptorCalculator.read_mode(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1894,12 +2029,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def read_noise(self, **args):
         """
@@ -1927,8 +2065,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.read_noise(self, **args)
+            else:
+                retval = self.descriptorCalculator.read_noise(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1938,12 +2076,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def read_speed_setting(self, **args):
         """
@@ -1966,8 +2107,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.read_speed_setting(self, **args)
+            else:
+                retval = self.descriptorCalculator.read_speed_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -1977,12 +2118,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def saturation_level(self, **args):
         """
@@ -2005,8 +2149,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.saturation_level(self, **args)
+            else:
+                retval = self.descriptorCalculator.saturation_level(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2016,12 +2160,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def slit(self, **args):
         """
@@ -2049,8 +2196,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.slit(self, **args)
+            else:
+                retval = self.descriptorCalculator.slit(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2060,12 +2207,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def telescope(self, **args):
         """
@@ -2087,8 +2237,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.telescope(self, **args)
+            else:
+                retval = self.descriptorCalculator.telescope(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2098,12 +2248,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def ut_date(self, **args):
         """
@@ -2125,8 +2278,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.ut_date(self, **args)
+            else:
+                retval = self.descriptorCalculator.ut_date(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2136,12 +2289,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def ut_datetime(self, **args):
         """
@@ -2190,8 +2346,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.ut_datetime(self, **args)
+            else:
+                retval = self.descriptorCalculator.ut_datetime(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2201,12 +2357,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def ut_time(self, **args):
         """
@@ -2228,8 +2387,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.ut_time(self, **args)
+            else:
+                retval = self.descriptorCalculator.ut_time(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2239,12 +2398,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def wavefront_sensor(self, **args):
         """
@@ -2268,8 +2430,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.wavefront_sensor(self, **args)
+            else:
+                retval = self.descriptorCalculator.wavefront_sensor(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2279,12 +2441,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def wavelength_reference_pixel(self, **args):
         """
@@ -2313,8 +2478,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
+            else:
+                retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2324,12 +2489,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def well_depth_setting(self, **args):
         """
@@ -2352,8 +2520,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.well_depth_setting(self, **args)
+            else:
+                retval = self.descriptorCalculator.well_depth_setting(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2363,12 +2531,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def x_offset(self, **args):
         """
@@ -2390,8 +2561,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.x_offset(self, **args)
+            else:
+                retval = self.descriptorCalculator.x_offset(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2401,12 +2572,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
     def y_offset(self, **args):
         """
@@ -2428,8 +2602,8 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.y_offset(self, **args)
+            else:
+                retval = self.descriptorCalculator.y_offset(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -2439,12 +2613,15 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
