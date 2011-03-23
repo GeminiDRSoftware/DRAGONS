@@ -38,15 +38,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def amp_read_area(self, **args):
         """
@@ -87,15 +84,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def azimuth(self, **args):
         """
@@ -128,15 +122,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def camera(self, **args):
         """
@@ -169,15 +160,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def cass_rotator_pa(self, **args):
         """
@@ -211,15 +199,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def central_wavelength(self, **args):
         """
@@ -268,15 +253,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def coadds(self, **args):
         """
@@ -309,15 +291,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def data_label(self, **args):
         """
@@ -350,15 +329,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def data_section(self, **args):
         """
@@ -405,15 +381,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def dec(self, **args):
         """
@@ -446,15 +419,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def decker(self, **args):
         """
@@ -493,15 +463,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def detector_section(self, **args):
         """
@@ -548,15 +515,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def detector_x_bin(self, **args):
         """
@@ -596,15 +560,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def detector_y_bin(self, **args):
         """
@@ -644,15 +605,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def disperser(self, **args):
         """
@@ -691,15 +649,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def dispersion(self, **args):
         """
@@ -748,15 +703,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def dispersion_axis(self, **args):
         """
@@ -789,15 +741,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def elevation(self, **args):
         """
@@ -830,15 +779,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def exposure_time(self, **args):
         """
@@ -871,15 +817,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def filter_name(self, **args):
         """
@@ -919,15 +862,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def focal_plane_mask(self, **args):
         """
@@ -966,15 +906,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def gain(self, **args):
         """
@@ -1013,15 +950,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def grating(self, **args):
         """
@@ -1060,15 +994,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def gain_setting(self, **args):
         """
@@ -1101,15 +1032,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def instrument(self, **args):
         """
@@ -1142,15 +1070,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def local_time(self, **args):
         """
@@ -1183,15 +1108,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def mdf_row_id(self, **args):
         """
@@ -1230,15 +1152,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def nod_count(self, **args):
         """
@@ -1272,15 +1191,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def nod_pixels(self, **args):
         """
@@ -1314,15 +1230,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def non_linear_level(self, **args):
         """
@@ -1356,15 +1269,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def object(self, **args):
         """
@@ -1397,15 +1307,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def observation_class(self, **args):
         """
@@ -1439,15 +1346,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def observation_epoch(self, **args):
         """
@@ -1480,15 +1384,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def observation_id(self, **args):
         """
@@ -1521,15 +1422,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def observation_type(self, **args):
         """
@@ -1563,15 +1461,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def pixel_scale(self, **args):
         """
@@ -1604,15 +1499,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def prism(self, **args):
         """
@@ -1651,15 +1543,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def program_id(self, **args):
         """
@@ -1693,15 +1582,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def pupil_mask(self, **args):
         """
@@ -1734,15 +1620,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def qa_state(self, **args):
         """
@@ -1776,15 +1659,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def ra(self, **args):
         """
@@ -1817,15 +1697,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def raw_bg(self, **args):
         """
@@ -1859,15 +1736,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def raw_cc(self, **args):
         """
@@ -1901,15 +1775,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def raw_iq(self, **args):
         """
@@ -1943,15 +1814,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def raw_wv(self, **args):
         """
@@ -1985,15 +1853,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def read_mode(self, **args):
         """
@@ -2029,15 +1894,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def read_noise(self, **args):
         """
@@ -2076,15 +1938,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def read_speed_setting(self, **args):
         """
@@ -2118,15 +1977,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def saturation_level(self, **args):
         """
@@ -2160,15 +2016,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def slit(self, **args):
         """
@@ -2207,15 +2060,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def telescope(self, **args):
         """
@@ -2248,15 +2098,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def ut_date(self, **args):
         """
@@ -2289,15 +2136,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def ut_datetime(self, **args):
         """
@@ -2357,15 +2201,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def ut_time(self, **args):
         """
@@ -2398,15 +2239,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def wavefront_sensor(self, **args):
         """
@@ -2441,15 +2279,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def wavelength_reference_pixel(self, **args):
         """
@@ -2489,15 +2324,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def well_depth_setting(self, **args):
         """
@@ -2531,15 +2363,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def x_offset(self, **args):
         """
@@ -2572,15 +2401,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
     def y_offset(self, **args):
         """
@@ -2613,15 +2439,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if hasattr(self, 'descriptorCalculator'):
-                if self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
                     raise
-                else:
-                    #print "NONE BY EXCEPTION"
-                    self.exception_info = sys.exc_info()
-                    return None
             else:
-                raise
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()
+                return None
     
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
