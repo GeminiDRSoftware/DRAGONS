@@ -1,5 +1,7 @@
-from descriptorDescriptionDict import descriptorDescDict, returnTypeDict
-from descriptorDescriptionDict import detailedNameDict, asDictArgDict
+from descriptorDescriptionDict import asDictArgDict
+from descriptorDescriptionDict import descriptorDescDict
+from descriptorDescriptionDict import detailedNameDict
+from descriptorDescriptionDict import returnTypeDict
 from descriptorDescriptionDict import stripIDArgDict
 
 class DescriptorDescriptor:
@@ -23,8 +25,8 @@ class DescriptorDescriptor:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info[1]
-                    return retval
-            retval = self.descriptorCalculator.%(name)s(self, **args)
+            else:
+                retval = self.descriptorCalculator.%(name)s(self, **args)
             if "asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
@@ -34,12 +36,15 @@ class DescriptorDescriptor:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator.throwExceptions == True:
-                raise
+            if hasattr(self, 'descriptorCalculator'):
+                if self.descriptorCalculator.throwExceptions == True:
+                    raise
+                else:
+                    #print "NONE BY EXCEPTION"
+                    self.exception_info = sys.exc_info()
+                    return None
             else:
-            #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
-                return None
+                raise
     """
     def __init__(self, name = None):
         self.name = name
