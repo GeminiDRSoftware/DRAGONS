@@ -38,7 +38,7 @@ class DescriptorDescriptor:
         except:
             if self.descriptorCalculator is None or \
                 self.descriptorCalculator.throwExceptions == True:
-                    raise
+                raise
             else:
                 #print "NONE BY EXCEPTION"
                 self.exception_info = sys.exc_info()
