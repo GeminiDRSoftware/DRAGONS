@@ -43,14 +43,14 @@ class EmptyKeyError(Error):
     Exception raised for errors when a PHU keyword was found to but was empty
     or ' '.
     """    
-    message = "Keyword value found but empty, so returning None"
+    message = "Keyword found but the value was empty"
     
 class ExistError(Error):
     """
     Exception raised for instances when a descriptor doesn't exist for a
     particular instrument
     """
-    message = "No descriptor function exists for this instrument"
+    message = "Descriptor does not exist for this instrument"
 
 class InvalidValueError(Error):
     """
@@ -99,5 +99,5 @@ class UndefinedKeyError(Error):
     Exception raised for errors when a PHU keyword has a value that is 
     pyfits.core.Undefined
     """
-    message = "Keyword value undefined, so returning None"
+    message = "Keyword found but the value was undefined"
 
