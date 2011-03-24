@@ -24,7 +24,7 @@ class DescriptorDescriptor:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.%(name)s(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -36,12 +36,12 @@ class DescriptorDescriptor:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or \
+            if self.descriptorCalculator is None or \\
                 self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     """
     def __init__(self, name = None):
