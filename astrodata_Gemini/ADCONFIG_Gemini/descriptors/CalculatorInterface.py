@@ -26,7 +26,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.airmass(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -38,11 +38,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def amp_read_area(self, **args):
@@ -72,7 +73,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.amp_read_area(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -84,11 +85,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def azimuth(self, **args):
@@ -110,7 +112,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.azimuth(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -122,11 +124,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def camera(self, **args):
@@ -148,7 +151,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.camera(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -160,11 +163,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def cass_rotator_pa(self, **args):
@@ -187,7 +191,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -199,11 +203,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def central_wavelength(self, **args):
@@ -241,7 +246,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.central_wavelength(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -253,11 +258,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def coadds(self, **args):
@@ -279,7 +285,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.coadds(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -291,11 +297,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def data_label(self, **args):
@@ -317,7 +324,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.data_label(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -329,11 +336,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def data_section(self, **args):
@@ -369,7 +377,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.data_section(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -381,11 +389,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def dec(self, **args):
@@ -407,7 +416,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.dec(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -419,11 +428,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def decker(self, **args):
@@ -451,7 +461,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.decker(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -463,11 +473,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def detector_section(self, **args):
@@ -503,7 +514,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.detector_section(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -515,11 +526,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def detector_x_bin(self, **args):
@@ -548,7 +560,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.detector_x_bin(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -560,11 +572,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def detector_y_bin(self, **args):
@@ -593,7 +606,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.detector_y_bin(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -605,11 +618,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def disperser(self, **args):
@@ -637,7 +651,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.disperser(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -649,11 +663,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def dispersion(self, **args):
@@ -691,7 +706,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.dispersion(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -703,11 +718,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def dispersion_axis(self, **args):
@@ -729,7 +745,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.dispersion_axis(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -741,11 +757,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def elevation(self, **args):
@@ -767,7 +784,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.elevation(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -779,11 +796,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def exposure_time(self, **args):
@@ -805,7 +823,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.exposure_time(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -817,11 +835,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def filter_name(self, **args):
@@ -850,7 +869,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.filter_name(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -862,11 +881,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def focal_plane_mask(self, **args):
@@ -894,7 +914,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.focal_plane_mask(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -906,11 +926,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def gain(self, **args):
@@ -938,7 +959,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.gain(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -950,11 +971,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def grating(self, **args):
@@ -982,7 +1004,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.grating(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -994,11 +1016,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def gain_setting(self, **args):
@@ -1020,7 +1043,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.gain_setting(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1032,11 +1055,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def instrument(self, **args):
@@ -1058,7 +1082,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.instrument(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1070,11 +1094,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def local_time(self, **args):
@@ -1096,7 +1121,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.local_time(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1108,11 +1133,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def mdf_row_id(self, **args):
@@ -1140,7 +1166,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.mdf_row_id(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1152,11 +1178,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def nod_count(self, **args):
@@ -1179,7 +1206,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.nod_count(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1191,11 +1218,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def nod_pixels(self, **args):
@@ -1218,7 +1246,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.nod_pixels(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1230,11 +1258,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def non_linear_level(self, **args):
@@ -1257,7 +1286,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.non_linear_level(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1269,11 +1298,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def object(self, **args):
@@ -1295,7 +1325,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.object(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1307,11 +1337,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def observation_class(self, **args):
@@ -1334,7 +1365,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_class(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1346,11 +1377,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def observation_epoch(self, **args):
@@ -1372,7 +1404,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_epoch(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1384,11 +1416,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def observation_id(self, **args):
@@ -1410,7 +1443,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_id(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1422,11 +1455,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def observation_type(self, **args):
@@ -1449,7 +1483,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_type(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1461,11 +1495,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def pixel_scale(self, **args):
@@ -1487,7 +1522,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.pixel_scale(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1499,11 +1534,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def prism(self, **args):
@@ -1531,7 +1567,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.prism(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1543,11 +1579,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def program_id(self, **args):
@@ -1570,7 +1607,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.program_id(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1582,11 +1619,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def pupil_mask(self, **args):
@@ -1608,7 +1646,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.pupil_mask(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1620,11 +1658,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def qa_state(self, **args):
@@ -1647,7 +1686,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.qa_state(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1659,11 +1698,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def ra(self, **args):
@@ -1685,7 +1725,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ra(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1697,11 +1737,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def raw_bg(self, **args):
@@ -1724,7 +1765,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_bg(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1736,11 +1777,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def raw_cc(self, **args):
@@ -1763,7 +1805,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_cc(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1775,11 +1817,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def raw_iq(self, **args):
@@ -1802,7 +1845,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_iq(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1814,11 +1857,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def raw_wv(self, **args):
@@ -1841,7 +1885,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_wv(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1853,11 +1897,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def read_mode(self, **args):
@@ -1882,7 +1927,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.read_mode(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1894,11 +1939,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def read_noise(self, **args):
@@ -1926,7 +1972,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.read_noise(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1938,11 +1984,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def read_speed_setting(self, **args):
@@ -1965,7 +2012,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.read_speed_setting(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -1977,11 +2024,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def saturation_level(self, **args):
@@ -2004,7 +2052,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.saturation_level(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2016,11 +2064,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def slit(self, **args):
@@ -2048,7 +2097,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.slit(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2060,11 +2109,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def telescope(self, **args):
@@ -2086,7 +2136,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.telescope(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2098,11 +2148,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def ut_date(self, **args):
@@ -2124,7 +2175,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ut_date(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2136,11 +2187,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def ut_datetime(self, **args):
@@ -2189,7 +2241,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ut_datetime(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2201,11 +2253,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def ut_time(self, **args):
@@ -2227,7 +2280,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ut_time(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2239,11 +2292,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def wavefront_sensor(self, **args):
@@ -2267,7 +2321,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.wavefront_sensor(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2279,11 +2333,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def wavelength_reference_pixel(self, **args):
@@ -2312,7 +2367,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2324,11 +2379,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def well_depth_setting(self, **args):
@@ -2351,7 +2407,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.well_depth_setting(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2363,11 +2419,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def x_offset(self, **args):
@@ -2389,7 +2446,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.x_offset(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2401,11 +2458,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
     def y_offset(self, **args):
@@ -2427,7 +2485,7 @@ class CalculatorInterface:
                     retval = self.phuHeader(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
-                            raise self.exception_info[1]
+                            raise self.exception_info
             else:
                 retval = self.descriptorCalculator.y_offset(self, **args)
             if "asString" in args and args["asString"]==True:
@@ -2439,11 +2497,12 @@ class CalculatorInterface:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or                 self.descriptorCalculator.throwExceptions == True:
+            if self.descriptorCalculator is None or \
+                self.descriptorCalculator.throwExceptions == True:
                 raise
             else:
                 #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()
+                self.exception_info = sys.exc_info()[1]
                 return None
     
 # UTILITY FUNCTIONS, above are descriptor thunks            
