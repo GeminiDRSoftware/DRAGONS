@@ -393,9 +393,10 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 #print "Didn't get a uttime from keyword %s" % kw
                 uttime_hdr = ''
             # The standard mandates HH:MM:SS[.S...] 
+            # OK, we allow single digits to cope with crap data
             # These are somewhat basic checks, it's not completely rigorous
             # Note that seconds can be > 59 when leap seconds occurs
-            if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', uttime_hdr):
+            if re.match('^([012]?\d)(:)([012345]?\d)(:)(\d\d?\.?\d*)$', uttime_hdr):
                 #print "Got UT time from keyword %s: %s" % (kw, uttime_hdr)
                 break
             else:
