@@ -43,7 +43,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         try:           
             for ad in rc.getInputs(style ='AD'):
                 infilename = ad.filename
@@ -67,9 +67,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 
                 ad.filename=gemt.fileNameUpdater(ad.filename,
                                                  suffix=rc["suffix"], 
-                                                 strip=False,
-                                                 logName=rc['logName'],
-                                                 logLevel=rc['logLevel'],)
+                                                 strip=False)
                 rc.reportOutput(ad)
                 
                 log.status('finished adding the MDF')

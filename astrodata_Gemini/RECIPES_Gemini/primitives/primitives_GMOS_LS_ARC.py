@@ -30,8 +30,7 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
         return rc
      
     def gtransform(self, rc):
-        log = gemLog.getGeminiLog(logName=rc['logName'], 
-                                  logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logType=rc['logType'], logLevel=rc['logLevel'])
         try:
             print "Starting gtrans GMOS_LS_ARC"
             #gtrans.gtrans.Gtrans('gsN20011222S027.fits',minsep=4,ntmax=50)

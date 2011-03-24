@@ -56,7 +56,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         try: 
             log.status('*STARTING* to fringe correct the images')
             
@@ -76,8 +76,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                          fringes=fringe,
                                          fl_statscale=rc['fl_statscale'],
                                          statsec=rc['statsec'], scale=rc['scale'],
-                                         suffix=rc['suffix'], 
-                                         log=log)           
+                                         suffix=rc['suffix'])           
             
             log.status('gmosScience.fringe_correct completed successfully')
                 
@@ -116,7 +115,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logName=rc['logName'],logLevel=rc['logLevel'])        
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])        
         try:
             if len(rc.getInputs())>1:
                 log.status('*STARTING* to create a fringe frame from the inputs')
@@ -127,8 +126,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                                 adInputs=rc.getInputs(style='AD'), 
                                              fl_vardq=rc['fl_vardq'],
                                              method=rc['method'],
-                                             suffix=rc['suffix'], 
-                                             log=log)           
+                                             suffix=rc['suffix'])           
                 
                 log.status('gmosScience.make_fringe_frame_imaging completed'+
                            ' successfully')
