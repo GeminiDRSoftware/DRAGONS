@@ -10,7 +10,7 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ToolboxError
 
-def stdInstHdrs(ad, logName=None, logLevel=1):  
+def stdInstHdrs(ad):  
     """ 
     A function used by StandardizeInstrumentHeaders in primitives_GMOS.
     It currently just adds the DISPAXIS header key to the SCI extensions.
@@ -18,23 +18,13 @@ def stdInstHdrs(ad, logName=None, logLevel=1):
     :param ad: input astrodata instance to have its headers standardized
     :type ad: a single astrodata instance
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
     """
     # Adding the missing/needed keywords into the headers
     if not ad.isType('GMOS_IMAGE'):
     # Do the stuff to the headers that is for the MOS, those for IMAGE are 
     # taken care of with stdObsHdrs all ready 
     
-        log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
+        log=gemLog.getGeminiLog()
     
         # Formatting so logger looks organized for these messages
         log.fullinfo('*'*50, 
@@ -77,7 +67,7 @@ def valInstData(ad):
 # There was talk about generalizing this module to work on all imaging data
 # rather than just GMOS images, this is left as a task to look into later.
 def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='', 
-               scale=0.0, logName=None, logLevel=1):                         
+               scale=0.0):                         
     """
     Scale and subtract a fringe frame from GMOS gireduced image.
     
@@ -99,19 +89,8 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
     :param scale: Override auto-scaling if not 0.0
     :type scale: real 
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
-    
     """    
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
+    log=gemLog.getGeminiLog()
     
     ut = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
     

@@ -10,16 +10,14 @@ import numpy as np
 from copy import deepcopy
 import time
 from datetime import datetime
-from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.Errors import ScienceError
 from gempy.instruments import geminiTools  as gemt
 from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
-def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,  
-                suffix=None, log=None, logName='gemini.log', logLevel=1, 
-                noLogFile=False):
+def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, 
+            suffix=None):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
     The BPM will be added as frames matching that of the SCI frames and ensure
@@ -31,10 +29,9 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     as the input the BPM frames are to be added to 
     (ie. if input has 3 SCI extensions, the BPM must have 3 DQ extensions).
     
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
           
     :param adInputs: Astrodata inputs to be converted to Electron pixel units
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -59,35 +56,12 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                    (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, funcName='add_bpm')
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, funcName='add_bpm')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
                    
     if BPMs==None:
         log.critical('There must be at least one BPM provided, the \
@@ -233,8 +207,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
         raise ScienceError('An error occurred while trying to run add_bpm')
     
 def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None, 
-                suffix=None, log=None, logName='gemini.log', logLevel=1, 
-                noLogFile=False):
+                suffix=None):
     """
     This function will create a numpy array for the data quality 
     of each SCI frame of the input data. This will then have a 
@@ -244,10 +217,9 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
     2=value is non linear, 4=pixel is saturated)
     
     NOTE: 
-    For every SCI extension of the inputs, a matching BPM extension must
-    also exist to be updated with the non-linear and saturated pixels from
-    the SCI data array for creation of the DQ array.
-    ie. for now, no BPM extensions=this function will crash
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
           
     NOTE:
     FIND A WAY TO TAKE CARE OF NO BPM EXTENSION EXISTS ISSUE, OR ALLOWING THEM
@@ -276,36 +248,13 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
        (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: 
-         verbosity setting for the log messages to screen,
-         default is 'critical' messages only.
-         Note: independent of logLevel setting, all messages always go 
-         to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, funcName='add_dq')
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      funcName='add_dq')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -364,8 +313,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                                    ' pixels') 
                     
                     # Creating one DQ array from the three
-                    dqArray=np.add(BPMArray, nonLinArray, 
-                                   saturatedArray) 
+                    dqArray=np.add(BPMArray, nonLinArray, saturatedArray) 
                     # Updating data array for the BPM array to be the 
                     # newly calculated DQ array
                     adOut[('BPM',sciExt.extver())].data = dqArray
@@ -413,8 +361,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
         log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run add_dq')
 
-def add_var(adInputs, outNames=None, suffix=None, log=None, 
-                            logName='gemini.log', logLevel=1, noLogFile=False):
+def add_var(adInputs, outNames=None, suffix=None):
     """
     This function uses numpy to calculate the variance of each SCI frame
     in the input files and appends it as a VAR frame using AstroData.
@@ -422,10 +369,10 @@ def add_var(adInputs, outNames=None, suffix=None, log=None,
     The calculation will follow the formula:
     variance = (read noise/gain)2 + max(data,0.0)/gain
     
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    NOTE:
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata inputs to have DQ extensions added to
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -439,36 +386,12 @@ def add_var(adInputs, outNames=None, suffix=None, log=None,
         (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: 
-        verbosity setting for the log messages to screen,
-        default is 'critical' messages only.
-        Note: independent of logLevel setting, all messages always go 
-        to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, funcName='add_var')
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, funcName='add_var')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -567,16 +490,14 @@ def add_var(adInputs, outNames=None, suffix=None, log=None,
         log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run add_var')
 
-def adu_to_electrons(adInputs, outNames=None, suffix=None, log=None,
-                            logName='gemini.log', logLevel=1, noLogFile=False):
+def adu_to_electrons(adInputs, outNames=None, suffix=None):
     """
     This function will convert the inputs from having pixel values in ADU to 
     that of electrons by use of the arith 'toolbox'.
     
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
 
     Note: 
     the SCI extensions of the input AstroData objects must have 'GAIN'
@@ -595,37 +516,13 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None, log=None,
         (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: 
-         verbosity setting for the log messages to screen,
-         default is 'critical' messages only.
-         Note: independent of logLevel setting, all messages always go 
-         to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
                                       funcName='adu_to_electrons')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -719,8 +616,7 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None, log=None,
                                                             adu_to_electrons')
 
 def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
-                fl_over=False, outNames=None, suffix=None, log=None, 
-                    logName='gemini.log', logLevel=1, noLogFile=False):
+                fl_over=False, outNames=None, suffix=None):
     """
     This function will subtract the biases from the inputs using the 
     CL script gireduce.
@@ -732,10 +628,9 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
     
     NOTE: The inputs to this function MUST be prepared. 
 
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata inputs to be bias subtracted
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -766,37 +661,13 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                    (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: 
-          verbosity setting for the log messages to screen,
-          default is 'critical' messages only.
-          Note: independent of logLevel setting, all messages always go 
-          to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical', 
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile,
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='bias_correct')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
         
     try:
         # Set up counter for looping through outNames list
@@ -833,8 +704,7 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
             # the CL script
             clm=gemt.CLManager(imageIns=ad, imageOutsNames=outNames[count], 
                                refIns=processedBias, suffix=suffix,  
-                               funcName='biasCorrect', logName=logName, 
-                               logLevel=logLevel, noLogFile=noLogFile)
+                               funcName='biasCorrect', log=log)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:               
@@ -851,11 +721,9 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                   # this input file
                   'bias'        :clm.refInsFiles(type='string'),   
                   # This is actually in the default dict but wanted to show it again  
-                  'Stdout'      :gemt.IrafStdout(logName=logName,
-                                                 logLevel=logLevel), 
+                  'Stdout'      :gemt.IrafStdout(), 
                   # This is actually in the default dict but wanted to show it again
-                  'Stderr'      :gemt.IrafStdout(logName=logName,
-                                                 logLevel=logLevel), 
+                  'Stderr'      :gemt.IrafStdout(), 
                   # This is actually in the default dict but wanted to show it again
                   'verbose'     :yes                
                               }
@@ -870,8 +738,7 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                                    }
                 # Grabbing the default params dict and updating it 
                 # with the two above dicts
-                clParamsDict = CLDefaultParamsDict('gireduce', logName=logName,
-                                                   logLevel=logLevel)
+                clParamsDict = CLDefaultParamsDict('gireduce')
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
             
@@ -880,15 +747,13 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                              category='parameters')
                 # Loop through the parameters in the clPrimParams dictionary
                 # and log them
-                gemt.logDictParams(clPrimParams, logName=logName, 
-                                   logLevel=logLevel)
+                gemt.logDictParams(clPrimParams)
                 
                 log.fullinfo('\nParameters adjustable by the user:', 
                              category='parameters')
                 # Loop through the parameters in the clSoftcodedParams 
                 # dictionary and log them
-                gemt.logDictParams(clSoftcodedParams, logName=logName,
-                                   logLevel=logLevel)
+                gemt.logDictParams(clSoftcodedParams)
                 
                 log.debug('calling the gireduce CL script for inputs '+
                                         clm.imageInsFiles(type='string'))
@@ -954,8 +819,7 @@ def bias_correct(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
         raise ScienceError('An error occurred while trying to run bias_correct')     
     
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
-            outNames=None, suffix=None, log=None, logName='gemini.log',
-                                                logLevel=1, noLogFile=False):
+            outNames=None, suffix=None):
     """
     This function will average and combine the SCI extensions of the 
     inputs. It takes all the inputs and creates a list of them and 
@@ -963,12 +827,12 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     average combination file. New VAR frames are made from these 
     combined SCI frames and the DQ frames are propagated through 
     to the final file.
+    
     NOTE: The inputs to this function MUST be prepared. 
 
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata inputs to be combined
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -994,36 +858,13 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always  
-                    go to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                       logLevel, noLogFile, funcName='combine', 
-                                       combinedInputs=True)
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      funcName='combine', combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -1043,8 +884,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
             # the CL script
             clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
                                suffix=suffix, funcName='combine', 
-                               combinedImages=True, logName=logName,  
-                               logLevel=logLevel, noLogFile=noLogFile)
+                               combinedImages=True, log=log)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:
@@ -1060,12 +900,10 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                     'logfile'     :clm.templog.name,  
                     # This is actually in the default dict but wanted to 
                     # show it again       
-                    'Stdout'      :gemt.IrafStdout(logName=logName,
-                                                   logLevel=logLevel), 
+                    'Stdout'      :gemt.IrafStdout(), 
                     # This is actually in the default dict but wanted to 
                     # show it again    
-                    'Stderr'      :gemt.IrafStdout(logName=logName,
-                                                   logLevel=logLevel),
+                    'Stderr'      :gemt.IrafStdout(),
                     # This is actually in the default dict but wanted to 
                     # show it again     
                     'verbose'     :yes,    
@@ -1082,9 +920,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                                     }
                 # Grabbing the default parameters dictionary and updating 
                 # it with the two above dictionaries
-                clParamsDict = CLDefaultParamsDict('gemcombine', 
-                                                   logName=logName,
-                                                   logLevel=logLevel)
+                clParamsDict = CLDefaultParamsDict('gemcombine')
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
                 
@@ -1093,15 +929,13 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                              category='parameters')
                 # Loop through the parameters in the clPrimParams dictionary
                 # and log them
-                gemt.logDictParams(clPrimParams, logName=logName, 
-                                   logLevel=logLevel)
+                gemt.logDictParams(clPrimParams)
                 
                 log.fullinfo('\nParameters adjustable by the user:', 
                              category='parameters')
-                # Loop through the parameters in the clSoftcodedParams dictionary
-                # and log them
-                gemt.logDictParams(clSoftcodedParams, logName=logName, 
-                                   logLevel=logLevel)
+                # Loop through the parameters in the clSoftcodedParams 
+                # dictionary and log them
+                gemt.logDictParams(clSoftcodedParams)
                 
                 log.debug('Calling the gemcombine CL script for input\
                                  list '+clm.imageInsFiles(type='listFile'))
@@ -1145,17 +979,15 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
         log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run combine')
                 
-def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None, 
-                            logName='gemini.log', logLevel=1, noLogFile=False):
+def flat_correct(adInputs, flats=None, outNames=None, suffix=None):
     """
     This function performs a flat correction by dividing the inputs by  
     processed flats, similar to the way gireduce would perform this operation
     but written in pure python in the arith toolbox.
     
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata inputs to have DQ extensions added to
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -1174,36 +1006,13 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None,
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always 
-                    go to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, 
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
                                       funcName='flat_correct') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     if flats==None:
         raise ScienceError('There must be at least one processed flat provided,\
@@ -1264,8 +1073,7 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None, log=None,
         raise ScienceError('An error occurred while trying to run flat_correct')
                 
 def measure_iq(adInputs, function='both', display=True, qa=True,
-               keepDats=False, log=None, logName='gemini.log', logLevel=1, 
-               noLogFile=False):
+               keepDats=False):
     """
     This function will detect the sources in the input images and fit
     both Gaussian and Moffat models to their profiles and calculate the 
@@ -1273,8 +1081,7 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
     
     Since the resultant parameters are formatted into one nice string and 
     normally recorded in a logger message, the returned dictionary of these 
-    parameters may be ignored. BUT, if the user wishes to completely shut off
-    the logging, then the returned dictionary of the results can be useful.
+    parameters may be ignored. 
     The dictionary's format is:
     {adIn1.filename:formatted results string for adIn1, 
     adIn2.filename:formatted results string for adIn2,...}
@@ -1285,10 +1092,9 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
     .dat filename 'measure_iqN20100311S0090.dat'
     
     NOTE:
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     Warning:
     ALL inputs of adInputs must have either 1 SCI extension, indicating they 
@@ -1323,37 +1129,15 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always 
-                     go to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, None, 'tmp', log, logName,
-                                      logLevel, noLogFile, 
+    sfm = gemt.ScienceFunctionManager(adInputs, None, 'tmp', 
                                       funcName='measure_iq') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
     # NOTE: outNames are not needed, but sfm.startUp creates them automatically.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
+    
     
     try:
         # Importing getiq module to perform the source detection and IQ
@@ -1462,11 +1246,10 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run measure_iq')                              
+        raise #ScienceError('An error occurred while trying to run measure_iq')                              
                 
 def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',  
-                fl_vardq='AUTO', outNames=None, suffix=None, log=None,
-                logName='gemini.log', logLevel=1, noLogFile=False):
+                fl_vardq='AUTO', outNames=None, suffix=None):
     """
     This function will mosaic the SCI frames of the input images, 
     along with the VAR and DQ frames if they exist.  
@@ -1478,10 +1261,9 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
     
     NOTE: The inputs to this function MUST be prepared. 
 
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata inputs to mosaic the extensions of
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -1510,36 +1292,13 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always  
-                    go to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical', 
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, 
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='mosaic_detectors') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # loading and bringing the pyraf related modules into the name-space
@@ -1555,9 +1314,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
         # Preparing input files, lists, parameters... for input to 
         # the CL script
         clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
-                           suffix=suffix, funcName='mosaicDetectors',  
-                           logName=logName, logLevel=logLevel, 
-                           noLogFile=noLogFile)
+                           suffix=suffix, funcName='mosaicDetectors', log=log)
         
         # Check the status of the CLManager object, True=continue, False= issue warning
         if clm.status: 
@@ -1571,9 +1328,9 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
               # This returns a unique/temp log file for IRAF 
               'logfile'     :clm.templog.name,
               # This is actually in the default dict but wanted to show it again     
-              'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
+              'Stdout'      :gemt.IrafStdout(), 
               # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
+              'Stderr'      :gemt.IrafStdout(), 
               # This is actually in the default dict but wanted to show it again
               'verbose'     :yes                
                           }
@@ -1586,8 +1343,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                               }
             # Grabbing the default params dict and updating it with 
             # the two above dicts
-            clParamsDict = CLDefaultParamsDict('gmosaic', logName=logName,
-                                               logLevel=logLevel)
+            clParamsDict = CLDefaultParamsDict('gmosaic')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)      
                 
@@ -1596,14 +1352,13 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                          category='parameters')
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gemt.logDictParams(clPrimParams, logName=logName, logLevel=logLevel)
+            gemt.logDictParams(clPrimParams)
             
             log.fullinfo('\nParameters adjustable by the user:', 
                          category='parameters')
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gemt.logDictParams(clSoftcodedParams, logName=logName,
-                               logLevel=logLevel)
+            gemt.logDictParams(clSoftcodedParams)
             
             log.debug('calling the gmosaic CL script for inputs '+
                                         clm.imageInsFiles(type='string'))
@@ -1623,7 +1378,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
             imageOuts, refOuts, arrayOuts = clm.finishCL()   
             
             # Renaming for symmetry
-            adOutputs=imageOuts
+            adOutputs = imageOuts
                 
             # Wrap up logging
             i=0
@@ -1657,8 +1412,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                                                             mosaic_detectors') 
                 
 def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO', 
-                outNames=None, suffix=None, log=None, logName='gemini.log',  
-                logLevel=1, noLogFile=False):
+                outNames=None, suffix=None):
     """
     This function will combine the input flats (adInputs) and then normalize  
     them using the CL script giflat.
@@ -1670,10 +1424,9 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
     
     NOTE: The inputs to this function MUST be prepared. 
 
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata input flat(s) to be combined and normalized
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -1702,37 +1455,14 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
             (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always  
-                    go to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                       logLevel, noLogFile,  
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
                                        funcName='normalize_flat', 
                                        combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # loading and bringing the pyraf related modules into the name-space
@@ -1749,8 +1479,7 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
         # the CL script
         clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
                            suffix=suffix, funcName='normalizeFlat', 
-                           logName=logName, combinedImages=True, 
-                           logLevel=logLevel, noLogFile=noLogFile)
+                           log=log, combinedImages=True)
         
         # Check the status of the CLManager object, True=continue, False= issue warning
         if clm.status:                 
@@ -1763,9 +1492,9 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
               # This returns a unique/temp log file for IRAF  
               'logfile'     :clm.templog.name,         
               # This is actually in the default dict but wanted to show it again
-              'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel),   
+              'Stdout'      :gemt.IrafStdout(),   
               # This is actually in the default dict but wanted to show it again  
-              'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
+              'Stderr'      :gemt.IrafStdout(), 
               # This is actually in the default dict but wanted to show it again    
               'verbose'     :yes                    
                           }
@@ -1778,8 +1507,7 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
                                }
             # Grabbing the default params dict and updating it 
             # with the two above dicts
-            clParamsDict = CLDefaultParamsDict('giflat', logName=logName,
-                                               logLevel=logLevel)
+            clParamsDict = CLDefaultParamsDict('giflat')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
@@ -1788,14 +1516,13 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
                          category='parameters')
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gemt.logDictParams(clPrimParams, logName=logName, logLevel=logLevel)
+            gemt.logDictParams(clPrimParams)
             
             log.fullinfo('\nParameters adjustable by the user:', 
                          category='parameters')
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gemt.logDictParams(clSoftcodedParams,logName=logName, 
-                               logLevel=logLevel)
+            gemt.logDictParams(clSoftcodedParams)
             
             log.debug('Calling the giflat CL script for inputs list '+
                   clm.imageInsFiles(type='listFile'))
@@ -1834,16 +1561,16 @@ def normalize_flat(adInputs, fl_trim=False, fl_over=False, fl_vardq='AUTO',
         raise ScienceError('An error occurred while trying to run \
                                                                 normalize_flat')    
     
-def overscan_trim(adInputs, outNames=None, suffix=None, log=None,  
-                            logName='gemini.log', logLevel=1,  noLogFile=False):
+def overscan_trim(adInputs, outNames=None, suffix=None):
     """
     This function uses AstroData to trim the overscan region 
     from the input images and update their headers.
     
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    NOTE: The inputs to this function MUST be prepared. 
+    
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata inputs to have DQ extensions added to
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -1856,36 +1583,13 @@ def overscan_trim(adInputs, outNames=None, suffix=None, log=None,
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always  
-                    go to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, 
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
                                       funcName='overscan_trim') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list

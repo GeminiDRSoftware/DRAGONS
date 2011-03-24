@@ -10,7 +10,7 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ToolboxError
 
-def biassecStrTonbiascontam(ad, biassec, logName=None, logLevel=1):
+def biassecStrTonbiascontam(ad, biassec):
     """ 
     This function works with nbiascontam() of the CLManager. 
     It will find the largest horizontal difference between biassec and 
@@ -23,19 +23,8 @@ def biassecStrTonbiascontam(ad, biassec, logName=None, logLevel=1):
     :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
     :type biassec: string  
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
-    
     """
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel) 
+    log = gemLog.getGeminiLog() 
     try:
         # Split up the input triple list into three separate ones
         ccdStrList = biassec.split('],[')
@@ -104,8 +93,7 @@ def biassecStrTonbiascontam(ad, biassec, logName=None, logLevel=1):
                   'nbiascontam, so using default value = 4')
         return 4 
 
-def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False,
-                     logName=None, logLevel=1):
+def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False):
     """
     This function is for updating the file names of astrodata objects.
     It can be used in a few different ways.  For simple post/pre pending of
@@ -136,29 +124,19 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='', strip=False,
                   defined for this to work.
     :type strip: Boolean
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
+    ::
     
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
-    
-    ex. 
-    fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
-    result: 'N20020214S022_prepared.fits'
+     fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
+     result: 'N20020214S022_prepared.fits'
         
-    fileNameUpdater(infilename='N20020214S022_prepared.fits', suffix='_biasCorrected')
-    result: 'N20020214S022_prepared_biasCorrected.fits'
+     fileNameUpdater(infilename='N20020214S022_prepared.fits', suffix='_biasCorrected')
+     result: 'N20020214S022_prepared_biasCorrected.fits'
         
-    fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
-    result: "testversion_N20020214S022.fits"
+     fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
+     result: "testversion_N20020214S022.fits"
     
     """
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel) 
+    log = gemLog.getGeminiLog() 
 
     # Check there is a name to update
     if infilename=='':
@@ -220,7 +198,7 @@ def listFileMaker(list=None, listName=None):
         except:
             raise ToolboxError("Could not write inlist file for stacking.") 
         
-def logDictParams(indict, logName=None, logLevel=1):
+def logDictParams(indict):
     """ A function to log the parameters in a provided dictionary.  Main use
     is to log the values in the dictionaries of parameters for function 
     calls using the ** method.
@@ -230,23 +208,13 @@ def logDictParams(indict, logName=None, logLevel=1):
     :type indict: dictionary. 
                   ex. {'param1':param1_value, 'param2':param2_value,...}
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
+    log = gemLog.getGeminiLog()
     for key in indict:
         log.fullinfo(repr(key)+' = '+repr(indict[key]), 
                      category='parameters')
         
-def nbiascontam(adInputs, biassec=None, logName=None, logLevel=1):
+def nbiascontam(adInputs, biassec=None):
     """
     This function will find the largest difference between the horizontal 
     component of every BIASSEC value and those of the biassec parameter. 
@@ -260,17 +228,6 @@ def nbiascontam(adInputs, biassec=None, logName=None, logLevel=1):
     :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
     :type biassec: string 
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always  
-                     goto the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
     """
         
     # Prepare a stored value to be compared between the inputs
@@ -279,8 +236,7 @@ def nbiascontam(adInputs, biassec=None, logName=None, logLevel=1):
     for ad in adInputs:
         # Pass the retrieved value to biassecStrToBiasContam function
         # to do the work in finding the difference of the biassec's
-        val = biassecStrTonbiascontam(ad, biassec, logName=logName, 
-                                      logLevel=logLevel)
+        val = biassecStrTonbiascontam(ad, biassec)
         # Check if value returned for this input is larger. Keep the largest
         if val > retval:
             retval = val
@@ -348,7 +304,7 @@ def secStrToIntList(string):
     retl.append(int(Xs[1]))
     return retl
 
-def stdObsHdrs(ad, logName=None, logLevel=1):
+def stdObsHdrs(ad):
     """ 
     This function is used by standardizeHeaders in primitives_GEMINI.
         
@@ -362,18 +318,8 @@ def stdObsHdrs(ad, logName=None, logLevel=1):
     :param ad: astrodata instance to perform header key updates on
     :type ad: an AstroData instance
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel) 
+    log = gemLog.getGeminiLog() 
     # Keywords that are updated/added for all Gemini PHUs 
     ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
                       'Number of science extensions')
@@ -445,7 +391,7 @@ def stdObsHdrs(ad, logName=None, logLevel=1):
         log.fullinfo('EXPTIME = '+str(ad.phuGetKeyValue('EXPTIME')), category='header' )
         log.fullinfo('-'*50, category='header')
 
-def stdObsStruct(ad, logName=None, logLevel=1):
+def stdObsStruct(ad):
     """ 
     This function is used by standardizeStructure in primitives_GEMINI.
     
@@ -455,23 +401,13 @@ def stdObsStruct(ad, logName=None, logLevel=1):
     :param ad: astrodata instance to perform header key updates on
     :type ad: an AstroData instance
     
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used., None causes default to be used.
-    
-    :param logLevel: Verbosity setting for the log messages to screen,
-                     default is 'critical' messages only.
-                     Note: independent of logLevel setting, all messages always go 
-                     to the logfile if noLogFile=False.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to screen.
-                    OR the message level as a string (ie. 'critical', 'status', 
-                    'fullinfo'...)
     """
-    log=gemLog.getGeminiLog(logName=logName, logLevel=logLevel)    
+    log = gemLog.getGeminiLog()    
     # Formatting so logger looks organized for these messages
-    log.fullinfo('****************************************************', 
+    log.fullinfo('*'*50, 
                  category='header') 
     log.fullinfo('file = '+ad.filename, category='header')
-    log.fullinfo('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~', 
+    log.fullinfo('~'*50, 
                  category='header')
     # A loop to add the missing/needed keywords in the SCI extensions
     for ext in ad['SCI']:
@@ -483,7 +419,7 @@ def stdObsStruct(ad, logName=None, logLevel=1):
                      ' keywords updated/added:\n', category='header')       
         log.fullinfo('EXTNAME = '+'SCI', category='header' )
         log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), category='header' )
-        log.fullinfo('---------------------------------------------------', 
+        log.fullinfo('-'*50, 
                      category='header') 
         
 #---------------------------------OBJECTS/CLASES--------------------------------
@@ -528,13 +464,10 @@ class CLManager(object):
     combinedImages = None
     templog = None
     log = None
-    logName = None
-    logLevel=1
      
     def __init__(self, imageIns=None, refIns=None, arrayIns=None, suffix=None,  
                   imageOutsNames=None, refOutsNames=None, numArrayOuts=None,
-                 combinedImages=False, funcName=None, logName=None,  
-                 logLevel=1, noLogFile=False):
+                 combinedImages=False, funcName=None, log=None):
         """
         This instantiates all the globally accessible variables (within the 
         CLManager class) and prepares the inputs for use in CL scripts by 
@@ -632,21 +565,12 @@ class CLManager(object):
                          track down any errors that might occur.
         :type funcName: String
         
-        :param logName: Name of the log file to write log messages to, 
-                        if noLogFile=False.
-        :type logName: String, None causes default to be used., None causes default to be used.
-        
-        :param logLevel: Verbosity setting for the log messages to screen,
-                         default is 'critical' messages only.
-                         Note: independent of logLevel setting, all messages 
-                         always go to the logfile if noLogFile=False.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen.
-                        OR the message level as a string (ie. 'critical', 
-                        'status', 'fullinfo'...)
-    
-        :param noLogFile: A boolean to make it so no log file is created
-        :type noLogFile: Python boolean (True/False)
+        :param log: logger object to send log messges to
+        :type log: A gemLog object from astrodata/adutils/gemLog.py .
+                   It is an upgraded version of the Python logger for use 
+                   with all new scripts in gemini_python/ .
+                   If None, then a null logger object will be created and used
+                   (ie, no log file, no messages to screen).  
         
         """
         # Casting the two types of input images to lists for internal use, 
@@ -679,12 +603,12 @@ class CLManager(object):
         if self.status:
             # Create a temporary log file object
             self.templog = tempfile.NamedTemporaryFile() 
-            # Get the REAL log file object
-            self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                                           noLogFile=noLogFile)
+            if not log:
+                # Get the REAL log file object
+                self.log = gemLog.getGeminiLog()
+            else:
+                self.log = log
             # load these to global early as they are needed below
-            self.logName = logName
-            self.logLevel = logLevel
             self.suffix = suffix
             # start up global lists
             if imageIns!=None:
@@ -841,15 +765,11 @@ class CLManager(object):
             self.imageOutsNames = []
             if self.combinedImages and (self.suffix!=None):
                 name = fileNameUpdater(adIn=self.imageIns[0], 
-                                       suffix=self.suffix, 
-                                       logName=self.logName,
-                                       logLevel=self.logLevel)
+                                       suffix=self.suffix)
                 self.imageOutsNames.append(name)
             elif (not self.combinedImages) and (self.suffix!=None):
                 for ad in self.imageIns:
-                    name = fileNameUpdater(adIn=ad, suffix=self.suffix,
-                                           logName=self.logName, 
-                                           logLevel=self.logLevel)
+                    name = fileNameUpdater(adIn=ad, suffix=self.suffix)
                     self.imageOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of imageOutsNames can '+
@@ -1033,9 +953,7 @@ class CLManager(object):
                 # Load up the _preCLimageNames list with the input's filename
                 self._preCLimageNames.append(ad.filename)
                 # Strip off all postfixes and prefix filename with a unique prefix
-                name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, 
-                                       logName=self.logName,
-                                       logLevel= self.logLevel)
+                name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True)
                 # store the unique name in imageInsCLdiskNames for later reference
                 self.imageInsCLdiskNames.append(name)
                 # Log the name of this temporary file being written to disk
@@ -1052,9 +970,7 @@ class CLManager(object):
                 # Load up the _preCLrefnames list with the input's filename
                 self._preCLrefnames.append(ad.filename)
                 # Strip off all suffixs and prefix filename with a unique prefix
-                name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True, 
-                                       logName=self.logName,
-                                       logLevel= self.logLevel)
+                name = fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True)
                 # store the unique name in refInsCLdiskNames for later reference
                 self.refInsCLdiskNames.append(name)
                 # Log the name of this temporary file being written to disk
@@ -1151,9 +1067,7 @@ class CLManager(object):
             self.refOutsNames = []
             if (self.suffix!=None):
                 for ad in self.refIns:
-                    name = fileNameUpdater(adIn=ad, suffix=self.suffix, 
-                                           logName=self.logName,
-                                           logLevel=self.logLevel)
+                    name = fileNameUpdater(adIn=ad, suffix=self.suffix)
                     self.refOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of refOutsNames can '+
@@ -1187,23 +1101,13 @@ class IrafStdout():
     """
     log=None
     
-    def __init__(self, logName=None, logLevel=1):
+    def __init__(self):
         """ 
         A function that is needed IRAF but not used in our wrapping its
         scripts.
             
-        :param logName: Name of the log file, default is 'gemini.log'
-        :type logName: String, None causes default to be used., None causes default to be used.
-        
-        :param logLevel: Verbosity setting for the log messages to screen,
-                         default is 'critical' messages only.
-                         Note: independent of logLevel setting, all messages   
-                         always go to the logfile if noLogFile=False.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
         """
-        self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel)
+        self.log = gemLog.getGeminiLog()
     
     def flush(self):
         """ A function that is needed IRAF but not used in our wrapping its
@@ -1235,24 +1139,17 @@ class ScienceFunctionManager():
     suffix = None
     funcName = None
     combinedInputs = False
-    log = None
-    logName = None
-    logLevel = 1
-    noLogFile = False    
+    log = None  
     
-    def __init__(self, adInputs=None, outNames=None, suffix=None, log=None,
-                 logName=None, logLevel=1, noLogFile=False, funcName=None,
+    def __init__(self, adInputs=None, outNames=None, suffix=None, funcName=None,
                  combinedInputs=False):
         """
         This will load up the global variables to use throughout the manager
         functions and instantiate the logger object for use in here and 
         back in the 'user level function' that is utilizing this manager.
         
-        If a log object is passed into the 'log' parameter, then the values of
-        the logName, logLevel and noLogFile will be extracted from that log 
-        object using its built in functions and logic.  These values will then
-        be passed back during startUp() for use in the 'user level function'
-        that is utilizing this manager.  
+        Either a 'main' type logger object, if it exists, or a null logger will
+        be returned from startUp() along with the checked adInputs and outNames.
         
         :param adInputs: Astrodata inputs to have DQ extensions added to
         :type adInputs: Astrodata objects, either a single or a list of objects.
@@ -1276,48 +1173,14 @@ class ScienceFunctionManager():
                                overridden by providing outNames. 
         :type combinedInputs: Python boolean (True/False)
         
-        :param log: logger object to send log messges to
-        :type log: A gemLog object from astrodata/adutils/gemLog.py .
-                   It is an upgraded version of the Python logger for use 
-                   with all new scripts in gemini_python/ .
-                   Note: the logName, logLevel and noLogFile are not needed if
-                   'log' parameter is defined.
-                   
-        :param logName: Name of the log file, default is 'gemini.log'
-        :type logName: String, None causes default to be used., None causes default to be used.
-        
-        :param logLevel: Verbosity setting for the log messages to screen,
-                         default is 'critical' messages only.
-                         Note: independent of logLevel setting, all messages   
-                         always go to the logfile if noLogFile=False.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
-        
-        :param noLogFile: A boolean to make it so no log file is created
-        :type noLogFile: Python boolean (True/False)
         """ 
         self.adInputs = adInputs
         self.outNames = outNames
         self.suffix = suffix
         self.funcName = funcName
         self.combinedInputs = combinedInputs
-        # Handling the loading of the logger, OR loading of its params to be
-        # passed back to the 'user level function' in startUp()
-        if log==None:
-            self.logName = logName
-            self.logLevel = logLevel
-            self.noLogFile = noLogFile
-            self.log = gemLog.getGeminiLog(logName=logName, logLevel=logLevel, 
-                                           noLogFile=noLogFile)
-        else:
-            self.log = log
-            self.logName = log.logname()
-            self.logLevel = log.levelChecker()
-            if self.logName=='/dev/null':
-                self.noLogFile = True
-            else:
-                self.noLogFile = False
+        # loading of the logger 
+        self.log = gemLog.getGeminiLog()
     
     def autoVardq(self, fl_vardq):
         """
@@ -1446,24 +1309,20 @@ class ScienceFunctionManager():
                     self.log.debug('Calling gemt.fileNameUpdater on '+
                                    ad.filename)
                     outName = fileNameUpdater(infilename=ad.filename,
-                                              suffix=self.suffix, strip=False, 
-                                              logName=self.logName,
-                                              logLevel=self.logLevel)
+                                              suffix=self.suffix, strip=False)
                     self.outNames.append(outName)
                 else:
                     for ad in self.adInputs:
                         self.log.debug('Calling gemt.fileNameUpdater on '+
                                        ad.filename)
                         outName = fileNameUpdater(infilename=ad.filename,
-                                                  suffix=self.suffix, strip=False, 
-                                                  logName=self.logName,
-                                                  logLevel=self.logLevel)
+                                                  suffix=self.suffix, 
+                                                  strip=False)
                         self.outNames.append(outName)
                 
             # return the now checked and loaded up (if needed) adInputs, 
-            # outNames and log object with its important parameters.
-            return (self.adInputs, self.outNames, self.log, self.logName, 
-                    self.logLevel, self.noLogFile)
+            # outNames and log object.
+            return (self.adInputs, self.outNames, self.log)
             
         except:
             # logging the exact message from the actual exception that was 

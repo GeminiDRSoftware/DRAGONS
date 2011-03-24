@@ -10,7 +10,6 @@ import numpy as np
 from copy import deepcopy
 
 from astrodata.AstroData import AstroData
-from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.Errors import ScienceError
 from gempy.instruments import geminiTools  as gemt
@@ -20,8 +19,7 @@ from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
 
 def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
-            outNames=None, suffix=None, log=None, logName='gemini.log', 
-                                                logLevel=1, noLogFile=False):
+            outNames=None, suffix=None):
     """
     This function uses the CL script gireduce to subtract the overscan 
     from the input images.
@@ -35,10 +33,9 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
     note
     The inputs to this function MUST be prepared.
 
-    String representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
 
     FOR FUTURE
     This function has many GMOS dependencies that would be great to work out
@@ -74,38 +71,14 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
     :param suffix: string to postpend on the end of the input filenames 
                    (or outNames if not None) for the output filenames.
     :type suffix: string
-    
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: 
-         verbosity setting for the log messages to screen,
-         default is 'critical' messages only.
-         Note: independent of logLevel setting, all messages always go 
-         to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical', 
-                    'status', 'fullinfo'...)
 
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, 
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='overscan_subtract') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try: 
         # loading and bringing the pyraf related modules into the name-space
@@ -125,8 +98,7 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
         # the CL script
         clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
                            suffix=suffix, funcName='overscanSubtract',   
-                           logName=logName, logLevel=logLevel, 
-                           noLogFile=noLogFile)
+                           log=log)
         
         # Check the status of the CLManager object, True=continue, False= issue warning
         if clm.status:                     
@@ -140,17 +112,16 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
               'logfile'     :clm.templog.name,      
               'fl_over'     :yes, 
               # This is actually in the default dict but wanted to show it again
-              'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
+              'Stdout'      :gemt.IrafStdout(), 
               # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
+              'Stderr'      :gemt.IrafStdout(), 
               # This is actually in the default dict but wanted to show it again
               'verbose'     :yes                
                           }
             
             # Taking care of the biasec->nbiascontam param
             if not biassec == '':
-                nbiascontam = gemt.nbiascontam(adInputs, biassec, logName, 
-                                               logLevel)
+                nbiascontam = gemt.nbiascontam(adInputs, biassec)
                 log.fullinfo('nbiascontam parameter was updated to = '+
                              str(nbiascontam))
             else: 
@@ -168,8 +139,7 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                                }
             # Grabbing the default params dict and updating it with 
             # the two above dicts
-            clParamsDict = CLDefaultParamsDict('gireduce', logName=logName,
-                                               logLevel=logLevel)
+            clParamsDict = CLDefaultParamsDict('gireduce')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
@@ -178,14 +148,13 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                          category='parameters')
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gemt.logDictParams(clPrimParams, logName=logName, logLevel=logLevel)
+            gemt.logDictParams(clPrimParams)
             
             log.fullinfo('\nParameters adjustable by the user:', 
                          category='parameters')
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gemt.logDictParams(clSoftcodedParams, logName=logName, 
-                               logLevel=logLevel)
+            gemt.logDictParams(clSoftcodedParams)
             
             log.debug('Calling the gireduce CL script for inputs '+
                   clm.imageInsFiles(type='string'))
@@ -239,18 +208,16 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                                                             overscan_subtract')    
                 
 def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
-            outNames=None, suffix=None, log=None, logName='gemini.log', 
-            logLevel=1, noLogFile=False):
+            outNames=None, suffix=None):
     """
     This primitive will scale and subtract the fringe frame from the inputs.
     It utilizes the Python re-written version of cl script girmfringe now called
     rmImgFringe in gmosTools to do the work.
     
     NOTE:
-    String representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
 
     FOR FUTURE
     This function has many GMOS dependencies that would be great to work out
@@ -286,37 +253,13 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
                    (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: 
-         verbosity setting for the log messages to screen,
-         default is 'critical' messages only.
-         Note: independent of logLevel setting, all messages always go 
-         to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything 
-                    to screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                      logLevel, noLogFile, 
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='fringe_correct') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames/BPMs lists
@@ -340,13 +283,12 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
                          'fl_statscale'   :fl_statscale,
                          'statsec'        :statsec,
                          'scale'          :scale,
-                         'logLevel'       :logLevel
                          }
             
             # Logging values set in the parameters dictionary above
             log.fullinfo('\nParameters being used for rmImgFringe '+
                          'function:\n')
-            gemt.logDictParams(paramDict, logName=logName, logLevel=logLevel)
+            gemt.logDictParams(paramDict)
             
             # Calling the rmImgFringe function to perform the fringe 
             # corrections, this function will return the corrected image as
@@ -378,18 +320,16 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
                                                                 fringe_correct')
     
 def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median', 
-            outNames=None, suffix=None, log=None, logName='gemini.log', 
-                                                logLevel=1, noLogFile=False):
+            outNames=None, suffix=None):
     """
     This function will create and return a single fringe image from all the 
     inputs.  It utilizes the CL script gifringe to create the fringe image.
     
     NOTE: The inputs to this function MUST be prepared. 
 
-    A string representing the name of the log file to write all log messages to
-    can be defined, or a default of 'gemini.log' will be used.  If the file
-    all ready exists in the directory you are working in, then this file will 
-    have the log messages during this function added to the end of it.
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
     
     :param adInputs: Astrodata inputs to be combined
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -413,37 +353,14 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                     (or outNames if not None) for the output filenames.
     :type suffix: string
     
-    :param log: logger object to send log messges to
-    :type log: A gemLog object from astrodata/adutils/gemLog.py .
-               It is an upgraded version of the Python logger for use 
-               with all new scripts in gemini_python/ .
-               Note: the logName, logLevel and noLogFile will be automatically
-               determined from the logger object passed in to 'log' with the 
-               ScienceFunctionManager.startUp() function.
-    
-    :param logName: Name of the log file, default is 'gemini.log'
-    :type logName: String, None causes default to be used.
-    
-    :param logLevel: verbosity setting for the log messages to screen,
-                    default is 'critical' messages only.
-                    Note: independent of logLevel setting, all messages always  
-                    go to the logfile if it is not turned off.
-    :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                    screen. OR the message level as a string (ie. 'critical',  
-                    'status', 'fullinfo'...)
-                    
-    :param noLogFile: A boolean to make it so no log file is created
-    :type noLogFile: Python boolean (True/False)
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, log, logName,
-                                       logLevel, noLogFile, 
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
                                        funcName='make_fringe_frame_imaging', 
                                        combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # and the log params for later use if needed.
-    adInputs, outNames, log, logName, logLevel, noLogFile = sfm.startUp()
+    adInputs, outNames, log = sfm.startUp()
     
     try:
         # Set up counter for looping through outNames list
@@ -469,8 +386,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
             # the CL script
             clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
                                suffix=suffix, funcName='makeFringeFrame', 
-                               combinedImages=True, logName=logName,   
-                               logLevel=logLevel, noLogFile=noLogFile)
+                               combinedImages=True, log=log)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:                     
@@ -486,10 +402,10 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                     'logfile'     :clm.templog.name,  
                     # This is actually in the default dict but wanted to 
                     # show it again       
-                    'Stdout'      :gemt.IrafStdout(logName=logName,logLevel=logLevel), 
+                    'Stdout'      :gemt.IrafStdout(), 
                     # This is actually in the default dict but wanted to 
                     # show it again    
-                    'Stderr'      :gemt.IrafStdout(logName=logName,logLevel=logLevel),
+                    'Stderr'      :gemt.IrafStdout(),
                     # This is actually in the default dict but wanted to 
                     # show it again     
                     'verbose'     :yes                    
@@ -504,8 +420,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                                     }
                 # Grabbing the default parameters dictionary and updating 
                 # it with the two above dictionaries
-                clParamsDict = CLDefaultParamsDict('gifringe', logName=logName,
-                                                   logLevel=logLevel)
+                clParamsDict = CLDefaultParamsDict('gifringe')
                 clParamsDict.update(clPrimParams)
                 clParamsDict.update(clSoftcodedParams)
                 
@@ -513,12 +428,10 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 log.fullinfo('\nParameters set by the CLManager or  '+
                          'dictated by the definition of the primitive:\n', 
                          category='parameters')
-                gemt.logDictParams(clPrimParams, logName=logName, 
-                                   logLevel=logLevel)
+                gemt.logDictParams(clPrimParams)
                 log.fullinfo('\nUser adjustable parameters in the '+
                              'parameters file:\n', category='parameters')
-                gemt.logDictParams(clSoftcodedParams, logName=logName,
-                                   logLevel=logLevel)
+                gemt.logDictParams(clSoftcodedParams)
                 
                 log.debug('Calling the gifringe CL script for input list '+
                               clm.imageInsFiles(type='listFile'))
