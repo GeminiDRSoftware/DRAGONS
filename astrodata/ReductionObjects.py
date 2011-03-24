@@ -2,10 +2,10 @@ import re
 import os
 import traceback
 from astrodata import AstroData
-
 from astrodata.adutils import gemLog
 
-log = gemLog.getGeminiLog()
+log = None
+
 class ReductionExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -30,6 +30,9 @@ class ReductionObject(object):
     
     def __init__(self):
         self.primDict= {}
+        global log
+        if log==None:
+                log = gemLog.getGeminiLog()
     
     def init(self, rc):
         """ This member is purely for overwriting.  Controllers should call this
@@ -290,7 +293,11 @@ usePRS = True
 prs = None
 def commandClause(ro, coi):
     global prs
+    global log
     
+    if log==None:
+        log = gemLog.getGeminiLog()
+        
     coi.processCmdReq()
     while (coi.paused):
         time.sleep(.100)
@@ -320,7 +327,8 @@ def commandClause(ro, coi):
                 
                 # print "r396:", calurl
                 if calurl == None:
-                    # @@NOTE: should log no calibrations found
+                    log.critical('No '+str(typ)+' calibration file found for '+\
+                                str(fn))
                     return None
                     # this is not fatal because perhaps there isn't a calibration
                     # the system checks both the local and central source

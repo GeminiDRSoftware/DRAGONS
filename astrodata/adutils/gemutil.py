@@ -6,7 +6,7 @@ import time
 
 from astrodata.adutils import gemLog
 
-log = gemLog.getGeminiLog()
+log = None
 
 """This file contains the following utilities:
     imageName (image, rawpath='', prefix='auto', observatory='gemini-north',
@@ -94,6 +94,12 @@ def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
     @return: image name string with .fits
     @rtype: string
     """
+    # retrieve global logger object
+    global log
+    if log==None:
+        # instantiate the logger object and put into the global variable 
+        log = gemLog.getGeminiLog()
+        
     # loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
     iraf = pyraf.iraf
@@ -178,6 +184,11 @@ def appendSuffix(filename, suffix):
     @rtype: string
     
     """
+    # retrieve global logger object
+    global log
+    if log==None:
+        # instantiate the logger object and put into the global variable 
+        log = gemLog.getGeminiLog()
 
     found = False
     # Extensions is a list of recognized filename extensions.
@@ -226,7 +237,12 @@ def replaceSuffix(filename, suffix):
     @return: the input file name with the suffix included
     @rtype: string
     """
-
+    # retrieve global logger object
+    global log
+    if log==None:
+        # instantiate the logger object and put into the global variable 
+        log = gemLog.getGeminiLog()
+    
     found = False
     # Extensions is a list of recognized filename extensions.
     for extn in extensions:
@@ -424,6 +440,12 @@ def printlog(text, logfile=None, verbose=True):
     @param verbose: if True, then also print to standard output
     @type verbose: boolean
     """
+    # retrieve global logger object
+    global log
+    if log==None:
+        # instantiate the logger object and put into the global variable 
+        log = gemLog.getGeminiLog()
+        
 
     if logfile == 'STDOUT':
         logfile = None

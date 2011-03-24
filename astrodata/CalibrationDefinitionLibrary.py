@@ -10,7 +10,6 @@ import gdpgutil
 from ReductionObjectRequests import CalibrationRequest
 #------------------------------------------------------------------------------ 
 from astrodata.adutils import gemLog
-log = gemLog.getGeminiLog()
 
 class CDLExcept:
     """This class is an exception class for the Calculator module"""
@@ -37,7 +36,8 @@ class CalibrationDefinitionLibrary( object ):
     '''
     This class deals with obtaining request data from XML calibration files and generating 
     the corresponding request.    
-    '''    
+    '''  
+    log=None  
     
     def __init__( self ):
         '''
@@ -45,6 +45,9 @@ class CalibrationDefinitionLibrary( object ):
         '''
         self.xmlIndex = {}
         self.updateXmlIndex()
+        # instantiate the logger object and put into the global variable 
+        self.log = gemLog.getGeminiLog()
+            
         
     def updateXmlIndex(self):
         '''
@@ -73,7 +76,7 @@ class CalibrationDefinitionLibrary( object ):
         
         @return: Returns a list of Calibration Request Events.
         @rtype: list
-        """
+        """        
         reqEvents = []
         
         for inp in inputs:
@@ -89,15 +92,15 @@ class CalibrationDefinitionLibrary( object ):
                                  "is available " + \
                                  "to Calibration Service." 
                     msg = msg % inp.filename
-                    log.warning(msg)
+                    self.log.warning(msg)
                 else:
-                    log.status("Writing in-memory AstroData instance " +
+                    self.log.status("Writing in-memory AstroData instance " +
                                "to new disk file (%s) to ensure availability " +
                                "to Calibration Service." % inp.filename)
                 try:
                     inp.write(clobber = True)
                 except astrodata.data.ADREADONLY:
-                    log.warning("Skipped writing dataset, as it was "
+                    self.log.warning("Skipped writing dataset, as it was "
                                 "readonly input. This write "
                                 "is done to ensure the file in memory is on disk "
                                 "as the calibration system inspects the file itself. "

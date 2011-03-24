@@ -34,7 +34,6 @@ centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
 
-log=gemLog.getGeminiLog()
 #------------------------------------------------------------------------------ 
 
 class RecipeExcept:

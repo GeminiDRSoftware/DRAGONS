@@ -3,7 +3,7 @@ import strutil
 
 from astrodata.adutils import gemLog
 
-log = gemLog.getGeminiLog()
+log = None
  
 """This file contains the following utilities:
 
@@ -40,6 +40,9 @@ def checkImageParam(image, logBadlist=False):
     @rtype: list, None
     
     """
+    global log
+    if log==None:
+        log = gemLog.getGeminiLog()
 
     root = os.path.dirname(image)
     imageName = os.path.basename(image)
@@ -131,6 +134,10 @@ def checkOutputParam(outfile, defaultValue='out.fits'):
             None is returned.
     @rtype: list, None
     """
+    global log
+    if log==None:
+        log = gemLog.getGeminiLog()
+        
     root = os.path.dirname(outfile)
     outfileName = os.path.basename(outfile)
     outList = []    
@@ -195,7 +202,10 @@ def verifyOutlist( inlist, outlist ):
     @type outlist: list    
     
     """
-   
+    global log
+    if log==None:
+        log = gemLog.getGeminiLog()
+    
     try:    
         if outlist == []:
             # Will append unique filenames if none exist in outlist             
@@ -253,6 +263,10 @@ def checkParam(parameter, paramType, defaultValue, compareValue=0.0):
             fails comparison, or None if errors.
     @rtype: paramType or None
     """
+    global log
+    if log==None:
+        log = gemLog.getGeminiLog()
+        
     if type(parameter) == paramType:
         if (paramType == type(0)) or (paramType == type(0.0)):
             if parameter > compareValue:

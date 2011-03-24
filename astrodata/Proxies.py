@@ -8,7 +8,7 @@ import select
 import socket
 from astrodata.adutils import gemLog
 
-log = gemLog.getGeminiLog()
+log = None
 
 PDEB = False
 
@@ -142,6 +142,11 @@ class PRSProxy(object):
     reduceServer = None
             
     def __init__(self, reduceServer = None, port = None):
+        # retrieving global logger and creating it if None
+        global log
+        if log==None:
+            log = gemLog.getGeminiLog() 
+            
         try:
             if port != None:
                 self.prsport = port
@@ -177,7 +182,7 @@ class PRSProxy(object):
         newProxy = PRSProxy(reduceServer = reduceServer, port = info["xmlrpc_port"])
         newProxy.httpport = info["http_port"]
         newProxy.localCalUrl = "http://localhost:%s/calsearch.xml" % newProxy.httpport
-        if not found:
+        if not found:           
             log.info("reduce-->adcc?")
         while(not found):
             try:
@@ -210,7 +215,7 @@ class PRSProxy(object):
                     newProxy = None
                     break
                 # try again
-        log.info("reduce--><--adcc")
+        log.info("reduce--><--adcc") 
 
         return newProxy
 
