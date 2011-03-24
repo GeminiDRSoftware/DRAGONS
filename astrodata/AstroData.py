@@ -1391,17 +1391,8 @@ n informed of the issue and
             self.relhdul()
             return retval
         except:
-            self.exception_info = sys.exc_info()
+            self.exception_info = sys.exc_info()[1]
             return None
-#        except KeyError:
-#            raise KeyError("Keyword '"+str(key)+"' not found.")
-#            self.relhdul()
-#        except Errors.EmptyKeyError:
-#            raise Errors.EmptyKeyError()
-#            self.relhdul()
-#        except Errors.UndefinedKeyError:
-#            raise Errors.UndefinedKeyError()
-#            self.relhdul()
     phuValue = phuGetKeyValue
     phuHeader = phuValue
     
@@ -1556,9 +1547,8 @@ n informed of the issue and
             retval = exthd.header[key]
         except:
             return None
-        # print "AD914:", key, "=",retval    
         return retval
-    
+        # print "AD914:", key, "=",retval
     
     def extSetKeyValue(self, extension, key, value, comment = None):
         """
@@ -1710,7 +1700,7 @@ n informed of the issue and
         then the value original filename is just returned.  If the key is there, but does not
         match the original filename of the object, then the original name is returned, NOT the 
         value in the PHU. The value in the PHU can always be found using ad.phuGetKeyValue('ORIGNAME').
-        """ 
+        """
         # Grabbing value of astrodata instances private member '__origFilename'
         origFilename = os.path.basename(self.__origFilename)
         # Grabbing value of 'ORIGNAME' from PHU
