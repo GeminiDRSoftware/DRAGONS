@@ -4,6 +4,7 @@ import sys, os
 import logging
 import traceback as tb
 from astrodata.Errors import Error
+
 _listOfLoggers = None
 
 class GeminiLogger(object):
@@ -35,9 +36,13 @@ class GeminiLogger(object):
     
     :param logLevel: verbosity setting for the lowest level of messages to 
                      print to the screen.
-    :type logLevel: integer from 0-10 following above chart
+    :type logLevel: integer from 0-6, or 10 following above chart
     
-    :param debug: Flag for showing debug level messages
+    :param logType: A string to indicate the type of usage of the log object.
+    :type logType: String in all lower case. Default: 'main'
+    
+    :param debug: Flag to log debug level messages to file. 
+                  NOTE: this is independent of logLevel for the screen msgs.
     :type debug: python boolean (True/False)
     
     :param noLogFile: Flag for stopping a log file from being created
@@ -49,15 +54,32 @@ class GeminiLogger(object):
     
     """
     logger = None
-    def __init__(self, logName=None, logLevel=1, debug=False, noLogFile=False, allOff=False):
+    def __init__(self, logName=None, logLevel=1, logType='main', debug=False, 
+                 noLogFile=False, allOff=False):
+        # Converting None -> 1(default) for logLevel, shouldn't happen though.
+        if logLevel==None:
+            logLevel = 1
+        
         # Setting logLevel and noFile accordingly if allOff is turned on
         if allOff:
             logLevel=0
             noLogFile=True
-        
+            
         # Save verbosity setting for log to a private variable to allow for 
         # changing the value in future calls. 
-        self._logLevel=logLevel
+        self._logLevel = logLevel
+        
+        # Save the type setting for the log to a private variable to allow for 
+        # changing the value in future calls. First check it is a string, 
+        # then force it to lower just in case.
+        if isinstance(logType,str):
+            # Force it to be a lower case string just in case
+            self._logType = logType.lower()
+        else:
+            raise Error('The value of logType must be a string.')
+        
+        # storing debug boolean in private variable for later use
+        self._debug = debug
         
         # If noLogFile=True, then set the log file as 'null'
         if noLogFile:
@@ -65,21 +87,21 @@ class GeminiLogger(object):
         # Set the file name for the log, default is currently 'gemini.log'
         else:
             # Setting the logName to the default or the value passed in, 
-            # if there was one
-            if not logName:
+            # if there was one.
+            if logName==None:
                 self._logName = 'gemini.log'
             else:
                 self._logName = logName
-            
+        
         # Adding logger levels not in default Python logger 
         # note: INFO level = 20
-        FULLINFO    = 15
-        STDINFO     = 21
-        STATUS      = 25
+        self.FULLINFO    = 15
+        self.STDINFO     = 21
+        self.STATUS      = 25
         log_levels = {
-                      FULLINFO  : 'FULLINFO',
-                      STDINFO   : 'STDINFO',
-                      STATUS    : 'STATUS'
+                      self.FULLINFO  : 'FULLINFO',
+                      self.STDINFO   : 'STDINFO',
+                      self.STATUS    : 'STATUS'
                       }
         for lvl in log_levels.keys():
             logging.addLevelName(lvl, log_levels[lvl])
@@ -89,64 +111,21 @@ class GeminiLogger(object):
         self.logger.setLevel(logging.DEBUG)
     
         setattr(self.logger, 'stdinfo', 
-                lambda *args: self.logger.log(STDINFO, *args))
+                lambda *args: self.logger.log(self.STDINFO, *args))
         setattr(self.logger, 'status', 
-                lambda *args: self.logger.log(STATUS, *args))
+                lambda *args: self.logger.log(self.STATUS, *args))
         setattr(self.logger, 'fullinfo', 
-                lambda *args: self.logger.log(FULLINFO, *args))
+                lambda *args: self.logger.log(self.FULLINFO, *args))
 
-        # Create console and file handlers
-        ch = logging.StreamHandler()
-        fh = logging.FileHandler(self._logName)
-        
-        # Set levels for handlers 
-        # Use file handler level FULLINFO unless debug is True
-        fh.setLevel(FULLINFO)
-        if debug:
-            ch.setLevel(FULLINFO)
-            fh.setLevel(logging.DEBUG)
-            
-        # Set console handler depending on value provided on logLevel value
-        else:
-            if (logLevel == 10):
-                ch.setLevel(logging.DEBUG)
-            elif (logLevel == 6):
-                ch.setLevel(FULLINFO)
-            elif (logLevel == 5):
-                ch.setLevel(STDINFO)
-            elif (logLevel == 4):
-                ch.setLevel(STATUS)
-            elif (logLevel == 3):
-                ch.setLevel(logging.WARNING)
-            elif (logLevel == 2):
-                ch.setLevel(logging.ERROR)
-            elif (logLevel == 1):
-                ch.setLevel(logging.CRITICAL)
-            elif (logLevel==0):
-                #ie. 'MAX' out the level so it is above all existing log levels
-                ch.setLevel(100)
-            else:
-                ch.setLevel(FULLINFO)
-                fh.setLevel(FULLINFO)
+        ## Creating and setting up the levels of the handlers
+        # initialize the console and file handlers
+        self.initializeHandlers()
+        # set the console handler level
+        self.setConsoleLevel(logLevel) 
+        # Remove any pre-existing handlers, set up formatters and add handlers 
+        # to logger.         
+        self.finalizeHandlers()      
                 
-        # Create formatters for console and file messages
-        ch_formatter = logging.Formatter('%(levelname)-8s '+
-                                        '%(levelno)d- %(message)s')
-        fh_formatter = logging.Formatter('%(asctime)s %(levelname)-8s '+
-                                         '%(levelno)d- %(message)s')
-        
-        # Add formatters to the handlers
-        ch.setFormatter(ch_formatter)
-        fh.setFormatter(fh_formatter) 
-        
-        # Check if log has handlers and if so, close them to alleviate double 
-        # messaging  from multiple handers to same file or console
-        self = checkHandlers(self, remove=True)
-           
-        # Add console and file handlers to logger
-        self.logger.addHandler(ch)
-        self.logger.addHandler(fh)
-        
         # Default category strings by order of importance
         self._criticalDefaultCategory = 'critical'
         self._errorDefaultCategory = 'error'
@@ -157,6 +136,105 @@ class GeminiLogger(object):
         self._fullinfoDefaultCategory = 'fullinfo'
         self._debugDefaultCategory = 'debug'
         
+    def initializeHandlers(self):
+        """
+        A function to initialize and then set the file handler level depending
+        on if the log has 'debug' set to True or False; if True, file handler
+        level goes to highest value (DEBUG), else it goes to default
+        of (FULLINFO).
+        """
+        # Create console and file handlers
+        self.ch = logging.StreamHandler()
+        self.fh = logging.FileHandler(self._logName)
+        
+        ## Set level for the file handler 
+        # Use file handler level FULLINFO unless debug is True
+        #NOTE: Using private member variable _fhLogLevel that could possibly
+        #      be made available to user in the future. But I can't see a reason
+        #      to do so at the moment.
+        if self._debug:
+            self._fhLogLevel = logging.DEBUG 
+        else:
+            self._fhLogLevel = self.FULLINFO
+        self.fh.setLevel(self._fhLogLevel)
+            
+    def finalizeHandlers(self):
+        """
+        This function will set up the console and file message formats, remove 
+        any previous handlers to ensure they are not doubled, then add the 
+        finalized handlers to the the logger.
+        """
+        # Create formatters for console and file messages
+        ch_formatter = logging.Formatter('%(levelname)-8s '+
+                                        '%(levelno)d- %(message)s')
+        fh_formatter = logging.Formatter('%(asctime)s %(levelname)-8s '+
+                                         '%(levelno)d- %(message)s')
+        
+        # Add formatters to the handlers
+        self.ch.setFormatter(ch_formatter)
+        self.fh.setFormatter(fh_formatter) 
+        
+        # Check if log has handlers and if so, close them to alleviate double 
+        # messaging from multiple handers to same file or console
+        self = checkHandlers(self, remove=True)
+           
+        # Add console and file handlers to the logger
+        self.logger.addHandler(self.ch)
+        self.logger.addHandler(self.fh)    
+    
+    def setConsoleLevel(self, logLevel):
+        """
+        A function to set the level in the console handler.
+        
+        :param logLevel: verbosity setting for the lowest level of messages to 
+                         print to the screen.
+        :type logLevel: integer from 0-6, or 10 following above chart
+        
+        """
+        if (logLevel == 10):
+            self.ch.setLevel(logging.DEBUG)
+        elif (logLevel == 6):
+            # set to new FULLINFO value (15)
+            self.ch.setLevel(self.FULLINFO)
+        elif (logLevel == 5):
+            # set to new STDINFO value (21)
+            self.ch.setLevel(self.STDINFO)
+        elif (logLevel == 4):
+            # set to new STATUS value (25)
+            self.ch.setLevel(self.STATUS)
+        elif (logLevel == 3):
+            self.ch.setLevel(logging.WARNING)
+        elif (logLevel == 2):
+            self.ch.setLevel(logging.ERROR)
+        elif (logLevel == 1):
+            self.ch.setLevel(logging.CRITICAL)
+        elif (logLevel==0):
+            #ie. 'MAX' out the level so it is above all existing log levels
+            # so no messages will ever have a high enough level to go to screen.
+            self.ch.setLevel(100)
+        else:
+            # set to default, CRITICAL, if all else are false
+            self.ch.setLevel(logging.CRITICAL)
+    
+    def changeConsoleLevel(self, logLevel):
+        """
+        A function to allow for changing the level of the console handler.
+        It re-initializes the handlers, re-sets their levels and then
+        re-finalizes them.
+        
+        :param logLevel: The NEW verbosity setting for the lowest level of 
+                         messages to print to the screen.
+        :type logLevel: integer from 0-6, or 10 following above chart
+        """
+        # re-initializing the handlers 
+        self.initializeHandlers()
+        # setting console level of re-initialized console handler
+        self.setConsoleLevel(logLevel)
+        # re-finalizing the re-initialized handlers
+        self.finalizeHandlers()
+        #return the log object with its handlers updated with new logLevel 
+        return self
+    
     def logname(self):
         """
         Just a function to return the 'private' member variable _logName
@@ -165,7 +243,27 @@ class GeminiLogger(object):
         """
         return self._logName
     
-    def levelChecker(self):
+    def logtype(self, newLogType=None):
+        """
+        Just a function to return the 'private' member variable _logType
+        to allow checking if logger with the same file type exists all ready,
+        OR if the user wishes to change the logger's current logType to a new 
+        one.
+        
+        :param newLogType: A new value to change the logger's logType to.
+        :type newLogType: String in all lower case.
+        """
+        if newLogType!=None:
+            if isinstance(newLogType, str):
+                # Setting the private member _logType value to the one passed in.
+                # Forcing the string to be in all lower case
+                self._logType = newLogType.lower()
+            else:
+                raise Error('The value of newLogType must be a string.')
+        # Return the current, or updated value if one was passed into newLogType
+        return self._logType
+    
+    def loglevel(self):
         """
         Just a function to return the 'private' member variable _logLevel
         to allow checking what the current verbosity of this logger object is.        
@@ -354,18 +452,6 @@ def callInfo():
         
         """
     st = tb.extract_stack()
-    #ran = range(len(st))
-    #ran.reverse()
-    #for i in ran:
-    #    print i
-    #    filenam=os.path.basename(st[i][0])
-    #    print filenam
-    #    linenum=st[i][1]
-    #    print linenum
-    #    funcnam=st[i][2]
-    #    print funcnam
-    #    print '------------------'
-    #print 'callInfo using ('+os.path.basename(st[-3][0])+','+str(st[-3][1])+','+st[-3][2]+')'
     return [os.path.basename(st[-3][0]), st[-3][1], st[-3][2]] 
     
 def checkHandlers(log, remove=True):
@@ -373,6 +459,9 @@ def checkHandlers(log, remove=True):
     This function is to close the handlers of the log to 
     avoid multiple handlers sending messages to same console and or file 
     when the logger is used outside of the Recipe System.
+    
+    :param remove: If handlers are found, remove them?
+    :type remove: Python boolean (True/False)
     
     """
     handlers = log.logger.handlers
@@ -406,67 +495,143 @@ def checkHandlers(log, remove=True):
         else:
             return False    
 
-def getGeminiLog(logName=None , logLevel=1, debug=False, noLogFile=False, allOff=False):
+def createGeminiLog(logName=None, logLevel=None, logType='main', debug=False, 
+                    noLogFile=False, allOff=False):
+    """
+    This function is to create a new logger object.
+    
+    :param logName: Name of the file the log messages will be written to
+    :type logName: String
+    
+    :param logLevel: verbosity setting for the lowest level of messages to 
+                     print to the screen.
+    :type logLevel: integer from 0-6, or 10 following above chart, or the message
+                    level as a string (ie. 'critical', 'status', 'fullinfo'...).
+                    None indicates to use default of 1/'critical' OR to leave 
+                    the current value in requested logger object if it exists.
+    
+    :param logType: A string to indicate the type of usage of the log object.
+    :type logType: String in all lower case. Default: 'main'
+    
+    :param debug: Flag for showing debug level messages
+    :type debug: Python boolean (True/False)
+    
+    :param noLogFile: Flag for stopping a log file from being created
+    :type noLogFile: Python boolean (True/False)
+    
+    :param allOff: Flag to turn off all messages to the screen or file and 
+                   to not make a log file. ie, completely ignore all messages.
+    :type allOff: Python boolean (True/False)
+    
+    """
+    # Retrieve the list of loggers
+    global _listOfLoggers
+    
+    _geminiLogger = None
+    
+    # No logger list (ie, not even one log object) exists, so create one
+    if not _listOfLoggers:
+        _listOfLoggers = []
+    #print '\n'+'-'*100+'\n'
+    #print 'GL486: creating new logger' #$$$$$$$$$$$$$$$$$$$$$
+    # Converting logLevel to its int value if needed
+    logLevel = logLevelConverter(logLevel=logLevel)
+    try:
+        _geminiLogger = GeminiLogger(logName=logName, logLevel=logLevel, 
+                                     logType=logType, debug=debug, 
+                                     noLogFile=noLogFile, allOff=allOff)
+        _listOfLoggers.append(_geminiLogger)
+    except:
+        raise Error('An error occured while trying to create logger object \
+                    named, '+logName+', of type, '+logType+'.')
+    
+    return _geminiLogger
+        
+        
+def getGeminiLog(logLevel=None, logType='main'):
     """ 
-    The function called to retrieve the desired logger object.
-    This can be a new one, and thus getGeminiLog will create one to be 
-    returned, else it will return the requested one based on the 
-    parameter 'logName' in the call.
+    The function called to retrieve the desired logger object based on the 
+    parameter 'logType', and update its logLevel value if not None.   
+    If the requested logger does not exist, then the 'main' logger is passed 
+    back, and if that does not exist then a null logger is returned 
+    (ie, no log file, no messages to screen).  
+    Thus, a logger will always be returned when getGeminiLog is called.
         
     :param logLevel: verbosity setting for the lowest level of messages to 
                      print to the screen.
     :type logLevel: integer from 0-6, or 10 following above chart, or the message
-                    level as a string (ie. 'critical', 'status', 'fullinfo'...)
+                    level as a string (ie. 'critical', 'status', 'fullinfo'...).
+                    None indicates to use default of 1/'critical' OR to leave 
+                    the current value in requested logger object if it exists.
+                    
+    :param logType: A string to indicate the type of usage of the log object.
+    :type logType: String in all lower case. Default: 'main'
     """
-    # Converting logLevel to its int value if needed
-    logLevel = logLevelConverter(logLevel=logLevel)
  
     # Retrieve the list of loggers
     global _listOfLoggers
     
     _geminiLogger = None
     
-    if logLevel==None:
-        logLevel=1
-        
-    # No logger list (ie, not even one log object) exists, so create one
+    #print '\nGL547: logger list: '+repr(_listOfLoggers)##########
+    
+    # No logger list (ie, not even one log object) exists, so create an 
+    # alloff=True log to be passed back (ie, no log file, no msgs to screen)
     if not _listOfLoggers:
-        #print 'GL415: creating new logger' #$$$$$$$$$$$$$$$$$$$$$
-        _listOfLoggers = []
-        _geminiLogger = GeminiLogger(logName=logName, logLevel=logLevel, 
-                                     debug=debug, noLogFile=noLogFile, 
-                                     allOff=allOff)
-        _listOfLoggers.append(_geminiLogger)
+        _geminiLogger = createGeminiLog(allOff=True)
+       
     # At least one logger object exists, so loop through current loggers in the 
-    # in the list and see if the one you are requesting exists.
-    else:
-        # Since logName=None means use default 'gemini.log', just set it to that 
-        # now to make searching the logger list easier.
-        if logName==None:
-            logName='gemini.log'
+    # list and see if the one you are requesting exists.            
+    else:     
+        # variable to hold the 'main' log to pass back if non-main one requested
+        # doesn't exist in list.
+        mainLog = None
         # Loop through logs in list
-        for log in _listOfLoggers:
-            # The log you requested is found in list
-            if log.logname() == logName:
-                #print 'GL432: using old logger'
-                if logLevel!=log.levelChecker():
-                    #print 'GL445: updating verbosity of existing log to '+str(logLevel)
-                    _geminiLogger = GeminiLogger(logName=logName, 
-                                         logLevel=logLevel, debug=debug, 
-                                         noLogFile=noLogFile, allOff=allOff)
-                    log = _geminiLogger
-                else:
-                    _geminiLogger=log
-        # The log you requested is not there, so create it and add it to list. 
-        if not _geminiLogger:
-            #print 'GL436: creating new logger but list was there'
-            _geminiLogger = GeminiLogger(logName=logName, logLevel=logLevel, 
-                                         debug=debug, noLogFile=noLogFile, 
-                                         allOff=allOff)
-            _listOfLoggers.append(_geminiLogger)
+        for log in _listOfLoggers:                
+            # The log of the type requested is found in list
+            if log.logtype()==logType:
+                #print 'GL565: using old logger of type: '+log.logtype()
                 
-    # return the log that was requested, whether it had to be created or was all 
-    # ready there.             
+                # Updating the value of the logLevel if passed in value was 
+                # not None or the same as the current logger's logLevel.
+                if logLevel!=None:
+                    # Converting logLevel to its int value if needed
+                    logLevel = logLevelConverter(logLevel=logLevel)
+                    
+                    if logLevel!=log.loglevel():
+                        #print 'G578: logs current logLevel: '+str(log.loglevel())
+                        #print '*******TRACEBACK:'+repr(tb.extract_stack()[-2])
+                        #print 'GL574: updating verbosity of existing log to '+str(logLevel)
+                        
+                        # updating the console level and reloading the handlers
+                        _geminiLogger = log.changeConsoleLevel(logLevel)
+                        break
+                    else:
+                        # levels matched, so just pass current log back
+                        _geminiLogger = log
+                        break
+                else:
+                    # no level change requested, so just pass current log back
+                    _geminiLogger = log
+                    break
+            # non-main requested, but main found, so store it for later 
+            elif log.logtype()=='main':
+                mainLog = log
+                
+        # The non-main log requested was not in the list, So pass back 'main' 
+        # if it was found, else create an alloff=True log to be passed back 
+        # (ie, no log file, no msgs to screen).
+        if not _geminiLogger:
+            if mainLog:
+                _geminiLogger = mainLog
+            else:
+                #print 'requested type, '+logType+', and no main log was found for : '+repr(tb.extract_stack()[-2])
+                _geminiLogger = createGeminiLog(allOff=True)
+    
+    #print 'GL597: logger being returned: '+_geminiLogger.logname()      
+                
+    # return the log that was requested, or the 'main' if specific one not there,
+    # or a null one if even the 'main' wasn't there. 
     return _geminiLogger
 
 def logLevelConverter(logLevel=None):
