@@ -193,7 +193,8 @@ if options.invoked:
     options.logLevel = 6
     
 #---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
-log = gemLog.getGeminiLog(logName=options.logName,logLevel=options.logLevel,debug=options.debug, 
+log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
+                             logType='main', debug=options.debug, 
                           noLogFile=options.noLogFile, allOff=options.logAllOff)
 #-------------------------------------------------------------------------
 
@@ -838,10 +839,12 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                         co.update({"writeInt":True})  #$$$$$ to be removed after writeIntermediate thing works correctly
                         
                  
-                # Putting the log level set with the --logLevel parser option 
-                # into the global dict for use throughout the primitives.
-                co.update({'logLevel':options.logLevel}) #$$$$$$$$$ right place to do this??       
-                        
+                # Putting the log level and log name set with the --logLevel 
+                # and --logName parser options into the global dict
+                # for use throughout the primitives.
+                co.update({'logLevel':options.logLevel}) #$$$$$$$$$ right place to do this??    
+                co.update({'logName':options.logName}) #$$$$$$$$$ right place to do this??      
+                co.update({'logType':'main'})        #$$$$$$$$$ right place to do this?? SHould we make this param more global?
                 # print "r352:", repr(co.userParams.userParamDict)
                 if (useTK):
                     while cw.bReady == False:
