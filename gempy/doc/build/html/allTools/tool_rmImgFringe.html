@@ -54,7 +54,7 @@
 <h1>rmImgFringe<a class="headerlink" href="#rmimgfringe" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="gempy.instruments.gmosTools.rmImgFringe">
-<tt class="descclassname">gempy.instruments.gmosTools.</tt><tt class="descname">rmImgFringe</tt><big>(</big><em>inimage</em>, <em>fringe</em>, <em>fl_statscale=False</em>, <em>statsec=''</em>, <em>scale=0.0</em>, <em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/gmosTools.html#rmImgFringe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.gmosTools.rmImgFringe" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gempy.instruments.gmosTools.</tt><tt class="descname">rmImgFringe</tt><big>(</big><em>inimage</em>, <em>fringe</em>, <em>fl_statscale=False</em>, <em>statsec=''</em>, <em>scale=0.0</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/gmosTools.html#rmImgFringe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.gmosTools.rmImgFringe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Scale and subtract a fringe frame from GMOS gireduced image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -67,13 +67,6 @@
 <li><strong>statsec</strong> (<em>string of format &#8216;[EXTNAME,EXTVER][x1:x2,y1:y2]&#8217;</em>) &#8211; image section used to determine the scale factor 
 if fl_statsec=True</li>
 <li><strong>scale</strong> (<em>real</em>) &#8211; Override auto-scaling if not 0.0</li>
-<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen.
-OR the message level as a string (ie. &#8216;critical&#8217;, &#8216;status&#8217;, 
-&#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of logLevel setting, all messages always go 
-to the logfile if noLogFile=False.</li>
 </ul>
 </td>
 </tr>

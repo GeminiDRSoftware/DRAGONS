@@ -54,7 +54,7 @@
 <h1>fileNameUpdater<a class="headerlink" href="#filenameupdater" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="gempy.instruments.geminiTools.fileNameUpdater">
-<tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">fileNameUpdater</tt><big>(</big><em>adIn=None</em>, <em>infilename=''</em>, <em>suffix=''</em>, <em>prefix=''</em>, <em>strip=False</em>, <em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#fileNameUpdater"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.fileNameUpdater" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">fileNameUpdater</tt><big>(</big><em>adIn=None</em>, <em>infilename=''</em>, <em>suffix=''</em>, <em>prefix=''</em>, <em>strip=False</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#fileNameUpdater"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.fileNameUpdater" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function is for updating the file names of astrodata objects.
 It can be used in a few different ways.  For simple post/pre pending of
 the infilename string, there is no need to define adIn or strip. The 
@@ -77,25 +77,20 @@ extension</li>
 <li><strong>strip</strong> (<em>Boolean</em>) &#8211; Boolean to signal that the original filename of the astrodata
 object prior to processing should be used. adIn MUST be 
 defined for this to work.</li>
-<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen.
-OR the message level as a string (ie. &#8216;critical&#8217;, &#8216;status&#8217;, 
-&#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of logLevel setting, all messages always go 
-to the logfile if noLogFile=False.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>ex. 
-fileNameUpdater(adIn=myAstrodataObject, suffix=&#8217;_prepared&#8217;, strip=True)
-result: &#8216;N20020214S022_prepared.fits&#8217;</p>
-<p>fileNameUpdater(infilename=&#8217;N20020214S022_prepared.fits&#8217;, suffix=&#8217;_biasCorrected&#8217;)
-result: &#8216;N20020214S022_prepared_biasCorrected.fits&#8217;</p>
-<p>fileNameUpdater(adIn=myAstrodataObject, prefix=&#8217;<a href="#id1"><span class="problematic" id="id2">testversion_</span></a>&#8216;)
-result: &#8220;testversion_N20020214S022.fits&#8221;</p>
+<div class="highlight-python"><pre>fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
+result: 'N20020214S022_prepared.fits'
+   
+fileNameUpdater(infilename='N20020214S022_prepared.fits', suffix='_biasCorrected')
+result: 'N20020214S022_prepared_biasCorrected.fits'
+   
+fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
+result: "testversion_N20020214S022.fits"</pre>
+</div>
 </dd></dl>
 
 </div>

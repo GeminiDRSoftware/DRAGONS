@@ -54,24 +54,14 @@
 <h1>stdInstHdrs<a class="headerlink" href="#stdinsthdrs" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="gempy.instruments.gmosTools.stdInstHdrs">
-<tt class="descclassname">gempy.instruments.gmosTools.</tt><tt class="descname">stdInstHdrs</tt><big>(</big><em>ad</em>, <em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/gmosTools.html#stdInstHdrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.gmosTools.stdInstHdrs" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gempy.instruments.gmosTools.</tt><tt class="descname">stdInstHdrs</tt><big>(</big><em>ad</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/gmosTools.html#stdInstHdrs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.gmosTools.stdInstHdrs" title="Permalink to this definition">¶</a></dt>
 <dd><p>A function used by StandardizeInstrumentHeaders in primitives_GMOS.
 It currently just adds the DISPAXIS header key to the SCI extensions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>ad</strong> (<em>a single astrodata instance</em>) &#8211; input astrodata instance to have its headers standardized</li>
-<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen.
-OR the message level as a string (ie. &#8216;critical&#8217;, &#8216;status&#8217;, 
-&#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of logLevel setting, all messages always go 
-to the logfile if noLogFile=False.</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ad</strong> (<em>a single astrodata instance</em>) &#8211; input astrodata instance to have its headers standardized</td>
 </tr>
 </tbody>
 </table>

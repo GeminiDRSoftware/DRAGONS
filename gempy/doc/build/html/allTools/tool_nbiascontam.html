@@ -54,7 +54,7 @@
 <h1>nbiascontam<a class="headerlink" href="#nbiascontam" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="gempy.instruments.geminiTools.nbiascontam">
-<tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">nbiascontam</tt><big>(</big><em>adInputs</em>, <em>biassec=None</em>, <em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#nbiascontam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.nbiascontam" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">nbiascontam</tt><big>(</big><em>adInputs</em>, <em>biassec=None</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#nbiascontam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.nbiascontam" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function will find the largest difference between the horizontal 
 component of every BIASSEC value and those of the biassec parameter. 
 The returned value will be that difference as an integer and it will be
@@ -67,14 +67,6 @@ call of the overscanSubtract primitive.</p>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>adInputs</strong> (<em>AstroData instance in a list</em>) &#8211; AstroData instance(s) to calculate the bias contamination</li>
 <li><strong>biassec</strong> (<em>string</em>) &#8211; biassec parameter of format &#8216;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#8217;</li>
-<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to 
-screen.
-OR the message level as a string (ie. &#8216;critical&#8217;, &#8216;status&#8217;, 
-&#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of logLevel setting, all messages always  
-goto the logfile if noLogFile=False.</li>
 </ul>
 </td>
 </tr>

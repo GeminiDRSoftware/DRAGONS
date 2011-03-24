@@ -54,7 +54,7 @@
 <h1>stdObsStruct<a class="headerlink" href="#stdobsstruct" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="gempy.instruments.geminiTools.stdObsStruct">
-<tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">stdObsStruct</tt><big>(</big><em>ad</em>, <em>logName=None</em>, <em>logLevel=1</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#stdObsStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.stdObsStruct" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gempy.instruments.geminiTools.</tt><tt class="descname">stdObsStruct</tt><big>(</big><em>ad</em><big>)</big><a class="reference internal" href="../_modules/gempy/instruments/geminiTools.html#stdObsStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.instruments.geminiTools.stdObsStruct" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function is used by standardizeStructure in primitives_GEMINI.</p>
 <p>It currently checks that the SCI extensions header key EXTNAME = &#8216;SCI&#8217; 
 and EXTVER matches that of descriptor values</p>
@@ -62,17 +62,7 @@ and EXTVER matches that of descriptor values</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>ad</strong> (<em>an AstroData instance</em>) &#8211; astrodata instance to perform header key updates on</li>
-<li><strong>logName</strong> (<em>String, None causes default to be used., None causes default to be used.</em>) &#8211; Name of the log file, default is &#8216;gemini.log&#8217;</li>
-<li><strong>logLevel</strong> (<em>integer from 0-6, 0=nothing to screen, 6=everything to screen.
-OR the message level as a string (ie. &#8216;critical&#8217;, &#8216;status&#8217;, 
-&#8216;fullinfo&#8217;...)</em>) &#8211; Verbosity setting for the log messages to screen,
-default is &#8216;critical&#8217; messages only.
-Note: independent of logLevel setting, all messages always go 
-to the logfile if noLogFile=False.</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ad</strong> (<em>an AstroData instance</em>) &#8211; astrodata instance to perform header key updates on</td>
 </tr>
 </tbody>
 </table>
