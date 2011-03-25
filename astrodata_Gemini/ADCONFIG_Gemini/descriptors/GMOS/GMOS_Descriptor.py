@@ -492,7 +492,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return Descriptors.DescriptorValue(ret_pixel_scale, format=format, \
             name=whoami(), ad=dataset)
 
-    def read_noise(self, dataset, asDict=True, **args):
+    def read_noise(self, dataset, asDict=False, **args):
         # Get the amplifier integration time (ampinteg) and the UT date from
         # the header of the PHU. The ampinteg keyword is defined in the local
         # key dictionary (stdkeyDictGMOS) but is read from the updated global
