@@ -1621,7 +1621,7 @@ n informed of the issue and
     def countExts(self, extname):
         """
         :param extname: the name of the extension, equivalent to the
-                        value associated with the "EXTNAM" key in the extension header.
+                        value associated with the "EXTNAME" key in the extension header.
         :type extname: string
         :returns: number of extensions of that name
         :rtype: int
