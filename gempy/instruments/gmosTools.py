@@ -9,39 +9,7 @@ import time
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ToolboxError
-
-def stdInstHdrs(ad):  
-    """ 
-    A function used by StandardizeInstrumentHeaders in primitives_GMOS.
-    It currently just adds the DISPAXIS header key to the SCI extensions.
-    
-    :param ad: input astrodata instance to have its headers standardized
-    :type ad: a single astrodata instance
-    
-    """
-    # Adding the missing/needed keywords into the headers
-    if not ad.isType('GMOS_IMAGE'):
-    # Do the stuff to the headers that is for the MOS, those for IMAGE are 
-    # taken care of with stdObsHdrs all ready 
-    
-        log=gemLog.getGeminiLog()
-    
-        # Formatting so logger looks organized for these messages
-        log.fullinfo('*'*50, 
-                     'header') 
-        log.fullinfo('file = '+ad.filename, 'header')
-        log.fullinfo('~'*50, 
-                     'header')
-        for ext in ad['SCI']:
-            ext.header.update(('SCI',ext.extver()),'DISPAXIS', \
-                            ext.dispersion_axis() , 'Dispersion axis')
-            # Updating logger with new header key values
-            log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
-                         ' keywords updated/added:\n', 'header')       
-            log.fullinfo('DISPAXIS = '+str(ext.header['DISPAXIS']), 'header' )
-            log.fullinfo('-'*50,
-                         'header')
-
+       
 def valInstData(ad):  
     """
     A function used by validateInstrumentData in primitives_GMOS.
