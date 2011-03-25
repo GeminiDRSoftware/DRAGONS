@@ -280,13 +280,14 @@ def pyrafBoolean(pythonBool):
         'in was not True or False, and thats just crazy talk :P')
 
 def secStrToIntList(string):
-    """ A function to convert a string representing a list of integers to 
-        an actual list of integers.
-        
-        :param string: string to be converted
-        :type string: string of format '[#1:#2,#3:#4]'
-        
-        returns list of ints [#1,#2,#3,#4]
+    """ 
+    A function to convert a string representing a list of integers to 
+    an actual list of integers.
+    
+    :param string: string to be converted
+    :type string: string of format '[#1:#2,#3:#4]'
+    
+    returns list of ints [#1,#2,#3,#4]
     
     """
     # Strip off the brackets and then split up into a string list 
@@ -304,7 +305,102 @@ def secStrToIntList(string):
     retl.append(int(Xs[1]))
     return retl
 
-def stdObsHdrs(ad):
+def update_key_value(ad, valueFuncStr, phu=True):
+    """
+    This is a function to update header keys, perform logging of the changes
+    and write history of change to the PHU.
+    
+    :param ad: astrodata instance to perform header key updates on
+    :type ad: an AstroData instance
+    
+    :param valueFuncStr: string for an astrodata function or descriptor to 
+                         perform on the input ad.
+                         ie. for ad.countExts('SCI'), 
+                         valueFuncStr="countExts('SCI')"
+    :type valueFuncStr: string 
+    
+    :param phu: Is this update to be performed on the phu?
+    :type phu: Python boolean (True/False)
+               If False, the ad input must ONLY have ONE extension.
+    
+    """
+    log = gemLog.getGeminiLog()
+    keyAndCommentDict = {    'pixel_scale()':['PIXSCALE',
+                             'Pixel scale in Y in [arcsec/pixel]'],
+                             'gain()':['GAIN', 'Gain [e-/ADU]'],
+                             'dispersion_axis()':['DISPAXIS','Dispersion axis'],
+                             'countExts("SCI")':['NSCIEXT',
+                             'Number of science extensions'],
+                             #storeOriginalName() actually all ready writes to the PHU, but doubling it doesn't hurt.
+                             'storeOriginalName()':['ORIGNAME',
+                             'Original name of file prior to processing'],
+                             'read_noise()':['RDNOISE',
+                             'readout noise in [e-]'],
+                             'non_linear_level()':['NONLINEA',
+                             'Non-linear regime level in [ADU]'],
+                             'saturation_level()':['SATLEVEL',
+                             'Saturation level in [ADU]'],                                    
+                         }
+    # Extract key and comment for input valueFuncStr from above dict
+    key = keyAndCommentDict[valueFuncStr][0]
+    comment = keyAndCommentDict[valueFuncStr][1]
+    
+    if phu:
+        # Try to get orig value of key for history purposes, if not there
+        # then no history is needed
+        try:
+            original_value = ad.phuGetKeyValue(key)
+            comment = '(UPDATED) '+comment
+            historyComment = 'Raw keyword '+key+'='+str(original_value)+\
+                                      ' was overwritten in the PHU.'
+            # Add history of orig key val to PHU before changing it
+            ad.getPHUHeader().add_history(historyComment)
+        except:
+            original_value = None
+            comment = '(NEW) '+comment
+            
+        # using exec to perform the requested valueFuncStr on input ad
+        exec('try:\n'+
+             '    output_value = ad.%s\n' % valueFuncStr+
+             'except:\n'+
+             '    output_value = "An exception was thrown"')
+        
+        # Perform key update
+        ad.phuSetKeyValue(key, output_value, comment)
+        # log key update
+        log.fullinfo(key+' = '+str(ad.phuGetKeyValue(key)), category='header')
+        
+    else:
+        # double check there is only one extension being passed in
+        if len(ad)!=1:
+            log.warning('If phu=False, only a single extension AstroData \
+                        instance can be passed in to update_key_value.')
+        else:
+            # Try to get orig value of key for history purposes, if not there
+            # then no history is needed
+            try:
+                original_value = ad.getKeyValue(key)
+                comment = '(UPDATED) '+comment
+                historyComment = 'Raw keyword '+key+'='+str(original_value)+\
+                                           ' was overwritten in extension '+\
+                                          ad.extname()+','+str(ad.extver())
+                # Add history of orig key val to PHU before changing it
+                ad.getPHUHeader().add_history(historyComment)
+            except:
+                original_value = None
+                comment = '(NEW) '+comment
+            # using exec to perform the requested valueFuncStr on input ad
+            exec('try:\n'+
+                 '    output_value = ad.%s\n' % valueFuncStr+
+                 'except:\n'+
+                 '    output_value = "An exception was thrown"')
+            #print 'GT399: key='+str(key)+', output_value='+str(output_value)+', comment='+str(comment)
+            # Perform key update
+            ad.setKeyValue(key, str(output_value), comment)
+            # log key update
+            log.fullinfo(key+' = '+str(ad.getKeyValue(key)), category='header')
+
+def standardize_headers_gemini(ad):
     """ 
     This function is used by standardizeHeaders in primitives_GEMINI.
         
@@ -320,75 +416,39 @@ def stdObsHdrs(ad):
     
     """
     log = gemLog.getGeminiLog() 
-    # Keywords that are updated/added for all Gemini PHUs 
-    ad.phuSetKeyValue('NSCIEXT', ad.countExts('SCI'), 
-                      'Number of science extensions')
-    ad.phuSetKeyValue('PIXSCALE', ad.pixel_scale()[('SCI',1)], ############## THIS NEEDS TO BE FIXED WHEN A DESCRIPTOR OBJECT IS MADE FOR pixel_scale()
-                      'Pixel scale in Y in arcsec/pixel')
-    ad.phuSetKeyValue('NEXTEND', len(ad) , 'Number of extensions')
-    ad.phuSetKeyValue('COADDEXP', ad.phuValue('EXPTIME') , 
-                      'Exposure time for each coadd frame')
-    # Retrieving the number of coadds using the coadds descriptor 
-    numcoadds = ad.coadds()
-    # If the value the coadds descriptor returned was None (or zero) set to 1
-    if not numcoadds:  
-        numcoadds = 1      
-    # Calculate the effective exposure time  
-    # = (current EXPTIME value) X (# of coadds)
-    effExpTime = ad.phuValue('EXPTIME')*numcoadds  
-    # Set the effective exposure time and number of coadds in the header  
-    ad.phuSetKeyValue('EXPTIME', effExpTime , 'Effective exposure time') 
-    ad.phuSetKeyValue('NCOADD', str(numcoadds) , 'Number of coadds')
     
-    # Adding the current filename (without directory info) to ORIGNAME in PHU
-    origName = ad.storeOriginalName()
-    
-    # Adding/updating the GEM-TLM (automatic) and GPREPARE time stamps
-    ut = ad.historyMark(key='GPREPARE',stomp=False) 
-       
-    # Updating logger with updated/added keywords
-    log.fullinfo('*'*50, category='header')
+    # Formatting so logger looks organized for these messages
+    log.fullinfo('*'*50, category='header') 
     log.fullinfo('file = '+ad.filename, category='header')
     log.fullinfo('~'*50, category='header')
     log.fullinfo('PHU keywords updated/added:\n', category='header')
-    log.fullinfo('NSCIEXT = '+str(ad.phuGetKeyValue('NSCIEXT')), category='header' )
-    log.fullinfo('PIXSCALE = '+str(ad.phuGetKeyValue('PIXSCALE')), category='header' )
-    log.fullinfo('NEXTEND = '+str(ad.phuGetKeyValue('NEXTEND')), category='header' )
-    log.fullinfo('COADDEXP = '+str(ad.phuGetKeyValue('COADDEXP')), category='header' )
-    log.fullinfo('EXPTIME = '+str(ad.phuGetKeyValue('EXPTIME')), category='header' )
-    log.fullinfo('ORIGNAME = '+ad.phuGetKeyValue('ORIGNAME'), category='header')
-    log.fullinfo('GEM-TLM = '+str(ad.phuGetKeyValue('GEM-TLM')), category='header' )
+    
+    # Keywords that are updated/added for all Gemini PHUs 
+    update_key_value(ad, 'countExts("SCI")')
+    #update_key_value(ad,'storeOriginalName()')
+    # updating keywords that are NOT calculated/looked up using descriptors
+    # or built-in ad functions.
+    ad.phuSetKeyValue('NEXTEND', len(ad) , '(UPDATED) Number of extensions')
+    log.fullinfo('NEXTEND = '+str(ad.phuGetKeyValue('NEXTEND')), 
+                 category='header' )
+    
     log.fullinfo('-'*50, category='header')
          
     # A loop to add the missing/needed keywords in the SCI extensions
     for ext in ad['SCI']:
-        ext.header.update('GAIN', ext.gain(asDict=False), 'Gain (e-/ADU)')
-        ext.header.update('PIXSCALE', ext.pixel_scale(asDict=False), 
-                           'Pixel scale in Y in arcsec/pixel')
-        ext.header.update('RDNOISE', ext.read_noise(asDict=False), 'readout noise in e-')
-        ext.header.update('BUNIT','adu', 'Physical units')
-        
-        # Retrieving the value for the non-linear value of the pixels using the
-        # non_linear_level descriptor, if it returns nothing, 
-        # set it to the string None.
-        nonlin = ext.non_linear_level()
-        if not nonlin:
-            nonlin = 'None'     
-        ext.header.update( 'NONLINEA', nonlin, 'Non-linear regime level in ADU')
-        ext.header.update( 'SATLEVEL', 
-                           ext.saturation_level(asDict=False), 'Saturation level in ADU')
-        ext.header.update( 'EXPTIME', effExpTime, 'Effective exposure time')
-        
+         # Updating logger with new header key values
         log.fullinfo('SCI extension number '+str(ext.extver())+
-                     ' keywords updated/added:\n', category='header')
-        log.fullinfo('GAIN = '+str(ad.phuGetKeyValue('GAIN')), category='header' )
-        log.fullinfo('PIXSCALE = '+str(ad.phuGetKeyValue('PIXSCALE')), category='header')
-        log.fullinfo('RDNOISE = '+str(ad.phuGetKeyValue('RDNOISE')), category='header')
-        log.fullinfo('BUNIT = '+str(ad.phuGetKeyValue('BUNIT')), category='header' )
-        log.fullinfo('NONLINEA = '+str(ad.phuGetKeyValue('NONLINEA')), category='header' )
-        log.fullinfo('SATLEVEL = '+str(ad.phuGetKeyValue('SATLEVEL')),
-                     category='header')
-        log.fullinfo('EXPTIME = '+str(ad.phuGetKeyValue('EXPTIME')), category='header' )
+                     ' keywords updated/added:\n', category='header')      
+         
+        # Keywords that are updated/added for all Gemini SCI extensions
+        update_key_value(ext, 'non_linear_level()', phu=False)
+        update_key_value(ext, 'saturation_level()', phu=False)
+        # updating keywords that are NOT calculated/looked up using descriptors
+        # or built-in ad functions.
+        ext.setKeyValue('BUNIT','adu', '(NEW) Physical units')
+        log.fullinfo('BUNIT = '+str(ext.getKeyValue('BUNIT')), 
+                 category='header' )
+        
         log.fullinfo('-'*50, category='header')
 
 def stdObsStruct(ad):
