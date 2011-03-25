@@ -1384,14 +1384,14 @@ n informed of the issue and
         try:
             hdus = self.getHDUList()
             retval = hdus[0].header[key]
-            if(isinstance(retval, pyfits.core.Undefined)):
+            if isinstance(retval, pyfits.core.Undefined):
                 raise Errors.UndefinedKeyError()
-            if (retval=='') or (retval==' '):
+            if retval == '' or retval == ' ':
                 raise Errors.EmptyKeyError()
             self.relhdul()
             return retval
         except:
-            self.exception_info = sys.exc_info()[1]
+            setattr(self, 'exception_info', sys.exc_info()[1])
             return None
     phuValue = phuGetKeyValue
     phuHeader = phuValue
@@ -1549,9 +1549,14 @@ n informed of the issue and
             raise ADExcept("No such extension: %s" % str(extension))
         try:
             retval = exthd.header[key]
+            if isinstance(retval, pyfits.core.Undefined):
+                raise Errors.UndefinedKeyError()
+            if retval == '' or retval == ' ':
+                raise Errors.EmptyKeyError()
+            return retval
         except:
+            setattr(self, 'exception_info', sys.exc_info()[1])
             return None
-        return retval
         # print "AD914:", key, "=",retval
     
     def extSetKeyValue(self, extension, key, value, comment=None):
