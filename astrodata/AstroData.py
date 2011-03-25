@@ -1483,13 +1483,15 @@ n informed of the issue and
             raise ADExcept("getHeaderValue must be called on single extension instance")
     getHeaderValue = getKeyValue
 
-    def setKeyValue(self, key, value):
+    def setKeyValue(self, key, value, comment=None):
         """
         :param key: name of data header value to set
         :type key: string
         :param value: value to apply to header
         :type value: string (or can be converted to string)
-
+        :param comment: value to be put in the comment part of the header key
+        :type comment: string
+        
         The setKeyValue(..) function is used to set the value (and optionally
         the comment) associated
         with a given key in the data-header of a single-HDU AstroData instance.
@@ -1511,7 +1513,7 @@ n informed of the issue and
             
         """
         if len(self.hdulist) == 2:
-            self.extSetKeyValue(0,key, value)
+            self.extSetKeyValue(0, key, value, comment)
         else:
             raise ADExcept("setKeyValue must be called on single extension instance")
            
@@ -1550,7 +1552,7 @@ n informed of the issue and
         return retval
         # print "AD914:", key, "=",retval
     
-    def extSetKeyValue(self, extension, key, value, comment = None):
+    def extSetKeyValue(self, extension, key, value, comment=None):
         """
         :param extension: identifies which extension, either an integer index 
                           or (EXTNAME, EXTVER) tuple
@@ -1559,6 +1561,8 @@ n informed of the issue and
         :type key: string
         :param value: value to apply to PHU header
         :type value: string (or can be converted to string)
+        :param comment: value to be put in the comment part of the header key
+        :type comment: string
 
         The extSetKeyValue(..) function is used to set the value (and optionally
         the comment) associated with a given key in the header unit of the given
