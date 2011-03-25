@@ -673,45 +673,17 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         try:   
             log.status('*STARTING* to standardize the headers')
-            log.status('Standardizing observatory general headers')            
-            for ad in rc.getInputs(style='AD'):
-                log.debug('calling gemt.stdObsHdrs for '+ad.filename)
-                gemt.stdObsHdrs(ad)
-                log.status('Completed standardizing the headers for '+
-                           ad.filename)
-   
-            log.status('Observatory headers fixed')
             log.debug('Calling standardizeInstrumentHeaders primitive')
-            log.status('Standardizing instrument specific headers')
             
             # Calling standarizeInstrumentHeaders primitive
             rc.run('standardizeInstrumentHeaders(logLevel='+str(rc['logLevel'])+')') 
-            log.status('Instrument specific headers fixed')
-            
-            # Updating the file name with the suffix/outsuffix  and timestamps 
-            # for this primitive and then reporting the new file to the 
-            # reduction context 
-            for ad in rc.getInputs(style='AD'):
-                # Adding a GEM-TLM (automatic) and STDHDRS time stamps 
-                # to the PHU
-                ad.historyMark(key='STDHDRS',stomp=False)
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   suffix=rc['suffix'], 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                # Updating logger with updated/added time stamps
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('STDHDRS = '+ad.phuGetKeyValue('STDHDRS'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')    
-                rc.reportOutput(ad)
-                
+           
+            # Reporting the original files through to the reduction context
+            # All the work was done to the inputs in 
+            # standardizeInstrumentHeaders, so at this point the inputs have
+            # had their headers standardized and can just be passed through.
+            rc.reportOutput(rc.getInputs(style='AD')) 
+           
             log.status('*FINISHED* standardizing the headers')
         except:
             # logging the exact message from the actual exception that was 
