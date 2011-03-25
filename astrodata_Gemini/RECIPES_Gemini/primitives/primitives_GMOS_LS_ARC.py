@@ -36,9 +36,8 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
         """
           Wavelength calibration primitive
         """
-        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
+        log = gemLog.createGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
 
-        print "i>>>>>>>>>>>>>>>>>>>>FROM primitive WAVECAl ****************"
         adOutputs = []
         log.info( "STARTING Wavecal")
 
@@ -46,6 +45,7 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
 
             for ad in rc.getInputs(style='AD'):
 
+                log.info('\n*** Wavecal primitive. Processing file:'+ad.filename)
                 gls = GmosLONGSLIT(ad, reffile=rc['reffile'], wrdb=rc['wrdb'], fitfunction=rc['fitfunction'],
                                    fitorder=rc['fitorder'], ntmax=rc['ntmax'], fwidth=rc['fwidth'], 
                                    cradius=rc['cradius'], match=rc['match'], minsep=rc['minsep'], 
