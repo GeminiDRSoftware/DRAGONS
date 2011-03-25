@@ -1727,7 +1727,7 @@ n informed of the issue and
         elif (phuOrigFilename is not None):
             # phu key exists, so check if it matches private members value
             if phuOrigFilename != origFilename:
-                #$$ Maybe a print message or something should go here??
+                #$$ They don't match, do something?
                 pass
             else:
                 #$$ They match, do something?
