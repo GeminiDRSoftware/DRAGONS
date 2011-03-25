@@ -1402,7 +1402,9 @@ n informed of the issue and
         :type key: string
         :param value: value to apply to PHU header
         :type value: string (or can be converted to string)
-
+        :param comment: value to be put in the comment part of the header key
+        :type comment: string
+        
         The phuSetKeyValue(..) function is used to set the value  (and
         optionally the comment) associated with a given key in the primary
         header unit of the dataset. The value argument will be converted to
