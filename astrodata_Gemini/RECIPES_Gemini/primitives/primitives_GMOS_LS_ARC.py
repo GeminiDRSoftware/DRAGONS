@@ -16,6 +16,9 @@ import numpy as np
 import pyfits as pf
 import shutil
 
+from gwavecal import GmosLONGSLIT
+
+
 class GMOS_LS_ARCPrimitives(GMOSPrimitives):
     """ 
     This is the class of all primitives for the GMOS level of the type 
@@ -29,8 +32,37 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
         GMOSPrimitives.init(self, rc)
         return rc
      
+    def wavecal(self, rc):
+        """
+          Wavelength calibration primitive
+        """
+        log = gemLog.getGeminiLog(logName=rc['logName'], logLevel=rc['logLevel'])
+
+        print "i>>>>>>>>>>>>>>>>>>>>FROM primitive WAVECAl ****************"
+        adOutputs = []
+        log.info( "STARTING Wavecal")
+
+        try:
+
+            for ad in rc.getInputs(style='AD'):
+
+                gls = GmosLONGSLIT(ad)
+                gls.wavecal()
+                gls.save_features()
+                adOutputs.append(gls.outad)
+
+            rc.reportOutput(adOutputs)
+
+            log.status('wavecal  completed successfully')
+
+        except:
+            raise PrimitiveError("Problems with wavecal")
+
+        yield rc
+
     def gtransform(self, rc):
-        log = gemLog.getGeminiLog(logType=rc['logType'], logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logName=rc['logName'], 
+                                  logLevel=rc['logLevel'])
         try:
             print "Starting gtrans GMOS_LS_ARC"
             #gtrans.gtrans.Gtrans('gsN20011222S027.fits',minsep=4,ntmax=50)
