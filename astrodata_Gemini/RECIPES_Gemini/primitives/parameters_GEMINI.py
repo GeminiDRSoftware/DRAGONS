@@ -169,14 +169,7 @@
                     },               
                     },
     
-    'standardizeHeaders':{'suffix':
-                   {
-                    'default': '_headers' , #value to be post pended to this primitives outputs
-                      'recipeOverride': True,
-                      'type': 'str',
-                      'userOverride':False 
-                    }     
-                          },
+                          
     'standardizeStructure':{'suffix':
                    {
                     'default': '_struct' , #value to be post pended to this primitives outputs
@@ -193,22 +186,22 @@
                      }     
                           },        
                           
-          'storeProcessedBias':{'clob':
-                              {
-                                'default': False,
-                                'recipeOverride': True,
-                                'type': 'bool',
-                                'userOverride':True  
-                               }
-                              } ,
-        'storeProcessedFlat':{'clob':
-                              {
-                                'default': False,
-                                'recipeOverride': True,
-                                'type': 'bool',
-                                'userOverride':True  
-                               }
-                              } ,
+      'storeProcessedBias':{'clob':
+                          {
+                            'default': False,
+                            'recipeOverride': True,
+                            'type': 'bool',
+                            'userOverride':True  
+                           }
+                          } ,
+    'storeProcessedFlat':{'clob':
+                          {
+                            'default': False,
+                            'recipeOverride': True,
+                            'type': 'bool',
+                            'userOverride':True  
+                           }
+                          } ,
                                             
     'validateData':{'suffix':
                    {
