@@ -46,7 +46,10 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
 
             for ad in rc.getInputs(style='AD'):
 
-                gls = GmosLONGSLIT(ad)
+                gls = GmosLONGSLIT(ad, reffile=rc['reffile'], wrdb=rc['wrdb'], fitfunction=rc['fitfunction'],
+                                   fitorder=rc['fitorder'], ntmax=rc['ntmax'], fwidth=rc['fwidth'], 
+                                   cradius=rc['cradius'], match=rc['match'], minsep=rc['minsep'], 
+                                   clip=rc['clip'], nsum=rc['nsum'], debug=rc['debug'], logfile=rc['logfile'])
                 gls.wavecal()
                 gls.save_features()
                 adOutputs.append(gls.outad)
