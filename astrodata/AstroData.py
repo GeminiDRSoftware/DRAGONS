@@ -896,8 +896,8 @@ integrates other functionality.
         HDU class members which are not updated. 
         
         :warning: This function maniplates private (or somewhat private)  HDU
-            members, specifically "name" and "_extver". STSCI has bee
-n informed of the issue and
+            members, specifically "name" and "_extver". STSCI has been
+            informed of the issue and
             has made a special HDU function for performing the renaming. 
             When generally available, this new function will be used instead of
             manipulating the  HDU's properties directly, and this function will 
@@ -1582,9 +1582,9 @@ n informed of the issue and
             # this translates ints from our 0-relative base of AstroData to the 
             #  1-relative base of the hdulist, but leaves tuple extensions
             #  as is.
-            print "AD892: pre-ext", extension
+            #print "AD892: pre-ext", extension
             extension = self.translateIntExt(extension)
-            print "AD892: ext", extension
+            #print "AD892: ext", extension
             
         #make sure extension is in the extensions list if present
         #if (self.extensions != None) and (not extension in self.extensions):
