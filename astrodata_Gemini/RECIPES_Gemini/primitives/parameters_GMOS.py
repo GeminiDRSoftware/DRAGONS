@@ -144,4 +144,12 @@
                           'userOverride':False    
                            }
                         },        
+        'standardizeInstrumentHeaders':{'suffix':
+                          {
+                           'default': '_headers' , #value to be post pended to this primitives outputs
+                          'recipeOverride': True,
+                          'type': 'str',
+                          'userOverride':False    
+                           }
+                        },        
 }
