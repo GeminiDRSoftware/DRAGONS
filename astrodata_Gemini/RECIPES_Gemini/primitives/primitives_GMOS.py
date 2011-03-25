@@ -12,6 +12,7 @@ from gempy.instruments import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.science import geminiScience
 from gempy.science import gmosScience
+from gempy.science import standardize
 from primitives_GEMINI import GEMINIPrimitives
 import shutil
 
@@ -551,9 +552,12 @@ class GMOSPrimitives(GEMINIPrimitives):
          
     def standardizeInstrumentHeaders(self,rc):
         """
-        This primitive is called by standardizeHeaders to makes the changes and 
-        additions to the headers of the input files that are GMOS instrument 
-        specific.
+        This primitive is called by standardizeHeaders to update and add 
+        important keywords to the PHU and SCI extension headers, first those 
+        that are common to ALL Gemini data and then those specific to data from 
+        the GMOS instrument.
+        The Science Function standardize_headers_gmos in standardize.py is
+        utilized to do the work for this primitive.
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
@@ -561,13 +565,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                         , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logType=rc['logType'], logLevel=rc['logLevel'])
-        try:                                          
-            for ad in rc.getInputs(style='AD'): 
-                log.debug('Calling gmost.stdInstHdrs for '+ad.filename) 
-                gmost.stdInstHdrs(ad, logLevel=rc['logLevel']) 
-                log.status('Completed standardizing GMOS instrument headers \
-                           for '+ad.filename)
-                    
+        try:           
+            log.status('*STARTING* to standardize the headers (GMOS)')                         
+            log.debug('Calling standardize.standardize_headers_gmos')
+            adOutputs = standardize.standardize_headers_gmos(
+                                            adInputs=rc.getInputs(style='AD'),     
+                                                        suffix=rc['suffix'])
+            
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOutputs) 
+            
+            log.status('*FINISHED* standardizing the headers (GMOS)')        
         except:
             # logging the exact message from the actual exception that was 
             # raised in the try block. Then raising a general PrimitiveError 
