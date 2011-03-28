@@ -61,9 +61,12 @@ hierarchy tree.  It inherits all the primitives to the level above
 <dl class="method">
 <dt id="primitives_GMOS.GMOSPrimitives.standardizeInstrumentHeaders">
 <tt class="descname">standardizeInstrumentHeaders</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="../_modules/primitives_GMOS.html#GMOSPrimitives.standardizeInstrumentHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GMOS.GMOSPrimitives.standardizeInstrumentHeaders" title="Permalink to this definition">¶</a></dt>
-<dd><p>This primitive is called by standardizeHeaders to makes the changes and 
-additions to the headers of the input files that are GMOS instrument 
-specific.</p>
+<dd><p>This primitive is called by standardizeHeaders to update and add 
+important keywords to the PHU and SCI extension headers, first those 
+that are common to ALL Gemini data and then those specific to data from 
+the GMOS instrument.
+The Science Function standardize_headers_gmos in standardize.py is
+utilized to do the work for this primitive.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
