@@ -333,7 +333,7 @@ def update_key_value(ad, valueFuncStr, phu=True):
                              'Number of science extensions'],
                              #storeOriginalName() actually all ready writes to the PHU, but doubling it doesn't hurt.
                              'storeOriginalName()':['ORIGNAME',
-                             'Original name of file prior to processing'],
+                             'Original filename prior to processing'],
                              'read_noise()':['RDNOISE',
                              'readout noise in [e-]'],
                              'non_linear_level()':['NONLINEA',
@@ -359,14 +359,27 @@ def update_key_value(ad, valueFuncStr, phu=True):
             original_value = None
             comment = '(NEW) '+comment
             
-        # using exec to perform the requested valueFuncStr on input ad
-        exec('try:\n'+
-             '    output_value = ad.%s\n' % valueFuncStr+
-             'except:\n'+
-             '    output_value = "An exception was thrown"')
+        # handling storeOriginalName issues caused by deepcopy
+        if valueFuncStr=='storeOriginalName()': 
+            origname = ad.phuGetKeyValue('ORIGNAME')
+            if origname==None:
+                try:
+                    origname= ad.storeOriginalName() 
+                except:
+                    log.critical('Unable to store original filename as does \
+                                    not exist in this astrodata instance \
+                                    anymore.  If using deepcopy on objects, \
+                                    please ensure to use storeOriginalName()\
+                                    on them prior to performing a deepcopy.')
+        else:
+            # using exec to perform the requested valueFuncStr on input ad    
+            exec('try:\n'+
+                 '    output_value = ad.%s\n' % valueFuncStr+
+                 'except:\n'+
+                 '    output_value = "An exception was thrown"')
         
-        # Perform key update
-        ad.phuSetKeyValue(key, output_value, comment)
+            # Perform key update
+            ad.phuSetKeyValue(key, output_value, comment)
         # log key update
         log.fullinfo(key+' = '+str(ad.phuGetKeyValue(key)), category='header')
         
@@ -402,14 +415,14 @@ def update_key_value(ad, valueFuncStr, phu=True):
 
 def standardize_headers_gemini(ad):
     """ 
-    This function is used by standardizeHeaders in primitives_GEMINI.
+    This function is used by the standardizeHeaders in primitive, through the
+    Science Function standardize.standardize_headers_####; where #### 
+    corresponds to the instrument's short name (ex. GMOS, F2...)
         
-    It will update the PHU header keys NSCIEXT, PIXSCALE
-    NEXTEND, OBSMODE, COADDEXP, EXPTIME and NCOADD plus it will add 
-    a time stamp for GPREPARE to indicate that the file has be prepared.
+    It will add the PHU header keys NSCIEXT, NEXTEND and ORIGNAME.
     
-    In the SCI extensions the header keys GAIN, PIXSCALE, RDNOISE, BUNIT,
-    NONLINEA, SATLEVEL and EXPTIME will be updated.
+    In the SCI extensions the header keys BUNIT, NONLINEA and SATLEVEL 
+    will be added.
     
     :param ad: astrodata instance to perform header key updates on
     :type ad: an AstroData instance
@@ -425,7 +438,7 @@ def standardize_headers_gemini(ad):
     
     # Keywords that are updated/added for all Gemini PHUs 
     update_key_value(ad, 'countExts("SCI")')
-    #update_key_value(ad,'storeOriginalName()')
+    update_key_value(ad,'storeOriginalName()')
     # updating keywords that are NOT calculated/looked up using descriptors
     # or built-in ad functions.
     ad.phuSetKeyValue('NEXTEND', len(ad) , '(UPDATED) Number of extensions')
