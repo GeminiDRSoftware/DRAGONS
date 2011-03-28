@@ -664,12 +664,12 @@ class CLManager(object):
         if imageIns!=None:
             for ad in self.imageIns:
                 if (ad.phuGetKeyValue('GPREPARE')==None) and \
-                   (ad.phuGetKeyValue('PREPARED')==None):
+                   (ad.phuGetKeyValue('PREPARE')==None):
                     self.status = False
         if refIns!=None:
             for ad in self.refIns:
                 if (ad.phuGetKeyValue('GPREPARE')==None) and \
-                   (ad.phuGetKeyValue('PREPARED')==None):
+                   (ad.phuGetKeyValue('PREPARE')==None):
                     self.status = False
         # All inputs prepared, then continue, else the False status will trigger
         # the caller to not proceed further.
