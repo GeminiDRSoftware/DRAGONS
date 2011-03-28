@@ -3,7 +3,7 @@
 # primitives that is considered generic enough to be at the 'GMOS' level of
 # the hierarchy tree, but too specific for the 'gemini' level above this.
 
-import os
+import os, sys
 
 import pyfits as pf
 import numpy as np
