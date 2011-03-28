@@ -421,11 +421,8 @@ def add_var(adInputs, outNames=None, suffix=None):
                     # var = (read noise/gain)2 + max(data,0.0)/gain
                     
                     # Retrieving necessary values (read noise, gain)
-                    readNoiseDict=sciExt.read_noise()
-                    readNoise = readNoiseDict[(sciExt.extname(),
-                                               sciExt.extver())] 
-                    gainDict=sciExt.gain()
-                    gain = gainDict[(sciExt.extname(), sciExt.extver())] 
+                    readNoise=sciExt.read_noise()
+                    gain = float(sciExt.gain()) #### Fix this when Craig finishes auto constructor stuff 
                     # Creating (read noise/gain) constant
                     rnOverG=readNoise/gain
                     # Convert negative numbers (if they exist) to zeros
@@ -438,15 +435,12 @@ def add_var(adInputs, outNames=None, suffix=None):
                     # Creating the variance frame's header and updating it     
                     varheader = pf.Header()
                     varheader.update('NAXIS', 2)
-                    varheader.update('PCOUNT', 0, 
-                                     'required keyword; must = 0 ')
-                    varheader.update('GCOUNT', 1, 
-                                     'required keyword; must = 1')
-                    varheader.update('EXTNAME', 'VAR', 
-                                     'Extension Name')
+                    varheader.update('PCOUNT', 0, 'required keyword; must = 0')
+                    varheader.update('GCOUNT', 1, 'required keyword; must = 1')
+                    varheader.update('EXTNAME', 'VAR', 'Extension Name')
                     varheader.update('EXTVER', sciExt.extver(), 
                                      'Extension Version')
-                    varheader.update('BITPIX', -32, 
+                    varheader.update('BITPIX', -32,
                                      'number of bits per data pixel')
                     
                     # Turning individual variance header and data 
@@ -463,8 +457,7 @@ def add_var(adInputs, outNames=None, suffix=None):
             # If VAR frames all ready existed, 
             # make a warning message in the logger
             else:
-                log.warning('VAR frames all ready exist for '+
-                             adOut.filename+
+                log.warning('VAR frames all ready exist for '+adOut.filename+
                              ', so addVAR will not calculate new ones')    
             
             # Updating GEM-TLM (automatic) and ADDVAR time stamps to the PHU
