@@ -2,7 +2,7 @@
 IrafStdout
 =======================
   
-.. autoclass:: gempy.instruments.geminiTools.IrafStdout
+.. autoclass:: gempy.geminiTools.IrafStdout
    :exclude-members: 
    
    

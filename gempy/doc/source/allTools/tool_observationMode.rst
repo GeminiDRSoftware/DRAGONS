@@ -2,4 +2,4 @@ observationMode
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.observationMode
+.. autofunction:: gempy.geminiTools.observationMode

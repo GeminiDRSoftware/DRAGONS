@@ -2,4 +2,4 @@ nbiascontam
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.nbiascontam
+.. autofunction:: gempy.geminiTools.nbiascontam

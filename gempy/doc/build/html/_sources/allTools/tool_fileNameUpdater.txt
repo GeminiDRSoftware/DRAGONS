@@ -2,4 +2,4 @@ fileNameUpdater
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.fileNameUpdater
+.. autofunction:: gempy.geminiTools.fileNameUpdater

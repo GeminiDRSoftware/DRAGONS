@@ -353,8 +353,9 @@ def update_key_value(ad, valueFuncStr, phu=True):
             comment = '(UPDATED) '+comment
             historyComment = 'Raw keyword '+key+'='+str(original_value)+\
                                       ' was overwritten in the PHU.'
-            # Add history of orig key val to PHU before changing it
+            # Add and log history of orig key val to PHU before changing it 
             ad.getPHUHeader().add_history(historyComment)
+            log.fullinfo('History comment added: '+historyComment)
         except:
             original_value = None
             comment = '(NEW) '+comment
@@ -397,8 +398,9 @@ def update_key_value(ad, valueFuncStr, phu=True):
                 historyComment = 'Raw keyword '+key+'='+str(original_value)+\
                                            ' was overwritten in extension '+\
                                           ad.extname()+','+str(ad.extver())
-                # Add history of orig key val to PHU before changing it
+                # Add and log history of orig key val to PHU before changing it
                 ad.getPHUHeader().add_history(historyComment)
+                log.fullinfo('History comment added: '+historyComment)
             except:
                 original_value = None
                 comment = '(NEW) '+comment
@@ -412,57 +414,6 @@ def update_key_value(ad, valueFuncStr, phu=True):
             ad.setKeyValue(key, str(output_value), comment)
             # log key update
             log.fullinfo(key+' = '+str(ad.getKeyValue(key)), category='header')
-
-def standardize_headers_gemini(ad):
-    """ 
-    This function is used by the standardizeHeaders in primitive, through the
-    Science Function standardize.standardize_headers_####; where #### 
-    corresponds to the instrument's short name (ex. GMOS, F2...)
-        
-    It will add the PHU header keys NSCIEXT, NEXTEND and ORIGNAME.
-    
-    In the SCI extensions the header keys BUNIT, NONLINEA and SATLEVEL 
-    will be added.
-    
-    :param ad: astrodata instance to perform header key updates on
-    :type ad: an AstroData instance
-    
-    """
-    log = gemLog.getGeminiLog() 
-    
-    # Formatting so logger looks organized for these messages
-    log.fullinfo('*'*50, category='header') 
-    log.fullinfo('file = '+ad.filename, category='header')
-    log.fullinfo('~'*50, category='header')
-    log.fullinfo('PHU keywords updated/added:\n', category='header')
-    
-    # Keywords that are updated/added for all Gemini PHUs 
-    update_key_value(ad, 'countExts("SCI")')
-    update_key_value(ad,'storeOriginalName()')
-    # updating keywords that are NOT calculated/looked up using descriptors
-    # or built-in ad functions.
-    ad.phuSetKeyValue('NEXTEND', len(ad) , '(UPDATED) Number of extensions')
-    log.fullinfo('NEXTEND = '+str(ad.phuGetKeyValue('NEXTEND')), 
-                 category='header' )
-    
-    log.fullinfo('-'*50, category='header')
-         
-    # A loop to add the missing/needed keywords in the SCI extensions
-    for ext in ad['SCI']:
-         # Updating logger with new header key values
-        log.fullinfo('SCI extension number '+str(ext.extver())+
-                     ' keywords updated/added:\n', category='header')      
-         
-        # Keywords that are updated/added for all Gemini SCI extensions
-        update_key_value(ext, 'non_linear_level()', phu=False)
-        update_key_value(ext, 'saturation_level()', phu=False)
-        # updating keywords that are NOT calculated/looked up using descriptors
-        # or built-in ad functions.
-        ext.setKeyValue('BUNIT','adu', '(NEW) Physical units')
-        log.fullinfo('BUNIT = '+str(ext.getKeyValue('BUNIT')), 
-                 category='header' )
-        
-        log.fullinfo('-'*50, category='header')
 
 def stdObsStruct(ad):
     """ 

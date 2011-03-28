@@ -2,4 +2,4 @@ listFileMaker
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.listFileMaker
+.. autofunction:: gempy.geminiTools.listFileMaker

@@ -16,8 +16,8 @@ Functions:
    allTools/tool_observationMode.rst
    allTools/tool_pyrafBoolean.rst
    allTools/tool_secStrToIntList.rst
-   allTools/tool_stdObsHdrs.rst
    allTools/tool_stdObsStruct.rst
+   allTools/tool-update_key_value.rst
    
 Classes:
 ========

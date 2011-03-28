@@ -2,4 +2,4 @@ stdObsStruct
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.stdObsStruct
+.. autofunction:: gempy.geminiTools.stdObsStruct

@@ -3,8 +3,9 @@ GMOS 'User Level Functions':
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 4
 
-   sciFunctions/function_overscan_subtract.rst
-   sciFunctions/function_fringe_correct.rst
-   sciFunctions/function_make_fringe_frame_imaging.rst
+   sciFunctions/function-overscan_subtract.rst
+   sciFunctions/function-fringe_correct.rst
+   sciFunctions/function-make_fringe_frame_imaging.rst
+   sciFunctions/function-standardize_headers_gmos.rst

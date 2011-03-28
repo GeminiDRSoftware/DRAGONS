@@ -1,0 +1,142 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>arrayInsFiles &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../../index.html" />
+    <link rel="up" title="CLManager" href="../class_CLManager.html" />
+    <link rel="next" title="arrayOutsFiles" href="CLM_arrayOutsFiles.html" />
+    <link rel="prev" title="__init__" href="CLM_init.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="CLM_arrayOutsFiles.html" title="arrayOutsFiles"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="CLM_init.html" title="__init__"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../GEMINI_tools.html" >GeminiTools</a> &raquo;</li>
+          <li><a href="../class_CLManager.html" accesskey="U">CLManager</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="arrayinsfiles">
+<h1>arrayInsFiles<a class="headerlink" href="#arrayinsfiles" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gempy.geminiTools.CLManager">
+<em class="property">class </em><tt class="descclassname">gempy.geminiTools.</tt><tt class="descname">CLManager</tt><big>(</big><em>imageIns=None</em>, <em>refIns=None</em>, <em>arrayIns=None</em>, <em>suffix=None</em>, <em>imageOutsNames=None</em>, <em>refOutsNames=None</em>, <em>numArrayOuts=None</em>, <em>combinedImages=False</em>, <em>funcName=None</em>, <em>log=None</em><big>)</big><a class="reference internal" href="../../_modules/gempy/geminiTools.html#CLManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.geminiTools.CLManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a class that will take care of all the preparation and wrap-up 
+tasks needed when writing a primitive that wraps a IRAF CL routine.</p>
+<dl class="method">
+<dt id="gempy.geminiTools.CLManager.arrayInsFiles">
+<tt class="descname">arrayInsFiles</tt><big>(</big><em>type=''</em><big>)</big><a class="reference internal" href="../../_modules/gempy/geminiTools.html#CLManager.arrayInsFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.geminiTools.CLManager.arrayInsFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function to get the file names for the temporary files written to 
+disk for the arrayIns as either a string (or comma-separated string if 
+input was a list), a list of the filenames, or a list file. 
+These files are required to be on disk by IRAF and the file names are 
+automatically created when the CLManager is instantiated based on the 
+funcName parameter and the array location in the &#8216;arrayIns&#8217; list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>type</strong> (<em>&#8216;string&#8217; for filenames as a string (comma-separated if input was a list),
+&#8216;list&#8217; for filenames as strings in a python list, or
+&#8216;listFile&#8217; for a IRAF type list file.</em>) &#8211; Desired form of the temp filenames on disk for arrayIns.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="CLM_init.html"
+                        title="previous chapter">__init__</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="CLM_arrayOutsFiles.html"
+                        title="next chapter">arrayOutsFiles</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../_sources/allTools/CLManager_funcs/CLM_arrayInsFiles.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="CLM_arrayOutsFiles.html" title="arrayOutsFiles"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="CLM_init.html" title="__init__"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../GEMINI_tools.html" >GeminiTools</a> &raquo;</li>
+          <li><a href="../class_CLManager.html" >CLManager</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

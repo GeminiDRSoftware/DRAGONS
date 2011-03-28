@@ -2,4 +2,4 @@ biassecStrTonbiascontam
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.biassecStrTonbiascontam
+.. autofunction:: gempy.geminiTools.biassecStrTonbiascontam

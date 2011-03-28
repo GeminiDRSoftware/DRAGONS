@@ -1,0 +1,214 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>__init__ &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../../index.html" />
+    <link rel="up" title="CLManager" href="../class_CLManager.html" />
+    <link rel="next" title="arrayInsFiles" href="CLM_arrayInsFiles.html" />
+    <link rel="prev" title="CLManager" href="../class_CLManager.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="CLM_arrayInsFiles.html" title="arrayInsFiles"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../class_CLManager.html" title="CLManager"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../GEMINI_tools.html" >GeminiTools</a> &raquo;</li>
+          <li><a href="../class_CLManager.html" accesskey="U">CLManager</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="init">
+<h1>__init__<a class="headerlink" href="#init" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gempy.geminiTools.CLManager">
+<em class="property">class </em><tt class="descclassname">gempy.geminiTools.</tt><tt class="descname">CLManager</tt><big>(</big><em>imageIns=None</em>, <em>refIns=None</em>, <em>arrayIns=None</em>, <em>suffix=None</em>, <em>imageOutsNames=None</em>, <em>refOutsNames=None</em>, <em>numArrayOuts=None</em>, <em>combinedImages=False</em>, <em>funcName=None</em>, <em>log=None</em><big>)</big><a class="reference internal" href="../../_modules/gempy/geminiTools.html#CLManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.geminiTools.CLManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a class that will take care of all the preparation and wrap-up 
+tasks needed when writing a primitive that wraps a IRAF CL routine.</p>
+<dl class="method">
+<dt id="gempy.geminiTools.CLManager.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>imageIns=None</em>, <em>refIns=None</em>, <em>arrayIns=None</em>, <em>suffix=None</em>, <em>imageOutsNames=None</em>, <em>refOutsNames=None</em>, <em>numArrayOuts=None</em>, <em>combinedImages=False</em>, <em>funcName=None</em>, <em>log=None</em><big>)</big><a class="reference internal" href="../../_modules/gempy/geminiTools.html#CLManager.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.geminiTools.CLManager.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>This instantiates all the globally accessible variables (within the 
+CLManager class) and prepares the inputs for use in CL scripts by 
+temporarily writing them to disk with temporary names.</p>
+<p>By using temporary filenames for the on disk copies 
+of the inputs, we avoid name collisions and by only temporarily writing
+them to disk, the &#8216;user level functions&#8217; that utilize the CLManager
+will appear as if their processing is all done in memory.</p>
+<p>NOTE: all input images must have been prepared.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>imageIns</strong> (<em>astrodata object(s); Either as single instance, a list 
+of them, or None.</em>) &#8211; Input image(s). 
+Use the imageInsFiles function to return the file names
+for the temporary disk file versions of these inputs
+in any desired form for input to IRAF.</li>
+<li><strong>refIns</strong> &#8211; Input reference image(s). This may be used for any 
+second set of input images.
+Use the refInsFiles function to return the file names
+for the temporary disk file versions of these inputs
+in any desired form for input to IRAF.</li>
+<li><strong>arrayIns</strong> (<em>Python list-of-lists with each element of an array being 
+an entire line to be written to an input file for IRAF; 
+Either list of input arrays or None.
+Format: 
+[[list1-line1,list1-line2,...],[list2-line2,list2-line2,
+...],...]
+another way of looking at it if lists are objects:
+[LIST1, LIST2,...]
+Even if only a single list is to be passed in, it MUST  
+be within another set of [].</em>) &#8211; Input array(s) of object locations in the images or 
+any other arrays needed for input to IRAF.
+Use the arrayInsFiles function to return the file names
+for the temporary disk file versions of these inputs
+in any desired form for input to IRAF.</li>
+<li><strong>suffix</strong> (<em>String</em>) &#8211; Desired suffix to be added to input filenames to create 
+the output names.
+Use this option if not using the imageOutsNames/
+refOutsNames parameters for the output names.</li>
+<li><strong>imageOutsNames</strong> (<em>String(s); Either a single string, a list of them 
+of length matching the expected number of output 
+images from IRAF, or None. If None, the list will 
+be populated automatically by use of the 
+&#8216;combinedImages&#8217; flag and post pending the 
+&#8216;suffix&#8217; parameter onto the input image names.</em>) &#8211; Desired final name(s) of output image(s) from 
+IRAF.
+Use the imageOutsFiles function to return these 
+file names in any desired form for input to IRAF.</li>
+<li><strong>refOutsNames</strong> (<em>String(s); Either a single string, a list of them of 
+length matching the expected number of output 
+reference images from IRAF, or None.
+If None, no reference image outputs from IRAF will 
+be handled by the CLManager.</em>) &#8211; Desired final name(s) of output reference image(s) 
+from IRAF. 
+These could be used to name any second set of 
+output images.
+Use the refOutsFiles function to return these 
+file names in any desired form for input to IRAF.</li>
+<li><strong>numArrayOuts</strong> (<em>int or None.
+If 0 or None, no array outputs from IRAF will be 
+handled by the CLManager.</em>) &#8211; The number of expected arrays to be output by IRAF.
+The output array names will be automatically 
+created.
+Use the arrayOutsFiles function to return these
+file names in any desired form for input to IRAF.</li>
+<li><strong>combinedImages</strong> (<em>Python boolean (True/False)</em>) &#8211; A flag to indicated that the input images of 
+imageIns will be combined to form one single 
+image output from IRAF.
+The use of this parameter is optional and is  
+overridden by providing imageOutsNames. 
+No parallel version of this argument exists for
+refIns.</li>
+<li><strong>funcName</strong> (<em>String</em>) &#8211; Name of the Python function using the CLManager. This 
+is used to name the temporary files on disk for input 
+to IRAF; so using the function name makes it easier to 
+track down any errors that might occur.</li>
+<li><strong>log</strong> (<em>A gemLog object from astrodata/adutils/gemLog.py .
+It is an upgraded version of the Python logger for use 
+with all new scripts in gemini_python/ .
+If None, then a null logger object will be created and used
+(ie, no log file, no messages to screen).</em>) &#8211; logger object to send log messges to</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../class_CLManager.html"
+                        title="previous chapter">CLManager</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="CLM_arrayInsFiles.html"
+                        title="next chapter">arrayInsFiles</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../_sources/allTools/CLManager_funcs/CLM_init.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="CLM_arrayInsFiles.html" title="arrayInsFiles"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../class_CLManager.html" title="CLManager"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../GEMINI_tools.html" >GeminiTools</a> &raquo;</li>
+          <li><a href="../class_CLManager.html" >CLManager</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

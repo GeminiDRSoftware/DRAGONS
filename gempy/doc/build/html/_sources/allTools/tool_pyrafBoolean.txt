@@ -2,4 +2,4 @@ pyrafBoolean
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.pyrafBoolean
+.. autofunction:: gempy.geminiTools.pyrafBoolean

@@ -2,7 +2,7 @@
 CLManager
 =======================
   
-.. autoclass:: gempy.instruments.geminiTools.CLManager
+.. autoclass:: gempy.geminiTools.CLManager
    :exclude-members: 
    
    

@@ -2,7 +2,7 @@
 ScienceFunctionManager
 =======================
   
-.. autoclass:: gempy.instruments.geminiTools.ScienceFunctionManager
+.. autoclass:: gempy.geminiTools.ScienceFunctionManager
    :exclude-members: 
    
    

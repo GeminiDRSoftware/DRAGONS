@@ -2,4 +2,4 @@ secStrToIntList
 =======================
 
 
-.. autofunction:: gempy.instruments.geminiTools.secStrToIntList
+.. autofunction:: gempy.geminiTools.secStrToIntList

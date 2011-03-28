@@ -1,0 +1,153 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>imageOutsFiles &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../../index.html" />
+    <link rel="up" title="CLManager" href="../class_CLManager.html" />
+    <link rel="next" title="obsmodeAdd" href="CLM_obsmodeAdd.html" />
+    <link rel="prev" title="imageInsFiles" href="CLM_imageInsFiles.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="CLM_obsmodeAdd.html" title="obsmodeAdd"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="CLM_imageInsFiles.html" title="imageInsFiles"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../GEMINI_tools.html" >GeminiTools</a> &raquo;</li>
+          <li><a href="../class_CLManager.html" accesskey="U">CLManager</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="imageoutsfiles">
+<h1>imageOutsFiles<a class="headerlink" href="#imageoutsfiles" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gempy.geminiTools.CLManager">
+<em class="property">class </em><tt class="descclassname">gempy.geminiTools.</tt><tt class="descname">CLManager</tt><big>(</big><em>imageIns=None</em>, <em>refIns=None</em>, <em>arrayIns=None</em>, <em>suffix=None</em>, <em>imageOutsNames=None</em>, <em>refOutsNames=None</em>, <em>numArrayOuts=None</em>, <em>combinedImages=False</em>, <em>funcName=None</em>, <em>log=None</em><big>)</big><a class="reference internal" href="../../_modules/gempy/geminiTools.html#CLManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.geminiTools.CLManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a class that will take care of all the preparation and wrap-up 
+tasks needed when writing a primitive that wraps a IRAF CL routine.</p>
+<dl class="method">
+<dt id="gempy.geminiTools.CLManager.imageOutsFiles">
+<tt class="descname">imageOutsFiles</tt><big>(</big><em>type=''</em><big>)</big><a class="reference internal" href="../../_modules/gempy/geminiTools.html#CLManager.imageOutsFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#gempy.geminiTools.CLManager.imageOutsFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is used to return the names of the images that will be  
+written to disk by IRAF in the form desired to pass into the IRAF 
+routine call.
+The names of these files can either be defined using
+the imageOutsNames parameter set during the CLManager initial call, or
+automatically created in one of two ways:
+1. Combine case: triggered by,
+imageOutsNames=None, combinedImages=True, suffix=&lt;any string&gt;.
+Then imageOutsNames will be a list with only the filename from the first 
+input of imageIns post pended by the value of suffix.
+2. Non-combine case: triggered by,
+imageOutsNames=None, combinedImages=False, suffix=&lt;any string&gt;.
+Then imageOutsNames will be a list with each file name of the imageIns  
+post pended by the value of suffix.</p>
+<p>This function is simply for &#8216;convenience&#8217; and can be ignored as long
+as the imageOutsNames is set properly and its filenames are passed into 
+IRAF properly.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>type</strong> (<em>&#8216;string&#8217; for filenames as a string (comma-separated if input was a list),
+&#8216;list&#8217; for filenames as strings in a python list, or
+&#8216;listFile&#8217; for a IRAF type list file.</em>) &#8211; Desired form of the filenames on disk for imageOutsNames.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="CLM_imageInsFiles.html"
+                        title="previous chapter">imageInsFiles</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="CLM_obsmodeAdd.html"
+                        title="next chapter">obsmodeAdd</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../../_sources/allTools/CLManager_funcs/CLM_imageOutsFiles.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="CLM_obsmodeAdd.html" title="obsmodeAdd"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="CLM_imageInsFiles.html" title="imageInsFiles"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../../GEMINI_tools.html" >GeminiTools</a> &raquo;</li>
+          <li><a href="../class_CLManager.html" >CLManager</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
