@@ -49,13 +49,14 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
             # First check if the input has been ran through this before, to 
             # avoid accidentally re-updating keys to wrong values.
             if ad.phuGetKeyValue('STDHDRS'):
-                log.warning('Input, '+ad.filename+', has all ready had its headers \
-                        standardized, so standardize_headers_gemini will not \
-                        add/update any keys.')
+                log.warning('Input, '+ad.filename+', has all ready had its \
+                        headers standardized, so standardize_headers_gemini \
+                        will not add/update any keys.')
             
             else:
                 # Making a deepcopy of the input to work on
-                # (ie. a truly new+different object that is a complete copy of the input)
+                # (ie. a truly new&different object that is a complete copy 
+                # of the input)
                 ad.storeOriginalName()
                 adOut = deepcopy(ad)
                 # moving the filename over as deepcopy doesn't do that
@@ -80,20 +81,24 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
                # Adding the missing/needed keywords into the SCI extensions
                 for ext in adOut['SCI']:
                     # Formatting so logger looks organized for these messages
-                    log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
+                    log.fullinfo('SCI extension number '+
+                                 str(ext.header['EXTVER'])+
                                  ' keywords updated/added:\n', 'header')       
                     
                     gemt.update_key_value(ext,'pixel_scale()', phu=False)
                     gemt.update_key_value(ext,'read_noise()', phu=False)               
                     gemt.update_key_value(ext,'gain()', phu=False)
                     if 'GMOS_IMAGE' not in ext.getTypes():
-                        gemt.update_key_value(ext,'dispersion_axis()', phu=False)
+                        gemt.update_key_value(ext,'dispersion_axis()', 
+                                              phu=False)
                     
                     log.fullinfo('-'*50, category='header')
         
-            # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
-            # and updating logger with updated/added time stamps
+            # Updating GEM-TLM (automatic), STDHDRS and PREPARE time stamps to 
+            # the PHU and updating logger with updated/added time stamps
             sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRS')
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
     
             # renaming the output ad filename
             adOut.filename = outNames[count]
@@ -111,9 +116,9 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
     except:
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
-        #log.critical(repr(sys.exc_info()[1]))
-        #raise ScienceError('An error occurred while trying to run \
-        #                                            standardize_headers_gmos')
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run \
+                                                    standardize_headers_gmos')
         raise
     
     
