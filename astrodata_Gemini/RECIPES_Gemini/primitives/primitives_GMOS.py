@@ -8,7 +8,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.ConfigSpace import lookupPath
 from astrodata.data import AstroData
 from astrodata.Errors import PrimitiveError
-from gempy.instruments import geminiTools as gemt
+from gempy import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.science import geminiScience
 from gempy.science import gmosScience

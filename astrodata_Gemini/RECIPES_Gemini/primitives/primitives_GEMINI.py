@@ -7,7 +7,7 @@ import time
 from astrodata.ReductionObjects import PrimitiveSet
 from astrodata.adutils import gemLog
 from astrodata import IDFactory
-from gempy.instruments import geminiTools as gemt
+from gempy import geminiTools as gemt
 from gempy.science import geminiScience
 from datetime import datetime
 import shutil
@@ -127,8 +127,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem adding the VAR to one of '+
-                                 rc.inputsAsStr())
+            raise #PrimitiveError('Problem adding the VAR to one of '+
+                  #               rc.inputsAsStr())
         yield rc 
     
     def aduToElectrons(self,rc):

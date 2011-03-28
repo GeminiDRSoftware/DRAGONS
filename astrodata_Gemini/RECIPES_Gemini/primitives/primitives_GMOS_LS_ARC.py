@@ -6,7 +6,7 @@ from astrodata.adutils import gemLog
 from astrodata import Descriptors
 from astrodata.data import AstroData
 from astrodata.Errors import PrimitiveError
-from gempy.instruments import geminiTools as gemt
+from gempy import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from primitives_GMOS import GMOSPrimitives, pyrafLoader
 import primitives_GEMINI

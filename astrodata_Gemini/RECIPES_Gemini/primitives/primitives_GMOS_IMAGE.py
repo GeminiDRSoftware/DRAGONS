@@ -13,9 +13,9 @@ from primitives_GEMINI import GEMINIPrimitives
 from primitives_GEMINI import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
 from gempy.science import gmosScience
-from gempy.instruments import geminiTools as gemt
+from gempy import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
-from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
+from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
     """

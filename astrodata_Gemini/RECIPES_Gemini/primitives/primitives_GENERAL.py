@@ -6,7 +6,7 @@ from astrodata.ReductionObjects import PrimitiveSet
 from astrodata.adutils import gemLog
 from astrodata.Errors import PrimitiveError
 from astrodata import IDFactory
-from gempy.instruments import geminiTools  as gemt
+from gempy import geminiTools as gemt
 import numpy as np
 import pyfits as pf
 from datetime import datetime
