@@ -13,8 +13,8 @@ from datetime import datetime
 from astrodata.AstroData import AstroData
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.Errors import ScienceError
-from gempy.instruments import geminiTools  as gemt
-from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
+from gempy import geminiTools as gemt
+from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, 
             suffix=None):

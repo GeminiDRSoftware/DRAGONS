@@ -8,7 +8,7 @@ import os, sys
 from copy import deepcopy
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ScienceError
-from gempy.instruments import geminiTools as gemt
+from gempy import geminiTools as gemt
 
 
 def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):

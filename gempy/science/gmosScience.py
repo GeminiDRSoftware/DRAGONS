@@ -12,9 +12,9 @@ from copy import deepcopy
 from astrodata.AstroData import AstroData
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.Errors import ScienceError
-from gempy.instruments import geminiTools  as gemt
-from gempy.instruments import gmosTools  as gmost
-from gempy.instruments.geminiCLParDicts import CLDefaultParamsDict
+from gempy import geminiTools as gemt
+from gempy.instruments import gmosTools as gmost
+from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 
 def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO', 
