@@ -4,7 +4,7 @@
 # have its important parameters updated and then passed into the iraf function.
 
 from astrodata.adutils.gemutil import pyrafLoader
-from gempy.instruments import geminiTools  as gemt
+from gempy import geminiTools  as gemt
 from astrodata.adutils import gemLog
 from astrodata.Errors import ToolboxError
 
