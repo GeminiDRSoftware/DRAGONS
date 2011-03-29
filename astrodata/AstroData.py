@@ -1712,19 +1712,22 @@ integrates other functionality.
         match the original filename of the object, then the original name is returned, NOT the 
         value in the PHU. The value in the PHU can always be found using ad.phuGetKeyValue('ORIGNAME').
         """
-        # Grabbing value of astrodata instances private member '__origFilename'
-        origFilename = os.path.basename(self.__origFilename)
         # Grabbing value of 'ORIGNAME' from PHU
         phuOrigFilename = self.phuGetKeyValue('ORIGNAME')
-        
-        if (origFilename is None):
+        # Grabbing value of astrodata instances private member
+        # '__origFilename' if it exists
+        origFilename = self.__origFilename
+        if origFilename!=None:
+            origFilename = os.path.basename(self.__origFilename)
+            
+        if origFilename==phuOrigFilename==None:
             # No private member value was found so throw an exception
             raise ADExcept('Error, '+self.filename+' failed to have its original filename stored when astrodata instantiated it')
-        elif (phuOrigFilename is None):
+        elif (phuOrigFilename is None) and (origFilename is not None):
             # phu key doesn't exist yet, so add it
             self.phuSetKeyValue('ORIGNAME', origFilename, 'Original name of file prior to processing')
         # The check below is extra at the moment, but could be useful in the future
-        elif (phuOrigFilename is not None):
+        elif (phuOrigFilename is not None) and (origFilename is not None):
             # phu key exists, so check if it matches private members value
             if phuOrigFilename != origFilename:
                 #$$ They don't match, do something?
@@ -1732,6 +1735,9 @@ integrates other functionality.
             else:
                 #$$ They match, do something?
                 pass
+        else:
+            # last choice, private one is None, but phu one isn't
+            origFilename = phuOrigFilename
         
         # Returning the filename for logging if desired   
         return origFilename
