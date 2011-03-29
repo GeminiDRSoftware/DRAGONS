@@ -52,55 +52,62 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
         
         # Do the work on each ad in the inputs
         for ad in adInputs:
+            # First check if the input has been ran through this before, to 
+            # avoid accidentally re-updating keys to wrong values.
+            if ad.phuGetKeyValue('STDHDRSG'):
+                log.warning('Input, '+ad.filename+', has all ready had its \
+                        general Gemini headers standardized, so \
+                        standardize_headers_gemini will not add/update any keys.')
             
-            # Making a deepcopy of the input to work on
-            # (ie. a truly new&different object that is a complete copy 
-            # of the input)
-            ad.storeOriginalName()
-            adOut = deepcopy(ad)
-            # moving the filename over as deepcopy doesn't do that
-            # only for internal use, renamed below to final name.
-            adOut.filename = ad.filename
-            
-            # Formatting so logger looks organized for these messages
-            log.fullinfo('*'*50, category='header') 
-            log.fullinfo('file = '+adOut.filename, category='header')
-            log.fullinfo('~'*50, category='header')
-            log.fullinfo('PHU keywords updated/added:\n', category='header')
-            
-            # Keywords that are updated/added for all Gemini PHUs 
-            gemt.update_key_value(adOut, 'countExts("SCI")')
-            gemt.update_key_value(adOut,'storeOriginalName()')
-            # updating keywords that are NOT calculated/looked up using 
-            # descriptors or built-in ad functions.
-            ad.phuSetKeyValue('NEXTEND', len(adOut) , 
-                              '(UPDATED) Number of extensions')
-            log.fullinfo('NEXTEND = '+str(adOut.phuGetKeyValue('NEXTEND')), 
-                         category='header' )
-            
-            log.fullinfo('-'*50, category='header')
-                 
-            # A loop to add the missing/needed keywords in the SCI extensions
-            for ext in adOut['SCI']:
-                 # Updating logger with new header key values
-                log.fullinfo('SCI extension number '+str(ext.extver())+
-                            ' keywords updated/added:\n', category='header')      
-                 
-                # Keywords that are updated/added for all Gemini SCI extensions
-                gemt.update_key_value(ext, 'non_linear_level()', phu=False)
-                gemt.update_key_value(ext, 'saturation_level()', phu=False)
-                # updating keywords that are NOT calculated/looked up using descriptors
-                # or built-in ad functions.
-                ext.setKeyValue('BUNIT','adu', '(NEW) Physical units')
-                log.fullinfo('BUNIT = '+str(ext.getKeyValue('BUNIT')), 
-                         category='header' )
+            else:
+                # Making a deepcopy of the input to work on
+                # (ie. a truly new&different object that is a complete copy 
+                # of the input)
+                ad.storeOriginalName()
+                adOut = deepcopy(ad)
+                # moving the filename over as deepcopy doesn't do that
+                # only for internal use, renamed below to final name.
+                adOut.filename = ad.filename
                 
-                log.fullinfo('-'*50, category='header') 
+                # Formatting so logger looks organized for these messages
+                log.fullinfo('*'*50, category='header') 
+                log.fullinfo('file = '+adOut.filename, category='header')
+                log.fullinfo('~'*50, category='header')
+                log.fullinfo('PHU keywords updated/added:\n', category='header')
+                
+                # Keywords that are updated/added for all Gemini PHUs 
+                gemt.update_key_value(adOut, 'countExts("SCI")')
+                gemt.update_key_value(adOut,'storeOriginalName()')
+                # updating keywords that are NOT calculated/looked up using 
+                # descriptors or built-in ad functions.
+                ad.phuSetKeyValue('NEXTEND', len(adOut) , 
+                                  '(UPDATED) Number of extensions')
+                log.fullinfo('NEXTEND = '+str(adOut.phuGetKeyValue('NEXTEND')), 
+                             category='header' )
+                
+                log.fullinfo('-'*50, category='header')
+                     
+                # A loop to add the missing/needed keywords in the SCI extensions
+                for ext in adOut['SCI']:
+                     # Updating logger with new header key values
+                    log.fullinfo('SCI extension number '+str(ext.extver())+
+                                ' keywords updated/added:\n', category='header')      
+                     
+                    # Keywords that are updated/added for all Gemini SCI extensions
+                    gemt.update_key_value(ext, 'non_linear_level()', phu=False)
+                    gemt.update_key_value(ext, 'saturation_level()', phu=False)
+                    # updating keywords that are NOT calculated/looked up using descriptors
+                    # or built-in ad functions.
+                    ext.setKeyValue('BUNIT','adu', '(NEW) Physical units')
+                    log.fullinfo('BUNIT = '+str(ext.getKeyValue('BUNIT')), 
+                             category='header' )
+                    
+                    log.fullinfo('-'*50, category='header') 
             # Updating GEM-TLM (automatic) and PREPARE time stamps to 
             # the PHU and updating logger with updated/added time stamps
-#            sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRS') ##########
-#            sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
-#            sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRSG') 
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
     
             # renaming the output ad filename
             adOut.filename = outNames[count]
@@ -167,13 +174,10 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
         for ad in ads:
             # First check if the input has been ran through this before, to 
             # avoid accidentally re-updating keys to wrong values.
-            #NOTE: This key is not written by standardize_headers_gemini
-            #      maybe we have two different keys to ensure both get time 
-            #      stamps ??!!
-            if ad.phuGetKeyValue('STDHDRS'):
+            if ad.phuGetKeyValue('STDHDRSI'):
                 log.warning('Input, '+ad.filename+', has all ready had its \
-                        headers standardized, so standardize_headers_gmos \
-                        will not add/update any keys.')
+                        instrument specific headers standardized, so \
+                        standardize_headers_gmos will not add/update any keys.')
             
             else:
                 # Making a deepcopy of the input to work on
@@ -213,7 +217,7 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
         
             # Updating GEM-TLM (automatic), STDHDRS and PREPARE time stamps to 
             # the PHU and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRS')
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRSI')
             sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
             sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
     
