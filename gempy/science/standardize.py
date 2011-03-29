@@ -99,8 +99,8 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
             # Updating GEM-TLM (automatic) and PREPARE time stamps to 
             # the PHU and updating logger with updated/added time stamps
 #            sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRS') ##########
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
+#            sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
+#            sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
     
             # renaming the output ad filename
             adOut.filename = outNames[count]
@@ -119,8 +119,8 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise #ScienceError('An error occurred while trying to run \
-              #                                      standardize_headers_gemini')
+        raise ScienceError('An error occurred while trying to run \
+                                                    standardize_headers_gemini')
 
 def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
     """
@@ -234,8 +234,8 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise #ScienceError('An error occurred while trying to run \
-              #                                       standardize_headers_gmos')
+        raise ScienceError('An error occurred while trying to run \
+                                                     standardize_headers_gmos')
         
     
     
