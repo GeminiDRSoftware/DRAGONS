@@ -422,7 +422,7 @@ def add_var(adInputs, outNames=None, suffix=None):
                     
                     # Retrieving necessary values (read noise, gain)
                     readNoise=sciExt.read_noise()
-                    gain = float(sciExt.gain()) #### Fix this when Craig finishes auto constructor stuff 
+                    gain = sciExt.gain(format='value') #### Fix this when Craig finishes auto constructor stuff 
                     # Creating (read noise/gain) constant
                     rnOverG=readNoise/gain
                     # Convert negative numbers (if they exist) to zeros
