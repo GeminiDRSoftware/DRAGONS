@@ -36,8 +36,8 @@ class DescriptorDescriptor:
                     retval = str(retval)
             return retval
         except:
-            if self.descriptorCalculator is None or \\
-                self.descriptorCalculator.throwExceptions == True:
+            if (self.descriptorCalculator==None 
+                or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"

@@ -45,6 +45,14 @@ class GENERALPrimitives(PrimitiveSet):
         if add:
             rc.addInput(files)
         yield rc
+        
+    def copy(self, rc):
+        for ad in rc.getInputsAsAstroData():
+            from copy import deepcopy
+            nd = deepcopy(ad)
+            nd.filename = "copy_"+os.path.basename(ad.filename)
+            rc.reportOutput(nd)
+        yield rc
     def setInputs(self, rc):
         files = rc["files"]
         if files != None:

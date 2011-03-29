@@ -141,6 +141,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                             format = format,
                                             name = whoami(),
                                             ad = dataset)
+    detector_x_bin.pytype = int
+    
     def detector_y_bin(self, dataset, format = None, **args):
         # DESCRIPTOR VALUE PROTOTYPE
         # semi-kludge to use DescriptorValue in all cases
