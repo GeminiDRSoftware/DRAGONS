@@ -887,7 +887,7 @@ integrates other functionality.
         :param ver: New "EXTVER" for the given extension
         :type ver: int
 
-            Note: This member only works on single extension AstroData instances.
+        Note: This member only works on single extension AstroData instances.
 
         The renameExt() function is used in order to rename an HDU with a new
         EXTNAME and EXTVER based identifier.  Merely changing the EXTNAME and 
@@ -895,13 +895,13 @@ integrates other functionality.
         Though the values change in the pyfits.Header object, there are special
         HDU class members which are not updated. 
         
-        :warning: This function maniplates private (or somewhat private)  HDU
-            members, specifically "name" and "_extver". STSCI has been
-            informed of the issue and
-            has made a special HDU function for performing the renaming. 
-            When generally available, this new function will be used instead of
-            manipulating the  HDU's properties directly, and this function will 
-            call the new pyfits.HDUList(..) function.
+        :warning:   This function maniplates private (or somewhat private)  HDU
+                    members, specifically "name" and "_extver". STSCI has been
+                    informed of the issue and
+                    has made a special HDU function for performing the renaming. 
+                    When generally available, this new function will be used instead of
+                    manipulating the  HDU's properties directly, and this function will 
+                    call the new pyfits.HDUList(..) function.
         """
         # @@TODO: change to use STSCI provided function.
         
