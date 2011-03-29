@@ -144,12 +144,22 @@
                           'userOverride':False    
                            }
                         },        
-        'standardizeInstrumentHeaders':{'suffix':
-                          {
-                           'default': '_headers' , #value to be post pended to this primitives outputs
-                          'recipeOverride': True,
-                          'type': 'str',
-                          'userOverride':False    
-                           }
-                        },        
+        'standardizeInstrumentStructure':
+                    {
+                    'suffix':
+                    {
+                       'default': '_struct' , #value to be post pended to this primitives outputs
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False    
+                    } ,
+                    'addMDF':
+                    {
+                      'default': True , 
+                      'recipeOverride': True,
+                      'type': 'bool',
+                      'userOverride':True                                      
+                     }     
+                     }, 
+        
 }

@@ -662,7 +662,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         be update/created, followed by those that are instrument specific.
         
         :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
+                       create the output name(s).
         :type suffix: string
         
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -672,7 +672,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         try:   
-            log.status('*STARTING* to standardize the headers')
+            log.status('*STARTING* to standardize the headers of the inputs')
             log.debug('Calling standardizeInstrumentHeaders primitive')
             
             # Calling standarizeInstrumentHeaders primitive
@@ -684,7 +684,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # had their headers standardized and can just be passed through.
             rc.reportOutput(rc.getInputs(style='AD')) 
            
-            log.status('*FINISHED* standardizing the headers')
+            log.status('*FINISHED* standardizing the headers of the inputs')
         except:
             # logging the exact message from the actual exception that was 
             # raised in the try block. Then raising a general PrimitiveError 
@@ -697,15 +697,16 @@ class GEMINIPrimitives(GENERALPrimitives):
     def standardizeStructure(self,rc):
         """
         This primitive ensures the MEF structure is ready for further 
-        processing, through adding the MDF if necessary and the needed 
-        keywords to the headers.  First the MEF's will be checked for the 
-        general Gemini structure requirements and then the instrument specific
-        ones if needed. If the data requires a MDF to be attached, use the 
-        'addMDF' flag to make this happen 
+        processing, through adding the MDF if necessary.  
+        The primitive calls the instrument specific version to perform the 
+        actual work. Data of type GMOS_SPECT, GMOS_LS and GMOS_MOS will 
+        have the 'addMDF' flag automatically set to True, while GMOS_IMAGE will
+        have it set to False; else the 'addMDF' flag can be used to force this 
+        to happen 
         (eg. standardizeStructure(addMDF=True)).
         
         :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
+                       create the output name(s).
         :type suffix: string
         
         :param addMDF: A flag to turn on/off appending the appropriate MDF 
@@ -720,47 +721,21 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         try:
-            log.status('*STARTING* to standardize the structure of input data')
+            log.status('*STARTING* to standardize the structure of the inputs')
+            log.debug('Calling standardizeInstrumentStructure primitive')
             
-            #$$$$ MAYBE SET THIS TO FALSE IF GMOS_IMAGE AND TRUE IF GMOS_SPEC?$
-            # Add the MDF if not set to false
-            if rc['addMDF'] is True:
-                log.debug('Calling attachMDF primitive')
-                # Calling the attachMDF primitive
-                rc.run('attachMDF(logLevel='+str(rc['logLevel'])+')')
-                log.status('Successfully returned to '+
-                           'standardizeStructure from the attachMDF primitive')
-
-            for ad in rc.getInputs(style='AD'):
-                log.debug('Calling gemt.stdObsStruct on '+ad.filename)
-                gemt.stdObsStruct(ad)
-                log.status('Completed standardizing the structure for '+
-                           ad.filename)
-                
-                # Adding a GEM-TLM (automatic) and STDSTRUC time stamps 
-                # to the PHU
-                ad.historyMark(key='STDSTRUC',stomp=False)
-                # Updating the file name with the suffix for this   
-                # primitive and then reporting the new file to the reduction 
-                # context
-                log.debug('Calling gemt.fileNameUpdater on '+ad.filename)
-                ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   suffix=rc['suffix'], 
-                                                   strip=False)
-                log.status('File name updated to '+ad.filename)
-                # Updating logger with updated/added time stamps
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('file = '+ad.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                             category='header')
-                log.fullinfo('STDSTRUC = '+ad.phuGetKeyValue('STDSTRUC'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')  
-                rc.reportOutput(ad)
-   
-            log.status('*FINISHED* standardizing the structure of input data')
+            # Calling standarizeInstrumentStructure primitive
+            rc.run('standardizeInstrumentStructure(logLevel='+
+                                               str(rc['logLevel'])+
+                                               'addMDF='+str(rc['addMDF'])+')') 
+           
+            # Reporting the original files through to the reduction context
+            # All the work was done to the inputs in 
+            # standardizeInstrumentHeaders, so at this point the inputs have
+            # had their headers standardized and can just be passed through.
+            rc.reportOutput(rc.getInputs(style='AD')) 
+           
+            log.status('*FINISHED* standardizing the structure of the inputs')
         except:
             # logging the exact message from the actual exception that was 
             # raised in the try block. Then raising a general PrimitiveError 

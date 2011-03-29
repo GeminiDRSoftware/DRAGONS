@@ -22,11 +22,6 @@ PRIMITIVES SETS:
    GMOS_IMAGE_primitives.rst   
    
 
-.. toctree::
-   :maxdepth: 1   
-   
-   GMOS_SPECT_primitives.rst  
-   
 =========
 RECIPES:
 =========  

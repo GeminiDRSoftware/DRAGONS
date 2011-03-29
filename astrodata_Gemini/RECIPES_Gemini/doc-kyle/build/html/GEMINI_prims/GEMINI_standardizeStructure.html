@@ -62,11 +62,12 @@ the hierarchy tree.  It inherits all the primitives to the level above
 <dt id="primitives_GEMINI.GEMINIPrimitives.standardizeStructure">
 <tt class="descname">standardizeStructure</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="../_modules/primitives_GEMINI.html#GEMINIPrimitives.standardizeStructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.standardizeStructure" title="Permalink to this definition">¶</a></dt>
 <dd><p>This primitive ensures the MEF structure is ready for further 
-processing, through adding the MDF if necessary and the needed 
-keywords to the headers.  First the MEF&#8217;s will be checked for the 
-general Gemini structure requirements and then the instrument specific
-ones if needed. If the data requires a MDF to be attached, use the 
-&#8216;addMDF&#8217; flag to make this happen 
+processing, through adding the MDF if necessary.  
+The primitive calls the instrument specific version to perform the 
+actual work. Data of type GMOS_SPECT, GMOS_LS and GMOS_MOS will 
+have the &#8216;addMDF&#8217; flag automatically set to True, while GMOS_IMAGE will
+have it set to False; else the &#8216;addMDF&#8217; flag can be used to force this 
+to happen 
 (eg. standardizeStructure(addMDF=True)).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

@@ -150,4 +150,50 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             raise PrimitiveError("Problem creating fringe from "+
                                  rc.inputsAsStr())
         yield rc  
+        
+    def standardizeInstrumentStructure(self,rc):
+        """
+        This primitive is called by standardizeStructure to add an MDF to the
+        inputs if they are of type SPECT, BUT since this is the version of the 
+        primitive in GMOS_IMAGE, no MDF will be added and the inputs will
+        pass through with only changes to time stamps and filenames. 
+        The Science Function standardize_structure_gmos in standardize.py is
+        utilized to do the work for this primitive.
+        
+        :param suffix: Value to be post pended onto each input name(s) to 
+                       create the output name(s).
+        :type suffix: string
+        
+        :param addMDF: A flag to turn on/off appending the appropriate MDF 
+                       file to the inputs.
+        :type addMDF: Python boolean (True/False)
+                      default: True
+                      
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'], logLevel=rc['logLevel'])
+        try:           
+            log.status('*STARTING* to standardize the structure (GMOS_IMAGE)')                         
+            log.debug('Calling standardize.standardize_structure_gmos')
+            adOutputs = standardize.standardize_structure_gmos(
+                                            adInputs=rc.getInputs(style='AD'),
+                                                        addMDF=rc['addMDF'],     
+                                                        suffix=rc['suffix'])
+            
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOutputs) 
+            
+            log.status('*FINISHED* standardizing the structure (GMOS_IMAGE)')        
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
+        
+        yield rc     
+
 

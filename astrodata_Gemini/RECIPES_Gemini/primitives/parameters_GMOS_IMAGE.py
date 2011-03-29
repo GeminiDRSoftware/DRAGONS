@@ -55,4 +55,21 @@
                       'userOverride':False  
                      },  
                     }, 
-}
+'standardizeInstrumentStructure':
+                    {
+                    'suffix':
+                    {
+                       'default': '_struct' , #value to be post pended to this primitives outputs
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False    
+                    } ,
+                    'addMDF':
+                    {
+                      'default': False , 
+                      'recipeOverride': True,
+                      'type': 'bool',
+                      'userOverride':True                                      
+                     }     
+                     }, 
+}             
