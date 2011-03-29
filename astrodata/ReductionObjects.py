@@ -18,6 +18,9 @@ class ReductionExcept:
         when the exception is not caught."""
         return self.message
         
+class IterationError(ReductionExcept):
+    pass
+    
 class ReductionObject(object):
 
     recipeLib = None
@@ -136,6 +139,10 @@ class ReductionObject(object):
                 yield rc
         except SettingFixedParam, e:
             print "${RED}"+str(e)+"${NORMAL}"
+        except TypeError,e:
+            print 'Recieved TypeError: "%s" during iteration' % e
+            msg = "The running primitive, '%s', probably lacks 'yield rc'." % primname
+            raise IterationError(msg)
         except:
             print "%(name)s failed due to an exception." %{'name':primname}
             raise
