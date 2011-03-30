@@ -179,7 +179,7 @@
                     },
                     'addMDF':
                     {
-                      'default': False , 
+                      'default': True , 
                       'recipeOverride': True,
                       'type': 'bool',
                       'userOverride':True                                      

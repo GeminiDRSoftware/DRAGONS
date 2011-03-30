@@ -59,8 +59,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to add the BPM frame(s) to the input data')
             
             #$$$$$$$$$$$$$ TO BE callibration search, correct when ready $$$$$$$
-            BPM_11 = AstroData(lookupPath('Gemini/GMOS/GMOS_BPM_11.fits'))
-            BPM_22 = AstroData(lookupPath('Gemini/GMOS/GMOS_BPM_22.fits'))
+            BPM_11 = AstroData(lookupPath('Gemini/GMOS/BPM/GMOS_BPM_11.fits'))
+            BPM_22 = AstroData(lookupPath('Gemini/GMOS/BPM/GMOS_BPM_22.fits'))
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             # Instantiate a list of suitable BPMs to be passed to addBPM func 

@@ -727,7 +727,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Calling standarizeInstrumentStructure primitive
             rc.run('standardizeInstrumentStructure(logLevel='+
                                                str(rc['logLevel'])+
-                                               'addMDF='+str(rc['addMDF'])+')') 
+                                               ',addMDF='+str(rc['addMDF'])+')') 
            
             # Reporting the original files through to the reduction context
             # All the work was done to the inputs in 

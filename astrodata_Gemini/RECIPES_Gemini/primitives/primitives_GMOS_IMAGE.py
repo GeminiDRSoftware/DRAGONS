@@ -13,6 +13,7 @@ from primitives_GEMINI import GEMINIPrimitives
 from primitives_GEMINI import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
 from gempy.science import gmosScience
+from gempy.science import standardize
 from gempy import geminiTools as gemt
 from gempy.instruments import gmosTools as gmost
 from gempy.geminiCLParDicts import CLDefaultParamsDict
