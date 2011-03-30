@@ -1,0 +1,224 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>primitives_GMOS_SPECT &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for primitives_GMOS_SPECT</h1><div class="highlight"><pre>
+<span class="c">#Author: Kyle Mede, June 2010</span>
+<span class="c">#from Reductionobjects import Reductionobject</span>
+<span class="kn">from</span> <span class="nn">primitives_GMOS</span> <span class="kn">import</span> <span class="n">GMOSPrimitives</span><span class="p">,</span> <span class="n">pyrafLoader</span>
+<span class="c"># All GEMINI IRAF task wrappers.</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">filesystem</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">IDFactory</span>
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">Descriptors</span>
+<span class="kn">from</span> <span class="nn">astrodata.data</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">geminiTools</span>  <span class="k">as</span> <span class="n">gemt</span>
+<span class="kn">from</span> <span class="nn">gempy.instruments</span> <span class="kn">import</span> <span class="n">gmosTools</span>  <span class="k">as</span> <span class="n">gmost</span>
+
+<span class="n">log</span><span class="o">=</span><span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GMOS_SPECTException"><a class="viewcode-back" href="../GMOS_SPECT_primitives.html#primitives_GMOS_SPECT.GMOS_SPECTException">[docs]</a><span class="k">class</span> <span class="nc">GMOS_SPECTException</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; This is the general exception the classes and functions in the</span>
+<span class="sd">    Structures.py module raise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s">&quot;Exception Raised in Recipe System&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This constructor takes a message to print to the user.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">msg</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This str conversion member returns the message given by the user (or the default message)</span>
+<span class="sd">        when the exception is not caught.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span>
+</div>
+<div class="viewcode-block" id="GMOS_SPECTPrimitives"><a class="viewcode-back" href="../GMOS_SPECT_prims/GMOS_SPECT_attachMDF.html#primitives_GMOS_SPECT.GMOS_SPECTPrimitives">[docs]</a><span class="k">class</span> <span class="nc">GMOS_SPECTPrimitives</span><span class="p">(</span><span class="n">GMOSPrimitives</span><span class="p">):</span>
+    <span class="n">astrotype</span> <span class="o">=</span> <span class="s">&quot;GMOS_SPECT&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">):</span>
+        <span class="n">GMOSPrimitives</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rc</span>
+
+<div class="viewcode-block" id="GMOS_SPECTPrimitives.standardizeInstrumentHeaders"><a class="viewcode-back" href="../GMOS_SPECT_primitives.html#primitives_GMOS_SPECT.GMOS_SPECTPrimitives.standardizeInstrumentHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">standardizeInstrumentHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This primitive is called by standardizeHeaders to makes the changes and </span>
+<span class="sd">        additions to the headers of the input files that are GMOS_SPEC </span>
+<span class="sd">        specific.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logLevel: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logLevel: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">logLevel</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logLevel&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span> 
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&quot;AD&quot;</span><span class="p">):</span> 
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;calling stdInstHdrs&#39;</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">)</span>
+                <span class="n">gmost</span><span class="o">.</span><span class="n">stdInstHdrs</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span> 
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;instrument headers fixed&#39;</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">)</span> 
+                
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Problem preparing the image.&quot;</span><span class="p">,</span><span class="s">&#39;critical&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> 
+        
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GMOS_SPECTPrimitives.attachMDF"><a class="viewcode-back" href="../GMOS_SPECT_prims/GMOS_SPECT_attachMDF.html#primitives_GMOS_SPECT.GMOS_SPECTPrimitives.attachMDF">[docs]</a>    <span class="k">def</span> <span class="nf">attachMDF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This primitive is used to add an MDF if there is a MASKNAME in the   </span>
+<span class="sd">        images PHU only. It is called by the primitive standardizeStructure</span>
+<span class="sd">        during the prepare recipe if the parameter addMDF=True.</span>
+<span class="sd">        ***********************************************</span>
+<span class="sd">        will be upgraded later, early testing complete</span>
+<span class="sd">        ***********************************************</span>
+<span class="sd">        </span>
+<span class="sd">        :param suffix: Value to be post pended onto each input name(s) to </span>
+<span class="sd">                         create the output name(s).</span>
+<span class="sd">        :type suffix: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param logLevel: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logLevel: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">logLevel</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logLevel&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>           
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span> <span class="o">=</span><span class="s">&#39;AD&#39;</span><span class="p">):</span>
+                <span class="n">infilename</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">filename</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;file having MDF attached= &#39;</span><span class="o">+</span><span class="n">infilename</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">)</span>
+                
+                <span class="n">pathname</span> <span class="o">=</span> <span class="s">&#39;kyles_test_images/&#39;</span> <span class="c">#$$$$ HARDCODED FOR NOW, TILL FIX COMES FROM CRAIG</span>
+                <span class="n">maskname</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&quot;MASKNAME&quot;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">stdinfo</span><span class="p">(</span><span class="s">&quot;maskname = &quot;</span><span class="o">+</span><span class="n">maskname</span><span class="p">,</span><span class="s">&#39;stdinfo&#39;</span><span class="p">)</span>
+                <span class="n">inMDFname</span> <span class="o">=</span> <span class="s">&#39;kyles_test_images/&#39;</span><span class="o">+</span><span class="n">maskname</span> <span class="o">+</span><span class="s">&#39;.fits&#39;</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;input MDF file = &#39;</span><span class="o">+</span><span class="n">inMDFname</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">)</span>
+                <span class="n">admdf</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">inMDFname</span><span class="p">)</span>
+                <span class="n">admdf</span><span class="o">.</span><span class="n">renameExt</span><span class="p">(</span><span class="s">&#39;MDF&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>  <span class="c">#$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER??</span>
+                <span class="n">admdf</span><span class="o">.</span><span class="n">extSetKeyValue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">admdf</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;EXTNAME&#39;</span><span class="p">,</span> <span class="s">&#39;MDF&#39;</span><span class="p">,</span><span class="s">&quot;Extension name&quot;</span> <span class="p">)</span>
+                <span class="n">admdf</span><span class="o">.</span><span class="n">extSetKeyValue</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">admdf</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="s">&#39;EXTVER&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span><span class="s">&quot;Extension version&quot;</span> <span class="p">)</span> <span class="c">#$$$ HARDCODED EXTVER=1 FOR NOW, CHANGE LATER?? this one is to add the comment</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">admdf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">getHeader</span><span class="p">())</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">admdf</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
+                
+                <span class="n">ad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">moredata</span><span class="o">=</span><span class="n">admdf</span><span class="p">)</span>  
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">(),</span><span class="s">&#39;status&#39;</span><span class="p">)</span>
+                
+                <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="o">=</span><span class="n">gemt</span><span class="o">.</span><span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span><span class="n">suffix</span><span class="o">=</span><span class="n">rc</span><span class="p">[</span><span class="s">&quot;suffix&quot;</span><span class="p">],</span> <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">rc</span><span class="o">.</span><span class="n">reportOutput</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;finished adding the MDF&#39;</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Problem preparing the image.&quot;</span><span class="p">,</span> <span class="s">&#39;critical&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+</div>
+<div class="viewcode-block" id="GMOS_SPECTPrimitives.validateInstrumentData"><a class="viewcode-back" href="../GMOS_SPECT_primitives.html#primitives_GMOS_SPECT.GMOS_SPECTPrimitives.validateInstrumentData">[docs]</a>    <span class="k">def</span> <span class="nf">validateInstrumentData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">rc</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This primitive is called by validateData to validate the GMOS_SPEC </span>
+<span class="sd">        specific data checks for all input files.</span>
+<span class="sd">        </span>
+<span class="sd">        :param logLevel: Verbosity setting for log messages to the screen.</span>
+<span class="sd">        :type logLevel: int. </span>
+<span class="sd">                          This value can be set for each primitive individually </span>
+<span class="sd">                          in a recipe only (ie. not in the parameter file). </span>
+<span class="sd">                          If no value is specified during the recipe, the value </span>
+<span class="sd">                          set during the call to reduce or its default (2) will </span>
+<span class="sd">                          be used.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">logLevel</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rc</span><span class="p">[</span><span class="s">&#39;logLevel&#39;</span><span class="p">]))</span>
+        <span class="k">try</span><span class="p">:</span>        
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">rc</span><span class="o">.</span><span class="n">getInputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&quot;AD&quot;</span><span class="p">):</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;validating data for file = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">)</span>
+                <span class="n">gmost</span><span class="o">.</span><span class="n">valInstData</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;data validated for file = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">)</span>
+                
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Problem preparing the image.&quot;</span><span class="p">,</span><span class="s">&#39;critical&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> 
+        <span class="k">yield</span> <span class="n">rc</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
