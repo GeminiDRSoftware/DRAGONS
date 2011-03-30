@@ -39,7 +39,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     :param BPMs: The BPM(s) to be added to the input(s).
     :type BPMs: 
        AstroData objects in a list, or a single instance.
-       Note: If there is multiple inputs and one BPM provided, then the
+       Note: If there are multiple inputs and one BPM provided, then the
        same BPM will be applied to all inputs; else the BPMs list  
        must match the length of the inputs.
            
@@ -59,7 +59,8 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, funcName='add_bpm')
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                                            funcName='add_bpm')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
                    
@@ -181,7 +182,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
             # If BPM frames exist, send a warning message to the logger
             else:
                 log.warning('BPM frames all ready exist for '+
-                             adOut.filename+', so addBPM will add new ones')
+                             adOut.filename+', so add_bpm will add new ones')
                 
             # Updating GEM-TLM (automatic) and ADDBPM time stamps to the PHU
             # and updating logger with updated/added time stamps
@@ -1178,7 +1179,8 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
             # measure the IQ of the current image 
             iqdata = getiq.gemiq(tmpWriteName, function=function, 
                                   verbose=True, display=display, 
-                                  mosaic=mosaic, qa=qa)
+                                  mosaic=mosaic, qa=qa,
+                                  debug=True)####
             
             # End time for measuring IQ of current file
             et = time.time()
