@@ -216,16 +216,28 @@ class GeminiLogger(object):
             # set to default, CRITICAL, if all else are false
             self.ch.setLevel(logging.CRITICAL)
     
-    def changeConsoleLevel(self, logLevel):
+    def changeLevels(self, logLevel=None, debug=None):
         """
-        A function to allow for changing the level of the console handler.
+        A function to allow for changing the level of the console handler 
+        (and file handler if debug is set to True or False).
         It re-initializes the handlers, re-sets their levels and then
         re-finalizes them.
         
         :param logLevel: The NEW verbosity setting for the lowest level of 
                          messages to print to the screen.
         :type logLevel: integer from 0-6, or 10 following above chart
+        
+        :param debug: Flag to log debug level messages to file. 
+                      NOTE: this is independent of logLevel for the screen msgs.
+        :type debug: python boolean (True/False). 
+                     None indicates to not change file handler level. 
         """
+        # updating private member variable _debug if debug not None
+        if debug==True:
+            self._debug = True
+        elif debug==False:
+            self._debug = False
+            
         # re-initializing the handlers 
         self.initializeHandlers()
         # setting console level of re-initialized console handler
@@ -604,7 +616,7 @@ def getGeminiLog(logLevel=None, logType='main'):
                         #print 'GL574: updating verbosity of existing log to '+str(logLevel)
                         
                         # updating the console level and reloading the handlers
-                        _geminiLogger = log.changeConsoleLevel(logLevel)
+                        _geminiLogger = log.changeLevels(logLevel=logLevel)
                         break
                     else:
                         # levels matched, so just pass current log back
