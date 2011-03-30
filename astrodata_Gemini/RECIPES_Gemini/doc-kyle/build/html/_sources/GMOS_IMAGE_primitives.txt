@@ -10,7 +10,8 @@ Primitives:
 =================
   
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    GMOS_IMAGE_prims/GMOS_IMAGE_fringeCorrect.rst
    GMOS_IMAGE_prims/GMOS_IMAGE_makeFringeFrame.rst
+   GMOS_IMAGE_prims/GMOS_IMAGE_standardizeInstrumentStructure.rst

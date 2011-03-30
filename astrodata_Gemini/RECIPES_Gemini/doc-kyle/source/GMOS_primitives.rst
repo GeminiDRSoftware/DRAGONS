@@ -20,4 +20,6 @@ Primitives:
    GMOS_prims/GMOS_overscanSubtract.rst
    GMOS_prims/GMOS_overscanTrim.rst
    GMOS_prims/GMOS_standardizeInstrumentHeaders.rst
+   GMOS_prims/GMOS_standardizeInstrumentStructure.rst
    GMOS_prims/GMOS_validateInstrumentData.rst
+   
