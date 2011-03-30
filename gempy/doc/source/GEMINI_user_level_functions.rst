@@ -3,7 +3,7 @@ Gemini 'User Level Functions':
 
 
 .. toctree::
-   :maxdepth: 11
+   :maxdepth: 12
 
    sciFunctions/function-add_bpm.rst
    sciFunctions/function-add_dq.rst
@@ -16,4 +16,5 @@ Gemini 'User Level Functions':
    sciFunctions/function-normalize_flat.rst
    sciFunctions/function-overscan_trim.rst
    sciFunctions/function-standardize_headers_gemini.rst
+   sciFunctions/function-add_mdf.rst
    

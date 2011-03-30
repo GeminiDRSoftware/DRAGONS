@@ -1,0 +1,1444 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gempy.geminiTools &mdash; gempy v0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gempy v0.1 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for gempy.geminiTools</h1><div class="highlight"><pre>
+<span class="c"># Author: Kyle Mede, May 2010</span>
+<span class="c"># This module provides many functions used by all primitives </span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+<span class="kn">from</span> <span class="nn">astrodata.AstroData</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">astrodata.Errors</span> <span class="kn">import</span> <span class="n">ToolboxError</span>
+
+<div class="viewcode-block" id="biassecStrTonbiascontam"><a class="viewcode-back" href="../../allTools/tool_biassecStrTonbiascontam.html#gempy.geminiTools.biassecStrTonbiascontam">[docs]</a><span class="k">def</span> <span class="nf">biassecStrTonbiascontam</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">biassec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    This function works with nbiascontam() of the CLManager. </span>
+<span class="sd">    It will find the largest horizontal difference between biassec and </span>
+<span class="sd">    BIASSEC for each SCI extension in a single input.  This value will </span>
+<span class="sd">    be the new bias contamination value for use in IRAF scripts.</span>
+<span class="sd">    </span>
+<span class="sd">    :param ad: AstroData instance to calculate the bias contamination for</span>
+<span class="sd">    :type ad: AstroData instance</span>
+<span class="sd">    </span>
+<span class="sd">    :param biassec: biassec parameter of format &#39;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#39;</span>
+<span class="sd">    :type biassec: string  </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span> 
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># Split up the input triple list into three separate ones</span>
+        <span class="n">ccdStrList</span> <span class="o">=</span> <span class="n">biassec</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;],[&#39;</span><span class="p">)</span>
+        <span class="c"># Prepare the to-be lists of lists</span>
+        <span class="n">ccdIntList</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">string</span> <span class="ow">in</span> <span class="n">ccdStrList</span><span class="p">:</span>
+            <span class="c"># Use secStrToIntList function to convert each string version</span>
+            <span class="c"># of the list into actual integer lists and load it into the lists</span>
+            <span class="c"># of lists</span>
+            <span class="n">ccdIntList</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">secStrToIntList</span><span class="p">(</span><span class="n">string</span><span class="p">))</span>
+        
+        <span class="c"># Setting the return value to be updated in the loop below    </span>
+        <span class="n">retvalue</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">)):</span>
+            <span class="c"># Retrieving current BIASSEC value</span>
+            <span class="n">BIASSEC</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">extGetKeyValue</span><span class="p">((</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="s">&#39;BIASSEC&#39;</span><span class="p">)</span>
+            <span class="c"># Converting the retrieved string into a integer list</span>
+            <span class="n">BIASSEClist</span> <span class="o">=</span> <span class="n">secStrToIntList</span><span class="p">(</span><span class="n">BIASSEC</span><span class="p">)</span>
+            <span class="c"># Setting the lower case biassec list to the appropriate list in the </span>
+            <span class="c"># lists of lists created above the loop</span>
+            <span class="n">biasseclist</span> <span class="o">=</span> <span class="n">ccdIntList</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="c"># Ensuring both biassec&#39;s have the same vertical coords</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">biasseclist</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">BIASSEClist</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="ow">and</span> \
+            <span class="p">(</span><span class="n">biasseclist</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="n">BIASSEClist</span><span class="p">[</span><span class="mi">3</span><span class="p">]):</span>
+                <span class="c"># If overscan/bias section is on the left side of the chip</span>
+                <span class="k">if</span> <span class="n">biasseclist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&lt;</span><span class="mi">50</span><span class="p">:</span> 
+                    <span class="c"># Ensuring left X coord of both biassec&#39;s are equal</span>
+                    <span class="k">if</span> <span class="n">biasseclist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">BIASSEClist</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> 
+                        <span class="c"># Set the number of contaminating columns to the </span>
+                        <span class="c"># difference between the biassec&#39;s right X coords</span>
+                        <span class="n">nbiascontam</span> <span class="o">=</span> <span class="n">BIASSEClist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">biasseclist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="c"># If left X coords of biassec&#39;s don&#39;t match, set number of </span>
+                    <span class="c"># contaminating columns to 4 and make a error log message</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;left horizontal components of biassec and&#39;</span><span class="o">+</span>
+                                  <span class="s">&#39; BIASSEC did not match, so using default&#39;</span><span class="o">+</span>
+                                  <span class="s">&#39; nbiascontam=4&#39;</span><span class="p">)</span>
+                        <span class="n">nbiascontam</span> <span class="o">=</span> <span class="mi">4</span>
+                <span class="c"># If overscan/bias section is on the right side of chip</span>
+                <span class="k">else</span><span class="p">:</span> 
+                    <span class="k">if</span> <span class="n">biasseclist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">BIASSEClist</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> 
+                        <span class="n">nbiascontam</span> <span class="o">=</span> <span class="n">BIASSEClist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">biasseclist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;right horizontal components of biassec&#39;</span><span class="o">+</span>
+                                  <span class="s">&#39; and BIASSEC did not match, so using &#39;</span><span class="o">+</span>
+                                  <span class="s">&#39;default nbiascontam=4&#39;</span><span class="p">)</span> 
+                        <span class="n">nbiascontam</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="c"># Overscan/bias section is not on left or right side of chip, so </span>
+            <span class="c"># set to number of contaminated columns to 4 and log error message</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;vertical components of biassec and BIASSEC &#39;</span><span class="o">+</span>
+                          <span class="s">&#39;parameters did not match, so using default &#39;</span><span class="o">+</span>
+                          <span class="s">&#39;nbiascontam=4&#39;</span><span class="p">)</span>
+                <span class="n">nbiascontam</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="c"># Find the largest nbiascontam value throughout all chips and </span>
+            <span class="c"># set it as the value to be returned  </span>
+            <span class="k">if</span> <span class="n">nbiascontam</span> <span class="o">&gt;</span> <span class="n">retvalue</span><span class="p">:</span>  
+                <span class="n">retvalue</span> <span class="o">=</span> <span class="n">nbiascontam</span>
+            
+        <span class="k">return</span> <span class="n">retvalue</span>
+    
+    <span class="c"># If all the above checks and attempts to calculate a new nbiascontam fail,</span>
+    <span class="c"># make a error log message and return the value 4. so exiting &#39;gracefully&#39;.        </span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;An error occurred while trying to calculate the &#39;</span><span class="o">+</span>
+                  <span class="s">&#39;nbiascontam, so using default value = 4&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">4</span> 
+</div>
+<div class="viewcode-block" id="fileNameUpdater"><a class="viewcode-back" href="../../allTools/tool_fileNameUpdater.html#gempy.geminiTools.fileNameUpdater">[docs]</a><span class="k">def</span> <span class="nf">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">infilename</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function is for updating the file names of astrodata objects.</span>
+<span class="sd">    It can be used in a few different ways.  For simple post/pre pending of</span>
+<span class="sd">    the infilename string, there is no need to define adIn or strip. The </span>
+<span class="sd">    current filename for adIn will be used if infilename is not defined. </span>
+<span class="sd">    The examples below should make the main uses clear.</span>
+<span class="sd">        </span>
+<span class="sd">    Note: </span>
+<span class="sd">    1.if the input filename has a path, the returned value will have</span>
+<span class="sd">    path stripped off of it.</span>
+<span class="sd">    2. if strip is set to True, then adIn must be defined.</span>
+<span class="sd">          </span>
+<span class="sd">    :param adIn: input astrodata instance having its filename being updated</span>
+<span class="sd">    :type adIn: astrodata object</span>
+<span class="sd">    </span>
+<span class="sd">    :param infilename: filename to be updated</span>
+<span class="sd">    :type infilename: string</span>
+<span class="sd">    </span>
+<span class="sd">    :param suffix: string to put between end of current filename and the </span>
+<span class="sd">                   extension </span>
+<span class="sd">    :type suffix: string</span>
+<span class="sd">    </span>
+<span class="sd">    :param prefix: string to put at the beginning of a filename</span>
+<span class="sd">    :type prefix: string</span>
+<span class="sd">    </span>
+<span class="sd">    :param strip: Boolean to signal that the original filename of the astrodata</span>
+<span class="sd">                  object prior to processing should be used. adIn MUST be </span>
+<span class="sd">                  defined for this to work.</span>
+<span class="sd">    :type strip: Boolean</span>
+<span class="sd">    </span>
+<span class="sd">    ::</span>
+<span class="sd">    </span>
+<span class="sd">     fileNameUpdater(adIn=myAstrodataObject, suffix=&#39;_prepared&#39;, strip=True)</span>
+<span class="sd">     result: &#39;N20020214S022_prepared.fits&#39;</span>
+<span class="sd">        </span>
+<span class="sd">     fileNameUpdater(infilename=&#39;N20020214S022_prepared.fits&#39;, suffix=&#39;_biasCorrected&#39;)</span>
+<span class="sd">     result: &#39;N20020214S022_prepared_biasCorrected.fits&#39;</span>
+<span class="sd">        </span>
+<span class="sd">     fileNameUpdater(adIn=myAstrodataObject, prefix=&#39;testversion_&#39;)</span>
+<span class="sd">     result: &quot;testversion_N20020214S022.fits&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span> 
+
+    <span class="c"># Check there is a name to update</span>
+    <span class="k">if</span> <span class="n">infilename</span><span class="o">==</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+        <span class="c"># if both infilename and adIn are not passed in, then log critical msg</span>
+        <span class="k">if</span> <span class="n">adIn</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;A filename or an astrodata object must be passed &#39;</span><span class="o">+</span>
+                         <span class="s">&#39;into fileNameUpdater, so it has a name to update&#39;</span><span class="p">)</span>
+        <span class="c"># adIn was passed in, so set infilename to that ad&#39;s filename</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">infilename</span> <span class="o">=</span> <span class="n">adIn</span><span class="o">.</span><span class="n">filename</span>
+            
+    <span class="c"># Strip off any path that the input file name might have</span>
+    <span class="n">basefilename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">infilename</span><span class="p">)</span>
+
+    <span class="c"># Split up the filename and the file type ie. the extension</span>
+    <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">filetype</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">basefilename</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">strip</span><span class="p">:</span>
+        <span class="c"># Grabbing the value of PHU key &#39;ORIGNAME&#39;</span>
+        <span class="n">phuOrigFilename</span> <span class="o">=</span> <span class="n">adIn</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;ORIGNAME&#39;</span><span class="p">)</span> 
+        <span class="c"># If key was &#39;None&#39;, ie. storeOriginalName() wasn&#39;t ran yet, then run it now</span>
+        <span class="k">if</span> <span class="n">phuOrigFilename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># Storing the original name of this astrodata object in the PHU</span>
+            <span class="n">phuOrigFilename</span> <span class="o">=</span> <span class="n">adIn</span><span class="o">.</span><span class="n">storeOriginalName</span><span class="p">()</span>
+            
+        <span class="c"># Split up the filename and the file type ie. the extension</span>
+        <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">filetype</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">phuOrigFilename</span><span class="p">)</span>
+        
+    <span class="c"># Create output filename</span>
+    <span class="n">outFileName</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="n">suffix</span><span class="o">+</span><span class="n">filetype</span>
+    <span class="k">return</span> <span class="n">outFileName</span>
+    </div>
+<div class="viewcode-block" id="listFileMaker"><a class="viewcode-back" href="../../allTools/tool_listFileMaker.html#gempy.geminiTools.listFileMaker">[docs]</a><span class="k">def</span> <span class="nf">listFileMaker</span><span class="p">(</span><span class="nb">list</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">listName</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        This function creates a list file of the input to IRAF.</span>
+<span class="sd">        If the list requested all ready exists on disk, then it&#39;s filename</span>
+<span class="sd">        is returned.</span>
+<span class="sd">        This function is utilized by the CLManager. </span>
+<span class="sd">        NOTE: &#39;@&#39; must be post pended onto this listName if not done all ready </span>
+<span class="sd">        for use with IRAF.</span>
+<span class="sd">        </span>
+<span class="sd">        :param list: list of filenames to be written to a list file.</span>
+<span class="sd">        :type list: list of strings</span>
+<span class="sd">        </span>
+<span class="sd">        :param listName: Name of file list is to be written to.</span>
+<span class="sd">        :type listName: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">listName</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&quot;listName can not be None, please provide a string&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">listName</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">listName</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">listName</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">:</span>
+                    <span class="n">fh</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">item</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>                    
+                <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">listName</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&quot;Could not write inlist file for stacking.&quot;</span><span class="p">)</span> 
+        </div>
+<span class="k">def</span> <span class="nf">logDictParams</span><span class="p">(</span><span class="n">indict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A function to log the parameters in a provided dictionary.  Main use</span>
+<span class="sd">    is to log the values in the dictionaries of parameters for function </span>
+<span class="sd">    calls using the ** method.</span>
+<span class="sd">    </span>
+<span class="sd">    :param indict: Dictionary full of parameters/settings to be recorded as </span>
+<span class="sd">                   fullinfo log messages.</span>
+<span class="sd">    :type indict: dictionary. </span>
+<span class="sd">                  ex. {&#39;param1&#39;:param1_value, &#39;param2&#39;:param2_value,...}</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">indict</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; = &#39;</span><span class="o">+</span><span class="nb">repr</span><span class="p">(</span><span class="n">indict</span><span class="p">[</span><span class="n">key</span><span class="p">]),</span> 
+                     <span class="n">category</span><span class="o">=</span><span class="s">&#39;parameters&#39;</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="nbiascontam"><a class="viewcode-back" href="../../allTools/tool_nbiascontam.html#gempy.geminiTools.nbiascontam">[docs]</a><span class="k">def</span> <span class="nf">nbiascontam</span><span class="p">(</span><span class="n">adInputs</span><span class="p">,</span> <span class="n">biassec</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function will find the largest difference between the horizontal </span>
+<span class="sd">    component of every BIASSEC value and those of the biassec parameter. </span>
+<span class="sd">    The returned value will be that difference as an integer and it will be</span>
+<span class="sd">    used as the value for the nbiascontam parameter used in the gireduce </span>
+<span class="sd">    call of the overscanSubtract primitive.</span>
+<span class="sd">    </span>
+<span class="sd">    :param adInputs: AstroData instance(s) to calculate the bias contamination </span>
+<span class="sd">    :type adInputs: AstroData instance in a list</span>
+<span class="sd">    </span>
+<span class="sd">    :param biassec: biassec parameter of format &#39;[#:#,#:#],[#:#,#:#],[#:#,#:#]&#39;</span>
+<span class="sd">    :type biassec: string </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="c"># Prepare a stored value to be compared between the inputs</span>
+    <span class="n">retval</span><span class="o">=</span><span class="mi">0</span>
+    <span class="c"># Loop through the inputs</span>
+    <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">adInputs</span><span class="p">:</span>
+        <span class="c"># Pass the retrieved value to biassecStrToBiasContam function</span>
+        <span class="c"># to do the work in finding the difference of the biassec&#39;s</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">biassecStrTonbiascontam</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">biassec</span><span class="p">)</span>
+        <span class="c"># Check if value returned for this input is larger. Keep the largest</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="n">retval</span><span class="p">:</span>
+            <span class="n">retval</span> <span class="o">=</span> <span class="n">val</span>
+    <span class="k">return</span> <span class="n">retval</span>
+    </div>
+<div class="viewcode-block" id="observationMode"><a class="viewcode-back" href="../../allTools/tool_observationMode.html#gempy.geminiTools.observationMode">[docs]</a><span class="k">def</span> <span class="nf">observationMode</span><span class="p">(</span><span class="n">ad</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    A basic function to determine if the input is one of </span>
+<span class="sd">    (IMAGE|IFU|MOS|LONGSLIT) type.  It returns the type as a string. If input is  </span>
+<span class="sd">    none of these types, then None is returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">types</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">getTypes</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;IMAGE&#39;</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;IMAGE&#39;</span>
+        <span class="k">elif</span> <span class="s">&#39;IFU&#39;</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;IFU&#39;</span>
+        <span class="k">elif</span> <span class="s">&#39;MOS&#39;</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;MOS&#39;</span>
+        <span class="k">elif</span> <span class="s">&#39;LONGSLIT&#39;</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;LONGSLIT&#39;</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Input &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="o">+</span>
+                            <span class="s">&#39; is not of type IMAGE or IFU or MOS or LONGSLIT.&#39;</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="pyrafBoolean"><a class="viewcode-back" href="../../allTools/tool_pyrafBoolean.html#gempy.geminiTools.pyrafBoolean">[docs]</a><span class="k">def</span> <span class="nf">pyrafBoolean</span><span class="p">(</span><span class="n">pythonBool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A very basic function to reduce code repetition that simply &#39;casts&#39; any </span>
+<span class="sd">    given Python boolean into a pyraf/IRAF one for use in the CL scripts.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+    <span class="kn">import</span> <span class="nn">pyraf</span>
+    
+    <span class="c"># If a boolean was passed in, convert it</span>
+    <span class="k">if</span> <span class="n">pythonBool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pyraf</span><span class="o">.</span><span class="n">iraf</span><span class="o">.</span><span class="n">yes</span>
+    <span class="k">elif</span>  <span class="ow">not</span> <span class="n">pythonBool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pyraf</span><span class="o">.</span><span class="n">iraf</span><span class="o">.</span><span class="n">no</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ToolBoxError</span><span class="p">(</span><span class="s">&#39;DANGER DANGER Will Robinson, pythonBool passed &#39;</span><span class="o">+</span>
+        <span class="s">&#39;in was not True or False, and thats just crazy talk :P&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="secStrToIntList"><a class="viewcode-back" href="../../allTools/tool_secStrToIntList.html#gempy.geminiTools.secStrToIntList">[docs]</a><span class="k">def</span> <span class="nf">secStrToIntList</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    A function to convert a string representing a list of integers to </span>
+<span class="sd">    an actual list of integers.</span>
+<span class="sd">    </span>
+<span class="sd">    :param string: string to be converted</span>
+<span class="sd">    :type string: string of format &#39;[#1:#2,#3:#4]&#39;</span>
+<span class="sd">    </span>
+<span class="sd">    returns list of ints [#1,#2,#3,#4]</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Strip off the brackets and then split up into a string list </span>
+    <span class="c"># using the &#39;,&#39; delimiter</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;[&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;]&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+    <span class="c"># Split up strings into X and Y components using &#39;:&#39; delimiter</span>
+    <span class="n">Ys</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+    <span class="n">Xs</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+    <span class="c"># Prepare the list and then fill it with the string coordinates </span>
+    <span class="c"># converted to integers</span>
+    <span class="n">retl</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">retl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">Ys</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">retl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">Ys</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">retl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">Xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">retl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">Xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">retl</span>
+</div>
+<div class="viewcode-block" id="update_key_value"><a class="viewcode-back" href="../../allTools/tool-update_key_value.html#gempy.geminiTools.update_key_value">[docs]</a><span class="k">def</span> <span class="nf">update_key_value</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">valueFuncStr</span><span class="p">,</span> <span class="n">phu</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a function to update header keys, perform logging of the changes</span>
+<span class="sd">    and write history of change to the PHU.</span>
+<span class="sd">    </span>
+<span class="sd">    :param ad: astrodata instance to perform header key updates on</span>
+<span class="sd">    :type ad: an AstroData instance</span>
+<span class="sd">    </span>
+<span class="sd">    :param valueFuncStr: string for an astrodata function or descriptor to </span>
+<span class="sd">                         perform on the input ad.</span>
+<span class="sd">                         ie. for ad.countExts(&#39;SCI&#39;), </span>
+<span class="sd">                         valueFuncStr=&quot;countExts(&#39;SCI&#39;)&quot;</span>
+<span class="sd">    :type valueFuncStr: string </span>
+<span class="sd">    </span>
+<span class="sd">    :param phu: Is this update to be performed on the phu?</span>
+<span class="sd">    :type phu: Python boolean (True/False)</span>
+<span class="sd">               If False, the ad input must ONLY have ONE extension.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span>
+    <span class="n">keyAndCommentDict</span> <span class="o">=</span> <span class="p">{</span>    <span class="s">&#39;pixel_scale()&#39;</span><span class="p">:[</span><span class="s">&#39;PIXSCALE&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;Pixel scale in Y in [arcsec/pixel]&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;gain()&#39;</span><span class="p">:[</span><span class="s">&#39;GAIN&#39;</span><span class="p">,</span> <span class="s">&#39;Gain [e-/ADU]&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;dispersion_axis()&#39;</span><span class="p">:[</span><span class="s">&#39;DISPAXIS&#39;</span><span class="p">,</span><span class="s">&#39;Dispersion axis&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;countExts(&quot;SCI&quot;)&#39;</span><span class="p">:[</span><span class="s">&#39;NSCIEXT&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;Number of science extensions&#39;</span><span class="p">],</span>
+                             <span class="c">#storeOriginalName() actually all ready writes to the PHU, but doubling it doesn&#39;t hurt.</span>
+                             <span class="s">&#39;storeOriginalName()&#39;</span><span class="p">:[</span><span class="s">&#39;ORIGNAME&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;Original filename prior to processing&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;read_noise()&#39;</span><span class="p">:[</span><span class="s">&#39;RDNOISE&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;readout noise in [e-]&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;non_linear_level()&#39;</span><span class="p">:[</span><span class="s">&#39;NONLINEA&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;Non-linear regime level in [ADU]&#39;</span><span class="p">],</span>
+                             <span class="s">&#39;saturation_level()&#39;</span><span class="p">:[</span><span class="s">&#39;SATLEVEL&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;Saturation level in [ADU]&#39;</span><span class="p">],</span>                                    
+                         <span class="p">}</span>
+    <span class="c"># Extract key and comment for input valueFuncStr from above dict</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">keyAndCommentDict</span><span class="p">[</span><span class="n">valueFuncStr</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">comment</span> <span class="o">=</span> <span class="n">keyAndCommentDict</span><span class="p">[</span><span class="n">valueFuncStr</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="k">if</span> <span class="n">phu</span><span class="p">:</span>
+        <span class="c"># Try to get orig value of key for history purposes, if not there</span>
+        <span class="c"># then no history is needed</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">original_value</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">comment</span> <span class="o">=</span> <span class="s">&#39;(UPDATED) &#39;</span><span class="o">+</span><span class="n">comment</span>
+            <span class="n">historyComment</span> <span class="o">=</span> <span class="s">&#39;Raw keyword &#39;</span><span class="o">+</span><span class="n">key</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">original_value</span><span class="p">)</span><span class="o">+</span>\
+                                      <span class="s">&#39; was overwritten in the PHU.&#39;</span>
+            <span class="c"># Add and log history of orig key val to PHU before changing it </span>
+            <span class="n">ad</span><span class="o">.</span><span class="n">getPHUHeader</span><span class="p">()</span><span class="o">.</span><span class="n">add_history</span><span class="p">(</span><span class="n">historyComment</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;History comment added: &#39;</span><span class="o">+</span><span class="n">historyComment</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">original_value</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">comment</span> <span class="o">=</span> <span class="s">&#39;(NEW) &#39;</span><span class="o">+</span><span class="n">comment</span>
+            
+        <span class="c"># handling storeOriginalName issues caused by deepcopy</span>
+        <span class="k">if</span> <span class="n">valueFuncStr</span><span class="o">==</span><span class="s">&#39;storeOriginalName()&#39;</span><span class="p">:</span> 
+            <span class="n">origname</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;ORIGNAME&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">origname</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">origname</span><span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">storeOriginalName</span><span class="p">()</span> 
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Unable to store original filename as does </span><span class="se">\</span>
+<span class="s">                                    not exist in this astrodata instance </span><span class="se">\</span>
+<span class="s">                                    anymore.  If using deepcopy on objects, </span><span class="se">\</span>
+<span class="s">                                    please ensure to use storeOriginalName()</span><span class="se">\</span>
+<span class="s">                                    on them prior to performing a deepcopy.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># using exec to perform the requested valueFuncStr on input ad    </span>
+            <span class="k">exec</span><span class="p">(</span><span class="s">&#39;try:</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span>
+                 <span class="s">&#39;    output_value = ad.</span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">valueFuncStr</span><span class="o">+</span>
+                 <span class="s">&#39;except:</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span>
+                 <span class="s">&#39;    output_value = &quot;An exception was thrown&quot;&#39;</span><span class="p">)</span>
+        
+            <span class="c"># Perform key update</span>
+            <span class="n">ad</span><span class="o">.</span><span class="n">phuSetKeyValue</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">output_value</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
+        <span class="c"># log key update</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">key</span><span class="o">+</span><span class="s">&#39; = &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="n">key</span><span class="p">)),</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+        
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># double check there is only one extension being passed in</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span><span class="o">!=</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;If phu=False, only a single extension AstroData </span><span class="se">\</span>
+<span class="s">                        instance can be passed in to update_key_value.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Try to get orig value of key for history purposes, if not there</span>
+            <span class="c"># then no history is needed</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">original_value</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">getKeyValue</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">comment</span> <span class="o">=</span> <span class="s">&#39;(UPDATED) &#39;</span><span class="o">+</span><span class="n">comment</span>
+                <span class="n">historyComment</span> <span class="o">=</span> <span class="s">&#39;Raw keyword &#39;</span><span class="o">+</span><span class="n">key</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">original_value</span><span class="p">)</span><span class="o">+</span>\
+                                           <span class="s">&#39; was overwritten in extension &#39;</span><span class="o">+</span>\
+                                          <span class="n">ad</span><span class="o">.</span><span class="n">extname</span><span class="p">()</span><span class="o">+</span><span class="s">&#39;,&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">extver</span><span class="p">())</span>
+                <span class="c"># Add and log history of orig key val to PHU before changing it</span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">getPHUHeader</span><span class="p">()</span><span class="o">.</span><span class="n">add_history</span><span class="p">(</span><span class="n">historyComment</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;History comment added: &#39;</span><span class="o">+</span><span class="n">historyComment</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">original_value</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">comment</span> <span class="o">=</span> <span class="s">&#39;(NEW) &#39;</span><span class="o">+</span><span class="n">comment</span>
+            <span class="c"># using exec to perform the requested valueFuncStr on input ad</span>
+            <span class="k">exec</span><span class="p">(</span><span class="s">&#39;try:</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span>
+                 <span class="s">&#39;    output_value = ad.</span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">valueFuncStr</span><span class="o">+</span>
+                 <span class="s">&#39;except:</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">+</span>
+                 <span class="s">&#39;    output_value = &quot;An exception was thrown&quot;&#39;</span><span class="p">)</span>
+            <span class="c">#print &#39;GT399: key=&#39;+str(key)+&#39;, output_value=&#39;+str(output_value)+&#39;, comment=&#39;+str(comment)</span>
+            <span class="c"># Perform key update</span>
+            <span class="n">ad</span><span class="o">.</span><span class="n">setKeyValue</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">output_value</span><span class="p">),</span> <span class="n">comment</span><span class="p">)</span>
+            <span class="c"># log key update</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">key</span><span class="o">+</span><span class="s">&#39; = &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">getKeyValue</span><span class="p">(</span><span class="n">key</span><span class="p">)),</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="stdObsStruct"><a class="viewcode-back" href="../../allTools/tool_stdObsStruct.html#gempy.geminiTools.stdObsStruct">[docs]</a><span class="k">def</span> <span class="nf">stdObsStruct</span><span class="p">(</span><span class="n">ad</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    This function is used by standardizeStructure in primitives_GEMINI.</span>
+<span class="sd">    </span>
+<span class="sd">    It currently checks that the SCI extensions header key EXTNAME = &#39;SCI&#39; </span>
+<span class="sd">    and EXTVER matches that of descriptor values </span>
+<span class="sd">        </span>
+<span class="sd">    :param ad: astrodata instance to perform header key updates on</span>
+<span class="sd">    :type ad: an AstroData instance</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span>    
+    <span class="c"># Formatting so logger looks organized for these messages</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> 
+                 <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span> 
+    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;file = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> 
+                 <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+    <span class="c"># A loop to add the missing/needed keywords in the SCI extensions</span>
+    <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+        <span class="c"># Setting EXTNAME = &#39;SCI&#39; and EXTVER = descriptor value</span>
+        <span class="n">ext</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="s">&#39;EXTNAME&#39;</span><span class="p">,</span> <span class="s">&#39;SCI&#39;</span><span class="p">,</span> <span class="s">&#39;Extension name&#39;</span><span class="p">)</span>        
+        <span class="n">ext</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">update</span><span class="p">(</span> <span class="s">&#39;EXTVER&#39;</span><span class="p">,</span> <span class="n">ext</span><span class="o">.</span><span class="n">extver</span><span class="p">(),</span> <span class="s">&#39;Extension version&#39;</span><span class="p">)</span> 
+        <span class="c"># Updating logger with new header key values</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;SCI extension number &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s">&#39;EXTVER&#39;</span><span class="p">])</span><span class="o">+</span>
+                     <span class="s">&#39; keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>       
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;EXTNAME = &#39;</span><span class="o">+</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span> <span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;EXTVER = &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s">&#39;EXTVER&#39;</span><span class="p">]),</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span> <span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> 
+                     <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span> 
+        
+<span class="c">#---------------------------------OBJECTS/CLASES--------------------------------</span>
+</div>
+<div class="viewcode-block" id="CLManager"><a class="viewcode-back" href="../../allTools/class_CLManager.html#gempy.geminiTools.CLManager">[docs]</a><span class="k">class</span> <span class="nc">CLManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a class that will take care of all the preparation and wrap-up </span>
+<span class="sd">    tasks needed when writing a primitive that wraps a IRAF CL routine.</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># The original names of the files at the start of the </span>
+    <span class="c"># primitive which called CLManager</span>
+    <span class="n">_preCLimageNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">_preCLrefnames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c"># The version of the names for input to the CL script</span>
+    <span class="n">imageInsCLdiskNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">refInsCLdiskNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">arrayInsCLdiskNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c"># Preparing other &#39;global&#39; variables to be accessed throughout this class</span>
+    <span class="c"># Ins</span>
+    <span class="n">imageIns</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">refIns</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">arrayIns</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">imageInsListName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">refInsListName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">arrayInsListName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c"># Outs</span>
+    <span class="n">imageOuts</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">refOuts</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">arrayOuts</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">numArrayOuts</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">imageOutsNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">refOutsNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">arrayOutsNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">imageOutsListName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">refOutsListName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">arrayOutsListName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="c"># Others</span>
+    <span class="n">suffix</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">funcName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">combinedImages</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">templog</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="bp">None</span>
+     
+<div class="viewcode-block" id="CLManager.__init__"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_init.html#gempy.geminiTools.CLManager.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imageIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">refIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">arrayIns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>  
+                  <span class="n">imageOutsNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">refOutsNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">numArrayOuts</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">combinedImages</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">funcName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This instantiates all the globally accessible variables (within the </span>
+<span class="sd">        CLManager class) and prepares the inputs for use in CL scripts by </span>
+<span class="sd">        temporarily writing them to disk with temporary names.  </span>
+<span class="sd">        </span>
+<span class="sd">        By using temporary filenames for the on disk copies </span>
+<span class="sd">        of the inputs, we avoid name collisions and by only temporarily writing</span>
+<span class="sd">        them to disk, the &#39;user level functions&#39; that utilize the CLManager</span>
+<span class="sd">        will appear as if their processing is all done in memory.</span>
+<span class="sd">       </span>
+<span class="sd">        NOTE: all input images must have been prepared.</span>
+<span class="sd">        </span>
+<span class="sd">        :param imageIns: Input image(s). </span>
+<span class="sd">                         Use the imageInsFiles function to return the file names</span>
+<span class="sd">                         for the temporary disk file versions of these inputs</span>
+<span class="sd">                         in any desired form for input to IRAF.</span>
+<span class="sd">        :type imageIns: astrodata object(s); Either as single instance, a list </span>
+<span class="sd">                        of them, or None.</span>
+<span class="sd">        </span>
+<span class="sd">        :param refIns: Input reference image(s). This may be used for any </span>
+<span class="sd">                       second set of input images.</span>
+<span class="sd">                       Use the refInsFiles function to return the file names</span>
+<span class="sd">                       for the temporary disk file versions of these inputs</span>
+<span class="sd">                       in any desired form for input to IRAF.</span>
+<span class="sd">        :type adIns: astrodata object(s); Either as single instance, a list of </span>
+<span class="sd">                     them, or None.</span>
+<span class="sd">        </span>
+<span class="sd">        :param arrayIns: Input array(s) of object locations in the images or </span>
+<span class="sd">                         any other arrays needed for input to IRAF.</span>
+<span class="sd">                         Use the arrayInsFiles function to return the file names</span>
+<span class="sd">                         for the temporary disk file versions of these inputs</span>
+<span class="sd">                         in any desired form for input to IRAF.</span>
+<span class="sd">        :type arrayIns: Python list-of-lists with each element of an array being </span>
+<span class="sd">                        an entire line to be written to an input file for IRAF; </span>
+<span class="sd">                        Either list of input arrays or None.</span>
+<span class="sd">                        Format: </span>
+<span class="sd">                        [[list1-line1,list1-line2,...],[list2-line2,list2-line2,</span>
+<span class="sd">                        ...],...]</span>
+<span class="sd">                        another way of looking at it if lists are objects:</span>
+<span class="sd">                        [LIST1, LIST2,...]</span>
+<span class="sd">                        Even if only a single list is to be passed in, it MUST  </span>
+<span class="sd">                        be within another set of [].</span>
+<span class="sd">        </span>
+<span class="sd">        :param suffix: Desired suffix to be added to input filenames to create </span>
+<span class="sd">                       the output names.</span>
+<span class="sd">                       Use this option if not using the imageOutsNames/</span>
+<span class="sd">                       refOutsNames parameters for the output names.</span>
+<span class="sd">        :type suffix: String</span>
+<span class="sd">        </span>
+<span class="sd">        :param imageOutsNames: Desired final name(s) of output image(s) from </span>
+<span class="sd">                               IRAF.</span>
+<span class="sd">                               Use the imageOutsFiles function to return these </span>
+<span class="sd">                               file names in any desired form for input to IRAF.</span>
+<span class="sd">        :type imageOutsNames: String(s); Either a single string, a list of them </span>
+<span class="sd">                              of length matching the expected number of output </span>
+<span class="sd">                              images from IRAF, or None. If None, the list will </span>
+<span class="sd">                              be populated automatically by use of the </span>
+<span class="sd">                              &#39;combinedImages&#39; flag and post pending the </span>
+<span class="sd">                              &#39;suffix&#39; parameter onto the input image names.</span>
+<span class="sd">                             </span>
+<span class="sd">                        </span>
+<span class="sd">        :param refOutsNames: Desired final name(s) of output reference image(s) </span>
+<span class="sd">                             from IRAF. </span>
+<span class="sd">                             These could be used to name any second set of </span>
+<span class="sd">                             output images.</span>
+<span class="sd">                             Use the refOutsFiles function to return these </span>
+<span class="sd">                             file names in any desired form for input to IRAF.</span>
+<span class="sd">        :type refOutsNames: String(s); Either a single string, a list of them of </span>
+<span class="sd">                            length matching the expected number of output </span>
+<span class="sd">                            reference images from IRAF, or None.</span>
+<span class="sd">                            If None, no reference image outputs from IRAF will </span>
+<span class="sd">                            be handled by the CLManager.         </span>
+<span class="sd">        </span>
+<span class="sd">        :param numArrayOuts: The number of expected arrays to be output by IRAF.</span>
+<span class="sd">                             The output array names will be automatically </span>
+<span class="sd">                             created.</span>
+<span class="sd">                             Use the arrayOutsFiles function to return these</span>
+<span class="sd">                             file names in any desired form for input to IRAF.</span>
+<span class="sd">        :type numArrayOuts: int or None.</span>
+<span class="sd">                            If 0 or None, no array outputs from IRAF will be </span>
+<span class="sd">                            handled by the CLManager.</span>
+<span class="sd">        </span>
+<span class="sd">        :param combinedImages: A flag to indicated that the input images of </span>
+<span class="sd">                               imageIns will be combined to form one single </span>
+<span class="sd">                               image output from IRAF.</span>
+<span class="sd">                               The use of this parameter is optional and is  </span>
+<span class="sd">                               overridden by providing imageOutsNames. </span>
+<span class="sd">                               No parallel version of this argument exists for</span>
+<span class="sd">                               refIns.</span>
+<span class="sd">        :type combinedImages: Python boolean (True/False)</span>
+<span class="sd">        </span>
+<span class="sd">        :param funcName: Name of the Python function using the CLManager. This </span>
+<span class="sd">                         is used to name the temporary files on disk for input </span>
+<span class="sd">                         to IRAF; so using the function name makes it easier to </span>
+<span class="sd">                         track down any errors that might occur.</span>
+<span class="sd">        :type funcName: String</span>
+<span class="sd">        </span>
+<span class="sd">        :param log: logger object to send log messges to</span>
+<span class="sd">        :type log: A gemLog object from astrodata/adutils/gemLog.py .</span>
+<span class="sd">                   It is an upgraded version of the Python logger for use </span>
+<span class="sd">                   with all new scripts in gemini_python/ .</span>
+<span class="sd">                   If None, then a null logger object will be created and used</span>
+<span class="sd">                   (ie, no log file, no messages to screen).  </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Casting the two types of input images to lists for internal use, </span>
+        <span class="c"># if not None</span>
+        <span class="k">if</span> <span class="n">imageIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">imageIns</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span> <span class="o">=</span> <span class="n">imageIns</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span> <span class="o">=</span> <span class="p">[</span><span class="n">imageIns</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">refIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>  
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">refIns</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refIns</span> <span class="o">=</span> <span class="n">refIns</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refIns</span> <span class="o">=</span> <span class="p">[</span><span class="n">refIns</span><span class="p">]</span>
+        <span class="c"># Check that the inputs have been prepared, else then CL scripts might</span>
+        <span class="c"># not work correctly.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="n">imageIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GPREPARE&#39;</span><span class="p">)</span><span class="o">==</span><span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> \
+                   <span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;PREPARE&#39;</span><span class="p">)</span><span class="o">==</span><span class="bp">None</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="n">refIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refIns</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GPREPARE&#39;</span><span class="p">)</span><span class="o">==</span><span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> \
+                   <span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;PREPARE&#39;</span><span class="p">)</span><span class="o">==</span><span class="bp">None</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># All inputs prepared, then continue, else the False status will trigger</span>
+        <span class="c"># the caller to not proceed further.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>
+            <span class="c"># Create a temporary log file object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">templog</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">()</span> 
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">log</span><span class="p">:</span>
+                <span class="c"># Get the REAL log file object</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">log</span>
+            <span class="c"># load these to global early as they are needed below</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="n">suffix</span>
+            <span class="c"># start up global lists</span>
+            <span class="k">if</span> <span class="n">imageIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_preCLimageNames</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageInsCLdiskNames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">refIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_preCLrefnames</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refInsCLdiskNames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">arrayIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">arrayInsCLdiskNames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c"># load up the rest of the inputs to being global</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span> <span class="o">=</span> <span class="n">imageOutsNames</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span> <span class="o">=</span> <span class="n">refOutsNames</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">combinedImages</span> <span class="o">=</span> <span class="n">combinedImages</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">funcName</span> <span class="o">=</span> <span class="n">funcName</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">arrayIns</span> <span class="o">=</span> <span class="n">arrayIns</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">numArrayOuts</span> <span class="o">=</span> <span class="n">numArrayOuts</span>
+            <span class="c"># now that everything is loaded to global make the uniquePrefix</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="s">&#39;tmp&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span>
+            <span class="c"># now the preCLwrites can load up the input lists and write </span>
+            <span class="c"># the temp files to disk</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preCLwrites</span><span class="p">()</span>
+     </div>
+<div class="viewcode-block" id="CLManager.arrayInsFiles"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_arrayInsFiles.html#gempy.geminiTools.CLManager.arrayInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">arrayInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function to get the file names for the temporary files written to </span>
+<span class="sd">        disk for the arrayIns as either a string (or comma-separated string if </span>
+<span class="sd">        input was a list), a list of the filenames, or a list file. </span>
+<span class="sd">        These files are required to be on disk by IRAF and the file names are </span>
+<span class="sd">        automatically created when the CLManager is instantiated based on the </span>
+<span class="sd">        funcName parameter and the array location in the &#39;arrayIns&#39; list.</span>
+<span class="sd">        </span>
+<span class="sd">        :param type: Desired form of the temp filenames on disk for arrayIns.</span>
+<span class="sd">        :type type: &#39;string&#39; for filenames as a string (comma-separated if input was a list),</span>
+<span class="sd">                    &#39;list&#39; for filenames as strings in a python list, or</span>
+<span class="sd">                    &#39;listFile&#39; for a IRAF type list file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">!=</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;string&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayInsCLdiskNames</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;list&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayInsCLdiskNames</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;listFile&#39;</span><span class="p">:</span>
+                <span class="n">arrayInsListName</span> <span class="o">=</span> <span class="n">listFileMaker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayInsCLdiskNames</span><span class="p">,</span>
+                                                    <span class="n">listName</span><span class="o">=</span><span class="s">&#39;arrayList&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">arrayInsListName</span> <span class="o">=</span> <span class="n">arrayInsListName</span>
+                <span class="k">return</span> <span class="s">&#39;@&#39;</span><span class="o">+</span><span class="n">arrayInsListName</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
+                           <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>    
+    </div>
+<div class="viewcode-block" id="CLManager.arrayOutsFiles"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_arrayOutsFiles.html#gempy.geminiTools.CLManager.arrayOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">arrayOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function is used to return the names of the array files to be written </span>
+<span class="sd">        to disk by IRAF in the form desired to pass into the IRAF routine call.</span>
+<span class="sd">        The names of these files is automatically produced simply based</span>
+<span class="sd">        on the funcName parameter, the string &#39;_arrayOut_&#39; and the integer value</span>
+<span class="sd">        of the arrays location in the arrayOuts list.</span>
+<span class="sd">        </span>
+<span class="sd">        This function is simply for &#39;convenience&#39; and can be ignored as long</span>
+<span class="sd">        as the filenames in the CLManger.arrayOutsNames are passed into </span>
+<span class="sd">        IRAF properly.</span>
+<span class="sd">        </span>
+<span class="sd">        :param type: Desired form of the filenames on disk for refOutsNames.</span>
+<span class="sd">        :type type: &#39;string&#39; for filenames as a string (comma-separated if input was a list),</span>
+<span class="sd">                    &#39;list&#39; for filenames as strings in a python list, or</span>
+<span class="sd">                    &#39;listFile&#39; for a IRAF type list file.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># returning the arrayOutsNames contents in the form requested, else </span>
+        <span class="c"># error log messsage</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">!=</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;string&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsNames</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;list&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsNames</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;listFile&#39;</span><span class="p">:</span>
+                <span class="n">arrayOutsListName</span> <span class="o">=</span> <span class="n">listFileMaker</span><span class="p">(</span><span class="nb">list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsNames</span><span class="p">,</span>
+                                    <span class="n">listName</span><span class="o">=</span><span class="s">&#39;arrayOutsList&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsListName</span> <span class="o">=</span> <span class="n">arrayOutsListName</span>
+                <span class="k">return</span> <span class="s">&#39;@&#39;</span><span class="o">+</span><span class="n">arrayOutsListName</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
+                           <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>
+         </div>
+<div class="viewcode-block" id="CLManager.finishCL"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_finishCL.html#gempy.geminiTools.CLManager.finishCL">[docs]</a>    <span class="k">def</span> <span class="nf">finishCL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">         Performs all the finalizing steps after CL script is ran. </span>
+<span class="sd">         This function is just a wrapper for postCLloads but might </span>
+<span class="sd">         contain more later.</span>
+<span class="sd">         </span>
+<span class="sd">        &quot;&quot;&quot;</span>    
+        <span class="n">imageOuts</span><span class="p">,</span> <span class="n">refOuts</span><span class="p">,</span> <span class="n">arrayOuts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postCLloads</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">imageOuts</span><span class="p">,</span> <span class="n">refOuts</span><span class="p">,</span> <span class="n">arrayOuts</span><span class="p">)</span> 
+          </div>
+<div class="viewcode-block" id="CLManager.imageInsFiles"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_imageInsFiles.html#gempy.geminiTools.CLManager.imageInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">imageInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function to get the temporary files written to disk for the imageIns</span>
+<span class="sd">        as either a string (or comma-separated string if input was a list), a </span>
+<span class="sd">        list of the file names, or a list file.  These files are required to </span>
+<span class="sd">        be on disk by IRAF and the file names are automatically created when </span>
+<span class="sd">        the CLManager is instantiated based on the &#39;funcName&#39; parameter and </span>
+<span class="sd">        the original file names of the &#39;imageIns&#39; astrodata objects.</span>
+<span class="sd">        </span>
+<span class="sd">        :param type: Desired form of the temp filenames on disk for imageIns.</span>
+<span class="sd">        :type type: &#39;string&#39; for filenames as a string (comma-separated if input was a list),</span>
+<span class="sd">                    &#39;list&#39; for filenames as strings in a python list, or</span>
+<span class="sd">                    &#39;listFile&#39; for a IRAF type list file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">!=</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;string&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imageInsCLdiskNames</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;list&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageInsCLdiskNames</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;listFile&#39;</span><span class="p">:</span>
+                <span class="n">imageInsListName</span> <span class="o">=</span> <span class="n">listFileMaker</span><span class="p">(</span><span class="nb">list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">imageInsCLdiskNames</span><span class="p">,</span>
+                                    <span class="n">listName</span><span class="o">=</span><span class="s">&#39;imageList&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageInsListName</span> <span class="o">=</span> <span class="n">imageInsListName</span>
+                <span class="k">return</span> <span class="s">&#39;@&#39;</span><span class="o">+</span><span class="n">imageInsListName</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
+                           <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>
+            </div>
+<div class="viewcode-block" id="CLManager.imageOutsFiles"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_imageOutsFiles.html#gempy.geminiTools.CLManager.imageOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">imageOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function is used to return the names of the images that will be  </span>
+<span class="sd">        written to disk by IRAF in the form desired to pass into the IRAF </span>
+<span class="sd">        routine call.</span>
+<span class="sd">        The names of these files can either be defined using</span>
+<span class="sd">        the imageOutsNames parameter set during the CLManager initial call, or</span>
+<span class="sd">        automatically created in one of two ways:</span>
+<span class="sd">        1. Combine case: triggered by,</span>
+<span class="sd">        imageOutsNames=None, combinedImages=True, suffix=&lt;any string&gt;.</span>
+<span class="sd">        Then imageOutsNames will be a list with only the filename from the first </span>
+<span class="sd">        input of imageIns post pended by the value of suffix.</span>
+<span class="sd">        2. Non-combine case: triggered by,</span>
+<span class="sd">        imageOutsNames=None, combinedImages=False, suffix=&lt;any string&gt;.</span>
+<span class="sd">        Then imageOutsNames will be a list with each file name of the imageIns  </span>
+<span class="sd">        post pended by the value of suffix.</span>
+<span class="sd">        </span>
+<span class="sd">        This function is simply for &#39;convenience&#39; and can be ignored as long</span>
+<span class="sd">        as the imageOutsNames is set properly and its filenames are passed into </span>
+<span class="sd">        IRAF properly.</span>
+<span class="sd">        </span>
+<span class="sd">        :param type: Desired form of the filenames on disk for imageOutsNames.</span>
+<span class="sd">        :type type: &#39;string&#39; for filenames as a string (comma-separated if input was a list),</span>
+<span class="sd">                    &#39;list&#39; for filenames as strings in a python list, or</span>
+<span class="sd">                    &#39;listFile&#39; for a IRAF type list file.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Loading up the imageOutsNames list if not done yet and params are set </span>
+        <span class="c"># correctly, else error log message.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinedImages</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="o">!=</span><span class="bp">None</span><span class="p">):</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> 
+                                       <span class="n">suffix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinedImages</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="o">!=</span><span class="bp">None</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> 
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;The &quot;automatic&quot; setting of imageOutsNames can &#39;</span><span class="o">+</span>
+                        <span class="s">&#39;only work if at least the suffix parameter is set&#39;</span><span class="p">)</span>
+        <span class="c"># The parameter was set, ie not None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Cast it to a list for use below</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="p">]</span>   
+        <span class="c"># returning the imageOutsNames contents in the form requested, else error</span>
+        <span class="c"># log messsage</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">!=</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;string&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;list&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;listFile&#39;</span><span class="p">:</span>
+                <span class="n">imageOutsListName</span> <span class="o">=</span> <span class="n">listFileMaker</span><span class="p">(</span><span class="nb">list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="p">,</span>
+                                    <span class="n">listName</span><span class="o">=</span><span class="s">&#39;imageOutsList&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsListName</span> <span class="o">=</span> <span class="n">imageOutsListName</span>
+                <span class="k">return</span> <span class="s">&#39;@&#39;</span><span class="o">+</span><span class="n">imageOutsListName</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
+                           <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>
+             </div>
+<div class="viewcode-block" id="CLManager.obsmodeAdd"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_obsmodeAdd.html#gempy.geminiTools.CLManager.obsmodeAdd">[docs]</a>    <span class="k">def</span> <span class="nf">obsmodeAdd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is an internally used function to add the &#39;OBSMODE&#39; key to the </span>
+<span class="sd">           inputs for use by IRAF routines in the GMOS package.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s">&#39;GMOS&#39;</span> <span class="ow">in</span> <span class="n">ad</span><span class="o">.</span><span class="n">getTypes</span><span class="p">():</span>
+            <span class="n">ad</span><span class="o">.</span><span class="n">phuSetKeyValue</span><span class="p">(</span><span class="s">&#39;OBSMODE&#39;</span><span class="p">,</span> <span class="n">observationMode</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span> <span class="p">,</span> 
+                      <span class="s">&#39;Observing mode (IMAGE|IFU|MOS|LONGSLIT)&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ad</span>    
+    </div>
+<div class="viewcode-block" id="CLManager.obsmodeDel"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_obsmodeDel.html#gempy.geminiTools.CLManager.obsmodeDel">[docs]</a>    <span class="k">def</span> <span class="nf">obsmodeDel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This is an internally used function to delete the &#39;OBSMODE&#39; key from</span>
+<span class="sd">           the outputs from IRAF routines in the GMOS package.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s">&#39;GMOS&#39;</span> <span class="ow">in</span> <span class="n">ad</span><span class="o">.</span><span class="n">getTypes</span><span class="p">():</span>
+            <span class="k">del</span> <span class="n">ad</span><span class="o">.</span><span class="n">getPHU</span><span class="p">()</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s">&#39;OBSMODE&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ad</span>
+    </div>
+<div class="viewcode-block" id="CLManager.postCLloads"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_postCLloads.html#gempy.geminiTools.CLManager.postCLloads">[docs]</a>    <span class="k">def</span> <span class="nf">postCLloads</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; This function takes care of loading the image, reference and/or </span>
+<span class="sd">            array files output by IRAF back into memory, in the form of the </span>
+<span class="sd">            imageOuts, refOuts and arrayOuts variables, and deleting those disk </span>
+<span class="sd">            files. </span>
+<span class="sd">            Then it will delete ALL the temporary files created by the </span>
+<span class="sd">            CLManager.  If the &#39;OBSMODE&#39; phu key was added during preCLwrites</span>
+<span class="sd">            to the imageIns and/or refIns, then it will be deleted here.</span>
+<span class="sd">            </span>
+<span class="sd">            NOTE: all fits files loaded back into memory in the form of </span>
+<span class="sd">            astrodata objects (adOuts, refOuts), will be in &#39;update&#39; mode.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Loading any output images into imageOuts and </span>
+        <span class="c"># killing off any disk files caused by them</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">imageOuts</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Loading output images into imageOuts and&#39;</span><span class="o">+</span>\
+                              <span class="s">&#39; removing temporary files from disk.&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsNames</span><span class="p">:</span>
+                <span class="c"># Loading the file into an astrodata object</span>
+                <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;update&#39;</span><span class="p">)</span>
+                <span class="c"># Removing the &#39;OBSMODE&#39; phu key if it is in there</span>
+                <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obsmodeDel</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="c"># appending the astrodata object to the imageOuts list to be</span>
+                <span class="c"># returned</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageOuts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="c"># Deleting the file from disk</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was loaded into memory&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageOutsListName</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imageOutsListName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary list &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">imageOutsListName</span><span class="o">+</span>
+                                  <span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span>
+        <span class="c"># Loading any output ref images into refOuts and </span>
+        <span class="c"># killing off any disk files caused by them</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">refOuts</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Loading output reference images into refOuts&#39;</span><span class="o">+</span>\
+                              <span class="s">&#39; and removing temporary files from disk.&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="p">:</span>
+                <span class="c"># Loading the file into an astrodata object</span>
+                <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;update&#39;</span><span class="p">)</span>
+                <span class="c"># Removing the &#39;OBSMODE&#39; phu key if it is in there</span>
+                <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obsmodeDel</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="c"># appending the astrodata object to the refOuts list to be</span>
+                <span class="c"># returned</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refOuts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="c"># Deleting the file from disk</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was loaded into memory&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refOutsListName</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refOutsListName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary list &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">refOutsListName</span><span class="o">+</span>
+                                  <span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span> 
+        <span class="c"># Loading any output arrays into arrayOuts and </span>
+        <span class="c"># killing off any disk files caused by them </span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsNames</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">arrayOuts</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Loading output reference array into arrayOuts&#39;</span><span class="o">+</span>\
+                              <span class="s">&#39; and removing temporary files from disk.&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsNames</span><span class="p">:</span>
+                <span class="c"># read in input array txt file to an array with each line</span>
+                <span class="c"># of the file is an element of the array, ie a list of lines.</span>
+                <span class="n">fin</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+                <span class="n">lineList</span> <span class="o">=</span> <span class="n">fin</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+                <span class="n">fin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>                
+                <span class="c"># appending the array to the arrayOuts list to be returned</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">arrayOuts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lineList</span><span class="p">)</span>
+                <span class="c"># Deleting the file from disk</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was loaded into memory&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsListName</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsListName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary list &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsListName</span><span class="o">+</span>
+                                  <span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span> 
+        <span class="c"># Killing off any disk files associated with imageIns</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Removing temporary files associated with &#39;</span><span class="o">+</span>\
+                              <span class="s">&#39;imageIns from disk&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageInsCLdiskNames</span><span class="p">:</span>
+                <span class="c"># Deleting the file from disk</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageInsListName</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imageInsListName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary list &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">imageInsListName</span><span class="o">+</span>
+                                  <span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span> 
+        <span class="c"># Killing off any disk files associated with refIns</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Removing temporary files associated with &#39;</span><span class="o">+</span>\
+                              <span class="s">&#39;refIns from disk&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refInsCLdiskNames</span><span class="p">:</span>
+                <span class="c"># Deleting the file from disk</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refInsListName</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refInsListName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary list &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">refInsListName</span><span class="o">+</span>
+                                  <span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span> 
+        <span class="c"># Killing off any disk files associated with arrayIns</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Removing temporary files associated with &#39;</span><span class="o">+</span>\
+                              <span class="s">&#39;arrayIns from disk&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayInsCLdiskNames</span><span class="p">:</span>
+                <span class="c"># Deleting the file from disk</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayInsListName</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayInsListName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary list &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">arrayInsListName</span><span class="o">+</span>
+                                  <span class="s">&#39; was deleted from disk&#39;</span><span class="p">)</span> 
+                
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imageOuts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">refOuts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayOuts</span><span class="p">)</span>            
+</div>
+<div class="viewcode-block" id="CLManager.preCLimageNames"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_preCLimageNames.html#gempy.geminiTools.CLManager.preCLimageNames">[docs]</a>    <span class="k">def</span> <span class="nf">preCLimageNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Just a simple function to return the value of the private member</span>
+<span class="sd">           variable _preCLimageNames that is a list of the filenames of imageIns.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preCLimageNames</span>
+    </div>
+<div class="viewcode-block" id="CLManager.preCLwrites"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_preCLwrites.html#gempy.geminiTools.CLManager.preCLwrites">[docs]</a>    <span class="k">def</span> <span class="nf">preCLwrites</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The function that writes the files in memory to disk with temporary </span>
+<span class="sd">            names and saves the original and temporary names in lists and </span>
+<span class="sd">            fills out the output file name lists for any output arrays if needed.  </span>
+<span class="sd">            The &#39;OBSMODE&#39; PHU key will also be added to all input GMOS images</span>
+<span class="sd">            of imageIns and refIns.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># preparing the input filenames for temporary input image files to </span>
+        <span class="c"># IRAF if needed along with saving the original astrodata filenames    </span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">imageIns</span><span class="p">:</span>            
+                <span class="c"># Adding the &#39;OBSMODE&#39; phu key if needed</span>
+                <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obsmodeAdd</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="c"># Load up the _preCLimageNames list with the input&#39;s filename</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_preCLimageNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="c"># Strip off all postfixes and prefix filename with a unique prefix</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">,</span> <span class="n">strip</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="c"># store the unique name in imageInsCLdiskNames for later reference</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">imageInsCLdiskNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="c"># Log the name of this temporary file being written to disk</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary image file on disk for input to CL: &#39;</span>
+                                  <span class="o">+</span><span class="n">name</span><span class="p">)</span>
+                <span class="c"># Write this file to disk with its unique filename </span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="c"># preparing the input filenames for temperary input ref image files to </span>
+        <span class="c"># IRAF if needed along with saving the original astrodata filenames</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refIns</span><span class="p">:</span>            
+                <span class="c"># Adding the &#39;OBSMODE&#39; phu key if needed</span>
+                <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obsmodeAdd</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+                <span class="c"># Load up the _preCLrefnames list with the input&#39;s filename</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_preCLrefnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                <span class="c"># Strip off all suffixs and prefix filename with a unique prefix</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">,</span> <span class="n">strip</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="c"># store the unique name in refInsCLdiskNames for later reference</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refInsCLdiskNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="c"># Log the name of this temporary file being written to disk</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary ref file on disk for input to CL: &#39;</span>
+                                  <span class="o">+</span><span class="n">name</span><span class="p">)</span>
+                <span class="c"># Write this file to disk with its unique filename </span>
+                <span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">rename</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="c"># preparing the input filenames for temperary input array files to </span>
+        <span class="c"># IRAF if needed and writing them to disk.   </span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayIns</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+            <span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+            <span class="k">for</span> <span class="n">array</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">arrayIns</span><span class="p">:</span>
+                <span class="c"># creating temp name for array</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="o">+</span><span class="s">&#39;_arrayIn_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">count</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.txt&#39;</span>
+                <span class="c"># store the unique name in arrayInsCLdiskNames for later reference</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">arrayInsCLdiskNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="c"># Log the name of this temporary file being written to disk</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary ref file on disk for input to CL: &#39;</span>
+                                  <span class="o">+</span><span class="n">name</span><span class="p">)</span>
+                <span class="c"># Write this array to text file on disk with its unique filename </span>
+                <span class="n">fout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">array</span><span class="p">:</span>
+                    <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">fout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                
+                <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="o">+</span><span class="mi">1</span>
+        <span class="c"># preparing the output filenames for temperary output array files from </span>
+        <span class="c"># IRAF if needed, no writing here that is done by IRAF.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numArrayOuts</span><span class="o">!=</span><span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numArrayOuts</span><span class="o">!=</span><span class="mi">0</span><span class="p">):</span>
+            <span class="c"># create empty list of array file names to be loaded in loop below</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsNames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">numArrayOuts</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="c"># Create name of output array file</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="o">+</span><span class="s">&#39;_arrayOut_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">count</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.txt&#39;</span>
+                <span class="c"># store the unique name in arrayOutsNames for later reference</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">arrayOutsNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="c"># Log the name of this temporary file being written to disk</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;Temporary ref file on disk for input to CL: &#39;</span>
+                                  <span class="o">+</span><span class="n">name</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="CLManager.refInsFiles"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_refInsFiles.html#gempy.geminiTools.CLManager.refInsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">refInsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function to get the temporary files written to disk for the refIns</span>
+<span class="sd">        as either a string (or comma-separated string if input was a list), a </span>
+<span class="sd">        list of the filenames, or a list file. These files are required to </span>
+<span class="sd">        be on disk by IRAF and the file names are automatically created when </span>
+<span class="sd">        the CLManager is instantiated based on the &#39;funcName&#39; parameter and </span>
+<span class="sd">        the original file names of the &#39;refIns&#39; astrodata objects.</span>
+<span class="sd">        </span>
+<span class="sd">        :param type: Desired form of the temp filenames on disk for refIns.</span>
+<span class="sd">        :type type: &#39;string&#39; for filenames as a string (comma-separated if input was a list),</span>
+<span class="sd">                    &#39;list&#39; for filenames as strings in a python list, or</span>
+<span class="sd">                    &#39;listFile&#39; for a IRAF type list file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">!=</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;string&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refInsCLdiskNames</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;list&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">refInsCLdiskNames</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;listFile&#39;</span><span class="p">:</span>
+                <span class="n">refInsListName</span> <span class="o">=</span> <span class="n">listFileMaker</span><span class="p">(</span><span class="nb">list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">refInsCLdiskNames</span><span class="p">,</span>
+                                    <span class="n">listName</span><span class="o">=</span><span class="s">&#39;refList&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refInsListName</span> <span class="o">=</span> <span class="n">refInsListName</span>
+                <span class="k">return</span> <span class="s">&#39;@&#39;</span><span class="o">+</span><span class="n">refInsListName</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
+                           <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>  
+                </div>
+<div class="viewcode-block" id="CLManager.refOutsFiles"><a class="viewcode-back" href="../../allTools/CLManager_funcs/CLM_refOutsFiles.html#gempy.geminiTools.CLManager.refOutsFiles">[docs]</a>    <span class="k">def</span> <span class="nf">refOutsFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function is used to return the names of the reference images that</span>
+<span class="sd">        will be written to disk by IRAF in the form desired to pass into the </span>
+<span class="sd">        IRAF routine call.</span>
+<span class="sd">        The names of these files can either be defined using</span>
+<span class="sd">        the refOutsNames parameter set during the CLManager initial call, or</span>
+<span class="sd">        automatically created in one way:</span>
+<span class="sd">        Triggered by, refOutsNames=None and suffix=&lt;any string&gt;.</span>
+<span class="sd">        Then refOutsNames will be a list with each file name of the refIns  </span>
+<span class="sd">        post pended by the value of suffix.</span>
+<span class="sd">        </span>
+<span class="sd">        This function is simply for &#39;convenience&#39; and can be ignored as long</span>
+<span class="sd">        as the refOutsNames is set properly and its filenames are passed into </span>
+<span class="sd">        IRAF properly.</span>
+<span class="sd">        </span>
+<span class="sd">        :param type: Desired form of the filenames on disk for refOutsNames.</span>
+<span class="sd">        :type type: &#39;string&#39; for filenames as a string (comma-separated if input was a list),</span>
+<span class="sd">                    &#39;list&#39; for filenames as strings in a python list, or</span>
+<span class="sd">                    &#39;listFile&#39; for a IRAF type list file.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Loading up the refOutsNames list if not done yet and params are set </span>
+        <span class="c"># correctly, else error log message</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="o">!=</span><span class="bp">None</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refIns</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">adIn</span><span class="o">=</span><span class="n">ad</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> 
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;The &quot;automatic&quot; setting of refOutsNames can &#39;</span><span class="o">+</span>
+                        <span class="s">&#39;only work if at least the suffix parameter is set&#39;</span><span class="p">)</span>
+        <span class="c"># The parameter was set, ie not None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Cast it to a list for use below</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="p">]</span> 
+        <span class="c"># returning the refOutsNames contents in the form requested, else error</span>
+        <span class="c"># log messsage</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="o">!=</span><span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;string&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;list&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="o">==</span><span class="s">&#39;listFile&#39;</span><span class="p">:</span>
+                <span class="n">refOutsListName</span> <span class="o">=</span> <span class="n">listFileMaker</span><span class="p">(</span><span class="nb">list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">refOutsNames</span><span class="p">,</span>
+                                    <span class="n">listName</span><span class="o">=</span><span class="s">&#39;refOutsList&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">refOutsListName</span> <span class="o">=</span> <span class="n">refOutsListName</span>
+                <span class="k">return</span> <span class="s">&#39;@&#39;</span><span class="o">+</span><span class="n">refOutsListName</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Parameter &quot;type&quot; must not be an empty string&#39;</span><span class="o">+</span>
+                           <span class="s">&#39;; choose either &quot;string&quot;,&quot;list&quot; or &quot;listFile&quot;&#39;</span><span class="p">)</span>             
+</div></div>
+<div class="viewcode-block" id="IrafStdout"><a class="viewcode-back" href="../../allTools/class_IrafStdout.html#gempy.geminiTools.IrafStdout">[docs]</a><span class="k">class</span> <span class="nc">IrafStdout</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; This is a class to act as the standard output for the IRAF </span>
+<span class="sd">        routines that instead of printing its messages to the screen,</span>
+<span class="sd">        it will print them to the gemlog.py logger that the primitives use</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span><span class="o">=</span><span class="bp">None</span>
+    
+<div class="viewcode-block" id="IrafStdout.__init__"><a class="viewcode-back" href="../../allTools/IrafStdout_funcs/IS_init.html#gempy.geminiTools.IrafStdout.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        A function that is needed IRAF but not used in our wrapping its</span>
+<span class="sd">        scripts.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span>
+    </div>
+<div class="viewcode-block" id="IrafStdout.flush"><a class="viewcode-back" href="../../allTools/IrafStdout_funcs/IS_flush.html#gempy.geminiTools.IrafStdout.flush">[docs]</a>    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A function that is needed IRAF but not used in our wrapping its</span>
+<span class="sd">            scripts</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+    </div>
+<div class="viewcode-block" id="IrafStdout.write"><a class="viewcode-back" href="../../allTools/IrafStdout_funcs/IS_write.html#gempy.geminiTools.IrafStdout.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; This function converts the IRAF console prints to logger calls.</span>
+<span class="sd">            If the print has &#39;PANIC&#39; in it, then it becomes a error log message,</span>
+<span class="sd">            else it becomes a fullinfo message.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s">&#39;PANIC&#39;</span> <span class="ow">in</span> <span class="n">out</span> <span class="ow">or</span> <span class="s">&#39;ERROR&#39;</span> <span class="ow">in</span> <span class="n">out</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;clError&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;clInfo&#39;</span><span class="p">)</span>
+</div></div>
+<div class="viewcode-block" id="ScienceFunctionManager"><a class="viewcode-back" href="../../allTools/class_ScienceFunctionManager.html#gempy.geminiTools.ScienceFunctionManager">[docs]</a><span class="k">class</span> <span class="nc">ScienceFunctionManager</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A manager class to hold functions for performing input checks, naming,</span>
+<span class="sd">    log instantiation... code that is repeated throughout all the &#39;user level</span>
+<span class="sd">    functions&#39; in the gempy libraries (currently those functions in </span>
+<span class="sd">    science/geminiScience.py and gmosScience.py).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Set up global variables </span>
+    <span class="n">adInputs</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">outNames</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">suffix</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">funcName</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">combinedInputs</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="bp">None</span>  
+    
+<div class="viewcode-block" id="ScienceFunctionManager.__init__"><a class="viewcode-back" href="../../allTools/ScienceFunctionManager_funcs/SFM_init.html#gempy.geminiTools.ScienceFunctionManager.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adInputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">outNames</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">funcName</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">combinedInputs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This will load up the global variables to use throughout the manager</span>
+<span class="sd">        functions and instantiate the logger object for use in here and </span>
+<span class="sd">        back in the &#39;user level function&#39; that is utilizing this manager.</span>
+<span class="sd">        </span>
+<span class="sd">        Either a &#39;main&#39; type logger object, if it exists, or a null logger will</span>
+<span class="sd">        be returned from startUp() along with the checked adInputs and outNames.</span>
+<span class="sd">        </span>
+<span class="sd">        :param adInputs: Astrodata inputs to have DQ extensions added to</span>
+<span class="sd">        :type adInputs: Astrodata objects, either a single or a list of objects.</span>
+<span class="sd">                        At least one object MUST be passed in for adInputs.</span>
+<span class="sd">        </span>
+<span class="sd">        :param outNames: filenames of output(s)</span>
+<span class="sd">        :type outNames: String, either a single or a list of strings of same </span>
+<span class="sd">                        length as adInputs.</span>
+<span class="sd">        </span>
+<span class="sd">        :param suffix: String to add on the end of the input filenames </span>
+<span class="sd">                       (or outNames if not None) for the output filenames.</span>
+<span class="sd">        :type suffix: string</span>
+<span class="sd">        </span>
+<span class="sd">        :param funcName: Name of the Python function using this manager.</span>
+<span class="sd">        :type funcName: String</span>
+<span class="sd">        </span>
+<span class="sd">        :param combinedInputs: A flag to indicated that the input images of </span>
+<span class="sd">                               adInputs will be combined to form one single </span>
+<span class="sd">                               image output.</span>
+<span class="sd">                               The use of this parameter is optional and is  </span>
+<span class="sd">                               overridden by providing outNames. </span>
+<span class="sd">        :type combinedInputs: Python boolean (True/False)</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span> <span class="o">=</span> <span class="n">adInputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outNames</span> <span class="o">=</span> <span class="n">outNames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="n">suffix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">funcName</span> <span class="o">=</span> <span class="n">funcName</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">combinedInputs</span> <span class="o">=</span> <span class="n">combinedInputs</span>
+        <span class="c"># loading of the logger </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">()</span>
+    </div>
+<div class="viewcode-block" id="ScienceFunctionManager.autoVardq"><a class="viewcode-back" href="../../allTools/ScienceFunctionManager_funcs/SFM_autoVardq.html#gempy.geminiTools.ScienceFunctionManager.autoVardq">[docs]</a>    <span class="k">def</span> <span class="nf">autoVardq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fl_vardq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is a function to perform either the &#39;AUTO&#39; fl_vardq determination</span>
+<span class="sd">        or just to check convert the value from True-&gt;iraf.yes, False-&gt;iraf.no .</span>
+<span class="sd">        </span>
+<span class="sd">        NOTE: &#39;AUTO&#39; uses the first input to determine if VAR and  </span>
+<span class="sd">        DQ frames exist, so, if the first does, then the rest MUST </span>
+<span class="sd">        also have them as well.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fl_vardq: The value of the fl_vardq parameter at the start of the</span>
+<span class="sd">                         Python user level function.</span>
+<span class="sd">        :type fl_vardq: either: Python bool (True/False) or the string &#39;AUTO&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">astrodata.adutils.gemutil</span> <span class="kn">import</span> <span class="n">pyrafLoader</span>
+        <span class="c"># loading and/or bringing the pyraf related modules into the name-space</span>
+        <span class="n">pyraf</span><span class="p">,</span> <span class="n">gemini</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span> <span class="o">=</span> <span class="n">pyrafLoader</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">fl_vardq</span><span class="o">==</span><span class="s">&#39;AUTO&#39;</span><span class="p">:</span>
+            <span class="c"># if there are matching numbers of VAR, DQ and SCI extensions</span>
+            <span class="c"># then set to yes to ensure the outputs have VAR and DQ&#39;s as well.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">)</span><span class="o">==</span>\
+                        <span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;DQ&#39;</span><span class="p">)</span>\
+                                            <span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">countExts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">):</span>
+                <span class="n">fl_vardq</span><span class="o">=</span><span class="n">yes</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fl_vardq</span><span class="o">=</span><span class="n">no</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># &#39;AUTO&#39; wasn&#39;t selected, so just convert the python bools to iraf</span>
+            <span class="c"># yes or no.</span>
+            <span class="k">if</span> <span class="n">fl_vardq</span><span class="p">:</span>
+                <span class="n">fl_vardq</span><span class="o">=</span><span class="n">yes</span>
+            <span class="k">elif</span> <span class="n">fl_vardq</span><span class="o">==</span><span class="bp">False</span><span class="p">:</span>
+                <span class="n">fl_vardq</span><span class="o">=</span><span class="n">no</span>
+       
+        <span class="k">return</span> <span class="n">fl_vardq</span>
+    </div>
+<div class="viewcode-block" id="ScienceFunctionManager.markHistory"><a class="viewcode-back" href="../../allTools/ScienceFunctionManager_funcs/SFM_markHistory.html#gempy.geminiTools.ScienceFunctionManager.markHistory">[docs]</a>    <span class="k">def</span> <span class="nf">markHistory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adOutputs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">historyMarkKey</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function to use near the end of a python user level function to </span>
+<span class="sd">        add a historyMark timestamp to all the outputs indicating when and what</span>
+<span class="sd">        function was just performed on them, then logging the new historyMarkKey</span>
+<span class="sd">        PHU key and updated &#39;GEM-TLM&#39; key values due to historyMark.</span>
+<span class="sd">        </span>
+<span class="sd">        Note: The GEM-TLM key will be updated, or added if not in the PHU yet, </span>
+<span class="sd">        automatically everytime wrapUp is called.</span>
+<span class="sd">        </span>
+<span class="sd">        :param adOutputs: List of astrodata instance(s) to perform historyMark on.</span>
+<span class="sd">        :type adOutputs: Either a single or multiple astrodata instances in a list.</span>
+<span class="sd">        </span>
+<span class="sd">        :param historyMarkKey: The PHU header key to write the current UT time </span>
+<span class="sd">        :type historyMarkKey: Under 8 character, all caps, string.</span>
+<span class="sd">                              If None, then only &#39;GEM-TLM&#39; is added/updated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># casting inputs to a list if not one all ready to make loop work right</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adOutputs</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+            <span class="n">adOutputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">adOutputs</span><span class="p">]</span>
+        
+        <span class="c"># looping though inputs to perform historyMark on each of them</span>
+        <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">adOutputs</span><span class="p">:</span>
+            <span class="c"># Adding &#39;GEM-TLM&#39; (automatic) and historyMarkKey (if not None)</span>
+            <span class="c"># time stamps to the PHU</span>
+            <span class="n">ad</span><span class="o">.</span><span class="n">historyMark</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">historyMarkKey</span><span class="p">,</span> <span class="n">stomp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            
+            <span class="c"># Updating log with new GEM-TLM and GIFLAT time stamps</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;File = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;~&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;PHU keywords updated/added:</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;header&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;GEM-TLM = &#39;</span><span class="o">+</span><span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="s">&#39;GEM-TLM&#39;</span><span class="p">),</span> 
+                              <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">historyMarkKey</span><span class="o">!=</span><span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="n">historyMarkKey</span><span class="o">+</span><span class="s">&#39; = &#39;</span><span class="o">+</span>
+                                  <span class="n">ad</span><span class="o">.</span><span class="n">phuGetKeyValue</span><span class="p">(</span><span class="n">historyMarkKey</span><span class="p">),</span> 
+                                  <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fullinfo</span><span class="p">(</span><span class="s">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s">&#39;header&#39;</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="ScienceFunctionManager.startUp"><a class="viewcode-back" href="../../allTools/ScienceFunctionManager_funcs/SFM_startUp.html#gempy.geminiTools.ScienceFunctionManager.startUp">[docs]</a>    <span class="k">def</span> <span class="nf">startUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function is to perform the input checks and fill out the outNames</span>
+<span class="sd">        parameter if needed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># Ensuring there are inputs ad&#39;s to work on, else raise</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;The parameter &quot;adInputs&quot; must not be None&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;The parameter &quot;adInputs&quot; must not be</span><span class="se">\</span>
+<span class="s">                                        an empty list&#39;</span><span class="p">)</span>
+                
+            <span class="c"># raise if funcName=None as it needs to be a valid string</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;funcName was None, must be a string.&#39;</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s">&#39;**STARTING** the &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">funcName</span><span class="o">+</span><span class="s">&#39; function&#39;</span><span class="p">)</span>
+    
+            <span class="c"># casting the input ad&#39;s and outNames into lists </span>
+            <span class="c"># for internal use and simplified returning</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">outNames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">outNames</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;outNames must be either a string or a </span><span class="se">\</span>
+<span class="s">                                     list of them.&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Checking combinations of outNames, combinedInputs, suffix and </span>
+            <span class="c"># len(adInputs) are valid</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinedInputs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">)</span><span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;outNames was not None or the same </span><span class="se">\</span>
+<span class="s">                                    length as number of adInputs&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="o">==</span><span class="bp">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;Both outNames and suffix were None&#39;</span><span class="p">)</span>
+                
+            <span class="c"># Checking the current outNames and loading it up if needed</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="p">)</span><span class="o">!=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinedInputs</span><span class="p">:</span>
+                    <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span>
+                                   <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                    <span class="n">outName</span> <span class="o">=</span> <span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">infilename</span><span class="o">=</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+                                              <span class="n">suffix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="p">,</span> <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outName</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calling gemt.fileNameUpdater on &#39;</span><span class="o">+</span>
+                                       <span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+                        <span class="n">outName</span> <span class="o">=</span> <span class="n">fileNameUpdater</span><span class="p">(</span><span class="n">infilename</span><span class="o">=</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+                                                  <span class="n">suffix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="p">,</span> 
+                                                  <span class="n">strip</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outName</span><span class="p">)</span>
+                
+            <span class="c"># return the now checked and loaded up (if needed) adInputs, </span>
+            <span class="c"># outNames and log object.</span>
+            <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adInputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outNames</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">)</span>
+            
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c"># logging the exact message from the actual exception that was </span>
+            <span class="c"># raised in the try block. Then raising a general ToolboxError </span>
+            <span class="c"># with message.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="k">raise</span> <span class="n">ToolboxError</span><span class="p">(</span><span class="s">&#39;An Error occurred during</span><span class="se">\</span>
+<span class="s">                                ScienceFunctionManager.startUp&#39;</span><span class="p">)</span>
+
+ </div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../index.html">gempy v0.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, nz.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
