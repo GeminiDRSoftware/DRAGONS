@@ -1,7 +1,7 @@
 # Author: Kyle Mede, May 2010
 # This module provides many functions used by all primitives 
 
-import os
+import os, sys
 
 import pyfits as pf
 import numpy as np
@@ -414,37 +414,6 @@ def update_key_value(ad, valueFuncStr, phu=True):
             ad.setKeyValue(key, str(output_value), comment)
             # log key update
             log.fullinfo(key+' = '+str(ad.getKeyValue(key)), category='header')
-
-def stdObsStruct(ad):
-    """ 
-    This function is used by standardizeStructure in primitives_GEMINI.
-    
-    It currently checks that the SCI extensions header key EXTNAME = 'SCI' 
-    and EXTVER matches that of descriptor values 
-        
-    :param ad: astrodata instance to perform header key updates on
-    :type ad: an AstroData instance
-    
-    """
-    log = gemLog.getGeminiLog()    
-    # Formatting so logger looks organized for these messages
-    log.fullinfo('*'*50, 
-                 category='header') 
-    log.fullinfo('file = '+ad.filename, category='header')
-    log.fullinfo('~'*50, 
-                 category='header')
-    # A loop to add the missing/needed keywords in the SCI extensions
-    for ext in ad['SCI']:
-        # Setting EXTNAME = 'SCI' and EXTVER = descriptor value
-        ext.header.update( 'EXTNAME', 'SCI', 'Extension name')        
-        ext.header.update( 'EXTVER', ext.extver(), 'Extension version') 
-        # Updating logger with new header key values
-        log.fullinfo('SCI extension number '+str(ext.header['EXTVER'])+
-                     ' keywords updated/added:\n', category='header')       
-        log.fullinfo('EXTNAME = '+'SCI', category='header' )
-        log.fullinfo('EXTVER = '+str(ext.header['EXTVER']), category='header' )
-        log.fullinfo('-'*50, 
-                     category='header') 
         
 #---------------------------------OBJECTS/CLASES--------------------------------
 
