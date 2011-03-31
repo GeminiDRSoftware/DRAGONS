@@ -191,7 +191,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
             # renaming the output ad filename
             adOut.filename = outNames[count]
                     
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
             
             # Appending to output list
             adOutputs.append(adOut)
@@ -346,7 +346,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
             # renaming the output ad filename
             adOut.filename = outNames[count]
                     
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
             
             # Appending to output list
             adOutputs.append(adOut)
@@ -468,7 +468,7 @@ def add_var(adInputs, outNames=None, suffix=None):
             # renaming the output ad filename
             adOut.filename = outNames[count]
                     
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
             
             # Appending to output list
             adOutputs.append(adOut)
@@ -592,7 +592,7 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None):
             # renaming the output ad filename
             adOut.filename = outNames[count]
                     
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
             
             # Appending to output list
             adOutputs.append(adOut)
@@ -1050,7 +1050,7 @@ def flat_correct(adInputs, flats=None, outNames=None, suffix=None):
             # renaming the output ad filename
             adOut.filename = outNames[count]
                     
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
         
             # Appending to output list
             adOutputs.append(adOut)

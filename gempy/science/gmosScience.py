@@ -298,7 +298,7 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
             # renaming the output ad filename
             adOut.filename = outNames[count]
                     
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
             
             # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
             # and updating logger with updated/added time stamps
