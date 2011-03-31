@@ -9,28 +9,6 @@ import time
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ToolboxError
-       
-def valInstData(ad):  
-    """
-    A function used by validateInstrumentData in primitives_GMOS.
-    
-    It currently just checks if there are 1, 3, 6 or 12 SCI extensions 
-    in the input. 
-    
-    :param ad: input astrodata instance to validate
-    :type ad: a single astrodata instance
-    
-    """
-    length=ad.countExts('SCI')
-    # If there are 1, 3, 6, or 12 extensions, all good, if not log a critical 
-    # message and raise an exception
-    if length==1 or length==3 or length==6 or length==12:
-        pass
-    else: 
-        raise ToolboxError('There are NOT 1, 3, 6 or 12 extensions in file = '+
-                     ad.filename)
-
-#------------- GMOS_IMAGE fringe removal funcs ---------------------------  
 
 # There was talk about generalizing this module to work on all imaging data
 # rather than just GMOS images, this is left as a task to look into later.
@@ -100,10 +78,10 @@ def rmImgFringe(inimage, fringe, fl_statscale=False, statsec='',
                              inimage.filename)
         # raising exception if ccd x binning doesn't match 
         else:
-            raise ToolboxError('The CCD X and Y binning for the input image '+inimage.filename+
-                         ' and the input fringe '+fringe.filename+ 
-                         ' do not match.')
-    
+            raise ToolboxError('The CCD X and Y binning for the input image '+
+                               inimage.filename+' and the input fringe '
+                                +fringe.filename+' do not match.')
+                         
     # Converting the statsec string into its useful components if needed                
     if fl_statscale:    
         (extname, extver, x1, x2, y1, y2) = statsecConverter(statsec) 
