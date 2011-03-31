@@ -69,9 +69,14 @@ class DescriptorValue():
                         name = "unknown", 
                         ad = None, 
                         pytype = None):
-                        
+        if pytype == None and self.pytype == None:
+            self.pytype = pytype = type(initval)
+        originalitval = initval
+        if isinstance(initval, DescriptorValue):
+            initval = initval.dictVal
+            
         if pytype:
-            self.pytype = ptype
+            self.pytype = pytype
         else:
             # careful moving this to a function, it gets the CALLER's function name!
             st = inspect.stack()
@@ -102,7 +107,7 @@ class DescriptorValue():
         
         if format:
             self.format = format
-        elif ad.descriptorFormat:
+        elif ad != None and ad.descriptorFormat:
             self.format = ad.descriptorFormat
         else:
             self.format = None
@@ -130,6 +135,9 @@ descriptor value for: %(name)s
     def forDB(self):
         return self.pytype(self.val)
     forNumpy = forDB
+    asPytype = forDB
+    
+    
     def isCollapsable(self):
         oldvalue = None
         for key in self.dictVal:

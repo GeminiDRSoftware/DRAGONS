@@ -115,7 +115,12 @@ if (options.listdescriptors):
     for fun in funs:
         if "_" != fun[0] and (fun.lower() == fun):
             descs.append(fun)
-    print "\t"+"\n\t".join(descs)
+    if True:
+        print "\t"+"\n\t".join(descs)
+    else:
+        #this makes something that looks like a python list with quoted desc names
+        qdescs = [ '"%s"' % s for s in descs]
+        print "["+", ".join(qdescs)+"]"
 elif (options.htmldoc):
     print cl.htmlDoc()
 else:
