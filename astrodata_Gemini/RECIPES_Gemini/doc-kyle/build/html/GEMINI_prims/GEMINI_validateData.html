@@ -63,11 +63,10 @@ the hierarchy tree.  It inherits all the primitives to the level above
 <tt class="descname">validateData</tt><big>(</big><em>rc</em><big>)</big><a class="reference internal" href="../_modules/primitives_GEMINI.html#GEMINIPrimitives.validateData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primitives_GEMINI.GEMINIPrimitives.validateData" title="Permalink to this definition">¶</a></dt>
 <dd><p>This primitive will ensure the data is not corrupted or in an odd 
 format that will affect later steps in the reduction process.  
-It will call a function to take care of the general Gemini issues 
-and then one for the instrument specific ones. If there are issues 
+It directly calls the validateInstrumentData primitive to ensure this
+validation is specific to each instrument. If there are issues 
 with the data, the flag &#8216;repair&#8217; can be used to turn on the feature to 
-repair it or not (eg. validateData(repair=True))
-(this feature is not coded yet).</p>
+repair it or not (eg. validateData(repair=True)).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
