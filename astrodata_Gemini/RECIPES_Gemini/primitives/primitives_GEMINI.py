@@ -272,12 +272,15 @@ class GEMINIPrimitives(GENERALPrimitives):
             raise PrimitiveError('Problem displaying output')
         yield rc
         
-    def flatCorrect(self,rc):
+    def divideByFlat(self,rc):
         """
-        This primitive performs a flat correction by dividing the inputs by a 
-        processed flat similar to the way gireduce would perform this operation
-        but written in pure Python in the arith toolbox.
-          
+        This primitive will divide each SCI extension of the inputs by those
+        of the corresponding flat.  If the inputs contain VAR or DQ frames,
+        those will also be updated accordingly due to the division on the data.
+    
+        This is all conducted in pure Python through the arith "toolbox" of 
+        astrodata. 
+        
         It is currently assumed that the same flat file will be applied to all
         input images.
         
@@ -292,7 +295,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         try:
-            log.status('*STARTING* to flat correct the inputs')
+            log.status('*STARTING* divide the inputs by the flat')
             
             # Retrieving the appropriate flat for the first of the inputs
             adOne = rc.getInputs(style='AD')[0]
@@ -308,19 +311,19 @@ class GEMINIPrimitives(GENERALPrimitives):
             if processedFlat.countExts('SCI')==0:
                 raise PrimitiveError('Invalid processed flat retrieved')               
             
-            log.debug('Calling geminiScience.flatCorrect function')
+            log.debug('Calling calibrate.divide_by_flat function')
             
-            adOutputs = geminiScience.flat_correct(
+            adOutputs = calibrate.divide_by_flat(
                                             adInputs=rc.getInputs(style='AD'),     
                                          flats=processedFlat, 
                                          suffix=rc['suffix'])           
             
-            log.status('geminiScience.flatCorrect completed successfully')
+            log.status('calibrate.divide_by_flat completed successfully')
               
             # Reporting the updated files to the reduction context
             rc.reportOutput(adOutputs)   
 
-            log.status('*FINISHED* flat correcting the inputs')  
+            log.status('*FINISHED* dividing the inputs by the flat')  
         except:
             # logging the exact message from the actual exception that was 
             # raised in the try block. Then raising a general PrimitiveError 
