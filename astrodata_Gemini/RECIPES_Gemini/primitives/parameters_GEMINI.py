@@ -202,6 +202,14 @@
                             'userOverride':True  
                            }
                           } ,
+    'subtractDark':{'suffix':
+                   {
+                    'default': '_subdark' , #value to be post pended to this primitives outputs
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False 
+                    },
+                    },
                                             
     'validateData':{'suffix':
                    {

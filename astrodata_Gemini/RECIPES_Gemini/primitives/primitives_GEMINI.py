@@ -8,6 +8,7 @@ from astrodata.ReductionObjects import PrimitiveSet
 from astrodata.adutils import gemLog
 from astrodata import IDFactory
 from gempy import geminiTools as gemt
+from gempy.science import calibrate
 from gempy.science import geminiScience
 from datetime import datetime
 import shutil
@@ -303,7 +304,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             ###################BULL CRAP FOR TESTING ########################## 
             from copy import deepcopy
             processedFlat = deepcopy(adOne)
-            processedFlat.filename = 'TEMPNAMEforBIAS.fits'
+            processedFlat.filename = 'TEMPNAMEforFLAT.fits'
             processedFlat.phuSetKeyValue('ORIGNAME','TEMPNAMEforFLAT.fits')
             ####################################################################
             
@@ -367,7 +368,6 @@ class GEMINIPrimitives(GENERALPrimitives):
                     print "get central"
                 else:
                     print "got local", cal
-                    
         
     def getProcessedBias(self,rc):
         """
@@ -840,6 +840,67 @@ class GEMINIPrimitives(GENERALPrimitives):
             # with message.
             log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem storing one of '+rc.inputsAsStr())
+        yield rc
+    
+    def subtractDark(self,rc):
+        """
+        This primitive will subtract each SCI extension of the inputs by those
+        of the corresponding dark.  If the inputs contain VAR or DQ frames,
+        those will also be updated accordingly due to the subtraction on the 
+        data.
+    
+        This is all conducted in pure Python through the arith "toolbox" of 
+        astrodata. 
+        
+        It is currently assumed that the same dark file will be applied to all
+        input images.
+        
+        :param suffix: Value to be post pended onto each input name(s) to 
+                         create the output name(s).
+        :type suffix: string
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        try:
+            log.status('*STARTING* subtract the dark from the inputs')
+            
+            # Retrieving the appropriate dark for the first of the inputs
+            adOne = rc.getInputs(style='AD')[0]
+            #processedDark = AstroData(rc.getCal(adOne,'dark'))
+            ###################BULL CRAP FOR TESTING ########################## 
+            from copy import deepcopy
+            processedDark = deepcopy(adOne)
+            processedDark.filename = 'TEMPNAMEforDARK.fits'
+            processedDark.phuSetKeyValue('ORIGNAME','TEMPNAMEforDARK.fits')
+            ####################################################################
+            
+            # Taking care of the case where there was no, or an invalid flat 
+            if processedDark.countExts('SCI')==0:
+                raise PrimitiveError('Invalid processed dark retrieved')               
+            
+            log.debug('Calling calibrate.subtract_dark function')
+            
+            adOutputs = calibrate.subtract_dark(
+                                            adInputs=rc.getInputs(style='AD'),     
+                                         darks=processedDark, 
+                                         suffix=rc['suffix'])           
+            
+            log.status('calibrate.subtract_dark completed successfully')
+              
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOutputs)   
+
+            log.status('*FINISHED* subtracting the dark from the inputs')  
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         yield rc
         
     def time(self, rc):
