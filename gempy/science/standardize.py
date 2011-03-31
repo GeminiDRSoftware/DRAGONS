@@ -1,7 +1,6 @@
-#Author: Kyle Mede, January 2011
-#For now, this module is to hold the code which performs the actual work of the 
-#primitives that is considered generic enough to be at the 'gemini' level of
-#the hierarchy tree.
+#Author: Kyle Mede, March 2011
+#For now, this module is to hold the code which performs standardizing steps
+#such as those of the primitives in the prepare recipe.
 
 import os, sys
 
