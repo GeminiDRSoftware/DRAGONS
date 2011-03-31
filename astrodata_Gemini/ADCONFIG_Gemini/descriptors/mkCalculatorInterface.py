@@ -7,9 +7,11 @@ from descriptorDescriptionDict import stripIDArgDict
 class DescriptorDescriptor:
     name = None
     description = None
+    pytype = None
+    unit = None
     
     thunkfuncbuff = """
-    def %(name)s(self, **args):
+    def %(name)s(self, format=None, **args):
         \"\"\"
         %(description)s
         \"\"\"
@@ -25,16 +27,28 @@ class DescriptorDescriptor:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                    else:
+                        return DescriptorValue( retval, 
+                                                format = format, 
+                                                name = "%(name)s",
+                                                pytype = %(pytype)s,)
             else:
                 retval = self.descriptorCalculator.%(name)s(self, **args)
-            if "asString" in args and args["asString"]==True:
+                                        
+            if True : #"asString" in args and args["asString"]==True:
                 from datetime import datetime
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            return retval
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "%(name)s",  
+                                                ad = self,
+                                                pytype = %(pytype)s
+                                                )
+            return ret
         except:
             if (self.descriptorCalculator==None 
                 or self.descriptorCalculator.throwExceptions == True):
@@ -44,9 +58,12 @@ class DescriptorDescriptor:
                 self.exception_info = sys.exc_info()[1]
                 return None
     """
-    def __init__(self, name = None):
+    def __init__(self, name=None, pytype = None, rtype=None):
         self.name = name
+        self.rtype = rtype
         
+        if pytype:
+            self.pytype = pytype
         try:
             desc = descriptorDescDict[name]
         except:
@@ -112,10 +129,18 @@ class DescriptorDescriptor:
                        % {'dname':dname}
                 
         self.description = desc
+        self.rtype = rtype
         
     def funcbody(self):
-        ret = self.thunkfuncbuff % {"name":self.name, \
-            'description':self.description}
+        if self.pytype:
+            pytypestr = self.pytype.__name__
+        else:
+            pytypestr = "None"
+            
+        ret = self.thunkfuncbuff % {'name':self.name,
+                                    'pytype': pytypestr,
+                                    'description':self.description, 
+                                    'rtype':self.rtype}
         return ret
         
 DD = DescriptorDescriptor
@@ -134,11 +159,11 @@ descriptors =   [   DD("airmass"),
                     DD("detector_section"),
                     DD("detector_x_bin"),
                     DD("detector_y_bin"),
-                    DD("disperser"),
+                    DD("disperser", pytype=str),
                     DD("dispersion"),
                     DD("dispersion_axis"),
                     DD("elevation"),
-                    DD("exposure_time"),
+                    DD("exposure_time", pytype=float),
                     DD("filter_name"),
                     DD("focal_plane_mask"),
                     DD("gain"),
@@ -184,6 +209,7 @@ descriptors =   [   DD("airmass"),
 wholeout = """import sys
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
+from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
 
 class CalculatorInterface:

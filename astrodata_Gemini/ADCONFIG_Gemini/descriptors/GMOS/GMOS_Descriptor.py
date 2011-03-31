@@ -162,10 +162,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 ret_detector_y_bin.update({(ext.extname(), \
                     ext.extver()):int(detector_y_bin)})
         # @@DESCRIPTOR VALUE PROTOTYPE
-        return Descriptors.DescriptorValue( ret_detector_y_bin, 
-                                            format = format,
-                                            name = whoami(),
-                                            ad = dataset)
+        
+        return ret_detector_y_bin
+        #return Descriptors.DescriptorValue( ret_detector_y_bin, 
+        #                                    format = format,
+        #                                    name = whoami(),
+        #                                    ad = dataset)
     
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
@@ -333,7 +335,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         hdu = dataset.hdulist
         ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
         # Get the UT date using the appropriate descriptor
-        ut_date = dataset.ut_date(asString=True)
+        ut_date = str(dataset.ut_date(asString=True))
         obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
         
@@ -361,8 +363,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 ampname = ext.header[globalStdkeyDict['key_ampname']]
                 # Get the gain setting and read speed setting values using the
                 # appropriate descriptors
-                gain_setting = ext.gain_setting()
-                read_speed_setting = ext.read_speed_setting()
+                gain_setting = ext.gain_setting().asPytype()
+                read_speed_setting = ext.read_speed_setting().asPytype()
                 
                 gainkey = (read_speed_setting, gain_setting, ampname)
                 
@@ -377,7 +379,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return Descriptors.DescriptorValue( ret_gain, format = format,
                                             name = whoami(),
-                                            ad = dataset)
+                                            ad = dataset,
+                                            pytype = float)
     
     gmosampsGain = None
     gmosampsGainBefore20060831 = None
