@@ -99,83 +99,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
             
         yield rc       
-        
-    def subtractBias(self, rc):
-        """
-        This primitive will subtract the biases from the inputs using the 
-        CL script gireduce.
-        
-        WARNING: The gireduce script used here replaces the previously 
-        calculated DQ frames with its own versions.  This may be corrected 
-        in the future by replacing the use of the gireduce
-        with a Python routine to do the bias subtraction.
-        
-        :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
-        :type suffix: string
-        
-        :param fl_over: Subtract the overscan?
-        :type fl_over: Python boolean (True/False), default is False
-        
-        :param fl_trim: Trim the overscan region from the frames?
-        :type fl_trim: Python boolean (True/False), default is False. 
-                       Note: This value cannot be set during a recipe or from 
-                       reduce command line call, only in the parameter file.
-        
-        :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False)
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
-        """
-#        # Loading and bringing the pyraf related modules into the name-space
-#        pyraf, gemini, yes, no = pyrafLoader()
-        
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            log.status('*STARTING* to subtract the bias from the inputs')
-            
-            # Getting the bias file for the first file of the inputs and 
-            # assuming it is the same for all the inputs. This should be 
-            # corrected in the future to be more intelligent and get the 
-            # correct bias for each input individually if they are not 
-            # all the same. Then gireduce can be called in a loop with 
-            # one flat and one bias, this will work well with the CLManager
-            # as that was how i wrote this prim originally.
-            adOne = rc.getInputs(style='AD')[0]
-            processedBias = AstroData(rc.getCal(adOne,'bias'))
-            ####################BULL CRAP FOR TESTING ########################## 
-            #from copy import deepcopy
-            #processedBias = deepcopy(adOne)
-            #processedBias.filename = 'TEMPNAMEforBIAS.fits'
-            #processedBias.phuSetKeyValue('ORIGNAME','TEMPNAMEforBIAS.fits')
-            #processedBias.historyMark(key='GBIAS', 
-            #                  comment='fake key to trick CL that GBIAS was ran')
-            ####################################################################
-            log.status('Using bias '+processedBias.filename+' to correct the inputs')
-            log.debug('Calling calibrate.subtract_bias function')
-            
-            adOutputs = calibrate.subtract_bias(adInputs=rc.getInputs(style='AD'), 
-                                         biases=processedBias, fl_vardq=rc['fl_vardq'], 
-                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-                                         suffix=rc['suffix'])           
-            
-            log.status('calibrate.subtract_bias completed successfully')
-                
-            # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs)   
-            
-            log.status('*FINISHED* subtracting the bias from the input flats')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
-            
-        yield rc
 
     def display(self, rc):
         """ 
@@ -576,6 +499,83 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
         
         yield rc     
+    
+    def subtractBias(self, rc):
+        """
+        This primitive will subtract the biases from the inputs using the 
+        CL script gireduce.
+        
+        WARNING: The gireduce script used here replaces the previously 
+        calculated DQ frames with its own versions.  This may be corrected 
+        in the future by replacing the use of the gireduce
+        with a Python routine to do the bias subtraction.
+        
+        :param suffix: Value to be post pended onto each input name(s) to 
+                         create the output name(s).
+        :type suffix: string
+        
+        :param fl_over: Subtract the overscan?
+        :type fl_over: Python boolean (True/False), default is False
+        
+        :param fl_trim: Trim the overscan region from the frames?
+        :type fl_trim: Python boolean (True/False), default is False. 
+                       Note: This value cannot be set during a recipe or from 
+                       reduce command line call, only in the parameter file.
+        
+        :param fl_vardq: Create variance and data quality frames?
+        :type fl_vardq: Python boolean (True/False)
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+#        # Loading and bringing the pyraf related modules into the name-space
+#        pyraf, gemini, yes, no = pyrafLoader()
+        
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        try:
+            log.status('*STARTING* to subtract the bias from the inputs')
+            
+            # Getting the bias file for the first file of the inputs and 
+            # assuming it is the same for all the inputs. This should be 
+            # corrected in the future to be more intelligent and get the 
+            # correct bias for each input individually if they are not 
+            # all the same. Then gireduce can be called in a loop with 
+            # one flat and one bias, this will work well with the CLManager
+            # as that was how i wrote this prim originally.
+            adOne = rc.getInputs(style='AD')[0]
+            processedBias = AstroData(rc.getCal(adOne,'bias'))
+            ####################BULL CRAP FOR TESTING ########################## 
+            #from copy import deepcopy
+            #processedBias = deepcopy(adOne)
+            #processedBias.filename = 'TEMPNAMEforBIAS.fits'
+            #processedBias.phuSetKeyValue('ORIGNAME','TEMPNAMEforBIAS.fits')
+            #processedBias.historyMark(key='GBIAS', 
+            #                  comment='fake key to trick CL that GBIAS was ran')
+            ####################################################################
+            log.status('Using bias '+processedBias.filename+' to correct the inputs')
+            log.debug('Calling calibrate.subtract_bias function')
+            
+            adOutputs = calibrate.subtract_bias(adInputs=rc.getInputs(style='AD'), 
+                                         biases=processedBias, fl_vardq=rc['fl_vardq'], 
+                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
+                                         suffix=rc['suffix'])           
+            
+            log.status('calibrate.subtract_bias completed successfully')
+                
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOutputs)   
+            
+            log.status('*FINISHED* subtracting the bias from the input flats')
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            
+        yield rc
     
     def validateInstrumentData(self,rc):
         """
