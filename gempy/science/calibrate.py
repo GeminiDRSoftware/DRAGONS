@@ -1,0 +1,1067 @@
+#Author: Kyle Mede, March 2011
+#This module will hold the code to perform calibration correction steps to the 
+#data such as: bias correction, normalizing flats, overscan subtraction...
+
+import os, sys
+
+import pyfits as pf
+import numpy as np
+from copy import deepcopy
+
+from astrodata.AstroData import AstroData
+from astrodata.adutils.gemutil import pyrafLoader
+from astrodata.ConfigSpace import lookupPath
+from astrodata.Errors import ScienceError
+from gempy import geminiTools as gemt
+from gempy.geminiCLParDicts import CLDefaultParamsDict
+
+def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
+    """
+    This function will divide each SCI extension of the inputs by those
+    of the corresponding flat.  If the inputs contain VAR or DQ frames,
+    those will also be updated accordingly due to the division on the data.
+    
+    This is all conducted in pure Python through the arith "toolbox" of 
+    astrodata. 
+    
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param flats: The flat(s) to divide the input(s) by.
+    :type flats: AstroData objects in a list, or a single instance.
+                Note: If there is multiple inputs and one flat provided, then the
+                same flat will be applied to all inputs; else the flats   
+                list must match the length of the inputs.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix: string to add on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+                                      funcName='divide_by_flat') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    if flats==None:
+        raise ScienceError('There must be at least one processed flat provided,\
+                             the "flats" parameter must not be None.')
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:                   
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
+
+            # Getting the right flat for this input
+            if isinstance(flats, list):
+                if len(flats)>1:
+                    processedFlat = flats[count]
+                else:
+                    processedFlat = flats[0]
+            else:
+                processedFlat = flats
+
+            log.status('Input flat file being used for flat correction '
+                       +processedFlat.filename)
+            log.debug('Calling ad.div on '+ad.filename)
+            
+            # the div function of the arith toolbox performs a deepcopy so
+            # it doesn't need to be done here.
+            adOut = ad.div(processedFlat)
+            adOut.filename = ad.filename
+            log.status('ad.div successfully flat corrected '+ad.filename)   
+            
+            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='FLATCORR')
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename+'\n')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count=count+1
+        
+        log.status('**FINISHED** the flat_correct function')
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                            'divide_by_flat')    
+    
+def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
+            outNames=None, suffix=None):
+    """
+    This primitive will scale and subtract the fringe frame from the inputs.
+    It utilizes the Python re-written version of cl script girmfringe now called
+    rmImgFringe in gmosTools to do the work.
+    
+    NOTE:
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+
+    FOR FUTURE
+    This function has many GMOS dependencies that would be great to work out
+    so that this could be made a more general function (say at the Gemini level)
+    .
+    
+    :param adInputs: Astrodata input(s) to be fringe corrected
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param fringes: Astrodata input fringe(s)
+    :type fringes: AstroData objects in a list, or a single instance.
+                   Note: If there is multiple inputs and one fringe provided, 
+                   then the same fringe will be applied to all inputs; else the   
+                   fringes list must match the length of the inputs.
+    
+    :param fl_statscale: Scale by statistics rather than exposure time
+    :type fl_statscale: Boolean
+    
+    :param statsec: image section used to determine the scale factor 
+                    if fl_statsec=True
+    :type statsec: string of format '[EXTNAME,EXTVER][x1:x2,y1:y2]'
+                   default: If CCDSUM = '1 1' :[SCI,2][100:1900,100:4500]'
+                   If CCDSUM = '2 2' : [SCI,2][100:950,100:2250]'
+    
+    :param scale: Override auto-scaling if not 0.0
+    :type scale: real
+
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same 
+                    length as adInputs.
+    
+    :param suffix: string to postpend on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      funcName='fringe_correct') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try:
+        # Set up counter for looping through outNames/BPMs lists
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Casting 'fringes' into a list if not one yet
+        if not(isinstance(fringes,list)):
+            fringes = [fringes]
+        elif fringes==None:
+            raise ScienceError('There must be at least one astrodata instance\
+                                passed in for the "fringes" parameter')
+        
+        for ad in adInputs:
+            # Loading up a dictionary with the input parameters for rmImgFringe
+            paramDict = {
+                         'inimage'        :ad,
+                         'fringe'         :fringes[count].filename,
+                         'fl_statscale'   :fl_statscale,
+                         'statsec'        :statsec,
+                         'scale'          :scale,
+                         }
+            
+            # Logging values set in the parameters dictionary above
+            log.fullinfo('\nParameters being used for rmImgFringe '+
+                         'function:\n')
+            gemt.logDictParams(paramDict)
+            
+            # Calling the rmImgFringe function to perform the fringe 
+            # corrections, this function will return the corrected image as
+            # an AstroData instance
+            adOut = gmost.rmImgFringe(**paramDict)
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename+'\n')
+            
+            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='RMFRINGE')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+                
+        log.status('**FINISHED** the fringe_correct function')
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run \
+                                                                fringe_correct')
+        
+def normalize_flat_image(adInputs, outNames=None, suffix=None):
+    """
+    This function will normalize each SCI frame of the inputs and take care of
+    the VAR and DQ frames if they exist.  
+    
+    This is all conducted in pure Python through the arith "toolbox" of 
+    astrodata. 
+       
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata input flat(s) to be combined and normalized
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix:
+            string to add on the end of the input filenames 
+            (or outNames if not None) for the output filenames.
+    :type suffix: string
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+                                             funcName='normalize_flat_image') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:  
+            # create an empty dict to load up with the mean of each SCI frame
+            meanDict={}
+            # loop through SCI extensions to load up dict with
+            for ext in ad['SCI']:
+                # calculate the mean of the current SCI frame
+                meanDict[('SCI',ext.extver())] = np.mean(ext.data)
+           
+            # divide each SCI by its mean and handle the updates to the DQ 
+            # and VAR frames.
+            # the div function of the arith toolbox performs a deepcopy so
+            # it doesn't need to be done here. 
+            adOut = ad.div(meanDict)
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename+'\n')
+            
+            # Updating GEM-TLM (automatic) and NORMFLAT time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='NORMFLAT')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+                
+        log.status('**FINISHED** the normalize_flat_image function')
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                        'normalize_flat_image')
+    
+def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,  
+                                fl_vardq='AUTO', outNames=None, suffix=None):
+    """
+    This function will combine the input flats (adInputs) and then normalize  
+    them using the CL script giflat.
+    
+    WARNING: The giflat script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the giflat
+    with a Python routine to do the flat normalizing.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata input flat(s) to be combined and normalized
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param fl_trim: Trim the overscan region from the frames?
+    :type fl_trim: Python boolean (True/False)
+    
+    :param fl_over: Subtract the overscan level from the frames?
+    :type fl_over: Python boolean (True/False)
+    
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
+                    it automatically if there are VAR and DQ frames in the 
+                    inputs.
+                    NOTE: 'AUTO' uses the first input to determine if VAR and  
+                    DQ frames exist, so, if the first does, then the rest MUST 
+                    also have them as well.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix:
+            string to add on the end of the input filenames 
+            (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+                                       funcName='normalize_flat_image_gmos', 
+                                       combinedInputs=True)
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try:
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()  
+            
+        # Converting input True/False to yes/no or detecting fl_vardq value
+        # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+        fl_vardq = sfm.autoVardq(fl_vardq)
+        
+        # To clean up log and screen if multiple inputs
+        log.fullinfo('+'*50, category='format')    
+        
+        # Preparing input files, lists, parameters... for input to 
+        # the CL script
+        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                           suffix=suffix, funcName='normalizeFlat', 
+                           log=log, combinedImages=True)
+        
+        # Check the status of the CLManager object, True=continue, False= issue warning
+        if clm.status:                 
+            # Creating a dictionary of the parameters set by the gemt.CLManager 
+            # or the definition of the function 
+            clPrimParams = {
+              'inflats'     :clm.imageInsFiles(type='listFile'),
+              # Maybe allow the user to override this in the future
+              'outflat'     :clm.imageOutsFiles(type='string'), 
+              # This returns a unique/temp log file for IRAF  
+              'logfile'     :clm.templog.name,         
+              # This is actually in the default dict but wanted to show it again
+              'Stdout'      :gemt.IrafStdout(),   
+              # This is actually in the default dict but wanted to show it again  
+              'Stderr'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again    
+              'verbose'     :yes                    
+                          }
+            # Creating a dictionary of the parameters from the function call 
+            # adjustable by the user
+            clSoftcodedParams = {
+               'fl_vardq'   :fl_vardq,
+               'fl_over'    :gemt.pyrafBoolean(fl_over),
+               'fl_trim'    :gemt.pyrafBoolean(fl_trim)
+                               }
+            # Grabbing the default params dict and updating it 
+            # with the two above dicts
+            clParamsDict = CLDefaultParamsDict('giflat')
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
+            # Logging the parameters that were not defaults
+            log.fullinfo('\nParameters set automatically:', 
+                         category='parameters')
+            # Loop through the parameters in the clPrimParams dictionary
+            # and log them
+            gemt.logDictParams(clPrimParams)
+            
+            log.fullinfo('\nParameters adjustable by the user:', 
+                         category='parameters')
+            # Loop through the parameters in the clSoftcodedParams 
+            # dictionary and log them
+            gemt.logDictParams(clSoftcodedParams)
+            
+            log.debug('Calling the giflat CL script for inputs list '+
+                  clm.imageInsFiles(type='listFile'))
+        
+            gemini.giflat(**clParamsDict)
+            
+            if gemini.giflat.status:
+                raise ScienceError('giflat failed for inputs '+
+                             clm.imageInsFiles(type='string'))
+            else:
+                log.status('Exited the giflat CL script successfully')
+            
+            # Renaming CL outputs and loading them back into memory 
+            # and cleaning up the intermediate temp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL()
+        
+            # Renaming for symmetry
+            adOutputs=imageOuts
+        
+            # Updating GEM-TLM (automatic) and COMBINE time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOutputs, historyMarkKey='GIFLAT')    
+        else:
+            raise ScienceError('One of the inputs has not been prepared,\
+            the normalizeFlat function can only work on prepared data.')
+                
+        log.status('**FINISHED** the normalize_flat_image_gmos function')
+        
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                    'normalize_flat_image_gmos')     
+    
+def overscan_trim(adInputs, outNames=None, suffix=None):
+    """
+    This function uses AstroData to trim the overscan region 
+    from the input images and update their headers.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+    
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length
+                    as adInputs.
+    
+    :param suffix: string to add on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+                                      funcName='overscan_trim') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:  
+            # Making a deepcopy of the input to work on
+            # (ie. a truly new+different object that is a complete copy of the input)
+            adOut = deepcopy(ad)
+            # moving the filename over as deepcopy doesn't do that
+            adOut.filename = ad.filename
+                             
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
+            
+            for sciExt in adOut['SCI']:
+                # Getting the data section from the header and as a dict
+                # and grabbing the integer list from it, then finding
+                # its shape
+                datasecDict = sciExt.data_section()
+                datasecStr = sciExt.data_section(pretty=True,asDict=False)
+                # NOTE: this list is zero based, like python and numpy
+                datasecList = datasecDict[(sciExt.extname(),sciExt.extver())] 
+                dsl = datasecList
+                
+                # Updating logger with the section being kept
+                log.stdinfo('\nfor '+adOut.filename+' extension '+
+                            str(sciExt.extver())+
+                            ', keeping the data from the section '+
+                            datasecStr,'science')
+                # Trimming the data section from input SCI array
+                # and making it the new SCI data
+                # NOTE: first elements of arrays in python are inclusive
+                #       while last ones are exclusive, thus a 1 must be 
+                #       added for the final element to be included.
+                sciExt.data=sciExt.data[dsl[2]:dsl[3]+1,dsl[0]:dsl[1]+1]
+                # Updating header keys to match new dimensions
+                sciExt.header['NAXIS1'] = dsl[1]-dsl[0]+1
+                sciExt.header['NAXIS2'] = dsl[3]-dsl[2]+1
+                newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
+                                str(dsl[3]-dsl[2]+1)+']' 
+                sciExt.header['DATASEC']=newDataSecStr
+                sciExt.header.update('TRIMSEC', datasecStr, 
+                                   'Data section prior to trimming')
+                # Updating logger with updated/added keywords to each SCI frame
+                log.fullinfo('*'*50, category='header')
+                log.fullinfo('File = '+adOut.filename, category='header')
+                log.fullinfo('~'*50, category='header')
+                log.fullinfo('SCI extension number '+str(sciExt.extver())+
+                             ' keywords updated/added:\n', 'header')
+                log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
+                            category='header')
+                log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),
+                             category='header')
+                log.fullinfo('DATASEC= '+newDataSecStr, category='header')
+                log.fullinfo('TRIMSEC= '+datasecStr, category='header')
+                    
+            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERTRIM')       
+            
+            # Setting 'TRIMMED' to 'yes' in the PHU and updating the log
+            adOut.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')
+            log.fullinfo('Another PHU keywords added:\n', 'header')
+            log.fullinfo('TRIMMED = '+adOut.phuGetKeyValue('TRIMMED')+'\n', 
+                         category='header')
+            
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count = count+1
+        
+        log.status('**FINISHED** the overscan_trim function')
+        
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                                'overscan_trim')    
+    
+def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO', 
+            biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
+            outNames=None, suffix=None):
+    """
+    This function uses the CL script gireduce to subtract the overscan 
+    from the input images.
+    
+    WARNING: 
+    The gireduce script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the gireduce
+    with a Python routine to do the overscan subtraction.
+
+    note
+    The inputs to this function MUST be prepared.
+
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+
+    FOR FUTURE
+    This function has many GMOS dependencies that would be great to work out
+    so that this could be made a more general function (say at the Gemini level)
+    .  In the future the parameters can be looked into and the CL script can be 
+    upgraded to handle things like row based overscan calculations/fitting/
+    modeling... vs the column based used right now, add the model, nbiascontam,
+    ... params to the functions inputs so the user can choose them for 
+    themselves.
+
+    :param adInputs: Astrodata inputs to be converted to Electron pixel units
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param fl_trim: Trim the overscan region from the frames?
+    :type fl_trim: Python boolean (True/False)
+    
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq: 
+        Python boolean (True/False), OR string 'AUTO' to do 
+        it automatically if there are VAR and DQ frames in the inputs.
+        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames  
+        exist, so, if the first does, then the rest MUST also have them as well.
+
+    :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+    :type biassec: string. 
+                   default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
+                   is ideal for 2x2 GMOS data.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix: string to postpend on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
+    :type suffix: string
+
+    """
+
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      funcName='overscan_subtract') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try: 
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader() 
+         
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+                
+        # Converting input True/False to yes/no or detecting fl_vardq value
+        # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+        fl_vardq = sfm.autoVardq(fl_vardq)
+        
+        # To clean up log and screen if multiple inputs
+        log.fullinfo('+'*50, category='format')                                 
+            
+        # Preparing input files, lists, parameters... for input to 
+        # the CL script
+        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+                           suffix=suffix, funcName='overscanSubtract',   
+                           log=log)
+        
+        # Check the status of the CLManager object, True=continue, False= issue warning
+        if clm.status:                     
+            # Parameters set by the gemt.CLManager or the definition 
+            # of the primitive 
+            clPrimParams = {
+              'inimages'    :clm.imageInsFiles(type='string'),
+              'gp_outpref'  :clm.prefix,
+              'outimages'   :clm.imageOutsFiles(type='string'),
+              # This returns a unique/temp log file for IRAF
+              'logfile'     :clm.templog.name,      
+              'fl_over'     :yes, 
+              # This is actually in the default dict but wanted to show it again
+              'Stdout'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'Stderr'      :gemt.IrafStdout(), 
+              # This is actually in the default dict but wanted to show it again
+              'verbose'     :yes                
+                          }
+            
+            # Taking care of the biasec->nbiascontam param
+            if not biassec == '':
+                nbiascontam = gemt.nbiascontam(adInputs, biassec)
+                log.fullinfo('nbiascontam parameter was updated to = '+
+                             str(nbiascontam))
+            else: 
+                # Do not try to calculate it, just use default value of 4.
+                log.fullinfo('Using default nbiascontam parameter = 4')
+                nbiascontam = 4
+            
+            # Parameters from the Parameter file that are adjustable by the user
+            clSoftcodedParams = {
+               # pyrafBoolean converts the python booleans to pyraf ones
+               'fl_trim'    :gemt.pyrafBoolean(fl_trim),
+               'outpref'    :suffix,
+               'fl_vardq'   :fl_vardq,
+               'nbiascontam':nbiascontam
+                               }
+            # Grabbing the default params dict and updating it with 
+            # the two above dicts
+            clParamsDict = CLDefaultParamsDict('gireduce')
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
+            # Logging the parameters that were not defaults
+            log.fullinfo('\nParameters set automatically:', 
+                         category='parameters')
+            # Loop through the parameters in the clPrimParams dictionary
+            # and log them
+            gemt.logDictParams(clPrimParams)
+            
+            log.fullinfo('\nParameters adjustable by the user:', 
+                         category='parameters')
+            # Loop through the parameters in the clSoftcodedParams 
+            # dictionary and log them
+            gemt.logDictParams(clSoftcodedParams)
+            
+            log.debug('Calling the gireduce CL script for inputs '+
+                  clm.imageInsFiles(type='string'))
+        
+            gemini.gmos.gireduce(**clParamsDict)
+            
+            if gemini.gmos.gireduce.status:
+                raise ScienceError('gireduce failed for inputs '+
+                             clm.imageInsFiles(type='string'))
+            else:
+                log.status('Exited the gireduce CL script successfully')
+            
+            # Renaming CL outputs and loading them back into memory, and 
+            # cleaning up the intermediate tmp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL() 
+            
+            # Renaming for symmetry
+            adOutputs=imageOuts
+            
+            # Wrap up logging
+            i=0
+            for adOut in adOutputs:
+                # Verifying gireduce was actually ran on the file
+                if adOut.phuGetKeyValue('GIREDUCE'): 
+                    # If gireduce was ran, then log the changes to the files 
+                    # it made
+                    log.fullinfo('\nFile '+clm.preCLimageNames()[i]+
+                                 ' had its overscan subracted successfully')
+                    log.fullinfo('New file name is: '+adOut.filename)
+                i = i+1
+                # Updating GEM-TLM and OVERSUB time stamps in the PHU
+                adOut.historyMark(key='OVERSUB', stomp=False)  
+                
+                # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+                # and updating logger with updated/added time stamps
+                sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERSUB')
+        else:
+            raise ScienceError('One of the inputs has not been prepared,\
+            the overscanSubtract function can only work on prepared data.')
+        
+        log.status('**FINISHED** the overscan_subtract function')
+        
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run \
+                                                            overscan_subtract')    
+                    
+def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
+                fl_over=False, outNames=None, suffix=None):
+    """
+    This function will subtract the biases from the inputs using the 
+    CL script gireduce.
+    
+    WARNING: The gireduce script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the gireduce
+    with a Python routine to do the bias subtraction.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata inputs to be bias subtracted
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param biases: The bias(es) to divide the input(s) by.
+    :type biases: 
+        AstroData objects in a list, or a single instance.
+        Note: If there is multiple inputs and one bias provided, then the
+        same bias will be applied to all inputs; else the biases   
+        list must match the length of the inputs.
+    
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq: 
+         Python boolean (True/False), OR string 'AUTO' to do 
+         it automatically if there are VAR and DQ frames in the input(s).
+    
+    :param fl_trim: Trim the overscan region from the frames?
+    :type fl_trim: Python boolean (True/False)
+    
+    :param fl_over: Subtract the overscan level from the frames?
+    :type fl_over: Python boolean (True/False)
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix: string to add on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      funcName='subtract_bias')
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+        
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+            
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()
+            
+        # Performing work in a loop, so that different biases may be
+        # used for each input as gireduce only allows one bias input per run.
+        for ad in adInputs:
+            
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
+            
+            # Converting input True/False to yes/no or detecting fl_vardq value
+            # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+            fl_vardq = sfm.autoVardq(fl_vardq)
+            
+            # Setting up the processedBias correctly
+            if (isinstance(biases,list)) and (len(biases)>1):
+                processedBias = biases[count]
+            elif (isinstance(biases,list)) and (len(biases)==1):
+                # Not sure if I need this check, but can't hurt
+                processedBias = biases[0]
+            else:
+                processedBias = biases
+                
+            
+            # Preparing input files, lists, parameters... for input to 
+            # the CL script
+            clm=gemt.CLManager(imageIns=ad, imageOutsNames=outNames[count], 
+                               refIns=processedBias, suffix=suffix,  
+                               funcName='biasCorrect', log=log)
+            
+            # Check the status of the CLManager object, True=continue, False= issue warning
+            if clm.status:               
+                    
+                # Parameters set by the gemt.CLManager or the definition of the function 
+                clPrimParams = {
+                  'inimages'    :clm.imageInsFiles(type='string'),
+                  'gp_outpref'  :clm.prefix,
+                  'outimages'   :clm.imageOutsFiles(type='string'),
+                  # This returns a unique/temp log file for IRAF 
+                  'logfile'     :clm.templog.name,     
+                  'fl_bias'     :yes,
+                  # Possibly add this to the params file so the user can override
+                  # this input file
+                  'bias'        :clm.refInsFiles(type='string'),   
+                  # This is actually in the default dict but wanted to show it again  
+                  'Stdout'      :gemt.IrafStdout(), 
+                  # This is actually in the default dict but wanted to show it again
+                  'Stderr'      :gemt.IrafStdout(), 
+                  # This is actually in the default dict but wanted to show it again
+                  'verbose'     :yes                
+                              }
+                    
+                # Parameters from the Parameter file adjustable by the user
+                clSoftcodedParams = {
+                   # pyrafBoolean converts the python booleans to pyraf ones
+                   'fl_trim'    :gemt.pyrafBoolean(fl_trim),
+                   'outpref'    :suffix,
+                   'fl_over'    :gemt.pyrafBoolean(fl_over),
+                   'fl_vardq'   :gemt.pyrafBoolean(fl_vardq)
+                                   }
+                # Grabbing the default params dict and updating it 
+                # with the two above dicts
+                clParamsDict = CLDefaultParamsDict('gireduce')
+                clParamsDict.update(clPrimParams)
+                clParamsDict.update(clSoftcodedParams)
+            
+                # Logging the parameters that were not defaults
+                log.fullinfo('\nParameters set automatically:', 
+                             category='parameters')
+                # Loop through the parameters in the clPrimParams dictionary
+                # and log them
+                gemt.logDictParams(clPrimParams)
+                
+                log.fullinfo('\nParameters adjustable by the user:', 
+                             category='parameters')
+                # Loop through the parameters in the clSoftcodedParams 
+                # dictionary and log them
+                gemt.logDictParams(clSoftcodedParams)
+                
+                log.debug('calling the gireduce CL script for inputs '+
+                                        clm.imageInsFiles(type='string'))
+            
+                gemini.gmos.gireduce(**clParamsDict)
+        
+                if gemini.gmos.gireduce.status:
+                    raise ScienceError('gireduce failed for inputs '+
+                                 clm.imageInsFiles(type='string'))
+                else:
+                    log.status('Exited the gireduce CL script successfully')
+                    
+                # Renaming CL outputs and loading them back into memory 
+                # and cleaning up the intermediate temp files written to disk
+                # refOuts and arrayOuts are None here
+                imageOuts, refOuts, arrayOuts = clm.finishCL() 
+                
+                # There is only one at this point so no need to perform a loop
+                # CLmanager outputs a list always, so take the 0th
+                adOut = imageOuts[0]
+                
+                # Varifying gireduce was actually ran on the file
+                # then logging file names of successfully reduced files
+                if adOut.phuGetKeyValue('GIREDUCE'): 
+                    log.fullinfo('\nFile '+clm.preCLimageNames()[0]+
+                                 ' was bias subracted successfully')
+                    log.fullinfo('New file name is: '+adOut.filename)
+  
+                # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+                # and updating logger with updated/added time stamps
+                sfm.markHistory(adOutputs=adOut, historyMarkKey='BIASCORR')
+
+                # Reseting the value set by gireduce to just the filename
+                # for clarity
+                adOut.phuSetKeyValue('BIASIM', 
+                                     os.path.basename(processedBias.filename)) 
+                
+                # Updating log with new BIASIM header key
+                log.fullinfo('Another PHU keywords added:\n', 'header')
+                log.fullinfo('BIASIM = '+adOut.phuGetKeyValue('BIASIM')+'\n', 
+                             category='header')
+           
+                # Appending to output list
+                adOutputs.append(adOut)
+
+                count = count+1
+                
+            else:
+                raise ScienceError('One of the inputs has not been prepared,\
+                the combine function can only work on prepared data.')
+            
+        log.warning('The CL script gireduce REPLACED the previously '+
+                    'calculated DQ frames')
+        
+        log.status('**FINISHED** the subtract_bias function')
+        
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                                'subtract_bias')
+    
+def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
+    """
+    This function will subtract the SCI of the input darks from each SCI frame 
+    of the inputs and take care of the VAR and DQ frames if they exist.  
+    
+    This is all conducted in pure Python through the arith "toolbox" of 
+    astrodata. 
+       
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata input flat(s) to be combined and normalized
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param MDFs: The dark(s) to be added to the input(s).
+    :type MDFs: AstroData objects in a list, or a single instance.
+                Note: If there are multiple inputs and one dark provided, 
+                then the same dark will be applied to all inputs; else the 
+                darks list must match the length of the inputs.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix:
+            string to add on the end of the input filenames 
+            (or outNames if not None) for the output filenames.
+    :type suffix: string
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+                                                    funcName='subtract_dark') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:  
+            # Getting the right dark for this input
+            if isinstance(darks, list):
+                if len(darks)>1:
+                    dark = darks[count]
+                else:
+                    dark = darks[0]
+            else:
+                dark = darks
+           
+            # sub each dark SCI  from each input SCI and handle the updates to 
+            # the DQ and VAR frames.
+            # the sub function of the arith toolbox performs a deepcopy so
+            # it doesn't need to be done here. 
+            adOut = ad.sub(dark)
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename+'\n')
+            
+            # Updating GEM-TLM (automatic) and SUBDARK time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='SUBDARK')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+                
+        log.status('**FINISHED** the subtract_dark function')
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                        'subtract_dark')    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
