@@ -12,6 +12,7 @@ from astrodata.Errors import PrimitiveError
 from primitives_GEMINI import GEMINIPrimitives
 from primitives_GEMINI import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
+from gempy.science import calibrate
 from gempy.science import gmosScience
 from gempy.science import standardize
 from gempy import geminiTools as gemt
@@ -151,6 +152,66 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             raise PrimitiveError("Problem creating fringe from "+
                                  rc.inputsAsStr())
         yield rc  
+        
+    def normalizeFlat(self, rc):
+        """
+        This primitive will combine the input flats and then normalize them 
+        using the CL script giflat.
+        
+        Warning: giflat calculates its own DQ frames and thus replaces the 
+        previously produced ones in calculateDQ. This may be fixed in the 
+        future by replacing giflat with a Python equivilent with more 
+        appropriate options for the recipe system.
+        
+        :param suffix: Value to be post pended onto each input name(s) to 
+                         create the output name(s).
+        :type suffix: string
+        
+        :param fl_over: Subtract the overscan level from the frames?
+        :type fl_over: Python boolean (True/False)
+        
+        :param fl_trim: Trim the overscan region from the frames?
+        :type fl_trim: Python boolean (True/False)
+        
+        :param fl_vardq: Create variance and data quality frames?
+        :type fl_vardq: Python boolean (True/False)
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        
+        # Loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()
+        
+        try:
+            log.status('*STARTING* to combine and normalize the input flats')
+            
+            log.debug('Calling calibrate.normalize_flat_image_gmos function')
+            
+            adOutputs = calibrate.normalize_flat_image_gmos(
+                                            adInputs=rc.getInputs(style='AD'), 
+                                        fl_trim=rc['fl_trim'], 
+                                        fl_over=rc['fl_over'], 
+                                        fl_vardq='AUTO', suffix=rc['suffix'])           
+            
+            log.status('calibrate.normalize_flat_image_gmos completed '+
+                                                                'successfully')
+                
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOutputs)
+        
+            log.status('*FINISHED* combining and normalizing the input flats')
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            
+        yield rc
         
     def standardizeInstrumentStructure(self,rc):
         """
