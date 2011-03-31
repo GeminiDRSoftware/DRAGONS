@@ -7,8 +7,7 @@ Functions:
 ==========
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    
-   allTools/tool_valInstData.rst
    allTools/tool_rmImgFringe.rst
    allTools/tool_statsecConverter.rst
