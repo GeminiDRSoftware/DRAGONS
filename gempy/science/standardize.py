@@ -121,7 +121,7 @@ def add_mdf(adInputs=None, MDFs=None, outNames=None, suffix=None):
             # renaming the output ad filename
             adOut.filename = outNames[count]
                     
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
             
             # Appending to output list
             adOutputs.append(adOut)
@@ -234,12 +234,13 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
             # the PHU and updating logger with updated/added time stamps
             sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRSG') 
             sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
+            # This one shouldn't be needed, but just adding it just in case 
             sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
     
             # renaming the output ad filename
             adOut.filename = outNames[count]
             
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
                 
             # Appending to output list
             adOutputs.append(adOut)
@@ -346,12 +347,13 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
             # the PHU and updating logger with updated/added time stamps
             sfm.markHistory(adOutputs=adOut, historyMarkKey='STDHDRSI')
             sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
+            # This one shouldn't be needed, but just adding it just in case 
             sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
     
             # renaming the output ad filename
             adOut.filename = outNames[count]
             
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
                 
             # Appending to output list
             adOutputs.append(adOut)
@@ -538,12 +540,13 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
             # the PHU and updating logger with updated/added time stamps
             sfm.markHistory(adOutputs=adOut, historyMarkKey='STDSTRUC')
             sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
+            # This one shouldn't be needed, but just adding it just in case 
             sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
     
             # renaming the output ad filename
             adOut.filename = outNames[count]
             
-            log.status('File name updated to '+adOut.filename)
+            log.status('File name updated to '+adOut.filename+'\n')
                 
             # Appending to output list
             adOutputs.append(adOut)
@@ -558,6 +561,113 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run \
-                                                     standardize_structure_gmos')
+                                                    standardize_structure_gmos')
     
+def validate_data_gmos(adInputs=None, repair=False, outNames=None, suffix=None):
+    """
+    This function will ensure the data is not corrupted or in an odd 
+    format that will affect later steps in the reduction process.  
+    It currently just checks if there are 1, 3, 6 or 12 SCI extensions 
+    in the input. If there are issues 
+    with the data, the flag 'repair' can be used to turn on the feature to 
+    repair it or not.
+    
+    This function is called by standardizeInstrumentStructure in both the GMOS 
+    and GMOS_IMAGE primitives sets to perform their work.
+    
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+          
+    :param adInputs: Astrodata inputs to have their headers standardized
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param repair: A flag to turn on/off repairing the data if there is a
+                   problem with it. 
+                   Note: this feature does not work yet.
+    :type repair: Python boolean (True/False)
+                  default: True
+              
+    :param mdfFiles: A file name (with path) of the MDF file to append onto the 
+                     input(s).
+                     Note: If there are multiple inputs and one mdfFiles  
+                     provided, then the same MDF will be applied to all inputs;  
+                     else the mdfFiles must be in a list of match the length of  
+                     the inputs and the inputs must ALL be of type SPECT.
+    :type mdfFiles: String, or list of strings.
+    
+    :param outNames: Filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same 
+                    length as adInputs.
+    
+    :param suffix: String to add on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
+    :type suffix: string
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      funcName='validate_data_gmos')
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    try:
+        # Set up counter for looping through outNames lists during renaming
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        for ad in adInputs:
+            # Making a deepcopy of the input to work on
+            # (ie. a truly new&different object that is a complete copy 
+            # of the input)
+            ad.storeOriginalName()
+            adOut = deepcopy(ad)
+            # moving the filename over as deepcopy doesn't do that
+            # only for internal use, renamed below to final name.
+            adOut.filename = ad.filename
             
+            if repair:
+                ################################################################
+                ######## This is where the code or a call to a function would ##
+                ######## go that performs any repairs for GMOS type data      ##
+                ################################################################
+                log.warning('Currently there are no repair features for '+
+                            'GMOS type data.  Maybe there will be in the '+
+                            'future if someone writes of some.')
+                pass
+            
+            length=adOut.countExts('SCI')
+            # If there are 1, 3, 6, or 12 extensions, all good, if not log a  
+            # critical message and raise an exception
+            if length==1 or length==3 or length==6 or length==12:
+                pass
+            else: 
+                raise ScienceError('There are NOT 1, 3, 6 or 12 extensions '+
+                                    'in file = '+adOut.filename)
+                    
+            # Updating GEM-TLM (automatic), VALDATA and PREPARE time stamps to 
+            # the PHU and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='VALDATA')
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='PREPARE')
+            # This one shouldn't be needed, but just adding it just in case 
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='GPREPARE')
+    
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+            
+            log.status('File name updated to '+adOut.filename+'\n')
+                
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+        
+        log.status('**FINISHED** the validate_data_gmos function')
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run \
+                                                    validate_data_gmos')
