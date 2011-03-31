@@ -161,5 +161,22 @@
                       'userOverride':True                                      
                      }     
                      }, 
+        'validateInstrumentData':
+                    {
+                    'suffix':
+                    {
+                       'default': '_validated' , #value to be post pended to this primitives outputs
+                      'recipeOverride': True,
+                      'type': 'str',
+                      'userOverride':False    
+                    } ,
+                    'repair':
+                    {
+                      'default': True , 
+                      'recipeOverride': True,
+                      'type': 'bool',
+                      'userOverride':True                                      
+                     }     
+                     }, 
         
 }

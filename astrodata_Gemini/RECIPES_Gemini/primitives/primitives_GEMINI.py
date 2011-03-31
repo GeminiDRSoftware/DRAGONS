@@ -856,14 +856,13 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         This primitive will ensure the data is not corrupted or in an odd 
         format that will affect later steps in the reduction process.  
-        It will call a function to take care of the general Gemini issues 
-        and then one for the instrument specific ones. If there are issues 
+        It directly calls the validateInstrumentData primitive to ensure this
+        validation is specific to each instrument. If there are issues 
         with the data, the flag 'repair' can be used to turn on the feature to 
-        repair it or not (eg. validateData(repair=True))
-        (this feature is not coded yet).
+        repair it or not (eg. validateData(repair=True)).
         
         :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
+                       create the output name(s).
         :type suffix: string
         
         :param repair: A flag to turn on/off repairing the data if there is a
@@ -879,45 +878,18 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         try:           
-            if rc['repair'] is True:
-               # This should repair the file if it is broken, but this function
-               # isn't coded yet and would require some sort of flag set while 
-               # checking the data to tell this to perform the corrections
-               log.warning('Sorry, but the repair feature of validateData' +
-                            ' is not available yet')
-            
             log.status('*STARTING* to validate the input data')
-            
             log.debug('Calling validateInstrumentData primitive')
             # Calling the validateInstrumentData primitive 
-            rc.run('validateInstrumentData(logLevel='+str(rc['logLevel'])+')')
-            log.status('Successfully returned to validateData'+
-                       ' from the validateInstrumentData primitive') 
+            rc.run('validateInstrumentData(logLevel='+str(rc['logLevel'])+
+                   ',repair='+str(rc['repair'])+')')
             
-            # Updating the file name with the suffix  and timestamps 
-            # for this primitive and then reporting the new file to the 
-            # reduction context 
-            for ad in rc.getInputs(style='AD'):
-                # Adding a GEM-TLM (automatic) and VALDATA time stamps 
-                # to the PHU
-                ad.historyMark(key='VALDATA',stomp=False)
-                log.debug('calling gemt.gemt.fileNameUpdater on '+ad.filename)        
-                ad.filename = gemt.fileNameUpdater(adIn=ad, 
-                                                   suffix='_validated', 
-                                                   strip=False)                
-                log.status('File name updated to '+ad.filename)
-                # Updating logger with updated/added time stamps
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('File = '+ad.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('PHU keywords updated/added:\n', category='header')
-                log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
-                              category='header')
-                log.fullinfo('VALDATA = '+ad.phuGetKeyValue('VALDATA'), 
-                             category='header')
-                log.fullinfo('-'*50, category='header')  
-                rc.reportOutput(ad) 
-                        
+            # Reporting the original files through to the reduction context
+            # All the work was done to the inputs in 
+            # standardizeInstrumentHeaders, so at this point the inputs have
+            # had their headers standardized and can just be passed through.
+            rc.reportOutput(rc.getInputs(style='AD')) 
+           
             log.status('*FINISHED* validating input data')                
         except:
             # logging the exact message from the actual exception that was 

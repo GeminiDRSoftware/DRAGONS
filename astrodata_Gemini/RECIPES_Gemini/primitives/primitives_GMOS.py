@@ -9,7 +9,6 @@ from astrodata.ConfigSpace import lookupPath
 from astrodata.data import AstroData
 from astrodata.Errors import PrimitiveError
 from gempy import geminiTools as gemt
-from gempy.instruments import gmosTools as gmost
 from gempy.science import geminiScience
 from gempy.science import gmosScience
 from gempy.science import standardize
@@ -634,25 +633,33 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc     
     
-    
     def validateInstrumentData(self,rc):
         """
         This primitive is called by validateData to validate the GMOS instrument 
         specific data checks for all input files.
+        
+        :param suffix: Value to be post pended onto each input name(s) to 
+                       create the output name(s).
+        :type suffix: string
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'], logLevel=rc['logLevel'])
-        try:
-            for ad in rc.getInputs(style='AD'):
-                log.debug('Calling gmost.valInstData for '+ad.filename)
-                gmost.valInstData(ad)
-                log.status('Completed validating instrument data for '+
-                           ad.filename)
-                
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        try:                
+            log.status('*STARTING* to validate the data (GMOS)')                         
+            log.debug('Calling standardize.validate_data_gmos')
+            adOutputs = standardize.validate_data_gmos(
+                                            adInputs=rc.getInputs(style='AD'),
+                                                        repair=rc['repair'],     
+                                                        suffix=rc['suffix'])
+            
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(adOutputs) 
+            
+            log.status('*FINISHED* validating the data (GMOS)')   
         except:
             # logging the exact message from the actual exception that was 
             # raised in the try block. Then raising a general PrimitiveError 
