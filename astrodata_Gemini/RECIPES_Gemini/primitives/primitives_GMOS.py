@@ -9,6 +9,7 @@ from astrodata.ConfigSpace import lookupPath
 from astrodata.data import AstroData
 from astrodata.Errors import PrimitiveError
 from gempy import geminiTools as gemt
+from gempy.science import calibrate
 from gempy.science import geminiScience
 from gempy.science import gmosScience
 from gempy.science import standardize
@@ -99,7 +100,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
         yield rc       
         
-    def biasCorrect(self, rc):
+    def subtractBias(self, rc):
         """
         This primitive will subtract the biases from the inputs using the 
         CL script gireduce.
@@ -154,14 +155,14 @@ class GMOSPrimitives(GEMINIPrimitives):
             #                  comment='fake key to trick CL that GBIAS was ran')
             ####################################################################
             log.status('Using bias '+processedBias.filename+' to correct the inputs')
-            log.debug('Calling geminiScience.biasCorrect function')
+            log.debug('Calling calibrate.subtract_bias function')
             
-            adOutputs = geminiScience.bias_correct(adInputs=rc.getInputs(style='AD'), 
+            adOutputs = calibrate.subtract_bias(adInputs=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
                                          suffix=rc['suffix'])           
             
-            log.status('geminiScience.biasCorrect completed successfully')
+            log.status('calibrate.subtract_bias completed successfully')
                 
             # Reporting the updated files to the reduction context
             rc.reportOutput(adOutputs)   
@@ -401,63 +402,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
         yield rc
 
-    def normalizeFlat(self, rc):
-        """
-        This primitive will combine the input flats and then normalize them 
-        using the CL script giflat.
-        
-        Warning: giflat calculates its own DQ frames and thus replaces the 
-        previously produced ones in calculateDQ. This may be fixed in the 
-        future by replacing giflat with a Python equivilent with more 
-        appropriate options for the recipe system.
-        
-        :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
-        :type suffix: string
-        
-        :param fl_over: Subtract the overscan level from the frames?
-        :type fl_over: Python boolean (True/False)
-        
-        :param fl_trim: Trim the overscan region from the frames?
-        :type fl_trim: Python boolean (True/False)
-        
-        :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False)
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
-        """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        
-        # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
-        
-        try:
-            log.status('*STARTING* to combine and normalize the input flats')
-            
-            log.debug('Calling geminiScience.normalizeFlat function')
-            
-            adOutputs = geminiScience.normalize_flat(adInputs=rc.getInputs(style='AD'), 
-                                        fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-                                        fl_vardq='AUTO', suffix=rc['suffix'])           
-            
-            log.status('geminiScience.normalizeFlat completed successfully')
-                
-            # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs)
-        
-            log.status('*FINISHED* combining and normalizing the input flats')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
-            
-        yield rc
-
     def overscanSubtract(self,rc):
         """
         This primitive uses the CL script gireduce to subtract the overscan 
@@ -489,13 +433,13 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             log.status('*STARTING* to subtract the overscan from the inputs')
             
-            log.debug('Calling gmosScience.overscanSubtract function')
+            log.debug('Calling calibrate.overscanSubtract function')
             
-            adOutputs = gmosScience.overscan_subtract(adInputs=rc.getInputs(style='AD'), 
+            adOutputs = calibrate.overscan_subtract(adInputs=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], biassec=rc['biassec'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'])           
             
-            log.status('gmosScience.overscanSubtract completed successfully')
+            log.status('calibrate.overscanSubtract completed successfully')
                 
             # Reporting the updated files to the reduction context
             rc.reportOutput(adOutputs)
@@ -529,9 +473,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             log.status('*STARTING* to trim the overscan region from the input data')
             
-            log.debug('Calling geminiScience.overscanTrim function')
+            log.debug('Calling calibrate.overscanTrim function')
             
-            adOutputs = geminiScience.overscan_trim(adInputs=rc.getInputs(style='AD'),     
+            adOutputs = calibrate.overscan_trim(adInputs=rc.getInputs(style='AD'),     
                                                         suffix=rc['suffix'])           
             
             log.status('geminiScience.overscanTrim completed successfully')
