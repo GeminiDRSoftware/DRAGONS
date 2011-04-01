@@ -1322,7 +1322,7 @@ class RecipeLibrary(object):
             types = gd.getTypes()
             rec = None
             for typ in types:
-                rec = self.retrieveRecipe(name, astrotype=typ)
+                rec = self.retrieveRecipe(name, astrotype=typ, inherit=False)
                 if rec:
                     prec  = self.composeRecipe(name, rec)
                     rfunc = self.compileRecipe(name, prec)
@@ -1409,7 +1409,7 @@ class RecipeLibrary(object):
         else:
             return recipelist
         
-    def retrieveRecipe(self, name, astrotype=None):
+    def retrieveRecipe(self, name, astrotype=None, inherit= True):
         # @@NAMING: uses "recipe.TYPE" and recipe for recipe.ALL
         cri = centralRecipeIndex
         #print "RM1406:", repr(astrotype)
@@ -1433,7 +1433,10 @@ class RecipeLibrary(object):
                 # @@NOTE: OLD WAY: User must SPECIFY none to get the generic recipe
                 # return None
                 # @@....: new way: inherit generic recipe!
-                fname = cri[key]        
+                if inherit == True:
+                    fname = cri[key]
+                else:
+                    return None        
         else:
             return None
 
