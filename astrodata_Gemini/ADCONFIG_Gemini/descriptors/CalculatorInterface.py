@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
@@ -13,7 +14,9 @@ class CalculatorInterface:
         Return the airmass value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the mean airmass of the observation
         """
         try:
@@ -28,30 +31,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "airmass",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.airmass(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "airmass",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="airmass",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -64,13 +57,15 @@ class CalculatorInterface:
         Return the amp_read_area value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: the return format
+                       set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more string(s)
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :rtype: dictionary containing one or more string(s) (format=asDict)
         :return: the composite string containing the name of the detector
                  amplifier (ampname) and the readout area of the CCD (detsec) 
                  used for the observation
@@ -87,30 +82,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "amp_read_area",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.amp_read_area(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "amp_read_area",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="amp_read_area",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -123,7 +108,9 @@ class CalculatorInterface:
         Return the azimuth value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the azimuth (in degrees between 0 and 360) of the observation
         """
         try:
@@ -138,30 +125,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "azimuth",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.azimuth(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "azimuth",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="azimuth",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -174,7 +151,9 @@ class CalculatorInterface:
         Return the camera value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the camera used for the observation
         """
         try:
@@ -189,30 +168,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "camera",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.camera(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "camera",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="camera",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -225,7 +194,9 @@ class CalculatorInterface:
         Return the cass_rotator_pa value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the cassegrain rotator position angle (in degrees between -360
                  and 360) of the observation
         """
@@ -241,30 +212,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "cass_rotator_pa",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "cass_rotator_pa",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="cass_rotator_pa",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -286,14 +247,15 @@ class CalculatorInterface:
         :param asAngstroms: set to True to return the central_wavelength 
                             value in units of Angstroms
         :type asAngstroms: Python boolean
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :rtype: dictionary containing one or more float(s)
-        :return: the central wavelength (in meters by default) of the 
+        :return: the central wavelength (in meters as default) of the 
                  observation
         """
         try:
@@ -308,30 +270,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "central_wavelength",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.central_wavelength(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "central_wavelength",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="central_wavelength",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -344,7 +296,9 @@ class CalculatorInterface:
         Return the coadds value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: integer
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
         :return: the number of coadds used for the observation
         """
         try:
@@ -359,30 +313,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "coadds",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.coadds(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "coadds",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="coadds",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -395,7 +339,9 @@ class CalculatorInterface:
         Return the data_label value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the data label of the observation
         """
         try:
@@ -410,30 +356,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "data_label",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.data_label(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "data_label",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="data_label",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -450,17 +386,19 @@ class CalculatorInterface:
                        value in the form [x1:x2,y1:y2] that uses 1-based 
                        indexing
         :type pretty: Python boolean
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more tuple(s) that use 0-based 
-                indexing in the form (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as 
-                default, or one or more string(s) that use 1-based indexing in 
-                the form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 
-                are integers.
+        :type format: string
+        :rtype: tuple of integers that use 0-based indexing in the form 
+                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default 
+                (i.e., format=None, pretty=False)
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
+                (pretty=True)
+        :rtype: dictionary containing one or more of the above return types 
+                (format=asDict)
         :return: the section of the data of the observation
         """
         try:
@@ -475,30 +413,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "data_section",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.data_section(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "data_section",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="data_section",
+                ad=self, pytype=tuple)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -511,7 +439,9 @@ class CalculatorInterface:
         Return the dec value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the declination (in decimal degrees) of the observation
         """
         try:
@@ -526,30 +456,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "dec",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.dec(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "dec",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="dec",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -568,7 +488,7 @@ class CalculatorInterface:
         :param pretty: set to True to return a human meaningful 
                        decker value
         :type pretty: Python boolean
-        :rtype: string
+        :rtype: string as default (i.e., format=None)
         :return: the decker position used for the observation
         """
         try:
@@ -583,30 +503,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "decker",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.decker(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "decker",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="decker",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -623,17 +533,19 @@ class CalculatorInterface:
                        detector_section value in the form [x1:x2,y1:y2] that 
                        uses 1-based indexing
         :type pretty: Python boolean
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more tuple(s) that use 0-based 
-                indexing in the form (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as 
-                default, or one or more string(s) that use 1-based indexing in 
-                the form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 
-                are integers.
+        :type format: string
+        :rtype: tuple of integers that use 0-based indexing in the form 
+                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default 
+                (i.e., format=None, pretty=False)
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
+                (pretty=True)
+        :rtype: dictionary containing one or more of the above return types 
+                (format=asDict)
         :return: the detector section of the observation
         """
         try:
@@ -648,30 +560,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "detector_section",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.detector_section(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "detector_section",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="detector_section",
+                ad=self, pytype=tuple)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -684,13 +586,15 @@ class CalculatorInterface:
         Return the detector_x_bin value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: the return format
+                       set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more integer(s)
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :rtype: dictionary containing one or more integer(s) (format=asDict)
         :return: the binning of the x-axis of the detector used for the 
                  observation
         """
@@ -706,30 +610,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "detector_x_bin",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.detector_x_bin(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "detector_x_bin",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="detector_x_bin",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -742,13 +636,15 @@ class CalculatorInterface:
         Return the detector_y_bin value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: the return format
+                       set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more integer(s)
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :rtype: dictionary containing one or more integer(s) (format=asDict)
         :return: the binning of the y-axis of the detector used for the 
                  observation
         """
@@ -764,30 +660,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "detector_y_bin",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.detector_y_bin(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "detector_y_bin",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="detector_y_bin",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -806,7 +692,7 @@ class CalculatorInterface:
         :param pretty: set to True to return a human meaningful 
                        disperser value
         :type pretty: Python boolean
-        :rtype: string
+        :rtype: string as default (i.e., format=None)
         :return: the disperser used for the observation
         """
         try:
@@ -821,30 +707,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "disperser",
-                                                pytype = str,)
             else:
                 retval = self.descriptorCalculator.disperser(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "disperser",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue(retval, format=format, name="disperser",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -866,14 +742,15 @@ class CalculatorInterface:
         :param asAngstroms: set to True to return the dispersion 
                             value in units of Angstroms
         :type asAngstroms: Python boolean
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more float(s)
-        :return: the dispersion (in meters per pixel by default) of the 
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s) (format=asDict)
+        :return: the dispersion (in meters per pixel as default) of the 
                  observation
         """
         try:
@@ -888,30 +765,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "dispersion",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.dispersion(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "dispersion",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="dispersion",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -924,7 +791,9 @@ class CalculatorInterface:
         Return the dispersion_axis value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: integer
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
         :return: the dispersion axis (x = 1; y = 2; z = 3) of the observation
         """
         try:
@@ -939,30 +808,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "dispersion_axis",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.dispersion_axis(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "dispersion_axis",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="dispersion_axis",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -975,7 +834,9 @@ class CalculatorInterface:
         Return the elevation value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the elevation (in degrees) of the observation
         """
         try:
@@ -990,30 +851,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "elevation",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.elevation(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "elevation",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="elevation",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1026,7 +877,9 @@ class CalculatorInterface:
         Return the exposure_time value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the total exposure time (in seconds) of the observation
         """
         try:
@@ -1041,30 +894,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "exposure_time",
-                                                pytype = float,)
             else:
                 retval = self.descriptorCalculator.exposure_time(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "exposure_time",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue(retval, format=format, name="exposure_time",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1083,7 +926,7 @@ class CalculatorInterface:
         :param pretty: set to True to return a human meaningful 
                        filter_name value
         :type pretty: Python boolean
-        :rtype: string
+        :rtype: string as default (i.e., format=None)
         :return: the unique, sorted filter name idenifier string used for the 
                  observation
         """
@@ -1099,30 +942,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "filter_name",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.filter_name(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "filter_name",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="filter_name",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1141,7 +974,7 @@ class CalculatorInterface:
         :param pretty: set to True to return a human meaningful 
                        focal_plane_mask value
         :type pretty: Python boolean
-        :rtype: string
+        :rtype: string as default (i.e., format=None)
         :return: the focal plane mask used for the observation
         """
         try:
@@ -1156,30 +989,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "focal_plane_mask",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.focal_plane_mask(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "focal_plane_mask",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="focal_plane_mask",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1192,13 +1015,15 @@ class CalculatorInterface:
         Return the gain value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: the return format
+                       set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more float(s)
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s) (format=asDict)
         :return: the gain (in electrons per ADU) of the observation
         """
         try:
@@ -1213,30 +1038,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "gain",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.gain(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "gain",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="gain",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1255,7 +1070,7 @@ class CalculatorInterface:
         :param pretty: set to True to return a human meaningful 
                        grating value
         :type pretty: Python boolean
-        :rtype: string
+        :rtype: string as default (i.e., format=None)
         :return: the grating used for the observation
         """
         try:
@@ -1270,30 +1085,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "grating",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.grating(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "grating",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="grating",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1306,7 +1111,9 @@ class CalculatorInterface:
         Return the gain_setting value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the gain setting of the observation
         """
         try:
@@ -1321,30 +1128,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "gain_setting",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.gain_setting(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "gain_setting",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="gain_setting",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1357,7 +1154,9 @@ class CalculatorInterface:
         Return the instrument value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the instrument used for the observation
         """
         try:
@@ -1372,30 +1171,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "instrument",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.instrument(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "instrument",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="instrument",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1408,7 +1197,9 @@ class CalculatorInterface:
         Return the local_time value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the local time (in HH:MM:SS.S) at the start of the observation
         """
         try:
@@ -1423,30 +1214,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "local_time",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.local_time(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "local_time",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="local_time",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1459,13 +1240,15 @@ class CalculatorInterface:
         Return the mdf_row_id value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: the return format
+                       set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more integer(s)
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :rtype: dictionary containing one or more integer(s) (format=asDict)
         :return: the corresponding reference row in the MDF
         """
         try:
@@ -1480,30 +1263,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "mdf_row_id",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.mdf_row_id(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "mdf_row_id",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="mdf_row_id",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1516,7 +1289,9 @@ class CalculatorInterface:
         Return the nod_count value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: integer
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
         :return: the number of nod and shuffle cycles in the nod and shuffle 
                  observation
         """
@@ -1532,30 +1307,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "nod_count",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.nod_count(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "nod_count",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="nod_count",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1568,7 +1333,9 @@ class CalculatorInterface:
         Return the nod_pixels value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: integer
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
         :return: the number of pixel rows the charge is shuffled by in the nod 
                  and shuffle observation
         """
@@ -1584,30 +1351,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "nod_pixels",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.nod_pixels(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "nod_pixels",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="nod_pixels",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1620,7 +1377,9 @@ class CalculatorInterface:
         Return the non_linear_level value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: integer
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
         :return: the non linear level in the raw images (in ADU) of the 
                  observation
         """
@@ -1636,30 +1395,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "non_linear_level",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.non_linear_level(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "non_linear_level",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="non_linear_level",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1672,7 +1421,9 @@ class CalculatorInterface:
         Return the object value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the name of the target object observed
         """
         try:
@@ -1687,30 +1438,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "object",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.object(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "object",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="object",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1723,7 +1464,9 @@ class CalculatorInterface:
         Return the observation_class value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the class (either 'science', 'progCal', 'partnerCal', 'acq', 
                  'acqCal' or 'dayCal') of the observation
         """
@@ -1739,30 +1482,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "observation_class",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.observation_class(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_class",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="observation_class",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1775,7 +1508,9 @@ class CalculatorInterface:
         Return the observation_epoch value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the epoch (in years) at the start of the observation
         """
         try:
@@ -1790,30 +1525,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "observation_epoch",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.observation_epoch(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_epoch",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="observation_epoch",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1826,7 +1551,9 @@ class CalculatorInterface:
         Return the observation_id value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the ID (e.g., GN-2011A-Q-123-45) of the observation
         """
         try:
@@ -1841,30 +1568,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "observation_id",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.observation_id(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_id",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="observation_id",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1877,7 +1594,9 @@ class CalculatorInterface:
         Return the observation_type value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the type (either 'OBJECT', 'DARK', 'FLAT', 'ARC', 'BIAS' or 
                  'MASK') of the observation
         """
@@ -1893,30 +1612,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "observation_type",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.observation_type(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_type",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="observation_type",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1929,7 +1638,9 @@ class CalculatorInterface:
         Return the pixel_scale value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the pixel scale (in arcsec per pixel) of the observation
         """
         try:
@@ -1944,30 +1655,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "pixel_scale",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.pixel_scale(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "pixel_scale",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="pixel_scale",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -1986,7 +1687,7 @@ class CalculatorInterface:
         :param pretty: set to True to return a human meaningful 
                        prism value
         :type pretty: Python boolean
-        :rtype: string
+        :rtype: string as default (i.e., format=None)
         :return: the prism used for the observation
         """
         try:
@@ -2001,30 +1702,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "prism",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.prism(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "prism",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="prism",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2037,7 +1728,9 @@ class CalculatorInterface:
         Return the program_id value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the Gemini program ID (e.g., GN-2011A-Q-123) of the 
                  observation
         """
@@ -2053,30 +1746,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "program_id",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.program_id(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "program_id",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="program_id",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2089,7 +1772,9 @@ class CalculatorInterface:
         Return the pupil_mask value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the pupil mask used for the observation
         """
         try:
@@ -2104,30 +1789,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "pupil_mask",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.pupil_mask(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "pupil_mask",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="pupil_mask",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2140,7 +1815,9 @@ class CalculatorInterface:
         Return the qa_state value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the quality assessment state (either 'Undefined', 'Pass', 
                  'Usable', 'Fail' or 'CHECK') of the observation
         """
@@ -2156,30 +1833,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "qa_state",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.qa_state(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "qa_state",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="qa_state",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2192,7 +1859,9 @@ class CalculatorInterface:
         Return the ra value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the Right Ascension (in decimal degrees) of the observation
         """
         try:
@@ -2207,30 +1876,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "ra",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.ra(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ra",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="ra",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2243,7 +1902,9 @@ class CalculatorInterface:
         Return the raw_bg value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the raw background (either '20-percentile', '50-percentile', 
                  '80-percentile' or 'Any') of the observation
         """
@@ -2259,30 +1920,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "raw_bg",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.raw_bg(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_bg",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="raw_bg",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2295,7 +1946,9 @@ class CalculatorInterface:
         Return the raw_cc value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the raw cloud cover (either '50-percentile', '70-percentile', 
                  '80-percentile', '90-percentile' or 'Any') of the observation
         """
@@ -2311,30 +1964,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "raw_cc",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.raw_cc(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_cc",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="raw_cc",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2347,7 +1990,9 @@ class CalculatorInterface:
         Return the raw_iq value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the raw image quality (either '20-percentile', 
                  '70-percentile', '85-percentile' or 'Any') of the observation
         """
@@ -2363,30 +2008,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "raw_iq",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.raw_iq(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_iq",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="raw_iq",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2399,7 +2034,9 @@ class CalculatorInterface:
         Return the raw_wv value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the raw water vapour (either '20-percentile', 
                  '50-percentile', '80-percentile' or 'Any') of the observation
         """
@@ -2415,30 +2052,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "raw_wv",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.raw_wv(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_wv",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="raw_wv",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2451,7 +2078,9 @@ class CalculatorInterface:
         Return the read_mode value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the read mode (either 'Very Faint Objects', 
                  'Faint Object(s)', 'Medium Object', 'Bright Object(s)', 
                  'Very Bright Object', 'Low Background', 'Medium Background', 
@@ -2469,30 +2098,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "read_mode",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.read_mode(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "read_mode",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="read_mode",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2505,13 +2124,15 @@ class CalculatorInterface:
         Return the read_noise value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: the return format
+                       set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more float(s)
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s) (format=asDict)
         :return: the estimated readout noise (in electrons) of the observation
         """
         try:
@@ -2526,30 +2147,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "read_noise",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.read_noise(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "read_noise",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="read_noise",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2562,7 +2173,9 @@ class CalculatorInterface:
         Return the read_speed_setting value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the read speed setting (either 'fast' or 'slow') of the 
                  observation
         """
@@ -2578,30 +2191,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "read_speed_setting",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.read_speed_setting(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "read_speed_setting",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="read_speed_setting",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2614,7 +2217,9 @@ class CalculatorInterface:
         Return the saturation_level value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: integer
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
         :return: the saturation level in the raw images (in ADU) of the 
                  observation
         """
@@ -2630,30 +2235,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "saturation_level",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.saturation_level(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "saturation_level",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="saturation_level",
+                ad=self, pytype=int)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2672,7 +2267,7 @@ class CalculatorInterface:
         :param pretty: set to True to return a human meaningful 
                        slit value
         :type pretty: Python boolean
-        :rtype: string
+        :rtype: string as default (i.e., format=None)
         :return: the slit used for the observation
         """
         try:
@@ -2687,30 +2282,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "slit",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.slit(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "slit",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="slit",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2723,7 +2308,9 @@ class CalculatorInterface:
         Return the telescope value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the telescope used for the observation
         """
         try:
@@ -2738,30 +2325,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "telescope",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.telescope(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "telescope",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="telescope",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2774,7 +2351,9 @@ class CalculatorInterface:
         Return the ut_date value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: datatime.date
+        :param format: the return format
+        :type format: string
+        :rtype: datetime as default (i.e., format=None)
         :return: the UT date at the start of the observation
         """
         try:
@@ -2789,30 +2368,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "ut_date",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.ut_date(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ut_date",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="ut_date",
+                ad=self, pytype=datetime)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2867,30 +2436,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "ut_datetime",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.ut_datetime(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ut_datetime",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="ut_datetime",
+                ad=self, pytype=datetime)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2903,7 +2462,9 @@ class CalculatorInterface:
         Return the ut_time value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: datatime.time
+        :param format: the return format
+        :type format: string
+        :rtype: datetime as default (i.e., format=None)
         :return: the UT time at the start of the observation
         """
         try:
@@ -2918,30 +2479,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "ut_time",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.ut_time(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ut_time",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="ut_time",
+                ad=self, pytype=datetime)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -2954,7 +2505,9 @@ class CalculatorInterface:
         Return the wavefront_sensor value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the wavefront sensor (either 'AOWFS', 'OIWFS', 'PWFS1', 
                  'PWFS2', some combination in alphebetic order separated with 
                  an ampersand or None) used for the observation
@@ -2971,30 +2524,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "wavefront_sensor",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.wavefront_sensor(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "wavefront_sensor",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="wavefront_sensor",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -3007,13 +2550,15 @@ class CalculatorInterface:
         Return the wavelength_reference_pixel value
         :param dataset: the data set
         :type dataset: AstroData
-        :param asDict: set to True to return a dictionary, where the number of 
-                       dictionary elements equals the number of pixel data 
+        :param format: the return format
+                       set to asDict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
-        :type asDict: Python boolean
-        :rtype: dictionary containing one or more float(s)
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s) (format=asDict)
         :return: the reference pixel of the central wavelength of the 
                  observation
         """
@@ -3029,30 +2574,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "wavelength_reference_pixel",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "wavelength_reference_pixel",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="wavelength_reference_pixel",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -3065,7 +2600,9 @@ class CalculatorInterface:
         Return the well_depth_setting value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: string
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
         :return: the well depth setting (either 'Shallow', 'Deep' or 
                  'Invalid') of the observation
         """
@@ -3081,30 +2618,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "well_depth_setting",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.well_depth_setting(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "well_depth_setting",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="well_depth_setting",
+                ad=self, pytype=str)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -3117,7 +2644,9 @@ class CalculatorInterface:
         Return the x_offset value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the x offset of the observation
         """
         try:
@@ -3132,30 +2661,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "x_offset",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.x_offset(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "x_offset",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="x_offset",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -3168,7 +2687,9 @@ class CalculatorInterface:
         Return the y_offset value
         :param dataset: the data set
         :type dataset: AstroData
-        :rtype: float
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
         :return: the y offset of the observation
         """
         try:
@@ -3183,30 +2704,20 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "y_offset",
-                                                pytype = None,)
             else:
                 retval = self.descriptorCalculator.y_offset(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "y_offset",  
-                                                ad = self,
-                                                pytype = None
-                                                )
+            ret = DescriptorValue(retval, format=format, name="y_offset",
+                ad=self, pytype=float)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -3219,6 +2730,6 @@ class CalculatorInterface:
         '''Function to put at top of all descriptor members
         to ensure the descriptor is loaded.  This way we avoid
         loading it if it is not needed.'''
-        if self.descriptorCalculator == None:
+        if self.descriptorCalculator is None:
             self.descriptorCalculator = Descriptors.getCalculator(self, **args)
 
