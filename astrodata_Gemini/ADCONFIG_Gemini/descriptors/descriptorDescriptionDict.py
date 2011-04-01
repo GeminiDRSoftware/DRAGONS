@@ -5,7 +5,9 @@
 #     Return the <descriptor> value
 #     :param dataset: the data set
 #     :type dataset: AstroData
-#     :rtype: string
+#     :param format: the return format
+#     :type format: string
+#     :rtype: string as default (i.e., format=None)
 #     :return: the <descriptor> for the observation
 #
 # Add to this dictionary using the format <descriptor>:<doc string>,
@@ -27,15 +29,16 @@ descriptorDescDict = {
     'central_wavelength \n                            value in units of ' +
     'Angstroms\n' +
     '        :type asAngstroms: Python boolean\n' +
-    '        :param asDict: set to True to return a dictionary, where the ' +
-    'number of \n                       dictionary elements equals the ' +
+    '        :param format: set to asDict to return a dictionary, where the ' +
+    'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
     'EXTVER) tuple, if available. Otherwise, \n                       the ' +
-    'key is the integer index of the extension.\n' + \
-    '        :type asDict: Python boolean\n' + \
-    '        :rtype: dictionary containing one or more float(s)\n' + \
-    '        :return: the central wavelength (in meters by default) of the ' +
+    'key is the integer index of the extension.\n' +
+    '        :type format: string\n' +
+    '        :rtype: float as default (i.e., format=None)\n' +
+    '        :rtype: dictionary containing one or more float(s)\n' +
+    '        :return: the central wavelength (in meters as default) of the ' +
     '\n                 observation',
     # data_section
     'data_section':'Return the data_section value\n' +
@@ -45,19 +48,20 @@ descriptorDescDict = {
     'data_section \n                       value in the form [x1:x2,y1:y2] ' +
     'that uses 1-based \n                       indexing\n' +
     '        :type pretty: Python boolean\n' +
-    '        :param asDict: set to True to return a dictionary, where the ' +
-    'number of \n                       dictionary elements equals the ' +
+    '        :param format: set to asDict to return a dictionary, where the ' +
+    'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
     'EXTVER) tuple, if available. Otherwise, \n                       the ' +
-    'key is the integer index of the extension.\n' + \
-    '        :type asDict: Python boolean\n' + \
-    '        :rtype: dictionary containing one or more tuple(s) that use ' +
-    '0-based \n                indexing in the form ' + \
-    '(x1 - 1, x2 - 1, y1 - 1, y2 - 1) as \n                default, or one ' +
-    'or more string(s) that use 1-based indexing in \n                the ' +
-    'form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 ' +
-    '\n                are integers.\n' + \
+    'key is the integer index of the extension.\n' +
+    '        :type format: string\n' +
+    '        :rtype: tuple of integers that use 0-based indexing in the ' +
+    'form \n                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default \n' +
+    '                (i.e., format=None, pretty=False)\n'
+    '        :rtype: string that uses 1-based indexing in the form ' +
+    '[x1:x2,y1:y2] \n                (pretty=True)\n' +
+    '        :rtype: dictionary containing one or more of the above return ' +
+    'types \n                (format=asDict)\n' +
     '        :return: the section of the data of the observation',
     # detector_section
     'detector_section':'Return the detector_section value\n' +
@@ -67,19 +71,20 @@ descriptorDescDict = {
     '                       detector_section value in the form ' +
     '[x1:x2,y1:y2] that \n                       uses 1-based indexing\n' +
     '        :type pretty: Python boolean\n' +
-    '        :param asDict: set to True to return a dictionary, where the ' +
-    'number of \n                       dictionary elements equals the ' +
+    '        :param format: set to asDict to return a dictionary, where the ' +
+    'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
     'EXTVER) tuple, if available. Otherwise, \n                       the ' +
-    'key is the integer index of the extension.\n' + \
-    '        :type asDict: Python boolean\n' + \
-    '        :rtype: dictionary containing one or more tuple(s) that use ' +
-    '0-based \n                indexing in the form ' + \
-    '(x1 - 1, x2 - 1, y1 - 1, y2 - 1) as \n                default, or one ' +
-    'or more string(s) that use 1-based indexing in \n                the ' +
-    'form [x1:x2,y1:y2] if pretty=True, where x1, x2, y1 and y2 ' +
-    '\n                are integers.\n' + \
+    'key is the integer index of the extension.\n' +
+    '        :type format: string\n' +
+    '        :rtype: tuple of integers that use 0-based indexing in the ' +
+    'form \n                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default \n' +
+    '                (i.e., format=None, pretty=False)\n'
+    '        :rtype: string that uses 1-based indexing in the form ' +
+    '[x1:x2,y1:y2] \n                (pretty=True)\n' +
+    '        :rtype: dictionary containing one or more of the above return ' +
+    'types \n                (format=asDict)\n' +
     '        :return: the detector section of the observation',
     # dispersion
     'dispersion':'Return the dispersion value\n' +
@@ -97,15 +102,16 @@ descriptorDescDict = {
     'dispersion \n                            value in units of ' +
     'Angstroms\n' +
     '        :type asAngstroms: Python boolean\n' +
-    '        :param asDict: set to True to return a dictionary, where the ' +
-    'number of \n                       dictionary elements equals the ' +
+    '        :param format: set to asDict to return a dictionary, where the ' +
+    'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
     'EXTVER) tuple, if available. Otherwise, \n                       the ' +
-    'key is the integer index of the extension.\n' + \
-    '        :type asDict: Python boolean\n' + \
-    '        :rtype: dictionary containing one or more float(s)\n' + \
-    '        :return: the dispersion (in meters per pixel by default) of ' +
+    'key is the integer index of the extension.\n' +
+    '        :type format: string\n' +
+    '        :rtype: float as default (i.e., format=None)\n' +
+    '        :rtype: dictionary containing one or more float(s) (format=asDict)\n' +
+    '        :return: the dispersion (in meters per pixel as default) of ' +
     'the \n                 observation',
     # ut_datetime
     'ut_datetime':'Return the ut_datetime value\n' +
@@ -144,38 +150,6 @@ descriptorDescDict = {
     '        :rtype: datetime.date (dateonly=True)\n' +
     '        :return: the UT date and time at the start of the observation',
                       }
-
-# Use the returnTypeDict dictionary to change the return type of a descriptor
-# when using the standard doc string. The default return type is 'string'. Add
-# to this dictionary using the format <descriptor>:<return type>,
-
-returnTypeDict = {
-    'airmass':'float',
-    'azimuth':'float',
-    'cass_rotator_pa':'float',
-    'central_wavelength':'float',
-    'coadds':'integer',
-    'dec':'float',
-    'detector_x_bin':'integer',
-    'detector_y_bin':'integer',
-    'dispersion_axis':'integer',
-    'elevation':'float',
-    'exposure_time':'float',
-    'gain':'float',
-    'mdf_row_id':'integer',
-    'nod_count':'integer',
-    'nod_pixels':'integer',
-    'non_linear_level':'integer',
-    'pixel_scale':'float',
-    'ra':'float',
-    'read_noise':'float',
-    'saturation_level':'integer',
-    'ut_date':'datatime.date',
-    'ut_time':'datatime.time',
-    'wavelength_reference_pixel':'float',
-    'x_offset':'float',
-    'y_offset':'float',
-                 }
 
 # Use the detailedNameDict dictionary to use a more detailed description of
 # the descriptor in the return field (include units if applicable) when using
@@ -274,10 +248,10 @@ detailedNameDict = {
                    }
 
 # Use the asDictArgDict dictionary to change the standard doc string of a
-# descriptor to include the asDict argument description for those descriptors
-# that access keywords in the headers of the pixel data extensions. The
-# default return type is 'no'. Add to this dictionary using the format
-# <descriptor>:'yes',
+# descriptor to include the format=asDict argument description for those
+# descriptors that access keywords in the headers of the pixel data
+# extensions. The default return type is 'no'. Add to this dictionary using
+# the format <descriptor>:'yes',
 
 asDictArgDict = {
     'amp_read_area':'yes',
