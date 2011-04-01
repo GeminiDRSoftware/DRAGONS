@@ -258,7 +258,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Get the dispersion axis from the header of each pixel data
                 # extension
                 dispersion_axis = \
-                    ext.getKeyValue[globalStdkeyDict['key_dispersion_axis']]
+                    ext.getKeyValue(globalStdkeyDict['key_dispersion_axis'])
                 if dispersion_axis is None:
                     # The getKeyValue() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
