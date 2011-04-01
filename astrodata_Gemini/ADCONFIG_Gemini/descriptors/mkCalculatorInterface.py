@@ -1,7 +1,7 @@
+from datetime import datetime
 from descriptorDescriptionDict import asDictArgDict
 from descriptorDescriptionDict import descriptorDescDict
 from descriptorDescriptionDict import detailedNameDict
-from descriptorDescriptionDict import returnTypeDict
 from descriptorDescriptionDict import stripIDArgDict
 
 class DescriptorDescriptor:
@@ -27,30 +27,20 @@ class DescriptorDescriptor:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
-                    else:
-                        return DescriptorValue( retval, 
-                                                format = format, 
-                                                name = "%(name)s",
-                                                pytype = %(pytype)s,)
             else:
                 retval = self.descriptorCalculator.%(name)s(self, **args)
                                         
-            if True : #"asString" in args and args["asString"]==True:
-                from datetime import datetime
+            if "asString" in args and args["asString"]:
                 from astrodata.adutils.gemutil import stdDateString
                 if isinstance(retval, datetime):
                     retval = stdDateString(retval)
                 else:
                     retval = str(retval)
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "%(name)s",  
-                                                ad = self,
-                                                pytype = %(pytype)s
-                                                )
+            ret = DescriptorValue(retval, format=format, name="%(name)s",
+                ad=self, pytype=%(pytype)s)
             return ret
         except:
-            if (self.descriptorCalculator==None 
+            if (self.descriptorCalculator is None 
                 or self.descriptorCalculator.throwExceptions == True):
                 raise
             else:
@@ -58,19 +48,18 @@ class DescriptorDescriptor:
                 self.exception_info = sys.exc_info()[1]
                 return None
     """
-    def __init__(self, name=None, pytype = None, rtype=None):
+    def __init__(self, name=None, pytype=None):
         self.name = name
-        self.rtype = rtype
-        
         if pytype:
             self.pytype = pytype
+            rtype = pytype.__name__
         try:
             desc = descriptorDescDict[name]
         except:
-            try:
-                rtype = returnTypeDict[name]
-            except:
+            if rtype == 'str':
                 rtype = 'string'
+            if rtype == 'int':
+                rtype = 'integer'
             try:
                 dname = detailedNameDict[name]
             except:
@@ -97,16 +86,18 @@ class DescriptorDescriptor:
                        '                       %(name)s ' % {'name':name} + \
                        'value\n' + \
                        '        :type pretty: Python boolean\n' + \
-                       '        :rtype: %(rtype)s\n' % {'rtype':rtype} + \
+                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
+                       'as default (i.e., format=None)\n' + \
                        '        :return: the %(dname)s' \
                        % {'dname':dname}
             elif asDictArg == 'yes':
                 desc = 'Return the %(name)s value\n' % {'name':name} + \
                        '        :param dataset: the data set\n' + \
                        '        :type dataset: AstroData\n' + \
-                       '        :param asDict: set to True to return a ' + \
-                       'dictionary, where the number of ' + \
-                       '\n                       dictionary elements ' + \
+                       '        :param format: the return format\n' + \
+                       '                       set to asDict to return a ' + \
+                       'dictionary, where the number ' + \
+                       '\n                       of dictionary elements ' + \
                        'equals the number of pixel data ' + \
                        '\n                       extensions in the image. ' + \
                        'The key of the dictionary is ' + \
@@ -114,9 +105,12 @@ class DescriptorDescriptor:
                        'tuple, if available. Otherwise, ' + \
                        '\n                       the key is the integer ' + \
                        'index of the extension.\n' + \
-                       '        :type asDict: Python boolean\n' + \
+                       '        :type format: string\n' + \
+                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
+                       'as default (i.e., format=None)\n' + \
                        '        :rtype: dictionary containing one or more ' + \
-                       '%(rtype)s(s)\n' % {'rtype':rtype} + \
+                       '%(rtype)s(s) ' % {'rtype':rtype} + \
+                       '(format=asDict)\n' + \
                        '        :return: the %(dname)s' \
                        % {'dname':dname}
 
@@ -124,12 +118,14 @@ class DescriptorDescriptor:
                 desc = 'Return the %(name)s value\n' % {'name':name} + \
                        '        :param dataset: the data set\n' + \
                        '        :type dataset: AstroData\n' + \
-                       '        :rtype: %(rtype)s\n' % {'rtype':rtype} + \
+                       '        :param format: the return format\n' + \
+                       '        :type format: string\n' + \
+                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
+                       'as default (i.e., format=None)\n' + \
                        '        :return: the %(dname)s' \
                        % {'dname':dname}
                 
         self.description = desc
-        self.rtype = rtype
         
     def funcbody(self):
         if self.pytype:
@@ -139,74 +135,74 @@ class DescriptorDescriptor:
             
         ret = self.thunkfuncbuff % {'name':self.name,
                                     'pytype': pytypestr,
-                                    'description':self.description, 
-                                    'rtype':self.rtype}
+                                    'description':self.description}
         return ret
         
 DD = DescriptorDescriptor
         
-descriptors =   [   DD("airmass"),
-                    DD("amp_read_area"),
-                    DD("azimuth"),
-                    DD("camera"),
-                    DD("cass_rotator_pa"),
-                    DD("central_wavelength"),
-                    DD("coadds"),
-                    DD("data_label"),
-                    DD("data_section"),
-                    DD("dec"),
-                    DD("decker"),
-                    DD("detector_section"),
-                    DD("detector_x_bin"),
-                    DD("detector_y_bin"),
+descriptors =   [   DD("airmass", pytype=float),
+                    DD("amp_read_area", pytype=str),
+                    DD("azimuth", pytype=float),
+                    DD("camera", pytype=str),
+                    DD("cass_rotator_pa", pytype=float),
+                    DD("central_wavelength", pytype=float),
+                    DD("coadds", pytype=int),
+                    DD("data_label", pytype=str),
+                    DD("data_section", pytype=tuple),
+                    DD("dec", pytype=float),
+                    DD("decker", pytype=str),
+                    DD("detector_section", pytype=tuple),
+                    DD("detector_x_bin", pytype=int),
+                    DD("detector_y_bin", pytype=int),
                     DD("disperser", pytype=str),
-                    DD("dispersion"),
-                    DD("dispersion_axis"),
-                    DD("elevation"),
+                    DD("dispersion", pytype=float),
+                    DD("dispersion_axis", pytype=int),
+                    DD("elevation", pytype=float),
                     DD("exposure_time", pytype=float),
-                    DD("filter_name"),
-                    DD("focal_plane_mask"),
-                    DD("gain"),
-                    DD("grating"),
-                    DD("gain_setting"),
-                    DD("instrument"),
-                    DD("local_time"),
-                    DD("mdf_row_id"),
-                    DD("nod_count"),
-                    DD("nod_pixels"),
-                    DD("non_linear_level"),
-                    DD("object"),
-                    DD("observation_class"),
-                    DD("observation_epoch"),
-                    DD("observation_id"),
-                    DD("observation_type"),
-                    DD("pixel_scale"),
-                    DD("prism"),
-                    DD("program_id"),
-                    DD("pupil_mask"),
-                    DD("qa_state"),
-                    DD("ra"),
-                    DD("raw_bg"),
-                    DD("raw_cc"),
-                    DD("raw_iq"),
-                    DD("raw_wv"),
-                    DD("read_mode"),
-                    DD("read_noise"),
-                    DD("read_speed_setting"),
-                    DD("saturation_level"),
-                    DD("slit"),
-                    DD("telescope"),
-                    DD("ut_date"),
-                    DD("ut_datetime"),
-                    DD("ut_time"),
-                    DD("wavefront_sensor"),
-                    DD("wavelength_reference_pixel"),
-                    DD("well_depth_setting"),
-                    DD("x_offset"),
-                    DD("y_offset"),
+                    DD("filter_name", pytype=str),
+                    DD("focal_plane_mask", pytype=str),
+                    DD("gain", pytype=float),
+                    DD("grating", pytype=str),
+                    DD("gain_setting", pytype=str),
+                    DD("instrument", pytype=str),
+                    DD("local_time", pytype=str),
+                    DD("mdf_row_id", pytype=int),
+                    DD("nod_count", pytype=int),
+                    DD("nod_pixels", pytype=int),
+                    DD("non_linear_level", pytype=int),
+                    DD("object", pytype=str),
+                    DD("observation_class", pytype=str),
+                    DD("observation_epoch", pytype=str),
+                    DD("observation_id", pytype=str),
+                    DD("observation_type", pytype=str),
+                    DD("pixel_scale", pytype=float),
+                    DD("prism", pytype=str),
+                    DD("program_id", pytype=str),
+                    DD("pupil_mask", pytype=str),
+                    DD("qa_state", pytype=str),
+                    DD("ra", pytype=float),
+                    DD("raw_bg", pytype=str),
+                    DD("raw_cc", pytype=str),
+                    DD("raw_iq", pytype=str),
+                    DD("raw_wv", pytype=str),
+                    DD("read_mode", pytype=str),
+                    DD("read_noise", pytype=float),
+                    DD("read_speed_setting", pytype=str),
+                    DD("saturation_level", pytype=int),
+                    DD("slit", pytype=str),
+                    DD("telescope", pytype=str),
+                    DD("ut_date", pytype=datetime),
+                    DD("ut_datetime", pytype=datetime),
+                    DD("ut_time", pytype=datetime),
+                    DD("wavefront_sensor", pytype=str),
+                    DD("wavelength_reference_pixel", pytype=float),
+                    DD("well_depth_setting", pytype=str),
+                    DD("x_offset", pytype=float),
+                    DD("y_offset", pytype=float),
                 ]
 
 wholeout = """import sys
+from datetime import datetime
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
@@ -221,7 +217,7 @@ class CalculatorInterface:
         '''Function to put at top of all descriptor members
         to ensure the descriptor is loaded.  This way we avoid
         loading it if it is not needed.'''
-        if self.descriptorCalculator == None:
+        if self.descriptorCalculator is None:
             self.descriptorCalculator = Descriptors.getCalculator(self, **args)
 """
 
