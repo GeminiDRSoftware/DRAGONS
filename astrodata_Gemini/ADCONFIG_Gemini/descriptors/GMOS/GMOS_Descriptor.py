@@ -1,22 +1,16 @@
-from astrodata import Lookups
-from astrodata import Descriptors
-from astrodata import Errors
-
-from astrodata.Calculator import Calculator
-
 from datetime import datetime
 from time import strptime
 
+from astrodata import Descriptors
+from astrodata import Errors
+from astrodata import Lookups
+from astrodata.Calculator import Calculator
+from gempy import string
 import GemCalcUtil
 
 from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
-
-import inspect
-# functions
-def whoami():
-    return inspect.stack()[1][3]
 
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
@@ -47,39 +41,47 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                    'gmosampsRdnoise',
                                    'gmosampsRdnoiseBefore20060831')
     
-    def amp_read_area(self, dataset, format = None, **args):
-        if True:
-            ret_amp_read_area = {}
-            # Loop over the science extensions
-            for ext in dataset['SCI']:
-                # Get the name of the detector amplifier (ampname) from the
-                # header of each pixel data extension. The ampname keyword is
-                # defined in the local key dictionary (stdkeyDictGMOS) but is
-                # read from the updated global key dictionary
-                # (globalStdkeyDict)
-                ampname = ext.header[globalStdkeyDict['key_ampname']]
-                # Get the readout area of the CCD (detsec) using the
-                # appropriate descriptor
-                detsec = ext.detector_section(pretty=True, asDict=False)
+    def amp_read_area(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_amp_read_area = {}
+        # Loop over the science extensions in the dataset
+        for ext in dataset['SCI']:
+            # Get the name of the detector amplifier (ampname) from the header
+            # of each pixel data extension. The ampname keyword is defined in
+            # the local key dictionary (stdkeyDictGMOS) but is read from the
+            # updated global key dictionary (globalStdkeyDict)
+            ampname = ext.getKeyValue(globalStdkeyDict["key_ampname"])
+            if ampname is None:
+                # The getKeyValue() function returns None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, 'exception_info'):
+                    raise ext.exception_info
+            # Get the pretty (1-based indexing) readout area of the CCD
+            # (detsec) using the appropriate descriptor
+            detsec = ext.detector_section(pretty=True)
+            if detsec is None:
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, 'exception_info'):
+                    raise ext.exception_info
                 # Create the composite amp_read_area string
-                amp_read_area = "'%s':%s" % (ampname, detsec)
-
-                # Return a dictionary with the composite amp_read_area string
-                # as the value
-                ret_amp_read_area.update({(ext.extname(), \
-                    ext.extver()):str(amp_read_area)})
+            amp_read_area = "'%s':%s" % (ampname, detsec)
+            # Return a dictionary with the composite amp_read_area string as
+            # the value
+            ret_amp_read_area.update({(ext.extname(), \
+                ext.extver()):str(amp_read_area)})
         
-        return Descriptors.DescriptorValue( ret_amp_read_area,
-                                        format = format,
-                                        name = whoami(),
-                                        ad = dataset)
+        return ret_amp_read_area
     
     def central_wavelength(self, dataset, asMicrometers=False, \
-        asNanometers=False, asAngstroms=False, asDict=False, **args):        
+        asNanometers=False, asAngstroms=False, **args):
         # Currently for GMOS data, the central wavelength is recorded in
         # nanometers
         input_units = 'nanometers'
-        
         # Determine the output units to use
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         if unit_arg_list.count(True) == 1:
@@ -96,100 +98,102 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters
             output_units = 'meters'
-        
-        if asDict:
-            # This is used when obtaining the central wavelength from processed
-            # data (when the keyword will be in the pixel data extensions)
-            return 'asDict for central_wavelength not yet implemented'
-        else:
-            # Get the central wavelength value from the header of the PHU. The
-            # central wavelength keyword is defined in the local key
-            # dictionary (stdkeyDictGMOS) but is read from the updated global
-            # key dictionary (globalStdkeyDict)
-            hdu = dataset.hdulist
-            raw_central_wavelength = \
-                float(hdu[0].header[globalStdkeyDict['key_central_wavelength']])
-            # Use the utilities function convert_units to convert the central
-            # wavelength value from the input units to the output units
-            ret_central_wavelength = \
-                GemCalcUtil.convert_units(input_units=input_units, \
-                input_value=raw_central_wavelength, output_units=output_units)
+        # Get the central wavelength value from the header of the PHU. The
+        # central wavelength keyword is defined in the local key dictionary
+        # (stdkeyDictGMOS) but is read from the updated global key dictionary
+        # (globalStdkeyDict)
+        raw_central_wavelength = \
+            dataset.phuGetKeyValue(globalStdkeyDict['key_central_wavelength'])
+        if raw_central_wavelength is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Use the utilities function convert_units to convert the central
+        # wavelength value from the input units to the output units
+        ret_central_wavelength = \
+            GemCalcUtil.convert_units(input_units=input_units, \
+            input_value=float(raw_central_wavelength), \
+             output_units=output_units)
         
         return ret_central_wavelength
     
-    def detector_x_bin(self, dataset, format = None, **args):
-        # DESCRIPTOR VALUE PROTOTYPE
-        # semi-kludge to use DescriptorValue in all cases
-        # this flag is still important to the DescriptorValue class
-        if True:
-            ret_detector_x_bin = {}
-            # Loop over the science extensions
-            for ext in dataset['SCI']:
-                # Get the ccdsum value from the header of each pixel data
-                # extension. The ccdsum keyword is defined in the local key
-                # dictionary (stdkeyDictGMOS) but is read from the updated
-                # global key dictionary (globalStdkeyDict)
-                ccdsum = ext.header[globalStdkeyDict['key_ccdsum']]
-                detector_x_bin, detector_y_bin = ccdsum.split()
-                # Return a dictionary with the binning of the x-axis integer
-                # as the value
-                ret_detector_x_bin.update({(ext.extname(), \
-                    ext.extver()):int(detector_x_bin)})
+    def detector_x_bin(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_detector_x_bin = {}
+        # Loop over the science extensions in the dataset
+        for ext in dataset['SCI']:
+            # Get the ccdsum value from the header of each pixel data
+            # extension. The ccdsum keyword is defined in the local key
+            # dictionary (stdkeyDictGMOS) but is read from the updated global
+            # key dictionary (globalStdkeyDict)
+            ccdsum = ext.getKeyValue(globalStdkeyDict['key_ccdsum'])
+            if ccdsum is None:
+                # The getKeyValue() function returns None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, 'exception_info'):
+                    raise ext.exception_info
+            detector_x_bin, detector_y_bin = ccdsum.split()
+            # Return a dictionary with the binning of the x-axis integer as the
+            # value
+            ret_detector_x_bin.update({(ext.extname(), \
+                ext.extver()):int(detector_x_bin)})
         
-        # @@DESCRIPTOR VALUE PROTOTYPE
-        return Descriptors.DescriptorValue( ret_detector_x_bin, 
-                                            format = format,
-                                            name = whoami(),
-                                            ad = dataset)
-    detector_x_bin.pytype = int
+        return ret_detector_x_bin
     
-    def detector_y_bin(self, dataset, format = None, **args):
-        # DESCRIPTOR VALUE PROTOTYPE
-        # semi-kludge to use DescriptorValue in all cases
-        # this flag is still important to the DescriptorValue class
-        if True:
-            ret_detector_y_bin = {}
-            # Loop over the science extensions
-            for ext in dataset['SCI']:
-                # Get the ccdsum value from the header of each pixel data
-                # extension. The ccdsum keyword is defined in the local key
-                # dictionary (stdkeyDictGMOS) but is read from the updated
-                # global key dictionary (globalStdkeyDict)
-                ccdsum = ext.header[globalStdkeyDict['key_ccdsum']]
-                detector_x_bin, detector_y_bin = ccdsum.split()
-                # Return a dictionary with the binning of the x-axis integer
-                # as the value
-                ret_detector_y_bin.update({(ext.extname(), \
-                    ext.extver()):int(detector_y_bin)})
-        # @@DESCRIPTOR VALUE PROTOTYPE
+    def detector_y_bin(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_detector_y_bin = {}
+        # Loop over the science extensions in the dataset
+        for ext in dataset['SCI']:
+            # Get the ccdsum value from the header of each pixel data
+            # extension. The ccdsum keyword is defined in the local key
+            # dictionary (stdkeyDictGMOS) but is read from the updated global
+            # key dictionary (globalStdkeyDict)
+            ccdsum = ext.getKeyValue(globalStdkeyDict['key_ccdsum'])
+            if ccdsum is None:
+                # The getKeyValue() function returns None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, 'exception_info'):
+                    raise ext.exception_info
+            detector_x_bin, detector_y_bin = ccdsum.split()
+            # Return a dictionary with the binning of the y-axis integer as the
+            # value
+            ret_detector_y_bin.update({(ext.extname(), \
+                ext.extver()):int(detector_y_bin)})
         
         return ret_detector_y_bin
-        #return Descriptors.DescriptorValue( ret_detector_y_bin, 
-        #                                    format = format,
-        #                                    name = whoami(),
-        #                                    ad = dataset)
-    
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictGMOS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
-        hdu = dataset.hdulist
-        disperser = hdu[0].header[globalStdkeyDict['key_disperser']]
-        
+        disperser = dataset.phuGetKeyValue(globalStdkeyDict['key_disperser'])
+        if disperser is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if pretty:
             # If pretty=True, use stripID then additionally remove the
             # trailing '+' from the string
             stripID = True
-        
         if stripID:
             if pretty:
                 # Return the stripped and pretty disperser string
                 ret_disperser = \
-                    GemCalcUtil.removeComponentID(disperser).strip('+')
+                    string.removeComponentID(disperser).strip('+')
             else:
                 # Return the stripped disperser string
-                ret_disperser = GemCalcUtil.removeComponentID(disperser)
+                ret_disperser = string.removeComponentID(disperser)
         else:
             # Return the disperser string
             ret_disperser = str(disperser)
@@ -197,10 +201,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_disperser
     
     def dispersion(self, dataset, asMicrometers=False, asNanometers=False, \
-        asAngstroms=False, asDict=True, **args):
-        
-        # I have no idea what the units the dispersion is recorded in, so
-        # defaulting to meters for now ...
+        asAngstroms=False, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_dispersion = {}
+        # Currently for GMOS data, the dispersion is recorded in meters (?)
         input_units = 'meters'
         
         # Determine the output units to use
@@ -220,54 +226,42 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # return the dispersion in the default units of meters
             output_units = 'meters'
         
-        if asDict:
-            ret_dispersion = {}
-            # Loop over the science extensions
-            for ext in dataset['SCI']:
-                # Get the dispersion value from the header of each pixel data
-                # extension. The dispersion keyword is defined in the local
-                # key dictionary (stdkeyDictGMOS) but is read from the updated
-                # global key dictionary (globalStdkeyDict)
-                raw_dispersion = \
-                    ext.header[globalStdkeyDict['key_dispersion']]
-                # Use the utilities function convert_units to convert the
-                # dispersion wavelength value from the input units to the
-                # output units                
-                dispersion = \
-                    GemCalcUtil.convert_units(input_units=input_units, \
-                    input_value=raw_dispersion, output_units=output_units)
-                # Return a dictionary with the dispersion float as the value
-                ret_dispersion.update({(ext.extname(), \
-                    ext.extver()):float(dispersion)})
-        else:
-            # Check to see whether the dataset has a single extension and if
-            # it does, return a single value
-            if dataset.countExts('SCI') <= 1:
-                # Get the dispersion value from the header of the single pixel
-                # data extension. The dispersion keyword is defined in the
-                # local key dictionary (stdkeyDictGMOS) but is read from the
-                # updated global key dictionary (globalStdkeyDict)
-                hdu = dataset.hdulist
-                raw_dispersion = \
-                    hdu[1].header[globalStdkeyDict['key_dispersion']]
-                # Use the utilities function convert_units to convert the
-                # dispersion wavelength value from the input units to the
-                # output units                
-                dispersion = \
-                    GemCalcUtil.convert_units(input_units=input_units, \
-                    input_value=raw_dispersion, output_units=output_units)
-                # Return the dispersion float
-                ret_dispersion = float(dispersion)
-            else:
-                raise Errors.DescriptorDictError()
+        # Loop over the science extensions in the dataset
+        for ext in dataset['SCI']:
+            # Get the dispersion value from the header of each pixel data
+            # extension. The dispersion keyword is defined in the local key
+            # dictionary (stdkeyDictGMOS) but is read from the updated global
+            # key dictionary (globalStdkeyDict)
+            raw_dispersion = \
+                ext.getKeyValue(globalStdkeyDict['key_dispersion'])
+            if raw_dispersion is None:
+                # The getKeyValue() function returns None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, 'exception_info'):
+                    raise ext.exception_info
+            # Use the utilities function convert_units to convert the
+            # dispersion wavelength value from the input units to the output
+            # units
+            dispersion = \
+                GemCalcUtil.convert_units(input_units=input_units, \
+                input_value=float(raw_dispersion), output_units=output_units)
+            # Return a dictionary with the dispersion float as the value
+            ret_dispersion.update({(ext.extname(), \
+                ext.extver()):float(dispersion)})
         
         return ret_dispersion
     
     def exposure_time(self, dataset, **args):
         # Get the exposure time from the header of the PHU
-        hdu = dataset.hdulist
-        exposure_time = hdu[0].header[globalStdkeyDict['key_exposure_time']]
-        
+        exposure_time = \
+            dataset.phuGetKeyValue(globalStdkeyDict['key_exposure_time'])
+        if exposure_time is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It 
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         # Sanity check for times when the GMOS DC is stoned
         if exposure_time > 10000. or exposure_time < 0.:
             raise Errors.InvalidValueError()
@@ -282,31 +276,40 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # filter name keywords are defined in the local key dictionary
         # (stdkeyDictGMOS) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        hdu = dataset.hdulist
-        filter1 = hdu[0].header[globalStdkeyDict['key_filter1']]
-        filter2 = hdu[0].header[globalStdkeyDict['key_filter2']]
-        
+        key_filter1 = globalStdkeyDict['key_filter1']
+        key_filter2 = globalStdkeyDict['key_filter2']
+        filter1 = dataset.phuGetKeyValue(key_filter1)
+        filter2 = dataset.phuGetKeyValue(key_filter2)
+        if filter1 is None or filter2 is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if pretty:
             stripID = True
-        
         if stripID:
             # Strip the component ID from the two filter name values
-            filter1 = GemCalcUtil.removeComponentID(filter1)
-            filter2 = GemCalcUtil.removeComponentID(filter2)
+            filter1 = string.removeComponentID(filter1)
+            filter2 = string.removeComponentID(filter2)
+        # Return a dictionary with the keyword names as the key and the filter
+        # name string as the value
+        ret_filter_name = {}
+        ret_filter_name.update({key_filter1:str(filter1), \
+            key_filter2:str(filter2)})
         
-        filters = []
-        if not 'open' in filter1:
-            filters.append(filter1)
-        if not 'open' in filter2:
-            filters.append(filter2)
-        
-        if len(filters) == 0:
-            ret_filter_name = 'open'
-        else:
-            # Return a unique, sorted filter name identifier string with an
-            # ampersand separating each filter name
-            filters.sort
-            ret_filter_name = str('&'.join(filters))
+        ##### Put the below code into DescriptorValue
+        #filters = []
+        #if not 'open' in filter1:
+        #    filters.append(filter1)
+        #if not 'open' in filter2:
+        #    filters.append(filter2)
+        #if len(filters) == 0:
+        #    ret_filter_name = 'open'
+        #else:
+        #    # Return a unique filter name identifier string with an ampersand
+        #    # separating each filter name
+        #    ret_filter_name = str('&'.join(filters))
         
         return ret_filter_name
     
@@ -315,10 +318,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # plane mask keyword is defined in the local key dictionary
         # (stdkeyDictGMOS) but is read from the updated global key dictionary
         # (globalStdkeyDict)
-        hdu = dataset.hdulist
         focal_plane_mask = \
-            hdu[0].header[globalStdkeyDict['key_focal_plane_mask']]
-        
+            dataset.phuGetKeyValue(globalStdkeyDict['key_focal_plane_mask'])
+        if focal_plane_mask is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if focal_plane_mask == 'None':
             ret_focal_plane_mask = 'Imaging'
         else:
@@ -327,128 +334,145 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_focal_plane_mask
     
-    def gain(self, dataset, format = None, **args):
-        # Get the amplifier integration time (ampinteg) and the UT date from
-        # the header of the PHU. The ampinteg keyword is defined in the local
-        # key dictionary (stdkeyDictGMOS) but is read from the updated global
-        # key dictionary (globalStdkeyDict)
-        hdu = dataset.hdulist
-        ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
-        # Get the UT date using the appropriate descriptor
-        ut_date = str(dataset.ut_date(asString=True))
-        obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
-        old_ut_date = datetime(2006, 8, 31, 0, 0)
-        
-        if True: # was if asDict
-            ret_gain = {}
-            # Loop over the science extensions
-            # dataset.info(pyrafVersion = True)
-            for ext in dataset:
-                #ext.info()
-                # Check if the original gain (gainorig) keyword exists in the
-                # header of the pixel data extension. The gainorig keyword is
-                # defined in the local key dictionary (stdkeyDictGMOS) but is
-                # read from the updated global key dictionary
-                # (globalStdkeyDict)
-                if ext.header.has_key(globalStdkeyDict['key_gainorig']):
-                    headergain = ext.header[globalStdkeyDict['key_gainorig']]
-                else:
-                    headergain = ext.header[globalStdkeyDict['key_gain']]
-                
+    def gain(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_gain = {}
+        # If the data have been prepared, take the gain value directly from the
+        # appropriate keyword. At some point, a check for the STDHDRSI header
+        # keyword should be added, since the function that overwrites the gain
+        # keyword also writes the STDHDRSI keyword
+        if 'PREPARED' in dataset.types:
+            # Loop over the science extensions in the dataset
+            for ext in dataset['SCI']:
+                gain = ext.getKeyValue(globalStdkeyDict['key_gain'])
+                if gain is None:
+                    # The getKeyValue() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(ext, 'exception_info'):
+                        raise ext.exception_info
+                # Return a dictionary with the gain float as the value
+                ret_gain.update({(ext.extname(), ext.extver()):float(gain)})
+        else:
+            # Get the amplifier integration time (ampinteg) and the UT date
+            # from the header of the PHU. The ampinteg keyword is defined in
+            # the local key dictionary (stdkeyDictGMOS) but is read from the
+            # updated global key dictionary (globalStdkeyDict)
+            ampinteg = dataset.phuGetKeyValue(globalStdkeyDict['key_ampinteg'])
+            if ampinteg is None:
+                # The phuGetKeyValue() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+            # Get the UT date using the appropriate descriptor
+            ut_date = str(dataset.ut_date(asString=True))
+            if ut_date is None:
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+            obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
+            old_ut_date = datetime(2006, 8, 31, 0, 0)
+            # Loop over the science extensions in the dataset
+            for ext in dataset['SCI']:
                 # Get the name of the detector amplifier (ampname) from the
                 # header of each pixel data extension. The ampname keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
                 # read from the updated global key dictionary
                 # (globalStdkeyDict)
-                ampname = ext.header[globalStdkeyDict['key_ampname']]
+                ampname = ext.getKeyValue(globalStdkeyDict['key_ampname'])
+                if ampname is None:
+                    # The getKeyValue() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(ext, 'exception_info'):
+                        raise ext.exception_info
                 # Get the gain setting and read speed setting values using the
-                # appropriate descriptors
-                gain_setting = ext.gain_setting().asPytype()
-                read_speed_setting = ext.read_speed_setting().asPytype()
-                
-                gainkey = (read_speed_setting, gain_setting, ampname)
-                
+                # appropriate descriptors. Use asPytype() to return the values
+                # as the default python type, rather than an object
+                read_speed_setting = dataset.read_speed_setting().asPytype()
+                gain_setting = dataset.gain_setting().asPytype()
+                if read_speed_setting is None or gain_setting is None:
+                    # The descriptor functions return None if a value cannot be
+                    # found and stores the exception info. Re-raise the
+                    # exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(dataset, 'exception_info'):
+                        raise dataset.exception_info
+                gain_key = (read_speed_setting, gain_setting, ampname)
                 if obs_ut_date > old_ut_date:
-                    gain = self.gmosampsGain[gainkey]
+                    if gain_key in getattr(self, 'gmosampsGain'):
+                        gain = self.gmosampsGain[gain_key]
+                    else:
+                        raise Errors.TableKeyError()
                 else:
-                    gain = self.gmosampsGainBefore20060831[gainkey]
-                
+                    if gain_key in getattr(self, 'gmosampsGainBefore20060831'):
+                        gain = self.gmosampsGainBefore20060831[gain_key]
+                    else:
+                        raise Errors.TableKeyError()
                 # Return a dictionary with the gain float as the value
-                # print "GM415: returning", ext.extname(), ext.extver()
                 ret_gain.update({(ext.extname(), ext.extver()):float(gain)})
         
-        return Descriptors.DescriptorValue( ret_gain, format = format,
-                                            name = whoami(),
-                                            ad = dataset,
-                                            pytype = float)
+        return ret_gain
     
     gmosampsGain = None
     gmosampsGainBefore20060831 = None
     
     def gain_setting(self, dataset, **args):
-        # Check if the original gain (gainorig) keyword exists in the header
-        # of the pixel data extension. The gainorig keyword is defined in the
-        # local key dictionary (stdkeyDictGMOS) but is read from the updated
-        # global key dictionary (globalStdkeyDict)
-        hdu = dataset.hdulist
-        if hdu[1].header.has_key(globalStdkeyDict['key_gainorig']):
-            headergain = hdu[1].header[globalStdkeyDict['key_gainorig']]
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_gain_setting = {}
+        # If the data have not been prepared, take the raw gain value directly
+        # from the appropriate keyword
+        if 'PREPARED' not in dataset.types:
+            # Loop over the science extensions in the dataset
+            for ext in dataset['SCI']:
+                # Get the gain from the header of each pixel data extension.
+                gain = ext.getKeyValue(globalStdkeyDict['key_gain'])
+                if gain is None:
+                    # The getKeyValue() function returns None if a value cannot
+                    # be found and stores the exception info. Re-raise the
+                    # exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(ext, 'exception_info'):
+                        raise ext.exception_info
+                if gain > 3.0:
+                    gain_setting = 'high'
+                else:
+                    gain_setting = 'low'
+                # Return a dictionary with the gain setting string as the
+                # value
+                ret_gain_setting.update({(ext.extname(), \
+                        ext.extver()):str(gain_setting)})
         else:
-            headergain = hdu[1].header[globalStdkeyDict['key_gain']]
-        
-        if headergain > 3.0:
-            ret_gain_setting = 'high'
-        else:
-            ret_gain_setting = 'low'
+            # Can you return the gain_setting without using the raw gain value?
+            raise Errors.DescriptorTypeError()
         
         return ret_gain_setting
     
-    def mdf_row_id(self, dataset, asDict=True, **args):
-        # This descriptor function will only work on data that has been
-        # reduced to a certain point (~gscut), so the descriptor function
-        # should return None if the data is RAW, etc and the true value
-        # when it is past the given data reduction point - TO BE DONE!
-        
-        # Check if the images is prepared, and not an image
-        if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
-            if asDict:
-                ret_mdf_row_id = {}
-                # Loop over the science extensions
-                for ext in dataset['SCI']:
-                    # Get the MDF row ID from the header of each pixel data
-                    # extension
-                    mdf_row_id = \
-                        ext.header[globalStdkeyDict['key_mdf_row_id']]
-                    # Return a dictionary with the MDF row ID integer as the
-                    # value
-                    ret_mdf_row_id.update({(ext.extname(), \
-                        ext.extver()):int(mdf_row_id)})
-            else:
-                # Check to see whether the dataset has a single extension and
-                # if it does, return a single value
-                if dataset.countExts('SCI') <= 1:
-                    # Get the MDF row ID from the header of each pixel data
-                    # extension                    
-                    hdu = dataset.hdulist
-                    mdf_row_id = \
-                        hdu[1].header[globalStdkeyDict['key_mdf_row_id']]
-                    # Return the MDF row ID integer
-                    ret_mdf_row_id = int(mdf_row_id)
-                else:
-                    raise Errors.DescriptorDictError()
-        else:
-            raise Errors.DescriptorTypeError()
-        
-        return ret_mdf_row_id
-
     def nod_count(self, dataset, **args):
         # The number of nod and shuffle cycles can only be obtained from nod
         # and shuffle data
         if 'GMOS_NODANDSHUFFLE' in dataset.types:
             # Get the number of nod and shuffle cycles from the header of the
             # PHU
-            hdu = dataset.hdulist
-            ret_nod_count = hdu[0].header[globalStdkeyDict['key_nod_count']]
+            nod_count = \
+                dataset.phuGetKeyValue(globalStdkeyDict['key_nod_count'])
+            if nod_count is None:
+                # The phuGetKeyValue() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+            # Return the nod count integer
+            ret_nod_count = int(nod_count)
         else:
             raise Errors.DescriptorTypeError()
         
@@ -460,132 +484,144 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if 'GMOS_NODANDSHUFFLE' in dataset.types:
             # Get the number of pixel rows the charge is shuffled by from the
             # header of the PHU
-            hdu = dataset.hdulist
-            ret_nod_pixels = hdu[0].header[globalStdkeyDict['key_nod_pixels']]
+            nod_pixels = \
+                dataset.phuGetKeyValue(globalStdkeyDict['key_nod_pixels'])
+            if nod_pixels is None:
+                # The phuGetKeyValue() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+            # Return the nod pixels integer
+            ret_nod_pixels = int(nod_pixels)
         else:
             raise Errors.DescriptorTypeError()
-
+        
         return ret_nod_pixels
     
     def non_linear_level(self, dataset, **args):
         # Set the non linear level equal to the saturation level for GMOS
         ret_non_linear_level = dataset.saturation_level()
+        if ret_non_linear_level is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         
         return ret_non_linear_level
     
-    def pixel_scale(self, dataset, format=None, **args):
-        # Get the instrument value using the appropriate descriptor
-        instrument = dataset.instrument()
-        
+    def pixel_scale(self, dataset, **args):
+        # Get the instrument value and the binning of the y-axis value using
+        # the appropriate descriptors
+        instrument = str(dataset.instrument())
+        detector_y_bin = dataset.detector_y_bin()
+        if instrument is None or detector_y_bin is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         # Set the default pixel scales for GMOS-N and GMOS-S
         if instrument == 'GMOS-N':
             scale = 0.0727
         if instrument == 'GMOS-S':
-            scale = 0.073
+            scale = 0.073        
+        # The binning of the y-axis is used to calculate the pixel scale.
+        # Return the pixel scale float
+        ret_pixel_scale = float(detector_y_bin) * scale
         
-        ret_pixel_scale = {}
-        # Loop over the science extensions
-        for ext in dataset['SCI']:
-            # Get the binning of the y-axis value using the appropriate 
-            # descriptor
-            # I shouldn't have to do int(dataset.detector_y_bin()) :(
-            detector_y_bin = int(dataset.detector_y_bin())
-            # The binning of the y-axis is used to calculate the pixel
-            # scale. Return the pixel scale float
-            ret_pixel_scale = float(detector_y_bin * scale)
-
-        return Descriptors.DescriptorValue(ret_pixel_scale, format=format, \
-            name=whoami(), ad=dataset)
-
-    def read_noise(self, dataset, asDict=False, **args):
-        # Get the amplifier integration time (ampinteg) and the UT date from
-        # the header of the PHU. The ampinteg keyword is defined in the local
-        # key dictionary (stdkeyDictGMOS) but is read from the updated global
-        # key dictionary (globalStdkeyDict)
-        hdu = dataset.hdulist
-        ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
-        # Get the UT date using the appropriate descriptor
-        ut_date = dataset.ut_date(asString=True)
-        obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
-        old_ut_date = datetime(2006, 8, 31, 0, 0)
-        
-        if asDict:
-            ret_read_noise = {}
-            # Loop over the science extensions
+        return ret_pixel_scale
+    
+    def read_noise(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_read_noise = {}
+        # If the data have been prepared, take the read noise value directly
+        # from the appropriate keyword. At some point, a check for the STDHDRSI
+        # header keyword should be added, since the function that overwrites
+        # the read noise keyword also writes the STDHDRSI keyword
+        if 'PREPARED' in dataset.types:
+            # Loop over the science extensions in the dataset
             for ext in dataset['SCI']:
-                # Check if the original gain (gainorig) keyword exists in the
-                # header of the pixel data extension. The gainorig keyword is
-                # defined in the local key dictionary (stdkeyDictGMOS) but is
-                # read from the updated global key dictionary
-                # (globalStdkeyDict)
-                if ext.header.has_key(globalStdkeyDict['key_gainorig']):
-                    headergain = ext.header[globalStdkeyDict['key_gainorig']]
-                else:
-                    headergain = ext.header[globalStdkeyDict['key_gain']]
-                
+                read_noise = \
+                    ext.getKeyValue(globalStdkeyDict['key_read_noise'])
+                if read_noise is None:
+                    # The getKeyValue() function returns None if a value cannot
+                    # be found and stores the exception info. Re-raise the
+                    # exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(ext, 'exception_info'):
+                        raise ext.exception_info
+                # Return a dictionary with the read noise float as the value
+                ret_read_noise.update({(ext.extname(), \
+                    ext.extver()):float(read_noise)})
+        else:
+            # Get the amplifier integration time (ampinteg) and the UT date
+            # from the header of the PHU. The ampinteg keyword is defined in
+            # the local key dictionary (stdkeyDictGMOS) but is read from the
+            # updated global key dictionary (globalStdkeyDict)
+            ampinteg = dataset.phuGetKeyValue(globalStdkeyDict['key_ampinteg'])
+            if ampinteg is None:
+                # The phuGetKeyValue() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+            # Get the UT date using the appropriate descriptor
+            ut_date = str(dataset.ut_date(asString=True))
+            if ut_date is None:
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+            obs_ut_date = datetime(*strptime(ut_date, '%Y-%m-%d')[0:6])
+            old_ut_date = datetime(2006, 8, 31, 0, 0)
+            # Loop over the science extensions of the dataset
+            for ext in dataset['SCI']:
                 # Get the name of the detector amplifier (ampname) from the
                 # header of each pixel data extension. The ampname keyword is
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
                 # read from the updated global key dictionary
                 # (globalStdkeyDict)
-                ampname = ext.header[globalStdkeyDict['key_ampname']]
-                
+                ampname = ext.getKeyValue(globalStdkeyDict['key_ampname'])
+                if ampname is None:
+                    # The getKeyValue() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(ext, 'exception_info'):
+                        raise ext.exception_info
                 # Get the gain setting and read speed setting values using the
-                # appropriate descriptors
-                gain_setting = dataset.gain_setting()
-                read_speed_setting = dataset.read_speed_setting()
-                
+                # appropriate descriptors. Use asPytype() to return the values
+                # as the default python type, rather than an object
+                read_speed_setting = dataset.read_speed_setting().asPytype()
+                gain_setting = dataset.gain_setting().asPytype()
+                if read_speed_setting is None or gain_setting is None:
+                    # The descriptor function returns None if a value cannot be
+                    # found and stores the exception info. Re-raise the
+                    # exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(dataset, 'exception_info'):
+                        raise dataset.exception_info
                 read_noise_key = (read_speed_setting, gain_setting, ampname)
-                
                 if obs_ut_date > old_ut_date:
-                    read_noise = self.gmosampsRdnoise[read_noise_key]
+                    if read_noise_key in getattr(self, 'gmosampsRdnoise'):
+                        read_noise = self.gmosampsRdnoise[read_noise_key]
+                    else:
+                        raise Errors.TableKeyError()
                 else:
-                    read_noise = \
-                        self.gmosampsRdnoiseBefore20060831[read_noise_key]
-                
+                    if read_noise_key in getattr(self,
+                        'gmosampsRdnoiseBefore20060831[read_noise_key]'):
+                        read_noise = \
+                            self.gmosampsRdnoiseBefore20060831[read_noise_key]
+                    else:
+                        raise Errors.TableKeyError()
                 # Return a dictionary with the read noise float as the value
                 ret_read_noise.update({(ext.extname(), \
                     ext.extver()):float(read_noise)})
-        else:
-            # Check to see whether the dataset has a single extension and if 
-            # it does, return a single value
-            if dataset.countExts('SCI') <= 1:
-                # Check if the original gain (gainorig) keyword exists in the
-                # header of the pixel data extension. The gainorig keyword is
-                # defined in the local key dictionary (stdkeyDictGMOS) but is
-                # read from the updated global key dictionary
-                # (globalStdkeyDict)
-                hdu = dataset.hdulist
-                if hdu[1].header.has_key(globalStdkeyDict['key_gainorig']):
-                    headergain = \
-                        hdu[1].header[globalStdkeyDict['key_gainorig']]
-                else:
-                    headergain = \
-                        hdu[1].header[globalStdkeyDict['key_gain']]
-                
-                # Get the name of the detector amplifier (ampname) from the
-                # header of the single pixel data extension. The ampname
-                # keyword is defined in the local key dictionary
-                # (stdkeyDictGMOS) but is read from the updated global key
-                # dictionary (globalStdkeyDict)
-                ampname = hdu[1].header[globalStdkeyDict['key_ampname']]
-                # Get the gain setting and read speed setting values using the
-                # appropriate descriptors
-                gain_setting = dataset.gain_setting()
-                read_speed_setting = dataset.read_speed_setting()
-                
-                read_noise_key = (read_speed_setting, gain_setting, ampname)
-                
-                if obs_ut_date > old_ut_date:
-                    read_noise = self.gmosampsRdnoise[read_noise_key]
-                else:
-                    read_noise = \
-                        self.gmosampsRdnoiseBefore20060831[read_noise_key]
-                
-                # Return the read noise float
-                ret_read_noise = float(read_noise)
-            else:
-                raise Errors.DescriptorDictError()
         
         return ret_read_noise
     
@@ -597,9 +633,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # PHU. The ampinteg keyword is defined in the local key dictionary
         # (stdkeyDictGMOS) but is read from the updated global key dictionary
         # (globalStdkeyDict)
-        hdu = dataset.hdulist
-        ampinteg = hdu[0].header[globalStdkeyDict['key_ampinteg']]
-        
+        ampinteg = dataset.phuGetKeyValue(globalStdkeyDict['key_ampinteg'])
+        if ampinteg is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if ampinteg == 1000:
             ret_read_speed_setting = 'fast'
         else:
@@ -612,41 +652,3 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_saturation_level = int(65536)
         
         return ret_saturation_level
-    
-    def wavelength_reference_pixel(self, dataset, asDict=True, **args):
-        if asDict:
-            ret_wavelength_reference_pixel = {}
-            # Loop over the science extensions
-            for ext in dataset['SCI']:
-                # Get the reference pixel of the central wavelength from the
-                # header of each pixel data extension. The reference pixel of
-                # the central wavelength keyword is defined in the local key
-                # dictionary (stdkeyDictGMOS) but is read from the updated
-                # global key dictionary (globalStdkeyDict)
-                wavelength_reference_pixel = \
-                    ext.header\
-                    [globalStdkeyDict['key_wavelength_reference_pixel']]
-                # Return a dictionary with the reference pixel of the central
-                # wavelength float as the value
-                ret_wavelength_reference_pixel.update({(ext.extname(), \
-                    ext.extver()):float(wavelength_reference_pixel)})
-        else:
-            # Check to see whether the dataset has a single extension and if 
-            # it does, return a single value
-            if dataset.countExts('SCI') <= 1:
-                # Get the reference pixel of the central wavelength from the
-                # header of the single pixel data extension. The reference
-                # pixel of the central wavelength keyword is defined in the
-                # local key dictionary (stdkeyDictGMOS) but is read from the
-                # updated global key dictionary (globalStdkeyDict)
-                hdu = dataset.hdulist
-                wavelength_reference_pixel = \
-                    hdu[1].header\
-                    [globalStdkeyDict['key_wavelength_reference_pixel']]
-                # Return the reference pixel of the central wavelength float
-                ret_wavelength_reference_pixel = \
-                    float(wavelength_reference_pixel)
-            else:
-                raise Errors.DescriptorDictError()
-        
-        return ret_wavelength_reference_pixel
