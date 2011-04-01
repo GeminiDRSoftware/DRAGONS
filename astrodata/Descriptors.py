@@ -1,3 +1,4 @@
+
 import sys,os
 import re
 
@@ -21,6 +22,10 @@ from ConfigSpace import configWalk
 DESCRIPTORSPACE = "descriptors"
 
 import inspect
+
+import DescriptorUnits as Units
+from DescriptorUnits import Unit
+
 # utility functions
 def whoami():
     print repr(inspect.stack())
@@ -58,23 +63,28 @@ class DescriptorValueBadCast(DescriptorExcept):
 # the purpose of acting as a central location for Descriptor behavior.
 firstrun = True
 
+
+
 class DescriptorValue():
     dictVal = None
     val = None
     name = None
     pytype = None
+    unit = None
     def __init__(self,  initval, 
                         format = None, 
                         asDict = None, 
                         name = "unknown", 
                         ad = None, 
-                        pytype = None):
+                        pytype = None,
+                        unit = None):
         if pytype == None and self.pytype == None:
             self.pytype = pytype = type(initval)
         originalitval = initval
         if isinstance(initval, DescriptorValue):
             initval = initval.dictVal
             
+        # pytype logic
         if pytype:
             self.pytype = pytype
         else:
@@ -90,6 +100,22 @@ class DescriptorValue():
                 self.pytype = float
         pytype = self.pytype
 
+        # unit logic
+        if unit:
+            self.unit = unit
+        else:
+            # careful moving this to a function, it gets the CALLER's function name!
+            st = inspect.stack()
+            callername = st[1][3]
+            callerframe = inspect.stack()[1][0]
+            fargs = inspect.getargvalues(callerframe)
+            callercalc = fargs[3]["self"]
+            try:
+                self.unit = eval("callercalc.%s.unit" % callername)
+            except:
+                self.unit = "unitless"
+        unit = self.unit
+
         if isinstance(initval, dict):
             self.dictVal = initval
             val = None
@@ -101,7 +127,6 @@ class DescriptorValue():
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
-        
         self.asDict = asDict
         self.name = name
         
@@ -113,63 +138,8 @@ class DescriptorValue():
             self.format = None
         # do after object is set up
         self.val = self.isCollapsable() # note, tricky thing, doesn't return true, returns value
-    def info(self):
-        dvstr = ""
-        keys = self.dictVal.keys()
-        keys.sort()
-        for key in keys:
-            
-            dvstr += str(key)
-            dvstr += ": "
-            dvstr += str(self.dictVal[key])
-            dvstr += "\n                      "
-        retstr = """\
-descriptor value for: %(name)s
-        single value: %(val)s
-    extension values: %(dictVal)s
-        """ % {"name":self.name,
-               "val": repr(self.val),
-               "dictVal":dvstr
-              }
-        return retstr
-    def forDB(self):
-        return self.pytype(self.val)
-    forNumpy = forDB
-    asPytype = forDB
     
     
-    def isCollapsable(self):
-        oldvalue = None
-        for key in self.dictVal:
-            value = self.dictVal[key]
-            if oldvalue == None:
-                oldvalue = value
-            else:
-                if oldvalue != value:
-                    self.val = None
-                    return None
-        # got here then all values were identical
-        self.val = value
-        return value
-    def collapseDictVal(self):
-        value = self.isCollapsable()
-        if value == None:
-            raise DescriptorValueBadCast("\n"
-                "Cannot convert DescriptorValue to scaler " 
-                "as the value varies across extensions \n"
-                "-------------------------------------\n"
-                + self.info()
-                )
-        # got here then all values were identical
-        return value
-
-    def overloaded(self, other):
-        other = self.pytype(other)
-        funcname = whocalledme()
-        if hasattr(other, funcname):
-            othertype = type(other)
-            return eval("other.%s(othertype(self))" % funcname)
-
     def __str__(self):
         format = self.format
         # do any automatic format heuristics
@@ -193,7 +163,78 @@ descriptor value for: %(name)s
                 retstr = "+".join(parts)
         elif format == "value":
             val = self.isCollapsable()
+        return retstr
+    
+    
+    def collapseDictVal(self):
+        value = self.isCollapsable()
+        if value == None:
+            raise DescriptorValueBadCast("\n"
+                "Cannot convert DescriptorValue to scaler " 
+                "as the value varies across extensions \n"
+                "-------------------------------------\n"
+                + self.info()
+                )
+        # got here then all values were identical
+        return value
+
+    
+    def convertValueTo(self, newUnits, newType = None):
+        retval = self.unit.convert(self.val, newUnits)
+        if newType:
+            retval = newType(retval)
+        return retval
+
+    
+    def forDB(self):
+        return self.pytype(self.val)
+    # alias
+    forNumpy = forDB
+    asPytype = forDB
             
+    
+    def info(self):
+        dvstr = ""
+        keys = self.dictVal.keys()
+        keys.sort()
+        for key in keys:
+            
+            dvstr += str(key)
+            dvstr += ": "
+            dvstr += str(self.dictVal[key])
+            dvstr += "\n                      "
+        retstr = """\
+descriptor value for: %(name)s
+        single value: %(val)s
+    extension values: %(dictVal)s
+        """ % {"name":self.name,
+               "val": repr(self.val),
+               "dictVal":dvstr
+              }
+
+    
+    def isCollapsable(self):
+        oldvalue = None
+        for key in self.dictVal:
+            value = self.dictVal[key]
+            if oldvalue == None:
+                oldvalue = value
+            else:
+                if oldvalue != value:
+                    self.val = None
+                    return None
+        # got here then all values were identical
+        self.val = value
+        return value
+    
+    
+    def overloaded(self, other):
+        other = self.pytype(other)
+        funcname = whocalledme()
+        if hasattr(other, funcname):
+            othertype = type(other)
+            return eval("other.%s(othertype(self))" % funcname)
+
         return retstr
     
     def __float__(self):
