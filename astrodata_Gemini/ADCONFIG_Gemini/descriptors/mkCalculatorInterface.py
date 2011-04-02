@@ -2,7 +2,13 @@ from datetime import datetime
 from descriptorDescriptionDict import asDictArgDict
 from descriptorDescriptionDict import descriptorDescDict
 from descriptorDescriptionDict import detailedNameDict
+try:
+    from descriptorDescriptionDict import returnTypeDict
+except:
+    returnTypeDict = {}
 from descriptorDescriptionDict import stripIDArgDict
+
+import datetime
 
 class DescriptorDescriptor:
     name = None
@@ -30,14 +36,13 @@ class DescriptorDescriptor:
             else:
                 retval = self.descriptorCalculator.%(name)s(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="%(name)s",
-                ad=self, pytype=%(pytype)s)
+            %(pytypeimport)s
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "%(name)s",  
+                                                ad = self,
+                                                pytype = %(pytype)s
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -132,8 +137,13 @@ class DescriptorDescriptor:
             pytypestr = self.pytype.__name__
         else:
             pytypestr = "None"
-            
+        if pytypestr == "datetime":
+            pti = "from datetime import datetime"
+        else:
+            pti = ""
+        #print "mkC150:", pti
         ret = self.thunkfuncbuff % {'name':self.name,
+                                    'pytypeimport': pti,
                                     'pytype': pytypestr,
                                     'description':self.description}
         return ret
@@ -207,6 +217,7 @@ import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
+from datetime import datetime
 
 class CalculatorInterface:
 
@@ -222,6 +233,7 @@ class CalculatorInterface:
 """
 
 out = ""
+
 for dd in descriptors:
     out += dd.funcbody()
     

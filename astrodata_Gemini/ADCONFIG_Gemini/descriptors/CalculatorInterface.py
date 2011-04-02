@@ -4,6 +4,7 @@ import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
+from datetime import datetime
 
 class CalculatorInterface:
 
@@ -34,14 +35,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.airmass(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="airmass",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "airmass",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -85,14 +85,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.amp_read_area(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="amp_read_area",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "amp_read_area",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -128,14 +127,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.azimuth(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="azimuth",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "azimuth",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -171,14 +169,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.camera(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="camera",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "camera",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -215,14 +212,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="cass_rotator_pa",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "cass_rotator_pa",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -273,14 +269,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.central_wavelength(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="central_wavelength",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "central_wavelength",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -316,14 +311,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.coadds(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="coadds",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "coadds",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -359,14 +353,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.data_label(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="data_label",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "data_label",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -416,14 +409,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.data_section(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="data_section",
-                ad=self, pytype=tuple)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "data_section",  
+                                                ad = self,
+                                                pytype = tuple
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -459,14 +451,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.dec(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="dec",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "dec",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -506,14 +497,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.decker(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="decker",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "decker",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -563,14 +553,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.detector_section(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="detector_section",
-                ad=self, pytype=tuple)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "detector_section",  
+                                                ad = self,
+                                                pytype = tuple
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -613,14 +602,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.detector_x_bin(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="detector_x_bin",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "detector_x_bin",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -663,14 +651,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.detector_y_bin(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="detector_y_bin",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "detector_y_bin",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -710,14 +697,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.disperser(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="disperser",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "disperser",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -768,14 +754,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.dispersion(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="dispersion",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "dispersion",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -811,14 +796,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.dispersion_axis(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="dispersion_axis",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "dispersion_axis",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -854,14 +838,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.elevation(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="elevation",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "elevation",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -897,14 +880,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.exposure_time(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="exposure_time",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "exposure_time",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -945,14 +927,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.filter_name(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="filter_name",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "filter_name",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -992,14 +973,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.focal_plane_mask(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="focal_plane_mask",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "focal_plane_mask",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1041,14 +1021,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.gain(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="gain",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "gain",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1088,14 +1067,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.grating(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="grating",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "grating",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1131,14 +1109,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.gain_setting(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="gain_setting",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "gain_setting",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1174,14 +1151,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.instrument(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="instrument",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "instrument",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1217,14 +1193,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.local_time(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="local_time",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "local_time",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1266,14 +1241,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.mdf_row_id(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="mdf_row_id",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "mdf_row_id",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1310,14 +1284,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.nod_count(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="nod_count",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "nod_count",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1354,14 +1327,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.nod_pixels(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="nod_pixels",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "nod_pixels",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1398,14 +1370,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.non_linear_level(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="non_linear_level",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "non_linear_level",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1441,14 +1412,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.object(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="object",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "object",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1485,14 +1455,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.observation_class(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="observation_class",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "observation_class",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1528,14 +1497,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.observation_epoch(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="observation_epoch",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "observation_epoch",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1571,14 +1539,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.observation_id(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="observation_id",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "observation_id",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1615,14 +1582,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.observation_type(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="observation_type",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "observation_type",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1658,14 +1624,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.pixel_scale(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="pixel_scale",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "pixel_scale",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1705,14 +1670,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.prism(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="prism",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "prism",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1749,14 +1713,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.program_id(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="program_id",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "program_id",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1792,14 +1755,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.pupil_mask(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="pupil_mask",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "pupil_mask",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1836,14 +1798,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.qa_state(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="qa_state",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "qa_state",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1879,14 +1840,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.ra(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="ra",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "ra",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1923,14 +1883,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.raw_bg(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="raw_bg",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "raw_bg",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1967,14 +1926,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.raw_cc(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="raw_cc",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "raw_cc",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2011,14 +1969,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.raw_iq(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="raw_iq",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "raw_iq",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2055,14 +2012,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.raw_wv(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="raw_wv",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "raw_wv",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2101,14 +2057,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.read_mode(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="read_mode",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "read_mode",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2150,14 +2105,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.read_noise(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="read_noise",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "read_noise",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2194,14 +2148,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.read_speed_setting(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="read_speed_setting",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "read_speed_setting",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2238,14 +2191,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.saturation_level(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="saturation_level",
-                ad=self, pytype=int)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "saturation_level",  
+                                                ad = self,
+                                                pytype = int
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2285,14 +2237,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.slit(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="slit",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "slit",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2328,14 +2279,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.telescope(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="telescope",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "telescope",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2371,14 +2321,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.ut_date(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="ut_date",
-                ad=self, pytype=datetime)
+            from datetime import datetime
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "ut_date",  
+                                                ad = self,
+                                                pytype = datetime
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2439,14 +2388,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.ut_datetime(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="ut_datetime",
-                ad=self, pytype=datetime)
+            from datetime import datetime
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "ut_datetime",  
+                                                ad = self,
+                                                pytype = datetime
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2482,14 +2430,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.ut_time(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="ut_time",
-                ad=self, pytype=datetime)
+            from datetime import datetime
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "ut_time",  
+                                                ad = self,
+                                                pytype = datetime
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2527,14 +2474,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.wavefront_sensor(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="wavefront_sensor",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "wavefront_sensor",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2577,14 +2523,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="wavelength_reference_pixel",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "wavelength_reference_pixel",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2621,14 +2566,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.well_depth_setting(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="well_depth_setting",
-                ad=self, pytype=str)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "well_depth_setting",  
+                                                ad = self,
+                                                pytype = str
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2664,14 +2608,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.x_offset(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="x_offset",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "x_offset",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2707,14 +2650,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptorCalculator.y_offset(self, **args)
                                         
-            if "asString" in args and args["asString"]:
-                from astrodata.adutils.gemutil import stdDateString
-                if isinstance(retval, datetime):
-                    retval = stdDateString(retval)
-                else:
-                    retval = str(retval)
-            ret = DescriptorValue(retval, format=format, name="y_offset",
-                ad=self, pytype=float)
+            
+            ret = Descriptors.DescriptorValue(  retval, 
+                                                format = format, 
+                                                name = "y_offset",  
+                                                ad = self,
+                                                pytype = float
+                                                )
             return ret
         except:
             if (self.descriptorCalculator is None 
