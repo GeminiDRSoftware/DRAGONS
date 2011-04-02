@@ -52,6 +52,13 @@ class ExistError(Error):
     """
     message = "Descriptor does not exist for this instrument"
 
+class IncompatibleOperand(Error):
+    """
+    Exception raised when the other operand in a DescriptorValue binary 
+    operator does not have the required operator.
+    """
+    pass
+    
 class InvalidValueError(Error):
     """
     Exception raised for instances when the keyword required for calculation

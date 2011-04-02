@@ -298,6 +298,12 @@ from astrodata.ReductionObjectRequests import CalibrationRequest,\
 import Proxies
 usePRS = True
 prs = None
+
+# !!! @@@ GET THESE SOME CLEANER WAY, HAVE REDUCE/CONTROL SYSTEMS set them!
+adatadir = "./recipedata/"
+calindfile = "./.reducecache/calindex.pkl"
+stkindfile = "./.reducecache/stkindex.pkl"
+
 def commandClause(ro, coi):
     global prs
     global log

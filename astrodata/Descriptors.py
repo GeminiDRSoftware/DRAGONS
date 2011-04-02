@@ -17,11 +17,12 @@ solution of proxying descriptor access in AstroData member functions which then
 call the appropriate member function of the calculator associated with
 their dataset.
 """
-
+from astrodata import Errors
 from ConfigSpace import configWalk
 DESCRIPTORSPACE = "descriptors"
 
 import inspect
+from copy import copy
 
 import DescriptorUnits as Units
 from DescriptorUnits import Unit
@@ -78,6 +79,7 @@ class DescriptorValue():
                         ad = None, 
                         pytype = None,
                         unit = None):
+        # print "DV82:", repr(unit)
         if pytype == None and self.pytype == None:
             self.pytype = pytype = type(initval)
         originalitval = initval
@@ -113,7 +115,7 @@ class DescriptorValue():
             try:
                 self.unit = eval("callercalc.%s.unit" % callername)
             except:
-                self.unit = "unitless"
+                self.unit = Units.scaler # can be DescriptorUnits.scaler (or whatever)
         unit = self.unit
 
         if isinstance(initval, dict):
@@ -178,16 +180,48 @@ class DescriptorValue():
         # got here then all values were identical
         return value
 
+   
+    
     
     def convertValueTo(self, newUnits, newType = None):
-        retval = self.unit.convert(self.val, newUnits)
+        # retval = self.unit.convert(self.val, newUnits)
+        newDict = copy(self.dictVal)
+        for key in self.dictVal:
+            val = self.dictVal[key]
+            newval = self.unit.convert(val, newUnits)
+            if newType:
+                newval = newType(newval)
+            else:
+                if self.pytype != None:
+                    newval = self.pytype(newval)
+            newDict.update({key:newval})
+            
         if newType:
-            retval = newType(retval)
+            pytype = newType
+        else:
+            pytype = self.pytype
+            
+        retval = DescriptorValue(   newDict, 
+                                    unit= newUnits, 
+                                    pytype = pytype,
+                                    name = self.name,
+                                    format = self.format)
+
         return retval
 
     
     def forDB(self):
-        return self.pytype(self.val)
+        self.val = self.isCollapsable()
+        if self.val == None:
+            curform = self.format
+            self.format = "db"
+            retstr =  str(self)
+            self.format = curform
+            return retstr
+        elif self.pytype != type(self.val):
+            return self.pytype(self.val)
+        else:
+            return self.val
     # alias
     forNumpy = forDB
     asPytype = forDB
@@ -229,13 +263,33 @@ descriptor value for: %(name)s
     
     
     def overloaded(self, other):
-        other = self.pytype(other)
-        funcname = whocalledme()
-        if hasattr(other, funcname):
-            othertype = type(other)
-            return eval("other.%s(othertype(self))" % funcname)
+        mytype = self.pytype
+        if isinstance(other, DescriptorValue):
+            other = other.asPytype()
+        othertype = type(other)
+        
+        if mytype == float and othertype == int:
+            outtype = float
+        elif mytype == int and othertype == float:
+            outtype = float
+        else:
+            # by default, we use our type
+            outtype = self.pytype
+        
+        # convert other to the target type (possibly coerced)
+        other = outtype(other)
+        myfuncname = whocalledme()
+        if myfuncname[0:3] == "__r" and myfuncname != "__rshift__":
+            otherfuncname = "__" + myfuncname[3:]
+        else:
+            otherfuncname = "__r"+myfuncname[2:]
+            
+        
+        #print "D273:", myfuncname, "->", otherfuncname
+        if hasattr(other, otherfuncname):
+            return eval("other.%s(outtype(self))" % otherfuncname)
 
-        return retstr
+        raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),otherfuncname))
     
     def __float__(self):
         value = self.collapseDictVal()

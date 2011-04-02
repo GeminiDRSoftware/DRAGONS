@@ -23,6 +23,7 @@ class Unit(object):
 	
     def convert(self, value, newunit):
         if newunit.mks != self.mks:
+            print "DU26:", newunit.mks, self.mks
             if newunit.mks is None:
                 print "MKS compatability not defined"
             raise "DescriptorUnits.py, line 28: Imcompatible types "
@@ -70,6 +71,7 @@ iunits = {"m"           :{1.          :"m"},
           "second"      :{1.          :"s"},
           "sec"         :{1.          :"s"},
           "seconds"     :{1.          :"s"},
+          "scaler"      :{1.          :"scaler"}
          }
 
 # set all the Unit objects
