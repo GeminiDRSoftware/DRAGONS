@@ -52,7 +52,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # of each pixel data extension. The ampname keyword is defined in
             # the local key dictionary (stdkeyDictGMOS) but is read from the
             # updated global key dictionary (globalStdkeyDict)
-            ampname = ext.getKeyValue(globalStdkeyDict["key_ampname"])
+            ampname = ext.getKeyValue(globalStdkeyDict['key_ampname'])
             if ampname is None:
                 # The getKeyValue() function returns None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
@@ -271,48 +271,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_exposure_time
     
-    def filter_name(self, dataset, stripID=False, pretty=False, **args):
-        # Get the two filter name values from the header of the PHU. The two
-        # filter name keywords are defined in the local key dictionary
-        # (stdkeyDictGMOS) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        key_filter1 = globalStdkeyDict['key_filter1']
-        key_filter2 = globalStdkeyDict['key_filter2']
-        filter1 = dataset.phuGetKeyValue(key_filter1)
-        filter2 = dataset.phuGetKeyValue(key_filter2)
-        if filter1 is None or filter2 is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
-                raise dataset.exception_info
-        if pretty:
-            stripID = True
-        if stripID:
-            # Strip the component ID from the two filter name values
-            filter1 = string.removeComponentID(filter1)
-            filter2 = string.removeComponentID(filter2)
-        # Return a dictionary with the keyword names as the key and the filter
-        # name string as the value
-        ret_filter_name = {}
-        ret_filter_name.update({key_filter1:str(filter1), \
-            key_filter2:str(filter2)})
-        
-        ##### Put the below code into DescriptorValue
-        #filters = []
-        #if not 'open' in filter1:
-        #    filters.append(filter1)
-        #if not 'open' in filter2:
-        #    filters.append(filter2)
-        #if len(filters) == 0:
-        #    ret_filter_name = 'open'
-        #else:
-        #    # Return a unique filter name identifier string with an ampersand
-        #    # separating each filter name
-        #    ret_filter_name = str('&'.join(filters))
-        
-        return ret_filter_name
-    
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         # Get the focal plane mask value from the header of the PHU. The focal
         # plane mask keyword is defined in the local key dictionary
@@ -369,7 +327,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if hasattr(dataset, 'exception_info'):
                     raise dataset.exception_info
             # Get the UT date using the appropriate descriptor
-            ut_date = str(dataset.ut_date(asString=True))
+            ut_date = str(dataset.ut_date())
             if ut_date is None:
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
@@ -526,10 +484,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if instrument == 'GMOS-N':
             scale = 0.0727
         if instrument == 'GMOS-S':
-            scale = 0.073        
+            scale = 0.073
         # The binning of the y-axis is used to calculate the pixel scale.
         # Return the pixel scale float
-        ret_pixel_scale = float(detector_y_bin) * scale
+        ret_pixel_scale = float(detector_y_bin * scale)
         
         return ret_pixel_scale
     
@@ -570,7 +528,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if hasattr(dataset, 'exception_info'):
                     raise dataset.exception_info
             # Get the UT date using the appropriate descriptor
-            ut_date = str(dataset.ut_date(asString=True))
+            ut_date = str(dataset.ut_date())
             if ut_date is None:
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
