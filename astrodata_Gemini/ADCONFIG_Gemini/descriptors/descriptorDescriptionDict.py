@@ -224,8 +224,9 @@ detailedNameDict = {
     'read_mode':'read mode (either \'Very Faint Object(s)\', \n' +
         '                 \'Faint Object(s)\', \'Medium Object\', ' +
         '\'Bright Object(s)\', \n                 \'Very Bright Object(s)\',' +
-        ' \'Low Background\', \'Medium Background\', \n                 ' +
-        '\'High Background\' or \'Invalid\') of the observation',
+        ' \'Low Background\', \n                 \'Medium Background\', ' +
+        '\'High Background\' or \'Invalid\') of the \n                 ' +
+    'observation',
     'read_noise':'estimated readout noise (in electrons) of the observation',
     'read_speed_setting':'read speed setting (either \'fast\' or \'slow\') ' +
         'of the \n                 observation',
