@@ -275,6 +275,63 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_dispersion_axis
     
+    def exposure_time(self, dataset, **args):
+        # Get the exposure time value from the header of the PHU
+        exposure_time = \
+            dataset.phuGetKeyValue(globalStdkeyDict['key_exposure_time'])
+        if exposure_time is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # If the data have been prepared, take the (total) exposure time value
+        # directly from the appropriate keyword
+        if 'PREPARED' in dataset.types:
+            # Get the total exposure time value from the header of the PHU
+            ret_exposure_time = float(exposure_time)
+        else:
+            # Get the number of coadds using the appropriate descriptor
+            coadds = dataset.coadds()
+            if coadds is None:
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+            ret_exposure_time = exposure_time * coadds
+        
+        return ret_exposure_time
+    
+    def filter_name(self, dataset, stripID=False, pretty=False, **args):
+        # Get the two filter name values from the header of the PHU. The two
+        # filter name keywords are defined in the local key dictionary
+        # (stdkeyDictGMOS) but are read from the updated global key dictionary
+        # (globalStdkeyDict)
+        key_filter1 = globalStdkeyDict['key_filter1']
+        key_filter2 = globalStdkeyDict['key_filter2']
+        filter1 = dataset.phuGetKeyValue(key_filter1)
+        filter2 = dataset.phuGetKeyValue(key_filter2)
+        if filter1 is None or filter2 is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        if pretty:
+            stripID = True
+        if stripID:
+            # Strip the component ID from the two filter name values
+            filter1 = string.removeComponentID(filter1)
+            filter2 = string.removeComponentID(filter2)
+        # Return a dictionary with the keyword names as the key and the filter
+        # name string as the value
+        ret_filter_name = {}
+        ret_filter_name.update({key_filter1:str(filter1), \
+            key_filter2:str(filter2)})
+        
+        return ret_filter_name
+    
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
             stripID = True
