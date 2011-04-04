@@ -26,7 +26,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.getLookupTable('Gemini/GNIRS/GNIRSConfigDict',
                                    'gnirsConfigDict')
     
-    def disperser(self, dataset, stripID=True, pretty=True, **args):
+    def disperser(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
             stripID = True
         # GNIRS contains two dispersers - the grating and the prism. Get the
@@ -136,10 +136,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         m = cre.match(grating)
         if m:
             parts = m.groups()
+            ret_grating = '%s%s%s' % (parts[0], parts[2], parts[3])
             if stripID or pretty:
-                ret_grating = string.removeComponentID(grating)
-            else:
-                ret_grating = '%s%s%s' % (parts[0], parts[2], parts[3])
+                ret_grating = string.removeComponentID(ret_grating)
         
         return ret_grating
     
@@ -254,10 +253,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         m = cre.match(prism)
         if m:
             parts = m.groups()
+            ret_prism = '%s%s%s' % (parts[1], parts[2], parts[3])
             if stripID or pretty:
-                ret_prism = string.removeComponentID(prism)
-            else:
-                ret_prism = '%s%s%s' % (parts[1], parts[2], parts[3])
+                ret_prism = string.removeComponentID(ret_prism)
         
         return ret_prism
     
