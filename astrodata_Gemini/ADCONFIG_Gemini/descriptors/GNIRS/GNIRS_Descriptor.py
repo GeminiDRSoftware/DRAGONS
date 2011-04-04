@@ -1,18 +1,18 @@
-from astrodata import Lookups
+import math, re
+
 from astrodata import Descriptors
-import math
-import re
-
+from astrodata import Errors
+from astrodata import Lookups
 from astrodata.Calculator import Calculator
-
-import GemCalcUtil 
+from gempy import string
 
 from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGNIRSKeyDict import stdkeyDictGNIRS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
-    # Updating the global key dict with the local dict of this descriptor class
+    # Updating the global key dictionary with the local key dictionary
+    # associated with this descriptor class
     globalStdkeyDict.update(stdkeyDictGNIRS)
     
     gnirsArrayDict = None
@@ -26,179 +26,85 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.getLookupTable('Gemini/GNIRS/GNIRSConfigDict',
                                    'gnirsConfigDict')
     
-    def decker(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the decker value for GNIRS
-        In GNIRS, the decker is used to basically mask off the ends of the
-        slit to create the short slits used in the cross dispersed modes.
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID from the
-        returned decker names
-        @param pretty: set to True to return a human meaningful decker name
-        @rtype: string
-        @return: the decker postition used to acquire the data
-        """
-        hdu = dataset.hdulist
-        decker = hdu[0].header[globalStdkeyDict['key_decker']]
-        
+    def disperser(self, dataset, stripID=True, pretty=True, **args):
         if pretty:
-            stripID=True
-        
+            stripID = True
+        # GNIRS contains two dispersers - the grating and the prism. Get the
+        # grating and the prism values using the appropriate descriptors
+        grating = dataset.grating(stripID=stripID, pretty=pretty).asPytype()
+        prism = dataset.prism(stripID=stripID, pretty=pretty).asPytype()
+        if grating is None or prism is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if stripID:
-            decker = GemCalcUtil.removeComponentID(decker)
-        
-        return decker
-    
-    def disperser(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the disperser value for GNIRS
-        Note that GNIRS contains two dispersers - the grating and the prism.
-        This descriptor will combine the two with '&'. Sometimes the 'prism'
-        is a mirror, in which case we don't list it in the human readable
-        pretty string.
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to strip the component ID from the
-        returned disperser names
-        @param pretty: set to True to return a human meaningful disperser name
-        @rtype: string
-        @return: the dispersers used to acquire the data
-        """
-        if pretty:
-            stripID=True
-        
-        grating = self.grating(dataset=dataset, stripID=stripID, pretty=pretty)
-        prism = self.prism(dataset=dataset, stripID=stripID, pretty=pretty)
-        
-        if (pretty and prism[0:3]=='MIR'):
-            disperser = grating
-        else:
-            disperser = grating + '&' + prism
-        
-        return disperser
-    
-    def exposure_time(self, dataset, **args):
-        """
-        Return the exposure_time value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the total exposure time of the observation (seconds)
-        """
-        hdu = dataset.hdulist
-        exposure_time = hdu[0].header[globalStdkeyDict['key_exposure_time']]
-        coadds = dataset.coadds()
-        
-        if dataset.isType('GNIRS_RAW') == True and coadds != 1:
-            ret_exposure_time = float(exposure_time * coadds)
-        else:
-            ret_exposure_time = float(exposure_time)
-        
-        return ret_exposure_time
-    
-    def filter_name(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the filter_name value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID from the
-        returned filter name
-        @param pretty: set to True to return a meaningful filter name
-        @rtype: string
-        @return: the unique filter identifier string
-        """
-        # No specific pretty names, just use stripID
-        if pretty:
-            stripID=True
-        
-        hdu = dataset.hdulist
-        filter1 = hdu[0].header[stdkeyDictGNIRS['key_filter1']]
-        filter2 = hdu[0].header[stdkeyDictGNIRS['key_filter2']]
-        
-        if stripID:
-            filter1 = GemCalcUtil.removeComponentID(filter1)
-            filter2 = GemCalcUtil.removeComponentID(filter2)
-        
-        # Create list of filter values
-        filters = [filter1,filter2]
-        
-        # reject 'Open'
-        filters2 = []
-        for filt in filters:
-            if 'Open' in filt:
-                pass
+            if pretty and prism.startswith('MIR'):
+                # Return the stripped and pretty disperser string. If the
+                # prism is a mirror, don't list it in the pretty disperser. 
+                disperser = string.removeComponentID(grating)
             else:
-                filters2.append(filt)
-        
-        filters = filters2
-        
-        if len(filters) == 0:
-            ret_filter_name = 'open'
+                # Return the stripped disperser string
+                disperser = '%s&%s' % (string.removeComponentID(grating), \
+                    string.removeComponentID(prism))
         else:
-            ret_filter_name = str('&'.join(filters))
+            # Return the disperser string
+            disperser = '%s&%s' % (grating, prism)
         
-        if 'Dark' in filters:
-            ret_filter_name = 'blank'
+        ret_disperser = str(disperser)
         
-        return ret_filter_name
+        return ret_disperser
     
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the focal_plane_mask value for GNIRS
-        Note that in GNIRS, the focal plane mask is the combination of the slit
-        mechanism and the decker mechanism. 
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component IDs from the
-        returned focal_plane_mask names
-        @param pretty: set to True to return a human meaningful
-        focal_plane_mask name
-        @rtype: string
-        @return: the focal plane mask used to acquire the data
-        """
+        # For GNIRS, the focal plane mask is the combination of the slit
+        # mechanism and the decker mechanism. Get the slit and the decker
+        # values using the appropriate descriptors
+        slit = dataset.slit(stripID=stripID, pretty=pretty)
+        decker = dataset.decker(stripID=stripID, pretty=pretty).asPytype()
+        if slit is None or decker is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if pretty:
-            stripID=True
+            # Disregard the decker if it's in long slit mode
+            if 'Long' in decker:
+                focal_plane_mask = slit
+            # Append XD to the slit name if the decker is in XD mode
+            elif 'XD' in decker:
+                focal_plane_mask = '%s%s' % (slit, 'XD')
+            else:
+                focal_plane_mask = '%s&%s' % (slit, decker)
+        else:
+            focal_plane_mask = '%s&%s' % (slit, decker)
+        ret_focal_plane_mask = str(focal_plane_mask)
         
-        slit = self.slit(dataset=dataset, stripID=stripID, pretty=pretty)
-        decker = self.decker(dataset=dataset, stripID=stripID, pretty=pretty)
-        
-        fpmask = slit + '&' + decker
-        
-        if pretty:
-            # For pretty output, disregard the decker if it's in long slit mode
-            if decker.count('Long'):
-                fpmask = slit
-            # For pretty output, simply append XD to the slit name if the
-            # decker is in XD
-            if decker.count('XD'):
-                fpmask = slit + 'XD'
-        
-        return fpmask
+        return ret_focal_plane_mask
     
     def gain(self, dataset, **args):
-        """
-        Return the gain value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the gain (electrons/ADU)
-        """
-        hdu = dataset.hdulist
-        headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
-        
-        biasvalues = self.gnirsArrayDict.keys()
-        
-        for bias in biasvalues:
-            if abs(float(bias) - abs(headerbias)) < 0.1:
-                array = self.gnirsArrayDict[bias]
-            else:
-                array = None
-        
-        if array != None:
-            ret_gain = float(array[2])
-        else:
-            ret_gain = None
+        # Get the bias value (biasvolt) from the header of the PHU. The bias
+        # keyword is defined in the local key dictionary (stdkeyDictGNIRS) but
+        # is read from the updated global key dictionary (globalStdkeyDict)
+        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        if biasvolt is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        bias_values = self.gnirsArrayDict.keys()
+        count = 0
+        for bias in bias_values:
+            if abs(float(bias) - abs(biasvolt)) < 0.1:
+                count += 1
+                if float(self.gnirsArrayDict[bias][2]):
+                    ret_gain = float(self.gnirsArrayDict[bias][2])
+                else:
+                    Errors.TableValueError()
+        if count == 0:
+            Errors.TableKeyError()
         
         return ret_gain
     
@@ -206,98 +112,118 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def grating(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the grating value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to strip the component ID from the
-        returned grating name
-        @param pretty: set to True to return a human meaningful grating name.
-        In this case, this is the same as stripID
-        @rtype: string
-        @return: the grating used to acquire the data
-
         Note. A CC software change approx July 2010 changed the grating names
         to also include the camera, eg 32/mmSB_G5533 indicates the 32/mm
         grating with the Short Blue camera. This is unhelpful as if we wanted
         to know the camera, we'd call the camera descriptor. Thus, this
         descriptor function repairs the header values to only list the grating.
         """
-        hdu = dataset.hdulist
-        string = hdu[0].header[globalStdkeyDict['key_grating']]
-        
+        # Get the grating value from the header of the PHU.
+        grating = dataset.phuGetKeyValue(globalStdkeyDict['key_grating'])
+        if grating is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         # The format of the grating string is currently (2011) nnn/mmCAM_Gnnnn
         # nnn is a 2 or 3 digit number (lines per mm)
         # /mm is literally '/mm'
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
         # _G is literally '_G'
         # nnnn is the 4 digit component ID.
-        
         cre = re.compile('([\d/m]+)([A-Z]*)(_G)(\d+)')
-        m = cre.match(string)
-        
-        grating = string
+        m = cre.match(grating)
         if m:
             parts = m.groups()
-            grating = parts[0] + parts[2] + parts[3]
+            if stripID or pretty:
+                ret_grating = string.removeComponentID(grating)
+            else:
+                ret_grating = '%s%s%s' % (parts[0], parts[2], parts[3])
         
-        if (stripID or pretty):
-            grating = str(GemCalcUtil.removeComponentID(grating))
-        
-        return grating
+        return ret_grating
     
     def non_linear_level(self, dataset, **args):
-        """
-        Return the non_linear_level value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the non-linear level in the raw images (ADU)
-        """
-        # non_linear_level depends on whether data has been corrected for
-        # non-linearity ... need to check this ...
-        hdu = dataset.hdulist
-        headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
-        coadds = dataset.coadds()
-        
-        biasvalues = self.gnirsArrayDict.keys()
-        for bias in biasvalues:
-            if abs(float(bias) - abs(headerbias)) < 0.1:
-                array = self.gnirsArrayDict[bias]
-            else:
-                array = None
-        
-        if array != None:
-            well = float(array[3])
-            linearlimit = float(array[4])
-            nonlinearlimit = float(array[8])
-            saturation = int(well * coadds)
-            ret_non_linear_level = int(saturation * linearlimit)
+        # Get the bias value (biasvolt) from the header of the PHU. The bias
+        # keyword is defined in the local key dictionary (stdkeyDictGNIRS) but
+        # is read from the updated global key dictionary (globalStdkeyDict)
+        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        if biasvolt is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Get the saturation level using the appropriate descriptor
+        saturation_level = dataset.saturation_level()
+        if saturation_level is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Determine whether the dataset has been corrected for non-linearity
+        if dataset.phuGetKeyValue('NONLINCR'):
+            corrected = True
         else:
-            ret_non_linear_level = None
+            corrected = False
+        # The array is non-linear at some fraction of the saturation level.
+        # Get this fraction from the lookup table
+        bias_values = self.gnirsArrayDict.keys()
+        count = 0
+        for bias in bias_values:
+            if abs(float(bias) - abs(biasvolt)) < 0.1:
+                count += 1
+                row = self.gnirsArrayDict[bias]
+                if corrected:
+                    # Use row[4] if correcting for non-linearity
+                    if float(row[4]):
+                        linearlimit = float(row[4])
+                    else:
+                        Errors.TableValueError()
+                else:
+                    # Use row[8] if not correcting for non-linearity
+                    if float(row[8]):
+                        linearlimit = float(row[8])
+                    else:
+                        Errors.TableValueError()
+        if count == 0:
+            Errors.TableKeyError()
+        # Return the saturation level integer
+        ret_non_linear_level = int(saturation_level * linearlimit)
         
         return ret_non_linear_level
     
     gnirsArrayDict = None
     
     def pixel_scale(self, dataset, **args):
-        """
-        Return the pixel_scale value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the pixel scale (arcsec/pixel)
-        """
-        hdu = dataset.hdulist
-        prism = hdu[0].header[globalStdkeyDict['key_prism']]
-        decker = hdu[0].header[globalStdkeyDict['key_decker']]
-        disperser = hdu[0].header[globalStdkeyDict['key_grating']]
-        camera = dataset.camera()
-        
+        # Get the prism, decker and disperser from the header of the PHU.
+        prism = dataset.phuGetKeyValue(globalStdkeyDict['key_prism'])
+        decker = dataset.phuGetKeyValue(globalStdkeyDict['key_decker'])
+        disperser = dataset.phuGetKeyValue(globalStdkeyDict['key_grating'])
+        if prism is None or decker is None or disperser is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Get the camera using the appropriate descriptor
+        camera = dataset.camera().asPytype()
+        if camera is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         pixel_scale_key = (prism, decker, disperser, camera)
-        
-        array = self.gnirsConfigDict[pixel_scale_key]
-        
-        ret_pixel_scale = float(array[2])
+        if pixel_scale_key in getattr(self, 'gnirsConfigDict'):
+            row = self.gnirsConfigDict[pixel_scale_key]
+        else:
+            raise Errors.TableKeyError()
+        if float(row[2]):
+            ret_pixel_scale = float(row[2])
+        else:
+            raise Errors.TableValueError()
         
         return ret_pixel_scale
     
@@ -305,131 +231,139 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def prism(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the prism value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to strip the component ID from the
-        returned prism name
-        @param pretty: set to True to return a human meaningful prism name. In
-        this case, this is the same as stripID
-        @rtype: string
-        @return: the prism used to acquire the data
-
         Note. A CC software change approx July 2010 changed the prism names to
         also include the camera, eg 32/mmSB_G5533 indicates the 32/mm grating
         with the Short Blue camera. This is unhelpful as if we wanted to know
         the camera, we'd call the camera descriptor. Thus, this descriptor
         function repairs the header values to only list the prism.
         """
-        hdu = dataset.hdulist
-        string = hdu[0].header[globalStdkeyDict['key_prism']]
-        
+        # Get the prism value from the header of the PHU.
+        prism = dataset.phuGetKeyValue(globalStdkeyDict['key_prism'])
+        if prism is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         # The format of the prism string is currently (2011) [CAM+]prism_Gnnnn
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
         # + is a literal '+'
         # prism is the actual prism name
         # nnnn is the 4 digit component ID.
-        
         cre = re.compile('([LBSR]*\+)*([A-Z]*)(_G)(\d+)')
-        m = cre.match(string)
-        
-        prism = string
+        m = cre.match(prism)
         if m:
             parts = m.groups()
-            prism = parts[1] + parts[2] + parts[3]
+            if stripID or pretty:
+                ret_prism = string.removeComponentID(prism)
+            else:
+                ret_prism = '%s%s%s' % (parts[1], parts[2], parts[3])
         
-        if (stripID or pretty):
-            prism = str(GemCalcUtil.removeComponentID(prism))
-        
-        return prism
+        return ret_prism
     
     def read_mode(self, dataset, **args):
-        """
-        Return the read_mode value for GNIRS
-        This is either 'Very Bright Objects', 'Bright Objects',
-        'Faint Objects' or 'Very Faint Objects' in the OT. Returns 'Invalid'
-        if the headers don't make sense wrt these defined modes
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the read mode used to acquire the data
-        """
-        hdu = dataset.hdulist
-        lnrs = hdu[0].header[stdkeyDictGNIRS['key_lnrs']]
-        ndavgs = hdu[0].header[stdkeyDictGNIRS['key_ndavgs']]
-        
-        read_mode = 'Invalid'
-        
+        # Get the number of non-destructive read pairs (lnrs) and the number
+        # of digital averages (ndavgs) from the header of the PHU. The lnrs and
+        # ndavgs keywords are defined in the local key dictionary
+        # (stdkeyDictGNIRS) but are read from the updated global key dictionary
+        # (globalStdkeyDict)
+        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
+        ndavgs = dataset.phuGetKeyValue(globalStdkeyDict['key_ndavgs'])
+        if lnrs is None or ndavgs is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if lnrs == 32 and ndavgs == 16:
             read_mode = 'Very Faint Objects'
-        
-        if lnrs == 16 and ndavgs == 16:
+        elif lnrs == 16 and ndavgs == 16:
             read_mode = 'Faint Objects'
-        
-        if lnrs == 1 and ndavgs == 16:
+        elif lnrs == 1 and ndavgs == 16:
             read_mode = 'Bright Objects'
-        
-        if lnrs == 1 and ndavgs == 1:
+        elif lnrs == 1 and ndavgs == 1:
             read_mode = 'Very Bright Objects'
+        else:
+            read_mode = 'Invalid'
+        ret_read_mode = str(read_mode)
         
-        return read_mode
+        return ret_read_mode
     
     def read_noise(self, dataset, **args):
-        """
-        Return the read_noise value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the estimated readout noise (electrons)
-        """
-        hdu = dataset.hdulist
-        headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
-        lnrs = hdu[0].header[stdkeyDictGNIRS['key_lnrs']]
-        ndavgs = hdu[0].header[stdkeyDictGNIRS['key_ndavgs']]
+        # Get the bias value (biasvolt), the number of non-destructive read
+        # pairs (lnrs) and the number of digital averages (ndavgs) from the
+        # header of the PHU. The biasvolt, lnrs and ndavgs keywords are
+        # defined in the local key dictionary (stdkeyDictGNIRS) but are read
+        # from the updated global key dictionary (globalStdkeyDict)
+        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
+        ndavgs = dataset.phuGetKeyValue(globalStdkeyDict['key_ndavgs'])
+        if biasvolt is None or lnrs is None or ndavgs is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
+        if coadds is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        bias_values = self.gnirsArrayDict.keys()
+        count = 0
+        for bias in bias_values:
+            if abs(float(bias) - abs(biasvolt)) < 0.1:
+                count += 1
+                if float(self.gnirsArrayDict[bias][1]):
+                    read_noise = float(self.gnirsArrayDict[bias][1])
+                else:
+                    Errors.TableValueError()
+        if count == 0:
+            Errors.TableKeyError()
         
-        biasvalues = self.gnirsArrayDict.keys()
-        for bias in biasvalues:
-            if abs(float(bias) - abs(headerbias)) < 0.1:
-                array = self.gnirsArrayDict[bias]
-            else:
-                array = None
-        
-        if array != None:
-            read_noise = float(array[1])
-            ret_read_noise = float((read_noise * math.sqrt(coadds)) \
+        ret_read_noise = float((read_noise * math.sqrt(coadds)) \
                 / (math.sqrt(lnrs) * math.sqrt(ndavgs)))
-        else:
-            ret_read_noise = None
         
         return ret_read_noise
     
     gnirsArrayDict = None
     
     def saturation_level(self, dataset, **args):
-        """
-        Return the saturation_level value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: integer
-        @return: the saturation level in the raw images (ADU)
-        """
-        hdu = dataset.hdulist
-        headerbias = hdu[0].header[stdkeyDictGNIRS['key_bias']]
+        # Get the bias value (biasvolt) from the header of the PHU. The
+        # biasvolt keyword is defined in the local key dictionary
+        # (stdkeyDictGNIRS) but is read from the updated global key dictionary
+        # (globalStdkeyDict)
+        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        if biasvolt is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
+        if coadds is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        bias_values = self.gnirsArrayDict.keys()
+        count = 0
+        for bias in bias_values:
+            if abs(float(bias) - abs(biasvolt)) < 0.1:
+                count += 1
+                if float(self.gnirsArrayDict[bias][3]):
+                    well = float(self.gnirsArrayDict[bias][3])
+                else:
+                    Errors.TableValueError()
+        if count == 0:
+            Errors.TableKeyError()
         
-        biasvalues = self.gnirsArrayDict.keys()
-        for bias in biasvalues:
-            if abs(float(bias) - abs(headerbias)) < 0.1:
-                array = self.gnirsArrayDict[bias]
-            else:
-                array = None
-        
-        if array != None:
-            well = array[3]
-            ret_saturation_level = int(well * coadds)
-        else:
-            ret_saturation_level = None
+        ret_saturation_level = int(well * coadds)
         
         return ret_saturation_level
     
@@ -437,49 +371,45 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def slit(self, dataset, stripID=False, pretty=False, **args):
         """
-        Return the slit value for GNIRS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID
-        @param pretty: set to True to return a human readable
-        @rtype: string
-        @return: the slit used to acquire the data
-
         Note that in GNIRS all the slits are machined into one physical piece
         of metal, which is on a slide - the mechanism simply slides the slide
         along to put the right slit in the beam. Thus all the slits have the
         same componenet ID as they're they same physical compononet.
         """
-        hdu = dataset.hdulist
-        slit = hdu[0].header[globalStdkeyDict['key_slit']]
+        # Get the slit value from the header of the PHU.
+        slit = dataset.phuGetKeyValue(globalStdkeyDict['key_slit'])
+        if slit is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        if stripID or pretty:
+            ret_slit = string.removeComponentID(slit)
+        else:
+            ret_slit = str(slit)
         
-        if pretty:
-            stripID=True
-        
-        if stripID:
-            slit = GemCalcUtil.removeComponentID(slit)
-        
-        return slit
+        return ret_slit
     
     def well_depth_setting(self, dataset, **args):
-        """
-        Return the well_depth_setting value for GNIRS
-        This is either 'Shallow' or 'Deep' in the OT. Returns 'Invalid' if the
-        headers don't make sense wrt these defined modes
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the well depth mode used to acquire the data
-        """
-        hdu = dataset.hdulist
-        biasvoltage = hdu[0].header[stdkeyDictGNIRS['key_bias']]
-        
-        well_depth_setting = 'Invalid'
-        
-        if abs(biasvoltage + 0.3) < 0.1:
+        # Get the bias value (biasvolt) from the header of the PHU. The
+        # biasvolt keyword is defined in the local key dictionary
+        # (stdkeyDictGNIRS) but is read from the updated global key dictionary
+        # (globalStdkeyDict)
+        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        if biasvolt is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        if abs(biasvolt + 0.3) < 0.1:
             well_depth_setting = 'Deep'
-        
-        if abs(biasvoltage + 0.6) < 0.1:
+        elif abs(biasvolt + 0.6) < 0.1:
             well_depth_setting = 'Shallow'
+        else:
+            well_depth_setting = 'Invalid'
+        # Return the well depth setting string
+        ret_well_depth_setting = str(well_depth_setting)
         
         return well_depth_setting
