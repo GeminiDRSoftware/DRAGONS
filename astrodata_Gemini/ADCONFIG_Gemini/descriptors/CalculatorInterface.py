@@ -1992,8 +1992,9 @@ class CalculatorInterface:
         :rtype: string as default (i.e., format=None)
         :return: the read mode (either 'Very Faint Object(s)', 
                  'Faint Object(s)', 'Medium Object', 'Bright Object(s)', 
-                 'Very Bright Object(s)', 'Low Background', 'Medium Background', 
-                 'High Background' or 'Invalid') of the observation
+                 'Very Bright Object(s)', 'Low Background', 
+                 'Medium Background', 'High Background' or 'Invalid') of the 
+                 observation
         """
         try:
             self._lazyloadCalculator()
