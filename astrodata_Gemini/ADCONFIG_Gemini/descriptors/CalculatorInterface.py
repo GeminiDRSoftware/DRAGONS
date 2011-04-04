@@ -1,10 +1,8 @@
 import sys
-from datetime import datetime
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
-from datetime import datetime
 
 class CalculatorInterface:
 
@@ -36,12 +34,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.airmass(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "airmass",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "airmass",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -86,12 +83,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.amp_read_area(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "amp_read_area",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "amp_read_area",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -128,12 +124,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.azimuth(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "azimuth",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "azimuth",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -170,12 +165,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.camera(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "camera",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "camera",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -213,12 +207,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "cass_rotator_pa",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "cass_rotator_pa",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -270,12 +263,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.central_wavelength(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "central_wavelength",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "central_wavelength",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -312,12 +304,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.coadds(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "coadds",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "coadds",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -354,12 +345,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.data_label(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "data_label",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "data_label",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -410,12 +400,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.data_section(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "data_section",  
-                                                ad = self,
-                                                pytype = tuple
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "data_section",  
+                                   ad = self,
+                                   pytype = tuple )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -452,12 +441,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.dec(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "dec",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "dec",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -498,12 +486,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.decker(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "decker",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "decker",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -554,12 +541,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.detector_section(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "detector_section",  
-                                                ad = self,
-                                                pytype = tuple
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_section",  
+                                   ad = self,
+                                   pytype = tuple )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -603,12 +589,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.detector_x_bin(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "detector_x_bin",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_x_bin",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -652,12 +637,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.detector_y_bin(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "detector_y_bin",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_y_bin",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -698,12 +682,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.disperser(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "disperser",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "disperser",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -755,12 +738,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.dispersion(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "dispersion",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "dispersion",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -797,12 +779,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.dispersion_axis(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "dispersion_axis",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "dispersion_axis",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -839,12 +820,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.elevation(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "elevation",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "elevation",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -881,12 +861,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.exposure_time(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "exposure_time",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "exposure_time",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -928,12 +907,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.filter_name(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "filter_name",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "filter_name",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -974,12 +952,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.focal_plane_mask(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "focal_plane_mask",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "focal_plane_mask",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1022,12 +999,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.gain(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "gain",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "gain",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1068,12 +1044,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.grating(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "grating",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "grating",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1110,12 +1085,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.gain_setting(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "gain_setting",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "gain_setting",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1152,12 +1126,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.instrument(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "instrument",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "instrument",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1194,12 +1167,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.local_time(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "local_time",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "local_time",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1242,12 +1214,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.mdf_row_id(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "mdf_row_id",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "mdf_row_id",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1285,12 +1256,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.nod_count(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "nod_count",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "nod_count",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1328,12 +1298,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.nod_pixels(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "nod_pixels",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "nod_pixels",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1371,12 +1340,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.non_linear_level(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "non_linear_level",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "non_linear_level",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1413,12 +1381,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.object(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "object",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "object",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1456,12 +1423,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.observation_class(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_class",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "observation_class",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1498,12 +1464,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.observation_epoch(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_epoch",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "observation_epoch",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1540,12 +1505,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.observation_id(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_id",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "observation_id",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1583,12 +1547,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.observation_type(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "observation_type",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "observation_type",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1625,12 +1588,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.pixel_scale(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "pixel_scale",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "pixel_scale",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1671,12 +1633,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.prism(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "prism",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "prism",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1714,12 +1675,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.program_id(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "program_id",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "program_id",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1756,12 +1716,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.pupil_mask(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "pupil_mask",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "pupil_mask",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1799,12 +1758,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.qa_state(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "qa_state",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "qa_state",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1841,12 +1799,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.ra(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ra",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "ra",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1884,12 +1841,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.raw_bg(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_bg",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "raw_bg",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1927,12 +1883,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.raw_cc(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_cc",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "raw_cc",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1970,12 +1925,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.raw_iq(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_iq",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "raw_iq",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2013,12 +1967,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.raw_wv(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "raw_wv",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "raw_wv",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2058,12 +2011,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.read_mode(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "read_mode",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "read_mode",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2106,12 +2058,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.read_noise(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "read_noise",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "read_noise",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2149,12 +2100,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.read_speed_setting(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "read_speed_setting",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "read_speed_setting",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2192,12 +2142,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.saturation_level(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "saturation_level",  
-                                                ad = self,
-                                                pytype = int
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "saturation_level",  
+                                   ad = self,
+                                   pytype = int )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2238,12 +2187,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.slit(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "slit",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "slit",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2280,12 +2228,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.telescope(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "telescope",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "telescope",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2322,12 +2269,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.ut_date(self, **args)
                                         
             from datetime import datetime
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ut_date",  
-                                                ad = self,
-                                                pytype = datetime
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "ut_date",  
+                                   ad = self,
+                                   pytype = datetime )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2389,12 +2335,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.ut_datetime(self, **args)
                                         
             from datetime import datetime
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ut_datetime",  
-                                                ad = self,
-                                                pytype = datetime
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "ut_datetime",  
+                                   ad = self,
+                                   pytype = datetime )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2431,12 +2376,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.ut_time(self, **args)
                                         
             from datetime import datetime
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "ut_time",  
-                                                ad = self,
-                                                pytype = datetime
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "ut_time",  
+                                   ad = self,
+                                   pytype = datetime )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2475,12 +2419,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.wavefront_sensor(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "wavefront_sensor",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "wavefront_sensor",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2524,12 +2467,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "wavelength_reference_pixel",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "wavelength_reference_pixel",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2567,12 +2509,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.well_depth_setting(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "well_depth_setting",  
-                                                ad = self,
-                                                pytype = str
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "well_depth_setting",  
+                                   ad = self,
+                                   pytype = str )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2609,12 +2550,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.x_offset(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "x_offset",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "x_offset",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -2651,12 +2591,11 @@ class CalculatorInterface:
                 retval = self.descriptorCalculator.y_offset(self, **args)
                                         
             
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "y_offset",  
-                                                ad = self,
-                                                pytype = float
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "y_offset",  
+                                   ad = self,
+                                   pytype = float )
             return ret
         except:
             if (self.descriptorCalculator is None 
