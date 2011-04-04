@@ -2,13 +2,7 @@ from datetime import datetime
 from descriptorDescriptionDict import asDictArgDict
 from descriptorDescriptionDict import descriptorDescDict
 from descriptorDescriptionDict import detailedNameDict
-try:
-    from descriptorDescriptionDict import returnTypeDict
-except:
-    returnTypeDict = {}
 from descriptorDescriptionDict import stripIDArgDict
-
-import datetime
 
 class DescriptorDescriptor:
     name = None
@@ -37,12 +31,11 @@ class DescriptorDescriptor:
                 retval = self.descriptorCalculator.%(name)s(self, **args)
                                         
             %(pytypeimport)s
-            ret = Descriptors.DescriptorValue(  retval, 
-                                                format = format, 
-                                                name = "%(name)s",  
-                                                ad = self,
-                                                pytype = %(pytype)s
-                                                )
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "%(name)s",  
+                                   ad = self,
+                                   pytype = %(pytype)s )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -212,12 +205,10 @@ descriptors =   [   DD("airmass", pytype=float),
                 ]
 
 wholeout = """import sys
-from datetime import datetime
 import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
-from datetime import datetime
 
 class CalculatorInterface:
 
@@ -231,7 +222,6 @@ class CalculatorInterface:
         if self.descriptorCalculator is None:
             self.descriptorCalculator = Descriptors.getCalculator(self, **args)
 """
-
 out = ""
 
 for dd in descriptors:
