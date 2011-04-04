@@ -161,34 +161,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_disperser
     
-    def exposure_time(self, dataset, **args):
-        # Get the exposure time value from the header of the PHU
-        exposure_time = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_exposure_time'])
-        if exposure_time is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
-                raise dataset.exception_info
-        # If the data have been prepared, take the (total) exposure time value
-        # directly from the appropriate keyword
-        if 'PREPARED' in dataset.types:
-            # Get the total exposure time value from the header of the PHU
-            ret_exposure_time = float(exposure_time)
-        else:
-            # Get the number of coadds using the appropriate descriptor
-            coadds = dataset.coadds()
-            if coadds is None:
-                # The descriptor functions return None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, 'exception_info'):
-                    raise dataset.exception_info
-            ret_exposure_time = exposure_time * coadds
-        
-        return ret_exposure_time
-    
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
             # To match against the lookup table to get the pretty name, we
@@ -288,7 +260,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def pupil_mask(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
-            stripID = True        
+            stripID = True
         # Get the key_filter3 filter name value from the header of the PHU.
         # The filter name keyword is defined in the local key dictionary
         # (stdkeyDictNIRI) but is read from the updated global key dictionary
@@ -349,9 +321,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         read_mode = dataset.read_mode()
         coadds = dataset.coadds()
         if read_mode is None or coadds is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Use the value of the read mode to get the read noise from the lookup
@@ -380,9 +352,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         gain = dataset.gain()
         well_depth_setting = str(dataset.well_depth_setting())
         if coadds is None or gain is None or well_depth_setting is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The descriptor functions return None if a value cannot be found 
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Use the value of the well depth setting to get the well depth from
