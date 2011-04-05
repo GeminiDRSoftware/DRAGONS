@@ -279,15 +279,29 @@ descriptor value for: %(name)s
         # convert other to the target type (possibly coerced)
         other = outtype(other)
         myfuncname = whocalledme()
-        if myfuncname[0:3] == "__r" and myfuncname != "__rshift__":
-            otherfuncname = "__" + myfuncname[3:]
-        else:
-            otherfuncname = "__r"+myfuncname[2:]
-            
         
-        #print "D273:", myfuncname, "->", otherfuncname
+        if myfuncname =="__cmp__":
+            otherfuncname = "__cmp__"
+        else:
+            if myfuncname[0:3] == "__r" and myfuncname != "__rshift__":
+                otherfuncname = "__" + myfuncname[3:]
+            else:
+                otherfuncname = "__r"+myfuncname[2:]
+
+        
+        print "D273:", myfuncname, "->", otherfuncname
         if hasattr(other, otherfuncname):
-            return eval("other.%s(outtype(self))" % otherfuncname)
+            evalstr = "other.%s(outtype(self))" % otherfuncname
+            print "D295:", evalstr
+            retval = eval(evalstr)
+            if otherfuncname == "__cmp__":
+                if retval == 0:
+                    # we're equal
+                    return 0
+                else:
+                    return -1*retval
+            else:
+                return retval
 
         raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),otherfuncname))
     
@@ -303,6 +317,10 @@ descriptor value for: %(name)s
     def __add__(self, other):
         return self.overloaded(other)
     def __div__(self, other):
+        return self.overloaded(other)
+    def __floordiv__(self, other):
+        return self.overloaded(other)
+    def __rfloordiv__(self, other):
         return self.overloaded(other)
     def __divmod__(self, other):
         return self.overloaded(other)
@@ -364,18 +382,18 @@ descriptor value for: %(name)s
         return self.overloaded(other)
     
     #overloaded operators unique to float
-    def __eq__(self, other):
-        return self.overloaded(other)
-    def __ge__(self, other):
-        return self.overloaded(other)
-    def __gt__(self, other):
-        return self.overloaded(other)
-    def __le__(self, other):
-        return self.overloaded(other)
-    def __lt__(self, other):
-        return self.overloaded(other)
-    def __ne__(self, other):
-        return self.overloaded(other)
+    #def __eq__(self, other):
+    #    return self.overloaded(other)
+    #def __ge__(self, other):
+    #    return self.overloaded(other)
+    #def __gt__(self, other):
+    #    return self.overloaded(other)
+    #def __le__(self, other):
+    #    return self.overloaded(other)
+    #def __lt__(self, other):
+    #    return self.overloaded(other)
+    #def __ne__(self, other):
+    #    return self.overloaded(other)
         
 
 # calculatorIndexREMask used to identify descriptorIndex files
