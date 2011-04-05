@@ -297,65 +297,85 @@ descriptor value for: %(name)s
     def __int__(self):
         value = self.collapseDictVal()
         return int(value)
-    # overloaded operators    
+    
+
+    # overloaded operators (used for int and float)  
     def __add__(self, other):
-        return self.overloaded(other)
-    def __sub__(self, other):
-        return self.overloaded(other)
-    def __mul__(self, other):
         return self.overloaded(other)
     def __div__(self, other):
         return self.overloaded(other)
-    def __truediv__(self, other):
-        return self.overloaded(other)
-    def __floordiv__(self, other):
+    def __divmod__(self, other):
         return self.overloaded(other)
     def __mod__(self, other):
         return self.overloaded(other)
-    def __divmod__(self, other):
+    def __mul__(self, other):
         return self.overloaded(other)
     def __pow__(self, other):
         return self.overloaded(other)
-    def __lshift__(self, other):
-        return self.overloaded(other)
-    def __rshift__(self, other):
-        return self.overloaded(other)
-    def __and__(self, other):
-        return self.overloaded(other)
-    def __xor__(self, other):
-        return self.overloaded(other)
-    def __or__(self, other):
-        return self.overloaded(other)
-    # reflected operands
     def __radd__(self, other):
         return self.overloaded(other)
-    def __rsub__(self, other):
+    def __rdiv__(self, other):
+        return self.overloaded(other)
+    def __rdivmod__(self, other):
         return self.overloaded(other)
     def __rmul__(self, other):
         return self.overloaded(other)
     def __rdiv__(self, other):
         return self.overloaded(other)
-    def __rtruediv__(self, other):
-        return self.overloaded(other)
-    def __rfloordiv__(self, other):
+    def __rdivmod__(self, other):
         return self.overloaded(other)
     def __rmod__(self, other):
         return self.overloaded(other)
-    def __rdivmod__(self, other):
+    def __rmul__(self, other):
         return self.overloaded(other)
     def __rpow__(self, other):
         return self.overloaded(other)
-    def __rlshift__(self, other):
+    def __rsub__(self, other):
         return self.overloaded(other)
-    def __rrshift__(self, other):
+    def __rtruediv__(self, other):
+        return self.overloaded(other)
+    def __sub__(self, other):
+        return self.overloaded(other)
+    def __truediv__(self, other):
+        return self.overloaded(other)
+    
+    # overloaded operators unique to int
+    def __and__(self, other):
+        return self.overloaded(other)
+    def __cmp__(self, other):
+        return self.overloaded(other)
+    def __lshift__(self, other):
+        return self.overloaded(other)
+    def __or__(self, other):
         return self.overloaded(other)
     def __rand__(self, other):
         return self.overloaded(other)
-    def __rxor__(self, other):
+    def __rlshift__(self, other):
         return self.overloaded(other)
     def __ror__(self, other):
         return self.overloaded(other)
-
+    def __rrshift__(self, other):
+        return self.overloaded(other)
+    def __rshift__(self, other):
+        return self.overloaded(other)
+    def __rxor__(self, other):
+        return self.overloaded(other)
+    def __xor__(self, other):
+        return self.overloaded(other)
+    
+    #overloaded operators unique to float
+    def __eq__(self, other):
+        return self.overloaded(other)
+    def __ge__(self, other):
+        return self.overloaded(other)
+    def __gt__(self, other):
+        return self.overloaded(other)
+    def __le__(self, other):
+        return self.overloaded(other)
+    def __lt__(self, other):
+        return self.overloaded(other)
+    def __ne__(self, other):
+        return self.overloaded(other)
         
 
 # calculatorIndexREMask used to identify descriptorIndex files
