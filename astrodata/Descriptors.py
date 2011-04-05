@@ -289,10 +289,10 @@ descriptor value for: %(name)s
                 otherfuncname = "__r"+myfuncname[2:]
 
         
-        print "D273:", myfuncname, "->", otherfuncname
+        #print "D273:", myfuncname, "->", otherfuncname
         if hasattr(other, otherfuncname):
             evalstr = "other.%s(outtype(self))" % otherfuncname
-            print "D295:", evalstr
+            #print "D295:", evalstr
             retval = eval(evalstr)
             if otherfuncname == "__cmp__":
                 if retval == 0:
