@@ -327,8 +327,18 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Return a dictionary with the keyword names as the key and the filter
         # name string as the value
         ret_filter_name = {}
-        ret_filter_name.update({key_filter1:str(filter1), \
-            key_filter2:str(filter2)})
+        if pretty:
+            # Remove any filters that have the value 'open' or 'Open'
+            if 'open' not in filter1 and 'Open' not in filter1:
+                ret_filter_name.update({key_filter1:str(filter1)})
+            if 'open' not in filter2 and 'Open' not in filter2:
+                ret_filter_name.update({key_filter2:str(filter2)})
+            if len(ret_filter_name) == 0:
+                ret_filter_name = 'open'
+        else:
+            # Return a dictionary with the filter name string as the value
+            ret_filter_name.update({key_filter1:str(filter1), \
+                key_filter2:str(filter2)})
         
         return ret_filter_name
     
