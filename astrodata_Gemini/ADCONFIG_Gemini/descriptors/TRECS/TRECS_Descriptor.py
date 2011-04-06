@@ -1,128 +1,138 @@
-from astrodata import Lookups
 from astrodata import Descriptors
-import re
-
+from astrodata import Errors
+from astrodata import Lookups
 from astrodata.Calculator import Calculator
-
-import GemCalcUtil 
+import GemCalcUtil
 
 from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardTRECSKeyDict import stdkeyDictTRECS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
-    # Updating the global key dict with the local dict of this descriptor class
+    # Updating the global key dictionary with the local key dictionary
+    # associated with this descriptor class
     globalStdkeyDict.update(stdkeyDictTRECS)
     
     def __init__(self):
         pass
     
-    def central_wavelength(self, dataset, **args):
-        """
-        Return the central_wavelength value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the central wavelength (nanometers)
-        """
-        hdu = dataset.hdulist
-        disperser = hdu[0].header[stdkeyDictTRECS['key_disperser']]
-        
-        if disperser == 'LowRes-10':
-            ret_central_wavelength = 10.5
-        elif disperser == 'LowRes-20':
-            ret_central_wavelength = 20.0
+    def central_wavelength(self, dataset, asMicrometers=False, \
+        asNanometers=False, asAngstroms=False, **args):
+        # For TRECS data, the central wavelength is recorded in
+        # nanometers
+        input_units = 'nanometers'
+        # Determine the output units to use
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = 'micrometers'
+            if asNanometers:
+                output_units = 'nanometers'
+            if asAngstroms:
+                output_units = 'angstroms'
         else:
-            ret_central_wavelength = None
+            # Either none of the unit arguments were set to True or more than
+            # one of the unit arguments was set to True. In either case,
+            # return the central wavelength in the default units of meters
+            output_units = 'meters'
+        # Get the disperser value from the header of the PHU. The disperser
+        # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
+        # is read from the updated global key dictionary (globalStdkeyDict)
+        disperser = dataset.phuGetKeyValue(globalStdkeyDict['key_disperser'])
+        if disperser is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        if disperser == 'LowRes-10':
+            central_wavelength = 10.5
+        elif disperser == 'LowRes-20':
+            central_wavelength = 20.0
+        elif disperser == 'Mirror':
+            raise Errors.DescriptorTypeError()
+        else:
+            raise Errors.CalcError()
+        # Use the utilities function convert_units to convert the central
+        # wavelength value from the input units to the output units
+        ret_central_wavelength = \
+            GemCalcUtil.convert_units(input_units=input_units, \
+            input_value=central_wavelength, \
+            output_units=output_units)
         
         return ret_central_wavelength
     
-    def filter_name(self, dataset, **args):
-        """
-        Return the filter_name value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: string
-        @return: the unique filter identifier string
-        """
-        hdu = dataset.hdulist
-        filter1 = hdu[0].header[stdkeyDictTRECS['key_filter1']]
-        filter2 = hdu[0].header[stdkeyDictTRECS['key_filter2']]
-        
-        # create list of filter values
-        filters = [filter1,filter2]
-        
-        # reject 'Open'
-        filters2 = []
-        for filt in filters:
-            if ('Open' in filt):
-                pass
-            else:
-                filters2.append(filt)
-        
-        filters = filters2
-        
-        # Block means an opaque mask was in place, which of course
-        # blocks any other in place filters
-        if 'Block' in filters:
-            ret_filter_name = 'blank'
-        
-        if len(filters) == 0:
-            ret_filter_name = 'open'
+    def dispersion(self, dataset, asMicrometers=False, asNanometers=False, \
+        asAngstroms=False, **args):
+        # Currently for TRECS data, the dispersion is recorded in meters (?)
+        input_units = 'meters'
+        # Determine the output units to use
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # dispersion in these units
+            if asMicrometers:
+                output_units = 'micrometers'
+            if asNanometers:
+                output_units = 'nanometers'
+            if asAngstroms:
+                output_units = 'angstroms'
         else:
-            filters.sort()
-            ret_filter_name = str('&'.join(filters))
+            # Either none of the unit arguments were set to True or more than
+            # one of the unit arguments was set to True. In either case,
+            # return the dispersion in the default units of meters
+            output_units = 'meters'
+        # Get the dispersion value from the header of the PHU. The dispersion
+        # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
+        # is read from the updated global key dictionary (globalStdkeyDict)
+        raw_dispersion = \
+            dataset.phuGetKeyValue(globalStdkeyDict['key_dispersion'])
+        if raw_dispersion is None:
+            # The getKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        if disperser == 'LowRes-10':
+            dispersion = 0.022
+        elif disperser == 'LowRes-20':
+            dispersion = 0.033
+        elif disperser == 'Mirror':
+            raise Errors.DescriptorTypeError()
+        else:
+            raise Errors.CalcError()
+        # Use the utilities function convert_units to convert the dispersion
+        # value from the input units to the output units
+        ret_dispersion = \
+            GemCalcUtil.convert_units(input_units=input_units, \
+            input_value=dispersion, output_units=output_units)
         
-        return ret_filter_name
+        return ret_dispersion
     
     def gain(self, dataset, **args):
-        """
-        Return the gain value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the gain (electrons/ADU)
-        """
-        hdu = dataset.hdulist
-        biaslevel = hdu[0].header[stdkeyDictTRECS['key_biaslevel']]
-        
+        # Get the bias value (biaslevel) from the header of the PHU. The bias
+        # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
+        # is read from the updated global key dictionary (globalStdkeyDict)
+        biaslevel = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        if biaslevel is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
         if biaslevel == '2':
             ret_gain = 214.0
         elif biaslevel == '1':
             ret_gain = 718.0
         else:
-            ret_gain = None
+            Errors.CalcError()
         
         return ret_gain
     
     def pixel_scale(self, dataset, **args):
-        """
-        Return the pixel_scale value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the pixel scale (arcsec/pixel)
-        """
-        ret_pixel_scale = 0.089
+        # Return the pixel scale float
+        ret_pixel_scale = float(0.089)
         
         return ret_pixel_scale
-    
-    def dispersion(self, dataset, **args):
-        """
-        Return the dispersion value for TRECS
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @returns: the dispersion (angstroms/pixel)
-        """
-        hdu = dataset.hdulist
-        disperser = hdu[0].header[stdkeyDictTRECS['key_disperser']]
-        
-        if disperser == 'LowRes-10':
-            ret_dispersion = 0.022
-        elif disperser == 'LowRes-20':
-            ret_dispersion = 0.033
-        else:
-            ret_dispersion = None
-        
-        return ret_dispersion
