@@ -52,7 +52,8 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the filter name value from the header of the PHU. The filter name
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
         # are read from the updated global key dictionary (globalStdkeyDict)
-        filter_name = dataset.phuGetKeyValue(globalStdkeyDict['key_filter'])
+        filter_name = \
+            dataset.phuGetKeyValue(globalStdkeyDict['key_filter_name'])
         if filter_name is None:
             # The phuGetKeyValue() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
