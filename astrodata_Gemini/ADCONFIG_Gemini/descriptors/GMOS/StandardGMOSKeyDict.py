@@ -10,7 +10,6 @@ stdkeyDictGMOS = {
     "key_filter1":"FILTER1",
     "key_filter2":"FILTER2",
     "key_focal_plane_mask":"MASKNAME",
-    "key_gainorig":"GAINORIG",
     "key_maskname":"MASKNAME",
     "key_masktype":"MASKTYP",
     "key_wavelength_reference_pixel":"CRPIX1",
