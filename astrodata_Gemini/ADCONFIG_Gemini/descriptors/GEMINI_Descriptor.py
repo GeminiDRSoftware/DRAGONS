@@ -83,23 +83,25 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # return the central wavelength in the default units of meters
             output_units = 'meters'
         # Get the central wavelength value from the header of the PHU.
-        raw_central_wavelength = float(dataset.phuGetKeyValue\
-            (globalStdkeyDict['key_central_wavelength']))
+        raw_central_wavelength = dataset.phuGetKeyValue\
+            (globalStdkeyDict['key_central_wavelength'])
         if raw_central_wavelength is None:
             # The phuGetKeyValue() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
+        else:
+            central_wavelength = float(raw_central_wavelength)
         # Validate the central wavelength value
-        if raw_central_wavelength < 0.0:
+        if central_wavelength < 0.0:
             raise Errors.InvalidValueError()
         else:
             # Use the utilities function convert_units to convert the central
             # wavelength value from the input units to the output units
             ret_central_wavelength = \
                 GemCalcUtil.convert_units(input_units=input_units, \
-                input_value=raw_central_wavelength, \
+                input_value=central_wavelength, \
                 output_units=output_units)
         
         return ret_central_wavelength
