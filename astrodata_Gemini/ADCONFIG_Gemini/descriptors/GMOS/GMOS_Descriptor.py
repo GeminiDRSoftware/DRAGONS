@@ -208,7 +208,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_dispersion = {}
         # Currently for GMOS data, the dispersion is recorded in meters (?)
         input_units = 'meters'
-        
         # Determine the output units to use
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         if unit_arg_list.count(True) == 1:
@@ -225,7 +224,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # one of the unit arguments was set to True. In either case,
             # return the dispersion in the default units of meters
             output_units = 'meters'
-        
         # Loop over the science extensions in the dataset
         for ext in dataset['SCI']:
             # Get the dispersion value from the header of each pixel data
@@ -241,8 +239,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             # Use the utilities function convert_units to convert the
-            # dispersion wavelength value from the input units to the output
-            # units
+            # dispersion value from the input units to the output units
             dispersion = \
                 GemCalcUtil.convert_units(input_units=input_units, \
                 input_value=float(raw_dispersion), output_units=output_units)
