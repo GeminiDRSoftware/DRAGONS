@@ -1,76 +1,65 @@
-from astrodata import Lookups
 from astrodata import Descriptors
-import re
-
+from astrodata import Errors
 from astrodata.Calculator import Calculator
-
-import GemCalcUtil 
 
 from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardMICHELLEKeyDict import stdkeyDictMICHELLE
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
-    # Updating the global key dict with the local dict of this descriptor class
+    # Updating the global key dictionary with the local key dictionary
+    # associated with this descriptor class
     globalStdkeyDict.update(stdkeyDictMICHELLE)
     
     def __init__(self):
         pass
     
-    def central_wavelength(self, dataset, **args):
-        """
-        Return the central_wavelength value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the central wavelength (nanometers)
-        """
-        hdu = dataset.hdulist
-        central_wavelength = \
-            hdu[0].header[stdkeyDictMICHELLE['key_central_wavelength']]
-        
-        ret_central_wavelength = float(central_wavelength)
-        if(ret_central_wavelength < 0.0):
-            ret_central_wavelength = None
-        
-        return ret_central_wavelength
-    
     def exposure_time(self, dataset, **args):
-        """
-        Return the exposure_time value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @rtype: float
-        @return: the total exposure time of the observation (seconds)
-        """
-        hdu = dataset.hdulist
-        exposure = float(hdu[0].header[stdkeyDictMICHELLE['key_exposure']])
-        numexpos = float(hdu[0].header[stdkeyDictMICHELLE['key_coadds']])
-        numext = float(hdu[0].header[stdkeyDictMICHELLE['key_numext']])
-        
-        ret_exposure_time = float(exposure * numexpos * numext)
+        # Get the exposure time and the number of extensions from the header of
+        # the PHU. The exposure time and the number of extensions keywords are
+        # defined in the local key dictionary (stdkeyDictMICHELLE) but are read
+        # from the updated global key dictionary (globalStdkeyDict)
+        exposure_time = \
+            dataset.phuGetKeyValue(globalStdkeyDict['key_exposure_time'])
+        extensions = dataset.phuGetKeyValue(globalStdkeyDict['key_numext'])
+        print exposure_time, extensions
+        if exposure_time is None or extensions is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Get the number of coadds using the appropriate descriptor
+        coadds = dataset.coadds()
+        print coadds
+        if coadds is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+                if hasattr(dataset, 'exception_info'):
+                    raise dataset.exception_info
+        # Return the exposure time float
+        ret_exposure_time = float(exposure_time * coadds * extensions)
         
         return ret_exposure_time
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the filter_name value for MICHELLE
-        @param dataset: the data set
-        @type dataset: AstroData
-        @param stripID: set to True to remove the component ID from the
-        returned filter name
-        @param pretty: set to True to return a meaningful filter name
-        @rtype: string
-        @return: the unique filter identifier string
-        """
-        # The Michelle filters don't have ID strings, so we just ignore the
+        # Get the filter name value from the header of the PHU. The filter name
+        # keyword is defined in the local key dictionary (stdkeyDictMICHELLE)
+        # but is read from the updated global key dictionary (globalStdkeyDict)
+        filter_name = dataset.phuGetKeyValue(globalStdkeyDict['key_filter'])
+        if filter_name is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # The MICHELLE filters don't have ID strings, so we just ignore the
         # stripID and pretty options
-        hdu = dataset.hdulist
-        filter = hdu[0].header[stdkeyDictMICHELLE['key_filter']]
-        
-        if filter == 'NBlock':
+        if filter_name == 'NBlock':
             ret_filter_name = 'blank'
         else:
-            ret_filter_name = str(filter)
+            # Return the filter name string
+            ret_filter_name = str(filter_name)
         
         return ret_filter_name
