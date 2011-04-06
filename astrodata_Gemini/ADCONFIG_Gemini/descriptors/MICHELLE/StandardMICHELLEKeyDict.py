@@ -3,7 +3,7 @@ stdkeyDictMICHELLE = {
     "key_coadds":"NUMEXPOS",
     "key_disperser":"GRATNAME",
     "key_dispersion":"GRATDISP",
-    "key_exposure":"EXPOSURE",
+    "key_exposure_time":"EXPOSURE",
     "key_filter":"FILTER",
     "key_focal_plane_mask":"SLITNAME",
     "key_numext":"NUMEXT",
