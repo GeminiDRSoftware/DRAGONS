@@ -311,6 +311,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             read_mode = 'High Background'
         else:
             read_mode = 'Invalid'
+        # Return the read mode string
         ret_read_mode = str(read_mode)
         
         return ret_read_mode
