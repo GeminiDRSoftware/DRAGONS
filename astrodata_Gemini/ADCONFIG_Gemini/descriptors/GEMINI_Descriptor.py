@@ -83,26 +83,39 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # return the central wavelength in the default units of meters
             output_units = 'meters'
         # Get the central wavelength value from the header of the PHU.
-        raw_central_wavelength = dataset.phuGetKeyValue\
-            (globalStdkeyDict['key_central_wavelength'])
+        raw_central_wavelength = float(dataset.phuGetKeyValue\
+            (globalStdkeyDict['key_central_wavelength']))
         if raw_central_wavelength is None:
             # The phuGetKeyValue() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
-        # Use the utilities function convert_units to convert the central
-        # wavelength value from the input units to the output units
-        ret_central_wavelength = \
-            GemCalcUtil.convert_units(input_units=input_units, \
-            input_value=float(raw_central_wavelength), \
-            output_units=output_units)
+        # Validate the central wavelength value
+        if raw_central_wavelength < 0.0:
+            raise Errors.InvalidValueError()
+        else:
+            # Use the utilities function convert_units to convert the central
+            # wavelength value from the input units to the output units
+            ret_central_wavelength = \
+                GemCalcUtil.convert_units(input_units=input_units, \
+                input_value=raw_central_wavelength, \
+                output_units=output_units)
         
         return ret_central_wavelength
     
     def coadds(self, dataset, **args):
-        # Return the coadds integer (set to 1 as default for Gemini data)
-        ret_coadds = int(1)
+        # Get the number of coadds from the header of the PHU. The number of
+        # coadds keyword may be defined in a local key dictionary
+        # (stdkeyDict<INSTRUMENT>) but is read from the updated global key
+        # dictionary (globalStdkeyDict).
+        coadds = dataset.phuGetKeyValue(globalStdkeyDict['key_coadds'])
+        if coadds is None:
+            # Return 1 as the default value for the number of coadds for Gemini
+            # data
+            ret_coadds = int(1)
+        else:
+            ret_coadds = int(coadds)
         
         return ret_coadds
     
@@ -299,15 +312,15 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, 'exception_info'):
                     raise dataset.exception_info
-            ret_exposure_time = exposure_time * coadds
+            ret_exposure_time = float(exposure_time * coadds)
         
         return ret_exposure_time
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Get the two filter name values from the header of the PHU. The two
-        # filter name keywords are defined in the local key dictionary
-        # (stdkeyDictGMOS) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
+        # filter name keywords may be defined in a local key dictionary
+        # (stdkeyDict<INSTRUMENT>) but are read from the updated global key
+        # dictionary (globalStdkeyDict)
         key_filter1 = globalStdkeyDict['key_filter1']
         key_filter2 = globalStdkeyDict['key_filter2']
         filter1 = dataset.phuGetKeyValue(key_filter1)
@@ -335,6 +348,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 ret_filter_name.update({key_filter2:str(filter2)})
             if len(ret_filter_name) == 0:
                 ret_filter_name = 'open'
+            if 'Block' in (filter1 or filter2):
+                ret_filter_name = 'blank'
         else:
             # Return a dictionary with the filter name string as the value
             ret_filter_name.update({key_filter1:str(filter1), \
