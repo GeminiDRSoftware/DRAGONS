@@ -218,14 +218,25 @@ class DescriptorValue():
             retstr =  str(self)
             self.format = curform
             return retstr
+        elif self.pytype == tuple:
+            return repr(self.isCollapsable())
         elif self.pytype != type(self.val):
-            return self.pytype(self.val)
+            return self.pytype(self)
         else:
-            return self.val
+            return self.isCollapsable()
     # alias
     forNumpy = forDB
-    asPytype = forDB
-            
+    def asPytype(self):
+        self.val = self.isCollapsable()
+        if self.val == None:
+            curform = self.format
+            retstr =  str(self)
+            return retstr
+        elif self.pytype != type(self.val):
+            return self.pytype(self)
+        else:
+            return self.isCollapsable()
+
     
     def info(self):
         dvstr = ""

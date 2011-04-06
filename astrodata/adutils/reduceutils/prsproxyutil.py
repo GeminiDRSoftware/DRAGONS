@@ -34,9 +34,14 @@ def calibrationSearch(rq, fullResult = False):
         tokenstr = "datalabel=%s" % token
     
     print "ppu32:", repr(rq)
-    if rq["source"]=="central":
+    if "source" not in rq:
+        source = "central"
+    else:
+        source = rq["source"]
+    
+    if source == "central":
         rqurl = urljoin(CALMGR, CALTYPEDICT[rq['caltype']],token)
-    if rq["source"]=='local':
+    if source == 'local':
         return None
         rqurl = LOCALCALMGR % { "httpport": 8777,
                                 "caltype":CALTYPEDICT[rq['caltype']],
