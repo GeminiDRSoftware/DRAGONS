@@ -1,5 +1,5 @@
 stdkeyDictTRECS = {
-    "key_biaslevel":"BIASLEVL",
+    "key_bias":"BIASLEVL",
     "key_camera":"OBSMODE",
     "key_disperser":"GRATING",
     "key_exposure_time":"OBJTIME",
