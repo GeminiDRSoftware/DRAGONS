@@ -4,7 +4,7 @@ stdkeyDictMICHELLE = {
     "key_disperser":"GRATNAME",
     "key_dispersion":"GRATDISP",
     "key_exposure_time":"EXPOSURE",
-    "key_filter":"FILTER",
+    "key_filter_name":"FILTER",
     "key_focal_plane_mask":"SLITNAME",
     "key_numext":"NUMEXT",
     "key_pixel_scale":"PIXELSIZ",
