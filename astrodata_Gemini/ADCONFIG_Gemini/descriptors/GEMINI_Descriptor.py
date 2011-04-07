@@ -458,11 +458,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         raise Errors.ExistError()
     
     def read_mode(self, dataset, **args):
-        # The read_mode descriptor is only specific to GNIRS, NIFS and NIRI
-        # data. The code below will be replaced with the GNIRS, NIFS or NIRI
-        # specific read_mode descriptor function located in the instrument
-        # specific descriptor files. For all other Gemini data, raise an
-        # exception if this descriptor is called.
+        # The read_mode descriptor is only specific to GNIRS, MICHELLE, NIFS
+        # and NIRI data. The code below will be replaced with the GNIRS,
+        # MICHELLE, NIFS or NIRI specific read_mode descriptor function located
+        # in the instrument specific descriptor files. For all other Gemini
+        # data, raise an exception if this descriptor is called.
         raise Errors.ExistError()
     
     def read_speed_setting(self, dataset, **args):
