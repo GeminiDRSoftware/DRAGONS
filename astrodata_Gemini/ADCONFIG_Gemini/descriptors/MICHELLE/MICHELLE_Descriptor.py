@@ -64,3 +64,19 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_filter_name = str(filter_name)
         
         return ret_filter_name
+    
+    def read_mode(self, dataset, **args):
+        # Get the read mode from the header of the PHU. The read mode is
+        # defined in the local key dictionary (stdkeyDictMICHELLE) but is read
+        # from the updated global key dictionary (globalStdkeyDict)
+        read_mode = dataset.phuGetKeyValue(globalStdkeyDict['key_read_mode'])
+        if read_mode is None:
+            # The phuGetKeyValue() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        # Return the read mode string
+        ret_read_mode = str(read_mode)
+        
+        return ret_read_mode
