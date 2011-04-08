@@ -13,7 +13,7 @@ getProcessedBias
 biasCorrect
 
 #showInputs
-setStackable
+addToList
 
 makeNormalizedFlat
 

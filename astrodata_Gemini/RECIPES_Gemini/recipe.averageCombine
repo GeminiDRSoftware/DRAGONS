@@ -1,9 +1,9 @@
-# This mini-recipe will retrieve the stack for the current input and then 
-# produce a single average combination of all the files in the stack.
-# The output will be a single file with the name of the first file in the stack
+# This mini-recipe will retrieve the list for the current input and then 
+# produce a single average combination of all the files in the list.
+# The output will be a single file with the name of the first file in the list
 # with the postfix '_avgcomb.fits'.
 
 #showInputs
-getStackable
+getList
 #showInputs
 combine(method="average", suffix="_avgcomb")

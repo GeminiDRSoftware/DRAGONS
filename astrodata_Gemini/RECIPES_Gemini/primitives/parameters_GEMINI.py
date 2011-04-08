@@ -88,7 +88,7 @@
                     'type':'str'
                 }
               },
-    'getStackable':{'purpose':
+    'getList':{'purpose':
                    {
                     'default': '' ,
                       'recipeOverride': True,
@@ -128,7 +128,7 @@
                }
               },      
               
-    'setStackable':{'purpose':
+    'addToList':{'purpose':
                    {
                     'default': '' ,
                       'recipeOverride': True,
@@ -160,7 +160,7 @@
                     }
                 },
                 
-    'showStackable':{'purpose':
+    'showList':{'purpose':
                    {
                     'default': '' ,
                       'recipeOverride': True,

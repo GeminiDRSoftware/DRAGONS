@@ -88,6 +88,49 @@ class GEMINIPrimitives(GENERALPrimitives):
                                  rc.inputsAsStr())
         yield rc
     
+    def addToList(self, rc):
+        """
+        This primitive will update the lists of files to be stacked
+        that have the same observationID with the current inputs.
+        This file is cached between calls to reduce, thus allowing
+        for one-file-at-a-time processing.
+        
+        :param purpose: 
+        :type purpose: string, either: '' for regular image stacking, 
+                       or 'fringe' for fringe stacking.
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        try:
+            log.status('*STARTING* to update/create the list')
+            # Requesting for the reduction context to perform an update
+            # to the list cache file (or create it) with the current inputs.
+            purpose = rc["purpose"]
+            if purpose == None:
+                purpose = ""
+                
+            rc.rqStackUpdate(purpose= purpose)
+            # Writing the files in the list to disk if not all ready there
+            for ad in rc.getInputs(style='AD'):
+                if not os.path.exists(ad.filename):
+                    log.fullinfo('writing '+ad.filename+\
+                                 ' to disk', category='stack')
+                    ad.write(ad.filename)
+                    
+            log.status('*FINISHED* updating/creating the list')
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem writing list for files '+
+                                 rc.inputsAsStr(), category='stack')
+        yield rc
+   
     def addVAR(self,rc):
         """
         This primitive uses numpy to calculate the variance of each SCI frame
@@ -368,30 +411,11 @@ class GEMINIPrimitives(GENERALPrimitives):
                     print "get central"
                 else:
                     print "got local", cal
-        
-    def getProcessedBias(self,rc):
+     
+    def getList(self, rc):
         """
-        A primitive to search and return the appropriate calibration bias from
-        a server for the given inputs.
-        
-        """
-        rc.rqCal('bias', rc.getInputs(style='AD'))
-        yield rc
-        
-    def getProcessedFlat(self,rc):
-        """
-        A primitive to search and return the appropriate calibration flat from
-        a server for the given inputs.
-        
-        """
-        rc.rqCal('flat', rc.getInputs(style='AD'))
-        yield rc
-    
-    def getStackable(self, rc):
-        """
-        This primitive will check the files in the stack lists are on disk,
-        and then update the inputs list to include all members of the stack 
-        for stacking.
+        This primitive will check the files in the lists that  are on disk,
+        and then update the inputs list to include all members of the list.
         
         :param purpose: 
         :type purpose: string, either: '' for regular image stacking, 
@@ -412,7 +436,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
             for sid in sidset:
                 stacklist = rc.getStack(sid) #.filelist
-                log.fullinfo('Stack for stack id=%s' % sid)
+                log.fullinfo('List for stack id=%s' % sid)
                 for f in stacklist:
                     rc.reportOutput(f)
                     log.fullinfo('   '+os.path.basename(f))
@@ -422,7 +446,25 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem getting stack '+sid, category='stack')
+            raise PrimitiveError('Problem getting list '+sid, category='stack')
+        yield rc
+       
+    def getProcessedBias(self,rc):
+        """
+        A primitive to search and return the appropriate calibration bias from
+        a server for the given inputs.
+        
+        """
+        rc.rqCal('bias', rc.getInputs(style='AD'))
+        yield rc
+        
+    def getProcessedFlat(self,rc):
+        """
+        A primitive to search and return the appropriate calibration flat from
+        a server for the given inputs.
+        
+        """
+        rc.rqCal('flat', rc.getInputs(style='AD'))
         yield rc
     
     def measureIQ(self,rc):
@@ -488,49 +530,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.update(rc.localparms)
         yield rc   
        
-    def setStackable(self, rc):
-        """
-        This primitive will update the lists of files to be stacked
-        that have the same observationID with the current inputs.
-        This file is cached between calls to reduce, thus allowing
-        for one-file-at-a-time processing.
-        
-        :param purpose: 
-        :type purpose: string, either: '' for regular image stacking, 
-                       or 'fringe' for fringe stacking.
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
-        """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            log.status('*STARTING* to update/create the stack')
-            # Requesting for the reduction context to perform an update
-            # to the stack cache file (or create it) with the current inputs.
-            purpose = rc["purpose"]
-            if purpose == None:
-                purpose = ""
-                
-            rc.rqStackUpdate(purpose= purpose)
-            # Writing the files in the stack to disk if not all ready there
-            for ad in rc.getInputs(style='AD'):
-                if not os.path.exists(ad.filename):
-                    log.fullinfo('writing '+ad.filename+\
-                                 ' to disk', category='stack')
-                    ad.write(ad.filename)
-                    
-            log.status('*FINISHED* updating/creating the stack')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem writing stack for files '+
-                                 rc.inputsAsStr(), category='stack')
-        yield rc
-    
     def showCals(self, rc):
         """
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -577,6 +576,44 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.fullinfo('  '+inf.filename, category='inputs')  
         yield rc  
     showFiles = showInputs
+    
+    def showList(self, rc):
+        """
+        This primitive will log the list of files in the stacking list matching
+        the current inputs and 'purpose' value.  
+        
+        :param purpose: 
+        :type purpose: string, either: '' for regular image stacking, 
+                       or 'fringe' for fringe stacking.
+                       
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        sidset = set()
+        purpose = rc["purpose"]
+        if purpose == None:
+            purpose = ""
+        # print "pG710"
+        if purpose == "all":
+            allsids = rc.getStackIDs()
+            # print "pG713:", repr(allsids)
+            for sid in allsids:
+                sidset.add(sid)
+        else:   
+            for inp in rc.inputs:
+                sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
+        for sid in sidset:
+            stacklist = rc.getStack(sid) #.filelist
+            log.status('List for stack id=%s' % sid)
+            if len(stacklist)>0:
+                for f in stacklist:
+                    log.status('    '+os.path.basename(f))
+            else:
+                log.status("no datasets in list")
+        yield rc
 
     def showParameters(self, rc):
         """
@@ -610,44 +647,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
         yield rc  
          
-    def showStackable(self, rc):
-        """
-        This primitive will log the list of files in the stacking list matching
-        the current inputs and 'purpose' value.  
-        
-        :param purpose: 
-        :type purpose: string, either: '' for regular image stacking, 
-                       or 'fringe' for fringe stacking.
-                       
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
-        """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        sidset = set()
-        purpose = rc["purpose"]
-        if purpose == None:
-            purpose = ""
-        # print "pG710"
-        if purpose == "all":
-            allsids = rc.getStackIDs()
-            # print "pG713:", repr(allsids)
-            for sid in allsids:
-                sidset.add(sid)
-        else:   
-            for inp in rc.inputs:
-                sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
-        for sid in sidset:
-            stacklist = rc.getStack(sid) #.filelist
-            log.status('Stack for stack id=%s' % sid)
-            if len(stacklist)>0:
-                for f in stacklist:
-                    log.status('    '+os.path.basename(f))
-            else:
-                log.status("no datasets in list")
-        yield rc
-            
     def sleep(self, rc):
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         if rc['duration']:

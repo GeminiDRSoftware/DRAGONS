@@ -10,13 +10,13 @@ GEMINIPrimitives
 7. gem_produce_im_flat
 8. getProcessedBias
 9. getProcessedFlat
-10. getStackable
+10. getList
 11. logFilename
 12. measureIQ
 13. primtoolExclude
 14. printParameters
 15. printStackable
-16. setStackable
+16. addToList
 17. showCals
 18. showInputs
 19. showParams
