@@ -82,7 +82,7 @@ class DescriptorValue():
         # print "DV82:", repr(unit)
         if pytype == None and self.pytype == None:
             self.pytype = pytype = type(initval)
-        originalitval = initval
+        originalinitval = initval
         if isinstance(initval, DescriptorValue):
             initval = initval.dictVal
             
@@ -140,6 +140,16 @@ class DescriptorValue():
             self.format = None
         # do after object is set up
         self.val = self.isCollapsable() # note, tricky thing, doesn't return true, returns value
+    
+    
+    def __float__(self):
+        value = self.collapseDictVal()
+        return float(value)
+    
+    
+    def __int__(self):
+        value = self.collapseDictVal()
+        return int(value)
     
     
     def __str__(self):
@@ -218,25 +228,14 @@ class DescriptorValue():
             retstr =  str(self)
             self.format = curform
             return retstr
-        elif self.pytype == tuple:
-            return repr(self.isCollapsable())
         elif self.pytype != type(self.val):
-            return self.pytype(self)
+            return self.pytype(self.val)
         else:
-            return self.isCollapsable()
+            return self.val
     # alias
     forNumpy = forDB
-    def asPytype(self):
-        self.val = self.isCollapsable()
-        if self.val == None:
-            curform = self.format
-            retstr =  str(self)
-            return retstr
-        elif self.pytype != type(self.val):
-            return self.pytype(self)
-        else:
-            return self.isCollapsable()
-
+    asPytype = forDB
+            
     
     def info(self):
         dvstr = ""
@@ -272,23 +271,28 @@ descriptor value for: %(name)s
         self.val = value
         return value
     
-    
+        
     def overloaded(self, other):
         mytype = self.pytype
         if isinstance(other, DescriptorValue):
             other = other.asPytype()
+            #print "D282:", other, type(other), self.asPytype(), type(self.asPytype()), self.pytype
         othertype = type(other)
         
         if mytype == float and othertype == int:
             outtype = float
         elif mytype == int and othertype == float:
             outtype = float
+        elif mytype == str:
+            outtype = str
         else:
             # by default, we use our type
             outtype = self.pytype
         
         # convert other to the target type (possibly coerced)
-        other = outtype(other)
+        if mytype != str:
+            other = outtype(other)
+        
         myfuncname = whocalledme()
         
         if myfuncname =="__cmp__":
@@ -301,27 +305,54 @@ descriptor value for: %(name)s
 
         
         #print "D273:", myfuncname, "->", otherfuncname
-        if hasattr(other, otherfuncname):
+        if hasattr(self.asPytype(), myfuncname):
+            evalstr = "self.asPytype().%s(other)" % myfuncname
+            retval = eval(evalstr)
+            retval = outtype(retval)
+            return retval
+        elif hasattr(other, otherfuncname):
             evalstr = "other.%s(outtype(self))" % otherfuncname
             #print "D295:", evalstr
             retval = eval(evalstr)
-            if otherfuncname == "__cmp__":
-                if retval == 0:
-                    # we're equal
-                    return 0
-                else:
-                    return -1*retval
-            else:
-                return retval
+            return retval
 
         raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),otherfuncname))
     
-    def __float__(self):
-        value = self.collapseDictVal()
-        return float(value)
-    def __int__(self):
-        value = self.collapseDictVal()
-        return int(value)
+    
+    def overloadedCmp(self,other):
+        
+        if isinstance(other, DescriptorValue):
+            other = other.asPytype()
+        othertype = type(other)
+        
+        myfuncname = whocalledme()
+        
+        mine = self.asPytype()
+        
+        if hasattr(mine, "__eq__"):
+            try:
+                retval = mine.__eq__(other)
+                if retval == True:
+                    return 0
+            except:
+                pass
+        if hasattr(mine, "__gt__"):
+            try:
+                retval = mine.__gt__(other)
+                if retval:
+                    return 1
+                else:
+                    return -1
+            except:
+                pass
+        if hasattr(mine, "__cmp__"):
+            try:
+                retval = mine.__cmp__(other)
+                return retval
+            except:
+                pass
+        raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),myfuncname))
+    
     
 
     # overloaded operators (used for int and float)  
@@ -372,7 +403,7 @@ descriptor value for: %(name)s
     def __and__(self, other):
         return self.overloaded(other)
     def __cmp__(self, other):
-        return self.overloaded(other)
+        return self.overloadedCmp(other)
     def __lshift__(self, other):
         return self.overloaded(other)
     def __or__(self, other):
@@ -392,20 +423,13 @@ descriptor value for: %(name)s
     def __xor__(self, other):
         return self.overloaded(other)
     
-    #overloaded operators unique to float
-    #def __eq__(self, other):
-    #    return self.overloaded(other)
-    #def __ge__(self, other):
-    #    return self.overloaded(other)
     #def __gt__(self, other):
-    #    return self.overloaded(other)
-    #def __le__(self, other):
-    #    return self.overloaded(other)
+    #    return self.overloadedCmp(other)
     #def __lt__(self, other):
-    #    return self.overloaded(other)
-    #def __ne__(self, other):
-    #    return self.overloaded(other)
-        
+    #    return self.overloadedCmp(other)
+    #def __eq__(self, other):
+    #    return self.overloadedCmp(other)
+    
 
 # calculatorIndexREMask used to identify descriptorIndex files
 # these files need to set descriptorIndex to a dictionary value

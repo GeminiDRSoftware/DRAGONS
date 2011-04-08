@@ -4,8 +4,9 @@
 
 class Error(Exception):
     """Base class for exceptions in this module."""
+    message = None
     def __init__(self, message=None):
-        if message is not None:
+        if message != None:
             self.message = message
             
     def __str__(self):
