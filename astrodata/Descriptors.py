@@ -221,20 +221,26 @@ class DescriptorValue():
 
     
     def forDB(self):
+        oldformat = self.format
+        self.format = "db"
+        val = self.asPytype
+        self.format = oldformat
+        if type(val) == tuple:
+            val = str(val)
+        return val
+    def asPytype(self):
         self.val = self.isCollapsable()
         if self.val == None:
             curform = self.format
-            self.format = "db"
             retstr =  str(self)
-            self.format = curform
             return retstr
         elif self.pytype != type(self.val):
             return self.pytype(self.val)
         else:
             return self.val
+    
     # alias
-    forNumpy = forDB
-    asPytype = forDB
+    forNumpy = asPytype
             
     
     def info(self):
@@ -273,72 +279,114 @@ descriptor value for: %(name)s
     
         
     def overloaded(self, other):
-        mytype = self.pytype
-        if isinstance(other, DescriptorValue):
-            other = other.asPytype()
-            #print "D282:", other, type(other), self.asPytype(), type(self.asPytype()), self.pytype
-        othertype = type(other)
+        val = self.isCollapsable()
         
-        if mytype == float and othertype == int:
-            outtype = float
-        elif mytype == int and othertype == float:
-            outtype = float
-        elif mytype == str:
-            outtype = str
+        if val == None:
+            raise Errors.DescriptorValueTypeError("DescriptorValue contains complex result (differs for different extension) and cannot be used as a simple %s" % str(self.pytype))
         else:
-            # by default, we use our type
-            outtype = self.pytype
-        
-        # convert other to the target type (possibly coerced)
-        if mytype != str:
-            other = outtype(other)
-        
+            if type(val) != self.pytype:
+                val = self.asPytype()
         myfuncname = whocalledme()
         
-        if myfuncname =="__cmp__":
-            otherfuncname = "__cmp__"
+        if isinstance(other, DescriptorValue):
+            other = other.asPytype()
+
+        if hasattr(val, myfuncname):
+            try:
+                
+                op = None
+                hasop = eval('hasattr(self.%s,"operation")' % myfuncname)
+                if hasop: 
+                    op = eval("self.%s.operation" % myfuncname)
+                
+                if op:
+                    retval = eval(op)
+                else:
+                    print "D306:",myfuncname
+                    raise "problem"
+                    retval = eval("val.%s(other)" % myfuncname)
+                return retval
+            except TypeError, e:
+                # print "D296: I'm here"
+                raise Errors.DescriptorValueTypeError(str(e))
         else:
-            if myfuncname[0:3] == "__r" and myfuncname != "__rshift__":
-                otherfuncname = "__" + myfuncname[3:]
-            else:
-                otherfuncname = "__r"+myfuncname[2:]
-
-        
-        #print "D273:", myfuncname, "->", otherfuncname
-        if hasattr(self.asPytype(), myfuncname):
-            evalstr = "self.asPytype().%s(other)" % myfuncname
-            retval = eval(evalstr)
-            retval = outtype(retval)
-            return retval
-        elif hasattr(other, otherfuncname):
-            evalstr = "other.%s(outtype(self))" % otherfuncname
-            #print "D295:", evalstr
-            retval = eval(evalstr)
-            return retval
-
-        raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),otherfuncname))
+            raise Errors.DescriptorValueTypeError("Unsupported operand, %s, for types %s and %s"
+                        % (myfuncname, str(self.pytype), str(type(other))))
+        print "DISASTERDISASTERDISASTERDISASTERDISASTERDISASTERDISASTER"
+#        mytype = self.pytype
+#        if isinstance(other, DescriptorValue):
+#            other = other.asPytype()
+#            #print "D282:", other, type(other), self.asPytype(), type(self.asPytype()), self.pytype
+#        othertype = type(other)
+#        
+#        if mytype == float and othertype == int:
+#            outtype = float
+#        elif mytype == int and othertype == float:
+#            outtype = float
+#        elif mytype == str:
+#            outtype = str
+#        else:
+#            # by default, we use our type
+#            outtype = self.pytype
+#        
+#        # convert other to the target type (possibly coerced)
+#        if mytype != str:
+#            other = outtype(other)
+#        
+#        myfuncname = whocalledme()
+#        
+#        if myfuncname =="__cmp__":
+#            otherfuncname = "__cmp__"
+#        else:
+#            if myfuncname[0:3] == "__r" and myfuncname != "__rshift__":
+#                otherfuncname = "__" + myfuncname[3:]
+#            else:
+#                otherfuncname = "__r"+myfuncname[2:]
+#
+#        
+#        #print "D273:", myfuncname, "->", otherfuncname
+#        if hasattr(self.asPytype(), myfuncname):
+#            evalstr = "self.asPytype().%s(other)" % myfuncname
+#            retval = eval(evalstr)
+#            retval = outtype(retval)
+#            return retval
+#        elif hasattr(other, otherfuncname):
+#            evalstr = "other.%s(outtype(self))" % otherfuncname
+#            #print "D295:", evalstr
+#            retval = eval(evalstr)
+#            return retval
+#
+#        raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),otherfuncname))
     
     
     def overloadedCmp(self,other):
+        val = self.isCollapsable()
+        
+        if val == None:
+            raise Errors.DescriptorValueTypeError("DescriptorValue contains complex result (differs for different extension) and cannot be used as a simple %s" % str(self.pytype))
+        else:
+            if type(val) != self.pytype:
+                val = self.asPytype()
+                
+        #myfuncname = whocalledme()
         
         if isinstance(other, DescriptorValue):
             other = other.asPytype()
+
         othertype = type(other)
-        
-        myfuncname = whocalledme()
         
         mine = self.asPytype()
         
         if hasattr(mine, "__eq__"):
             try:
-                retval = mine.__eq__(other)
+                retval = eval ("mine == other")
                 if retval == True:
                     return 0
             except:
                 pass
         if hasattr(mine, "__gt__"):
             try:
-                retval = mine.__gt__(other)
+                retval = eval ("mine > other")
                 if retval:
                     return 1
                 else:
@@ -347,7 +395,7 @@ descriptor value for: %(name)s
                 pass
         if hasattr(mine, "__cmp__"):
             try:
-                retval = mine.__cmp__(other)
+                retval = eval ("cmp(mine,other)")
                 return retval
             except:
                 pass
@@ -358,78 +406,115 @@ descriptor value for: %(name)s
     # overloaded operators (used for int and float)  
     def __add__(self, other):
         return self.overloaded(other)
+    __add__.operation = "val + other"
     def __div__(self, other):
         return self.overloaded(other)
+    __div__.operation = "val / other"
     def __floordiv__(self, other):
         return self.overloaded(other)
+    __floordiv__.operation = "val // other"
     def __rfloordiv__(self, other):
         return self.overloaded(other)
+    __rfloordiv__.operation = "other // val"
     def __divmod__(self, other):
         return self.overloaded(other)
+    __divmod__.operation = "divmod(val, other)"
+    
     def __mod__(self, other):
         return self.overloaded(other)
+    __mod__.operation = "val % other"
     def __mul__(self, other):
         return self.overloaded(other)
+    __mul__.operation = "val * other"
     def __pow__(self, other):
         return self.overloaded(other)
+    __pow__.operation = "pow(val,other)"
     def __radd__(self, other):
         return self.overloaded(other)
+    __radd__.operation = "other + val"
     def __rdiv__(self, other):
         return self.overloaded(other)
+    __rdiv__.operation = "other / val"
     def __rdivmod__(self, other):
         return self.overloaded(other)
+    __rdivmod__.operation = "divmod(other, val)"
     def __rmul__(self, other):
         return self.overloaded(other)
+    __rmul__.operation = "other * val"
     def __rdiv__(self, other):
         return self.overloaded(other)
+    __rdiv__.operation = "other / val"
     def __rdivmod__(self, other):
         return self.overloaded(other)
+    __rdivmod__.operation = "divmod(other, val)"
     def __rmod__(self, other):
         return self.overloaded(other)
+    __rmod__.operation = "other % val"
     def __rmul__(self, other):
         return self.overloaded(other)
+    __rmul__.operation = "other * val"
     def __rpow__(self, other):
         return self.overloaded(other)
+    __rpow__.operation = "pow(other, val)"
     def __rsub__(self, other):
         return self.overloaded(other)
+    __rsub__.operation = "other - val"
     def __rtruediv__(self, other):
         return self.overloaded(other)
+    __rtruediv__.operation = "other / val"
     def __sub__(self, other):
         return self.overloaded(other)
+    __sub__.operation = "val - other"
     def __truediv__(self, other):
         return self.overloaded(other)
+    __truediv__.operation = "val / other"
     
     # overloaded operators unique to int
     def __and__(self, other):
         return self.overloaded(other)
+    __and__.operation = "val & other"
     def __cmp__(self, other):
         return self.overloadedCmp(other)
+    #__cmp__.operation = "cmp(val, other)"
+    
     def __lshift__(self, other):
         return self.overloaded(other)
+    __lshift__.operation = "val << other"
     def __or__(self, other):
         return self.overloaded(other)
+    __or__.operation = "val | other"
     def __rand__(self, other):
         return self.overloaded(other)
+    __rand__.operation = "other & val"
     def __rlshift__(self, other):
         return self.overloaded(other)
+    __rlshift__.operation = "other << val"
     def __ror__(self, other):
         return self.overloaded(other)
+    __ror__.operation  = "other | val"
     def __rrshift__(self, other):
         return self.overloaded(other)
+    __rrshift__.operation = "other >> val"
     def __rshift__(self, other):
         return self.overloaded(other)
+    __rshift__.operation  = "val >> other" 
     def __rxor__(self, other):
         return self.overloaded(other)
+    __rxor__.operation = "other ^ val"
     def __xor__(self, other):
         return self.overloaded(other)
+    __xor__.operation = "val ^ other"
     
     #def __gt__(self, other):
-    #    return self.overloadedCmp(other)
-    #def __lt__(self, other):
-    #    return self.overloadedCmp(other)
-    #def __eq__(self, other):
-    #    return self.overloadedCmp(other)
-    
+#        return self.overloaded(other)
+#    __gt__.operation = "val > other" 
+#    def __lt__(self, other):
+#        return self.overloaded(other)
+#    __lt__.operation = "val < other"
+#    def __eq__(self, other):
+#        return self.overloaded(other)
+#    __eq__.operation = "val == other"
+#    
 
 # calculatorIndexREMask used to identify descriptorIndex files
 # these files need to set descriptorIndex to a dictionary value

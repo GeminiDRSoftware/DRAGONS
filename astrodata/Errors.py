@@ -38,7 +38,9 @@ class DescriptorTypeError(Error):
     value for a given AstroData Type i.e., dispersion_axis for IMAGE data
     """
     message = "Unable to return a value for data of this AstroData Type"
-
+class DescriptorValueTypeError(Error):
+    pass
+    
 class EmptyKeyError(Error):
     """
     Exception raised for errors when a PHU keyword was found to but was empty
