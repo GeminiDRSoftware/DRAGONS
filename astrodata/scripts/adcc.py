@@ -265,10 +265,10 @@ def get_version():
 # begin negotiated startup... we won't run if another adcc owns this directory
 
 # could be done later or in lazy manner, but for now ensure this is present
-from astrodata.FitsStorageFeatures import FitsStorageSetup
-fss = FitsStorageSetup() # note: uses current working directory!!!
-fss.setup()
-
+if False: # future feature
+    from astrodata.FitsStorageFeatures import FitsStorageSetup
+    fss = FitsStorageSetup() # note: uses current working directory!!!
+    fss.setup()
 racefile = ".adcc/adccinfo.py"
 # caller lock file name
 clfn = options.adccsrn
