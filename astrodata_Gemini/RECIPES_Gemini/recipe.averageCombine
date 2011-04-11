@@ -6,4 +6,4 @@
 #showInputs
 getList
 #showInputs
-combine(method="average", suffix="_avgcomb")
+stackFrames(method="average", suffix="_avgstack")
