@@ -118,7 +118,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             for ad in rc.getInputs(style='AD'):
                 if not os.path.exists(ad.filename):
                     log.fullinfo('writing '+ad.filename+\
-                                 ' to disk', category='stack')
+                                 ' to disk', category='list')
                     ad.write(ad.filename)
                     
             log.status('*FINISHED* updating/creating the list')
@@ -128,7 +128,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # with message.
             log.critical(repr(sys.exc_info()[1]))
             raise PrimitiveError('Problem writing list for files '+
-                                 rc.inputsAsStr(), category='stack')
+                                 rc.inputsAsStr(), category='list')
         yield rc
    
     def addVAR(self,rc):
@@ -446,7 +446,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem getting list '+sid, category='stack')
+            raise PrimitiveError('Problem getting list '+sid, category='list')
         yield rc
        
     def getProcessedBias(self,rc):
