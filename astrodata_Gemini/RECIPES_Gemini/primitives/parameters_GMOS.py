@@ -7,33 +7,6 @@
         'userOverride'  : False,
         },
     },
-'subtractBias':{
-    'suffix':{
-        # String to be post pended to the output of subtractBias
-        'default'       : '_biasCorrected',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  : False,
-        },
-    'fl_over':{
-        'default'       : False,
-        'recipeOverride': True,
-        'type'          : 'bool',
-        'userOverride'  : True,
-        },
-    'fl_trim':{
-        'default'       : False,
-        'recipeOverride': False,
-        'type'          : 'bool',
-        'userOverride'  : False,
-        },
-    'fl_vardq':{
-        'default'       : True,
-        'recipeOverride': True,
-        'type'          : 'bool',
-        'userOverride'  : True    
-         },
-    },
 'mosaicDetectors':{
     'suffix':{
         # String to be post pended to the output of mosaicDetectors
@@ -150,6 +123,33 @@
         'type'          : 'bool',
         'userOverride'  : True,
         },
+    },
+'subtractBias':{
+    'suffix':{
+        # String to be post pended to the output of subtractBias
+        'default'       : '_biasCorrected',
+        'recipeOverride': True,
+        'type'          : 'str',
+        'userOverride'  : False,
+        },
+    'fl_over':{
+        'default'       : False,
+        'recipeOverride': True,
+        'type'          : 'bool',
+        'userOverride'  : True,
+        },
+    'fl_trim':{
+        'default'       : False,
+        'recipeOverride': False,
+        'type'          : 'bool',
+        'userOverride'  : False,
+        },
+    'fl_vardq':{
+        'default'       : True,
+        'recipeOverride': True,
+        'type'          : 'bool',
+        'userOverride'  : True    
+         },
     },
 'validateInstrumentData':{
     'suffix':{
