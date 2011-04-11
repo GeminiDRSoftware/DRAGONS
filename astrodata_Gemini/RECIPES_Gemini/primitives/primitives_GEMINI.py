@@ -436,10 +436,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
             for sid in sidset:
                 stacklist = rc.getStack(sid) #.filelist
-                log.fullinfo('List for stack id=%s' % sid)
+                log.fullinfo('List for stack id=%s' % sid, category='list')
                 for f in stacklist:
                     rc.reportOutput(f)
-                    log.fullinfo('   '+os.path.basename(f))
+                    log.fullinfo('   '+os.path.basename(f), category='list')
             yield rc
         except:
             # logging the exact message from the actual exception that was 
@@ -607,12 +607,12 @@ class GEMINIPrimitives(GENERALPrimitives):
                 sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
         for sid in sidset:
             stacklist = rc.getStack(sid) #.filelist
-            log.status('List for stack id=%s' % sid)
+            log.status('List for stack id=%s' % sid, category='list')
             if len(stacklist)>0:
                 for f in stacklist:
-                    log.status('    '+os.path.basename(f))
+                    log.status('    '+os.path.basename(f), category='list')
             else:
-                log.status("no datasets in list")
+                log.status("no datasets in list", category='list')
         yield rc
 
     def showParameters(self, rc):
