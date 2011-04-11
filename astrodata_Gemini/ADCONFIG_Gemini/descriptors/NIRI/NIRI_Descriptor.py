@@ -58,8 +58,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         if 'IMAGE' not in dataset.types:
             # Get the focal plane mask and disperser values using the
             # appropriate descriptors
-            focal_plane_mask = str(dataset.focal_plane_mask())
-            disperser = str(dataset.disperser(stripID=True))
+            focal_plane_mask = dataset.focal_plane_mask()
+            disperser = dataset.disperser(stripID=True)
             if focal_plane_mask is None or disperser is None:
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
@@ -351,7 +351,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # using the appropriate descriptors
         coadds = dataset.coadds()
         gain = dataset.gain()
-        well_depth_setting = str(dataset.well_depth_setting())
+        well_depth_setting = dataset.well_depth_setting()
         if coadds is None or gain is None or well_depth_setting is None:
             # The descriptor functions return None if a value cannot be found 
             # and stores the exception info. Re-raise the exception. It will be
