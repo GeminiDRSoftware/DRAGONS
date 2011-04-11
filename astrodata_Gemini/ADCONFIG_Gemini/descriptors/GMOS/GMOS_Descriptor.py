@@ -469,7 +469,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def pixel_scale(self, dataset, **args):
         # Get the instrument value and the binning of the y-axis value using
         # the appropriate descriptors
-        instrument = str(dataset.instrument())
+        instrument = dataset.instrument()
         detector_y_bin = dataset.detector_y_bin()
         if instrument is None or detector_y_bin is None:
             # The descriptor functions return None if a value cannot be found
