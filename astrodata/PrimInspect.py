@@ -301,7 +301,11 @@ class PrimInspect():
         else:
             if len(primlist)>0:
                 self.show("${BLUE}%s(Following Are Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
-        maxlenprim = min(16, len(max(primlist, key=len)))
+        
+        if len(primlist) == 0:
+            maxlenprim = 0
+        else:
+            maxlenprim = min(16, len(max(primlist, key=len)))
         for prim in primlist:
             i+=1
             hide = self.hides(primsetname, prim, instance = instance)
