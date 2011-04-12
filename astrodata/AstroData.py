@@ -1702,6 +1702,29 @@ integrates other functionality.
         # Returning the current time for logging if desired
         return self.tlm
     
+    def deepCopyAD(self):
+        """
+        This function is to be used to deepcopy an astrodata instance such that
+        private member variable __origFilename and _filename are transfered to 
+        the copied new instance.  
+        The completely copy of the input object will be returned once created.
+        
+        This approach to copying an ad instance avoids the problem of those 
+        private member variables not being copied during a standard deepcopy.
+        
+        ex. adOut = ad.deepCopyAD()
+        """
+        # deep copying instance to creat new one
+        adOut = deepcopy(self)
+        # Setting new objects origFilename to input one's
+        adOut.__origFilename = self.__origFilename
+        # ditto for the filename
+        adOut.filename = self.filename
+        
+        # return the copied object
+        return adOut
+        
+    
     def storeOriginalName(self):
         """
         This function will add the key 'ORIGNAME' to PHU of an astrodata object 
