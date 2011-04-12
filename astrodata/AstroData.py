@@ -506,9 +506,6 @@ integrates other functionality.
         adReturn._filename = self._filename
         # Return fully copied AD instance
         return adReturn
-            
-        
-        # print "AD298: copy?"
     
     def getFilename(self):
         return self._filename
