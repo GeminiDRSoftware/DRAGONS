@@ -1903,7 +1903,9 @@ def prepOutput(inputAry = None, name = None, clobber = False):
     newhdulist = pyfits.HDUList(outlist)
     
     retgd = AstroData(newhdulist, mode = "update")
-
+    # Ensuring the prepared output has the __origFilename private variable
+    retgd._AstroData__origFilename = inputAry._AstroData__origFilename
+    
     if name != None:
         if os.path.exists(name):
             if clobber == False:
