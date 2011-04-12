@@ -33,12 +33,12 @@ options.astrotypes = []
 options.args = args
 for arg in args:
     if os.path.exists(arg):
-        options.datasets.append( arg )
+        options.datasets.append(arg)
     else:
-        options.astrotypes.append( arg )
+        options.astrotypes.append(arg)
 
 #Instantiate PrimInspectObject
-pin = PrimInspect( options )
+pin = PrimInspect(options)
 
 #Proceed to show Primitives
 pin.datasets = options.datasets
@@ -46,32 +46,32 @@ pin.astrotypes = options.astrotypes
 pin.buildDictionaries()
 primsets = pin.primsdict.keys()
 
-primsets.sort( pin.primsetcmp )
+primsets.sort(pin.primsetcmp)
 
 names = []
 if options.showSetsOnly:
-    pin.show( "\n\n\t\t\t\t${BOLD}PRIMITIVE SETS${NORMAL}" )
-    pin.show( "-"*80 ) 
+    pin.show("\n\n\t\t\t\t${BOLD}PRIMITIVE SETS${NORMAL}")
+    pin.show("-"*80) 
     count = 1
 for primset in primsets:
     nam = primset.__class__.__name__
     if nam in names:
         continue
     else:
-        names.append( nam )    
+        names.append(nam)    
     if options.showSetsOnly:
         cl = pin.name2class[ nam ]
-        pin.show( "\n\n%2d. ${BOLD}%s${NORMAL}\n" %( count,cl.astrotype ) )
-        primlist = pin.primsdictKBN[ nam ]
-        pin.showSetInfo( nam, cl, primlist ) 
+        pin.show("\n\n%2d. ${BOLD}%s${NORMAL}\n" %(count,cl.astrotype))
+        primlist = pin.primsdictKBN[nam]
+        pin.showSetInfo(nam, cl, primlist) 
         count+=1
     else:
-        pin.showPrims( nam )
+        pin.showPrims(nam)
 if options.showSetsOnly:
-    pin.show( "\n\n" )
-    pin.show( "-"*80 )
+    pin.show("\n\n") 
+    pin.show("-"*80)
 else:
-    pin.show( "_"*80 )
+    pin.show("_"*80)
 pin.close_fhandler()
 
 
