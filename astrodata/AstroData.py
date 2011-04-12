@@ -491,15 +491,21 @@ integrates other functionality.
         # pyfits throws exception on deepcopy
         #self.hdulist = deepcopy(self.hdulist, memo)
         lohdus = []
+        # loop through headers and copy to a new list
         for hdu in self.hdulist:
             nhdu = copy(hdu)
             #print "AD496:", repr(hdu.header), id(hdu.data)
             nhdu.header = nhdu.header.copy()
             lohdus.append(nhdu)
-        
+        # Load copied list of headers into pyfits
         hdulist = pyfits.HDUList(lohdus)
-        
-        return AstroData(hdulist)
+        # loading the pyfits hdulist into AstroData
+        adReturn = AstroData(hdulist)
+        # Copying over private variables over to copied object
+        adReturn.__origFilename = self.__origFilename
+        adReturn._filename = self._filename
+        # Return fully copied AD instance
+        return adReturn
             
         
         # print "AD298: copy?"
@@ -1700,30 +1706,7 @@ integrates other functionality.
              self.phuSetKeyValue('GEM-TLM',self.tlm,'UT Last modification with GEMINI')     
         
         # Returning the current time for logging if desired
-        return self.tlm
-    
-    def deepCopyAD(self):
-        """
-        This function is to be used to deepcopy an astrodata instance such that
-        private member variable __origFilename and _filename are transfered to 
-        the copied new instance.  
-        The completely copy of the input object will be returned once created.
-        
-        This approach to copying an ad instance avoids the problem of those 
-        private member variables not being copied during a standard deepcopy.
-        
-        ex. adOut = ad.deepCopyAD()
-        """
-        # deep copying instance to creat new one
-        adOut = deepcopy(self)
-        # Setting new objects origFilename to input one's
-        adOut.__origFilename = self.__origFilename
-        # ditto for the filename
-        adOut.filename = self.filename
-        
-        # return the copied object
-        return adOut
-        
+        return self.tlm        
     
     def storeOriginalName(self):
         """
