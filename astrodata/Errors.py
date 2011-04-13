@@ -76,6 +76,12 @@ class InvalidValueError(Error):
     """
     message = "Keyword value outside allowed range"
 
+class ManagersError(Error):
+    """
+    For general Exceptions raised within the managers.py toolbox
+    """
+    message = 'Exception Raised in managers toolbox'
+
 class TableKeyError(Error):
     """
     Exception raised for instances when a key cannot be matched in a lookup
