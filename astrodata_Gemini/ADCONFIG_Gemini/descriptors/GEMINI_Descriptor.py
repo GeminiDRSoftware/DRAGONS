@@ -333,8 +333,6 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
-        if pretty:
-            stripID = True
         if stripID:
             # Strip the component ID from the two filter name values
             filter1 = string.removeComponentID(filter1)
@@ -344,9 +342,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         ret_filter_name = {}
         if pretty:
             # Remove any filters that have the value 'open' or 'Open'
-            if ('open' or 'Open') not in filter1:
+            if ('open' and 'Open') not in filter1:
                 ret_filter_name.update({key_filter1:str(filter1)})
-            if ('open' or 'Open') not in filter2:
+            if ('open' and 'Open') not in filter2:
                 ret_filter_name.update({key_filter2:str(filter2)})
             if len(ret_filter_name) == 0:
                 ret_filter_name = 'open'
