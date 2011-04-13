@@ -495,6 +495,9 @@ class CLManager(object):
         """This is an internally used function to add the 'OBSMODE' key to the 
            inputs for use by IRAF routines in the GMOS package.
            Modes are: (IMAGE|IFU|MOS|LONGSLIT)
+           
+           :param ad: AstroData instance to find mode of
+           :type ad: AstroData instance
         """
         types = ad.getTypes()
         if 'GMOS' in types:
