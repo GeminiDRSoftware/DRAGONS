@@ -358,8 +358,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling calibrate.overscanSubtract function')
             
-            adOutputs = calibrate.overscan_subtract(adInputs=rc.getInputs(style='AD'), 
-                                        fl_trim=rc['fl_trim'], biassec=rc['biassec'], 
+            adOutputs = calibrate.overscan_subtract_gmos(
+                                        adInputs=rc.getInputs(style='AD'), 
+                                        fl_trim=rc['fl_trim'], 
+                                        biassec=rc['biassec'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'])           
             
             log.status('calibrate.overscanSubtract completed successfully')
