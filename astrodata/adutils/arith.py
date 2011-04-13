@@ -112,8 +112,7 @@ def div(numerator, denominator):
                 raise
             
     # Check to see if the denominator is of type AstroData
-    elif isinstance(den,astrodata.AstroData) or \
-    isinstance(den,astrodata.AstroData.AstroData):
+    elif isinstance(den, AstroData):
         # Loop through the SCI extensions 
         for sci in num['SCI']:
             # Retrieving the version of this extension
@@ -294,8 +293,7 @@ def mult(inputA, inputB):
                 raise 
     
     # Check to see if the denominator is of type AstroData
-    elif isinstance(inB, astrodata.AstroData) or \
-    isinstance(inB, astrodata.AstroData.AstroData):
+    elif isinstance(inB, AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -442,8 +440,7 @@ def add(inputA, inputB):
             except:
                 raise
     # Check to see if the denominator is of type AstroData
-    elif isinstance(inB, astrodata.AstroData) or \
-    isinstance(inB, astrodata.AstroData.AstroData):
+    elif isinstance(inB, AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -575,8 +572,7 @@ def sub(inputA, inputB):
                 raise
             
     # Check to see if the denominator is of type AstroData
-    elif isinstance(inB, astrodata.AstroData) or \
-    isinstance(inB,astrodata.AstroData.AstroData):
+    elif isinstance(inB, AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
