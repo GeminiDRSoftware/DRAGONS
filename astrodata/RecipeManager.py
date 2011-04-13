@@ -522,7 +522,7 @@ class ReductionContext(dict):
          
     def getOutputs(self, style=None):
         if style==None:
-            return outputs
+            return self.outputs
         elif style == "AD": #@@HARDCODED: means "as AstroData instances"
             retl = []
             for inp in self.outputs['standard']:
