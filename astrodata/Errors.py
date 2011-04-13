@@ -16,7 +16,12 @@ class Error(Exception):
         return self.__class__.__name__+"(%s)" % repr(self.message)
 
 # The following exceptions are listed alphabetically
-
+class ArithError(Error):
+    """
+    For general Exceptions raised within the arith.py toolbox
+    """
+    message = 'Exception Raised in arith toolbox'
+    
 class CalcError(Error):
     """
     Exception raised for instances when the keyword required for calculation
