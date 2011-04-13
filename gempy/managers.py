@@ -522,6 +522,9 @@ class CLManager(object):
     def obsmodeDel(self, ad):
         """This is an internally used function to delete the 'OBSMODE' key from
            the outputs from IRAF routines in the GMOS package.
+           
+           :param ad: AstroData instance to find mode of
+           :type ad: AstroData instance
         """
         if 'GMOS' in ad.getTypes():
             del ad.getPHU().header['OBSMODE']
