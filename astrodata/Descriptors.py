@@ -223,7 +223,7 @@ class DescriptorValue():
     def forDB(self):
         oldformat = self.format
         self.format = "db"
-        val = self.asPytype
+        val = self.asPytype()
         self.format = oldformat
         if type(val) == tuple:
             val = str(val)
