@@ -560,6 +560,58 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     ptusage_showCals='Used to show calibrations currently in cache for inputs.'
 
+    def scaleFringeToScience(self,rc):
+        """
+        This primitive will scale the fringes to their matching science data
+        in the inputs.
+        The primitive getProcessedFringe must have been ran prior to this in 
+        order to find and load the matching fringes into memory.
+        
+        :param suffix: Value to be post pended onto each input name(s) to 
+                       create the output name(s).
+        :type suffix: string
+        
+        :param statScale: Use statistics to calculate the scale values?
+        :type statScale: Python boolean (True/False)
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        try:
+            log.status('*STARTING* to scale the fringe frames')
+            
+            log.debug('Calling calibrate.scale_fringe_to_science function')
+            processedFringes = []
+            sciInputs=rc.getInputs(style='AD', category='standard')##################DOESN"T EXIST YET!!!!!!! 
+            for inp in sciInputs:
+                processedFringes.append(AstroData(rc.getCal(adOne,'fringe')))            
+            
+            scaledFriges = calibrate.scale_fringe_to_science(
+                                              fringes=processedFringes,
+                                              sciInputs=sciInputs,
+                                              statScale=rc['statScale'],
+                                              suffix=rc['suffix']
+                                              )
+            
+            log.status('calibrate.scale_fringe_to_science completed successfully')
+              
+            # Reporting the scaled fringes and original sci inputs(as they 
+            # weren't changed at all in this prim
+            rc.reportOutput(scaledFriges, category='fringe')   ##################DOESN"T EXIST YET!!!!!!!        
+            rc.reportOutput(sciInputs, category='standard')   ##################DOESN"T EXIST YET!!!!!!!        
+            
+            log.status('*FINISHED* scaling the fringe frames')
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise 
+        yield rc
+        
     def showInputs(self, rc):
         """
         A simple primitive to show the filenames for the current inputs to 
@@ -875,11 +927,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             processedDark = deepcopy(adOne)
             processedDark.filename = 'TEMPNAMEforDARK.fits'
             processedDark.phuSetKeyValue('ORIGNAME','TEMPNAMEforDARK.fits')
-            ####################################################################
-            
-            # Taking care of the case where there was no, or an invalid flat 
-            if processedDark.countExts('SCI')==0:
-                raise PrimitiveError('Invalid processed dark retrieved')               
+            ####################################################################              
             
             log.debug('Calling calibrate.subtract_dark function')
             
@@ -894,6 +942,65 @@ class GEMINIPrimitives(GENERALPrimitives):
             rc.reportOutput(adOutputs)   
 
             log.status('*FINISHED* subtracting the dark from the inputs')  
+        except:
+            # logging the exact message from the actual exception that was 
+            # raised in the try block. Then raising a general PrimitiveError 
+            # with message.
+            log.critical(repr(sys.exc_info()[1]))
+            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+        yield rc
+        
+    def subtractFringe(self,rc):
+        """
+        This primitive will subtract each SCI extension of the inputs by those
+        of the corresponding fringe.  If the inputs contain VAR or DQ frames,
+        those will also be updated accordingly due to the subtraction on the 
+        data.
+    
+        This is all conducted in pure Python through the arith "toolbox" of 
+        astrodata. 
+        
+        It is currently assumed that the same fringe file will be applied to all
+        input images.
+        
+        :param suffix: Value to be post pended onto each input name(s) to 
+                         create the output name(s).
+        :type suffix: string
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        try:
+            log.status('*STARTING* subtract the fringe from the inputs')
+            
+            # Retrieving the appropriate fringe for the first of the inputs
+            adOne = rc.getInputs(style='AD')[0]
+            #fringes=rc.getInputs(style='AD', category='fringe')##################DOESN"T EXIST YET!!!!!!! 
+
+            ###################BULL CRAP FOR TESTING ########################## 
+            from copy import deepcopy
+            fringes = deepcopy(adOne)
+            fringes.filename = 'TEMPNAMEforFRINGE.fits'
+            fringes.phuSetKeyValue('ORIGNAME','TEMPNAMEforFRINGE.fits')
+            ####################################################################         
+            
+            log.debug('Calling calibrate.subtract_dark function')
+            
+            adOutputs = calibrate.subtract_fringe(
+                                            adInputs=rc.getInputs(style='AD'),     
+                                         fringes=fringes, 
+                                         suffix=rc['suffix'])           
+            
+            log.status('calibrate.subtract_fringe completed successfully')
+              
+            # Reporting the updated files to the reduction context
+            rc.reportOutput(scaledFriges, category='fringe')   ##################DOESN"T EXIST YET!!!!!!!        
+            rc.reportOutput(adOutputs, category='standard')   ##################DOESN"T EXIST YET!!!!!!!  
+
+            log.status('*FINISHED* subtracting the fringe from the inputs')  
         except:
             # logging the exact message from the actual exception that was 
             # raised in the try block. Then raising a general PrimitiveError 

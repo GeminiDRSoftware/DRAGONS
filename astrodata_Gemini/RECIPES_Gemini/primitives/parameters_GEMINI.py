@@ -122,6 +122,21 @@
         'note2'         : "pause doesn't need a 'message' parameter",
         },
     },
+ 'scaleFringeToScience':{
+    'suffix':{
+        # String to be post pended to the output of stackFrames
+        'default'       : '_scaled',
+        'recipeOverride': True,
+        'type'          : 'str',
+        'userOverride'  : False,
+        },
+    'statScale':{
+        'default'       : True,
+        'recipeOverride': True,
+        'type'          : 'bool',
+        'userOverride'  : True,
+        },
+    },
  'showList':{
     'purpose':{
         'default'       : '',
