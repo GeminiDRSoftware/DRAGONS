@@ -217,7 +217,7 @@ def mult(inputA, inputB):
     @type inputA: a MEF or single extension fits file in the form of an 
                   AstroData instance
     
-    @param inputB: inputB to multiply the inputA by
+    @param inputB: input to multiply the inputA by
     @type inputB:   a MEF of SCI, VAR and DQ frames in the form of an AstroData 
                     instance, a float list or a single float (list must be 
                     in order of the SCI extension EXTVERs) OR a dictionary 
@@ -396,7 +396,7 @@ def add(inputA, inputB):
     @type inputA: a MEF or single extension fits file in the form of an 
                   AstroData instance
     
-    @param inputB: inputB to add to the inputA 
+    @param inputB: input to add to the inputA 
     @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData 
                   instance or a float integer 
     #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO???
