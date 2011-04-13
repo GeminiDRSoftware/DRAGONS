@@ -9,6 +9,7 @@ from astrodata.AstroData import AstroData
 from astrodata.ConfigSpace import lookupPath
 from astrodata.Errors import ScienceError
 from gempy import geminiTools as gemt
+from gempy import managers as man
 
 def add_mdf(adInputs=None, MDFs=None, outNames=None, suffix=None):
     """
@@ -39,7 +40,7 @@ def add_mdf(adInputs=None, MDFs=None, outNames=None, suffix=None):
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                                             funcName='add_mdf')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -72,9 +73,6 @@ def add_mdf(adInputs=None, MDFs=None, outNames=None, suffix=None):
                 # Making a deepcopy of the input to work on
                 # (ie. a truly new+different object that is a complete copy of the input)
                 adOut = deepcopy(ad)
-                # moving the filename over as deepcopy doesn't do that
-                # only for internal use, renamed below to final name.
-                adOut.filename = ad.filename
                 
                 # checking that the MDF found is not a MEF, else raise
                 if len(MDF)>1:
@@ -111,7 +109,7 @@ def add_mdf(adInputs=None, MDFs=None, outNames=None, suffix=None):
             # If MDF frames exist, send a warning message to the logger
             else:
                 log.warning('An MDF frame all ready exist for '+
-                             adOut.filename+', so add_mdf will not add new ones')
+                            adOut.filename+', so add_mdf will not add new ones')
             
             # Updating GEM-TLM (automatic) and ADDMDF time stamps to the PHU
             # and updating logger with updated/added time stamps
@@ -164,7 +162,7 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='standardize_headers_gemini')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -181,19 +179,16 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
             # First check if the input has been ran through this before, to 
             # avoid accidentally re-updating keys to wrong values.
             if ad.phuGetKeyValue('STDHDRSG'):
-                log.warning('Input, '+ad.filename+', has all ready had its \
-                        general Gemini headers standardized, so \
-                        standardize_headers_gemini will not add/update any keys.')
+                log.warning('Input, '+ad.filename+', has all ready had its '+
+                        'general Gemini headers standardized, so '+
+                        'standardize_headers_gemini will not '+
+                        'add/update any keys.')
             
             else:
                 # Making a deepcopy of the input to work on
                 # (ie. a truly new&different object that is a complete copy 
                 # of the input)
-                ad.storeOriginalName()
                 adOut = deepcopy(ad)
-                # moving the filename over as deepcopy doesn't do that
-                # only for internal use, renamed below to final name.
-                adOut.filename = ad.filename
                 
                 # Formatting so logger looks organized for these messages
                 log.fullinfo('*'*50, category='header') 
@@ -253,8 +248,8 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                    standardize_headers_gemini')
+        raise ScienceError('An error occurred while trying to run '+
+                                                'standardize_headers_gemini')
 
 def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
     """
@@ -279,7 +274,7 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
     :type suffix: string
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='standardize_headers_gmos')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -302,19 +297,16 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
             # First check if the input has been ran through this before, to 
             # avoid accidentally re-updating keys to wrong values.
             if ad.phuGetKeyValue('STDHDRSI'):
-                log.warning('Input, '+ad.filename+', has all ready had its \
-                        instrument specific headers standardized, so \
-                        standardize_headers_gmos will not add/update any keys.')
+                log.warning('Input, '+ad.filename+', has all ready had its '+
+                        'instrument specific headers standardized, so '+
+                        'standardize_headers_gmos will not add/update '+
+                        'any keys.')
             
             else:
                 # Making a deepcopy of the input to work on
                 # (ie. a truly new&different object that is a complete copy 
                 # of the input)
-                ad.storeOriginalName()
                 adOut = deepcopy(ad)
-                # moving the filename over as deepcopy doesn't do that
-                # only for internal use, renamed below to final name.
-                adOut.filename = ad.filename
                 
                 ## update headers that are GMOS specific
                 log.status('Updating GMOS specific headers')
@@ -366,8 +358,8 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                     standardize_headers_gmos')
+        raise ScienceError('An error occurred while trying to run '+
+                                                     'standardize_headers_gmos')
     
 def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None, 
                                                     outNames=None, suffix=None):
@@ -411,7 +403,7 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
     :type suffix: string
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='standardize_headers_gmos')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -433,7 +425,7 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
                                     'standardize_structure_gmos will pass '+
                                     'this input to the outputs unchanged.')
                     # Passing the input to be an output without appending any MDF
-                    adOut = ad
+                    adOut = deepcopy(ad)
                 else:
                     log.status('Starting to hunt for matching MDF file')
                     # Input is not of type IMAGE so look up and append the right MDF
@@ -506,8 +498,10 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
                     if os.path.exists(MDFfilename):
                         MDF = AstroData(MDFfilename)
                     # If not there, see if it is in lookups/GMOS/MDF dir
-                    elif os.path.exists(lookupPath('Gemini/GMOS/MDF/'+MDFfilename)):
-                        MDF = AstroData(lookupPath('Gemini/GMOS/MDF/'+MDFfilename))
+                    elif os.path.exists(lookupPath('Gemini/GMOS/MDF/'+
+                                                   MDFfilename)):
+                        MDF = AstroData(lookupPath('Gemini/GMOS/MDF/'+
+                                                   MDFfilename))
                     else:
                         log.critical('MDF file '+MDFfilename+' was not found '+
                                         'on disk.')
@@ -522,7 +516,8 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
                     # NOTE: This is another science function, so it performs the normal
                     #       deepcopy and filename handling that would normally go here.
                     log.debug('Calling add_mdf to append the MDF')
-                    adOuts = add_mdf(adInputs=ad, MDFs=MDF,outNames=outNames[count])
+                    adOuts = add_mdf(adInputs=ad, MDFs=MDF, 
+                                                    outNames=outNames[count])
                     # grab the single output in the list as only one went in
                     adOut = adOuts[0]
                     log.status('Input ,'+adOut.filename+', successfully had '+
@@ -559,8 +554,8 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                    standardize_structure_gmos')
+        raise ScienceError('An error occurred while trying to run '+
+                                                'standardize_structure_gmos')
     
 def validate_data_gmos(adInputs=None, repair=False, outNames=None, suffix=None):
     """
@@ -604,7 +599,7 @@ def validate_data_gmos(adInputs=None, repair=False, outNames=None, suffix=None):
     :type suffix: string
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='validate_data_gmos')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -619,12 +614,8 @@ def validate_data_gmos(adInputs=None, repair=False, outNames=None, suffix=None):
             # Making a deepcopy of the input to work on
             # (ie. a truly new&different object that is a complete copy 
             # of the input)
-            ad.storeOriginalName()
             adOut = deepcopy(ad)
-            # moving the filename over as deepcopy doesn't do that
-            # only for internal use, renamed below to final name.
-            adOut.filename = ad.filename
-            
+
             if repair:
                 ################################################################
                 ######## This is where the code or a call to a function would ##
@@ -668,5 +659,5 @@ def validate_data_gmos(adInputs=None, repair=False, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                    validate_data_gmos')
+        raise ScienceError('An error occurred while trying to run '+
+                                                    'validate_data_gmos')

@@ -4,7 +4,7 @@
 
 import os, sys
 
-import pyfits as pf
+#import pyfits as pf
 import numpy as np
 from copy import deepcopy
 
@@ -13,6 +13,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.ConfigSpace import lookupPath
 from astrodata.Errors import ScienceError
 from gempy import geminiTools as gemt
+from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
@@ -47,7 +48,7 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
                                       funcName='divide_by_flat') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -86,7 +87,7 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
             # the div function of the arith toolbox performs a deepcopy so
             # it doesn't need to be done here.
             adOut = ad.div(processedFlat)
-            adOut.filename = ad.filename
+            
             log.status('ad.div successfully flat corrected '+ad.filename)   
             
             # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
@@ -161,7 +162,7 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='fringe_correct') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -221,8 +222,8 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                                fringe_correct')
+        raise ScienceError('An error occurred while trying to run '+
+                                                                'fringe_correct')
         
 def normalize_flat_image(adInputs, outNames=None, suffix=None):
     """
@@ -249,7 +250,7 @@ def normalize_flat_image(adInputs, outNames=None, suffix=None):
     :type suffix: string
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
                                              funcName='normalize_flat_image') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -347,7 +348,7 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
                                        funcName='normalize_flat_image_gmos', 
                                        combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
@@ -366,26 +367,20 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
         
         # Preparing input files, lists, parameters... for input to 
         # the CL script
-        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+        clm=man.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
                            suffix=suffix, funcName='normalizeFlat', 
                            log=log, combinedImages=True)
         
         # Check the status of the CLManager object, True=continue, False= issue warning
         if clm.status:                 
-            # Creating a dictionary of the parameters set by the gemt.CLManager 
+            # Creating a dictionary of the parameters set by the man.CLManager 
             # or the definition of the function 
             clPrimParams = {
               'inflats'     :clm.imageInsFiles(type='listFile'),
               # Maybe allow the user to override this in the future
               'outflat'     :clm.imageOutsFiles(type='string'), 
               # This returns a unique/temp log file for IRAF  
-              'logfile'     :clm.templog.name,         
-              # This is actually in the default dict but wanted to show it again
-              'Stdout'      :gemt.IrafStdout(),   
-              # This is actually in the default dict but wanted to show it again  
-              'Stderr'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again    
-              'verbose'     :yes                    
+              'logfile'     :clm.templog.name,                   
                           }
             # Creating a dictionary of the parameters from the function call 
             # adjustable by the user
@@ -436,8 +431,8 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
             # and updating logger with updated/added time stamps
             sfm.markHistory(adOutputs=adOutputs, historyMarkKey='GIFLAT')    
         else:
-            raise ScienceError('One of the inputs has not been prepared,\
-            the normalizeFlat function can only work on prepared data.')
+            raise ScienceError('One of the inputs has not been prepared,'+
+            'the normalizeFlat function can only work on prepared data.')
                 
         log.status('**FINISHED** the normalize_flat_image_gmos function')
         
@@ -475,7 +470,7 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
                                       funcName='overscan_trim') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -494,8 +489,6 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
             # Making a deepcopy of the input to work on
             # (ie. a truly new+different object that is a complete copy of the input)
             adOut = deepcopy(ad)
-            # moving the filename over as deepcopy doesn't do that
-            adOut.filename = ad.filename
                              
             # To clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    
@@ -626,7 +619,7 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='overscan_subtract') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -647,13 +640,13 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
             
         # Preparing input files, lists, parameters... for input to 
         # the CL script
-        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+        clm=man.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
                            suffix=suffix, funcName='overscanSubtract',   
                            log=log)
         
         # Check the status of the CLManager object, True=continue, False= issue warning
         if clm.status:                     
-            # Parameters set by the gemt.CLManager or the definition 
+            # Parameters set by the man.CLManager or the definition 
             # of the primitive 
             clPrimParams = {
               'inimages'    :clm.imageInsFiles(type='string'),
@@ -662,17 +655,11 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
               # This returns a unique/temp log file for IRAF
               'logfile'     :clm.templog.name,      
               'fl_over'     :yes, 
-              # This is actually in the default dict but wanted to show it again
-              'Stdout'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'verbose'     :yes                
                           }
             
             # Taking care of the biasec->nbiascontam param
             if not biassec == '':
-                nbiascontam = gemt.nbiascontam(adInputs, biassec)
+                nbiascontam = clm.nbiascontam(adInputs, biassec)
                 log.fullinfo('nbiascontam parameter was updated to = '+
                              str(nbiascontam))
             else: 
@@ -744,8 +731,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERSUB')
         else:
-            raise ScienceError('One of the inputs has not been prepared,\
-            the overscanSubtract function can only work on prepared data.')
+            raise ScienceError('One of the inputs has not been prepared,'+
+            'the overscanSubtract function can only work on prepared data.')
         
         log.status('**FINISHED** the overscan_subtract function')
         
@@ -755,8 +742,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                            overscan_subtract')    
+        raise ScienceError('An error occurred while trying to run '+
+                                                            'overscan_subtract')    
                     
 def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
                 fl_over=False, outNames=None, suffix=None):
@@ -806,10 +793,17 @@ def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='subtract_bias')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
+     
+    # casting biases into a list if not one all ready for later indexing
+    if not isinstance(biases, list):
+        biases = [biases]
+    
+    # checking the inputs have matching filters, binning and SCI shapes.
+    gemt.checkInputsMatch(adInsA=biases, adInsB=adInputs) 
         
     try:
         # Set up counter for looping through outNames list
@@ -832,26 +826,22 @@ def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
             # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
             fl_vardq = sfm.autoVardq(fl_vardq)
             
-            # Setting up the processedBias correctly
-            if (isinstance(biases,list)) and (len(biases)>1):
-                processedBias = biases[count]
-            elif (isinstance(biases,list)) and (len(biases)==1):
-                # Not sure if I need this check, but can't hurt
-                processedBias = biases[0]
+            # Getting the right dark for this input
+            if len(biases)>1:
+                bias = biases[count]
             else:
-                processedBias = biases
+                bias = biases[0]
                 
-            
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=ad, imageOutsNames=outNames[count], 
-                               refIns=processedBias, suffix=suffix,  
+            clm = man.CLManager(imageIns=ad, imageOutsNames=outNames[count], 
+                               refIns=bias, suffix=suffix,  
                                funcName='biasCorrect', log=log)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:               
                     
-                # Parameters set by the gemt.CLManager or the definition of the function 
+                # Parameters set by the man.CLManager or the definition of the function 
                 clPrimParams = {
                   'inimages'    :clm.imageInsFiles(type='string'),
                   'gp_outpref'  :clm.prefix,
@@ -861,13 +851,7 @@ def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                   'fl_bias'     :yes,
                   # Possibly add this to the params file so the user can override
                   # this input file
-                  'bias'        :clm.refInsFiles(type='string'),   
-                  # This is actually in the default dict but wanted to show it again  
-                  'Stdout'      :gemt.IrafStdout(), 
-                  # This is actually in the default dict but wanted to show it again
-                  'Stderr'      :gemt.IrafStdout(), 
-                  # This is actually in the default dict but wanted to show it again
-                  'verbose'     :yes                
+                  'bias'        :clm.refInsFiles(type='string'),     
                               }
                     
                 # Parameters from the Parameter file adjustable by the user
@@ -931,7 +915,7 @@ def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                 # Reseting the value set by gireduce to just the filename
                 # for clarity
                 adOut.phuSetKeyValue('BIASIM', 
-                                     os.path.basename(processedBias.filename)) 
+                                     os.path.basename(bias.filename)) 
                 
                 # Updating log with new BIASIM header key
                 log.fullinfo('Another PHU keywords added:\n', 'header')
@@ -944,8 +928,8 @@ def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
                 count = count+1
                 
             else:
-                raise ScienceError('One of the inputs has not been prepared,\
-                the combine function can only work on prepared data.')
+                raise ScienceError('One of the inputs has not been prepared,'+
+                'the combine function can only work on prepared data.')
             
         log.warning('The CL script gireduce REPLACED the previously '+
                     'calculated DQ frames')
@@ -973,11 +957,11 @@ def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
     
-    :param adInputs: Astrodata input flat(s) to be combined and normalized
+    :param adInputs: Astrodata input science data
     :type adInputs: Astrodata objects, either a single or a list of objects
     
-    :param MDFs: The dark(s) to be added to the input(s).
-    :type MDFs: AstroData objects in a list, or a single instance.
+    :param darks: The dark(s) to be added to the input(s).
+    :type darks: AstroData objects in a list, or a single instance.
                 Note: If there are multiple inputs and one dark provided, 
                 then the same dark will be applied to all inputs; else the 
                 darks list must match the length of the inputs.
@@ -992,10 +976,17 @@ def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
     :type suffix: string
     """
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
                                                     funcName='subtract_dark') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
+    
+    # casting darks into a list if not one all ready for later indexing
+    if not isinstance(darks, list):
+        darks = [darks]
+    
+    # checking the inputs have matching filters, binning and SCI shapes.
+    gemt.checkInputsMatch(adInsA=darks, adInsB=adInputs)
     
     try:
         # Set up counter for looping through outNames list
@@ -1009,13 +1000,10 @@ def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
         # full DQ frames. 
         for ad in adInputs:  
             # Getting the right dark for this input
-            if isinstance(darks, list):
-                if len(darks)>1:
-                    dark = darks[count]
-                else:
-                    dark = darks[0]
+            if len(darks)>1:
+                dark = darks[count]
             else:
-                dark = darks
+                dark = darks[0]
            
             # sub each dark SCI  from each input SCI and handle the updates to 
             # the DQ and VAR frames.
@@ -1045,12 +1033,301 @@ def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run '+
-                                                        'subtract_dark')    
+                                                        'subtract_dark') 
+
+def subtract_fringe(adInputs, fringes=None, outNames=None, suffix=None):
+    """
+    This function will subtract the SCI of the input fringes from each SCI frame 
+    of the inputs and take care of the VAR and DQ frames if they exist.  
+    
+    This is all conducted in pure Python through the arith "toolbox" of 
+    astrodata. 
+       
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata input science data
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param fringes: The fringe(s) to be added to the input(s).
+    :type fringes: AstroData objects in a list, or a single instance.
+                Note: If there are multiple inputs and one fringe provided, 
+                then the same fringe will be applied to all inputs; else the 
+                fringes list must match the length of the inputs.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix:
+            string to add on the end of the input filenames 
+            (or outNames if not None) for the output filenames.
+    :type suffix: string
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
+                                                    funcName='subtract_fringe') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    # casting fringes into a list if not one all ready for later indexing
+    if not isinstance(fringes, list):
+        fringes = [fringes]
+    
+    # checking the inputs have matching filters, binning and SCI shapes.
+    gemt.checkInputsMatch(adInsA=fringes, adInsB=adInputs)
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:  
+            # Getting the right fringe for this input
+            if len(fringes)>1:
+                fringe = fringes[count]
+            else:
+                fringe = fringes[0]
+           
+            # sub each fringe SCI  from each input SCI and handle the updates to 
+            # the DQ and VAR frames.
+            # the sub function of the arith toolbox performs a deepcopy so
+            # it doesn't need to be done here. 
+            adOut = ad.sub(fringe)
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename+'\n')
+            
+            # Updating GEM-TLM (automatic) and SUBFRINGE time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='SUBFRING')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+                
+        log.status('**FINISHED** the subtract_fringe function')
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                        'subtract_fringe')    
+    
+def scale_fringe_to_science(fringes=None, sciInputs=None, statsec=None, 
+                                    statScale=True, outNames=None, suffix=None):
+    """
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    THIS FUNCTION WAS ORIGINALLY GOING TO BE A GENERIC SCALE_A_TO_B, BUT IT WAS
+    REALIZED THAT IT PERFORMED VERY FRINGE SPECIFIC CLIPPING DURING THE SCALING,
+    THUS IT WAS RENAMED SCALE_FRINGE_TO_SCIENCE.  A VERSION OF THIS FUNCTION 
+    THAT PERFORMS SPECIFIC THINGS FOR SKY'S NEEDS TO BE CREATED, OR THIS 
+    FUNCTION NEEDS TO BE MODIFIED TO WORK FOR BOTH AND RENAMED.  IDEALLY A 
+    FUNCTION THAT COULD SCALE A TO B WOULD BE GREAT, BUT HARD TO ACCOMPLISH 
+    WITHOUT ADDING A LARGE NUMBER OF PARAMETERS (IE CLUTTER).
+    TO MAKE FUTURE REFACTORING EASIER SCIENCE INPUTS = B AND FRINGE = A, SO JUST
+    THROUGH AND CONVERT PHRASES FOR SCIENCE BACK TO B AND SIMILAR FOR FRINGES.
+    $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
     
     
+    This function will take the SCI extensions of the fringes and scale them
+    up/down to match those of sciInputs.  There are two ways to find the 
+    value to scale fringes by:
+    1. If statScale is set to True, the equation:
+    (letting science data = b (or B), and fringe = a (or A))
     
+    arrayB = where({where[SCIb < (SCIb.median+2.5*SCIb.std)]} > [SCIb.median-3*SCIb.std])
+    scale = arrayB.std / SCIa.std
     
+    A section of the SCI arrays to use for calculating these statistics can
+    be defined with statsec, or the default; the default is the original SCI
+    data excluding the outer 100 pixels on all 4 sides (so less 200 pixels in  
+    width and height).
     
+    2. If statScale=False, then scale will be calculated using:
+    exposure time of science / exposure time of fringe
+    
+    The outputs of adOutputs will be the scaled version of fringes.
+    
+    NOTE: There MUST be a matching number of inputs for sciInputs and fringes, 
+    AND every pair of inputs MUST have matching size SCI frames.
+    
+    NOTE: If you are looking to simply perform basic scaling by a predetermined 
+    value, rather than calculating it from a second set of inputs inside this
+    function, then the .div(), .mult(), .sub() and .add() functions of the 
+    arith.py toolbox in astrodata are perfect to perform such opperations. 
+    
+    :param fringes: fringe inputs to be scaled to those of sciInputs
+    :type fringes: Astrodata objects, either a single or a list of objects
+                   Note: there must be an equal number of sciInputs as fringes
+    
+    :param sciInputs: Astrodata inputs to have those of adInputsA scaled to.
+    :type sciInputs: AstroData objects in a list, or a single instance.
+                     Note: there must be an equal number of sciInputs as fringes
+                     Note: no changes will be made to the sciInputs.
+                     
+    :param statsec: sections of detectors to use for calculating the statistics
+    :type statsec: 
+    Dictionary of the format:
+    {(SCI,1):[x1:x2,y1:y2], (SCI,2):[x1:x2,y1:y2], ...} 
+    with every SCI extension having a data section defined.
+    Default is the inner region 100pixels from all 4 sides of SCI data.
+    
+    :param statScale: Use statistics to calculate the scale values?
+    :type statScale: Python boolean (True/False). Default, True.               
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix: string to add on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = man.ScienceFunctionManager(fringes, outNames, suffix,
+                                            funcName='scale_fringe_to_science') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    fringes, outNames, log = sfm.startUp()
+    
+    # casting sciInputs into a list if not one all ready for later indexing
+    if not isinstance(sciInputs, list):
+        sciInputs = [sciInputs]
+    
+    # checking the inputs have matching filters, binning and SCI shapes.
+    gemt.checkInputsMatch(adInsA=fringes, adInsB=sciInputs)
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform scaling of fringes to the sciInputs
+        # NOTE: for clarity and simplicity, fringes objects are type 'A' and 
+        #       science input objects are type 'B'.
+        for adA in fringes:  
+            # set up empty dict to hold scale vals for each extension
+            scaleDict = {}
+            # get matching B input
+            adB = sciInputs[count]
+            
+            log.fullinfo('\n'+'*'*50)
+            log.status('Starting to scale '+adA.filename+' to match '+
+                                                                adB.filename)
+            
+            for sciExtA in adA['SCI']:
+                # Grab the A and B SCI extensions to opperate on
+                SCIa = sciExtA
+                curExtver = sciExtA.extver()
+                SCIb = adB[('SCI', curExtver)]
+                
+                log.fullinfo('Scaling SCI extension '+str(curExtver))
+                
+                if statScale:
+                    # use statistics to calculate the scaling factor, following
+                    # arrayB = where({where[SCIb < (SCIb.median+2.5*SCIb.std)]} > [SCIb.median-3*SCIb.std])
+                    # scale = arrayB.std / SCIa.std
+                    log.status('Using statistics to calculate the scaling'+
+                                                                    ' factor')
+                    # Get current SCI's statsec
+                    if statsec is None:
+                        # use default inner region
+                        datsecAtuple = sciExtA.data_section().asPytype()
+                        dAt = datsecAtuple
+                        curStatsecList = [dAt[0]+100,dAt[1]-100,dAt[2]+100,
+                                         dAt[3]-100]
+                    else:
+                        # pull value from statsec dict provided
+                        if isinstance(statsec,dict):
+                            curStatsecList = statsec[('SCI',curExtver)]
+                        else:
+                            log.critical('statsec must be a dictionary, it '+
+                                         'was found to be a '+
+                                         str(type(statsec)))
+                            raise ScienceError()
+               
+                    cl = curStatsecList  
+                    log.stdinfo('Using section '+repr(cl)+' of data to '+
+                                'calculate the scaling factor')      
+                    # pull the data arrays from the extensions, 
+                    # for the statsec region
+                    A = SCIa.data[cl[0]:cl[1],cl[2]:cl[3]]
+                    B = SCIb.data[cl[0]:cl[1],cl[2]:cl[3]]
+                    # Must flatten because incase using older verion of numpy    
+                    # B's median
+                    Bmed = np.median(B.flatten()) 
+                    # B's standard deviation
+                    Bstd = B.std()
+                    # make an array of all the points where the pixel value is 
+                    # less than the median value + 2.5 x the standard deviation.
+                    Bbelow = B[np.where(B<(Bmed+(2.5*Bstd)))]  
+                    # make an array from the previous one where all the pixels  
+                    # in it have a value greater than the median -3 x the 
+                    # standard deviation. Thus a final array of all the pixels 
+                    # with values between (median + 2.5xstd) and (median -3xstd)
+                    Bmiddle = Bbelow[np.where(Bbelow>(Bmed-(3.*Bstd)))]
+                    ######## NOTE: kathleen believes the median should #########
+                    ########       be used below instead of the std    #########
+                    ### This needs real scientific review and discussion with ##
+                    ### DA's to make a decision as to what is appropriate/works#
+                    curScale = Bmiddle.std() / A.std() 
+                
+                else:
+                    # use the exposure times to calculate the scale
+                    log.status('Using exposure times to calculate the scaling'+
+                               ' factor')
+                    curScale = SCIb.exposure_time() / SCIa.exposure_time()
+                
+                log.stdinfo('Scale factor found = '+str(curScale))
+                
+                # load determined scale for this extension into scaleDict    
+                scaleDict[('SCI',sciExtA.extver())] = curScale
+                
+            # Using mult from the arith toolbox to perform the scaling of 
+            # A (fringe input) to B (science input), it does deepcopy
+            # so none needed here.
+            adOut = adA.mult(inputB=scaleDict)          
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename+'\n')
+            
+            # Updating GEM-TLM (automatic) and SUBDARK time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='SCALEA2B')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+                
+        log.status('**FINISHED** the scale_fringe_to_science function')
+        # Return the outputs (list or single, matching adInputs)
+        # These are the scaled fringe ad's
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise #ScienceError('An error occurred while trying to run '+
+              #                                       'scale_fringe_2_science')    
+    
+            
     
     
     

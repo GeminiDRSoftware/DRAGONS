@@ -13,6 +13,7 @@ from astrodata.AstroData import AstroData
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.Errors import ScienceError
 from gempy import geminiTools as gemt
+from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
     
 def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median', 
@@ -52,7 +53,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
                                        funcName='make_fringe_frame_imaging', 
                                        combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
@@ -80,14 +81,14 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+            clm = man.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
                                suffix=suffix, funcName='makeFringeFrame', 
                                combinedImages=True, log=log)
             
             # Check the status of the CLManager object, True=continue, False= issue warning
             if clm.status:                     
             
-                # Parameters set by the gemt.CLManager or the definition 
+                # Parameters set by the man.CLManager or the definition 
                 # of the primitive 
                 clPrimParams = {
                     # Retrieving the inputs as a list from the CLManager
@@ -95,16 +96,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                     # Maybe allow the user to override this in the future. 
                     'outimage'    :clm.imageOutsFiles(type='string'), 
                     # This returns a unique/temp log file for IRAF  
-                    'logfile'     :clm.templog.name,  
-                    # This is actually in the default dict but wanted to 
-                    # show it again       
-                    'Stdout'      :gemt.IrafStdout(), 
-                    # This is actually in the default dict but wanted to 
-                    # show it again    
-                    'Stderr'      :gemt.IrafStdout(),
-                    # This is actually in the default dict but wanted to 
-                    # show it again     
-                    'verbose'     :yes                    
+                    'logfile'     :clm.templog.name,                   
                               }
     
                 # Creating a dictionary of the parameters from the Parameter 
@@ -155,12 +147,12 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOutputs, historyMarkKey='FRINGE')
             else:
-                raise ScienceError('One of the inputs has not been prepared,\
-                the combine function can only work on prepared data.')
+                raise ScienceError('One of the inputs has not been prepared,'+
+                'the combine function can only work on prepared data.')
         else:
-            log.warning('Only one input was passed in for adInputs, so \
-                    make_fringe_frame_imaging is simply passing the inputs  \
-                    into the outputs list without doing anything to them.')
+            log.warning('Only one input was passed in for adInputs, so '+
+                    'make_fringe_frame_imaging is simply passing the inputs  '+
+                    'into the outputs list without doing anything to them.')
             adOutputs = adInputs
         
         log.status('**FINISHED** the make_fringe_frame_imaging function')
@@ -171,8 +163,8 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                    make_fringe_frame_imaging')
+        raise ScienceError('An error occurred while trying to run '+
+                                                    'make_fringe_frame_imaging')
     
     
     

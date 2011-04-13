@@ -4,7 +4,7 @@
 # have its important parameters updated and then passed into the iraf function.
 
 from astrodata.adutils.gemutil import pyrafLoader
-from gempy import geminiTools  as gemt
+from gempy import managers as man
 from astrodata.adutils import gemLog
 from astrodata.Errors import ToolboxError
 
@@ -73,8 +73,8 @@ def CLDefaultParamsDict(CLscript):
             'fl_dqprop'  :no,            # Propagate all DQ values?
             'verbose'    :yes,           # Verbose output?
             'status'     :0,             # Exit status (0=good)
-            'Stdout'     :gemt.IrafStdout(),
-            'Stderr'     :gemt.IrafStdout()
+            'Stdout'     :man.IrafStdout(),
+            'Stderr'     :man.IrafStdout()
                        }
         
     if CLscript == 'gireduce':
@@ -129,8 +129,8 @@ def CLDefaultParamsDict(CLscript):
             'logfile'    :'',                # Logfile
             'verbose'    :yes,               # Verbose?
             'status'     :0,                 # Exit status (0=good)
-            'Stdout'     :gemt.IrafStdout(),
-            'Stderr'     :gemt.IrafStdout()
+            'Stdout'     :man.IrafStdout(),
+            'Stderr'     :man.IrafStdout()
                            }
         
     if CLscript == 'giflat':
@@ -184,8 +184,8 @@ def CLDefaultParamsDict(CLscript):
             'low_reject' :3.0,           # Low sigma rejection factor.
             'high_reject':3.0,           # High sigma rejection factor.
             'niterate'   :2,             # Number of rejection iterations.
-            'Stdout'      :gemt.IrafStdout(),
-            'Stderr'      :gemt.IrafStdout()
+            'Stdout'      :man.IrafStdout(),
+            'Stderr'      :man.IrafStdout()
                        }    
           
     if CLscript == 'gmosaic':
@@ -214,8 +214,8 @@ def CLDefaultParamsDict(CLscript):
             'fl_real'    :no,                     # Convert file to real before transforming
             'verbose'    :yes,                    # Verbose
             'status'     :0,                      # Exit status (0=good)
-            'Stdout'     :gemt.IrafStdout(),
-            'Stderr'     :gemt.IrafStdout()
+            'Stdout'     :man.IrafStdout(),
+            'Stderr'     :man.IrafStdout()
                        }
     
     if CLscript == 'gdisplay':
@@ -241,8 +241,8 @@ def CLDefaultParamsDict(CLscript):
             'gaindb'        :'default',         # Database with gain data
             'verbose'       :yes,               # Verbose
             'status'        :0,                 # Exit status (0=good)
-            'Stdout'        :gemt.IrafStdout(), 
-            'Stderr'        :gemt.IrafStdout()  
+            'Stdout'        :man.IrafStdout(), 
+            'Stderr'        :man.IrafStdout()  
                        }
     
     if CLscript == 'gifringe':
@@ -276,7 +276,7 @@ def CLDefaultParamsDict(CLscript):
             'glogpars'  : '',             # Logging preferences
             'verbose'   : yes,            # Verbose output
             'status'    : 0,              # Exit status (0=good)
-            'Stdout'    :gemt.IrafStdout(),
-            'Stderr'    :gemt.IrafStdout()
+            'Stdout'    :man.IrafStdout(),
+            'Stderr'    :man.IrafStdout()
                        }
     return defaultParams

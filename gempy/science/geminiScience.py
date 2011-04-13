@@ -15,6 +15,7 @@ from astrodata.AstroData import AstroData
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.Errors import ScienceError
 from gempy import geminiTools as gemt
+from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, 
@@ -60,14 +61,14 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                                             funcName='add_bpm')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
                    
     if BPMs==None:
-        log.critical('There must be at least one BPM provided, the \
-                                        "BPMs" parameter must not be None.')
+        log.critical('There must be at least one BPM provided, the '+
+                                        '"BPMs" parameter must not be None.')
         raise ScienceError()
                    
     try:
@@ -93,9 +94,6 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                 # Making a deepcopy of the input to work on
                 # (ie. a truly new+different object that is a complete copy of the input)
                 adOut = deepcopy(ad)
-                # moving the filename over as deepcopy doesn't do that
-                # only for internal use, renamed below to final name.
-                adOut.filename = ad.filename
                 
                 # Getting the filename for the BPM and removing any paths
                 BPMfilename = os.path.basename(BPM.filename)
@@ -114,14 +112,11 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                     
                     # Matching size of BPM array to that of the SCI data array
                     if matchSize:
-                        # Getting the data section from the header and as a dict
-                        # and grabbing the integer list from it, then finding
+                        # Getting the data section from the header and as a str
+                        # and converting to an integer list, then finding
                         # its shape
-                        datasecDict = sciExt.data_section()
-                        # NOTE: this list is zero based, like python and numpy
-                        datasecList = datasecDict[(sciExt.extname(),
-                                                   sciExt.extver())] 
-                        dsl = datasecList
+                        datasecList = sciExt.data_section()
+                        dsl = gemt.secStrToIntList(datasecList)
                         datasecShape = (dsl[3]-dsl[2]+1, dsl[1]-dsl[0]+1)
                         
                         # Creating a zeros array the same size as SCI array
@@ -253,7 +248,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='add_dq')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -274,8 +269,6 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                 # Making a deepcopy of the input to work on
                 # (ie. a truly new+different object that is a complete copy of the input)
                 adOut = deepcopy(ad)
-                # moving the filename over as deepcopy doesn't do that
-                adOut.filename = ad.filename
                 
                 for sciExt in adOut['SCI']: 
                     # Retrieving BPM extension 
@@ -391,7 +384,7 @@ def add_var(adInputs, outNames=None, suffix=None):
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, funcName='add_var')
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, funcName='add_var')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
     
@@ -409,8 +402,6 @@ def add_var(adInputs, outNames=None, suffix=None):
             # Making a deepcopy of the input to work on
             # (ie. a truly new+different object that is a complete copy of the input)
             adOut = deepcopy(ad)
-            # moving the filename over as deepcopy doesn't do that
-            adOut.filename = ad.filename
             
             # To clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')
@@ -514,7 +505,7 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None):
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
                                       funcName='adu_to_electrons')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -540,9 +531,6 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None):
             
             log.status('ad.mult completed converting the pixel units'+
                        ' to electrons')  
-                        
-            # moving the filename over as mult doesn't do that
-            adOut.filename = ad.filename
             
             # Updating SCI headers
             for sciExt in adOut['SCI']:
@@ -607,11 +595,9 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                            adu_to_electrons')
+        raise ScienceError('An error occurred while trying to run '+
+                                                            'adu_to_electrons')
 
-     
-    
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
             outNames=None, suffix=None):
     """
@@ -655,7 +641,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='combine', combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -676,7 +662,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 
             # Preparing input files, lists, parameters... for input to 
             # the CL script
-            clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
+            clm=man.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
                                suffix=suffix, funcName='combine', 
                                combinedImages=True, log=log)
             
@@ -691,16 +677,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                     # Maybe allow the user to override this in the future. 
                     'output'      :clm.imageOutsFiles(type='string'), 
                     # This returns a unique/temp log file for IRAF  
-                    'logfile'     :clm.templog.name,  
-                    # This is actually in the default dict but wanted to 
-                    # show it again       
-                    'Stdout'      :gemt.IrafStdout(), 
-                    # This is actually in the default dict but wanted to 
-                    # show it again    
-                    'Stderr'      :gemt.IrafStdout(),
-                    # This is actually in the default dict but wanted to 
-                    # show it again     
-                    'verbose'     :yes,    
+                    'logfile'     :clm.templog.name,   
                     'reject'      :'none'                
                               }
                 
@@ -731,8 +708,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 # dictionary and log them
                 gemt.logDictParams(clSoftcodedParams)
                 
-                log.debug('Calling the gemcombine CL script for input\
-                                 list '+clm.imageInsFiles(type='listFile'))
+                log.debug('Calling the gemcombine CL script for input '+
+                                 'list '+clm.imageInsFiles(type='listFile'))
                 
                 gemini.gemcombine(**clParamsDict)
                 
@@ -740,8 +717,8 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                     raise ScienceError('gemcombine failed for inputs '+
                                  clm.imageInsFiles(type='string'))
                 else:
-                    log.status('Exited the gemcombine CL script \
-                                                            successfully')
+                    log.status('Exited the gemcombine CL script '+
+                                                            'successfully')
                 
                 # Renaming CL outputs and loading them back into memory 
                 # and cleaning up the intermediate temp files written to disk
@@ -755,12 +732,12 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOutputs, historyMarkKey='COMBINE')
             else:
-                raise ScienceError('One of the inputs has not been prepared,\
-                the combine function can only work on prepared data.')
+                raise ScienceError('One of the inputs has not been prepared,'+
+                'the combine function can only work on prepared data.')
         else:
-            log.warning('Only one input was passed in for adInputs, so combine \
-                    is simply passing the inputs into the outputs list without \
-                    doing anything to them.')
+            log.warning('Only one input was passed in for adInputs, so combine'+
+                    'is simply passing the inputs into the outputs list '+
+                    'without doing anything to them.')
             adOutputs = adInputs
         
         log.status('**FINISHED** the combine function')
@@ -833,7 +810,7 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, None, 'tmp', 
+    sfm = man.ScienceFunctionManager(adInputs, None, 'tmp', 
                                       funcName='measure_iq') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     # NOTE: outNames are not needed, but sfm.startUp creates them automatically.
@@ -874,8 +851,8 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
                 mosaic = False
             else:
                 raise ScienceError('The input '+ad.filename+' had '+\
-                                   str(numExts)+' SCI extensions and inputs \
-                                   with only 1 or 3 extensions are allowed')
+                                   str(numExts)+' SCI extensions and inputs '+
+                                   'with only 1 or 3 extensions are allowed')
             
             # Start time for measuring IQ of current file
             st = time.time()
@@ -997,7 +974,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
     """
     
     # Instantiate ScienceFunctionManager object
-    sfm = gemt.ScienceFunctionManager(adInputs, outNames, suffix, 
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
                                       funcName='mosaic_detectors') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -1015,12 +992,12 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
         
         # Preparing input files, lists, parameters... for input to 
         # the CL script
-        clm=gemt.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
+        clm=man.CLManager(imageIns=adInputs, imageOutsNames=outNames, 
                            suffix=suffix, funcName='mosaicDetectors', log=log)
         
         # Check the status of the CLManager object, True=continue, False= issue warning
         if clm.status: 
-            # Parameters set by the gemt.CLManager or the definition of the prim 
+            # Parameters set by the man.CLManager or the definition of the prim 
             clPrimParams = {
               # Retrieving the inputs as a string of filenames
               'inimages'    :clm.imageInsFiles(type='string'),
@@ -1028,13 +1005,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
               # Setting the value of FL_vardq set above
               'fl_vardq'    :fl_vardq,
               # This returns a unique/temp log file for IRAF 
-              'logfile'     :clm.templog.name,
-              # This is actually in the default dict but wanted to show it again     
-              'Stdout'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'Stderr'      :gemt.IrafStdout(), 
-              # This is actually in the default dict but wanted to show it again
-              'verbose'     :yes                
+              'logfile'     :clm.templog.name,               
                           }
             # Parameters from the Parameter file adjustable by the user
             clSoftcodedParams = {
@@ -1099,8 +1070,8 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=ad, historyMarkKey='MOSAIC')
         else:
-            raise ScienceError('One of the inputs has not been prepared, the\
-             mosaicDetectors function can only work on prepared data.')
+            raise ScienceError('One of the inputs has not been prepared, the'+
+             ' mosaicDetectors function can only work on prepared data.')
                 
         log.status('**FINISHED** the mosaic_detectors function')
         
@@ -1110,8 +1081,8 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run \
-                                                            mosaic_detectors')    
+        raise ScienceError('An error occurred while trying to run '+
+                                                            'mosaic_detectors')    
     
 
 
