@@ -146,7 +146,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Return a dictionary with the data section tuple that uses
                 # 0-based indexing as the value
                 data_section = \
-                    string.section_to_tuple(raw_data_section)
+                    string.section_str_to_int_list(raw_data_section)
                 ret_data_section.update({(ext.extname(), \
                     ext.extver()):data_section})
         

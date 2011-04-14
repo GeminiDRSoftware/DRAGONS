@@ -404,7 +404,7 @@ class CalculatorInterface:
                                    format = format, 
                                    name = "data_section",  
                                    ad = self,
-                                   pytype = tuple )
+                                   pytype = list )
             return ret
         except:
             if (self.descriptorCalculator is None 
