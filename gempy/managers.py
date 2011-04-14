@@ -9,6 +9,7 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata.Errors import ManagersError
 from gempy import geminiTools as gemt
+from gempy import string
 
 class CLManager(object):
     """
@@ -228,7 +229,8 @@ class CLManager(object):
         funcName parameter and the array location in the 'arrayIns' list.
         
         :param type: Desired form of the temp filenames on disk for arrayIns.
-        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+        :type type: 'string' for filenames as a string 
+                    (comma-separated if input was a list),
                     'list' for filenames as strings in a python list, or
                     'listFile' for a IRAF type list file.
         """
@@ -239,7 +241,9 @@ class CLManager(object):
                 return self.arrayInsCLdiskNames
             if type=='listFile':
                 arrayInsListName = listFileMaker(self.arrayInsCLdiskNames,
-                                                    listName='arrayList'+str(os.getpid())+self.funcName)
+                                                    listName='arrayList'+\
+                                                    str(os.getpid())+\
+                                                    self.funcName)
                 self.arrayInsListName = arrayInsListName
                 return '@'+arrayInsListName
         else:
@@ -248,18 +252,19 @@ class CLManager(object):
     
     def arrayOutsFiles(self, type=''):
         """
-        This function is used to return the names of the array files to be written 
-        to disk by IRAF in the form desired to pass into the IRAF routine call.
-        The names of these files is automatically produced simply based
-        on the funcName parameter, the string '_arrayOut_' and the integer value
-        of the arrays location in the arrayOuts list.
+        This function is used to return the names of the array files to be  
+        written to disk by IRAF in the form desired to pass into the IRAF 
+        routine call. The names of these files is automatically produced simply 
+        based on the funcName parameter, the string '_arrayOut_' and the 
+        integer value of the arrays location in the arrayOuts list.
         
         This function is simply for 'convenience' and can be ignored as long
         as the filenames in the CLManger.arrayOutsNames are passed into 
         IRAF properly.
         
         :param type: Desired form of the filenames on disk for refOutsNames.
-        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+        :type type: 'string' for filenames as a string 
+                    (comma-separated if input was a list),
                     'list' for filenames as strings in a python list, or
                     'listFile' for a IRAF type list file.
         
@@ -273,94 +278,15 @@ class CLManager(object):
                 return self.arrayOutsNames
             if type=='listFile':
                 arrayOutsListName = listFileMaker(list=self.arrayOutsNames,
-                                    listName='arrayOutsList'+str(os.getpid())+self.funcName)
+                                    listName='arrayOutsList'+str(os.getpid())+\
+                                                                self.funcName)
                 self.arrayOutsListName = arrayOutsListName
                 return '@'+arrayOutsListName
         else:
             raise ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')
-    def biassecStrTonbiascontam(self, ad, biassec):
-        """ 
-        This function works with nbiascontam() of the CLManager. 
-        It will find the largest horizontal difference between biassec and 
-        BIASSEC for each SCI extension in a single input.  This value will 
-        be the new bias contamination value for use in IRAF scripts.
-        
-        :param ad: AstroData instance to calculate the bias contamination for
-        :type ad: AstroData instance
-        
-        :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
-        :type biassec: string  
-        
-        """
-        log = gemLog.getGeminiLog() 
-        try:
-            # Split up the input triple list into three separate ones
-            ccdStrList = biassec.split('],[')
-            # Prepare the to-be lists of lists
-            ccdIntList = []
-            for string in ccdStrList:
-                # Use secStrToIntList function to convert each string version
-                # of the list into actual integer lists and load it into the lists
-                # of lists
-                ccdIntList.append(secStrToIntList(string))
             
-            # Setting the return value to be updated in the loop below    
-            retvalue=0
-            for i in range(0, ad.countExts('SCI')):
-                # Retrieving current BIASSEC value
-                BIASSEC = ad.extGetKeyValue(('SCI',i+1),'BIASSEC')
-                # Converting the retrieved string into a integer list
-                BIASSEClist = secStrToIntList(BIASSEC)
-                # Setting the lower case biassec list to the appropriate list in the 
-                # lists of lists created above the loop
-                biasseclist = ccdIntList[i]
-                # Ensuring both biassec's have the same vertical coords
-                if (biasseclist[2] == BIASSEClist[2]) and \
-                (biasseclist[3] == BIASSEClist[3]):
-                    # If overscan/bias section is on the left side of the chip
-                    if biasseclist[0]<50: 
-                        # Ensuring left X coord of both biassec's are equal
-                        if biasseclist[0] == BIASSEClist[0]: 
-                            # Set the number of contaminating columns to the 
-                            # difference between the biassec's right X coords
-                            nbiascontam = BIASSEClist[1]-biasseclist[1]
-                        # If left X coords of biassec's don't match, set number of 
-                        # contaminating columns to 4 and make a error log message
-                        else:
-                            log.error('left horizontal components of biassec and'+
-                                      ' BIASSEC did not match, so using default'+
-                                      ' nbiascontam=4')
-                            nbiascontam = 4
-                    # If overscan/bias section is on the right side of chip
-                    else: 
-                        if biasseclist[1] == BIASSEClist[1]: 
-                            nbiascontam = BIASSEClist[0]-biasseclist[0]
-                        else:
-                            log.error('right horizontal components of biassec'+
-                                      ' and BIASSEC did not match, so using '+
-                                      'default nbiascontam=4') 
-                            nbiascontam = 4
-                # Overscan/bias section is not on left or right side of chip, so 
-                # set to number of contaminated columns to 4 and log error message
-                else:
-                    log.error('vertical components of biassec and BIASSEC '+
-                              'parameters did not match, so using default '+
-                              'nbiascontam=4')
-                    nbiascontam = 4
-                # Find the largest nbiascontam value throughout all chips and 
-                # set it as the value to be returned  
-                if nbiascontam > retvalue:  
-                    retvalue = nbiascontam
-                
-            return retvalue
-        
-        # If all the above checks and attempts to calculate a new nbiascontam fail,
-        # make a error log message and return the value 4. so exiting 'gracefully'.        
-        except:
-            log.error('An error occurred while trying to calculate the '+
-                      'nbiascontam, so using default value = 4')
-            return 4 
+    
          
     def finishCL(self): 
         """ 
@@ -382,7 +308,8 @@ class CLManager(object):
         the original file names of the 'imageIns' astrodata objects.
         
         :param type: Desired form of the temp filenames on disk for imageIns.
-        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+        :type type: 'string' for filenames as a string 
+                    (comma-separated if input was a list),
                     'list' for filenames as strings in a python list, or
                     'listFile' for a IRAF type list file.
         """
@@ -393,7 +320,8 @@ class CLManager(object):
                 return self.imageInsCLdiskNames
             if type=='listFile':
                 imageInsListName = listFileMaker(list=self.imageInsCLdiskNames,
-                                    listName='imageList'+str(os.getpid())+self.funcName)
+                                    listName='imageList'+str(os.getpid())+\
+                                                                self.funcName)
                 self.imageInsListName = imageInsListName
                 return '@'+imageInsListName
         else:
@@ -422,7 +350,8 @@ class CLManager(object):
         IRAF properly.
         
         :param type: Desired form of the filenames on disk for imageOutsNames.
-        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+        :type type: 'string' for filenames as a string 
+                    (comma-separated if input was a list),
                     'list' for filenames as strings in a python list, or
                     'listFile' for a IRAF type list file.
         
@@ -456,7 +385,8 @@ class CLManager(object):
                 return self.imageOutsNames
             if type=='listFile':
                 imageOutsListName = listFileMaker(list=self.imageOutsNames,
-                                    listName='imageOutsList'+str(os.getpid())+self.funcName)
+                                    listName='imageOutsList'+str(os.getpid())+\
+                                                                self.funcName)
                 self.imageOutsListName = imageOutsListName
                 return '@'+imageOutsListName
         else:
@@ -471,25 +401,96 @@ class CLManager(object):
         used as the value for the nbiascontam parameter used in the gireduce 
         call of the overscanSubtract primitive.
         
-        :param adInputs: AstroData instance(s) to calculate the bias contamination 
+        :param adInputs: AstroData instance(s) to calculate the bias 
+                         contamination 
         :type adInputs: AstroData instance in a list
         
-        :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+        :param biassec: biassec parameter of format 
+                        '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
         :type biassec: string 
         
         """
+        log = gemLog.getGeminiLog() 
             
-        # Prepare a stored value to be compared between the inputs
-        retval=0
-        # Loop through the inputs
-        for ad in adInputs:
-            # Pass the retrieved value to biassecStrToBiasContam function
-            # to do the work in finding the difference of the biassec's
-            val = self.biassecStrTonbiascontam(ad, biassec)
-            # Check if value returned for this input is larger. Keep the largest
-            if val > retval:
-                retval = val
-        return retval   
+        try:
+            # Prepare a stored value to be compared between the inputs
+            retvalue=0
+            # Loop through the inputs
+            for ad in adInputs:
+                # Split up the input triple list into three separate sections
+                biassecStrList = biassec.split('],[')
+                # Prepare the to-be list of lists
+                biassecIntList = []
+                for biassecStr in biassecStrList:
+                    # Use string.section_str_to_int_list function to convert 
+                    # each string version of the list into actual integer tuple 
+                    # and load it into the lists of lists
+                    # of form [y1, y2, x1, x2] 0-based and non-inclusive
+                    biassecIntList.append(
+                                    string.section_str_to_int_list(biassecStr))
+                
+                # Setting the return value to be updated in the loop below    
+                retvalue=0
+                for ext in ad['SCI']:
+                    # Retrieving current BIASSEC value                        #  THIS WHERE THE 
+                    BIASSEC = ext.getKeyValue('BIASSEC')                      #  bias_section()
+                    # Converting the retrieved string into a integer list     #  descriptor
+                    # of form [y1, y2, x1, x2] 0-based and non-inclusive      #  would be used!!!!
+                    BIASSEClist = string.section_str_to_int_list(BIASSEC)     #
+                    # Setting the lower case biassec list to the appropriate 
+                    # list in the lists of lists created above the loop
+                    biasseclist = biassecIntList[ext.extver()-1]
+                    # Ensuring both biassec's have the same vertical coords
+                    if (biasseclist[0]==BIASSEClist[0]) and \
+                    (biasseclist[1]==BIASSEClist[1]):
+                        # If overscan/bias section is on the left side of chip
+                        if biasseclist[3]<50: 
+                            # Ensuring right X coord of both biassec's are equal
+                            if biasseclist[2]==BIASSEClist[2]: 
+                                # Set the number of contaminating columns to the 
+                                # difference between the biassec's left X coords
+                                nbiascontam = BIASSEClist[3]-biasseclist[3]
+                            # If left X coords of biassec's don't match, set  
+                            # number of contaminating columns to 4 and make a 
+                            # error log message
+                            else:
+                                log.error('right horizontal components of '+
+                                          'biassec and BIASSEC did not match, '+
+                                          'so using default nbiascontam=4')
+                                nbiascontam = 4
+                        # If overscan/bias section is on the right side of chip
+                        else: 
+                            # Ensuring left X coord of both biassec's are equal
+                            if biasseclist[3]==BIASSEClist[3]: 
+                                # Set the number of contaminating columns to the 
+                                # difference between the biassec's right X coords
+                                nbiascontam = BIASSEClist[2]-biasseclist[2]
+                            else:
+                                log.error('left horizontal components of '+
+                                          'biassec and BIASSEC did not match, '+
+                                          'so using default nbiascontam=4') 
+                                nbiascontam = 4
+                    # Overscan/bias section is not on left or right side of chip
+                    # , so set to number of contaminated columns to 4 and log 
+                    # error message
+                    else:
+                        log.error('vertical components of biassec and BIASSEC '+
+                                  'parameters did not match, so using default '+
+                                  'nbiascontam=4')
+                        nbiascontam = 4
+                    # Find the largest nbiascontam value throughout all chips  
+                    # and set it as the value to be returned  
+                    if nbiascontam > retvalue:  
+                        retvalue = nbiascontam
+                        
+            return retvalue
+        # If all the above checks and attempts to calculate a new nbiascontam 
+        # fail, make a error log message and return the value 4. so exiting 
+        # 'gracefully'.        
+        except:
+            log.error('An error occurred while trying to calculate the '+
+                      'nbiascontam, so using default value = 4')
+            return 4 
                  
     def obsmodeAdd(self, ad):
         """This is an internally used function to add the 'OBSMODE' key to the 
@@ -510,7 +511,8 @@ class CLManager(object):
                     typeStr = 'MOS'
                 elif 'GMOS_LS' in types:
                     typeStr = 'LONGSLIT'
-        
+                else:######33
+                    typeStr = 'LONGSLIT'##########
                 ad.phuSetKeyValue('OBSMODE', typeStr , 
                           'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
             except:
@@ -547,7 +549,7 @@ class CLManager(object):
         # killing off any disk files caused by them
         if self.imageOutsNames!=None:
             self.imageOuts = []
-            self.log.fullinfo('Loading output images into imageOuts and'+\
+            self.log.fullinfo('Loading output images into imageOuts and'+
                               ' removing temporary files from disk.')
             for name in self.imageOutsNames:
                 # Loading the file into an astrodata object
@@ -569,7 +571,7 @@ class CLManager(object):
         # killing off any disk files caused by them
         if self.refOutsNames!=None:
             self.refOuts = []
-            self.log.fullinfo('Loading output reference images into refOuts'+\
+            self.log.fullinfo('Loading output reference images into refOuts'+
                               ' and removing temporary files from disk.')
             for name in self.refOutsNames:
                 # Loading the file into an astrodata object
@@ -591,7 +593,7 @@ class CLManager(object):
         # killing off any disk files caused by them 
         if self.arrayOutsNames!=None:
             self.arrayOuts = []
-            self.log.fullinfo('Loading output reference array into arrayOuts'+\
+            self.log.fullinfo('Loading output reference array into arrayOuts'+
                               ' and removing temporary files from disk.')
             for name in self.arrayOutsNames:
                 # read in input array txt file to an array with each line
@@ -611,7 +613,7 @@ class CLManager(object):
                                   ' was deleted from disk') 
         # Killing off any disk files associated with imageIns
         if self.imageIns!=None:
-            self.log.fullinfo('Removing temporary files associated with '+\
+            self.log.fullinfo('Removing temporary files associated with '+
                               'imageIns from disk')
             for name in self.imageInsCLdiskNames:
                 # Deleting the file from disk
@@ -623,7 +625,7 @@ class CLManager(object):
                                   ' was deleted from disk') 
         # Killing off any disk files associated with refIns
         if self.refIns!=None:
-            self.log.fullinfo('Removing temporary files associated with '+\
+            self.log.fullinfo('Removing temporary files associated with '+
                               'refIns from disk')
             for name in self.refInsCLdiskNames:
                 # Deleting the file from disk
@@ -635,7 +637,7 @@ class CLManager(object):
                                   ' was deleted from disk') 
         # Killing off any disk files associated with arrayIns
         if self.arrayIns!=None:
-            self.log.fullinfo('Removing temporary files associated with '+\
+            self.log.fullinfo('Removing temporary files associated with '+
                               'arrayIns from disk')
             for name in self.arrayInsCLdiskNames:
                 # Deleting the file from disk
@@ -650,16 +652,17 @@ class CLManager(object):
 
     def preCLimageNames(self):
         """Just a simple function to return the value of the private member
-           variable _preCLimageNames that is a list of the filenames of imageIns.
+           variable _preCLimageNames that is a list of the filenames of 
+           imageIns.
         """
         return self._preCLimageNames
     
     def preCLwrites(self):
         """ The function that writes the files in memory to disk with temporary 
             names and saves the original and temporary names in lists and 
-            fills out the output file name lists for any output arrays if needed.  
-            The 'OBSMODE' PHU key will also be added to all input GMOS images
-            of imageIns and refIns.
+            fills out the output file name lists for any output arrays if   
+            needed. The 'OBSMODE' PHU key will also be added to all input GMOS 
+            images of imageIns and refIns.
         
         """
         # preparing the input filenames for temporary input image files to 
@@ -670,13 +673,16 @@ class CLManager(object):
                 ad = self.obsmodeAdd(ad)
                 # Load up the _preCLimageNames list with the input's filename
                 self._preCLimageNames.append(ad.filename)
-                # Strip off all postfixes and prefix filename with a unique prefix
-                name = gemt.fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True)
-                # store the unique name in imageInsCLdiskNames for later reference
+                # Strip off all postfixes and prefix filename with a unique 
+                # prefix
+                name = gemt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
+                                                                    strip=True)
+                # store the unique name in imageInsCLdiskNames for later 
+                # reference
                 self.imageInsCLdiskNames.append(name)
                 # Log the name of this temporary file being written to disk
-                self.log.fullinfo('Temporary image file on disk for input to CL: '
-                                  +name)
+                self.log.fullinfo('Temporary image file on disk for input to '+
+                                  'CL: '+name)
                 # Write this file to disk with its unique filename 
                 ad.write(name, rename=False)
         # preparing the input filenames for temperary input ref image files to 
@@ -688,7 +694,8 @@ class CLManager(object):
                 # Load up the _preCLrefnames list with the input's filename
                 self._preCLrefnames.append(ad.filename)
                 # Strip off all suffixs and prefix filename with a unique prefix
-                name = gemt.fileNameUpdater(adIn=ad, prefix=self.prefix, strip=True)
+                name = gemt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
+                                                                    strip=True)
                 # store the unique name in refInsCLdiskNames for later reference
                 self.refInsCLdiskNames.append(name)
                 # Log the name of this temporary file being written to disk
@@ -703,7 +710,8 @@ class CLManager(object):
             for array in self.arrayIns:
                 # creating temp name for array
                 name = self.prefix+'_arrayIn_'+str(count)+'.txt'
-                # store the unique name in arrayInsCLdiskNames for later reference
+                # store the unique name in arrayInsCLdiskNames for later 
+                # reference
                 self.arrayInsCLdiskNames.append(name)
                 # Log the name of this temporary file being written to disk
                 self.log.fullinfo('Temporary ref file on disk for input to CL: '
@@ -739,7 +747,8 @@ class CLManager(object):
         the original file names of the 'refIns' astrodata objects.
         
         :param type: Desired form of the temp filenames on disk for refIns.
-        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+        :type type: 'string' for filenames as a string 
+                    (comma-separated if input was a list),
                     'list' for filenames as strings in a python list, or
                     'listFile' for a IRAF type list file.
         """
@@ -750,7 +759,8 @@ class CLManager(object):
                 return self.refInsCLdiskNames
             if type=='listFile':
                 refInsListName = listFileMaker(list=self.refInsCLdiskNames,
-                                    listName='refList'+str(os.getpid())+self.funcName)
+                                    listName='refList'+str(os.getpid())+
+                                                                self.funcName)
                 self.refInsListName = refInsListName
                 return '@'+refInsListName
         else:
@@ -774,7 +784,8 @@ class CLManager(object):
         IRAF properly.
         
         :param type: Desired form of the filenames on disk for refOutsNames.
-        :type type: 'string' for filenames as a string (comma-separated if input was a list),
+        :type type: 'string' for filenames as a string 
+                    (comma-separated if input was a list),
                     'list' for filenames as strings in a python list, or
                     'listFile' for a IRAF type list file.
         
@@ -804,7 +815,8 @@ class CLManager(object):
                 return self.refOutsNames
             if type=='listFile':
                 refOutsListName = listFileMaker(list=self.refOutsNames,
-                                    listName='refOutsList'+str(os.getpid())+self.funcName)
+                                    listName='refOutsList'+str(os.getpid())+
+                                                                self.funcName)
                 self.refOutsListName = refOutsListName
                 return '@'+refOutsListName
         else:
@@ -946,8 +958,10 @@ class ScienceFunctionManager():
         Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
         automatically everytime wrapUp is called.
         
-        :param adOutputs: List of astrodata instance(s) to perform historyMark on.
-        :type adOutputs: Either a single or multiple astrodata instances in a list.
+        :param adOutputs: List of astrodata instance(s) to perform historyMark 
+                          on.
+        :type adOutputs: Either a single or multiple astrodata instances in a 
+                         list.
         
         :param historyMarkKey: The PHU header key to write the current UT time 
         :type historyMarkKey: Under 8 character, all caps, string.
@@ -987,8 +1001,8 @@ class ScienceFunctionManager():
                 raise ManagersError('The parameter "adInputs" must not be None')
             elif isinstance(self.adInputs,list):
                 if len(self.adInputs)==0:
-                    raise ManagersError('The parameter "adInputs" must not be\
-                                        an empty list')
+                    raise ManagersError('The parameter "adInputs" must not be'+
+                                        ' an empty list')
                 
             # raise if funcName=None as it needs to be a valid string
             if self.funcName==None:
@@ -1006,19 +1020,19 @@ class ScienceFunctionManager():
                 if isinstance(self.outNames,str):
                     self.outNames = [self.outNames]
                 elif self.suffix==None:
-                    raise ManagersError('outNames must be either a string or a \
-                                     list of them.')
+                    raise ManagersError('outNames must be either a string or a'+
+                                     ' list of them.')
             
             # Checking combinations of outNames, combinedInputs, suffix and 
             # len(adInputs) are valid
             if len(self.outNames)>0:
                 if not self.combinedInputs:
                     if len(self.adInputs)!= len(self.outNames):
-                        raise ManagersError('outNames was not None or the same \
-                                    length as number of adInputs')
+                        raise ManagersError('outNames was not None or the same'+
+                                    ' length as number of adInputs')
             elif len(self.adInputs)>1:
                     if self.suffix==None:
-                        raise ManagersError('Both outNames and suffix were None')
+                        raise ManagersError('Both outNames and suffix are None')
                 
             # Checking the current outNames and loading it up if needed
             if len(self.outNames)!=len(self.adInputs):
