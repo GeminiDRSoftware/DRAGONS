@@ -59,8 +59,7 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
             log.status('wavecal  completed successfully')
 
         except:
-            raise PrimitiveError("Problems with wavecal")
-
+            raise 
         yield rc
 
     def gtransform(self, rc):
@@ -76,6 +75,5 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError("Problem with gtransform")
-
+            raise 
         yield rc

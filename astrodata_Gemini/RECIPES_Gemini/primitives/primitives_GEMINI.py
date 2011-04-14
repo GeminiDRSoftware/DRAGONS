@@ -84,8 +84,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem adding the DQ to one of '+
-                                 rc.inputsAsStr())
+            raise 
         yield rc
     
     def addToList(self, rc):
@@ -127,8 +126,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem writing list for files '+
-                                 rc.inputsAsStr(), category='list')
+            raise 
         yield rc
    
     def addVAR(self,rc):
@@ -171,8 +169,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise #PrimitiveError('Problem adding the VAR to one of '+
-                  #               rc.inputsAsStr())
+            raise 
         yield rc 
     
     def aduToElectrons(self,rc):
@@ -212,8 +209,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem converting the pixel units of one of '+
-                         rc.inputsAsStr())
+            raise 
         yield rc
             
     def combine(self,rc):
@@ -277,7 +273,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('There was a problem combining '+rc.inputsAsStr())
+            raise 
         yield rc
 
     def crashReduce(self, rc):
@@ -313,7 +309,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem displaying output')
+            raise 
         yield rc
         
     def divideByFlat(self,rc):
@@ -373,7 +369,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            raise 
         yield rc
    
     def getCal(self,rc):
@@ -446,7 +442,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem getting list '+sid, category='list')
+            raise 
         yield rc
        
     def getProcessedBias(self,rc):
@@ -518,8 +514,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('There was a problem measuring the IQ of '+
-                                 rc.inputsAsStr())
+            raise 
         yield rc
  
     def pause(self, rc):
@@ -744,8 +739,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem standardizing the headers for one of '+
-                         rc.inputsAsStr())
+            raise 
         yield rc
                                  
     def standardizeStructure(self,rc):
@@ -795,8 +789,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem standardizing the structure for one of '+
-                         rc.inputsAsStr())
+            raise 
         yield rc
         
     def storeProcessedBias(self,rc):
@@ -845,7 +838,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem storing one of '+rc.inputsAsStr())
+            raise 
         yield rc
    
     def storeProcessedFlat(self,rc):
@@ -890,7 +883,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem storing one of '+rc.inputsAsStr())
+            raise 
         yield rc
     
     def subtractDark(self,rc):
@@ -947,7 +940,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            raise 
         yield rc
         
     def subtractFringe(self,rc):
@@ -1006,7 +999,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            raise 
         yield rc
         
     def time(self, rc):
@@ -1066,7 +1059,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem preparing one of  '+rc.inputsAsStr())
+            raise 
         yield rc
 
     def writeOutputs(self,rc):
@@ -1170,7 +1163,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('There was a problem writing one of '+
-                                 rc.inputsAsStr())
+            raise 
         yield rc   
          

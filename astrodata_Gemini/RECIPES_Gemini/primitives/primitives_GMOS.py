@@ -96,8 +96,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
-            
+            raise 
         yield rc       
 
     def display(self, rc):
@@ -179,8 +178,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('There was a problem displaying '+
-                                 rc.inputsAsStr())
+            raise 
         yield rc
 
     def localGetProcessedBias(self,rc):
@@ -224,7 +222,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
+            raise 
         yield rc
    
     def localGetProcessedFlat(self,rc):
@@ -269,8 +267,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem retrieving one of '+rc.inputsAsStr())
-        
+            raise 
         yield rc
 
     def mosaicDetectors(self,rc):
@@ -322,7 +319,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
+            raise 
         yield rc
 
     def overscanSubtract(self,rc):
@@ -376,8 +373,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
-        
+            raise 
         yield rc    
 
     def overscanTrim(self,rc):
@@ -414,8 +410,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
-        
+            raise 
         yield rc
          
     def standardizeInstrumentHeaders(self,rc):
@@ -453,8 +448,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
-        
+            raise
         yield rc 
         
     def standardizeInstrumentStructure(self,rc):
@@ -498,8 +492,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
-        
+            raise 
         yield rc     
     
     def subtractBias(self, rc):
@@ -575,8 +568,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem processing one of '+rc.inputsAsStr())
-            
+            raise 
         yield rc
     
     def validateInstrumentData(self,rc):
@@ -611,7 +603,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             # raised in the try block. Then raising a general PrimitiveError 
             # with message.
             log.critical(repr(sys.exc_info()[1]))
-            raise PrimitiveError('Problem preparing one of '+rc.inputsAsStr())
-        
+            raise 
         yield rc
 
