@@ -111,8 +111,7 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                            'divide_by_flat')    
+        raise   
     
 def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
             outNames=None, suffix=None):
@@ -222,8 +221,7 @@ def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                                'fringe_correct')
+        raise 
         
 def normalize_flat_image(adInputs, outNames=None, suffix=None):
     """
@@ -300,8 +298,7 @@ def normalize_flat_image(adInputs, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                        'normalize_flat_image')
+        raise 
     
 def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,  
                                 fl_vardq='AUTO', outNames=None, suffix=None):
@@ -442,8 +439,7 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                    'normalize_flat_image_gmos')     
+        raise 
     
 def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
@@ -627,8 +623,7 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                    'overscan_subtract_gmos')    
+        raise 
         
 def overscan_trim(adInputs, outNames=None, suffix=None):
     """
@@ -741,8 +736,7 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                                'overscan_trim')   
+        raise 
                     
 def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
                 fl_over=False, outNames=None, suffix=None):
@@ -941,8 +935,7 @@ def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                                'subtract_bias')
+        raise 
     
 def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
     """
@@ -1031,8 +1024,7 @@ def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                        'subtract_dark') 
+        raise 
 
 def subtract_fringe(adInputs, fringes=None, outNames=None, suffix=None):
     """
@@ -1121,8 +1113,7 @@ def subtract_fringe(adInputs, fringes=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                        'subtract_fringe')    
+        raise 
     
 def scale_fringe_to_science(fringes=None, sciInputs=None, statsec=None, 
                                     statScale=True, outNames=None, suffix=None):
@@ -1328,21 +1319,4 @@ def scale_fringe_to_science(fringes=None, sciInputs=None, statsec=None,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise #ScienceError('An error occurred while trying to run '+
-              #                                       'scale_fringe_2_science')    
-    
-            
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        raise 

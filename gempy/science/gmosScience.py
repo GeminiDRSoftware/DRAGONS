@@ -163,8 +163,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                    'make_fringe_frame_imaging')
+        raise 
     
     
     

@@ -132,7 +132,7 @@ def add_mdf(adInputs=None, MDFs=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run add_mdf')             
+        raise          
                 
 def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
     """ 
@@ -248,8 +248,7 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                'standardize_headers_gemini')
+        raise 
 
 def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
     """
@@ -358,8 +357,7 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                     'standardize_headers_gmos')
+        raise 
     
 def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None, 
                                                     outNames=None, suffix=None):
@@ -554,8 +552,7 @@ def standardize_structure_gmos(adInputs=None, addMDF=False, mdfFiles=None,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                'standardize_structure_gmos')
+        raise 
     
 def validate_data_gmos(adInputs=None, repair=False, outNames=None, suffix=None):
     """
@@ -659,5 +656,4 @@ def validate_data_gmos(adInputs=None, repair=False, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                    'validate_data_gmos')
+        raise 

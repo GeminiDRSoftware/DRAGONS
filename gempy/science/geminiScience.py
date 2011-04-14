@@ -200,7 +200,7 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run add_bpm')
+        raise 
     
 def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None, 
                 suffix=None):
@@ -353,7 +353,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run add_dq')
+        raise 
 
 def add_var(adInputs, outNames=None, suffix=None):
     """
@@ -473,7 +473,7 @@ def add_var(adInputs, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run add_var')
+        raise 
 
 def adu_to_electrons(adInputs, outNames=None, suffix=None):
     """
@@ -594,8 +594,7 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None):
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                            'adu_to_electrons')
+        raise                                          
 
 def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average', 
             outNames=None, suffix=None):
@@ -747,7 +746,7 @@ def combine(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run combine')
+        raise 
                 
 def measure_iq(adInputs, function='both', display=True, qa=True,
                keepDats=False):
@@ -924,7 +923,7 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise #ScienceError('An error occurred while trying to run measure_iq')                              
+        raise                             
                 
 def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',  
                 fl_vardq='AUTO', outNames=None, suffix=None):
@@ -1080,17 +1079,6 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
         # logging the exact message from the actual exception that was raised
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                            'mosaic_detectors')    
-    
+        raise 
 
-
-
-
-
-                
-                
-                
-                
-                
 
