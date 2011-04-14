@@ -19,7 +19,7 @@ from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, 
-            suffix=None):
+                                                                suffix=None):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
     The BPM will be added as frames matching that of the SCI frames and ensure
@@ -112,12 +112,11 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                     
                     # Matching size of BPM array to that of the SCI data array
                     if matchSize:
-                        # Getting the data section from the header and as a str
-                        # and converting to an integer list, then finding
-                        # its shape
-                        datasecList = sciExt.data_section()
-                        dsl = gemt.secStrToIntList(datasecList)
-                        datasecShape = (dsl[3]-dsl[2]+1, dsl[1]-dsl[0]+1)
+                        # Getting the data section as a int list of form:
+                        # [y1, y2, x1, x2] 0-based and non-inclusive
+                        datsecList = sciExt.data_section().asPytype()
+                        dsl = datsecList
+                        datasecShape = (dsl[1]-dsl[0], dsl[3]-dsl[2])
                         
                         # Creating a zeros array the same size as SCI array
                         # for this extension
@@ -132,11 +131,11 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                         #       while last ones are exclusive, thus a 1 must be 
                         #       added for the final element to be included.
                         if BPMArrayIn.shape==datasecShape:
-                            BPMArrayOut[dsl[2]:dsl[3]+1, dsl[0]:dsl[1]+1] = \
+                            BPMArrayOut[dsl[0]:dsl[1], dsl[2]:dsl[3]] = \
                                                                 BPMArrayIn
                         elif BPMArrayIn.shape==BPMArrayOut.shape:
-                            BPMArrayOut[dsl[2]:dsl[3]+1, dsl[0]:dsl[1]+1] = \
-                                BPMArrayIn[dsl[2]:dsl[3]+1, dsl[0]:dsl[1]+1]
+                            BPMArrayOut[dsl[0]:dsl[1], dsl[2]:dsl[3]] = \
+                                BPMArrayIn[dsl[0]:dsl[1], dsl[2]:dsl[3]]
                     
                     # Don't match size
                     else:
