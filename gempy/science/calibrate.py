@@ -445,123 +445,7 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
         raise ScienceError('An error occurred while trying to run '+
                                                     'normalize_flat_image_gmos')     
     
-def overscan_trim(adInputs, outNames=None, suffix=None):
-    """
-    This function uses AstroData to trim the overscan region 
-    from the input images and update their headers.
-    
-    NOTE: The inputs to this function MUST be prepared. 
-    
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
-    
-    :param adInputs: Astrodata inputs to have DQ extensions added to
-    :type adInputs: Astrodata objects, either a single or a list of objects
-    
-    :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length
-                    as adInputs.
-    
-    :param suffix: string to add on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    :type suffix: string
-    
-    """
-    
-    # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
-                                      funcName='overscan_trim') 
-    # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
-    
-    try:
-        # Set up counter for looping through outNames list
-        count=0
-        
-        # Creating empty list of ad's to be returned that will be filled below
-        adOutputs=[]
-        
-        # Loop through the inputs to perform the non-linear and saturated
-        # pixel searches of the SCI frames to update the BPM frames into
-        # full DQ frames. 
-        for ad in adInputs:  
-            # Making a deepcopy of the input to work on
-            # (ie. a truly new+different object that is a complete copy of the input)
-            adOut = deepcopy(ad)
-                             
-            # To clean up log and screen if multiple inputs
-            log.fullinfo('+'*50, category='format')    
-            
-            for sciExt in adOut['SCI']:
-                # Getting the data section from the header and as a dict
-                # and grabbing the integer list from it, then finding
-                # its shape
-                datasecDict = sciExt.data_section()
-                datasecStr = sciExt.data_section(pretty=True,asDict=False)
-                # NOTE: this list is zero based, like python and numpy
-                datasecList = datasecDict[(sciExt.extname(),sciExt.extver())] 
-                dsl = datasecList
-                
-                # Updating logger with the section being kept
-                log.stdinfo('\nfor '+adOut.filename+' extension '+
-                            str(sciExt.extver())+
-                            ', keeping the data from the section '+
-                            datasecStr,'science')
-                # Trimming the data section from input SCI array
-                # and making it the new SCI data
-                # NOTE: first elements of arrays in python are inclusive
-                #       while last ones are exclusive, thus a 1 must be 
-                #       added for the final element to be included.
-                sciExt.data=sciExt.data[dsl[2]:dsl[3]+1,dsl[0]:dsl[1]+1]
-                # Updating header keys to match new dimensions
-                sciExt.header['NAXIS1'] = dsl[1]-dsl[0]+1
-                sciExt.header['NAXIS2'] = dsl[3]-dsl[2]+1
-                newDataSecStr = '[1:'+str(dsl[1]-dsl[0]+1)+',1:'+\
-                                str(dsl[3]-dsl[2]+1)+']' 
-                sciExt.header['DATASEC']=newDataSecStr
-                sciExt.header.update('TRIMSEC', datasecStr, 
-                                   'Data section prior to trimming')
-                # Updating logger with updated/added keywords to each SCI frame
-                log.fullinfo('*'*50, category='header')
-                log.fullinfo('File = '+adOut.filename, category='header')
-                log.fullinfo('~'*50, category='header')
-                log.fullinfo('SCI extension number '+str(sciExt.extver())+
-                             ' keywords updated/added:\n', 'header')
-                log.fullinfo('NAXIS1= '+str(sciExt.header['NAXIS1']),
-                            category='header')
-                log.fullinfo('NAXIS2= '+str(sciExt.header['NAXIS2']),
-                             category='header')
-                log.fullinfo('DATASEC= '+newDataSecStr, category='header')
-                log.fullinfo('TRIMSEC= '+datasecStr, category='header')
-                    
-            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
-            # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERTRIM')       
-            
-            # Setting 'TRIMMED' to 'yes' in the PHU and updating the log
-            adOut.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')
-            log.fullinfo('Another PHU keywords added:\n', 'header')
-            log.fullinfo('TRIMMED = '+adOut.phuGetKeyValue('TRIMMED')+'\n', 
-                         category='header')
-            
-            # Appending to output list
-            adOutputs.append(adOut)
-
-            count = count+1
-        
-        log.status('**FINISHED** the overscan_trim function')
-        
-        # Return the outputs list, even if there is only one output
-        return adOutputs
-    except:
-        # logging the exact message from the actual exception that was raised
-        # in the try block. Then raising a general ScienceError with message.
-        log.critical(repr(sys.exc_info()[1]))
-        raise ScienceError('An error occurred while trying to run '+
-                                                                'overscan_trim')    
-    
-def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO', 
+def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO', 
             biassec='[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]',
             outNames=None, suffix=None):
     """
@@ -603,7 +487,8 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
         NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames  
         exist, so, if the first does, then the rest MUST also have them as well.
 
-    :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+    :param biassec: biassec parameter of format 
+                    '[x1:x2,y1:y2],[x1:x2,y1:y2],[x1:x2,y1:y2]'
     :type biassec: string. 
                    default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
                    is ideal for 2x2 GMOS data.
@@ -620,7 +505,7 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
 
     # Instantiate ScienceFunctionManager object
     sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
-                                      funcName='overscan_subtract') 
+                                      funcName='overscan_subtract_gmos') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
     
@@ -731,10 +616,10 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
                 # and updating logger with updated/added time stamps
                 sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERSUB')
         else:
-            raise ScienceError('One of the inputs has not been prepared,'+
-            'the overscanSubtract function can only work on prepared data.')
+            raise ScienceError('One of the inputs has not been prepared, the '+
+            'overscan_subtract_gmos function can only work on prepared data.')
         
-        log.status('**FINISHED** the overscan_subtract function')
+        log.status('**FINISHED** the overscan_subtract_gmos function')
         
         # Return the outputs list, even if there is only one output
         return adOutputs
@@ -743,7 +628,121 @@ def overscan_subtract(adInputs, fl_trim=False, fl_vardq='AUTO',
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
         raise ScienceError('An error occurred while trying to run '+
-                                                            'overscan_subtract')    
+                                                    'overscan_subtract_gmos')    
+        
+def overscan_trim(adInputs, outNames=None, suffix=None):
+    """
+    This function uses AstroData to trim the overscan region 
+    from the input images and update their headers.
+    
+    NOTE: The inputs to this function MUST be prepared. 
+    
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length
+                    as adInputs.
+    
+    :param suffix: string to add on the end of the input filenames 
+                    (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    
+    # Instantiate ScienceFunctionManager object
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
+                                      funcName='overscan_trim') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs to perform the non-linear and saturated
+        # pixel searches of the SCI frames to update the BPM frames into
+        # full DQ frames. 
+        for ad in adInputs:  
+            # Making a deepcopy of the input to work on
+            # (ie. a truly new+different object that is a complete copy of the input)
+            adOut = deepcopy(ad)
+                             
+            # To clean up log and screen if multiple inputs
+            log.fullinfo('+'*50, category='format')    
+            
+            for sciExt in adOut['SCI']:
+                # Getting the data section 
+                # as a direct string from header
+                datasecStr = str(sciExt.data_section(pretty=True))
+                # int list of form [y1, y2, x1, x2] 0-based and non-inclusive
+                datsecList = sciExt.data_section().asPytype()
+                dsl = datsecList
+                
+                # Updating logger with the section being kept
+                log.stdinfo('\nfor '+adOut.filename+' extension '+
+                            str(sciExt.extver())+
+                            ', keeping the data from the section '+
+                            datasecStr,'science')
+                # Trimming the data section from input SCI array
+                # and making it the new SCI data
+                # NOTE: first elements of arrays in python are inclusive
+                #       while last ones are exclusive, thus a 1 must be 
+                #       added for the final element to be included.
+                sciExt.data=sciExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                # Updating header keys to match new dimensions
+                sciExt.header['NAXIS1'] = dsl[1]-dsl[0]
+                sciExt.header['NAXIS2'] = dsl[3]-dsl[2]
+                newDataSecStr = '[1:'+str(dsl[1]-dsl[0])+',1:'+\
+                                str(dsl[3]-dsl[2])+']' 
+                sciExt.header['DATASEC']=newDataSecStr
+                sciExt.header.update('TRIMSEC', datasecStr, 
+                                   'Data section prior to trimming')
+                # Updating logger with updated/added keywords to each SCI frame
+                log.fullinfo('*'*50, category='header')
+                log.fullinfo('File = '+adOut.filename, category='header')
+                log.fullinfo('~'*50, category='header')
+                log.fullinfo('SCI extension number '+str(sciExt.extver())+
+                             ' keywords updated/added:\n', 'header')
+                log.fullinfo('NAXIS1= '+str(sciExt.getKeyValue('NAXIS1')),
+                            category='header')
+                log.fullinfo('NAXIS2= '+str(sciExt.getKeyValue('NAXIS2')),
+                             category='header')
+                log.fullinfo('DATASEC= '+newDataSecStr, category='header')
+                log.fullinfo('TRIMSEC= '+datasecStr, category='header')
+                    
+            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERTRIM')       
+            
+            # Setting 'TRIMMED' to 'yes' in the PHU and updating the log
+            adOut.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')
+            log.fullinfo('Another PHU keywords added:\n', 'header')
+            log.fullinfo('TRIMMED = '+adOut.phuGetKeyValue('TRIMMED')+'\n', 
+                         category='header')
+            
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count = count+1
+        
+        log.status('**FINISHED** the overscan_trim function')
+        
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise ScienceError('An error occurred while trying to run '+
+                                                                'overscan_trim')   
                     
 def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
                 fl_over=False, outNames=None, suffix=None):
@@ -1239,17 +1238,22 @@ def scale_fringe_to_science(fringes=None, sciInputs=None, statsec=None,
                 
                 if statScale:
                     # use statistics to calculate the scaling factor, following
-                    # arrayB = where({where[SCIb < (SCIb.median+2.5*SCIb.std)]} > [SCIb.median-3*SCIb.std])
+                    # arrayB = where({where[SCIb < (SCIb.median+2.5*SCIb.std)]} 
+                    # > [SCIb.median-3*SCIb.std])
                     # scale = arrayB.std / SCIa.std
                     log.status('Using statistics to calculate the scaling'+
                                                                     ' factor')
                     # Get current SCI's statsec
                     if statsec is None:
                         # use default inner region
-                        datsecAtuple = sciExtA.data_section().asPytype()
-                        dAt = datsecAtuple
-                        curStatsecList = [dAt[0]+100,dAt[1]-100,dAt[2]+100,
-                                         dAt[3]-100]
+                        
+                        # Getting the data section as a int list of form:
+                        # [y1, y2, x1, x2] 0-based and non-inclusive
+                        datsecAlist = sciExtA.data_section().asPytype()
+                        dAl = datsecAlist
+                        # Take 100 pixels off each side
+                        curStatsecList = [dAl[0]+100,dAl[1]-100,dAl[2]+100,
+                                         dAl[3]-100]
                     else:
                         # pull value from statsec dict provided
                         if isinstance(statsec,dict):
