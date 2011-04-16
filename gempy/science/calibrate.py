@@ -14,6 +14,7 @@ from astrodata.ConfigSpace import lookupPath
 from astrodata.Errors import ScienceError
 from gempy import geminiTools as gemt
 from gempy import managers as man
+from gempy import string
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
@@ -113,116 +114,7 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
         log.critical(repr(sys.exc_info()[1]))
         raise   
     
-def fringe_correct(adInputs, fringes, fl_statscale=False, scale=0.0, statsec='',
-            outNames=None, suffix=None):
-    """
-    This primitive will scale and subtract the fringe frame from the inputs.
-    It utilizes the Python re-written version of cl script girmfringe now called
-    rmImgFringe in gmosTools to do the work.
-    
-    NOTE:
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
 
-    FOR FUTURE
-    This function has many GMOS dependencies that would be great to work out
-    so that this could be made a more general function (say at the Gemini level)
-    .
-    
-    :param adInputs: Astrodata input(s) to be fringe corrected
-    :type adInputs: Astrodata objects, either a single or a list of objects
-    
-    :param fringes: Astrodata input fringe(s)
-    :type fringes: AstroData objects in a list, or a single instance.
-                   Note: If there is multiple inputs and one fringe provided, 
-                   then the same fringe will be applied to all inputs; else the   
-                   fringes list must match the length of the inputs.
-    
-    :param fl_statscale: Scale by statistics rather than exposure time
-    :type fl_statscale: Boolean
-    
-    :param statsec: image section used to determine the scale factor 
-                    if fl_statsec=True
-    :type statsec: string of format '[EXTNAME,EXTVER][x1:x2,y1:y2]'
-                   default: If CCDSUM = '1 1' :[SCI,2][100:1900,100:4500]'
-                   If CCDSUM = '2 2' : [SCI,2][100:950,100:2250]'
-    
-    :param scale: Override auto-scaling if not 0.0
-    :type scale: real
-
-    :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same 
-                    length as adInputs.
-    
-    :param suffix: string to postpend on the end of the input filenames 
-                   (or outNames if not None) for the output filenames.
-    :type suffix: string
-    
-    """
-    # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
-                                      funcName='fringe_correct') 
-    # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
-    
-    try:
-        # Set up counter for looping through outNames/BPMs lists
-        count=0
-        
-        # Creating empty list of ad's to be returned that will be filled below
-        adOutputs=[]
-        
-        # Casting 'fringes' into a list if not one yet
-        if not(isinstance(fringes,list)):
-            fringes = [fringes]
-        elif fringes==None:
-            raise ScienceError('There must be at least one astrodata instance\
-                                passed in for the "fringes" parameter')
-        
-        for ad in adInputs:
-            # Loading up a dictionary with the input parameters for rmImgFringe
-            paramDict = {
-                         'inimage'        :ad,
-                         'fringe'         :fringes[count].filename,
-                         'fl_statscale'   :fl_statscale,
-                         'statsec'        :statsec,
-                         'scale'          :scale,
-                         }
-            
-            # Logging values set in the parameters dictionary above
-            log.fullinfo('\nParameters being used for rmImgFringe '+
-                         'function:\n')
-            gemt.logDictParams(paramDict)
-            
-            # Calling the rmImgFringe function to perform the fringe 
-            # corrections, this function will return the corrected image as
-            # an AstroData instance
-            adOut = gmost.rmImgFringe(**paramDict)
-            
-            # renaming the output ad filename
-            adOut.filename = outNames[count]
-                    
-            log.status('File name updated to '+adOut.filename+'\n')
-            
-            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
-            # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='RMFRINGE')
-        
-            # Appending to output list
-            adOutputs.append(adOut)
-    
-            count=count+1
-                
-        log.status('**FINISHED** the fringe_correct function')
-        # Return the outputs (list or single, matching adInputs)
-        return adOutputs
-    except:
-        # logging the exact message from the actual exception that was raised
-        # in the try block. Then raising a general ScienceError with message.
-        log.critical(repr(sys.exc_info()[1]))
-        raise 
-        
 def normalize_flat_image(adInputs, outNames=None, suffix=None):
     """
     This function will normalize each SCI frame of the inputs and take care of
@@ -508,7 +400,12 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
     try: 
         # loading and bringing the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader() 
-         
+        ###################################
+        ##################################
+        pyraf.iraf.task(gireduce='/home/kmede/workspace/gemini_python/test_data/gireduce.cl')
+        #gireduce(params)
+        ########################
+        ############################## 
         # Creating empty list of ad's to be returned that will be filled below
         adOutputs=[]
                 
@@ -578,8 +475,8 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
             log.debug('Calling the gireduce CL script for inputs '+
                   clm.imageInsFiles(type='string'))
         
-            gemini.gmos.gireduce(**clParamsDict)
-            
+            #gemini.gmos.gireduce(**clParamsDict)
+            pyraf.iraf.gireduce(**clParamsDict)
             if gemini.gmos.gireduce.status:
                 raise ScienceError('gireduce failed for inputs '+
                              clm.imageInsFiles(type='string'))
@@ -624,7 +521,226 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
         # in the try block. Then raising a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
         raise 
+
+def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO', 
+            biassec='',
+            outNames=None, suffix=None):
+    """
+    ######### make this take a nbiascontam param as well as a biassec direct...####
+    #################################################################################
+    This function uses the CL script gireduce to subtract the overscan 
+    from the input images.
+    
+    WARNING: 
+    The gireduce script used here replaces the previously 
+    calculated DQ frames with its own versions.  This may be corrected 
+    in the future by replacing the use of the gireduce
+    with a Python routine to do the overscan subtraction.
+
+    note
+    The inputs to this function MUST be prepared.
+
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+
+    FOR FUTURE
+    This function has many GMOS dependencies that would be great to work out
+    so that this could be made a more general function (say at the Gemini level)
+    .  In the future the parameters can be looked into and the CL script can be 
+    upgraded to handle things like row based overscan calculations/fitting/
+    modeling... vs the column based used right now, add the model, nbiascontam,
+    ... params to the functions inputs so the user can choose them for 
+    themselves.
+
+    :param adInputs: Astrodata inputs to be converted to Electron pixel units
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param fl_trim: Trim the overscan region from the frames?
+    :type fl_trim: Python boolean (True/False)
+    
+    :param fl_vardq: Create variance and data quality frames?
+    :type fl_vardq: 
+        Python boolean (True/False), OR string 'AUTO' to do 
+        it automatically if there are VAR and DQ frames in the inputs.
+        NOTE: 'AUTO' uses the first input to determine if VAR and DQ frames  
+        exist, so, if the first does, then the rest MUST also have them as well.
+
+    :param biassec: biassec parameter of format 
+                    '[x1:x2,y1:y2],[x1:x2,y1:y2],[x1:x2,y1:y2]'
+    :type biassec: string. If empty string, then header BIASSEC vals are used.
+                   Ex. '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
+                   is ideal for 2x2 GMOS data.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix: string to postpend on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
+    :type suffix: string
+
+    """
+
+    # Instantiate ScienceFunctionManager object
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
+                                      funcName='overscan_subtract_gmos') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try: 
+        # loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader() 
+         
+        # Changing the standard output so the excess prints while loading IRAF
+        # packages does not get displayed
+        import StringIO
+        SAVEOUT = sys.stdout
+        capture = StringIO.StringIO()
+        sys.stdout = capture
+        from pyraf.iraf import noao
+        from pyraf.iraf import imred
+        from pyraf.iraf import bias
+        noao()
+        imred()
+        bias()
+        # Returning stdout back to normal so prints show on the screen
+        sys.stdout = SAVEOUT
         
+        # Converting input True/False to yes/no or detecting fl_vardq value
+        # if 'AUTO' chosen with autoVardq in the ScienceFunctionManager
+        fl_vardq = sfm.autoVardq(fl_vardq) 
+         
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        count = 0
+        for ad in adInputs:
+            # Preparing input files, lists, parameters... for input to 
+            # the CL script
+            clm=man.CLManager(imageIns=ad, imageOutsNames=outNames[count],  
+                               suffix=suffix, funcName='overscanSubtract',   
+                               log=log)
+            # Making a deepcopy of the input to work on
+            # (ie. a truly new+different object that is a complete copy of the input)
+            adOut = deepcopy(ad)
+            infilename = clm.imageInsFiles(type='list')[count]               
+            outfilename = clm.imageOutsFiles(type='list')[count]                     
+            
+            for sciExtIn in adOut['SCI']:
+                extVerIn = sciExtIn.extver()
+                ######## make it handle biassec argument of this function#######
+                ########## so in here would be if biassec!='', and another section for if is not nbiascontam:...#######
+                biassecStr = sciExtIn.getKeyValue('BIASSEC')    ########### convert this to use overscan_section() descriptor when exists, but with pretty=True
+                
+                ######### make a func or mode nbiascontam to handle this
+                biassecList = string.section_str_to_int_list(biassecStr) #####
+                bsL=biassecList
+                if  biassecList[3]<50:
+                    #ie biassec on left of chip
+                    print '### bias is on left side of chip # '+str(extVerIn)
+                    bsLtrimmed = [bsL[0],bsL[1],bsL[2]+1,bsL[3]-7]
+                else:
+                    #ie biassec on right of chip
+                    print '### bias is on right side of chip # '+str(extVerIn)
+                    bsLtrimmed = [bsL[0],bsL[1],bsL[2]+7,bsL[3]-1]
+                bsLt = bsLtrimmed    
+                
+                biassecStrTrimmed='['+str(bsLt[2]+1)+':'+str(bsLt[3]+1)+','+str(bsLt[0]+1)+':'+str(bsLt[1]+1)+']'
+                
+                print biassecStr        
+                print repr(sciExtIn.data.shape)
+                print repr(bsLtrimmed)
+                
+                if os.path.exists('tmpoverscanlog'):
+                    os.remove('tmpoverscanlog')
+                
+                colbiasParamDict = {'input'     :infilename+'[SCI,'+str(extVerIn)+']',
+                                    'output'    :outfilename+'[SCI,'+str(extVerIn)+',append]',
+                                    'bias'      :biassecStrTrimmed,
+                                    'trim'      :"[]",
+                                    'median'    :no,
+                                    'interactive':no,
+                                    'function'  :'chebyshev',
+                                    'order'     :1,
+                                    'low_reject':3.,
+                                    'high_reject':3.,
+                                    'niterate'  :2,
+                                    'logfile'   :'tmpoverscanlog',
+                                    'graphics'  :'stdgraph',
+                                    'cursor'    :'',
+                                    'mode'      :'al'                                        
+                                    }
+                
+                # Loop through the parameters in the colbiasParamDict 
+                # dictionary and log them
+                gemt.logDictParams(colbiasParamDict)
+                log.debug('Calling colbias')
+                noao.imred.bias.colbias(**colbiasParamDict)
+                
+                log.status('colbias finished subtracting the overscan')
+                for line in open('tmpoverscanlog').readlines():
+                    if line.find('RMS')>0:
+                        rmsStr = line.split(' ')[-1][0:-1]
+                
+                overscanMean = sciExtIn.data[bsLt[0]:bsLt[1],bsLt[2]:bsLt[3]].mean()
+                
+                sciExtIn.setKeyValue('OVERRMS',rmsStr,"Overscan RMS value from colbias")
+                sciExtIn.setKeyValue("OVERSCAN", overscanMean, "Overscan mean value")
+                log.stdinfo('RMS in the overscan region found to be '+sciExtIn.getKeyValue('OVERRMS'))
+                log.stdinfo('mean of the overscan region found to be '+str(sciExtIn.getKeyValue('OVERSCAN')))
+                
+            # Renaming CL outputs and loading them back into memory, and 
+            # cleaning up the intermediate tmp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL() 
+            
+            # loop to extract SCI extension data from the colbias ouputs
+            # this is because colbias doesn't correctly re-create the MEF of
+            # the input, only the single extensions.
+            for sciExtOut in imageOuts[0]['SCI']:
+                extVerOut = sciExtOut.extver()
+                print 'copying colbias output SCI data frame '+str(extVerOut)+' to adOut SCI data'
+                adOut['SCI',extVerOut].data = sciExtOut.data
+                
+             
+            # Renaming for symmetry
+            adOutputs.append(adOut)
+        
+        #if fl_vardq==yes:
+        if False:
+            ############## refactor this if it works to use add_var OUTSIDE the SCI extn loop but inside adInputs loop#####
+            from gempy.science.geminiScience import add_var
+            if adOut['VAR']:
+                log.status('updating variance plane')
+                initialVar = gemt.calculateInitialVarianceArray(sciExtOut)
+                newVar = np.add(initialVar,float(rmsStr)*float(rmsStr))
+                adOut['VAR',extVer].data = newVar
+            else:
+                log.status('creating new variance plane')
+                initialVar = gemt.calculateInitialVarianceArray(sciExt)
+                newVar = np.add(initialVar,float(rmsStr)*float(rmsStr))
+                varheader = gemt.createInitialVarianceHeader(extVer)
+                # Turning individual variance header and data 
+                # into one astrodata instance
+                varAD = AstroData(header=varheader, data=varArray)
+                adOut.append(varAD)
+            ################################################################################################################  
+
+        
+            
+            
+        
+        log.status('**FINISHED** the overscan_subtract_gmos function')
+        
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise 
+
 def overscan_trim(adInputs, outNames=None, suffix=None):
     """
     This function uses AstroData to trim the overscan region 
@@ -987,9 +1103,7 @@ def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
         # Creating empty list of ad's to be returned that will be filled below
         adOutputs=[]
         
-        # Loop through the inputs to perform the non-linear and saturated
-        # pixel searches of the SCI frames to update the BPM frames into
-        # full DQ frames. 
+        # Loop through the inputs 
         for ad in adInputs:  
             # Getting the right dark for this input
             if len(darks)>1:
