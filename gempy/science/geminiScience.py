@@ -12,6 +12,7 @@ from copy import deepcopy
 from datetime import datetime
 
 from astrodata.AstroData import AstroData
+from astrodata.adutils import varutil
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.Errors import ScienceError
 from gempy import geminiTools as gemt
@@ -286,8 +287,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                                            dtype=np.int16)
                     saturatedArray = np.zeros(sciExt.data.shape, 
                                               dtype=np.int16)
-                    linear = sciExt.non_linear_level()
-                    saturated = sciExt.saturation_level()
+                    linear = sciExt.non_linear_level().asPytype()
+                    saturated = sciExt.saturation_level().asPytype()
 
                     if (linear is not None) and (fl_nonlinear): 
                         log.debug('Performing an np.where to find '+
@@ -410,30 +411,13 @@ def add_var(adInputs, outNames=None, suffix=None):
                 # and calculate a corresponding VAR frame for it, then 
                 # append it
                 for sciExt in adOut['SCI']:
-                    # var = (read noise/gain)2 + max(data,0.0)/gain
-                    
-                    # Retrieving necessary values (read noise, gain)
-                    readNoise=sciExt.read_noise()
-                    gain = sciExt.gain(format='value') #### Fix this when Craig finishes auto constructor stuff 
-                    # Creating (read noise/gain) constant
-                    rnOverG=readNoise/gain
-                    # Convert negative numbers (if they exist) to zeros
-                    maxArray=np.where(sciExt.data>0.0,0,sciExt.data)
-                    # Creating max(data,0.0)/gain array
-                    maxOverGain=np.divide(maxArray,gain)
-                    # Putting it all together
-                    varArray=np.add(maxOverGain,rnOverG*rnOverG)
+                    # Using the toolbox function calculateVarianceArray
+                    # to conduct the actual calculation following:
+                    # var = (read noise/gain)**2 + max(data,0.0)/gain
+                    varArray = varutil.calculateInitialVarianceArray(sciExt)
                      
                     # Creating the variance frame's header and updating it     
-                    varheader = pf.Header()
-                    varheader.update('NAXIS', 2)
-                    varheader.update('PCOUNT', 0, 'required keyword; must = 0')
-                    varheader.update('GCOUNT', 1, 'required keyword; must = 1')
-                    varheader.update('EXTNAME', 'VAR', 'Extension Name')
-                    varheader.update('EXTVER', sciExt.extver(), 
-                                     'Extension Version')
-                    varheader.update('BITPIX', -32,
-                                     'number of bits per data pixel')
+                    varheader = varutil.createInitialVarianceHeader(sciExt.extver())
                     
                     # Turning individual variance header and data 
                     # into one astrodata instance
