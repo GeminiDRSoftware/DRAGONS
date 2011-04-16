@@ -9,6 +9,7 @@ import numpy as np
 from copy import deepcopy
 import astrodata
 from astrodata.AstroData import AstroData
+from astrodata.adutils import varutil
 from astrodata.Errors import ArithError
 
 def div(numerator, denominator):
@@ -18,9 +19,15 @@ def div(numerator, denominator):
     this function will loop through the SCI, VAR and DQ frames
     to divide each SCI of the numerator by the denominator SCI of 
     the same EXTVER. It will apply a bitwise-or to the DQ frames to 
-    preserve their binary formats. The VAR frames output will follow:
-    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) ), where A=numerator 
-    and B=denominator frames.
+    preserve their binary formats. 
+    
+    The VAR frames output will follow:
+    
+    If denominator is an AstroData instance:
+    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) ), 
+    where A=numerator and B=denominator frames.
+    Else:
+    varOut=varA * float^2
             
     If the denominator is a float integer then only the SCI frames of the 
     numerator are each divided by the float.
@@ -106,8 +113,9 @@ def div(numerator, denominator):
             except:
                 raise
             
-    # Check to see if the denominator is of type AstroData
-    elif isinstance(den, AstroData):
+    # Check to see if the denominator is of type astrodata.AstroData.AstroData
+    elif isinstance(den, astrodata.AstroData) or \
+                                isinstance(den, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions 
         for sci in num['SCI']:
             # Retrieving the version of this extension
@@ -136,27 +144,13 @@ def div(numerator, denominator):
                         
                         # Creating the output VAR frame following 
                         # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
-                        
-                        # Making empty sciOutSqured array and squaring 
-                        # the sciOut frame to load it up 
-                        sciOutSquared = np.multiply(out[('SCI', extver)].data, 
-                                                  out[('SCI', extver)].data)
-                        # Ditto for sciA and sciB 
-                        sciASquared = np.multiply(num[('SCI', extver)].data, 
-                                                num[('SCI', extver)].data)
-                        sciBSquared = np.multiply(den[('SCI', extver)].data, 
-                                                den[('SCI', extver)].data)
-                        # Now var_A/sciASquared and var_B/sciBSquared
-                        varAoverSciASquared = np.divide(num[('VAR', extver)].data,
-                                                      sciASquared)
-                        varBoverSciBSquared = np.divide(den[('VAR', extver)].data,
-                                                      sciBSquared)
-                        # Now varAoverSciASquared + varBoverSciBSquared
-                        varOverAplusB = np.add(varAoverSciASquared, 
-                                             varBoverSciBSquared)
-                        # Put it all together 
-                        # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
-                        outvar.data=np.multiply(sciOutSquared, varOverAplusB)
+                        # using the varianceArrayCalculator() function
+                        outvar.data = varutil.varianceArrayCalculator(
+                                                      sciExtA=inA['SCI',extver],
+                                                      sciExtB=inB['SCI',extver],
+                                                      varExtA=inA['VAR',extver],
+                                                      varExtB=inB['VAR',extver],
+                                                      div=True)
                         # Append the updated out VAR frame to the output
                         out.append(outvar)
                         
@@ -174,14 +168,14 @@ def div(numerator, denominator):
                         
                 # If arrays are different sizes then raise an exception
                 else:
-                    raise ArithError('arrays are different sizes')
+                    raise ArithError('different numbers of SCI, VAR extensions')
             except:
                 raise 
 
     # If the input was not of type astrodata, float, float list or dictionary
     # then raise an exception
     else:
-        raise ArithError('An error occurred while performing the div task')  
+        raise 
     # Return the fully updated output astrodata object      
     return out       
                 
@@ -192,8 +186,14 @@ def mult(inputA, inputB):
     function will loop through the SCI, VAR and DQ frames to multiply each 
     SCI of the inputA by the inputB SCI of the same EXTVER. It will apply a 
     bitwise-or to the DQ frames to preserve their binary formats.
+    
     The VAR frames output will follow:
-    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
+    
+    If denominator is an AstroData instance:
+    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) ), 
+    where A=numerator and B=denominator frames.
+    Else:
+    varOut=varA * float^2
     
     If inputB is a float integer then only the SCI frames of the inputA 
     are each multiplied by the float.
@@ -278,8 +278,9 @@ def mult(inputA, inputB):
             except:
                 raise 
     
-    # Check to see if the denominator is of type AstroData
-    elif isinstance(inB, AstroData):
+    # Check to see if the denominator is of type astrodata.AstroData.AstroData
+    elif isinstance(inB, astrodata.AstroData) or \
+                                isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -307,27 +308,13 @@ def mult(inputA, inputB):
                         
                         # Creating the output VAR frame following 
                         # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
-                        
-                        # Making empty sciOutSqured array and squaring 
-                        # the sciOut frame to load it up 
-                        sciOutSquared = np.multiply(out[('SCI', extver)].data, 
-                                                  out[('SCI', extver)].data)
-                        # Ditto for sciA and sciB 
-                        sciASquared = np.multiply(inA[('SCI', extver)].data, 
-                                                inA[('SCI', extver)].data)
-                        sciBSquared = np.multiply(inB[('SCI', extver)].data, 
-                                                inB[('SCI', extver)].data)
-                        # Now var_A/sciASquared and var_B/sciBSquared
-                        varAoverSciASquared = np.divide(inA[('VAR', extver)].data,
-                                                        sciASquared)
-                        varBoverSciBSquared = np.divide(inB[('VAR', extver)].data,
-                                                        sciBSquared)
-                        # Now varAoverSciASquared + varBoverSciBSquared
-                        varOverAplusB = np.add(varAoverSciASquared, 
-                                             varBoverSciBSquared)
-                        # Put it all together 
-                        # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
-                        outvar.data = np.multiply(sciOutSquared,varOverAplusB)
+                        # using the varianceArrayCalculator() function
+                        outvar.data = varutil.varianceArrayCalculator(
+                                                      sciExtA=inA['SCI',extver],
+                                                      sciExtB=inB['SCI',extver],
+                                                      varExtA=inA['VAR',extver],
+                                                      varExtB=inB['VAR',extver],
+                                                      mult=True)
                         # Append the updated out VAR frame to the output
                         out.append(outvar)
                         
@@ -342,14 +329,14 @@ def mult(inputA, inputB):
                         out.append(outdq)
                 # If arrays are different sizes then raise an exception
                 else:
-                    raise ArithError('arrays are different sizes')
+                    raise ArithError('different numbers of SCI, VAR extensions')
             except:
                 raise 
 
     # If the input was not of type astrodata, float, float list or dictionary
     # then raise an exception
     else:
-        raise ArithError('An error occurred while performing the mult task')      
+        raise    
     # Return the fully updated output astrodata object 
     return out   
 
@@ -359,7 +346,13 @@ def add(inputA, inputB):
     point integer. If inputB is an AstroData MEF then this function will 
     loop through the SCI, VAR and DQ frames to add each SCI of the inputA 
     to the inputB SCI of the same EXTVER. It will apply a bitwise-or to the DQ
-     frames to preserve their binary formats and the VAR frames will be added.
+    frames to preserve their binary formats. 
+    The VAR frames output will follow:
+    
+    If inputB is an AstroData instance:
+    varOut= varA + varB
+    Else:
+    varOut=varA 
     
     If the inputB is a float integer then only the SCI frames of inputA will 
     each have the float value added, while the VAR and DQ frames of inputA 
@@ -416,8 +409,9 @@ def add(inputA, inputB):
                     out.append(outdq) 
             except:
                 raise
-    # Check to see if the denominator is of type AstroData
-    elif isinstance(inB, AstroData):
+    # Check to see if the denominator is of type astrodata.AstroData.AstroData
+    elif isinstance(inB, astrodata.AstroData) or \
+                                isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -462,13 +456,13 @@ def add(inputA, inputB):
                 
                 # If arrays are different sizes then raise an exception
                 else:
-                    raise ArithError('arrays are different sizes')
+                    raise ArithError('different numbers of SCI, VAR extensions')
             except:
                 raise 
      
     # If the input was not of type astrodata or float, raise an exception
     else:
-        raise ArithError('An error occurred while performing the add task')            
+        raise             
     # Return the fully updated output astrodata object 
     return out     
         
@@ -478,8 +472,13 @@ def sub(inputA, inputB):
     floating point integer. If inputB is an AstroData MEF then this function 
     will loop through the SCI, VAR and DQ frames to subtract each SCI of the 
     inputB from the inputA SCI of the same EXTVER. It will apply a bitwise-or 
-    to the DQ frames to preserve their binary formats and the VAR frames 
-    will be added.
+    to the DQ frames to preserve their binary formats.
+    The VAR frames output will follow:
+    
+    If inputB is an AstroData instance:
+    varOut= varA + varB
+    Else:
+    varOut=varA 
     
     If the inputB is a float integer then only the SCI frames of inputA will 
     each have the float value subtracted while the VAR and DQ frames of 
@@ -538,8 +537,9 @@ def sub(inputA, inputB):
             except:
                 raise
             
-    # Check to see if the denominator is of type AstroData
-    elif isinstance(inB, AstroData):
+    # Check to see if the denominator is of type astrodata.AstroData.AstroData
+    elif isinstance(inB, astrodata.AstroData) or \
+                                isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -582,12 +582,13 @@ def sub(inputA, inputB):
                 
                 # If arrays are different sizes then raise an exception
                 else:
-                    raise ArithError('arrays are different sizes')
+                    raise ArithError('different numbers of SCI, VAR extensions')
             except:
                 raise 
      
     # If the input was not of type astrodata or float, raise an exception
     else:
-        raise ArithError('An error occurred while performing the sub task')            
+        raise            
     # Return the fully updated output astrodata object 
     return out 
+
