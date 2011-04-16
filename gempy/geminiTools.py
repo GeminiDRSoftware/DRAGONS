@@ -88,7 +88,7 @@ def checkInputsMatch(adInsA=None, adInsB=None):
                 raise ToolboxError('Extensions have different filters')
         
         log.status('Inputs match')    
-   
+
 def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',strip=False):
     """
     This function is for updating the file names of astrodata objects.
@@ -226,32 +226,6 @@ def pyrafBoolean(pythonBool):
     else:
         raise ToolBoxError('DANGER DANGER Will Robinson, pythonBool passed '+
         'in was not True or False, and thats just crazy talk :P')
-
-def secStrToIntList(string):
-    """ 
-    A function to convert a string representing a list of integers to 
-    an actual list of integers.
-    
-    :param string: string to be converted
-    :type string: string of format '[#1:#2,#3:#4]'
-    
-    returns list of ints [#1,#2,#3,#4]
-    
-    """
-    # Strip off the brackets and then split up into a string list 
-    # using the ',' delimiter
-    coords = string.strip('[').strip(']').split(',')
-    # Split up strings into X and Y components using ':' delimiter
-    Ys = coords[0].split(':')
-    Xs = coords[1].split(':')
-    # Prepare the list and then fill it with the string coordinates 
-    # converted to integers
-    retl = []
-    retl.append(int(Ys[0]))
-    retl.append(int(Ys[1]))
-    retl.append(int(Xs[0]))
-    retl.append(int(Xs[1]))
-    return retl
 
 def update_key_value(ad, valueFuncStr, phu=True):
     """
