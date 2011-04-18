@@ -148,6 +148,7 @@ def div(numerator, denominator):
                         outvar.data = varutil.varianceArrayCalculator(
                                                       sciExtA=inA['SCI',extver],
                                                       sciExtB=inB['SCI',extver],
+                                                      sciOut=outsci,
                                                       varExtA=inA['VAR',extver],
                                                       varExtB=inB['VAR',extver],
                                                       div=True)
@@ -312,6 +313,7 @@ def mult(inputA, inputB):
                         outvar.data = varutil.varianceArrayCalculator(
                                                       sciExtA=inA['SCI',extver],
                                                       sciExtB=inB['SCI',extver],
+                                                      sciOut=outsci,
                                                       varExtA=inA['VAR',extver],
                                                       varExtB=inB['VAR',extver],
                                                       mult=True)
