@@ -67,13 +67,13 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
             # Calling geminiScience toolbox function ADUtoElectons to do the work
             # of converting the pixels, updating headers and logging.
-            log.debug('Calling geminiScience.addDQ')
+            log.debug('Calling geminiScience.add_dq')
 
             adOutputs = geminiScience.add_dq(adInputs=rc.getInputs(style='AD'), 
                                          fl_nonlinear=rc['fl_nonlinear'], 
                                          fl_saturated=rc['fl_saturated'], 
                                          suffix=rc['suffix'])
-            log.status('geminiScience.addDQ completed successfully')
+            log.status('geminiScience.add_dq completed successfully')
             
             # Reporting the outputs to the reduction context
             rc.reportOutput(adOutputs)          
@@ -153,12 +153,12 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             # Calling geminiScience toolbox function ADUtoElectons to do the work
             # of converting the pixels, updating headers and logging.
-            log.debug('Calling geminiScience.addVAR')
+            log.debug('Calling geminiScience.add_var')
             
             adOutputs = geminiScience.add_var(adInputs=rc.getInputs(style='AD'), 
                                          suffix=rc['suffix'])    
            
-            log.status('geminiScience.addVAR completed successfully')
+            log.status('geminiScience.add_var completed successfully')
             
             # Reporting the outputs to the reduction context
             rc.reportOutput(adOutputs)            
@@ -192,7 +192,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                        'ADU to electrons')
             # Calling geminiScience toolbox function ADUtoElectons to do the work
             # of converting the pixels, updating headers and logging.
-            log.debug('Calling geminiScience.ADUtoElectrons')
+            log.debug('Calling geminiScience.adu_to_electrons')
             
             adOutputs = geminiScience.adu_to_electrons(
                                             adInputs=rc.getInputs(style='AD'), 
@@ -980,7 +980,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             fringes.phuSetKeyValue('ORIGNAME','TEMPNAMEforFRINGE.fits')
             ####################################################################         
             
-            log.debug('Calling calibrate.subtract_dark function')
+            log.debug('Calling calibrate.subtract_fringe function')
             
             adOutputs = calibrate.subtract_fringe(
                                             adInputs=rc.getInputs(style='AD'),     
