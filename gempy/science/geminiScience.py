@@ -128,20 +128,19 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
                         # if the sizes match then there is no change, else
                         # output BPM array will be 'padded with zeros' or 
                         # 'not bad pixels' to match SCI's size.
-                        # NOTE: first elements of arrays in python are inclusive
-                        #       while last ones are exclusive, thus a 1 must be 
-                        #       added for the final element to be included.
                         if BPMArrayIn.shape==datasecShape:
+                            log.fullinfo('BPM data was found to be of a'+
+                                     ' different size than the SCI, so padding'+
+                                     ' the BPM"s data to match the SCI.')                   
                             BPMArrayOut[dsl[0]:dsl[1], dsl[2]:dsl[3]] = \
                                                                 BPMArrayIn
                         elif BPMArrayIn.shape==BPMArrayOut.shape:
-                            BPMArrayOut[dsl[0]:dsl[1], dsl[2]:dsl[3]] = \
-                                BPMArrayIn[dsl[0]:dsl[1], dsl[2]:dsl[3]]
+                            BPMArrayOut = BPMArrayIn
                     
                     # Don't match size
                     else:
                         BPMArrayOut = BPMArrayIn
-                        
+                    
                     # Creating a header for the BPM array and updating
                     # further updating to this header will take place in 
                     # addDQ primitive
@@ -275,11 +274,37 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                     bpmAD = adOut[('BPM',sciExt.extver())]
                     
                     # Extracting the BPM data array for this extension
-                    BPMArray = bpmAD.data
+                    BPMArrayIn = bpmAD.data
                     
                     # Extracting the BPM header for this extension to be 
                     # later converted to a DQ header
                     dqheader = bpmAD.header
+                    
+                    ## Matching size of BPM array to that of the SCI data array
+                    
+                    # Getting the data section as a int list of form:
+                    # [y1, y2, x1, x2] 0-based and non-inclusive
+                    datsecList = sciExt.data_section().asPytype()
+                    dsl = datsecList
+                    datasecShape = (dsl[1]-dsl[0], dsl[3]-dsl[2])
+                    
+                    # Creating a zeros array the same size as SCI array
+                    # for this extension
+                    BPMArrayOut = np.zeros(sciExt.data.shape, 
+                                           dtype=np.int16)
+
+                    # Loading up zeros array with data from BPM array
+                    # if the sizes match then there is no change, else
+                    # output BPM array will be 'padded with zeros' or 
+                    # 'not bad pixels' to match SCI's size.
+                    if BPMArrayIn.shape==datasecShape:
+                        log.fullinfo('BPM data was found to be of a'+
+                                 ' different size than the SCI, so padding'+
+                                 ' the BPM"s data to match the SCI.')                   
+                        BPMArrayOut[dsl[0]:dsl[1], dsl[2]:dsl[3]] = BPMArrayIn
+                    elif BPMArrayIn.shape==BPMArrayOut.shape:
+                        BPMArrayOut = BPMArrayIn
+                    
                     
                     # Preparing the non linear and saturated pixel arrays
                     # and their respective constants
@@ -308,7 +333,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                                    ' pixels') 
                     
                     # Creating one DQ array from the three
-                    dqArray=np.add(BPMArray, nonLinArray, saturatedArray) 
+                    dqArray=np.add(BPMArrayOut, nonLinArray, saturatedArray) 
                     # Updating data array for the BPM array to be the 
                     # newly calculated DQ array
                     adOut[('BPM',sciExt.extver())].data = dqArray
