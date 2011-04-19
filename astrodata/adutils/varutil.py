@@ -207,26 +207,34 @@ def calculateInitialVarianceArray(sciExt=None):
     except:
         raise
 
-def createInitialVarianceHeader(extver):
+def createInitialVarianceHeader(extver=None,shape=None):
     """
     This function creates a variance pyfits header object and loads it up with 
     the standard header keys.
     Since these are basically the same for all initial variance frames, 
     excluding the EXTVER key, this func is very simple :-)
     
+    NOTE: maybe this function should be further generalized in the future to 
+    handle variance frames with more than two axes? IFU VAR frames?
+    
     :param extver: extension version to put into the EXTVER header key matching
                    the SCI extension's EXTVER
     :type extver: int
+    
+    :param shape: shape of data array for this VAR extension. 
+                  Can be found using ad['VAR',extver].data.shape
+    :type shape: tuple. ex. (2304,1024), , ie(number of rows, number of columns)
     """    
     # Creating the variance frame's header with pyfits and updating it     
     varheader = pf.Header()
+    varheader.update('XTENSION','IMAGE','IMAGE extension')
+    varheader.update('BITPIX', -32,'number of bits per data pixel')
     varheader.update('NAXIS', 2)
+    varheader.update('NAXIS1',shape[1],'length of data axis 1')
+    varheader.update('NAXIS2',shape[0],'length of data axis 2')
     varheader.update('PCOUNT', 0, 'required keyword; must = 0')
     varheader.update('GCOUNT', 1, 'required keyword; must = 1')
     varheader.update('EXTNAME', 'VAR', 'Extension Name')
-    varheader.update('EXTVER', extver, 
-                     'Extension Version')
-    varheader.update('BITPIX', -32,
-                     'number of bits per data pixel')
+    varheader.update('EXTVER', extver, 'Extension Version')
     
     return varheader
