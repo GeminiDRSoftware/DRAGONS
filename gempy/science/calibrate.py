@@ -9,6 +9,7 @@ import numpy as np
 from copy import deepcopy
 
 from astrodata.AstroData import AstroData
+from astrodata.adutils import varutil
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.ConfigSpace import lookupPath
 from astrodata.Errors import ScienceError
@@ -522,20 +523,13 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
         log.critical(repr(sys.exc_info()[1]))
         raise 
 
-def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO', 
-            biassec='',
-            outNames=None, suffix=None):
+def overscan_subtract_gmosNEW(adInputs, fl_vardq='AUTO', biassec='',
+            numContamCol=None, outNames=None, suffix=None):
     """
     ######### make this take a nbiascontam param as well as a biassec direct...####
     #################################################################################
-    This function uses the CL script gireduce to subtract the overscan 
-    from the input images.
-    
-    WARNING: 
-    The gireduce script used here replaces the previously 
-    calculated DQ frames with its own versions.  This may be corrected 
-    in the future by replacing the use of the gireduce
-    with a Python routine to do the overscan subtraction.
+    This function uses the CL script colbias to calculate and subtract the  
+    overscan from the input images.
 
     note
     The inputs to this function MUST be prepared.
@@ -545,13 +539,11 @@ def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO',
     ScienceFunctionManager and used within this function.
 
     FOR FUTURE
-    This function has many GMOS dependencies that would be great to work out
-    so that this could be made a more general function (say at the Gemini level)
-    .  In the future the parameters can be looked into and the CL script can be 
-    upgraded to handle things like row based overscan calculations/fitting/
-    modeling... vs the column based used right now, add the model, nbiascontam,
-    ... params to the functions inputs so the user can choose them for 
-    themselves.
+    .  In the future the parameters can be looked into and an upgraded pure 
+    Python version can be made to handle things like row based overscan 
+    calculations/fitting/modeling... vs the column based used right now, add the
+    model, nbiascontam,... params to the functions inputs so the user can choose
+    them for themselves.
 
     :param adInputs: Astrodata inputs to be converted to Electron pixel units
     :type adInputs: Astrodata objects, either a single or a list of objects
@@ -569,9 +561,16 @@ def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO',
     :param biassec: biassec parameter of format 
                     '[x1:x2,y1:y2],[x1:x2,y1:y2],[x1:x2,y1:y2]'
     :type biassec: string. If empty string, then header BIASSEC vals are used.
-                   Ex. '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
+                   Ex. '[2:25,1:2304],[2:25,1:2304],[1032:1055,1:2304]' 
                    is ideal for 2x2 GMOS data.
     
+    :param numContamCol: The number of contaminating columns from the data 
+                         section. ie. the desired gap size in pixels between
+                         the bias section and data section.
+    :type numContamCol: int.  typical values are between 4-10. 
+                        Default of 4 is used if numContamCol and biassec are 
+                        not defined.
+                            
     :param outNames: filenames of output(s)
     :type outNames: String, either a single or a list of strings of same length 
                     as adInputs.
@@ -624,11 +623,23 @@ def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO',
             # Making a deepcopy of the input to work on
             # (ie. a truly new+different object that is a complete copy of the input)
             adOut = deepcopy(ad)
-            infilename = clm.imageInsFiles(type='list')[count]               
+            
+            # Getting the names of the temp disk file versions of the inputs
+            infilename = clm.imageInsFiles(type='list')[count]       
+            # Getting the file names which the CL script will be writting its
+            # outputs to.        
             outfilename = clm.imageOutsFiles(type='list')[count]                     
             
+            # loop through the SCI extensions in the deepcopied AD and 
+            # conduct the bias subtraction plus header updates to them
             for sciExtIn in adOut['SCI']:
                 extVerIn = sciExtIn.extver()
+                
+                # Taking care of the biasec->nbiascontam param
+                if not biassec == '':
+                    nbiascontam = clm.nbiascontam(adInputs, biassec)
+                    log.fullinfo('nbiascontam parameter was updated to = '+
+                                 str(nbiascontam))
                 ######## make it handle biassec argument of this function#######
                 ########## so in here would be if biassec!='', and another section for if is not nbiascontam:...#######
                 biassecStr = sciExtIn.getKeyValue('BIASSEC')    ########### convert this to use overscan_section() descriptor when exists, but with pretty=True
@@ -645,18 +656,26 @@ def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO',
                     print '### bias is on right side of chip # '+str(extVerIn)
                     bsLtrimmed = [bsL[0],bsL[1],bsL[2]+7,bsL[3]-1]
                 bsLt = bsLtrimmed    
-                
-                biassecStrTrimmed='['+str(bsLt[2]+1)+':'+str(bsLt[3]+1)+','+str(bsLt[0]+1)+':'+str(bsLt[1]+1)+']'
+                # converting the 0-based non-inclusive to 1-based inclusive 
+                # string for use by colbias.
+                biassecStrTrimmed='['+str(bsLt[2]+1)+':'+str(bsLt[3])+','+str(bsLt[0]+1)+':'+str(bsLt[1])+']'
                 
                 print biassecStr        
                 print repr(sciExtIn.data.shape)
                 print repr(bsLtrimmed)
                 
+                # make versions of the input and output filenames for colbias
+                colbiasInputfile = infilename+'[SCI,'+str(extVerIn)+']'
+                colbiasOutputfile = outfilename+'[SCI,'+str(extVerIn)+',append]'
+                
+                # delete the previous temp log for colbias if it exists
                 if os.path.exists('tmpoverscanlog'):
                     os.remove('tmpoverscanlog')
                 
-                colbiasParamDict = {'input'     :infilename+'[SCI,'+str(extVerIn)+']',
-                                    'output'    :outfilename+'[SCI,'+str(extVerIn)+',append]',
+                # fill out colbias input parameter dictionary
+                ### maybe add this to geminiCLParDicts.py??
+                colbiasParamDict = {'input'     :colbiasInputfile,
+                                    'output'    :colbiasOutputfile,
                                     'bias'      :biassecStrTrimmed,
                                     'trim'      :"[]",
                                     'median'    :no,
@@ -675,14 +694,18 @@ def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO',
                 # Loop through the parameters in the colbiasParamDict 
                 # dictionary and log them
                 gemt.logDictParams(colbiasParamDict)
+                
                 log.debug('Calling colbias')
                 noao.imred.bias.colbias(**colbiasParamDict)
                 
                 log.status('colbias finished subtracting the overscan')
+                
+                # scan through the temp log to find the RMS value calculated
                 for line in open('tmpoverscanlog').readlines():
                     if line.find('RMS')>0:
                         rmsStr = line.split(' ')[-1][0:-1]
-                
+                # calculate the mean of the overscan region defined by 
+                # trimmed biassec
                 overscanMean = sciExtIn.data[bsLt[0]:bsLt[1],bsLt[2]:bsLt[3]].mean()
                 
                 sciExtIn.setKeyValue('OVERRMS',rmsStr,"Overscan RMS value from colbias")
@@ -690,46 +713,46 @@ def overscan_subtract_gmosNEW(adInputs, fl_trim=False, fl_vardq='AUTO',
                 log.stdinfo('RMS in the overscan region found to be '+sciExtIn.getKeyValue('OVERRMS'))
                 log.stdinfo('mean of the overscan region found to be '+str(sciExtIn.getKeyValue('OVERSCAN')))
                 
+                # add or update the VAR frames if requested.
+                ## We don't need to update the DQ frams as they are un-effected
+                ## by overscan subtraction.
+                if fl_vardq==yes:
+                    if adOut['VAR']:
+                        # update the current variance with 
+                        # varOut=vanIn + (RMS of overscan region)
+                        log.status('updating variance plane')
+                        adOut['VAR',extVerIn].data = np.add(adOut['VAR',extVerIn].data,float(rmsStr)*float(rmsStr))
+                    else:
+                        log.status('creating new variance plane')
+                        initialVar = gemt.calculateInitialVarianceArray(sciExtIn)
+                        varheader = gemt.createInitialVarianceHeader(
+                                                                extver=extVerIn,
+                                                                shape=initialVar.shape)
+                        # Turning individual variance header and data 
+                        # into one astrodata instance
+                        varAD = AstroData(header=varheader, data=initialVar)
+                        adOut.append(varAD)
+                        # update the current variance with 
+                        # varOut=vanIn + (RMS of overscan region)
+                        adOut['VAR',extVerIn].data = np.add(adOut['VAR',extVerIn].data,float(rmsStr)*float(rmsStr))     
+                
             # Renaming CL outputs and loading them back into memory, and 
             # cleaning up the intermediate tmp files written to disk
             # refOuts and arrayOuts are None here
             imageOuts, refOuts, arrayOuts = clm.finishCL() 
             
-            # loop to extract SCI extension data from the colbias ouputs
-            # this is because colbias doesn't correctly re-create the MEF of
-            # the input, only the single extensions.
+            # loop to extract SCI extension data from the colbias ouputs.
+            # This is because colbias doesn't correctly re-create the MEF 
+            # structure of the input, only the single extensions, and it plays  
+            # with the header keys in naughty ways. bad colbias bad :-P
             for sciExtOut in imageOuts[0]['SCI']:
                 extVerOut = sciExtOut.extver()
-                print 'copying colbias output SCI data frame '+str(extVerOut)+' to adOut SCI data'
+                log.fullinfo('copying colbias output SCI data frame '+
+                             str(extVerOut)+' to adOut SCI data')
                 adOut['SCI',extVerOut].data = sciExtOut.data
                 
-             
-            # Renaming for symmetry
+            # adding the final output ad to the outputs list
             adOutputs.append(adOut)
-        
-        #if fl_vardq==yes:
-        if False:
-            ############## refactor this if it works to use add_var OUTSIDE the SCI extn loop but inside adInputs loop#####
-            from gempy.science.geminiScience import add_var
-            if adOut['VAR']:
-                log.status('updating variance plane')
-                initialVar = gemt.calculateInitialVarianceArray(sciExtOut)
-                newVar = np.add(initialVar,float(rmsStr)*float(rmsStr))
-                adOut['VAR',extVer].data = newVar
-            else:
-                log.status('creating new variance plane')
-                initialVar = gemt.calculateInitialVarianceArray(sciExt)
-                newVar = np.add(initialVar,float(rmsStr)*float(rmsStr))
-                varheader = gemt.createInitialVarianceHeader(extVer)
-                # Turning individual variance header and data 
-                # into one astrodata instance
-                varAD = AstroData(header=varheader, data=varArray)
-                adOut.append(varAD)
-            ################################################################################################################  
-
-        
-            
-            
         
         log.status('**FINISHED** the overscan_subtract_gmos function')
         
@@ -807,12 +830,12 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
                 # NOTE: first elements of arrays in python are inclusive
                 #       while last ones are exclusive, thus a 1 must be 
                 #       added for the final element to be included.
-                sciExt.data=sciExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                sciExt.data=sciExt.data[dsl[0]:dsl[1],dsl[2]:dsl[3]]
                 # Updating header keys to match new dimensions
-                sciExt.header['NAXIS1'] = dsl[1]-dsl[0]
-                sciExt.header['NAXIS2'] = dsl[3]-dsl[2]
-                newDataSecStr = '[1:'+str(dsl[1]-dsl[0])+',1:'+\
-                                str(dsl[3]-dsl[2])+']' 
+                sciExt.header['NAXIS1'] = dsl[3]-dsl[2]
+                sciExt.header['NAXIS2'] = dsl[1]-dsl[0]
+                newDataSecStr = '[1:'+str(dsl[3]-dsl[2])+',1:'+\
+                                str(dsl[1]-dsl[0])+']' 
                 sciExt.header['DATASEC']=newDataSecStr
                 sciExt.header.update('TRIMSEC', datasecStr, 
                                    'Data section prior to trimming')
@@ -854,7 +877,7 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
         log.critical(repr(sys.exc_info()[1]))
         raise 
                     
-def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False, 
+def subtract_bias(adInputs, biases=None ,fl_vardq='AUTO', fl_trim=False, 
                 fl_over=False, outNames=None, suffix=None):
     """
     This function will subtract the biases from the inputs using the 
@@ -1053,6 +1076,142 @@ def subtract_bias(adInputs, biases=None,fl_vardq='AUTO', fl_trim=False,
         log.critical(repr(sys.exc_info()[1]))
         raise 
     
+
+def subtract_biasNEW(adInputs, biases=None, fl_vardq='AUTO', outNames=None, suffix=None):
+    """
+    This function will subtract the SCI of the input biases from each SCI frame 
+    of the inputs.  New VAR frames will be calculated and appended to the 
+    output.  If both the bias and input have DQ frames, they will be 
+    propogated using a bitwise_or addition. 
+    
+    NOTE: Any pre-existing VAR frames will be replaced with new ones after the 
+    subtraction is complete.
+    
+    This is all conducted in pure Python through the arith "toolbox" of 
+    astrodata. The varutil module is used to create the output VAR frames.
+       
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+    
+    :param adInputs: Astrodata input science data
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param biases: The bias(es) to be added to the input(s).
+    :type biases: AstroData objects in a list, or a single instance.
+                  Note: If there are multiple inputs and one bias provided, 
+                  then the same bias will be applied to all inputs; else the 
+                  biases list must match the length of the inputs.
+    
+    :param outNames: filenames of output(s)
+    :type outNames: String, either a single or a list of strings of same length 
+                    as adInputs.
+    
+    :param suffix: string to add on the end of the input filenames 
+                   (or outNames if not None) for the output filenames.
+    :type suffix: string
+    """
+    # Instantiate ScienceFunctionManager object
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
+                                                    funcName='subtract_bias') 
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    # casting darks into a list if not one all ready for later indexing
+    if not isinstance(biases, list):
+        biases = [biases]
+    
+    # checking the inputs have matching filters, binning and SCI shapes.
+    gemt.checkInputsMatch(adInsA=biases, adInsB=adInputs)
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Loop through the inputs 
+        for ad in adInputs:  
+            if ad.phuGetKeyValue('BIASIM'):
+                # bias image has all ready been subtracted, so don't do it again
+                adOut = ad
+            else:
+                # Getting the right bias for this input
+                if len(biases)>1:
+                    bias = biases[count]
+                else:
+                    bias = biases[0]
+               
+                # sub each bias SCI  from each input SCI and handle the updates to 
+                # the DQ and VAR frames.
+                # the sub function of the arith toolbox performs a deepcopy so
+                # it doesn't need to be done here. 
+                adOut = ad.sub(bias)
+            
+                # adding name of bias image used for subtraction to PHU
+                adOut.phuSetKeyValue('BIASIM',os.path.basename(bias.filename), 'bias image subtracted')
+                
+            # adding or replacing current VAR's with new ones
+            for sciExt in adOut['SCI']:
+                sciExtVer = sciExt.extver()
+                # Using the toolbox function calculateInitialVarianceArray
+                # to conduct the actual calculation following:
+                # var = (read noise/gain)**2 + max(data,0.0)/gain
+                varArray = varutil.calculateInitialVarianceArray(sciExt)
+                 
+                # Creating the variance frame's header and updating it     
+                varHeader = varutil.createInitialVarianceHeader(
+                                                        extver=sciExtVer,
+                                                        shape=varArray.shape)
+                
+                # append as new extension or replace data and header of current
+                if adOut['VAR',sciExtVer]:
+                    # VAR extensions exists, so replace its header and data
+                    adOut['VAR',sciExtVer].data = varArray
+                    adOut['VAR',sciExtVer].header = varHeader
+                    log.status('Previous VAR frame version '+str(sciExtVer)+
+                               ', had its data and header elements replaced')
+                else:
+                    # extension doens't exist so make it and append it
+                    
+                    # Turning individual variance header and data 
+                    # into one astrodata instance
+                    varAD = AstroData(header=varHeader, data=varArray)
+            
+                    # Appending variance astrodata instance onto input one
+                    log.debug('Appending new VAR HDU onto the file '
+                                 +adOut.filename)
+                    adOut.append(varAD)
+                    log.status('Appending VAR frame '+str(sciExtVer)+
+                               ' complete for '+adOut.filename)
+            
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            adOut.info() ############       
+            
+            log.status('File name updated to '+adOut.filename+'\n')
+            
+            # Updating GEM-TLM (automatic) and SUBBIAS time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='SUBBIAS')
+        
+            # Appending to output list
+            adOutputs.append(adOut)
+    
+            count=count+1
+                
+        log.status('**FINISHED** the subtract_bias function')
+        # Return the outputs (list or single, matching adInputs)
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise 
+
+
 def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
     """
     This function will subtract the SCI of the input darks from each SCI frame 
