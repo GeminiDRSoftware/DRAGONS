@@ -436,17 +436,19 @@ def add_var(adInputs, outNames=None, suffix=None):
                 # and calculate a corresponding VAR frame for it, then 
                 # append it
                 for sciExt in adOut['SCI']:
-                    # Using the toolbox function calculateVarianceArray
+                    # Using the toolbox function calculateInitialVarianceArray
                     # to conduct the actual calculation following:
                     # var = (read noise/gain)**2 + max(data,0.0)/gain
                     varArray = varutil.calculateInitialVarianceArray(sciExt)
                      
                     # Creating the variance frame's header and updating it     
-                    varheader = varutil.createInitialVarianceHeader(sciExt.extver())
+                    varHeader = varutil.createInitialVarianceHeader(
+                                                        extver=sciExt.extver(),
+                                                        shape=varArray.shape)
                     
                     # Turning individual variance header and data 
                     # into one astrodata instance
-                    varAD = AstroData(header=varheader, data=varArray)
+                    varAD = AstroData(header=varHeader, data=varArray)
                     
                     # Appending variance astrodata instance onto input one
                     log.debug('Appending new VAR HDU onto the file '
