@@ -29,11 +29,11 @@ class DescriptorDescriptor:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.%(name)s(self, **args)
-                                        
+            
             %(pytypeimport)s
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "%(name)s",  
+                                   name = "%(name)s",
                                    ad = self,
                                    pytype = %(pytype)s )
             return ret
@@ -154,7 +154,7 @@ descriptors =   [   DD("airmass", pytype=float),
                     DD("data_section", pytype=list),
                     DD("dec", pytype=float),
                     DD("decker", pytype=str),
-                    DD("detector_section", pytype=tuple),
+                    DD("detector_section", pytype=list),
                     DD("detector_x_bin", pytype=int),
                     DD("detector_y_bin", pytype=int),
                     DD("disperser", pytype=str),
@@ -178,6 +178,7 @@ descriptors =   [   DD("airmass", pytype=float),
                     DD("observation_epoch", pytype=str),
                     DD("observation_id", pytype=str),
                     DD("observation_type", pytype=str),
+                    DD("overscan_section", pytype=list),
                     DD("pixel_scale", pytype=float),
                     DD("prism", pytype=str),
                     DD("program_id", pytype=str),
