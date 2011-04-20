@@ -19,7 +19,7 @@ def removeComponentID(instr):
 
     return ret_str
 
-def section_str_to_int_list(section):
+def sectionStrToIntList(section):
     """
     Convert the input section in the form '[x1:x2,y1:y2]' to a list in the
     form [y1 - 1, y2, x1 - 1, x2], where x1, x2, y1 and y2 are

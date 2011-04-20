@@ -645,7 +645,7 @@ def overscan_subtract_gmosNEW(adInputs, fl_vardq='AUTO', biassec='',
                 biassecStr = sciExtIn.getKeyValue('BIASSEC')    ########### convert this to use overscan_section() descriptor when exists, but with pretty=True
                 
                 ######### make a func or mode nbiascontam to handle this
-                biassecList = string.section_str_to_int_list(biassecStr) #####
+                biassecList = string.sectionStrToIntList(biassecStr) #####
                 bsL=biassecList
                 if  biassecList[3]<50:
                     #ie biassec on left of chip

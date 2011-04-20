@@ -422,12 +422,12 @@ class CLManager(object):
                 # Prepare the to-be list of lists
                 biassecIntList = []
                 for biassecStr in biassecStrList:
-                    # Use string.section_str_to_int_list function to convert 
+                    # Use string.sectionStrToIntList function to convert 
                     # each string version of the list into actual integer tuple 
                     # and load it into the lists of lists
                     # of form [y1, y2, x1, x2] 0-based and non-inclusive
                     biassecIntList.append(
-                                    string.section_str_to_int_list(biassecStr))
+                                    string.sectionStrToIntList(biassecStr))
                 
                 # Setting the return value to be updated in the loop below    
                 retvalue=0
@@ -436,7 +436,7 @@ class CLManager(object):
                     BIASSEC = ext.getKeyValue('BIASSEC')                      #  bias_section()
                     # Converting the retrieved string into a integer list     #  descriptor
                     # of form [y1, y2, x1, x2] 0-based and non-inclusive      #  would be used!!!!
-                    BIASSEClist = string.section_str_to_int_list(BIASSEC)     #
+                    BIASSEClist = string.sectionStrToIntList(BIASSEC)     #
                     # Setting the lower case biassec list to the appropriate 
                     # list in the lists of lists created above the loop
                     biasseclist = biassecIntList[ext.extver()-1]
