@@ -32,6 +32,7 @@ globalStdkeyDict = {
     "key_observation_epoch":"OBSEPOCH",
     "key_observation_id":"OBSID",
     "key_observation_type":"OBSTYPE",
+    "key_overscan_section":"OVERSSEC",
     "key_pixel_scale":"PIXSCALE",
     "key_prism":"PRISM",
     "key_program_id":"GEMPRGID",
