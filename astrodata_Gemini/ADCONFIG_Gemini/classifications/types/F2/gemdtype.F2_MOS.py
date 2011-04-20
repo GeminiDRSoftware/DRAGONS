@@ -4,7 +4,9 @@ class F2_MOS(DataClassification):
         Applies to all MOS datasets from the FLAMINGOS-2 instrument
         """
     parent = "F2_SPECT"
-    requirement = ISCLASS("F2_SPECT") & OR([  PHU(DCKERPOS="mos"),
-                                              PHU(MOSPOS="mos.?")  ])
+    requirement = AND ([  ISCLASS("F2_SPECT"),
+                          PHU(OBSTYPE="OBJECT"),
+                          OR([  PHU(DCKERPOS="mos"),
+                                PHU(MOSPOS="mos.?")  ])  ])
 
 newtypes.append(F2_MOS())
