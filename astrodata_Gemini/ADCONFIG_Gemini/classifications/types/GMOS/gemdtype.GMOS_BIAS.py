@@ -1,8 +1,10 @@
-
 class GMOS_BIAS(DataClassification):
     name="GMOS_BIAS"
-    usage = ""
+    usage = """
+        Applies to all dark datasets from the GMOS instruments
+        """
     parent = "GMOS_IMAGE"
-    requirement = ISCLASS("GMOS") & PHU(OBSTYPE="BIAS")
+    requirement = AND([  ISCLASS("GMOS_IMAGE"),
+                         PHU(OBSTYPE="BIAS")  ])
 
 newtypes.append(GMOS_BIAS())

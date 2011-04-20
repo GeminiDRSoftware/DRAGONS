@@ -1,10 +1,11 @@
 class GMOS_LS(DataClassification):
     name="GMOS_LS"
-    usage = ""
+    usage = """
+        Applies to all longslit datasets from the GMOS instruments
+        """
     parent = "GMOS_SPECT"
-    requirement = OR(AND(ISCLASS('GMOS_SPECT'),
-                         PHU(OBSMODE='LONGSLIT',OBSTYPE='OBJECT')),
-                     ISCLASS(    'GMOS_LS_FLAT'),
-                     ISCLASS('GMOS_LS_TWILIGHT'),
-                     ISCLASS(     'GMOS_LS_ARC') )
+    requirement = AND([  ISCLASS("GMOS_SPECT"),
+                         PHU(MASKTYP="1"),
+                         PHU(MASKNAME=".*arcsec")  ])
+
 newtypes.append(GMOS_LS())

@@ -1,12 +1,11 @@
-
 class GMOS_MOS(DataClassification):
     name="GMOS_MOS"
-    usage = ""
+    usage = """
+        Applies to all MOS datasets from the GMOS instruments
+        """
     parent = "GMOS_SPECT"
-    requirement = OR(AND(ISCLASS('GMOS_SPECT'),
-                         PHU(OBSMODE='MOS',OBSTYPE='OBJECT')),
-                     ISCLASS(    'GMOS_MOS_FLAT'),
-                     ISCLASS('GMOS_MOS_TWILIGHT'),
-                     ISCLASS(     'GMOS_MOS_ARC') )
+    requirement = AND([  ISCLASS("GMOS_SPECT"),
+                         PHU(MASKTYP="1"),
+                         PHU({"{prohibit}MASKNAME": ".*arcsec"})  ])
 
 newtypes.append(GMOS_MOS())
