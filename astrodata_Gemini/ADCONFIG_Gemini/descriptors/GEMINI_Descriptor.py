@@ -143,10 +143,10 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 ret_data_section.update({(ext.extname(), \
                     ext.extver()):str(raw_data_section)})
             else:
-                # Return a dictionary with the data section tuple that uses
-                # 0-based indexing as the value
+                # Return a dictionary with the data section list that uses
+                # 0-based, non-inclusive indexing as the value
                 data_section = \
-                    string.section_str_to_int_list(raw_data_section)
+                    string.sectionStrToIntList(raw_data_section)
                 ret_data_section.update({(ext.extname(), \
                     ext.extver()):data_section})
         
@@ -199,10 +199,10 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 ret_detector_section.update({(ext.extname(), \
                     ext.extver()):str(raw_detector_section)})
             else:
-                # Return a dictionary with the detector section tuple that 
-                # uses 0-based indexing as the value
+                # Return a dictionary with the detector section list that 
+                # uses 0-based, non-inclusive indexing as the value
                 detector_section = \
-                    string.section_to_tuple(raw_detector_section)
+                    string.sectionStrToIntList(raw_detector_section)
                 ret_detector_section.update({(ext.extname(), \
                     ext.extver()):detector_section})
         
@@ -454,6 +454,38 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # an AstroData Type of 'GMOS'. For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
+    
+    def overscan_section(self, dataset, pretty=False, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_overscan_section = {}
+        # Loop over the science extensions in the dataset
+        for ext in dataset['SCI']:
+            # Get the overscan section from the header of each pixel data
+            # extension
+            raw_overscan_section = \
+                ext.getKeyValue(globalStdkeyDict['key_overscan_section'])
+            if raw_overscan_section is None:
+                # The getKeyValue() function returns None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, 'exception_info'):
+                    raise ext.exception_info
+            if pretty:
+                # Return a dictionary with the overscan section string that 
+                # uses 1-based indexing as the value
+                ret_overscan_section.update({(ext.extname(), \
+                    ext.extver()):str(raw_overscan_section)})
+            else:
+                # Return a dictionary with the overscan section list that 
+                # uses 0-based, non-inclusive indexing as the value
+                overscan_section = \
+                    string.sectionStrToIntList(raw_overscan_section)
+                ret_overscan_section.update({(ext.extname(), \
+                    ext.extver()):overscan_section})
+        
+        return ret_overscan_section
     
     def read_mode(self, dataset, **args):
         # The read_mode descriptor is only specific to GNIRS, MICHELLE, NIFS
