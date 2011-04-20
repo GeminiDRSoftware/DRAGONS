@@ -32,11 +32,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.airmass(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "airmass",  
+                                   name = "airmass",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -81,11 +81,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.amp_read_area(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "amp_read_area",  
+                                   name = "amp_read_area",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -122,11 +122,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.azimuth(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "azimuth",  
+                                   name = "azimuth",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -163,11 +163,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.camera(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "camera",  
+                                   name = "camera",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -205,11 +205,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "cass_rotator_pa",  
+                                   name = "cass_rotator_pa",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -261,11 +261,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.central_wavelength(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "central_wavelength",  
+                                   name = "central_wavelength",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -302,11 +302,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.coadds(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "coadds",  
+                                   name = "coadds",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -343,11 +343,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.data_label(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "data_label",  
+                                   name = "data_label",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -398,11 +398,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.data_section(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "data_section",  
+                                   name = "data_section",
                                    ad = self,
                                    pytype = list )
             return ret
@@ -439,11 +439,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.dec(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "dec",  
+                                   name = "dec",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -484,11 +484,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.decker(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "decker",  
+                                   name = "decker",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -539,13 +539,13 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.detector_section(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "detector_section",  
+                                   name = "detector_section",
                                    ad = self,
-                                   pytype = tuple )
+                                   pytype = list )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -587,11 +587,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.detector_x_bin(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "detector_x_bin",  
+                                   name = "detector_x_bin",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -635,11 +635,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.detector_y_bin(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "detector_y_bin",  
+                                   name = "detector_y_bin",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -680,11 +680,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.disperser(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "disperser",  
+                                   name = "disperser",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -736,11 +736,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.dispersion(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "dispersion",  
+                                   name = "dispersion",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -777,11 +777,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.dispersion_axis(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "dispersion_axis",  
+                                   name = "dispersion_axis",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -818,11 +818,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.elevation(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "elevation",  
+                                   name = "elevation",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -859,11 +859,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.exposure_time(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "exposure_time",  
+                                   name = "exposure_time",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -905,11 +905,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.filter_name(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "filter_name",  
+                                   name = "filter_name",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -950,11 +950,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.focal_plane_mask(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "focal_plane_mask",  
+                                   name = "focal_plane_mask",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -997,11 +997,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.gain(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "gain",  
+                                   name = "gain",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1042,11 +1042,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.grating(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "grating",  
+                                   name = "grating",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1083,11 +1083,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.gain_setting(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "gain_setting",  
+                                   name = "gain_setting",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1124,11 +1124,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.instrument(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "instrument",  
+                                   name = "instrument",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1165,11 +1165,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.local_time(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "local_time",  
+                                   name = "local_time",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1212,11 +1212,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.mdf_row_id(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "mdf_row_id",  
+                                   name = "mdf_row_id",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1254,11 +1254,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.nod_count(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "nod_count",  
+                                   name = "nod_count",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1296,11 +1296,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.nod_pixels(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "nod_pixels",  
+                                   name = "nod_pixels",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1338,11 +1338,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.non_linear_level(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "non_linear_level",  
+                                   name = "non_linear_level",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1379,11 +1379,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.object(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "object",  
+                                   name = "object",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1421,11 +1421,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_class(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "observation_class",  
+                                   name = "observation_class",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1462,11 +1462,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_epoch(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "observation_epoch",  
+                                   name = "observation_epoch",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1503,11 +1503,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_id(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "observation_id",  
+                                   name = "observation_id",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1545,13 +1545,54 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.observation_type(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "observation_type",  
+                                   name = "observation_type",
                                    ad = self,
                                    pytype = str )
+            return ret
+        except:
+            if (self.descriptorCalculator is None 
+                or self.descriptorCalculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
+    def overscan_section(self, format=None, **args):
+        """
+        Return the overscan_section value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: list as default (i.e., format=None)
+        :return: the overscan_section
+        """
+        try:
+            self._lazyloadCalculator()
+            #print hasattr(self.descriptorCalculator, "overscan_section")
+            if not hasattr(self.descriptorCalculator, "overscan_section"):
+                key = "key_"+"overscan_section"
+                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
+                #print "mkCI12:", key in SDKD.globalStdkeyDict
+                if key in SDKD.globalStdkeyDict.keys():
+                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+            else:
+                retval = self.descriptorCalculator.overscan_section(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "overscan_section",
+                                   ad = self,
+                                   pytype = list )
             return ret
         except:
             if (self.descriptorCalculator is None 
@@ -1586,11 +1627,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.pixel_scale(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "pixel_scale",  
+                                   name = "pixel_scale",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1631,11 +1672,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.prism(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "prism",  
+                                   name = "prism",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1673,11 +1714,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.program_id(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "program_id",  
+                                   name = "program_id",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1714,11 +1755,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.pupil_mask(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "pupil_mask",  
+                                   name = "pupil_mask",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1756,11 +1797,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.qa_state(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "qa_state",  
+                                   name = "qa_state",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1797,11 +1838,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ra(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "ra",  
+                                   name = "ra",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1839,11 +1880,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_bg(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "raw_bg",  
+                                   name = "raw_bg",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1881,11 +1922,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_cc(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "raw_cc",  
+                                   name = "raw_cc",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1923,11 +1964,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_iq(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "raw_iq",  
+                                   name = "raw_iq",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1965,11 +2006,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.raw_wv(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "raw_wv",  
+                                   name = "raw_wv",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2010,11 +2051,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.read_mode(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "read_mode",  
+                                   name = "read_mode",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2057,11 +2098,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.read_noise(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "read_noise",  
+                                   name = "read_noise",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -2099,11 +2140,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.read_speed_setting(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "read_speed_setting",  
+                                   name = "read_speed_setting",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2141,11 +2182,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.saturation_level(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "saturation_level",  
+                                   name = "saturation_level",
                                    ad = self,
                                    pytype = int )
             return ret
@@ -2186,11 +2227,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.slit(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "slit",  
+                                   name = "slit",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2227,11 +2268,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.telescope(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "telescope",  
+                                   name = "telescope",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2268,11 +2309,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ut_date(self, **args)
-                                        
+            
             from datetime import datetime
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "ut_date",  
+                                   name = "ut_date",
                                    ad = self,
                                    pytype = datetime )
             return ret
@@ -2334,11 +2375,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ut_datetime(self, **args)
-                                        
+            
             from datetime import datetime
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "ut_datetime",  
+                                   name = "ut_datetime",
                                    ad = self,
                                    pytype = datetime )
             return ret
@@ -2375,11 +2416,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.ut_time(self, **args)
-                                        
+            
             from datetime import datetime
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "ut_time",  
+                                   name = "ut_time",
                                    ad = self,
                                    pytype = datetime )
             return ret
@@ -2418,11 +2459,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.wavefront_sensor(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "wavefront_sensor",  
+                                   name = "wavefront_sensor",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2466,11 +2507,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "wavelength_reference_pixel",  
+                                   name = "wavelength_reference_pixel",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -2508,11 +2549,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.well_depth_setting(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "well_depth_setting",  
+                                   name = "well_depth_setting",
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2549,11 +2590,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.x_offset(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "x_offset",  
+                                   name = "x_offset",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -2590,11 +2631,11 @@ class CalculatorInterface:
                             raise self.exception_info
             else:
                 retval = self.descriptorCalculator.y_offset(self, **args)
-                                        
+            
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "y_offset",  
+                                   name = "y_offset",
                                    ad = self,
                                    pytype = float )
             return ret
