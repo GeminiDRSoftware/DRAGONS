@@ -227,7 +227,7 @@ def pyrafBoolean(pythonBool):
         raise ToolBoxError('DANGER DANGER Will Robinson, pythonBool passed '+
         'in was not True or False, and thats just crazy talk :P')
 
-def update_key_value(ad, valueFuncStr, phu=True):
+def updateKeyValue(ad, valueFuncStr, phu=True):
     """
     This is a function to update header keys, perform logging of the changes
     and write history of change to the PHU.
@@ -310,7 +310,7 @@ def update_key_value(ad, valueFuncStr, phu=True):
         # double check there is only one extension being passed in
         if len(ad)!=1:
             log.warning('If phu=False, only a single extension AstroData \
-                        instance can be passed in to update_key_value.')
+                        instance can be passed in to updateKeyValue.')
         else:
             # Try to get orig value of key for history purposes, if not there
             # then no history is needed

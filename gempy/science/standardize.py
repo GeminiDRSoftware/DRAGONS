@@ -197,8 +197,8 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
                 log.fullinfo('PHU keywords updated/added:\n', category='header')
                 
                 # Keywords that are updated/added for all Gemini PHUs 
-                gemt.update_key_value(adOut, 'countExts("SCI")')
-                gemt.update_key_value(adOut,'storeOriginalName()')
+                gemt.updateKeyValue(adOut, 'countExts("SCI")')
+                gemt.updateKeyValue(adOut,'storeOriginalName()')
                 # updating keywords that are NOT calculated/looked up using 
                 # descriptors or built-in ad functions.
                 ad.phuSetKeyValue('NEXTEND', len(adOut) , 
@@ -215,8 +215,8 @@ def standardize_headers_gemini(adInputs=None, outNames=None, suffix=None):
                                 ' keywords updated/added:\n', category='header')      
                      
                     # Keywords that are updated/added for all Gemini SCI extensions
-                    gemt.update_key_value(ext, 'non_linear_level()', phu=False)
-                    gemt.update_key_value(ext, 'saturation_level()', phu=False)
+                    gemt.updateKeyValue(ext, 'non_linear_level()', phu=False)
+                    gemt.updateKeyValue(ext, 'saturation_level()', phu=False)
                     # updating keywords that are NOT calculated/looked up using descriptors
                     # or built-in ad functions.
                     ext.setKeyValue('BUNIT','adu', '(NEW) Physical units')
@@ -324,11 +324,11 @@ def standardize_headers_gmos(adInputs=None, outNames=None, suffix=None):
                                  str(ext.header['EXTVER'])+
                                  ' keywords updated/added:\n', 'header')       
                     
-                    gemt.update_key_value(ext,'pixel_scale()', phu=False)
-                    gemt.update_key_value(ext,'read_noise()', phu=False)               
-                    gemt.update_key_value(ext,'gain()', phu=False)
+                    gemt.updateKeyValue(ext,'pixel_scale()', phu=False)
+                    gemt.updateKeyValue(ext,'read_noise()', phu=False)               
+                    gemt.updateKeyValue(ext,'gain()', phu=False)
                     if 'GMOS_IMAGE' not in ext.getTypes():
-                        gemt.update_key_value(ext,'dispersion_axis()', 
+                        gemt.updateKeyValue(ext,'dispersion_axis()', 
                                               phu=False)
                     
                     log.fullinfo('-'*50, category='header')
