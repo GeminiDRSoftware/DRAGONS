@@ -16,7 +16,6 @@ from gempy.science import calibrate
 from gempy.science import gmosScience
 from gempy.science import standardize
 from gempy import geminiTools as gemt
-from gempy.instruments import gmosTools as gmost
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):

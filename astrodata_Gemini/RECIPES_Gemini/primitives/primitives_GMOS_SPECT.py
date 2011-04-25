@@ -11,7 +11,6 @@ from astrodata import Descriptors
 from astrodata.data import AstroData
 from astrodata.Errors import PrimitiveError
 from gempy import geminiTools as gemt
-from gempy.instruments import gmosTools  as gmost
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """
