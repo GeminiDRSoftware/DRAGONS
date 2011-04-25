@@ -1,8 +1,8 @@
-# This recipe will perform the preparation and corrections
-# needed to convert the inputs into a single stacked and normalized
-# flat calibration file.  Output is stored in a directory specified
-# by the parameters of the storeProcessedFlat primitive 
-# with the postfix '_preparedflat.fits' to the name of the first input file.
+# This recipe performs the standardization and corrections needed to convert 
+# the raw input flat images into a single stacked and normalized flat image. 
+# This output processed flat is stored on disk using storeProcessedFlat and 
+# has a name equal to the name of the first input flat image with "_flat.fits" 
+# appended.
 
 prepare
 overscanCorrect
@@ -11,10 +11,7 @@ addVARDQ
 getProcessedBias
 #localGetProcessedBias
 biasCorrect
-
 #showInputs
 addToList
-
 makeNormalizedFlat
-
 storeProcessedFlat(clob=True)
