@@ -240,7 +240,7 @@ class CLManager(object):
             if type=='list':
                 return self.arrayInsCLdiskNames
             if type=='listFile':
-                arrayInsListName = listFileMaker(self.arrayInsCLdiskNames,
+                arrayInsListName = gemt.listFileMaker(self.arrayInsCLdiskNames,
                                                     listName='arrayList'+\
                                                     str(os.getpid())+\
                                                     self.funcName)
@@ -277,7 +277,7 @@ class CLManager(object):
             if type=='list':
                 return self.arrayOutsNames
             if type=='listFile':
-                arrayOutsListName = listFileMaker(list=self.arrayOutsNames,
+                arrayOutsListName = gemt.listFileMaker(list=self.arrayOutsNames,
                                     listName='arrayOutsList'+str(os.getpid())+\
                                                                 self.funcName)
                 self.arrayOutsListName = arrayOutsListName
@@ -319,7 +319,7 @@ class CLManager(object):
             if type=='list':
                 return self.imageInsCLdiskNames
             if type=='listFile':
-                imageInsListName = listFileMaker(list=self.imageInsCLdiskNames,
+                imageInsListName = gemt.listFileMaker(list=self.imageInsCLdiskNames,
                                     listName='imageList'+str(os.getpid())+\
                                                                 self.funcName)
                 self.imageInsListName = imageInsListName
@@ -384,7 +384,7 @@ class CLManager(object):
             if type=='list':
                 return self.imageOutsNames
             if type=='listFile':
-                imageOutsListName = listFileMaker(list=self.imageOutsNames,
+                imageOutsListName = gemt.listFileMaker(list=self.imageOutsNames,
                                     listName='imageOutsList'+str(os.getpid())+\
                                                                 self.funcName)
                 self.imageOutsListName = imageOutsListName
@@ -758,7 +758,7 @@ class CLManager(object):
             if type=='list':
                 return self.refInsCLdiskNames
             if type=='listFile':
-                refInsListName = listFileMaker(list=self.refInsCLdiskNames,
+                refInsListName = gemt.listFileMaker(list=self.refInsCLdiskNames,
                                     listName='refList'+str(os.getpid())+
                                                                 self.funcName)
                 self.refInsListName = refInsListName
@@ -814,7 +814,7 @@ class CLManager(object):
             if type=='list':
                 return self.refOutsNames
             if type=='listFile':
-                refOutsListName = listFileMaker(list=self.refOutsNames,
+                refOutsListName = gemt.listFileMaker(list=self.refOutsNames,
                                     listName='refOutsList'+str(os.getpid())+
                                                                 self.funcName)
                 self.refOutsListName = refOutsListName
