@@ -45,6 +45,34 @@
         'userOverride'  : True,
         },
     },
+ 'combine':{
+    'suffix':{
+        # String to be post pended to the output of addDQ
+        'default'       : '_combine',
+        'recipeOverride': True,
+        'type'          : 'str',
+        'userOverride'  : True,
+        },
+    'method':{
+        # String to be post pended to the output of addDQ
+        'default'       : 'average',
+        'recipeOverride': True,
+        'type'          : 'str',
+        'userOverride'  : True,
+        },
+     'fl_vardq':{
+        'default'       : True,
+        'recipeOverride': True,
+        'type'          : 'bool',
+        'userOverride'  : True,
+        },
+     'fl_dqprop':{
+        'default'       : True,
+        'recipeOverride': True,
+        'type'          : 'bool',
+        'userOverride'  : True,
+        }
+    },
  'divideByFlat':{
     'suffix':{
         # String to be post pended to the output of divideByFlat
