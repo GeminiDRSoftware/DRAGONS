@@ -56,8 +56,8 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
     adInputs, outNames, log = sfm.startUp()
     
     if flats==None:
-        raise ScienceError('There must be at least one processed flat provided,\
-                             the "flats" parameter must not be None.')
+        raise ScienceError('There must be at least one processed flat provided'+
+                            ', the "flats" parameter must not be None.')
     
     try:
         # Set up counter for looping through outNames list
