@@ -4,7 +4,7 @@ sys.path=['/opt/sqlalchemy/lib/python2.5/site-packages', '/astro/iraf/x86_64/gem
 import FitsStorage
 import FitsStorageConfig
 from FitsStorageLogger import *
-from FitsStorageUtils import *
+from FitsStorageUtils.IngestStandards import *
 import os
 import re
 import datetime
