@@ -6,7 +6,7 @@ from FitsStorage import *
 import FitsStorageConfig
 import GeminiMetadataUtils
 
-def get_cal_object(session, filename, header=None, descriptors=None, types=None, flag=None):
+def get_cal_object(session, filename, header=None, descriptors=None, types=None):
   """
   This function returns an appropriate calibration object for the given dataset
   Need to pass in a sqlalchemy session that should already be open, the class will not close it
@@ -26,18 +26,18 @@ def get_cal_object(session, filename, header=None, descriptors=None, types=None,
   else:
     instrument = descriptors['instrument']
   if('GMOS' in instrument):
-    c = CalibrationGMOS(session, header, descriptors, types, flag)
+    c = CalibrationGMOS(session, header, descriptors, types)
   if(instrument == 'NIRI'):
-    c = CalibrationNIRI(session, header, descriptors, types, flag)
+    c = CalibrationNIRI(session, header, descriptors, types)
   if(instrument == 'GNIRS'):
-    c = CalibrationGNIRS(session, header, descriptors, types, flag)
+    c = CalibrationGNIRS(session, header, descriptors, types)
   if(instrument == 'NIFS'):
-    c = CalibrationNIFS(session, header, descriptors, types, flag)
+    c = CalibrationNIFS(session, header, descriptors, types)
   if(instrument == 'michelle'):
-    c = CalibrationMICHELLE(session, header, descriptors, types, flag)
+    c = CalibrationMICHELLE(session, header, descriptors, types)
   # Add other instruments here
   if(c==None):
-    c = Calibration(session, header, descriptors, types, flag)
+    c = Calibration(session, header, descriptors, types)
 
   return c
 
@@ -51,10 +51,9 @@ class Calibration():
   header = None
   descriptors = None
   types = None
-  flag = None
   required = []
 
-  def __init__(self, session, header, descriptors, types, flag):
+  def __init__(self, session, header, descriptors, types):
     """
     Initialise a calibration manager for a given header object (ie data file)
     Need to pass in an sqlalchemy session that should already be open, this class will not close it
@@ -64,11 +63,11 @@ class Calibration():
     self.header = header
     self.descriptors = descriptors
     self.types = types
-    self.flag = flag
+    self.from_descriptors = False
 
     # Populate the descriptors dictionary for header
     if(self.descriptors==None):
-      self.flag=True
+      self.from_descriptors=True
       self.descriptors = {}
       self.descriptors['header_id']=self.header.id
       self.descriptors['observation_type']=self.header.observation_type
@@ -94,9 +93,9 @@ class CalibrationGMOS(Calibration):
   """
   gmos = None
 
-  def __init__(self, session, header, descriptors, types, flag):
+  def __init__(self, session, header, descriptors, types):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types, flag)
+    Calibration.__init__(self, session, header, descriptors, types)
 
     # if header based, Find the gmosheader
     if(header):
@@ -104,7 +103,7 @@ class CalibrationGMOS(Calibration):
       self.gmos = query.first()
 
     # Populate the descriptors dictionary for GMOS
-    if(self.flag):
+    if(self.from_descriptors):
       self.descriptors['disperser']=self.gmos.disperser
       self.descriptors['filter_name']=self.gmos.filter_name
       self.descriptors['focal_plane_mask']=self.gmos.focal_plane_mask
@@ -124,7 +123,7 @@ class CalibrationGMOS(Calibration):
     # Return a list of the calibrations required for this GMOS dataset
     list=[]
 
-    if(self.header):
+    if(self.descriptors):
       # BIASes do not require a bias. 
       if(self.descriptors['observation_type'] != 'BIAS'):
         list.append('bias')
@@ -381,16 +380,16 @@ class CalibrationNIRI(Calibration):
   """
   niri = None
 
-  def __init__(self, session, header, descriptors, types, flag):
+  def __init__(self, session, header, descriptors, types):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types, flag)
+    Calibration.__init__(self, session, header, descriptors, types)
 
     # Find the niriheader
     query = session.query(Niri).filter(Niri.header_id==self.descriptors['header_id'])
     self.niri = query.first()
 
     # Populate the descriptors dictionary for NIRI
-    if(self.flag):
+    if(self.from_descriptors):
       self.descriptors['data_section']=self.niri.data_section
       self.descriptors['read_mode']=self.niri.read_mode
       self.descriptors['well_depth_setting']=self.niri.well_depth_setting
@@ -469,16 +468,16 @@ class CalibrationGNIRS(Calibration):
   """
   gnirs = None
 
-  def __init__(self, session, header, descriptors, types, flag):
+  def __init__(self, session, header, descriptors, types):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types, flag)
+    Calibration.__init__(self, session, header, descriptors, types)
 
     # Find the gnirsheader
     query = session.query(Gnirs).filter(Gnirs.header_id==self.descriptors['header_id'])
     self.gnirs = query.first()
 
     # Populate the descriptors dictionary for GNIRS
-    if(self.flag):
+    if(self.from_descriptors):
       self.descriptors['read_mode']=self.gnirs.read_mode
       self.descriptors['well_depth_setting']=self.gnirs.well_depth_setting
       self.descriptors['coadds']=self.gnirs.coadds
@@ -611,16 +610,16 @@ class CalibrationNIFS(Calibration):
   """
   nifs = None
 
-  def __init__(self, session, header, descriptors, types, flag):
+  def __init__(self, session, header, descriptors, types):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types, flag)
+    Calibration.__init__(self, session, header, descriptors, types)
 
     # Find the nifsheader
     query = session.query(Nifs).filter(Nifs.header_id==self.descriptors['header_id'])
     self.nifs = query.first()
 
     # Populate the descriptors dictionary for NIFS
-    if(self.flag):
+    if(self.from_descriptors):
       self.descriptors['read_mode']=self.nifs.read_mode
       self.descriptors['coadds']=self.nifs.coadds
       self.descriptors['disperser']=self.nifs.disperser
@@ -747,16 +746,16 @@ class CalibrationMICHELLE(Calibration):
   """
   michelle = None
 
-  def __init__(self, session, header, descriptors, types, flag):
+  def __init__(self, session, header, descriptors, types):
     # Init the superclass
-    Calibration.__init__(self, session, header, descriptors, types, flag)
+    Calibration.__init__(self, session, header, descriptors, types)
 
     # Find the michelleheader
     query = session.query(Michelle).filter(Michelle.header_id==self.descriptors['header_id'])
     self.michelle = query.first()
 
     # Populate the descriptors dictionary for MICHELLE
-    if(self.flag):
+    if(self.from_descriptors):
       self.descriptors['read_mode']=self.michelle.read_mode
       self.descriptors['coadds']=self.michelle.coadds
 

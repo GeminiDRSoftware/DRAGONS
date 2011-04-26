@@ -9,7 +9,7 @@
 #   something more appropriate.
 
 from FitsStorage import *
-import FitsStorageCal
+from FitsStorageCal import get_cal_object
 
 
 def openquery(selection):
@@ -53,8 +53,8 @@ def search(criteria):
   
     try:
         req = reqProxy()
-        import FitsStorageWebSummary
-        FitsStorageWebSummary.calmgr(req, criteria)
+        from FitsStorageWebSummary.CalMGR import calmgr
+        calmgr(req, criteria)
     except:
         print req.buff    
         raise
@@ -65,7 +65,7 @@ def search(criteria):
 def summary(parms):
     
     try:
-        import FitsStorageWebSummary
+        from FitsStorageWebSummary.Summary import summary
         req = reqProxy()
         req.uri="summary"
         if "orderby" in parms:
@@ -73,7 +73,7 @@ def summary(parms):
             print "s165:", orderby
         else:
             orderby = None
-        FitsStorageWebSummary.summary(req, "summary", parms, orderby)
+        summary(req, "summary", parms, orderby)
         
         return req.buff
     except:
