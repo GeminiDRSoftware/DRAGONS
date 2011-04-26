@@ -355,13 +355,13 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling calibrate.overscanSubtract function')
             
-            adOutputs = calibrate.overscan_subtract_gmos(
+            adOutputs = calibrate.overscan_subtract_gmosNEW(  ###########
                                         adInputs=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], 
                                         biassec=rc['biassec'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'])           
             
-            log.status('calibrate.overscanSubtract completed successfully')
+            log.status('calibrate.overscan_subtract completed successfully')
                 
             # Reporting the updated files to the reduction context
             rc.reportOutput(adOutputs)
@@ -413,7 +413,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
         yield rc
          
-    def standardizeInstrumentHeaders(self,rc):
+    def standardizeHeaders(self,rc):
         """
         This primitive is called by standardizeHeaders to update and add 
         important keywords to the PHU and SCI extension headers, first those 
@@ -451,11 +451,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise
         yield rc 
         
-    def standardizeInstrumentStructure(self,rc):
+    def standardizeStructure(self,rc):
         """
-        This primitive is called by standardizeStructure to add an MDF to the
+        This primitive will to add an MDF to the
         inputs if they are of type SPECT, those of type IMAGE will be handled
-        by the standardizeInstrumentStructure in the primitives_GMOS_IMAGE set
+        by the standardizeStructure in the primitives_GMOS_IMAGE set
         where no MDF will be added.
         The Science Function standardize_structure_gmos in standardize.py is
         utilized to do the work for this primitive.
@@ -540,22 +540,25 @@ class GMOSPrimitives(GEMINIPrimitives):
             # one flat and one bias, this will work well with the CLManager
             # as that was how i wrote this prim originally.
             adOne = rc.getInputs(style='AD')[0]
-            processedBias = AstroData(rc.getCal(adOne,'bias'))
+            #processedBias = AstroData(rc.getCal(adOne,'bias'))
             ####################BULL CRAP FOR TESTING ########################## 
-            #from copy import deepcopy
-            #processedBias = deepcopy(adOne)
-            #processedBias.filename = 'TEMPNAMEforBIAS.fits'
-            #processedBias.phuSetKeyValue('ORIGNAME','TEMPNAMEforBIAS.fits')
-            #processedBias.historyMark(key='GBIAS', 
-            #                  comment='fake key to trick CL that GBIAS was ran')
+            from copy import deepcopy
+            processedBias = deepcopy(adOne)
+            processedBias.filename = 'TEMPNAMEforBIAS.fits'
+            processedBias.phuSetKeyValue('ORIGNAME','TEMPNAMEforBIAS.fits')
+            processedBias.historyMark(key='GBIAS', 
+                              comment='fake key to trick CL that GBIAS was ran')
             ####################################################################
             log.status('Using bias '+processedBias.filename+' to correct the inputs')
             log.debug('Calling calibrate.subtract_bias function')
             
-            adOutputs = calibrate.subtract_bias(adInputs=rc.getInputs(style='AD'), 
+            #adOutputs = calibrate.subtract_biasNEW(adInputs=rc.getInputs(style='AD'), 
+            #                             biases=processedBias, fl_vardq=rc['fl_vardq'], 
+            #                             fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
+            #                             suffix=rc['suffix'])   
+            adOutputs = calibrate.subtract_biasNEW(adInputs=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
-                                         fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-                                         suffix=rc['suffix'])           
+                                         suffix=rc['suffix'])            
             
             log.status('calibrate.subtract_bias completed successfully')
                 
@@ -571,10 +574,15 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
         yield rc
     
-    def validateInstrumentData(self,rc):
+    def validateData(self,rc):
         """
-        This primitive is called by validateData to validate the GMOS instrument 
+        This primitive is to validate the GMOS instrument 
         specific data checks for all input files.
+        It will ensure the data is not corrupted or in an odd 
+        format that will affect later steps in the reduction process.  
+        If there are issues 
+        with the data, the flag 'repair' can be used to turn on the feature to 
+        repair it or not (eg. validateData(repair=True)).
         
         :param suffix: Value to be post pended onto each input name(s) to 
                        create the output name(s).
