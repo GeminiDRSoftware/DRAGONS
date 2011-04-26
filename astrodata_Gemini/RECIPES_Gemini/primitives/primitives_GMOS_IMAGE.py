@@ -144,12 +144,12 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             raise 
         yield rc
         
-    def standardizeInstrumentStructure(self,rc):
+    def standardizeStructure(self,rc):
         """
-        This primitive is called by standardizeStructure to add an MDF to the
-        inputs if they are of type SPECT, BUT since this is the version of the 
-        primitive in GMOS_IMAGE, no MDF will be added and the inputs will
-        pass through with only changes to time stamps and filenames. 
+        This primitive will to add an MDF to the
+        inputs if they are of type SPECT, those of type IMAGE will be handled
+        by the standardizeStructure in the primitives_GMOS_IMAGE set
+        where no MDF will be added.
         The Science Function standardize_structure_gmos in standardize.py is
         utilized to do the work for this primitive.
         

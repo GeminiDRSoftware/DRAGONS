@@ -98,21 +98,21 @@
         'userOverride'  : False,
         },
     },
-'standardizeInstrumentHeaders':{
+'standardizeHeaders':{
     'suffix':{
         # String to be post pended to the output of
         # standardizeInstrumentHeaders
-        'default'       : '_sdzInstHdrs',
+        'default'       : '_sdzHdrs',
         'recipeOverride': True,
         'type'          : 'str',
         'userOverride'  : False,
         },
     },
- 'standardizeInstrumentStructure':{
+ 'standardizeStructure':{
     'suffix':{
         # String to be post pended to the output of
         # standardizeInstrumentStructure
-        'default'       : '_sdzInstStruct',
+        'default'       : '_sdzStruct',
         'recipeOverride': True,
         'type'          : 'str',
         'userOverride'  : False,
@@ -151,10 +151,10 @@
         'userOverride'  : True    
          },
     },
-'validateInstrumentData':{
+'validateData':{
     'suffix':{
         # String to be post pended to the output of validateInstrumentData
-        'default'       : '_validatedInst',
+        'default'       : '_validated',
         'recipeOverride': True,
         'type'          : 'str',
         'userOverride'  :False,
