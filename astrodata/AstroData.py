@@ -1749,7 +1749,7 @@ integrates other functionality.
         
         adOut=arith.div(self,denominator)
         return adOut
-    
+
     def mult(self,inputB):
         adOut=arith.mult(self,inputB)
         return adOut

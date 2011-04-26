@@ -109,7 +109,7 @@ class CalibrationDefinitionLibrary( object ):
             cr.filename = inp.filename
             cr.caltype = caltype
             # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the ID
-            cr.datalabel = inp.data_label()
+            cr.datalabel = str(inp.data_label())
             
             reqEvents.append(cr)
             if (False): # old code to delete

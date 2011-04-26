@@ -58,7 +58,7 @@ class CalibrationRequest( ReductionObjectRequest ):
     def fromDict(self, params):
         self.filename = params["filename"] if "filename" in params else None
         self.caltype = params["caltype"] if "caltype" in params else None
-        self.datalable = params["datalabel"] if "datalabel" in params else None
+        self.datalabel = params["datalabel"] if "datalabel" in params else None
         
     def __str__(self):
         tempStr = super( CalibrationRequest, self ).__str__()

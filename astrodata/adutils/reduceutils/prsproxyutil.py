@@ -19,6 +19,10 @@ def urljoin(*args):
     return ret
 
 def calibrationSearch(rq, fullResult = False):
+    from astrodata.FitsStorageFeatures import FitsStorageSetup
+    fss = FitsStorageSetup() # note: uses current working directory!!!
+    if not fss.isSetup():
+        return None
     print "prs38: the request",repr(rq)
     if 'caltype' not in rq:
         rq.update({"caltype":"processed_bias"})

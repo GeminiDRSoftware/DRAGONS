@@ -14,6 +14,7 @@ import time
 import subprocess
 import tarfile
 import urllib
+import traceback
 from xml.dom.minidom import parseString
 
 
@@ -51,6 +52,7 @@ if(len(options.tapedrive) != len(options.tapelabel)):
   sys.exit(1)
 
 logger.info("TapeDrive: %s; TapeLabel: %s" % (options.tapedrive, options.tapelabel))
+logger.info("Selection: %s" % options.selection)
 
 logger.info("Fetching file list from disk server...")
 # Get the list of files to put on tape from the server
@@ -124,12 +126,14 @@ if(not options.dontcheck):
 try:
   logger.info("Fetching files to local disk")
   tds[0].cdworkingdir()
+  i=0
   for f in files:
+    i+=1
     filename = f['filename']
     size = int(f['size'])
     ccrc = f['ccrc']
     url="http://%s/file/%s" % (options.diskserver, filename)
-    logger.info("Fetching file: %s from %s" % (filename, url))
+    logger.info("Fetching file (%d/%d): %s from %s" % (i, numfiles, filename, url))
     retcode=subprocess.call(['/usr/bin/curl', '-s', '-b', 'gemini_fits_authorization=good_to_go', '-O', '-f', url])
     if(retcode):
       # Curl command failed. Bail out
@@ -139,7 +143,7 @@ try:
       session.close()
       sys.exit(1)
     else:
-      # Curl command suceeded.
+      # Curl command succeeded.
       # Check the CRC of the file we got against the DB
       filecrc = CadcCRC.cadcCRC(filename)
       if(filecrc != ccrc):
@@ -154,6 +158,8 @@ try:
       f['md5sum'] = md5sum
   logger.info("All files fetched OK")
 except:
+  string = traceback.format_tb(sys.exc_info()[2])
+  logger.error("Exception: %s : %s... %s" % (sys.exc_info()[0], sys.exc_info()[1], string))
   logger.error("Problem Fetching Files, aborting")
   tds[0].cdback()
   tds[0].cleanup()
@@ -256,7 +262,7 @@ for i in range(0, len(tds)):
     # update records post-write
     logger.debug("Updating tapewrite record")
     tw.enddate = datetime.datetime.utcnow()
-    logger.debug("Suceeded: %s" % tarok)
+    logger.debug("Succeeded: %s" % tarok)
     tw.suceeded = tarok
     tw.afterstatus = td.status()
     tw.size = bytecount

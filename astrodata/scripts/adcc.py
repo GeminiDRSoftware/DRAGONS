@@ -265,10 +265,37 @@ def get_version():
 # begin negotiated startup... we won't run if another adcc owns this directory
 
 # could be done later or in lazy manner, but for now ensure this is present
-if False: # future feature
-    from astrodata.FitsStorageFeatures import FitsStorageSetup
-    fss = FitsStorageSetup() # note: uses current working directory!!!
-    fss.setup()
+if True: # future feature
+    try:
+        from astrodata.FitsStorageFeatures import FitsStorageSetup
+    except:
+        import traceback
+        traceback.print_exc()
+    try:
+        fss = FitsStorageSetup() # note: uses current working directory!!!
+        if not fss.isSetup():
+            print """Automated Dataflow Coordination Center:
+    The local fits storage database has not been initialized for this
+    directory.  This database allows reductions run in the same directory
+    to share a common data repository, which can for example be used to
+    retrieve best-fit calibrations.
+    
+    This initialization will only have to be executed one time
+    for each working directory. 
+    
+    please wait...
+    """
+            fss.setup()
+    except:
+        msg = "Can't setup Local Fits Storage, some features not available."
+        print msg
+        print "Error reported:"
+        print "-"*len(msg)
+        import traceback
+        traceback.print_exc()
+        print "-"*len(msg)
+        print "CONTINUING without Local Fits Storage Database."
+        
 racefile = ".adcc/adccinfo.py"
 # caller lock file name
 clfn = options.adccsrn

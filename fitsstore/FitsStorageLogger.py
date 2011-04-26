@@ -14,8 +14,14 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Create log message handlers 
-myname = "%s.log" % (os.path.basename(sys.argv[0]))
-logfile = os.path.join(FitsStorageConfig.fits_log_dir, myname)
+#If logname is already set, use it, otherwise default to script name .log
+try:
+  if(FitsStorageConfig.logname):
+    logname = FitsStorageConfig.logname
+except (NameError, AttributeError):
+  logname = "%s.log" % (os.path.basename(sys.argv[0]))
+
+logfile = os.path.join(FitsStorageConfig.fits_log_dir, logname)
 filehandler=logging.handlers.RotatingFileHandler(logfile, backupCount=10, maxBytes=10000000)
 streamhandler=logging.StreamHandler()
 smtphandler=logging.handlers.SMTPHandler(mailhost='smtp.gemini.edu', fromaddr='fitsdata@gemini.edu', toaddrs=[FitsStorageConfig.email_errors_to], subject="ERROR from fits storage")
@@ -45,7 +51,8 @@ def setdebug(want):
 
 def setdemon(want):
   if(want):
-    logger.addHandler(smtphandler)
+    if(len(FitsStorageConfig.email_errors_to)):
+      logger.addHandler(smtphandler)
   else:
     logger.addHandler(streamhandler)
 

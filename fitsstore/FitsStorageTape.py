@@ -57,7 +57,7 @@ class TapeDrive:
     """
     Runs the mt command mtcmd on the tape device with argument mtarg
     Returns the return code from the mt command
-    The fail parameter (sefault False) says whether to print
+    The fail parameter (default False) says whether to print
     an error and exit if the attempt fails
     returns [returncode, stdoutstring, stderrstring]
     """
@@ -91,13 +91,9 @@ class TapeDrive:
     The fail argument determines whether to exit with an error if it fails
     Returns the return code from the mt command
     """
-
     if(self.fileno() >= filenum):
-      print "rewinding..."
       returncode = self.rewind()
     while (self.fileno() < filenum):
-      current = self.fileno()
-      print "fsf"
       [returncode, stdoutstring, stderrstring]=self.mt('fsf', fail=fail)
 
     return returncode
@@ -175,7 +171,7 @@ class TapeDrive:
     scratchdir is a directory we can write in. This function
     will operate in a subdirectory in there named with the current pid
     The fail parameter says whether to exit with an error if it fails.
-    Returns the tape label string, or None if it fails
+    Returns the tape label string, or raises an error if it fails
     """
     retval = None
 

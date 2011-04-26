@@ -290,15 +290,12 @@ descriptor value for: %(name)s
         
         if isinstance(other, DescriptorValue):
             other = other.asPytype()
-
-        if hasattr(val, myfuncname):
+        if True: # always try the following and let it raise #hasattr(val, myfuncname):
             try:
-                
                 op = None
                 hasop = eval('hasattr(self.%s,"operation")' % myfuncname)
                 if hasop: 
                     op = eval("self.%s.operation" % myfuncname)
-                
                 if op:
                     retval = eval(op)
                 else:

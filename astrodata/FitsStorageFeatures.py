@@ -27,8 +27,33 @@ class FitsStorageSetup(object):
         self.fs_config = FSC_TEMPLATE % { "startingdir":cwd}
         self.fs_logdir = os.path.join(self.fitsstoredir, "logs")
         
+    def isSetup(self):
         
+        try:
+            from fitsstore import FitsStorageConfig
+        except:
+            return False
+        
+        if not os.path.exists(self.fitsstoredir):
+            return False
+        if not os.path.exists(self.fscName):
+            return False
+        if not os.path.exists(self.fs_logdir):
+            return False
+        if not os.path.exists(FitsStorageConfig.fits_db_backup_dir):
+            return False
+        if not os.path.exists(FitsStorageConfig.fits_lockfile_dir):
+            return False
+        if not os.path.exists(os.path.join(self.fitsstoredir, FitsStorageConfig.fits_dbname)):
+            return False
+        
+        return True
+
     def setup(self):
+        """ setup can cafely be called on existing databases.  It ensures setup
+        when done."""
+        if self.isSetup():
+            return
         if not os.path.exists(self.fitsstoredir):
             os.mkdir(self.fitsstoredir)
         if os.path.exists(self.fscName):
@@ -39,6 +64,14 @@ class FitsStorageSetup(object):
             fscout.close()
         if not os.path.exists(self.fs_logdir):
             os.mkdir(self.fs_logdir)
+        from fitsstore import FitsStorageConfig
+        reload(FitsStorageConfig)
+        print "after reload"
+        print FitsStorageConfig.fits_db_backup_dir
+        if not os.path.exists(FitsStorageConfig.fits_db_backup_dir):
+            os.mkdir(FitsStorageConfig.fits_db_backup_dir)
+        if not os.path.exists(FitsStorageConfig.fits_lockfile_dir):
+            os.mkdir(FitsStorageConfig.fits_lockfile_dir)
         
         # create tables
         from fitsstore import FitsStorageConfig

@@ -55,21 +55,29 @@ def cadcCRC(filename):
 #    retary = IDFactory.generateFingerprint( ad)
 #    return retary
 
-def md5sum(filename):
+def md5sumfile(f):
   """
-  Generates the md5sum of the filename, returns the hex string.
+  Generates the md5sum of the thing represented by the file object f
   """
   import md5
   m = md5.new()
 
   block = 64*1024
-  f = open(filename, 'r')
   data = f.read(block)
   m.update(data)
   while(data):
     data = f.read(block)
     m.update(data)
 
-  f.close()
   return m.hexdigest()
-  
+
+def md5sum(filename):
+  """
+  Generates the md5sum of the filename, returns the hex string.
+  """
+  f = open(filename, 'r')
+  m = md5sumfile(f)
+  f.close()
+  return m
+
+

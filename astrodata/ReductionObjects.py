@@ -335,14 +335,13 @@ def commandClause(ro, coi):
                     prs = Proxies.PRSProxy.getADCC()
                     
                 if usePRS:
-                    print "RO316:", repr(rq)
+                    # print "RO316:", repr(rq)
                     calurl = prs.calibrationSearch( rq )
                 
                 # print "r396:", calurl
                 if calurl == None:
                     log.critical('No '+str(typ)+' calibration file found for '+\
                                 str(fn))
-                    return None
                     # this is not fatal because perhaps there isn't a calibration
                     # the system checks both the local and central source
                     # raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
