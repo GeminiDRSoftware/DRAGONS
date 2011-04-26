@@ -23,7 +23,7 @@ try:
 except ImportError:
     pass
     
-import FitsStorageCal
+from FitsStorageCal import get_cal_object
 import FitsStorageConfig
 import urllib
 
@@ -48,10 +48,7 @@ def summary(req, type, selection, orderby, links=True):
   title = "FITS header %s table %s" % (type, sayselection(selection))
   req.write("<head>")
   req.write("<title>%s</title>" % (title))
-  if fsc_localmode:
-      req.write('<link rel="stylesheet" href="/htmldocs/FS_LOCALMODE_table.css">')
-  else:
-      req.write('<link rel="stylesheet" href="/htmldocs/table.css">')
+  req.write('<link rel="stylesheet" href="/htmldocs/table.css">')
   req.write("</head>\n")
   req.write("<body>")
   if (fits_system_status == "development"):
@@ -941,7 +938,7 @@ def tapewrite(req, things):
       req.write("<h2>ID: %d; Tape ID: %d; Tape Label: %s; File Number: %d</h2>" % (tw.id, tw.tape_id, tw.tape.label, tw.filenum))
       req.write("<UL>")
       req.write("<LI>Start Date: %s UTC - End Date: %s UTC</LI>" % (tw.startdate, tw.enddate))
-      req.write("<LI>Suceeded: %s</LI>" % tw.suceeded)
+      req.write("<LI>Succeeded: %s</LI>" % tw.suceeded)
       if(tw.size is None):
         req.write("<LI>Size: None")
       else:
@@ -1243,7 +1240,7 @@ def calmgr(req, selection):
       #req.write("IsType GMOS_S: %s\n" % gs)
 
       # Get a cal object for this target data
-      c = FitsStorageCal.get_cal_object(session, None, header=None, descriptors=descriptors, types=types)
+      c = get_cal_object(session, None, header=None, descriptors=descriptors, types=types)
       req.content_type = "text/xml"
       req.write('<?xml version="1.0" ?>')
       req.write("<calibration_associations>\n")
@@ -1331,7 +1328,7 @@ def calmgr(req, selection):
           req.write("<ccrc>%s</ccrc>\n" % object.diskfile.ccrc)
 
           # Get a cal object for this target data
-          c = FitsStorageCal.get_cal_object(session, None, header=object)
+          c = get_cal_object(session, None, header=object)
    
           # Call the appropriate method depending what calibration type we want
           cal = None
@@ -1348,11 +1345,7 @@ def calmgr(req, selection):
             req.write("<filename>%s</filename>\n" % cal.diskfile.file.filename)
             req.write("<md5>%s</md5>\n" % cal.diskfile.md5)
             req.write("<ccrc>%s</ccrc>\n" % cal.diskfile.ccrc)
-            if not fsc_localmode:
-                req.write("<url>http://%s/file/%s</url>\n" % (req.server.server_hostname, cal.diskfile.file.filename))
-            else:
-                req.write("<url>file://%s/%s</url>" % (cal.diskfile.file.path,
-                                                    cal.diskfile.file.filename))
+            req.write("<url>http://%s/file/%s</url>\n" % (req.server.server_hostname, cal.diskfile.file.filename))
             req.write("</calibration>\n")
           else:
             req.write("<!-- NO CALIBRATION FOUND-->\n")
@@ -1436,7 +1429,7 @@ def calibrations(req, selection):
 
       html+='<H3><a href="/fullheader/%s">%s</a> - <a href="/summary/%s">%s</a></H3>' % (object.diskfile.file.filename, object.diskfile.file.filename, object.data_label, object.data_label)
 
-      c = FitsStorageCal.get_cal_object(session, None, header=object)
+      c = get_cal_object(session, None, header=object)
       if('arc' in c.required and (caltype=='all' or caltype=='arc')):
         requires=True
 
@@ -1514,8 +1507,6 @@ def calibrations(req, selection):
           if(smallestinterval > nowhours):
             takenow=True
 
-        html += "<HR>"
-
       if('dark' in c.required and (caltype=='all' or caltype=='dark')):
         requires=True
         dark = c.dark()
@@ -1531,8 +1522,6 @@ def calibrations(req, selection):
           warning = True
           missing = True
 
-      html += "<HR>"
-
       if('bias' in c.required and (caltype=='all' or caltype=='bias')):
         requires=True
         bias = c.bias()
@@ -1543,8 +1532,6 @@ def calibrations(req, selection):
           warning = True
           missing = True
 
-        html += "<HR>"
-
       if('flat' in c.required and (caltype=='all' or caltype=='flat')):
         requires=True
         flat = c.flat()
@@ -1554,21 +1541,7 @@ def calibrations(req, selection):
           html += '<H3><FONT COLOR="Red">NO FLAT FOUND!</FONT></H3>'
           warning = True
           missing = True
-
-        html += "<HR>"
-   
-      if('arc' in c.required and (caltype=='all' or caltype=='arc')):
-        requires=True
-        arc = c.arc()
-        if(arc):
-          html += "<H4>ARC: %s - %s</H4>" % (arc.diskfile.file.filename, arc.data_label)
-        else:
-          html += '<H3><FONT COLOR="Red">NO ARC FOUND!</FONT></H3>'
-          warning = True
-          missing = True
-
-        html += "<HR>"
-   
+      
       if('processed_bias' in c.required and (caltype=='all' or caltype=='processed_bias')):
         requires=True
         processed_bias = c.processed_bias()
@@ -1578,9 +1551,7 @@ def calibrations(req, selection):
           html += '<H3><FONT COLOR="Red">NO PROCESSED_BIAS FOUND!</FONT></H3>'
           warning = True
           missing = True
-
-        html += "<HR>"
-   
+  
       if('processed_flat' in c.required and (caltype=='all' or caltype=='processed_flat')):
         requires=True
         processed_flat = c.processed_flat()
@@ -1591,8 +1562,6 @@ def calibrations(req, selection):
           warning = True
           missing = True
 
-        html += "<HR>"
-   
       if('processed_fringe' in c.required and (caltype=='all' or caltype=='processed_fringe')):
         requires=True
         processed_fringe = c.processed_fringe()
@@ -1603,8 +1572,6 @@ def calibrations(req, selection):
           warning = True
           missing = True
 
-        html += "<HR>"
-   
       if('pinhole_mask' in c.required and (caltype=='all' or caltype=='pinhole_mask')):
         requires=True
         pinhole_mask = c.pinhole_mask()
@@ -1615,8 +1582,6 @@ def calibrations(req, selection):
           warning = True
           missing = True
 
-        html += "<HR>"
-   
       if('ronchi_mask' in c.required and (caltype=='all' or caltype=='ronchi_mask')):
         requires=True
         ronchi_mask = c.ronchi_mask()
@@ -1627,7 +1592,7 @@ def calibrations(req, selection):
           warning = True
           missing = True
 
-        html += "<HR>"
+      html += "<HR>"
    
       caloption=None
       if('caloption' in selection):

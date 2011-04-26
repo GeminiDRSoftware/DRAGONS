@@ -4,7 +4,7 @@ sys.path=['/opt/sqlalchemy/lib/python2.5/site-packages', '/opt/pyinotify/lib/pyt
 import FitsStorage
 import FitsStorageConfig
 from FitsStorageLogger import *
-from FitsStorageUtils import *
+from FitsStorageUtils.AddToIngestQueue import *
 
 import pyinotify
 

@@ -28,6 +28,7 @@ import CadcWMD
 
 from FitsStorageConfig import *
 
+from astrodata import Errors
 from astrodata.AstroData import AstroData
 
 # This was to debug the number of open database sessions.
@@ -89,7 +90,7 @@ class File(Base):
 
   def lastmod(self):
     return datetime.datetime.fromtimestamp(os.path.getmtime(self.fullpath()))
-    
+
 class DiskFile(Base):
   """
   This is the ORM class for the diskfile table.
@@ -239,119 +240,120 @@ class Header(Base):
     ad=0
     try:
       ad=AstroData(fullpath, mode='readonly')
+      ad.descriptorFormat = "db"
 
       # Basic data identification part
       try:
-        self.program_id = ad.program_id()
-      except (KeyError, ValueError):
+        self.program_id = ad.program_id().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.observation_id = ad.observation_id()
-      except (KeyError, ValueError):
+        self.observation_id = ad.observation_id().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.data_label = ad.data_label()
-      except (KeyError, ValueError):
+        self.data_label = ad.data_label().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.telescope = ad.telescope()
-      except (KeyError, ValueError):
+        self.telescope = ad.telescope().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.instrument = ad.instrument()
-      except (KeyError, ValueError):
+        self.instrument = ad.instrument().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
 
       # Date and times part
       try:
-        self.ut_datetime = ad.ut_datetime()
+        self.ut_datetime = ad.ut_datetime().forDB()
       except:
         raise
 
       try:
-        localtime_string = ad.local_time()
+        localtime_string = ad.local_time().forDB()
         if(localtime_string):
           # This is a bit of a hack so as to use the nice parser
           self.local_time = dateutil.parser.parse("2000-01-01 %s" % (localtime_string)).time()
-      except (KeyError, ValueError):
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
 
       # Data Types
       try:
-        self.observation_type = ad.observation_type()
+        self.observation_type = ad.observation_type().forDB()
         if('GNIRS_PINHOLE' in ad.types):
           self.observation_type='PINHOLE'
         if('NIFS_RONCHI' in ad.types):
           self.observation_type='RONCHI'
-      except (KeyError, ValueError):
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.observation_class = ad.observation_class()
-      except (KeyError, ValueError):
+        self.observation_class = ad.observation_class().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.object = ad.object()
-      except (KeyError, ValueError):
+        self.object = ad.object().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.ra = float(ad.ra())
-      except (KeyError, ValueError, TypeError):
+        self.ra = ad.ra().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.dec = float(ad.dec())
-      except (KeyError, ValueError, TypeError):
+        self.dec = ad.dec().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.azimuth = float(ad.azimuth())
-      except (KeyError, ValueError, TypeError):
+        self.azimuth = ad.azimuth().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.elevation = float(ad.elevation())
-      except (KeyError, ValueError, TypeError):
+        self.elevation = ad.elevation().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.cass_rotator_pa = float(ad.cass_rotator_pa())
-      except (KeyError, ValueError, TypeError):
+        self.cass_rotator_pa = ad.cass_rotator_pa().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.airmass = float(ad.airmass())
-      except (KeyError, ValueError, TypeError):
+        self.airmass = ad.airmass().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.raw_iq = ad.raw_iq()
-      except (KeyError, ValueError):
+        self.raw_iq = ad.raw_iq().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.raw_cc = ad.raw_cc()
-      except (KeyError, ValueError):
+        self.raw_cc = ad.raw_cc().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.raw_wv = ad.raw_wv()
-      except (KeyError, ValueError):
+        self.raw_wv = ad.raw_wv().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.raw_bg = ad.raw_bg()
-      except (KeyError, ValueError):
+        self.raw_bg = ad.raw_bg().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.filter_name = ad.filter_name(pretty=True)
-      except (KeyError, ValueError):
+        self.filter_name = ad.filter_name(pretty=True).forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.exposure_time = float(ad.exposure_time())
-      except (KeyError, ValueError, TypeError):
+        self.exposure_time = ad.exposure_time().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.disperser = ad.disperser(pretty=True)
-      except (KeyError, ValueError):
+        self.disperser = ad.disperser(pretty=True).forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.central_wavelength = float(ad.central_wavelength(asMicrometers=True))
-      except (KeyError, ValueError, TypeError):
+        self.central_wavelength = ad.central_wavelength(asMicrometers=True).forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, Errors.DescriptorTypeError):
         pass
       try:
-        self.focal_plane_mask = ad.focal_plane_mask(pretty=True)
-      except (KeyError, ValueError):
+        self.focal_plane_mask = ad.focal_plane_mask(pretty=True).forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
 
       # Hack the AO header for now
@@ -362,18 +364,18 @@ class Header(Base):
       self.spectroscopy = False
       if('SPECT' in ad.types):
         self.spectroscopy = True
-  
+
       # Set the derived QA state and release date
       try:
-        self.qa_state = ad.qa_state()
-      except (KeyError, ValueError, AttributeError):
+        self.qa_state = ad.qa_state().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, AttributeError):
         pass
       try:
         reldatestring = ad.phuHeader('RELEASE')
         if(reldatestring):
           reldts = "%s 00:00:00" % reldatestring
           self.release = dateutil.parser.parse(reldts).date()
-      except (KeyError, ValueError):
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
 
 
@@ -385,10 +387,11 @@ class Header(Base):
         self.reduction = 'PROCESSED_FLAT'
       if('PROCESSED_BIAS' in ad.types):
         self.reduction = 'PROCESSED_BIAS'
-  
+
       ad.close()
     except:
-      # Astrodata open or any of the above failed
+      # Astrodata open failed or there was some other exception
+      ad.close()
       raise
 
 class FullTextHeader(Base):
@@ -419,9 +422,11 @@ class FullTextHeader(Base):
         self.fulltext += "\n--- HDU %s ---\n" % i
         self.fulltext += unicode(str(ad.hdulist[i].header.ascardlist()), errors='replace')
         self.fulltext += '\n'
+      ad.close()
 
     except:
-      # Astrodata open or header reference failed
+      # Astrodata open failed or there was some other exception
+      ad.close()
       raise
 
 
@@ -460,9 +465,9 @@ class Tape(Base):
   lastverified = Column(DateTime(timezone=False))
   location = Column(Text)
   lastmoved = Column(DateTime(timezone=False))
-  active = Column(Boolean)
-  full = Column(Boolean)
-  set = Column(Integer)
+  active = Column(Boolean, index=True)
+  full = Column(Boolean, index=True)
+  set = Column(Integer, index=True)
   fate = Column(Text)
 
   def __init__(self, label):
@@ -482,10 +487,10 @@ class TapeWrite(Base):
   id = Column(Integer, primary_key=True)
   tape_id = Column(Integer, ForeignKey('tape.id'), nullable=False, index=True)
   tape = relation(Tape, order_by=id)
-  filenum = Column(Integer)
+  filenum = Column(Integer, index=True)
   startdate = Column(DateTime(timezone=False))
   enddate = Column(DateTime(timezone=False))
-  suceeded = Column(Boolean)
+  suceeded = Column(Boolean, index=True)
   size = Column(BigInteger)
   beforestatus = Column(Text)
   afterstatus = Column(Text)
@@ -501,12 +506,12 @@ class TapeFile(Base):
   __tablename__ = 'tapefile'
 
   id = Column(Integer, primary_key=True)
-  tapewrite_id = Column(Integer, ForeignKey('tapewrite.id'), nullable=False)
+  tapewrite_id = Column(Integer, ForeignKey('tapewrite.id'), nullable=False, index=True)
   tapewrite = relation(TapeWrite, order_by=id)
-  filename = Column(Text)
-  size = Column(Integer)
+  filename = Column(Text, index=True)
+  size = Column(Integer, index=True)
   ccrc = Column(Text)
-  md5 = Column(Text)
+  md5 = Column(Text, index=True)
   lastmod = Column(DateTime(timezone=True))
 
 class TapeRead(Base):
@@ -524,7 +529,6 @@ class TapeRead(Base):
   tape_label = Column(Text, index=True)
   filenum = Column(Integer, index=True)
   requester = Column(Text)
-
 
 class Gmos(Base):
   """
@@ -558,54 +562,57 @@ class Gmos(Base):
     # Get an AstroData object on it
     try:
       ad = AstroData(self.header.diskfile.file.fullpath(), mode="readonly")
+      ad.descriptorFormat = "db"
       # Populate values
       try:
-        self.disperser = ad.disperser()
-      except (KeyError, ValueError):
+        self.disperser = ad.disperser().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.filter_name = ad.filter_name()
-      except (KeyError, ValueError):
+        self.filter_name = ad.filter_name().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.detector_x_bin = ad.detector_x_bin()
-      except (KeyError, IndexError, ValueError):
+        self.detector_x_bin = ad.detector_x_bin().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, IndexError):
         pass
       try:
-        self.detector_y_bin = ad.detector_y_bin()
-      except (KeyError, IndexError, ValueError):
+        self.detector_y_bin = ad.detector_y_bin().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, IndexError):
         pass
       try:
-        self.amp_read_area = str(ad.amp_read_area(asList=True))
-      except (KeyError, IndexError, ValueError):
+        self.amp_read_area = ad.amp_read_area().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, IndexError):
         pass
       try:
-        self.read_speed_setting = ad.read_speed_setting()
-      except (KeyError, IndexError, ValueError):
+        self.read_speed_setting = ad.read_speed_setting().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, IndexError):
         pass
       try:
-        self.gain_setting = ad.gain_setting()
-      except (KeyError, IndexError, ValueError):
+        self.gain_setting = ad.gain_setting().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, IndexError):
         pass
       try:
-        self.focal_plane_mask = ad.focal_plane_mask()
-      except (KeyError, ValueError):
-        pass
-      try:
-        self.nod_count = ad.nod_count()
-      except (KeyError, ValueError):
-        pass
-      try:
-        self.nod_pixels = ad.nod_pixels()
-      except (KeyError, ValueError):
+        self.focal_plane_mask = ad.focal_plane_mask().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
         self.nodandshuffle = ad.isType('GMOS_NODANDSHUFFLE')
-      except (KeyError, ValueError):
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
+      if(self.nodandshuffle):
+        try:
+          self.nod_count = ad.nod_count().forDB()
+        except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, Errors.DescriptorTypeError):
+          pass
+        try:
+          self.nod_pixels = ad.nod_pixels().forDB()
+        except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, Errors.DescriptorTypeError):
+          pass
       ad.close()
     except:
-      # Astrodata open failed
+      # Astrodata open failed or there was some other exception
+      ad.close()
       raise
 
 class Niri(Base):
@@ -636,42 +643,45 @@ class Niri(Base):
     # Get an AstroData object on it
     try:
       ad = AstroData(self.header.diskfile.file.fullpath(), mode="readonly")
+      ad.descriptorFormat = "db"
       # Populate values
       try:
-        self.disperser = ad.disperser()
-      except (KeyError, ValueError):
+        self.disperser = ad.disperser().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.filter_name = ad.filter_name()
-      except (KeyError, ValueError):
+        self.filter_name = ad.filter_name().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.read_mode = ad.read_mode()
-      except (KeyError, ValueError):
+        self.read_mode = ad.read_mode().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.well_depth_setting = ad.well_depth_setting()
-      except (KeyError, ValueError):
+        self.well_depth_setting = ad.well_depth_setting().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.data_section = ad.data_section()
-      except (KeyError, ValueError):
+        # the str() is a temp workaround 20110404 PH
+        self.data_section = str(ad.data_section().forDB())
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError, IndexError):
         pass
       try:
-        self.coadds = ad.coadds()
-      except (KeyError, ValueError):
+        self.coadds = ad.coadds().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.camera = ad.camera()
-      except (KeyError, ValueError):
+        self.camera = ad.camera().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.focal_plane_mask = ad.focal_plane_mask()
-      except (KeyError, ValueError):
+        self.focal_plane_mask = ad.focal_plane_mask().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       ad.close()
     except:
-      # Astrodata open failed
+      # Astrodata open failed or there was some other exception
+      ad.close()
       raise
 
 class Gnirs(Base):
@@ -690,7 +700,7 @@ class Gnirs(Base):
   coadds = Column(Integer, index=True)
   camera = Column(Text, index=True)
   focal_plane_mask = Column(Text)
-  
+
   def __init__(self, header):
     self.header = header
 
@@ -701,38 +711,40 @@ class Gnirs(Base):
     # Get an AstroData object on it
     try:
       ad = AstroData(self.header.diskfile.file.fullpath(), mode="readonly")
+      ad.descriptorFormat = "db"
       # Populate values
       try:
-        self.disperser = ad.disperser()
-      except (KeyError, ValueError):
+        self.disperser = ad.disperser().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.filter_name = ad.filter_name()
-      except (KeyError, ValueError):
+        self.filter_name = ad.filter_name().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.read_mode = ad.read_mode()
-      except (KeyError, ValueError):
+        self.read_mode = ad.read_mode().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.well_depth_setting = ad.well_depth_setting()
-      except (KeyError, ValueError):
+        self.well_depth_setting = ad.well_depth_setting().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.coadds = ad.coadds()
-      except (KeyError, ValueError):
+        self.coadds = ad.coadds().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.camera = ad.camera()
-      except (KeyError, ValueError):
+        self.camera = ad.camera().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.focal_plane_mask = ad.focal_plane_mask()
-      except (KeyError, ValueError):
+        self.focal_plane_mask = ad.focal_plane_mask().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       ad.close()
     except:
-      # Astrodata open failed
+      # Astrodata open failed or there was some other exception
+      ad.close()
       raise
 
 class Nifs(Base):
@@ -760,30 +772,32 @@ class Nifs(Base):
     # Get an AstroData object on it
     try:
       ad = AstroData(self.header.diskfile.file.fullpath(), mode="readonly")
+      ad.descriptorFormat = "db"
       # Populate values
       try:
-        self.disperser = ad.disperser()
-      except (KeyError, ValueError):
+        self.disperser = ad.disperser().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.filter_name = ad.filter_name()
-      except (KeyError, ValueError):
+        self.filter_name = ad.filter_name().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.read_mode = ad.read_mode()
-      except (KeyError, ValueError):
+        self.read_mode = ad.read_mode().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.coadds = ad.coadds()
-      except (KeyError, ValueError):
+        self.coadds = ad.coadds().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.focal_plane_mask = ad.focal_plane_mask()
-      except (KeyError, ValueError):
+        self.focal_plane_mask = ad.focal_plane_mask().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       ad.close()
     except:
-      # Astrodata open failed
+      # Astrodata open failed or there was some other exception
+      ad.close()
       raise
 
 class Michelle(Base):
@@ -811,30 +825,32 @@ class Michelle(Base):
     # Get an AstroData object on it
     try:
       ad = AstroData(self.header.diskfile.file.fullpath(), mode="readonly")
+      ad.descriptorFormat = "db"
       # Populate values
       try:
-        self.disperser = ad.disperser()
-      except (KeyError, ValueError):
+        self.disperser = ad.disperser().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.filter_name = ad.filter_name()
-      except (KeyError, ValueError):
+        self.filter_name = ad.filter_name().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.read_mode = ad.read_mode()
-      except (KeyError, ValueError):
+        self.read_mode = ad.read_mode().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.coadds = ad.coadds()
-      except (KeyError, ValueError):
+        self.coadds = ad.coadds().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.focal_plane_mask = ad.focal_plane_mask()
-      except (KeyError, ValueError):
+        self.focal_plane_mask = ad.focal_plane_mask().forDB()
+      except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       ad.close()
     except:
-      # Astrodata open failed
+      # Astrodata open failed or there was some other exception
+      ad.close()
       raise
 
 class PhotStandard(Base):
