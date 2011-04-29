@@ -3,7 +3,6 @@ from astrodata import AstroData
 from astrodata import Errors
 import re
 from optparse import OptionParser
-from copy import deepcopy
 
 parser = OptionParser()
 parser.set_description(
@@ -55,7 +54,7 @@ if len(args) > 1:
 
 if len(args) is 1:
     ad = AstroData(args[0])
-    outstr += "** ad Testdata: "+args
+    outstr += "** ad Testdata: "+args[0]
 else:
     testdatafile = "../../../../test_data/recipedata/N20090703S0163.fits"
     ad = AstroData(testdatafile)
@@ -224,8 +223,13 @@ for desc in descripts:
         outstr += "FAILED"
         raise
     outstr += "_"*80 + "\n"
-    print outstr
-
+    if options.writefile:
+        outfile = open("output_test_dv_opterators.txt","w")
+        outfile.write(outstr)
+        outfile.close()
+    else:
+        print outstr
+    
 
 
 
