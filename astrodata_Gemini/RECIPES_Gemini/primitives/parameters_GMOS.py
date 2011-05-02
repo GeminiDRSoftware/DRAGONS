@@ -98,32 +98,6 @@
         'userOverride'  : False,
         },
     },
-'standardizeHeaders':{
-    'suffix':{
-        # String to be post pended to the output of
-        # standardizeInstrumentHeaders
-        'default'       : '_sdzHdrs',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  : False,
-        },
-    },
- 'standardizeStructure':{
-    'suffix':{
-        # String to be post pended to the output of
-        # standardizeInstrumentStructure
-        'default'       : '_sdzStruct',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  : False,
-        },
-    'addMDF':{
-        'default'       : True,
-        'recipeOverride': True,
-        'type'          : 'bool',
-        'userOverride'  : True,
-        },
-    },
 'subtractBias':{
     'suffix':{
         # String to be post pended to the output of subtractBias
@@ -150,20 +124,5 @@
         'type'          : 'bool',
         'userOverride'  : True    
          },
-    },
-'validateData':{
-    'suffix':{
-        # String to be post pended to the output of validateInstrumentData
-        'default'       : '_validated',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  :False,
-        },
-    'repair':{
-        'default'       : True,
-        'recipeOverride': True,
-        'type'          : 'bool',
-        'userOverride'  :True,
-        },
     },
 }
