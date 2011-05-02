@@ -6,7 +6,7 @@ from optparse import OptionParser
 
 parser = OptionParser()
 parser.set_description(
-"""Descriptor Value Opertors Test.\n Created by C.Allen, 
+"""Descriptor Value Operators Test.\n Created by C.Allen, 
 K.Dement, Apr2011.""" )
 
 parser.add_option('-v', '--verbose', action='store_true', dest='verbose', 
