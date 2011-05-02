@@ -67,11 +67,10 @@ class F2Primitives(GEMINIPrimitives):
         
         yield rc 
     
-    def standardizeInstrumentHeaders(self, rc):
+    def standardizeHeaders(self, rc):
         """
-        This primitive is called by standardizeHeaders (which is located in
-        primitives_GEMINI.py) to make the changes and additions to the keywords
-        in the headers of FLAMINGOS-2 data, specifically.
+        This primitive is used to make the changes and additions to the
+        keywords in the headers of FLAMINGOS-2 data, specifically.
         
         :param loglevel: Verbosity setting for log messages to the screen.
                          0 = nothing to screen, 6 = everything to screen. OR
@@ -83,8 +82,7 @@ class F2Primitives(GEMINIPrimitives):
         log = gemLog.getGeminiLog(logType=rc['logType'],
                                   logLevel=rc['logLevel'])
         # Log the standard 'starting primitive' debug message
-        log.debug(gt.logMessage('primitive', 'standardizeInstrumentHeaders',
-                                'starting'))
+        log.debug(gt.logMessage('primitive', 'standardizeHeaders', 'starting'))
         try:
             # Call the standardize_headers_f2 user level function
             output = sdz.standardize_headers_f2(input=rc.getInputs(style='AD'),
@@ -99,11 +97,10 @@ class F2Primitives(GEMINIPrimitives):
         
         yield rc 
     
-    def standardizeInstrumentStructure(self, rc):
+    def standardizeStructure(self, rc):
         """
-        This primitive is called by standardizeHeaders (which is located in
-        primitives_GEMINI.py) to make the changes and additions to the keywords
-        in the headers of FLAMINGOS-2 data, specifically.
+        This primitive is used to make the changes and additions to the
+        keywords in the headers of FLAMINGOS-2 data, specifically.
         
         :param loglevel: Verbosity setting for log messages to the screen.
                          0 = nothing to screen, 6 = everything to screen. OR
@@ -115,7 +112,7 @@ class F2Primitives(GEMINIPrimitives):
         log = gemLog.getGeminiLog(logType=rc['logType'],
                                   logLevel=rc['logLevel'])
         # Log the standard 'starting primitive' debug message
-        log.debug(gt.logMessage('primitive', 'standardizeInstrumentStructure', 
+        log.debug(gt.logMessage('primitive', 'standardizeStructure',
                                 'starting'))
         try:
             # Call the standardize_structure_f2 user level function
@@ -131,10 +128,9 @@ class F2Primitives(GEMINIPrimitives):
         
         yield rc
     
-    def validateInstrumentData(self, rc):
+    def validateData(self, rc):
         """
-        This primitive is called by validateData (which is located in
-        primitives_GEMINI.py) to validate FLAMINGOS-2 data, specifically.
+        This primitive is used to validate FLAMINGOS-2 data, specifically.
         
         :param loglevel: Verbosity setting for log messages to the screen.
                          0 = nothing to screen, 6 = everything to screen. OR
@@ -146,8 +142,7 @@ class F2Primitives(GEMINIPrimitives):
         log = gemLog.getGeminiLog(logType=rc['logType'],
                                   logLevel=rc['logLevel'])
         # Log the standard 'starting primitive' debug message
-        log.debug(gt.logMessage('primitive', 'validateInstrumentData', 
-                                'starting'))
+        log.debug(gt.logMessage('primitive', 'validateData', 'starting'))
         try:
             # Call the validate_data_f2 user level function
             output = sdz.validate_data_f2(input=rc.getInputs(style='AD'),
