@@ -27,15 +27,15 @@ def pyrafLoader():
     This function is to load the modules needed by primitives that use pyraf. 
     It will also ensure there are no additional prints to the console when 
     loading the Gemini pyraf package.
-    The loaded modules are returned in the order of:
-    (pyraf, gemini, iraf.yes, iraf.no)
-    to be added to the name-space of the primitive this function is called from.
-    eg. (pyraf, gemini, yes, no)=pyrafLoader()
-    
+    The loaded modules are to be added to the name-space of the primitive this
+    function is called from, e.g., (pyraf, gemini, yes, no) = pyrafLoader()
     """
     import pyraf
     from pyraf import iraf
     from iraf import gemini
+    # Required for stackFrames (gemcombine)
+    from iraf import gemtools
+    # Required (gireduce, giflat, gmosaic, gdisplay, gifringe)
     from iraf import gmos
     import StringIO
     
@@ -48,10 +48,6 @@ def pyrafLoader():
     # Setting the IRAF versions of True and False
     yes = iraf.yes
     no = iraf.no
-    
-    # This will load the gemini pyraf package    
-    gemini() 
-    gmos()    
     
     # Returning stdout back to normal so prints show on the screen
     sys.stdout = SAVEOUT
