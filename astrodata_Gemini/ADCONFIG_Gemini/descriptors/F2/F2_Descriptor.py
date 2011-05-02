@@ -2,6 +2,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from gempy import string
 
 from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardF2KeyDict import stdkeyDictF2
@@ -23,6 +24,19 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.getLookupTable('Gemini/F2/F2ConfigDict',
                                    'f2ConfigDict')
     
+    def data_section(self, dataset, pretty=False, **args):
+        data_section = "[1:2048,1:2048]"
+        if pretty:
+            # Return the data section string that uses 1-based indexing as the
+            # value
+            ret_data_section = data_section
+        else:
+            # Return the data section list that used 0-based, non-inclusive
+            # indexing as the value
+            ret_data_section = string.sectionStrToIntList(data_section)
+        
+        return ret_data_section
+        
     def gain(self, dataset, **args):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
