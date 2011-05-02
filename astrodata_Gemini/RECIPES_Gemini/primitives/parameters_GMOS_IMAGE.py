@@ -1,55 +1,6 @@
-{'fringeCorrect':{
+{'standardizeStructure':{
     'suffix':{
-        # String to be post pended to the output of fringeCorrect
-        'default'       : '_fringeCorrected',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  : False,
-        },
-    'statsec':{
-        'default'       : '',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  : False,
-        },
-    'fl_statscale':{
-        'default'       : True,
-        'recipeOverride': True,
-        'type'          : 'bool',
-        'userOverride'  : True,
-        },
-    'scale':{
-        'default'       : 0.0,
-        'recipeOverride': True,
-        'type'          : 'float',
-        'userOverride'  : False,
-        },
-    },
- 'makeFringeFrame':{
-    'suffix':{
-        # String to be post pended to the output of makeFringeFrame
-        'default'       : '_fringe',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  : False,
-        },
-    'fl_vardq':{
-        'default'       : True,
-        'recipeOverride': True,
-        'type'          : 'bool',
-        'userOverride'  : True,
-        },
-    'method':{
-        'default'       : 'median',
-        'recipeOverride': True,
-        'type'          : 'str',
-        'userOverride'  : False,
-        },
-    },
- 'standardizeStructure':{
-    'suffix':{
-        # String to be post pended to the output of
-        # standardizeStructure
+        # String to be post pended to the output of standardizeStructure
         'default'       : '_sdzStruct',
         'recipeOverride': True,
         'type'          : 'str',

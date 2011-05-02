@@ -124,7 +124,7 @@
     },
  'scaleFringeToScience':{
     'suffix':{
-        # String to be post pended to the output of stackFrames
+        # String to be post pended to the output of scaleFringeToScience
         'default'       : '_scaled',
         'recipeOverride': True,
         'type'          : 'str',
@@ -234,6 +234,15 @@
     'suffix':{
         # String to be post pended to the output of subtractDark
         'default'       : '_darkCorrected',
+        'recipeOverride': True,
+        'type'          : 'str',
+        'userOverride'  : False,
+        },
+    },
+ 'subtractFringe':{
+    'suffix':{
+        # String to be post pended to the output of subtractFringe
+        'default'       : '_fringeCorrected',
         'recipeOverride': True,
         'type'          : 'str',
         'userOverride'  : False,
