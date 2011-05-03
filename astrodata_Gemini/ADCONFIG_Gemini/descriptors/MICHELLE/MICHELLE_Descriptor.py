@@ -22,7 +22,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         exposure_time = \
             dataset.phuGetKeyValue(globalStdkeyDict['key_exposure_time'])
         extensions = dataset.phuGetKeyValue(globalStdkeyDict['key_numext'])
-        print exposure_time, extensions
         if exposure_time is None or extensions is None:
             # The phuGetKeyValue() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
