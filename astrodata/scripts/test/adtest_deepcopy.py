@@ -45,6 +45,7 @@ if options.test1:
         assert adIdlist is not adDeepcopyIdlist
     except:
         print "\t>> FAILED: hdulist ids match\n"
+        raise AssertionError
     print "\t>> PASSED: hdulist ids are different\n"
 
 if options.test2:
@@ -60,6 +61,7 @@ if options.test2:
         assert adDeepcopy._AstroData__origFilename is savedFilename
     except:
         print "\t>> FAILED: Original name is not the same after deepcopy\n"
+        raise AssertionError
     print "\t>> PASSED: Original name is preserved by deepcopy\n" 
 
 if options.test3:
