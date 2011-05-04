@@ -12,9 +12,9 @@ class F2Primitives(GEMINIPrimitives):
     """
     This is the class containing all of the primitives for the FLAMINGOS-2
     level of the type hierarchy tree. It inherits all the primitives from the
-    level above, 'GEMINIPrimitives'.
+    level above, "GEMINIPrimitives".
     """
-    astrotype = 'F2'
+    astrotype = "F2"
     
     def init(self, rc):
         GEMINIPrimitives.init(self, rc)
@@ -46,18 +46,18 @@ class F2Primitives(GEMINIPrimitives):
         :type logLevel: integer or string
         """
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc['logType'],
-                                  logLevel=rc['logLevel'])
-        # Log the standard 'starting primitive' debug message
-        log.debug(gt.logMessage('primitive', 'addBPM', 'starting'))
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.logMessage("primitive", "addBPM", "starting"))
         try:
             # Load the BPM file into AstroData
-            bpm = AstroData(lookupPath('Gemini/F2/BPM/F2_bpm.fits'))
+            bpm = AstroData(lookupPath("Gemini/F2/BPM/F2_bpm.fits"))
             # Call the add_bpm user level function
             output = gs.add_bpm(
-                input=rc.getInputs(style='AD'),
-                output_names=rc['output_names'],
-                suffix=rc['suffix'],
+                input=rc.getInputs(style="AD"),
+                output_names=rc["output_names"],
+                suffix=rc["suffix"],
                 bpm=bpm)
             # Report the output of the user level function to the reduction
             # context
@@ -81,16 +81,16 @@ class F2Primitives(GEMINIPrimitives):
         :type loglevel: integer or string
         """
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc['logType'],
-                                  logLevel=rc['logLevel'])
-        # Log the standard 'starting primitive' debug message
-        log.debug(gt.logMessage('primitive', 'standardizeHeaders', 'starting'))
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.logMessage("primitive", "standardizeHeaders", "starting"))
         try:
             # Call the standardize_headers_f2 user level function
             output = sdz.standardize_headers_f2(
-                input=rc.getInputs(style='AD'),
-                output_names=rc['output_names'],
-                suffix=rc['suffix'])
+                input=rc.getInputs(style="AD"),
+                output_names=rc["output_names"],
+                suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
@@ -113,17 +113,17 @@ class F2Primitives(GEMINIPrimitives):
         :type loglevel: integer or string
         """
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc['logType'],
-                                  logLevel=rc['logLevel'])
-        # Log the standard 'starting primitive' debug message
-        log.debug(gt.logMessage('primitive', 'standardizeStructure',
-                                'starting'))
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.logMessage("primitive", "standardizeStructure",
+                                "starting"))
         try:
             # Call the standardize_structure_f2 user level function
             output = sdz.standardize_headers_f2(
-                input=rc.getInputs(style='AD'),
-                output_names=rc['output_names'],
-                suffix=rc['suffix'])
+                input=rc.getInputs(style="AD"),
+                output_names=rc["output_names"],
+                suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
@@ -145,17 +145,17 @@ class F2Primitives(GEMINIPrimitives):
         :type loglevel: integer or string
         """
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc['logType'],
-                                  logLevel=rc['logLevel'])
-        # Log the standard 'starting primitive' debug message
-        log.debug(gt.logMessage('primitive', 'validateData', 'starting'))
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.logMessage("primitive", "validateData", "starting"))
         try:
             # Call the validate_data_f2 user level function
             output = sdz.validate_data_f2(
-                input=rc.getInputs(style='AD'),
-                output_names=rc['output_names'],
-                suffix=rc['suffix'],
-                repair=rc['repair'])
+                input=rc.getInputs(style="AD"),
+                output_names=rc["output_names"],
+                suffix=rc["suffix"],
+                repair=rc["repair"])
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
