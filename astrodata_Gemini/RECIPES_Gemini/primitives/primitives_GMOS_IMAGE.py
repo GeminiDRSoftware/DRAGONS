@@ -52,17 +52,18 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "addBPM", "starting"))
+        log.debug(gt.logMessage("primitive", "normalizeFlat", "starting"))
         try:
             # Load the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader()
             # Call the normalize_flat_image_gmos user level function
             output = cal.normalize_flat_image_gmos(
                 input=rc.getInputs(style="AD"),
+                output_names=rc["output_names"],
+                suffix=rc["suffix"],
                 fl_trim=rc["fl_trim"],
                 fl_over=rc["fl_over"],
-                fl_vardq="AUTO",
-                suffix=rc["suffix"])
+                fl_vardq="AUTO")
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
@@ -78,8 +79,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         This primitive will to add an MDF to the inputs if they are of type
         SPECT, those of type IMAGE will be handled by the standardizeStructure
         in the primitives_GMOS_IMAGE set where no MDF will be added. The
-        Science Function standardize_structure_gmos in standardize.py is
-        utilized to do the work for this primitive.
+        user level function standardize_structure_gmos in
+        gempy.science.standardization is utilized to do the work for this
+        primitive.
         
         :param suffix: Value to be post pended onto each input name(s) to 
                        create the output name(s).
@@ -99,13 +101,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "addBPM", "starting"))
+        log.debug(gt.logMessage("primitive", "standardizeStructure",
+                                "starting"))
         try:
             # Call the standardize_structure_gmos user level function
             output = sdz.standardize_structure_gmos(
                 input=rc.getInputs(style="AD"),
-                addMDF=rc["addMDF"],
-                suffix=rc["suffix"])
+                output_names=rc["output_names"],
+                suffix=rc["suffix"],
+                addMDF=rc["addMDF"])
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
