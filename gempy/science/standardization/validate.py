@@ -43,7 +43,7 @@ def validate_data_f2(input=None, output_names=None, suffix=None, repair=None):
                             "not work. Please come back later.")
             # Set the output file name of the output object
             output.filename = output_names_list[count]
-            count += count
+            count += 1
             log.info("Setting the output filename to %s" % output.filename)
             # Append the output object to the output list
             output_list.append(output)
@@ -129,7 +129,7 @@ def validate_data_gmos(input=None, output_names=None, suffix=None,
                                    "in raw GMOS data." % output.filename)
             # Set the output file name of the output object
             output.filename = output_names_list[count]
-            count += count
+            count += 1
             log.info("Setting the output filename to %s" % output.filename)
             # Append the output object to the output list
             output_list.append(output)
