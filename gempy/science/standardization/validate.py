@@ -34,13 +34,13 @@ def validate_data_f2(input=None, output_names=None, suffix=None, repair=None):
             # before
             if ad.phuGetKeyValue(timestampkey):
                 log.warning("%s has already been validated" % (ad.filename))
-                break
-            # Validate the output object. NEED TO ACTUALLY DO SOMETHING HERE?
-            log.status("No validation required for FLAMINGOS-2")
-            if repair:
-                # This would be where we would attempt to repair the data 
-                log.warning("Currently, the 'repair' parameter does " +
-                            "not work. Please come back later.")
+            else:
+                # Validate the output object. ACTUALLY DO SOMETHING HERE?
+                log.status("No validation required for FLAMINGOS-2")
+                if repair:
+                    # This would be where we would attempt to repair the data 
+                    log.warning("Currently, the 'repair' parameter does not " +
+                                "work. Please come back later.")
             # Set the output file name of the output object
             output.filename = output_names_list[count]
             count += 1
@@ -114,19 +114,21 @@ def validate_data_gmos(input=None, output_names=None, suffix=None,
             # before
             if ad.phuGetKeyValue(timestampkey):
                 log.warning("%s has already been validated" % (ad.filename))
-                break
-            # Validate the output object. Ensure that the input have 1, 3, 6
-            # or 12 extensions
-            extensions = output.countExts("SCI")
-            if (extensions != 1 and extensions != 3 and extensions != 6 and
-                extensions != 12):
-                if repair:
-                    # This would be where we would attempt to repair the data 
-                    log.warning("Currently, the 'repair' parameter does not " +
-                                "work. Please come back later.")
-                raise Errors.Error("The number of extensions in %s do match " +
-                                   "with the number of extensions expected " +
-                                   "in raw GMOS data." % output.filename)
+            else:
+                # Validate the output object. Ensure that the input have 1, 3,
+                # 6 or 12 extensions
+                extensions = output.countExts("SCI")
+                if (extensions != 1 and extensions != 3 and extensions != 6 and
+                    extensions != 12):
+                    if repair:
+                        # This would be where we would attempt to repair the
+                        # data 
+                        log.warning("Currently, the 'repair' parameter does " +
+                                    "not work. Please come back later.")
+                    raise Errors.Error("The number of extensions in %s do " +
+                                       "match with the number of extensions " +
+                                       "expected in raw GMOS data." \
+                                       % output.filename)
             # Set the output file name of the output object
             output.filename = output_names_list[count]
             count += 1
