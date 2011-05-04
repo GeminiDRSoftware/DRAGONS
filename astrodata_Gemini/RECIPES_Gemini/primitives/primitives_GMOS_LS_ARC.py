@@ -15,7 +15,7 @@ import numpy as np
 import pyfits as pf
 import shutil
 
-from gwavecal import GmosLONGSLIT
+from gwavecal import Wavecal
 
 
 class GMOS_LS_ARCPrimitives(GMOSPrimitives):
@@ -45,13 +45,13 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
             for ad in rc.getInputs(style='AD'):
 
                 log.info('\n*** Wavecal primitive. Processing file:'+ad.filename)
-                gls = GmosLONGSLIT(ad, reffile=rc['reffile'], wrdb=rc['wrdb'], fitfunction=rc['fitfunction'],
+                wc = Wavecal(ad, reffile=rc['reffile'], wrdb=rc['wrdb'], fitfunction=rc['fitfunction'],
                                    fitorder=rc['fitorder'], ntmax=rc['ntmax'], fwidth=rc['fwidth'], 
                                    cradius=rc['cradius'], match=rc['match'], minsep=rc['minsep'], 
                                    clip=rc['clip'], nsum=rc['nsum'], debug=rc['debug'], logfile=rc['logfile'])
-                gls.wavecal()
-                gls.save_features()
-                adOutputs.append(gls.outad)
+                wc.wavecal()
+                wc.save_features()
+                adOutputs.append(wc.outad)
 
             rc.reportOutput(adOutputs)
 
@@ -61,18 +61,3 @@ class GMOS_LS_ARCPrimitives(GMOSPrimitives):
             raise 
         yield rc
 
-    def gtransform(self, rc):
-        log = gemLog.getGeminiLog(logName=rc['logName'], 
-                                  logLevel=rc['logLevel'])
-        try:
-            print "Starting gtrans GMOS_LS_ARC"
-            #gtrans.gtrans.Gtrans('gsN20011222S027.fits',minsep=4,ntmax=50)
-            #gg = gtrans.Gtrans(rc.inputsAsStr(), minsep=4,ntmax=50)
-
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
-        yield rc
