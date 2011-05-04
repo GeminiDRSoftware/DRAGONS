@@ -5,7 +5,7 @@ from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookupPath
 from gempy import geminiTools as gt
 from gempy.science import geminiScience as gs
-from gempy.science import standardize as sdz
+from gempy.science import standardization as sdz
 from primitives_GEMINI import GEMINIPrimitives
 
 class F2Primitives(GEMINIPrimitives):
@@ -54,9 +54,11 @@ class F2Primitives(GEMINIPrimitives):
             # Load the BPM file into AstroData
             bpm = AstroData(lookupPath('Gemini/F2/BPM/F2_bpm.fits'))
             # Call the add_bpm user level function
-            output = gs.add_bpm(adInputs=rc.getInputs(style='AD'),
-                                BPMs=bpm,
-                                suffix=rc['suffix'])
+            output = gs.add_bpm(
+                input=rc.getInputs(style='AD'),
+                output_names=rc['output_names'],
+                suffix=rc['suffix'],
+                bpm=bpm)
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
@@ -85,8 +87,10 @@ class F2Primitives(GEMINIPrimitives):
         log.debug(gt.logMessage('primitive', 'standardizeHeaders', 'starting'))
         try:
             # Call the standardize_headers_f2 user level function
-            output = sdz.standardize_headers_f2(input=rc.getInputs(style='AD'),
-                                                suffix=rc['suffix'])
+            output = sdz.standardize_headers_f2(
+                input=rc.getInputs(style='AD'),
+                output_names=rc['output_names'],
+                suffix=rc['suffix'])
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
@@ -116,8 +120,10 @@ class F2Primitives(GEMINIPrimitives):
                                 'starting'))
         try:
             # Call the standardize_structure_f2 user level function
-            output = sdz.standardize_headers_f2(input=rc.getInputs(style='AD'),
-                                                suffix=rc['suffix'])
+            output = sdz.standardize_headers_f2(
+                input=rc.getInputs(style='AD'),
+                output_names=rc['output_names'],
+                suffix=rc['suffix'])
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
@@ -145,8 +151,11 @@ class F2Primitives(GEMINIPrimitives):
         log.debug(gt.logMessage('primitive', 'validateData', 'starting'))
         try:
             # Call the validate_data_f2 user level function
-            output = sdz.validate_data_f2(input=rc.getInputs(style='AD'),
-                                          suffix=rc['suffix'])
+            output = sdz.validate_data_f2(
+                input=rc.getInputs(style='AD'),
+                output_names=rc['output_names'],
+                suffix=rc['suffix'],
+                repair=rc['repair'])
             # Report the output of the user level function to the reduction
             # context
             rc.reportOutput(output)
