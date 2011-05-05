@@ -13,6 +13,7 @@ from gempy.science import calibrate
 from gempy.science import geminiScience
 from gempy.science import gmosScience
 from gempy.science import standardize
+from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
 import shutil
 
@@ -146,7 +147,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('\nParameters dictated by the definition of the '+
                          'primitive:\n', 
                          category='parameters')
-                gemt.LogDictParams(clPrimParams)
+                gemt.logDictParams(clPrimParams)
                 
                 log.debug('Calling the gdisplay CL script for input list '+
                               inputRecord.filename)
