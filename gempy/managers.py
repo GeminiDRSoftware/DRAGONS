@@ -362,7 +362,7 @@ class CLManager(object):
             self.imageOutsNames = []
             if self.combinedImages and (self.suffix!=None):
                 name = gemt.fileNameUpdater(adIn=self.imageIns[0], 
-                                       suffix=self.suffix)
+                                            suffix=self.suffix)
                 self.imageOutsNames.append(name)
             elif (not self.combinedImages) and (self.suffix!=None):
                 for ad in self.imageIns:
@@ -375,16 +375,21 @@ class CLManager(object):
         else:
             # Cast it to a list for use below
             if isinstance(self.imageOutsNames,str):
-                self.imageOutsNames = [self.imageOutsNames]   
-        # returning the imageOutsNames contents in the form requested, else error
-        # log messsage
+                self.imageOutsNames = [self.imageOutsNames]
+
+        tmp_names = []
+        for name in self.imageOutsNames:
+            tmp_names.append(self.prefix+name)
+
+        # returning the imageOutsNames contents in the form requested, 
+        # else error log messsage
         if type!='':
             if type=='string':
-                return ','.join(self.imageOutsNames)
+                return ','.join(tmp_names)
             if type=='list':
-                return self.imageOutsNames
+                return tmp_names
             if type=='listFile':
-                imageOutsListName = gemt.listFileMaker(list=self.imageOutsNames,
+                imageOutsListName = gemt.listFileMaker(list=tmp_names,
                                     listName='imageOutsList'+str(os.getpid())+\
                                                                 self.funcName)
                 self.imageOutsListName = imageOutsListName
@@ -552,17 +557,19 @@ class CLManager(object):
             self.log.fullinfo('Loading output images into imageOuts and'+
                               ' removing temporary files from disk.')
             for name in self.imageOutsNames:
+                tmpname = self.prefix+name
                 # Loading the file into an astrodata object
-                ad = AstroData(name, mode='update')
+                ad = AstroData(tmpname, mode='update')
+                ad.filename = name
                 # Removing the 'OBSMODE' phu key if it is in there
                 ad = self.obsmodeDel(ad)
                 # appending the astrodata object to the imageOuts list to be
                 # returned
                 self.imageOuts.append(ad)
                 # Deleting the file from disk
-                os.remove(name)
-                self.log.fullinfo(name+' was loaded into memory')
-                self.log.fullinfo(name+' was deleted from disk')
+                os.remove(tmpname)
+                self.log.fullinfo(tmpname+' was loaded into memory')
+                self.log.fullinfo(tmpname+' was deleted from disk')
             if self.imageOutsListName!=None:
                 os.remove(self.imageOutsListName)
                 self.log.fullinfo('Temporary list '+self.imageOutsListName+
@@ -574,17 +581,19 @@ class CLManager(object):
             self.log.fullinfo('Loading output reference images into refOuts'+
                               ' and removing temporary files from disk.')
             for name in self.refOutsNames:
+                tmpname = self.prefix+name
                 # Loading the file into an astrodata object
-                ad = AstroData(name, mode='update')
+                ad = AstroData(tmpname, mode='update')
+                ad.filename = name
                 # Removing the 'OBSMODE' phu key if it is in there
                 ad = self.obsmodeDel(ad)
                 # appending the astrodata object to the refOuts list to be
                 # returned
                 self.refOuts.append(ad)
                 # Deleting the file from disk
-                os.remove(name)
-                self.log.fullinfo(name+' was loaded into memory')
-                self.log.fullinfo(name+' was deleted from disk')
+                os.remove(tmpname)
+                self.log.fullinfo(tmpname+' was loaded into memory')
+                self.log.fullinfo(tmpname+' was deleted from disk')
             if self.refOutsListName!=None:
                 os.remove(self.refOutsListName)
                 self.log.fullinfo('Temporary list '+self.refOutsListName+
@@ -806,15 +815,21 @@ class CLManager(object):
             # Cast it to a list for use below
             if isinstance(self.refOutsNames,str):
                 self.refOutsNames = [self.refOutsNames] 
+
+        tmp_names = []
+        for name in self.refOutsNames:
+            tmp_names.append(self.prefix+name)
+
+
         # returning the refOutsNames contents in the form requested, else error
         # log messsage
         if type!='':
             if type=='string':
-                return ','.join(self.refOutsNames)
+                return ','.join(tmp_names)
             if type=='list':
-                return self.refOutsNames
+                return tmp_names
             if type=='listFile':
-                refOutsListName = gemt.listFileMaker(list=self.refOutsNames,
+                refOutsListName = gemt.listFileMaker(list=tmp_names,
                                     listName='refOutsList'+str(os.getpid())+
                                                                 self.funcName)
                 self.refOutsListName = refOutsListName
@@ -1048,14 +1063,13 @@ class ScienceFunctionManager():
                         self.log.debug('Calling gemt.gemt.fileNameUpdater on '+
                                        ad.filename)
                         outName = gemt.fileNameUpdater(infilename=ad.filename,
-                                                  suffix=self.suffix, 
-                                                  strip=False)
+                                                       suffix=self.suffix, 
+                                                       strip=False)
                         self.outNames.append(outName)
                 
             # return the now checked and loaded up (if needed) adInputs, 
             # outNames and log object.
             return (self.adInputs, self.outNames, self.log)
-            
         except:
             # logging the exact message from the actual exception that was 
             # raised in the try block. Then raising a general ManagersError 
@@ -1064,4 +1078,3 @@ class ScienceFunctionManager():
             raise ManagersError('An Error occurred during\
                                 ScienceFunctionManager.startUp')
 
- 
