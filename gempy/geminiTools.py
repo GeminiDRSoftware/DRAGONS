@@ -323,7 +323,6 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
         if output_value is not None:
             if output_value != original_value:
                 # Update the header and write a history comment
-                print key, output_value, comment
                 adinput.phuSetKeyValue(key, output_value, comment)
                 log.fullinfo("PHU keyword %s=%s %s" \
                              % (key, adinput.phuGetKeyValue(key), msg),
@@ -366,7 +365,7 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
                     ext.setKeyValue(key, output_value, comment)
                     log.fullinfo("%s,%s keyword %s=%s %s" \
                                  % (extname, ext.extver(), key,
-                                    ext.getKeyValue(key), msg)),
+                                    ext.getKeyValue(key), msg),
                                  category="header")
                     # Only need to write a history comment if the value in the
                     # header is actually overwritten
