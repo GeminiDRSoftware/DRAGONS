@@ -84,11 +84,12 @@ class F2Primitives(GEMINIPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "standardizeHeaders", "starting"))
+        log.debug(gt.log_message("primitive", "standardizeHeaders",
+                                 "starting"))
         try:
             # Call the standardize_headers_f2 user level function
             output = sdz.standardize_headers_f2(
-                input=rc.getInputs(style="AD"),
+                adinput=rc.getInputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
@@ -103,8 +104,8 @@ class F2Primitives(GEMINIPrimitives):
     
     def standardizeStructure(self, rc):
         """
-        This primitive is used to make the changes and additions to the
-        keywords in the headers of FLAMINGOS-2 data, specifically.
+        This primitive is used to standardize the structure of FLAMINGOS-2
+        data, specifically.
         
         :param loglevel: Verbosity setting for log messages to the screen.
                          0 = nothing to screen, 6 = everything to screen. OR
@@ -117,11 +118,11 @@ class F2Primitives(GEMINIPrimitives):
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeStructure",
-                                "starting"))
+                                 "starting"))
         try:
             # Call the standardize_structure_f2 user level function
-            output = sdz.standardize_headers_f2(
-                input=rc.getInputs(style="AD"),
+            output = sdz.standardize_structure_f2(
+                adinput=rc.getInputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
