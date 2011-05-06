@@ -4,6 +4,7 @@
 import sys
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
+from gempy import geminiTools as gt
 from gempy.science import calibrate as cal
 from gempy.science import standardization as sdz
 from primitives_GMOS import GMOSPrimitives
@@ -106,7 +107,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         try:
             # Call the standardize_structure_gmos user level function
             output = sdz.standardize_structure_gmos(
-                input=rc.getInputs(style="AD"),
+                adinput=rc.getInputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"],
                 addMDF=rc["addMDF"])
