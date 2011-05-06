@@ -7,8 +7,8 @@ import tempfile
 import astrodata
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
-from astrodata.Errors import ManagersError
-from gempy import geminiTools as gemt
+from astrodata import Errors
+from gempy import geminiTools as gt
 from gempy import string
 
 class CLManager(object):
@@ -240,14 +240,14 @@ class CLManager(object):
             if type=='list':
                 return self.arrayInsCLdiskNames
             if type=='listFile':
-                arrayInsListName = gemt.listFileMaker(self.arrayInsCLdiskNames,
+                arrayInsListName = gt.listFileMaker(self.arrayInsCLdiskNames,
                                                     listName='arrayList'+\
                                                     str(os.getpid())+\
                                                     self.funcName)
                 self.arrayInsListName = arrayInsListName
                 return '@'+arrayInsListName
         else:
-            raise ManagersError('Parameter "type" must not be an empty string'+
+            raise Errors.ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')    
     
     def arrayOutsFiles(self, type=''):
@@ -277,13 +277,13 @@ class CLManager(object):
             if type=='list':
                 return self.arrayOutsNames
             if type=='listFile':
-                arrayOutsListName = gemt.listFileMaker(list=self.arrayOutsNames,
+                arrayOutsListName = gt.listFileMaker(list=self.arrayOutsNames,
                                     listName='arrayOutsList'+str(os.getpid())+\
                                                                 self.funcName)
                 self.arrayOutsListName = arrayOutsListName
                 return '@'+arrayOutsListName
         else:
-            raise ManagersError('Parameter "type" must not be an empty string'+
+            raise Errors.ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')
             
     
@@ -319,13 +319,13 @@ class CLManager(object):
             if type=='list':
                 return self.imageInsCLdiskNames
             if type=='listFile':
-                imageInsListName = gemt.listFileMaker(list=self.imageInsCLdiskNames,
+                imageInsListName = gt.listFileMaker(list=self.imageInsCLdiskNames,
                                     listName='imageList'+str(os.getpid())+\
                                                                 self.funcName)
                 self.imageInsListName = imageInsListName
                 return '@'+imageInsListName
         else:
-            raise ManagersError('Parameter "type" must not be an empty string'+
+            raise Errors.ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')
             
     def imageOutsFiles(self, type=''):
@@ -361,12 +361,12 @@ class CLManager(object):
         if self.imageOutsNames==None:
             self.imageOutsNames = []
             if self.combinedImages and (self.suffix!=None):
-                name = gemt.fileNameUpdater(adIn=self.imageIns[0], 
+                name = gt.fileNameUpdater(adIn=self.imageIns[0], 
                                             suffix=self.suffix)
                 self.imageOutsNames.append(name)
             elif (not self.combinedImages) and (self.suffix!=None):
                 for ad in self.imageIns:
-                    name = gemt.fileNameUpdater(adIn=ad, suffix=self.suffix)
+                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix)
                     self.imageOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of imageOutsNames can '+
@@ -389,13 +389,13 @@ class CLManager(object):
             if type=='list':
                 return tmp_names
             if type=='listFile':
-                imageOutsListName = gemt.listFileMaker(list=tmp_names,
+                imageOutsListName = gt.listFileMaker(list=tmp_names,
                                     listName='imageOutsList'+str(os.getpid())+\
                                                                 self.funcName)
                 self.imageOutsListName = imageOutsListName
                 return '@'+imageOutsListName
         else:
-            raise ManagersError('Parameter "type" must not be an empty string'+
+            raise Errors.ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')
     
     def nbiascontam(self, adInputs, biassec=None):
@@ -521,7 +521,7 @@ class CLManager(object):
                 ad.phuSetKeyValue('OBSMODE', typeStr , 
                           'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
             except:
-                raise ManagersError('Input '+ad.filename+' is not of type '+ 
+                raise Errors.ManagersError('Input '+ad.filename+' is not of type '+ 
                                  'GMOS_IMAGE or GMOS_IFU or GMOS_MOS or '+
                                  'GMOS_LS.')
         return ad    
@@ -684,7 +684,7 @@ class CLManager(object):
                 self._preCLimageNames.append(ad.filename)
                 # Strip off all postfixes and prefix filename with a unique 
                 # prefix
-                name = gemt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
+                name = gt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
                                                                     strip=True)
                 # store the unique name in imageInsCLdiskNames for later 
                 # reference
@@ -703,7 +703,7 @@ class CLManager(object):
                 # Load up the _preCLrefnames list with the input's filename
                 self._preCLrefnames.append(ad.filename)
                 # Strip off all suffixs and prefix filename with a unique prefix
-                name = gemt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
+                name = gt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
                                                                     strip=True)
                 # store the unique name in refInsCLdiskNames for later reference
                 self.refInsCLdiskNames.append(name)
@@ -767,13 +767,13 @@ class CLManager(object):
             if type=='list':
                 return self.refInsCLdiskNames
             if type=='listFile':
-                refInsListName = gemt.listFileMaker(list=self.refInsCLdiskNames,
+                refInsListName = gt.listFileMaker(list=self.refInsCLdiskNames,
                                     listName='refList'+str(os.getpid())+
                                                                 self.funcName)
                 self.refInsListName = refInsListName
                 return '@'+refInsListName
         else:
-            raise ManagersError('Parameter "type" must not be an empty string'+
+            raise Errors.ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')  
                 
     def refOutsFiles(self, type=''):
@@ -805,7 +805,7 @@ class CLManager(object):
             self.refOutsNames = []
             if (self.suffix!=None):
                 for ad in self.refIns:
-                    name = gemt.fileNameUpdater(adIn=ad, suffix=self.suffix)
+                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix)
                     self.refOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of refOutsNames can '+
@@ -829,13 +829,13 @@ class CLManager(object):
             if type=='list':
                 return tmp_names
             if type=='listFile':
-                refOutsListName = gemt.listFileMaker(list=tmp_names,
+                refOutsListName = gt.listFileMaker(list=tmp_names,
                                     listName='refOutsList'+str(os.getpid())+
                                                                 self.funcName)
                 self.refOutsListName = refOutsListName
                 return '@'+refOutsListName
         else:
-            raise ManagersError('Parameter "type" must not be an empty string'+
+            raise Errors.ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')             
 
 class IrafStdout():
@@ -879,50 +879,46 @@ class ScienceFunctionManager():
     science/geminiScience.py and gmosScience.py).
     """
     # Set up global variables 
-    adInputs = None
-    outNames = None
+    adinput = None
+    output_names = None
     suffix = None
-    funcName = None
     combinedInputs = False
     log = None  
     
-    def __init__(self, adInputs=None, outNames=None, suffix=None, funcName=None,
-                 combinedInputs=False):
+    def __init__(self, adinput=None, output_names=None, suffix=None,
+                 combinedInputs=False, funcName=None):
         """
         This will load up the global variables to use throughout the manager
         functions and instantiate the logger object for use in here and 
         back in the 'user level function' that is utilizing this manager.
         
         Either a 'main' type logger object, if it exists, or a null logger will
-        be returned from startUp() along with the checked adInputs and outNames.
+        be returned from startUp() along with the checked input and
+        output_names.
         
-        :param adInputs: Astrodata inputs to have DQ extensions added to
-        :type adInputs: Astrodata objects, either a single or a list of objects.
-                        At least one object MUST be passed in for adInputs.
+        :param adinput: Astrodata inputs to have DQ extensions added to
+        :type adinput: Astrodata objects, either a single or a list of objects.
+                       At least one object MUST be passed in for input.
         
-        :param outNames: filenames of output(s)
-        :type outNames: String, either a single or a list of strings of same 
-                        length as adInputs.
+        :param output_names: filenames of output(s)
+        :type output_names: String, either a single or a list of strings of same 
+                        length as input.
         
         :param suffix: String to add on the end of the input filenames 
-                       (or outNames if not None) for the output filenames.
+                       (or output_names if not None) for the output filenames.
         :type suffix: string
         
-        :param funcName: Name of the Python function using this manager.
-        :type funcName: String
-        
         :param combinedInputs: A flag to indicated that the input images of 
-                               adInputs will be combined to form one single 
+                               input will be combined to form one single 
                                image output.
                                The use of this parameter is optional and is  
-                               overridden by providing outNames. 
+                               overridden by providing output_names. 
         :type combinedInputs: Python boolean (True/False)
         
         """ 
-        self.adInputs = adInputs
-        self.outNames = outNames
+        self.adinput = adinput
+        self.output_names = output_names
         self.suffix = suffix
-        self.funcName = funcName
         self.combinedInputs = combinedInputs
         # loading of the logger 
         self.log = gemLog.getGeminiLog()
@@ -947,9 +943,9 @@ class ScienceFunctionManager():
         if fl_vardq=='AUTO':
             # if there are matching numbers of VAR, DQ and SCI extensions
             # then set to yes to ensure the outputs have VAR and DQ's as well.
-            if self.adInputs[0].countExts('VAR')==\
-                        self.adInputs[0].countExts('DQ')\
-                                            ==self.adInputs[0].countExts('SCI'):
+            if self.adinput[0].countExts('VAR')==\
+                        self.adinput[0].countExts('DQ')\
+                                            ==self.adinput[0].countExts('SCI'):
                 fl_vardq=yes
             else:
                 fl_vardq=no
@@ -1007,74 +1003,68 @@ class ScienceFunctionManager():
         
     def startUp(self):
         """
-        This function is to perform the input checks and fill out the outNames
-        parameter if needed.
+        This function performs checks on the input AstroData objects specified
+        by the 'adinput' parameter, determines the name of the output AstroData
+        objects using the 'output_names' and 'suffix' parameters, and
+        instantiates the log. The 'output_names' parameter supercedes the
+        'suffix' parameter.
         """
         try:
-            # Ensuring there are inputs ad's to work on, else raise
-            if self.adInputs==None:
-                raise ManagersError('The parameter "adInputs" must not be None')
-            elif isinstance(self.adInputs,list):
-                if len(self.adInputs)==0:
-                    raise ManagersError('The parameter "adInputs" must not be'+
-                                        ' an empty list')
-                
-            # raise if funcName=None as it needs to be a valid string
-            if self.funcName==None:
-                raise ManagersError('funcName was None, must be a string.')
-            
-            self.log.status('**STARTING** the '+self.funcName+' function')
-    
-            # casting the input ad's and outNames into lists 
-            # for internal use and simplified returning
-            if not isinstance(self.adInputs,list):
-                self.adInputs=[self.adInputs]
-            if self.outNames==None:
-                self.outNames = []
-            if (not isinstance(self.outNames,list)):
-                if isinstance(self.outNames,str):
-                    self.outNames = [self.outNames]
-                elif self.suffix==None:
-                    raise ManagersError('outNames must be either a string or a'+
-                                     ' list of them.')
-            
-            # Checking combinations of outNames, combinedInputs, suffix and 
-            # len(adInputs) are valid
-            if len(self.outNames)>0:
-                if not self.combinedInputs:
-                    if len(self.adInputs)!= len(self.outNames):
-                        raise ManagersError('outNames was not None or the same'+
-                                    ' length as number of adInputs')
-            elif len(self.adInputs)>1:
-                    if self.suffix==None:
-                        raise ManagersError('Both outNames and suffix are None')
-                
-            # Checking the current outNames and loading it up if needed
-            if len(self.outNames)!=len(self.adInputs):
-                if self.combinedInputs:
-                    ad = self.adInputs[0]
-                    self.log.debug('Calling gemt.gemt.fileNameUpdater on '+
-                                   ad.filename)
-                    outName = gemt.fileNameUpdater(infilename=ad.filename,
-                                              suffix=self.suffix, strip=False)
-                    self.outNames.append(outName)
+            # Check if "adinput" contains at least one AstroData instance
+            if self.adinput is not None:
+                if type(self.adinput) is list:
+                    if len(self.adinput) == 0:
+                        raise Errors.InputError()
                 else:
-                    for ad in self.adInputs:
-                        self.log.debug('Calling gemt.gemt.fileNameUpdater on '+
-                                       ad.filename)
-                        outName = gemt.fileNameUpdater(infilename=ad.filename,
-                                                       suffix=self.suffix, 
-                                                       strip=False)
-                        self.outNames.append(outName)
-                
-            # return the now checked and loaded up (if needed) adInputs, 
-            # outNames and log object.
-            return (self.adInputs, self.outNames, self.log)
+                    # Return the "adinput" back to the user level function as a
+                    # list
+                    self.adinput = [self.adinput]
+            else:
+                raise Errors.InputError()
+            # Determine the name of the output AstroData instance(s) using the
+            # "output_names" and "suffix" parameters. If "output_names" is
+            # None, use the "suffix" parameter to determine the output names.
+            if self.output_names is None:
+                self.output_names = []
+            if type(self.output_names) is not list:
+                self.output_names = [self.output_names]
+            if len(self.output_names) == 0:
+                # Use the "suffix" parameter
+                if self.suffix is not None:
+                    for ad in self.adinput:
+                        output_name = gt.fileNameUpdater(
+                            infilename=ad.filename,
+                            suffix=self.suffix,
+                            strip=False)
+                        self.output_names.append(output_name)
+                else:
+                    # Both "suffix" and "output_names" are undefined
+                    raise Errors.OutputError()
+            elif len(self.output_names) == 1:
+                log.status("A single output name is defined")
+                first_adinput = self.adinput[0]
+                output_name = gt.fileNameUpdater(
+                    infilename=first_adinput.filename,
+                    suffix=None,
+                    strip=False)
+                self.output_names.append(output_name)
+            else:
+                # If there is more than one output name, make sure the number
+                # of output names matches the number of input AstroData
+                # instances
+                if len(self.adinput) == len(self.output_names):
+                    for ad in self.adinput:
+                        output_name = gt.fileNameUpdater(
+                            infilename=ad.filename,
+                            suffix=None,
+                            strip=False)
+                        self.output_names.append(output_name)
+                else:
+                    raise Errors.Error("The number of output names does not " +
+                                       "match with the number of inputs")
+            # Return the adinput list, output names list and the log object
+            return (self.adinput, self.output_names, self.log)
         except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general ManagersError 
-            # with message.
-            self.log.critical(repr(sys.exc_info()[1]))
-            raise ManagersError('An Error occurred during\
-                                ScienceFunctionManager.startUp')
-
+            # Log the message from the exception
+            log.critical(repr(sys.exc_info()[1]))
+            raise
