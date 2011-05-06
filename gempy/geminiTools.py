@@ -9,7 +9,7 @@ import tempfile
 import astrodata
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
-from astrodata.Errors import ToolboxError
+from astrodata import Errors
 
 def checkInputsMatch(adInsA=None, adInsB=None):
     """
@@ -33,14 +33,14 @@ def checkInputsMatch(adInsA=None, adInsB=None):
     # Check inputs are both matching length lists or single objects
     if (adInsA is None) or (adInsB is None):
         log.error('Neither A or B inputs can be None')
-        raise ToolboxError('Either A or B inputs were None')
+        raise Errors.ToolboxError('Either A or B inputs were None')
     if isinstance(adInsA,list):
         if isinstance(adInsB,list):
             if len(adInsA)!=len(adInsB):
                 log.error('Both the A and B inputs must be lists of MATCHING'+
                           ' lengths.')
-                raise ToolboxError('There were miss-matched numbers of '+
-                                   'A and B inputs.')
+                raise Errors.ToolboxError('There were miss-matched numbers ' \
+                                          'of A and B inputs.')
     if isinstance(adInsA,AstroData):
         if isinstance(adInsB,AstroData):
             # casting both A and B inputs to lists for looping later
@@ -49,7 +49,7 @@ def checkInputsMatch(adInsA=None, adInsB=None):
         else:
             log.error('Both the A and B inputs must be lists of MATCHING'+
                       ' lengths.')
-            raise ToolboxError('There were miss-matched numbers of '+
+            raise Errors.ToolboxError('There were miss-matched numbers of '+
                                'A and B inputs.')
     
     for count in range(0,len(adInsA)):
@@ -59,8 +59,8 @@ def checkInputsMatch(adInsA=None, adInsB=None):
         
         if A.countExts('SCI')!=B.countExts('SCI'):
             log.error('Inputs have different numbers of SCI extensions.')
-            raise ToolboxError('Miss-matching number of SCI extensions in '+
-                                                                    'inputs')
+            raise Errors.ToolboxError('Miss-matching number of SCI ' \
+                                      'extensions in inputs')
         for extCount in range(1,A.countExts('SCI')+1):
             # grab matching SCI extensions from A's and B's
             sciA = A[('SCI',extCount)]
@@ -71,7 +71,7 @@ def checkInputsMatch(adInsA=None, adInsB=None):
             # Check shape/size
             if sciA.data.shape!=sciB.data.shape:
                 log.error('Extensions have different shapes')
-                raise ToolboxError('Extensions have different shape')
+                raise Errors.ToolboxError('Extensions have different shape')
             
             # Check binning
             aX = sciA.detector_x_bin()
@@ -80,16 +80,17 @@ def checkInputsMatch(adInsA=None, adInsB=None):
             bY = sciB.detector_y_bin()
             if (aX!=bX) or (aY!=bY):
                 log.error('Extensions have different binning')
-                raise ToolboxError('Extensions have different binning')
+                raise Errors.ToolboxError('Extensions have different binning')
         
             # Check filter
             if sciA.filter_name().asPytype()!=sciB.filter_name().asPytype():
                 log.error('Extensions have different filters')
-                raise ToolboxError('Extensions have different filters')
+                raise Errors.ToolboxError('Extensions have different filters')
         
         log.status('Inputs match')    
 
-def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',strip=False):
+def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
+                    strip=False):
     """
     This function is for updating the file names of astrodata objects.
     It can be used in a few different ways.  For simple post/pre pending of
@@ -125,11 +126,12 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',strip=False):
      fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
      result: 'N20020214S022_prepared.fits'
         
-     fileNameUpdater(infilename='N20020214S022_prepared.fits', suffix='_biasCorrected')
+     fileNameUpdater(infilename='N20020214S022_prepared.fits',
+         suffix='_biasCorrected')
      result: 'N20020214S022_prepared_biasCorrected.fits'
         
      fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
-     result: "testversion_N20020214S022.fits"
+     result: 'testversion_N20020214S022.fits'
     
     """
     log = gemLog.getGeminiLog() 
@@ -153,7 +155,8 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',strip=False):
     if strip:
         # Grabbing the value of PHU key 'ORIGNAME'
         phuOrigFilename = adIn.phuGetKeyValue('ORIGNAME') 
-        # If key was 'None', ie. storeOriginalName() wasn't ran yet, then run it now
+        # If key was 'None', ie. storeOriginalName() wasn't ran yet, then run
+        # it now
         if phuOrigFilename is None:
             # Storing the original name of this astrodata object in the PHU
             phuOrigFilename = adIn.storeOriginalName()
@@ -182,7 +185,8 @@ def listFileMaker(list=None, listName=None):
         """
         try:
             if listName==None:
-                raise ToolboxError("listName can not be None, please provide a string")
+                raise Errors.ToolboxError("listName can not be None, please " \
+                                          "provide a string")
             elif os.path.exists(listName):
                 return listName
             else:
@@ -192,7 +196,8 @@ def listFileMaker(list=None, listName=None):
                 fh.close()
                 return listName
         except:
-            raise ToolboxError("Could not write inlist file for stacking.") 
+            raise Errors.ToolboxError("Could not write inlist file for " \
+                                      "stacking.") 
         
 def logDictParams(indict):
     """ A function to log the parameters in a provided dictionary.  Main use
@@ -209,12 +214,30 @@ def logDictParams(indict):
     for key in indict:
         log.fullinfo(repr(key)+' = '+repr(indict[key]), 
                      category='parameters')
-    
+
+def log_message(function, name, message_type):
+    if function == 'ulf':
+        full_function_name = 'user level function'
+    else:
+        full_function_name = function
+    if message_type == 'calling':
+        message = 'Calling the %s %s' % (full_function_name, name)
+    if message_type == 'starting':
+        message = 'Starting the %s %s' % (full_function_name, name)
+    if message_type == 'finishing':
+        message = 'Finishing the %s %s' % (full_function_name, name)
+    if message_type == 'completed':
+        message = 'The %s %s completed successfully' % (name,
+                                                        full_function_name)
+    if message:
+        return message
+    else:
+        return None
+
 def pyrafBoolean(pythonBool):
     """
     A very basic function to reduce code repetition that simply 'casts' any 
     given Python boolean into a pyraf/IRAF one for use in the CL scripts.
-    
     """ 
     import pyraf
     
@@ -224,116 +247,130 @@ def pyrafBoolean(pythonBool):
     elif  not pythonBool:
         return pyraf.iraf.no
     else:
-        raise ToolBoxError('DANGER DANGER Will Robinson, pythonBool passed '+
-        'in was not True or False, and thats just crazy talk :P')
+        raise Errors.ToolBoxError('DANGER DANGER Will Robinson, pythonBool ' \
+                                  ' passed in was not True or False, and ' \
+                                  ' thats just crazy talk :P')
 
-def updateKeyValue(ad, valueFuncStr, phu=True):
+def updateKeyValue(adinput=None, function=None, value=None, extname=None):
     """
-    This is a function to update header keys, perform logging of the changes
-    and write history of change to the PHU.
+    This function updates keywords in the headers of the input dataset,
+    performs logging of the changes and writes history keyword related to the
+    changes to the PHU.
     
-    :param ad: astrodata instance to perform header key updates on
-    :type ad: an AstroData instance
+    :param adinput: astrodata instance to perform header key updates on
+    :type adinput: an AstroData instance
     
-    :param valueFuncStr: string for an astrodata function or descriptor to 
+    :param function: string for an astrodata function or descriptor to 
                          perform on the input ad.
                          ie. for ad.countExts('SCI'), 
-                         valueFuncStr="countExts('SCI')"
-    :type valueFuncStr: string 
+                         function='countExts('SCI')'
+    :type function: string 
     
-    :param phu: Is this update to be performed on the phu?
-    :type phu: Python boolean (True/False)
-               If False, the ad input must ONLY have ONE extension.
-    
+    :param extname: Set to 'PHU', 'SCI', 'VAR' or 'DQ' to update the given
+                    keyword in the PHU, SCI, VAR or DQ extension, respectively.
+                    
+    :type extname: string
     """
     log = gemLog.getGeminiLog()
-    keyAndCommentDict = {    'pixel_scale()':['PIXSCALE',
-                             'Pixel scale in Y in [arcsec/pixel]'],
-                             'gain()':['GAIN', 'Gain [e-/ADU]'],
-                             'dispersion_axis()':['DISPAXIS','Dispersion axis'],
-                             'countExts("SCI")':['NSCIEXT',
-                             'Number of science extensions'],
-                             #storeOriginalName() actually all ready writes to the PHU, but doubling it doesn't hurt.
-                             'storeOriginalName()':['ORIGNAME',
-                             'Original filename prior to processing'],
-                             'read_noise()':['RDNOISE',
-                             'readout noise in [e-]'],
-                             'non_linear_level()':['NONLINEA',
-                             'Non-linear regime level in [ADU]'],
-                             'saturation_level()':['SATLEVEL',
-                             'Saturation level in [ADU]'],                                    
-                         }
-    # Extract key and comment for input valueFuncStr from above dict
-    key = keyAndCommentDict[valueFuncStr][0]
-    comment = keyAndCommentDict[valueFuncStr][1]
-    
-    if phu:
-        # Try to get orig value of key for history purposes, if not there
-        # then no history is needed
-        try:
-            original_value = ad.phuGetKeyValue(key)
-            comment = '(UPDATED) '+comment
-            historyComment = 'Raw keyword '+key+'='+str(original_value)+\
-                                      ' was overwritten in the PHU.'
-            # Add and log history of orig key val to PHU before changing it 
-            ad.getPHUHeader().add_history(historyComment)
-            log.fullinfo('History comment added: '+historyComment)
-        except:
-            original_value = None
-            comment = '(NEW) '+comment
-            
-        # handling storeOriginalName issues caused by deepcopy
-        if valueFuncStr=='storeOriginalName()': 
-            origname = ad.phuGetKeyValue('ORIGNAME')
-            if origname==None:
-                try:
-                    origname= ad.storeOriginalName() 
-                except:
-                    log.critical('Unable to store original filename as does \
-                                    not exist in this astrodata instance \
-                                    anymore.  If using deepcopy on objects, \
-                                    please ensure to use storeOriginalName()\
-                                    on them prior to performing a deepcopy.')
-        else:
-            # using exec to perform the requested valueFuncStr on input ad    
-            exec('try:\n'+
-                 '    output_value = ad.%s\n' % valueFuncStr+
-                 'except:\n'+
-                 '    output_value = "An exception was thrown"')
-        
-            # Perform key update
-            ad.phuSetKeyValue(key, output_value, comment)
-        # log key update
-        log.fullinfo(key+' = '+str(ad.phuGetKeyValue(key)), category='header')
-        
+    historyComment = None
+    update = False
+    keyAndCommentDict = {
+        'pixel_scale()':['PIXSCALE', 'Pixel scale in Y in [arcsec/pixel]'],
+        'gain()':['GAIN', 'Gain [e-/ADU]'],
+        'dispersion_axis()':['DISPAXIS','Dispersion axis'],
+        'countExts("SCI")':['NSCIEXT', 'Number of science extensions'],
+        # storeOriginalName() actually all ready writes to the PHU, but
+        # doubling it doesn't hurt.
+        'storeOriginalName()':
+            ['ORIGNAME', 'Original filename prior to processing'],
+        'read_noise()':['RDNOISE', 'readout noise in [e-]'],
+        'non_linear_level()':['NONLINEA', 'Non-linear regime level in [ADU]'],
+        'saturation_level()':['SATLEVEL', 'Saturation level in [ADU]'],
+        'bunit':['BUNIT', 'Physical units'],
+        'len(output)':['NEXTEND', 'Number of extensions'],
+                        }
+    # Extract key and comment for input function from above dict
+    if function not in keyAndCommentDict:
+        raise Errors.Error("Unknown value for the 'function' parameter")
     else:
-        # double check there is only one extension being passed in
-        if len(ad)!=1:
-            log.warning('If phu=False, only a single extension AstroData \
-                        instance can be passed in to updateKeyValue.')
+        key = keyAndCommentDict[function][0]
+        comment = keyAndCommentDict[function][1]
+    
+    if extname == "PHU":
+        # Check to see whether the keyword is already in the PHU
+        original_value = adinput.phuGetKeyValue(key)
+        if original_value is not None:
+            # The keyword exists, so store a history comment for later use
+            log.debug("Keyword %s=%s already exists in the PHU" \
+                  % (key, original_value))
+            comment = '(UPDATED) %s' % comment
+            msg = "updated"
+            historyComment = "Raw keyword %s=%s was overwritten in the PHU " \
+                             "by AstroData" % (key, original_value)
         else:
-            # Try to get orig value of key for history purposes, if not there
-            # then no history is needed
+            comment = '(NEW) %s' % comment
+            msg = "added"
+
+        # Use exec to perform the requested function on input
+        try:
+            exec('output_value = adinput.%s' % function)
+        except:
+            output_value = value
+        # Only update the keyword value in the PHU if it is different from the
+        # value already in the PHU
+        log.debug ("Original value=%s, Output value=%s" \
+                  % (original_value, output_value))
+        if output_value is not None:
+            if output_value != original_value:
+                # Update the header and write a history comment
+                print key, output_value, comment
+                adinput.phuSetKeyValue(key, output_value, comment)
+                log.fullinfo("PHU keyword %s=%s %s" \
+                             % (key, adinput.phuGetKeyValue(key), msg),
+                             category='header')
+                # Only need to write a history comment if the value in the
+                # header is actually overwritten
+                if original_value is None:
+                    historyComment = "New keyword %s=%s was written to the " \
+                                     "PHU by AstroData" % (key, output_value)
+                adinput.getPHUHeader().add_history(historyComment)
+                log.fullinfo('History comment added: %s' % historyComment)
+    else:
+        if extname is None:
+            extname = "SCI"
+        for ext in adinput[extname]:
+            # Check to see whether the keyword is already in the pixel data
+            # extension 
+            original_value = ext.getKeyValue(key)
+            if original_value is not None:
+                log.debug("Keyword %s=%s already in extension %s,%s" \
+                          % (key, original_value, extname, ext.extver()))
+                comment = '(UPDATED) %s' % comment
+                msg = "updated"
+                historyComment = "Raw keyword %s=%s was overwritten in " \
+                                 "extension %s,%s" % (key, original_value,
+                                                      extname, ext.extver())
+            else:
+                comment = '(NEW) %s' % comment
+                msg = "added"
+            # Use exec to perform the requested function on input
             try:
-                original_value = ad.getKeyValue(key)
-                comment = '(UPDATED) '+comment
-                historyComment = 'Raw keyword '+key+'='+str(original_value)+\
-                                           ' was overwritten in extension '+\
-                                          ad.extname()+','+str(ad.extver())
-                # Add and log history of orig key val to PHU before changing it
-                ad.getPHUHeader().add_history(historyComment)
-                log.fullinfo('History comment added: '+historyComment)
+                exec('output_value = ext.%s' % function)
             except:
-                original_value = None
-                comment = '(NEW) '+comment
-            # using exec to perform the requested valueFuncStr on input ad
-            exec('try:\n'+
-                 '    output_value = ad.%s\n' % valueFuncStr+
-                 'except:\n'+
-                 '    output_value = "An exception was thrown"')
-            #print 'GT399: key='+str(key)+', output_value='+str(output_value)+', comment='+str(comment)
-            # Perform key update
-            ad.setKeyValue(key, str(output_value), comment)
-            # log key update
-            log.fullinfo(key+' = '+str(ad.getKeyValue(key)), category='header')
-        
+                output_value = value
+            # Only update the keyword value in the pixel data extension if it
+            # is different from the value already in the pixel data extension
+            if original_value is not None and output_value is not None:
+                if output_value != original_value:
+                    # Update the header and write a history comment
+                    ext.setKeyValue(key, output_value, comment)
+                    log.fullinfo("%s,%s keyword %s=%s %s" \
+                                 % (extname, ext.extver(), key,
+                                    ext.getKeyValue(key), msg)),
+                                 category="header")
+                    # Only need to write a history comment if the value in the
+                    # header is actually overwritten
+                    if output_value != original_value:
+                        adinput.getPHUHeader().add_history(historyComment)
+                        log.fullinfo('History comment added: %s' \
+                                     % historyComment)
