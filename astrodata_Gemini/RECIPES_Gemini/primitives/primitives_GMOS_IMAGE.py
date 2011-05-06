@@ -52,7 +52,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "normalizeFlat", "starting"))
+        log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
         try:
             # Load the pyraf related modules into the name-space
             pyraf, gemini, yes, no = pyrafLoader()
@@ -101,7 +101,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "standardizeStructure",
+        log.debug(gt.log_message("primitive", "standardizeStructure",
                                 "starting"))
         try:
             # Call the standardize_structure_gmos user level function
