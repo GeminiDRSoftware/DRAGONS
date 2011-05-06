@@ -1,28 +1,24 @@
 # Author: Kyle Mede. 2010
 # Skeleton originally written by Craig Allen, callen@gemini.edu
-import sys, StringIO, os
 
-from astrodata import Descriptors
+import os, shutil, sys
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.ConfigSpace import lookupPath
 from astrodata.data import AstroData
-from astrodata.Errors import PrimitiveError
-from gempy import geminiTools as gemt
-from gempy.science import calibrate
-from gempy.science import geminiScience
-from gempy.science import gmosScience
-from gempy.science import standardize
+from astrodata import Errors
+from gempy import geminiTools as gt
+from gempy.science import calibrate as cal
+from gempy.science import geminiScience as gs
+from gempy.science import standardization as sdz
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
-import shutil
 
 class GMOSPrimitives(GEMINIPrimitives):
-    """ 
-    This is the class of all primitives for the GMOS level of the type 
-    hierarchy tree.  It inherits all the primitives to the level above
-    , 'GEMINIPrimitives'.
-    
+    """
+    This is the class containing all of the primitives for the GMOS level of
+    the type hierarchy tree. It inherits all the primitives from the level
+    above, 'GEMINIPrimitives'.
     """
     astrotype = 'GMOS'
     
@@ -82,7 +78,7 @@ class GMOSPrimitives(GEMINIPrimitives):
    
             log.debug('Calling geminiScience.addBPM function')
             
-            adOutputs = geminiScience.add_bpm(adInputs=rc.getInputs(style='AD'), 
+            adOutputs = gs.add_bpm(adInputs=rc.getInputs(style='AD'), 
                                          BPMs=BPMlist,matchSize=True, 
                                          suffix=rc['suffix'])           
             
@@ -147,7 +143,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo('\nParameters dictated by the definition of the '+
                          'primitive:\n', 
                          category='parameters')
-                gemt.logDictParams(clPrimParams)
+                gt.logDictParams(clPrimParams)
                 
                 log.debug('Calling the gdisplay CL script for input list '+
                               inputRecord.filename)
@@ -303,7 +299,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling geminiScience.mosaicDetectors function')
             
-            adOutputs = geminiScience.mosaic_detectors(
+            adOutputs = gs.mosaic_detectors(
                                             adInputs=rc.getInputs(style='AD'), 
                                         fl_paste=rc['fl_paste'], 
                                         interp_function=rc['interp_function'], 
@@ -356,7 +352,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling calibrate.overscanSubtract function')
             
-            adOutputs = calibrate.overscan_subtract_gmosNEW(  ###########
+            adOutputs = cal.overscan_subtract_gmosNEW(  ###########
                                         adInputs=rc.getInputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], 
                                         biassec=rc['biassec'], 
@@ -397,7 +393,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling calibrate.overscanTrim function')
             
-            adOutputs = calibrate.overscan_trim(adInputs=rc.getInputs(style='AD'),     
+            adOutputs = cal.overscan_trim(adInputs=rc.getInputs(style='AD'),     
                                                         suffix=rc['suffix'])           
             
             log.status('geminiScience.overscanTrim completed successfully')
@@ -416,42 +412,53 @@ class GMOSPrimitives(GEMINIPrimitives):
          
     def standardizeHeaders(self,rc):
         """
-        This primitive is called by standardizeHeaders to update and add 
-        important keywords to the PHU and SCI extension headers, first those 
-        that are common to ALL Gemini data and then those specific to data from 
-        the GMOS instrument.
-        The Science Function standardize_headers_gmos in standardize.py is
-        utilized to do the work for this primitive.
+        This primitive is used to update and add keywords to the headers of the
+        input dataset. First, it calls the standardize_headers_gemini user
+        level function to update Gemini specific keywords and then updates GMOS
+        specific keywords.
         
+        Either a 'main' type logger object, if it exists, or a null logger
+        (i.e., no log file, no messages to screen) will be retrieved/created in
+        the ScienceFunctionManager and used within this function.
+          
+        :param input: Astrodata inputs to have their headers standardized
+        :type input: Astrodata objects, either a single or a list of objects
+    
+        :param outNames: filenames of output(s)
+        :type outNames: String, either a single or a list of strings of same 
+                        length as input.
+    
         :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
+                       create the output name(s).
         :type suffix: string
         
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
+        :param loglevel: Verbosity setting for log messages to the screen.
+                         0 = nothing to screen, 6 = everything to screen. OR
+                         the message level as a string (i.e., 'critical',
+                         'status', 'fullinfo' ...)
+        :type loglevel: integer or string
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'], logLevel=rc['logLevel'])
-        try:           
-            log.status('*STARTING* to standardize the headers (GMOS)')                         
-            log.debug('Calling standardize.standardize_headers_gmos')
-            adOutputs = standardize.standardize_headers_gmos(
-                                            adInputs=rc.getInputs(style='AD'),     
-                                                        suffix=rc['suffix'])
-            
-            # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs) 
-            
-            log.status('*FINISHED* standardizing the headers (GMOS)')        
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        # Log the standard 'starting primitive' debug message
+        log.debug(gt.log_message('primitive', 'standardizeHeaders', 'starting'))
+        try:
+            # Call the standardize_headers_gmos user level function
+            output = sdz.standardize_headers_gmos(
+                adinput=rc.getInputs(style='AD'),
+                output_names=rc['output_names'],
+                suffix=rc['suffix'])
+            # Report the output of the user level function to the reduction
+            # context
+            rc.reportOutput(output)
         except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
+            # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
             raise
-        yield rc 
         
+        yield rc
+
     def standardizeStructure(self,rc):
         """
         This primitive will to add an MDF to the
@@ -479,7 +486,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:           
             log.status('*STARTING* to standardize the structure (GMOS)')                         
             log.debug('Calling standardize.standardize_structure_gmos')
-            adOutputs = standardize.standardize_structure_gmos(
+            adOutputs = sdz.standardize_structure_gmos(
                                             adInputs=rc.getInputs(style='AD'),
                                                         addMDF=rc['addMDF'],     
                                                         suffix=rc['suffix'])
@@ -557,7 +564,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             #                             biases=processedBias, fl_vardq=rc['fl_vardq'], 
             #                             fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
             #                             suffix=rc['suffix'])   
-            adOutputs = calibrate.subtract_biasNEW(adInputs=rc.getInputs(style='AD'), 
+            adOutputs = cal.subtract_biasNEW(adInputs=rc.getInputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          suffix=rc['suffix'])            
             
@@ -575,43 +582,41 @@ class GMOSPrimitives(GEMINIPrimitives):
             raise 
         yield rc
     
-    def validateData(self,rc):
+    def validateData(self, rc):
         """
-        This primitive is to validate the GMOS instrument 
-        specific data checks for all input files.
-        It will ensure the data is not corrupted or in an odd 
-        format that will affect later steps in the reduction process.  
-        If there are issues 
-        with the data, the flag 'repair' can be used to turn on the feature to 
-        repair it or not (eg. validateData(repair=True)).
+        This primitive is used to validate GMOS data, specifically. It will
+        ensure the data is not corrupted or in an odd format that will affect
+        later steps in the reduction process. If there are issues with the
+        data, the flag 'repair' can be used to turn on the feature to repair it
+        or not (e.g., validateData(repair=True)). 
         
         :param suffix: Value to be post pended onto each input name(s) to 
                        create the output name(s).
         :type suffix: string
         
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
+        :param loglevel: Verbosity setting for log messages to the screen.
+                         0 = nothing to screen, 6 = everything to screen. OR
+                         the message level as a string (i.e., 'critical',
+                         'status', 'fullinfo' ...)
+        :type loglevel: integer or string
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:                
-            log.status('*STARTING* to validate the data (GMOS)')                         
-            log.debug('Calling standardize.validate_data_gmos')
-            adOutputs = standardize.validate_data_gmos(
-                                            adInputs=rc.getInputs(style='AD'),
-                                                        repair=rc['repair'],     
-                                                        suffix=rc['suffix'])
-            
-            # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs) 
-            
-            log.status('*FINISHED* validating the data (GMOS)')   
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        # Log the standard 'starting primitive' debug message
+        log.debug(gt.log_message('primitive', 'validateData', 'starting'))
+        try:
+            # Call the validate_data_gmos user level function
+            output = sdz.validate_data_gmos(input=rc.getInputs(style='AD'),
+                                            output_names=rc['output_names'],
+                                            suffix=rc['suffix'],
+                                            repair=rc['repair'])
+            # Report the output of the user level function to the reduction
+            # context
+            rc.reportOutput(output)
         except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
+            # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
-            raise 
+            raise
+        
         yield rc
-
