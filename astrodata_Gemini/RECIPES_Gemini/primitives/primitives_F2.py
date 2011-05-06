@@ -49,7 +49,7 @@ class F2Primitives(GEMINIPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "addBPM", "starting"))
+        log.debug(gt.log_message("primitive", "addBPM", "starting"))
         try:
             # Load the BPM file into AstroData
             bpm = AstroData(lookupPath("Gemini/F2/BPM/F2_bpm.fits"))
@@ -84,7 +84,7 @@ class F2Primitives(GEMINIPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "standardizeHeaders", "starting"))
+        log.debug(gt.log_message("primitive", "standardizeHeaders", "starting"))
         try:
             # Call the standardize_headers_f2 user level function
             output = sdz.standardize_headers_f2(
@@ -116,7 +116,7 @@ class F2Primitives(GEMINIPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "standardizeStructure",
+        log.debug(gt.log_message("primitive", "standardizeStructure",
                                 "starting"))
         try:
             # Call the standardize_structure_f2 user level function
@@ -144,21 +144,37 @@ class F2Primitives(GEMINIPrimitives):
                          'status', 'fullinfo' ...)
         :type loglevel: integer or string
         """
-        # Instantiate the log
+        # Instantiate the log. This needs to be done outside of the try
+        # block, since the log object is used in the except block
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "validateData", "starting"))
         try:
-            # Call the validate_data_f2 user level function
-            output = sdz.validate_data_f2(
-                input=rc.getInputs(style="AD"),
-                output_names=rc["output_names"],
-                suffix=rc["suffix"],
-                repair=rc["repair"])
-            # Report the output of the user level function to the reduction
+            # Log the standard "starting primitive" debug message
+            log.debug(gt.log_message("primitive", "validateData", "starting"))
+            # Initialize the list of output AstroData objects
+            adoutput_list = []
+            # Loop over each input AstroData object in the input list
+            for ad in rc.getInputs(style="AD"):
+                # Check whether the validateData primitive has been run
+                # previously
+                if ad.phuGetKeyValue("VALDATA"):
+                    log.warning("%s has already been processed by " \
+                                "validateData" % (ad.filename))
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
+                # Call the validate_data_f2 user level function
+                ad = sdz.validate_data_f2(adinput=ad,
+                                          output_names=rc["output_names"],
+                                          suffix=rc["suffix"],
+                                          repair=rc["repair"])
+                # Append the output AstroData object to the list of output
+                # AstroData objects
+                adoutput_list.append(ad)
+            # Report the list of output AstroData objects to the reduction
             # context
-            rc.reportOutput(output)
+            rc.reportOutput(adoutput_list)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
