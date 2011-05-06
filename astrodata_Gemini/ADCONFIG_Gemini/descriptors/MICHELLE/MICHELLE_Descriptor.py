@@ -30,7 +30,6 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
-        print coadds
         if coadds is None:
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
