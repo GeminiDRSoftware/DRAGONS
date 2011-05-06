@@ -55,7 +55,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "addDQ", "starting"))
+        log.debug(gt.log_message("primitive", "addDQ", "starting"))
         try:
             # Call the addBPM primitive
             rc.run("addBPM")
@@ -131,18 +131,34 @@ class GEMINIPrimitives(GENERALPrimitives):
                         screen. OR the message level as a string (i.e.,
                         'critical', 'status', 'fullinfo'...)
         """
-        # Instantiate the log
+        # Instantiate the log. This needs to be done outside of the try
+        # block, since it is used in the except block
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "addVAR", "starting"))
         try:
-            # Call the add_var user level function
-            output = gs.add_var(adInputs=rc.getInputs(style="AD"),
-                                   suffix=rc["suffix"])
-            # Report the output of the user level function to the reduction
+            # Log the standard "starting primitive" debug message
+            log.debug(gt.log_message("primitive", "addVAR", "starting"))
+            # Initialize the list of output AstroData objects
+            adoutput_list = []
+            # Loop over each input AstroData object in the input list
+            for ad in rc.getInputs(style="AD"):
+                # Check whether the addVAR primitive has been run previously
+                if ad.phuGetKeyValue("ADDVAR"):
+                    log.warning("%s has already been processed by addVAR" \
+                                % (ad.filename))
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
+                # Call the add_var user level function
+                ad = gs.add_var(adinput=ad,
+                                suffix=rc["suffix"])
+                # Append the output AstroData object to the list of output
+                # AstroData objects
+                adoutput_list.append(ad)
+            # Report the list of output AstroData objects to the reduction
             # context
-            rc.reportOutput(output)
+            rc.reportOutput(adoutput_list)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -168,7 +184,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "aduToElectrons", "starting"))
+        log.debug(gt.log_message("primitive", "aduToElectrons", "starting"))
         try:
             # Call the adu_to_electrons user level function
             output = gs.adu_to_electrons(adInputs=rc.getInputs(style="AD"),
@@ -246,7 +262,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "divideByFlat", "starting"))
+        log.debug(gt.log_message("primitive", "divideByFlat", "starting"))
         try:
             # Retrieving the appropriate flat for the first of the inputs
             adOne = rc.getInputs(style="AD")[0]
@@ -410,7 +426,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "measureIQ", "starting"))
+        log.debug(gt.log_message("primitive", "measureIQ", "starting"))
         try:
             # Call the measure_iq user level function
             output = gs.measure_iq(adInputs=rc.getInputs(style="AD"),
@@ -435,7 +451,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "nonlinearityCorrect",
+        log.debug(gt.log_message("primitive", "nonlinearityCorrect",
                                 "starting"))
         try:
             # Call the nonlinearity_correct user level function
@@ -459,7 +475,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "normalizeFlat", "starting"))
+        log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
         try:
             # Call the normalize_flat user level function
             output = cal.normalize_flat_image(
@@ -539,7 +555,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "scaleFringeToScience",
+        log.debug(gt.log_message("primitive", "scaleFringeToScience",
                                 "starting"))
         try:
             inputs = rc.getInputs(style="AD", category="standard")
@@ -705,7 +721,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "stackFrames", "starting"))
+        log.debug(gt.log_message("primitive", "stackFrames", "starting"))
         try:
             # Call the stack_frames user level function
             output = gs.stack_frames(adInputs=rc.getInputs(style="AD"),
@@ -836,7 +852,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "subtractDark", "starting"))
+        log.debug(gt.log_message("primitive", "subtractDark", "starting"))
         try:
             # Retrieving the appropriate dark for the first of the inputs
             adOne = rc.getInputs(style="AD")[0]
@@ -891,7 +907,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.logMessage("primitive", "subtractFringe", "starting"))
+        log.debug(gt.log_message("primitive", "subtractFringe", "starting"))
         try:
             # Retrieving the appropriate fringe for the first of the inputs
             adOne = rc.getInputs(style="AD")[0]
