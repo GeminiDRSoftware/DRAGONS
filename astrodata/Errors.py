@@ -4,14 +4,13 @@
 
 class Error(Exception):
     """Base class for exceptions in this module."""
-    message = None
     def __init__(self, message=None):
         if message != None:
             self.message = message
-            
+    
     def __str__(self):
         return self.message
-        
+    
     def __repr__(self):
         return self.__class__.__name__+"(%s)" % repr(self.message)
 
@@ -30,19 +29,13 @@ class CalcError(Error):
     """
     message = "Descriptor unable to calculate value"
 
-class DescriptorDictError(Error):
-    """
-    Exception raised for instances where the asDict=True parameter should be
-    used, but isn't
-    """
-    message = "Please use asDict=True to obtain a dictionary"
-
 class DescriptorTypeError(Error):
     """
     Exception raised for instances when a descriptor function cannot return a
     value for a given AstroData Type i.e., dispersion_axis for IMAGE data
     """
     message = "Unable to return a value for data of this AstroData Type"
+
 class DescriptorValueTypeError(Error):
     pass
     
@@ -50,7 +43,7 @@ class EmptyKeyError(Error):
     """
     Exception raised for errors when a PHU keyword was found to but was empty
     or ' '.
-    """    
+    """
     message = "Keyword found but the value was empty"
     
 class ExistError(Error):
@@ -66,6 +59,12 @@ class IncompatibleOperand(Error):
     operator does not have the required operator.
     """
     pass
+
+class InputError(Error):
+    """
+    Exception raised for instances when an input value is None or empty
+    """
+    message = "Input is None or empty"
     
 class InvalidValueError(Error):
     """
@@ -81,6 +80,12 @@ class ManagersError(Error):
     For general Exceptions raised within the managers.py toolbox
     """
     message = 'Exception Raised in managers toolbox'
+
+class OutputError(Error):
+    """
+    Exception raised for instances when an output value is None or empty
+    """
+    message = "Output is None or empty"
 
 class TableKeyError(Error):
     """
@@ -121,4 +126,3 @@ class UndefinedKeyError(Error):
     pyfits.core.Undefined
     """
     message = "Keyword found but the value was undefined"
-
