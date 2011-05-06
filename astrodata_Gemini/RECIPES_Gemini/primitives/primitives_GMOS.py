@@ -607,7 +607,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         log.debug(gt.log_message('primitive', 'validateData', 'starting'))
         try:
             # Call the validate_data_gmos user level function
-            output = sdz.validate_data_gmos(input=rc.getInputs(style='AD'),
+            output = sdz.validate_data_gmos(adinput=rc.getInputs(style='AD'),
                                             output_names=rc['output_names'],
                                             suffix=rc['suffix'],
                                             repair=rc['repair'])
