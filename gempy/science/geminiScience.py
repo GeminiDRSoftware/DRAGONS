@@ -19,8 +19,8 @@ from gempy import geminiTools as gemt
 from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
-def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None, 
-                                                                suffix=None):
+def add_bpm(adinput=None, output_names=None, suffix=None, bpm=None,
+            matchSize=False):
     """
     This function will add the provided BPM (Bad Pixel Mask) to the inputs.  
     The BPM will be added as frames matching that of the SCI frames and ensure
@@ -62,14 +62,14 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
     """
 
     # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix, 
-                                                            funcName='add_bpm')
+    sfm = man.ScienceFunctionManager(adinput, output_names, suffix,
+                                     funcName='add_bpm')
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
                    
-    if BPMs==None:
+    if bpm is None:
         log.critical('There must be at least one BPM provided, the '+
-                                        '"BPMs" parameter must not be None.')
+                                        '"bpm" parameter must not be None.')
         raise ScienceError()
                    
     try:
@@ -82,13 +82,13 @@ def add_bpm(adInputs=None, BPMs=None, matchSize=False, outNames=None,
         # Do the work on each ad in the inputs
         for ad in adInputs:
             # Getting the right BPM for this input
-            if isinstance(BPMs, list):
-                if len(BPMs)>1:
-                    BPM = BPMs[count]
+            if isinstance(bpm, list):
+                if len(bpm)>1:
+                    BPM = bpm[count]
                 else:
-                    BPM = BPMs[0]
+                    BPM = bpm[0]
             else:
-                BPM = BPMs
+                BPM = bpm
             
             # Check if this input all ready has a BPM extension
             if not ad['BPM']:
