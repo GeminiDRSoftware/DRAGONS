@@ -55,7 +55,7 @@ class F2Primitives(GEMINIPrimitives):
             bpm = AstroData(lookupPath("Gemini/F2/BPM/F2_bpm.fits"))
             # Call the add_bpm user level function
             output = gs.add_bpm(
-                input=rc.getInputs(style="AD"),
+                adinput=rc.getInputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"],
                 bpm=bpm)
