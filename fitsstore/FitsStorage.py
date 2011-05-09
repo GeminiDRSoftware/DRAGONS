@@ -599,7 +599,7 @@ class Gmos(Base):
       except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       try:
-        self.nodandshuffle = ad.isType('GMOS_NODANDSHUFFLE')
+        self.nodandshuffle = ad.is_type('GMOS_NODANDSHUFFLE')
       except (KeyError, ValueError, Errors.InvalidValueError, Errors.EmptyKeyError):
         pass
       if(self.nodandshuffle):

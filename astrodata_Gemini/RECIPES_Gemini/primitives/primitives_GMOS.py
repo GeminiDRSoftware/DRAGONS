@@ -67,9 +67,9 @@ class GMOSPrimitives(GEMINIPrimitives):
             for ad in rc.getInputs(style='AD'):
                 ### This section might need to be upgraded in the future for more 
                 ### general use instead of just 1x1 and 2x2 imaging
-                if ad[('SCI',1)].getKeyValue('CCDSUM')=='1 1':
+                if ad[('SCI',1)].get_key_value('CCDSUM')=='1 1':
                     BPMlist.append(BPM_11)
-                elif ad[('SCI',1)].getKeyValue('CCDSUM')=='2 2':
+                elif ad[('SCI',1)].get_key_value('CCDSUM')=='2 2':
                     BPMlist.append(BPM_22)
                 else:
                     log.error('CCDSUM is not 1x1 or 2x2')
@@ -131,7 +131,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 'frame'         :i+1,
                 'fl_imexam'     :no,
                 # Retrieving the observatory key from the PHU
-                'observatory'   :inputRecord.ad.phuGetKeyValue('OBSERVAT')
+                'observatory'   :inputRecord.ad.phu_get_key_value('OBSERVAT')
                                 }
                 
                 # Grabbing the default parameters dictionary and updating 
@@ -198,10 +198,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
             
             for ad in rc.getInputs(style='AD'):
-                if ad.extGetKeyValue(1,'CCDSUM') == '1 1':
+                if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
                     log.error('NO 1x1 PROCESSED BIAS YET TO USE')
                     raise 'error'
-                elif ad.extGetKeyValue(1,'CCDSUM') == '2 2':
+                elif ad.ext_get_key_value(1,'CCDSUM') == '2 2':
                     biasfilename = 'N20020214S022_preparedBias.fits'
                     if not os.path.exists(os.path.join('.reducecache/'+
                                                        'storedcals/retrievd'+
@@ -243,10 +243,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             calPath='gemini_python/test_data/test_cal_files/processed_flats/'
             
             for ad in rc.getInputs(style='AD'):
-                if ad.extGetKeyValue(1,'CCDSUM') == '1 1':
+                if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
                     log.error('NO 1x1 PROCESSED BIAS YET TO USE')
                     raise 'error'
-                elif ad.extGetKeyValue(1,'CCDSUM') == '2 2':
+                elif ad.ext_get_key_value(1,'CCDSUM') == '2 2':
                     flatfilename = 'N20020211S156_preparedFlat.fits'
                     if not os.path.exists(os.path.join('.reducecache/storedca'+
                                                        'ls/retrievedflats', 
@@ -553,8 +553,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             from copy import deepcopy
             processedBias = deepcopy(adOne)
             processedBias.filename = 'TEMPNAMEforBIAS.fits'
-            processedBias.phuSetKeyValue('ORIGNAME','TEMPNAMEforBIAS.fits')
-            processedBias.historyMark(key='GBIAS', 
+            processedBias.phu_set_key_value('ORIGNAME','TEMPNAMEforBIAS.fits')
+            processedBias.history_mark(key='GBIAS', 
                               comment='fake key to trick CL that GBIAS was ran')
             ####################################################################
             log.status('Using bias '+processedBias.filename+' to correct the inputs')

@@ -40,9 +40,9 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
-        disperser = dataset.phuGetKeyValue(globalStdkeyDict['key_disperser'])
+        disperser = dataset.phu_get_key_value(globalStdkeyDict['key_disperser'])
         if disperser is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -88,9 +88,9 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
         raw_dispersion = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_dispersion'])
+            dataset.phu_get_key_value(globalStdkeyDict['key_dispersion'])
         if raw_dispersion is None:
-            # The getKeyValue() function returns None if a value cannot be
+            # The get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -115,9 +115,9 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biaslevel) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
-        biaslevel = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        biaslevel = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
         if biaslevel is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):

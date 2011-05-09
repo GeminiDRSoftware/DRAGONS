@@ -20,9 +20,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     
     def airmass(self, dataset, **args):
         # Get the airmass value from the header of the PHU
-        airmass = dataset.phuGetKeyValue(globalStdkeyDict['key_airmass'])
+        airmass = dataset.phu_get_key_value(globalStdkeyDict['key_airmass'])
         if airmass is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -46,9 +46,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def cass_rotator_pa(self, dataset, **args):
         # Get the cassegrain rotator position angle from the header of the PHU
         cass_rotator_pa = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_cass_rotator_pa'])
+            dataset.phu_get_key_value(globalStdkeyDict['key_cass_rotator_pa'])
         if cass_rotator_pa is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -83,10 +83,10 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # return the central wavelength in the default units of meters
             output_units = 'meters'
         # Get the central wavelength value from the header of the PHU.
-        raw_central_wavelength = dataset.phuGetKeyValue\
+        raw_central_wavelength = dataset.phu_get_key_value\
             (globalStdkeyDict['key_central_wavelength'])
         if raw_central_wavelength is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -111,7 +111,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # coadds keyword may be defined in a local key dictionary
         # (stdkeyDict<INSTRUMENT>) but is read from the updated global key
         # dictionary (globalStdkeyDict).
-        coadds = dataset.phuGetKeyValue(globalStdkeyDict['key_coadds'])
+        coadds = dataset.phu_get_key_value(globalStdkeyDict['key_coadds'])
         if coadds is None:
             # Return 1 as the default value for the number of coadds for Gemini
             # data
@@ -130,9 +130,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         for ext in dataset['SCI']:
             # Get the data section from the header of each pixel data extension
             raw_data_section = \
-                ext.getKeyValue(globalStdkeyDict['key_data_section'])
+                ext.get_key_value(globalStdkeyDict['key_data_section'])
             if raw_data_section is None:
-                # The getKeyValue() function returns None if a value cannot be
+                # The get_key_value() function returns None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
@@ -158,9 +158,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         slit to create the short slits used in the cross dispersed modes.
         """
         # Get the decker position from the header of the PHU
-        decker = dataset.phuGetKeyValue(globalStdkeyDict['key_decker'])
+        decker = dataset.phu_get_key_value(globalStdkeyDict['key_decker'])
         if decker is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -186,9 +186,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # Get the detector section from the header of each pixel data
             # extension
             raw_detector_section = \
-                ext.getKeyValue(globalStdkeyDict['key_detector_section'])
+                ext.get_key_value(globalStdkeyDict['key_detector_section'])
             if raw_detector_section is None:
-                # The getKeyValue() function returns None if a value cannot be
+                # The get_key_value() function returns None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
@@ -241,9 +241,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # keyword may be defined in a local key dictionary
         # (stdkeyDict<INSTRUMENT>) but is read from the updated global key
         # dictionary (globalStdkeyDict)
-        disperser = dataset.phuGetKeyValue(globalStdkeyDict['key_disperser'])
+        disperser = dataset.phu_get_key_value(globalStdkeyDict['key_disperser'])
         if disperser is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -273,9 +273,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Get the dispersion axis from the header of each pixel data
                 # extension
                 dispersion_axis = \
-                    ext.getKeyValue(globalStdkeyDict['key_dispersion_axis'])
+                    ext.get_key_value(globalStdkeyDict['key_dispersion_axis'])
                 if dispersion_axis is None:
-                    # The getKeyValue() function returns None if a value
+                    # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
                     # the exception. It will be dealt with by the
                     # CalculatorInterface.
@@ -293,9 +293,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def exposure_time(self, dataset, **args):
         # Get the exposure time value from the header of the PHU
         exposure_time = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_exposure_time'])
+            dataset.phu_get_key_value(globalStdkeyDict['key_exposure_time'])
         if exposure_time is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -325,10 +325,10 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # dictionary (globalStdkeyDict)
         key_filter1 = globalStdkeyDict['key_filter1']
         key_filter2 = globalStdkeyDict['key_filter2']
-        filter1 = dataset.phuGetKeyValue(key_filter1)
-        filter2 = dataset.phuGetKeyValue(key_filter2)
+        filter1 = dataset.phu_get_key_value(key_filter1)
+        filter2 = dataset.phu_get_key_value(key_filter2)
         if filter1 is None or filter2 is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -362,9 +362,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             stripID = True
         # Get the focal plane mask value from the header of the PHU.
         focal_plane_mask = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_focal_plane_mask'])
+            dataset.phu_get_key_value(globalStdkeyDict['key_focal_plane_mask'])
         if focal_plane_mask is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -389,9 +389,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     
     def local_time(self, dataset, **args):
         # Get the local time from the header of the PHU
-        local_time = dataset.phuGetKeyValue(globalStdkeyDict['key_local_time'])
+        local_time = dataset.phu_get_key_value(globalStdkeyDict['key_local_time'])
         if local_time is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -422,9 +422,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Get the MDF row ID from the header of each pixel data
                 # extension
                 mdf_row_id = \
-                    ext.getKeyValue(globalStdkeyDict['key_mdf_row_id'])
+                    ext.get_key_value(globalStdkeyDict['key_mdf_row_id'])
                 if mdf_row_id is None:
-                    # The getKeyValue() function returns None if a value
+                    # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
                     # the exception. It will be dealt with by the
                     # CalculatorInterface.
@@ -465,9 +465,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # Get the overscan section from the header of each pixel data
             # extension
             raw_overscan_section = \
-                ext.getKeyValue(globalStdkeyDict['key_overscan_section'])
+                ext.get_key_value(globalStdkeyDict['key_overscan_section'])
             if raw_overscan_section is None:
-                # The getKeyValue() function returns None if a value cannot be
+                # The get_key_value() function returns None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
@@ -509,12 +509,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # the header of the PHU. The rawpireq and rawgemqa keywords are
         # defined in the local key dictionary (stdkeyDictGEMINI) but are read
         # from the updated global key dictionary (globalStdkeyDict)
-        rawpireq = dataset.phuGetKeyValue\
+        rawpireq = dataset.phu_get_key_value\
             (globalStdkeyDict['key_raw_pi_requirements_met'])
-        rawgemqa = dataset.phuGetKeyValue\
+        rawgemqa = dataset.phu_get_key_value\
             (globalStdkeyDict['key_raw_gemini_qa'])
         if rawpireq is None or rawgemqa is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -749,12 +749,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # states keywords are defined in the local key dictionary
         # (stdkeyDictGEMINI) but are read from the updated global key
         # dictionary (globalStdkeyDict)
-        aowfs = dataset.phuGetKeyValue(globalStdkeyDict['key_aowfs'])
-        oiwfs = dataset.phuGetKeyValue(globalStdkeyDict['key_oiwfs'])
-        pwfs1 = dataset.phuGetKeyValue(globalStdkeyDict['key_pwfs1'])
-        pwfs2 = dataset.phuGetKeyValue(globalStdkeyDict['key_pwfs2'])
+        aowfs = dataset.phu_get_key_value(globalStdkeyDict['key_aowfs'])
+        oiwfs = dataset.phu_get_key_value(globalStdkeyDict['key_oiwfs'])
+        pwfs1 = dataset.phu_get_key_value(globalStdkeyDict['key_pwfs1'])
+        pwfs2 = dataset.phu_get_key_value(globalStdkeyDict['key_pwfs2'])
         if aowfs is None or oiwfs is None or pwfs1 is None or pwfs2 is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -792,10 +792,10 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # wavelength keyword may be defined in a local key dictionary
             # (stdkeyDict<INSTRUMENT>) but is read from the updated global key
             # dictionary (globalStdkeyDict)
-            wavelength_reference_pixel = ext.getKeyValue\
+            wavelength_reference_pixel = ext.get_key_value\
                 (globalStdkeyDict['key_wavelength_reference_pixel'])
             if wavelength_reference_pixel is None:
-                # The getKeyValue() function returns None if a value cannot be
+                # The get_key_value() function returns None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):

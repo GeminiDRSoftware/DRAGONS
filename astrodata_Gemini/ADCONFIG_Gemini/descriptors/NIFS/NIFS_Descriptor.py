@@ -32,9 +32,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
-        disperser = dataset.phuGetKeyValue(globalStdkeyDict['key_disperser'])
+        disperser = dataset.phu_get_key_value(globalStdkeyDict['key_disperser'])
         if disperser is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -53,9 +53,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
         # are read from the updated global key dictionary (globalStdkeyDict)
         filter_name = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_filter_name'])
+            dataset.phu_get_key_value(globalStdkeyDict['key_filter_name'])
         if filter_name is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -77,9 +77,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
-        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
         if biasvolt is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -105,9 +105,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
-        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
         if biasvolt is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -122,7 +122,7 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         # Determine whether the dataset has been / will be corrected for
         # non-linearity
-        if dataset.phuGetKeyValue('NONLINCR'):
+        if dataset.phu_get_key_value('NONLINCR'):
             corrected = True
         else:
             corrected = False
@@ -189,10 +189,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # value (biasvolt) from the header of the PHU. The lnrs and biasvolt
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
         # are read from the updated global key dictionary (globalStdkeyDict)
-        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
-        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
+        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
         if lnrs is None or biasvolt is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -215,10 +215,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # value (biasvolt) from the header of the PHU. The lnrs and biasvolt
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
         # are read from the updated global key dictionary (globalStdkeyDict)
-        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
-        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
+        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
         if lnrs is None or biasvolt is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -254,9 +254,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary (globalStdkeyDict)
-        biasvolt = dataset.phuGetKeyValue(globalStdkeyDict['key_bias'])
+        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
         if biasvolt is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):

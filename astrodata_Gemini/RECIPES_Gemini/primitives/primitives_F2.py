@@ -158,7 +158,7 @@ class F2Primitives(GEMINIPrimitives):
             for ad in rc.getInputs(style="AD"):
                 # Check whether the validateData primitive has been run
                 # previously
-                if ad.phuGetKeyValue("VALDATA"):
+                if ad.phu_get_key_value("VALDATA"):
                     log.warning("%s has already been processed by " \
                                 "validateData" % (ad.filename))
                     # Append the input AstroData object to the list of output

@@ -26,7 +26,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -75,7 +75,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -116,7 +116,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -157,7 +157,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -199,7 +199,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -255,7 +255,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -296,7 +296,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -337,7 +337,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -392,7 +392,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -433,7 +433,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -478,7 +478,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -533,7 +533,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -581,7 +581,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -629,7 +629,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -674,7 +674,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -730,7 +730,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -771,7 +771,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -812,7 +812,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -853,7 +853,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -899,7 +899,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -944,7 +944,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -991,7 +991,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1036,7 +1036,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1077,7 +1077,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1118,7 +1118,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1159,7 +1159,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1206,7 +1206,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1248,7 +1248,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1290,7 +1290,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1332,7 +1332,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1373,7 +1373,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1415,7 +1415,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1456,7 +1456,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1497,7 +1497,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1539,7 +1539,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1580,7 +1580,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1621,7 +1621,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1666,7 +1666,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1708,7 +1708,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1749,7 +1749,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1791,7 +1791,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1832,7 +1832,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1874,7 +1874,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1916,7 +1916,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1958,7 +1958,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2000,7 +2000,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2045,7 +2045,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2092,7 +2092,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2134,7 +2134,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2176,7 +2176,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2221,7 +2221,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2262,7 +2262,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2303,7 +2303,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2369,7 +2369,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2410,7 +2410,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2453,7 +2453,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2501,7 +2501,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2543,7 +2543,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2584,7 +2584,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2625,7 +2625,7 @@ class CalculatorInterface:
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
                 if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phuGetKeyValue(SDKD.globalStdkeyDict[key])
+                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info

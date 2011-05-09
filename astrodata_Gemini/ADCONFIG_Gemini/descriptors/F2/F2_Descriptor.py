@@ -42,9 +42,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
+        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
         if lnrs is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -65,9 +65,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
+        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
         if lnrs is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -96,9 +96,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
+        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
         if lnrs is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -119,9 +119,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
+        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
         if lnrs is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):

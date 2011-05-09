@@ -102,13 +102,13 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # local key dictionary (stdkeyDictNIRI) but is read from the
             # updated global key dictionary (globalStdkeyDict). The values
             # from the header use 0-based indexing.
-            x_start = ext.getKeyValue(globalStdkeyDict['key_lowrow'])
-            x_end = ext.getKeyValue(globalStdkeyDict['key_hirow'])
-            y_start = ext.getKeyValue(globalStdkeyDict['key_lowcol'])
-            y_end = ext.getKeyValue(globalStdkeyDict['key_hicol'])
+            x_start = ext.get_key_value(globalStdkeyDict['key_lowrow'])
+            x_end = ext.get_key_value(globalStdkeyDict['key_hirow'])
+            y_start = ext.get_key_value(globalStdkeyDict['key_lowcol'])
+            y_end = ext.get_key_value(globalStdkeyDict['key_hicol'])
             if x_start is None or x_end is None or y_start is None or \
                 y_end is None:
-                # The getKeyValue() function returns None if a value cannot be
+                # The get_key_value() function returns None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
@@ -137,9 +137,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # value from the header of the PHU. The filter name keyword is defined
         # in the local key dictionary (stdkeyDictNIRI) but is read from the
         # updated global key dictionary (globalStdkeyDict)
-        filter3 = dataset.phuGetKeyValue(globalStdkeyDict['key_filter3'])
+        filter3 = dataset.phu_get_key_value(globalStdkeyDict['key_filter3'])
         if filter3 is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -170,11 +170,11 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # three filter name keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but is read from the updated global key dictionary
         # (globalStdkeyDict)
-        filter1 = dataset.phuGetKeyValue(globalStdkeyDict['key_filter1'])
-        filter2 = dataset.phuGetKeyValue(globalStdkeyDict['key_filter2'])
-        filter3 = dataset.phuGetKeyValue(globalStdkeyDict['key_filter3'])
+        filter1 = dataset.phu_get_key_value(globalStdkeyDict['key_filter1'])
+        filter2 = dataset.phu_get_key_value(globalStdkeyDict['key_filter2'])
+        filter3 = dataset.phu_get_key_value(globalStdkeyDict['key_filter3'])
         if filter1 is None or filter2 is None or filter3 is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -239,12 +239,12 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # matrix elements keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        cd11 = dataset.phuGetKeyValue(globalStdkeyDict['key_cd11'])
-        cd12 = dataset.phuGetKeyValue(globalStdkeyDict['key_cd12'])
-        cd21 = dataset.phuGetKeyValue(globalStdkeyDict['key_cd21'])
-        cd22 = dataset.phuGetKeyValue(globalStdkeyDict['key_cd22'])
+        cd11 = dataset.phu_get_key_value(globalStdkeyDict['key_cd11'])
+        cd12 = dataset.phu_get_key_value(globalStdkeyDict['key_cd12'])
+        cd21 = dataset.phu_get_key_value(globalStdkeyDict['key_cd21'])
+        cd22 = dataset.phu_get_key_value(globalStdkeyDict['key_cd22'])
         if cd11 is None or cd12 is None or cd21 is None or cd22 is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -265,9 +265,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # The filter name keyword is defined in the local key dictionary
         # (stdkeyDictNIRI) but is read from the updated global key dictionary
         # (globalStdkeyDict)
-        filter3 = dataset.phuGetKeyValue(globalStdkeyDict['key_filter3'])
+        filter3 = dataset.phu_get_key_value(globalStdkeyDict['key_filter3'])
         if filter3 is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -295,10 +295,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # ndavgs keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        lnrs = dataset.phuGetKeyValue(globalStdkeyDict['key_lnrs'])
-        ndavgs = dataset.phuGetKeyValue(globalStdkeyDict['key_ndavgs'])
+        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
+        ndavgs = dataset.phu_get_key_value(globalStdkeyDict['key_ndavgs'])
         if lnrs is None or ndavgs is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -381,10 +381,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # avdduc and avdet keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
         # (globalStdkeyDict)
-        avdduc = dataset.phuGetKeyValue(globalStdkeyDict['key_avdduc'])
-        avdet = dataset.phuGetKeyValue(globalStdkeyDict['key_avdet'])
+        avdduc = dataset.phu_get_key_value(globalStdkeyDict['key_avdduc'])
+        avdet = dataset.phu_get_key_value(globalStdkeyDict['key_avdet'])
         if avdduc is None or avdet is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):

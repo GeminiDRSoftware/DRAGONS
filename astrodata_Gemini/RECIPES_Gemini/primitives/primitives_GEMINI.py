@@ -143,7 +143,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Loop over each input AstroData object in the input list
             for ad in rc.getInputs(style="AD"):
                 # Check whether the addVAR primitive has been run previously
-                if ad.phuGetKeyValue("ADDVAR"):
+                if ad.phu_get_key_value("ADDVAR"):
                     log.warning("%s has already been processed by addVAR" \
                                 % (ad.filename))
                     # Append the input AstroData object to the list of output
@@ -229,7 +229,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         try:
-            rc.rqDisplay(displayID=rc["displayID"])
+            rc.rqDisplay(display_id=rc["display_id"])
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -271,11 +271,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             from copy import deepcopy
             processedFlat = deepcopy(adOne)
             processedFlat.filename = "TEMPNAMEforFLAT.fits"
-            processedFlat.phuSetKeyValue("ORIGNAME","TEMPNAMEforFLAT.fits")
+            processedFlat.phu_set_key_value("ORIGNAME","TEMPNAMEforFLAT.fits")
             ###################################################################
             
             # Taking care of the case where there was no, or an invalid flat 
-            if processedFlat.countExts("SCI") == 0:
+            if processedFlat.count_exts("SCI") == 0:
                 raise Errors.PrimitiveError("Invalid processed flat " +
                                             "retrieved")
             # Call the divide_by_flat user level function
@@ -771,7 +771,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.status("File name updated to %s" % ad.filename)
                 
                 # Adding a GBIAS time stamp to the PHU
-                ad.historyMark(key="GBIAS",
+                ad.history_mark(key="GBIAS",
                                comment="fake key to trick CL that GBIAS " +
                                "was ran")
                 log.fullinfo("File written to %s/%s" % (rc["storedbiases"],
@@ -861,10 +861,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             from copy import deepcopy
             processedDark = deepcopy(adOne)
             processedDark.filename = "TEMPNAMEforDARK.fits"
-            processedDark.phuSetKeyValue("ORIGNAME","TEMPNAMEforDARK.fits")
+            processedDark.phu_set_key_value("ORIGNAME","TEMPNAMEforDARK.fits")
             ###################################################################
             # Taking care of the case where there was no, or an invalid flat 
-            if processedDark.countExts("SCI") == 0:
+            if processedDark.count_exts("SCI") == 0:
                 raise Errors.PrimitiveError("Invalid processed dark " +
                                             "retrieved")
             # Call the subtract_dark user level function
@@ -916,7 +916,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             from copy import deepcopy
             fringes = deepcopy(adOne)
             fringes.filename = "TEMPNAMEforFRINGE.fits"
-            fringes.phuSetKeyValue("ORIGNAME","TEMPNAMEforFRINGE.fits")
+            fringes.phu_set_key_value("ORIGNAME","TEMPNAMEforFRINGE.fits")
             ##################################################################
             # Call the subtract_fringe user level function
             output = cal.subtract_fringe(adInputs=rc.getInputs(style="AD"),

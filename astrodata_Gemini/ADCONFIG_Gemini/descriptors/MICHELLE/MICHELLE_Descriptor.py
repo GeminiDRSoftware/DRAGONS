@@ -20,10 +20,10 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # defined in the local key dictionary (stdkeyDictMICHELLE) but are read
         # from the updated global key dictionary (globalStdkeyDict)
         exposure_time = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_exposure_time'])
-        extensions = dataset.phuGetKeyValue(globalStdkeyDict['key_numext'])
+            dataset.phu_get_key_value(globalStdkeyDict['key_exposure_time'])
+        extensions = dataset.phu_get_key_value(globalStdkeyDict['key_numext'])
         if exposure_time is None or extensions is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -46,9 +46,9 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # keyword is defined in the local key dictionary (stdkeyDictMICHELLE)
         # but is read from the updated global key dictionary (globalStdkeyDict)
         filter_name = \
-            dataset.phuGetKeyValue(globalStdkeyDict['key_filter_name'])
+            dataset.phu_get_key_value(globalStdkeyDict['key_filter_name'])
         if filter_name is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -67,9 +67,9 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the read mode from the header of the PHU. The read mode is
         # defined in the local key dictionary (stdkeyDictMICHELLE) but is read
         # from the updated global key dictionary (globalStdkeyDict)
-        read_mode = dataset.phuGetKeyValue(globalStdkeyDict['key_read_mode'])
+        read_mode = dataset.phu_get_key_value(globalStdkeyDict['key_read_mode'])
         if read_mode is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):

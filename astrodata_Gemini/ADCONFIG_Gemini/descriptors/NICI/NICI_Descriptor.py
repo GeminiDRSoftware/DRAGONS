@@ -26,14 +26,14 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         # sure where the line is) doesn't. Need to find out when the keyword
         # locations changed ...
         key_exposure_time_r = globalStdkeyDict['key_exposure_time_r']
-        exposure_time_r = dataset.phuGetKeyValue(key_exposure_time_r)
+        exposure_time_r = dataset.phu_get_key_value(key_exposure_time_r)
         key_exposure_time_b = globalStdkeyDict['key_exposure_time_b']
-        exposure_time_b = dataset.phuGetKeyValue(key_exposure_time_b)
-        coadds_r = dataset.phuGetKeyValue(globalStdkeyDict['key_coadds_r'])
-        coadds_b = dataset.phuGetKeyValue(globalStdkeyDict['key_coadds_b'])
+        exposure_time_b = dataset.phu_get_key_value(key_exposure_time_b)
+        coadds_r = dataset.phu_get_key_value(globalStdkeyDict['key_coadds_r'])
+        coadds_b = dataset.phu_get_key_value(globalStdkeyDict['key_coadds_b'])
         if exposure_time_r is None or exposure_time_b is None or \
             coadds_r is None or coadds_b is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
@@ -55,10 +55,10 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         # (globalStdkeyDict)
         key_filter_r = globalStdkeyDict['key_filter_r']
         key_filter_b = globalStdkeyDict['key_filter_b']
-        filter_r = dataset.phuGetKeyValue(key_filter_r)
-        filter_b = dataset.phuGetKeyValue(key_filter_b)
+        filter_r = dataset.phu_get_key_value(key_filter_r)
+        filter_b = dataset.phu_get_key_value(key_filter_b)
         if filter_r is None or filter_b is None:
-            # The phuGetKeyValue() function returns None if a value cannot be
+            # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
