@@ -53,7 +53,7 @@ def standardize_headers_gemini(adinput=None, output_names=None, suffix=None):
             output = deepcopy(ad)
             # Check whether validate_data_f2 has been run on the data
             # before
-            if output.phuGetKeyValue(timestampkey):
+            if output.phu_get_key_value(timestampkey):
                 log.warning("%s has already had its headers standardized " +
                             "with Gemini specific keywords" \
                             % (output.filename))
@@ -66,11 +66,11 @@ def standardize_headers_gemini(adinput=None, output_names=None, suffix=None):
                 log.fullinfo("~"*50, category="header")
                 # Number of science extensions
                 gt.updateKeyValue(adinput=output,
-                                  function="countExts(\"SCI\")",
+                                  function="count_exts(\"SCI\")",
                                   extname="PHU")
                 # Original name
                 gt.updateKeyValue(adinput=output,
-                                  function="storeOriginalName()",
+                                  function="store_original_name()",
                                   extname="PHU")
                 # Number of extensions
                 gt.updateKeyValue(adinput=output,
@@ -157,7 +157,7 @@ def standardize_headers_gmos(adinput=None, output_names=None, suffix=None):
             output = deepcopy(ad)
             # Check whether validate_data_f2 has been run on the data
             # before
-            if output.phuGetKeyValue(timestampkey):
+            if output.phu_get_key_value(timestampkey):
                 log.warning("%s has already had its headers standardized " +
                             "with GMOS specific keywords" \
                             % (output.filename))
@@ -181,7 +181,7 @@ def standardize_headers_gmos(adinput=None, output_names=None, suffix=None):
                 gt.updateKeyValue(adinput=output,
                                   function="gain()",
                                   extname="SCI")
-                if "GMOS_IMAGE" not in output.getTypes():
+                if "GMOS_IMAGE" not in output.get_types():
                     gt.updateKeyValue(adinput=output,
                                       function="dispersion_axis()",
                                       extname="SCI")
@@ -234,7 +234,7 @@ def standardize_headers_f2(adinput=None, output_names=None, suffix=None):
             output = deepcopy(ad)
             # Check whether validate_data_f2 has been run on the data
             # before
-            if output.phuGetKeyValue(timestampkey):
+            if output.phu_get_key_value(timestampkey):
                 log.warning("%s has already had its headers standardized " +
                             "with FLAMINGOS-2 specific keywords" \
                             % (output.filename))
@@ -314,7 +314,7 @@ def standardize_structure_gmos(adinput=None, output_names=None, suffix=None,
         for ad in adinput:
             if addMDF:
                 # Ensuring data is not of type IMAGE, as they do not require an MDF
-                if "IMAGE" in ad.getTypes():
+                if "IMAGE" in ad.get_types():
                     # if of type IMAGE then log critical message and pass input 
                     # to the outputs without looking up and appending an MDF
                     log.critical("Input "+ad.filename+" is an IMAGE and "+
@@ -326,7 +326,7 @@ def standardize_structure_gmos(adinput=None, output_names=None, suffix=None,
                 else:
                     log.status("Starting to hunt for matching MDF file")
                     # Input is not of type IMAGE so look up and append the right MDF
-                    phuMDFkey = ad.phuGetKeyValue("MASKNAME")
+                    phuMDFkey = ad.phu_get_key_value("MASKNAME")
                     # check if this key exists in the PHU or if
                     # the input is of type IFU.  If not there, only use the 
                     # provided MDF through the mdfFiles param, if = "IFU-*" then 
@@ -360,13 +360,13 @@ def standardize_structure_gmos(adinput=None, output_names=None, suffix=None,
                                             "MASKNAME key in the PHU and the "+
                                             "mdfFiles provided was invalid.")
                             
-                    if (phuMDFkey is not None) and ("IFU" in ad.getTypes()):
+                    if (phuMDFkey is not None) and ("IFU" in ad.get_types()):
                         # The input is of type IFU, so the value for the 
                         # MASKNAME PHU key needs to be used to find the 
                         # appropriate MDF filename
-                        if "GMOS-S" in ad.getTypes():
+                        if "GMOS-S" in ad.get_types():
                             mdfPrefix = "gsifu_"
-                        if "GMOS-N" in ad.getTypes():
+                        if "GMOS-N" in ad.get_types():
                             mdfPrefix = "gnifu_"
                         if phuMDFkey=="IFU-2":
                             MDFfilename = mdfPrefix+"slits_mdf.fits"

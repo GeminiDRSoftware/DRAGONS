@@ -88,9 +88,9 @@ def add_mdf(adInputs=None, MDFs=None, outNames=None, suffix=None):
                            ' onto '+adOut.filename)
                 # Renaming the extension's extname='MDF' and extver=1, even if 
                 # they all ready these values just to be sure.
-                MDF.renameExt('MDF',1)
-                MDF.setKeyValue('EXTNAME','MDF', 'Extension name')
-                MDF.setKeyValue('EXTVER',1,'Extension version')
+                MDF.rename_ext('MDF',1)
+                MDF.set_key_value('EXTNAME','MDF', 'Extension name')
+                MDF.set_key_value('EXTVER',1,'Extension version')
                 
                 # log the current infostr() of both the ad and mdf for debugging
                 log.debug('Info strings before appending MDF:')

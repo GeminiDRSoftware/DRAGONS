@@ -32,7 +32,7 @@ def validate_data_f2(adinput=None, output_names=None, suffix=None,
         for ad in adinput_list:
             # Check whether the validate_data_f2 user level function has been
             # run previously
-            if ad.phuGetKeyValue(timestampkey):
+            if ad.phu_get_key_value(timestampkey):
                 msg = "%s has already been processed by validate_data_f2" \
                       % (ad.filename)
                 log.critical(msg)
@@ -119,7 +119,7 @@ def validate_data_gmos(adinput=None, output_names=None, suffix=None,
             output = deepcopy(ad)
             # Check whether validate_data_f2 has been run on the data
             # before
-            if output.phuGetKeyValue(timestampkey):
+            if output.phu_get_key_value(timestampkey):
                 log.warning("%s has already been validated" \
                             % (output.filename))
             else:
@@ -127,7 +127,7 @@ def validate_data_gmos(adinput=None, output_names=None, suffix=None,
                 # 6 or 12 extensions
                 log.info("Raw GMOS data should only have 1, 3, 6 or 12 " +
                          "extensions ... checking")
-                extensions = output.countExts("SCI")
+                extensions = output.count_exts("SCI")
                 if (extensions != 1 and extensions != 3 and extensions != 6 and
                     extensions != 12):
                     if repair:

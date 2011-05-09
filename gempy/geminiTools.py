@@ -57,11 +57,11 @@ def checkInputsMatch(adInsA=None, adInsB=None):
         B = adInsB[count]
         log.status('Checking inputs '+A.filename+' and '+B.filename)
         
-        if A.countExts('SCI')!=B.countExts('SCI'):
+        if A.count_exts('SCI')!=B.count_exts('SCI'):
             log.error('Inputs have different numbers of SCI extensions.')
             raise Errors.ToolboxError('Miss-matching number of SCI ' \
                                       'extensions in inputs')
-        for extCount in range(1,A.countExts('SCI')+1):
+        for extCount in range(1,A.count_exts('SCI')+1):
             # grab matching SCI extensions from A's and B's
             sciA = A[('SCI',extCount)]
             sciB = B[('SCI',extCount)]
@@ -154,12 +154,12 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
     
     if strip:
         # Grabbing the value of PHU key 'ORIGNAME'
-        phuOrigFilename = adIn.phuGetKeyValue('ORIGNAME') 
-        # If key was 'None', ie. storeOriginalName() wasn't ran yet, then run
+        phuOrigFilename = adIn.phu_get_key_value('ORIGNAME') 
+        # If key was 'None', ie. store_original_name() wasn't ran yet, then run
         # it now
         if phuOrigFilename is None:
             # Storing the original name of this astrodata object in the PHU
-            phuOrigFilename = adIn.storeOriginalName()
+            phuOrigFilename = adIn.store_original_name()
             
         # Split up the filename and the file type ie. the extension
         (name,filetype) = os.path.splitext(phuOrigFilename)
@@ -262,8 +262,8 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
     
     :param function: string for an astrodata function or descriptor to 
                          perform on the input ad.
-                         ie. for ad.countExts('SCI'), 
-                         function='countExts('SCI')'
+                         ie. for ad.count_exts('SCI'), 
+                         function='count_exts('SCI')'
     :type function: string 
     
     :param extname: Set to 'PHU', 'SCI', 'VAR' or 'DQ' to update the given
@@ -278,10 +278,10 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
         'pixel_scale()':['PIXSCALE', 'Pixel scale in Y in [arcsec/pixel]'],
         'gain()':['GAIN', 'Gain [e-/ADU]'],
         'dispersion_axis()':['DISPAXIS','Dispersion axis'],
-        'countExts("SCI")':['NSCIEXT', 'Number of science extensions'],
-        # storeOriginalName() actually all ready writes to the PHU, but
+        'count_exts("SCI")':['NSCIEXT', 'Number of science extensions'],
+        # store_original_name() actually all ready writes to the PHU, but
         # doubling it doesn't hurt.
-        'storeOriginalName()':
+        'store_original_name()':
             ['ORIGNAME', 'Original filename prior to processing'],
         'read_noise()':['RDNOISE', 'readout noise in [e-]'],
         'non_linear_level()':['NONLINEA', 'Non-linear regime level in [ADU]'],
@@ -298,7 +298,7 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
     
     if extname == "PHU":
         # Check to see whether the keyword is already in the PHU
-        original_value = adinput.phuGetKeyValue(key)
+        original_value = adinput.phu_get_key_value(key)
         if original_value is not None:
             # The keyword exists, so store a history comment for later use
             log.debug("Keyword %s=%s already exists in the PHU" \
@@ -323,16 +323,16 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
         if output_value is not None:
             if output_value != original_value:
                 # Update the header and write a history comment
-                adinput.phuSetKeyValue(key, output_value, comment)
+                adinput.phu_set_key_value(key, output_value, comment)
                 log.fullinfo("PHU keyword %s=%s %s" \
-                             % (key, adinput.phuGetKeyValue(key), msg),
+                             % (key, adinput.phu_get_key_value(key), msg),
                              category='header')
                 # Only need to write a history comment if the value in the
                 # header is actually overwritten
                 if original_value is None:
                     historyComment = "New keyword %s=%s was written to the " \
                                      "PHU by AstroData" % (key, output_value)
-                adinput.getPHUHeader().add_history(historyComment)
+                adinput.get_phuheader().add_history(historyComment)
                 log.fullinfo('History comment added: %s' % historyComment)
     else:
         if extname is None:
@@ -340,7 +340,7 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
         for ext in adinput[extname]:
             # Check to see whether the keyword is already in the pixel data
             # extension 
-            original_value = ext.getKeyValue(key)
+            original_value = ext.get_key_value(key)
             if original_value is not None:
                 log.debug("Keyword %s=%s already in extension %s,%s" \
                           % (key, original_value, extname, ext.extver()))
@@ -362,14 +362,14 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
             if original_value is not None and output_value is not None:
                 if output_value != original_value:
                     # Update the header and write a history comment
-                    ext.setKeyValue(key, output_value, comment)
+                    ext.set_key_value(key, output_value, comment)
                     log.fullinfo("%s,%s keyword %s=%s %s" \
                                  % (extname, ext.extver(), key,
-                                    ext.getKeyValue(key), msg),
+                                    ext.get_key_value(key), msg),
                                  category="header")
                     # Only need to write a history comment if the value in the
                     # header is actually overwritten
                     if output_value != original_value:
-                        adinput.getPHUHeader().add_history(historyComment)
+                        adinput.get_phuheader().add_history(historyComment)
                         log.fullinfo('History comment added: %s' \
                                      % historyComment)

@@ -164,9 +164,9 @@ def add_bpm(adinput=None, output_names=None, suffix=None, bpm=None,
                     # DQ array and header
                     bpmAD = AstroData(header=BPMheader, data=BPMArrayOut)
                     
-                    # Using renameExt to correctly set the EXTVER and 
+                    # Using rename_ext to correctly set the EXTVER and 
                     # EXTNAME values in the header   
-                    bpmAD.renameExt('BPM', ver=sciExt.extver())
+                    bpmAD.rename_ext('BPM', ver=sciExt.extver())
                     
                     # Appending BPM astrodata instance to the input one
                     log.debug('Appending new BPM HDU onto the file '+ 
@@ -341,9 +341,9 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                     # Renaming the extension to DQ from BPM
                     dqheader.update('EXTNAME', 'DQ', 'Extension Name')
                     
-                    # Using renameExt to correctly set the EXTVER and 
+                    # Using rename_ext to correctly set the EXTVER and 
                     # EXTNAME values in the header   
-                    bpmAD.renameExt('DQ', ver=sciExt.extver(), force=True)
+                    bpmAD.rename_ext('DQ', ver=sciExt.extver(), force=True)
 
                     # Logging that the name of the BPM extension was changed
                     log.fullinfo('BPM Extension '+str(sciExt.extver())+
@@ -853,7 +853,7 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
             # Automatically determine the 'mosaic' parameter for gemiq
             # if there are 3 SCI extensions -> mosaic=False
             # if only one -> mosaic=True, else raise error
-            numExts = ad.countExts('SCI')
+            numExts = ad.count_exts('SCI')
             if numExts==1:
                 mosaic = True
             elif numExts==3:
@@ -1069,7 +1069,7 @@ def mosaic_detectors(adInputs, fl_paste=False, interp_function='linear',
                 
                 # Varifying gireduce was actually ran on the file
                 # then logging file names of successfully reduced files
-                if ad.phuGetKeyValue('GMOSAIC'): 
+                if ad.phu_get_key_value('GMOSAIC'): 
                     log.fullinfo('\nFile '+clm.preCLimageNames()[i]+\
                                  ' mosaiced successfully')
                     log.fullinfo('New file name is: '+ad.filename)

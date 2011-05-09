@@ -177,13 +177,13 @@ class CLManager(object):
         self.status = True
         if imageIns!=None:
             for ad in self.imageIns:
-                if (ad.phuGetKeyValue('GPREPARE')==None) and \
-                   (ad.phuGetKeyValue('PREPARE')==None):
+                if (ad.phu_get_key_value('GPREPARE')==None) and \
+                   (ad.phu_get_key_value('PREPARE')==None):
                     self.status = False
         if refIns!=None:
             for ad in self.refIns:
-                if (ad.phuGetKeyValue('GPREPARE')==None) and \
-                   (ad.phuGetKeyValue('PREPARE')==None):
+                if (ad.phu_get_key_value('GPREPARE')==None) and \
+                   (ad.phu_get_key_value('PREPARE')==None):
                     self.status = False
         # All inputs prepared, then continue, else the False status will trigger
         # the caller to not proceed further.
@@ -438,7 +438,7 @@ class CLManager(object):
                 retvalue=0
                 for ext in ad['SCI']:
                     # Retrieving current BIASSEC value                        #  THIS WHERE THE 
-                    BIASSEC = ext.getKeyValue('BIASSEC')                      #  bias_section()
+                    BIASSEC = ext.get_key_value('BIASSEC')                      #  bias_section()
                     # Converting the retrieved string into a integer list     #  descriptor
                     # of form [y1, y2, x1, x2] 0-based and non-inclusive      #  would be used!!!!
                     BIASSEClist = string.sectionStrToIntList(BIASSEC)     #
@@ -505,7 +505,7 @@ class CLManager(object):
            :param ad: AstroData instance to find mode of
            :type ad: AstroData instance
         """
-        types = ad.getTypes()
+        types = ad.get_types()
         if 'GMOS' in types:
             try:
                 if 'GMOS_IMAGE' in types:
@@ -518,7 +518,7 @@ class CLManager(object):
                     typeStr = 'LONGSLIT'
                 else:######33
                     typeStr = 'LONGSLIT'##########
-                ad.phuSetKeyValue('OBSMODE', typeStr , 
+                ad.phu_set_key_value('OBSMODE', typeStr , 
                           'Observing mode (IMAGE|IFU|MOS|LONGSLIT)')
             except:
                 raise Errors.ManagersError('Input '+ad.filename+' is not of type '+ 
@@ -533,8 +533,8 @@ class CLManager(object):
            :param ad: AstroData instance to find mode of
            :type ad: AstroData instance
         """
-        if 'GMOS' in ad.getTypes():
-            del ad.getPHU().header['OBSMODE']
+        if 'GMOS' in ad.get_types():
+            del ad.get_phu().header['OBSMODE']
         return ad
     
     def postCLloads(self):
@@ -943,9 +943,9 @@ class ScienceFunctionManager():
         if fl_vardq=='AUTO':
             # if there are matching numbers of VAR, DQ and SCI extensions
             # then set to yes to ensure the outputs have VAR and DQ's as well.
-            if self.adinput[0].countExts('VAR')==\
-                        self.adinput[0].countExts('DQ')\
-                                            ==self.adinput[0].countExts('SCI'):
+            if self.adinput[0].count_exts('VAR')==\
+                        self.adinput[0].count_exts('DQ')\
+                                            ==self.adinput[0].count_exts('SCI'):
                 fl_vardq=yes
             else:
                 fl_vardq=no
@@ -962,14 +962,14 @@ class ScienceFunctionManager():
     def markHistory(self, adOutputs=None, historyMarkKey=None):
         """
         The function to use near the end of a python user level function to 
-        add a historyMark timestamp to all the outputs indicating when and what
+        add a history_mark timestamp to all the outputs indicating when and what
         function was just performed on them, then logging the new historyMarkKey
-        PHU key and updated 'GEM-TLM' key values due to historyMark.
+        PHU key and updated 'GEM-TLM' key values due to history_mark.
         
         Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
         automatically everytime wrapUp is called.
         
-        :param adOutputs: List of astrodata instance(s) to perform historyMark 
+        :param adOutputs: List of astrodata instance(s) to perform history_mark 
                           on.
         :type adOutputs: Either a single or multiple astrodata instances in a 
                          list.
@@ -982,22 +982,22 @@ class ScienceFunctionManager():
         if not isinstance(adOutputs,list):
             adOutputs = [adOutputs]
         
-        # looping though inputs to perform historyMark on each of them
+        # looping though inputs to perform history_mark on each of them
         for ad in adOutputs:
             # Adding 'GEM-TLM' (automatic) and historyMarkKey (if not None)
             # time stamps to the PHU
-            ad.historyMark(key=historyMarkKey, stomp=False)
+            ad.history_mark(key=historyMarkKey, stomp=False)
             
             # Updating log with new GEM-TLM and GIFLAT time stamps
             self.log.fullinfo('*'*50, category='header')
             self.log.fullinfo('File = '+ad.filename, category='header')
             self.log.fullinfo('~'*50, category='header')
             self.log.fullinfo('PHU keywords updated/added:\n', 'header')
-            self.log.fullinfo('GEM-TLM = '+ad.phuGetKeyValue('GEM-TLM'), 
+            self.log.fullinfo('GEM-TLM = '+ad.phu_get_key_value('GEM-TLM'), 
                               category='header')
             if historyMarkKey!=None:
                 self.log.fullinfo(historyMarkKey+' = '+
-                                  ad.phuGetKeyValue(historyMarkKey), 
+                                  ad.phu_get_key_value(historyMarkKey), 
                                   category='header')
             self.log.fullinfo('-'*50, category='header')
         

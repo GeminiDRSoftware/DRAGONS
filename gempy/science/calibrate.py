@@ -496,7 +496,7 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
             i=0
             for adOut in adOutputs:
                 # Verifying gireduce was actually ran on the file
-                if adOut.phuGetKeyValue('GIREDUCE'): 
+                if adOut.phu_get_key_value('GIREDUCE'): 
                     # If gireduce was ran, then log the changes to the files 
                     # it made
                     log.fullinfo('\nFile '+clm.preCLimageNames()[i]+
@@ -504,7 +504,7 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
                     log.fullinfo('New file name is: '+adOut.filename)
                 i = i+1
                 # Updating GEM-TLM and OVERSUB time stamps in the PHU
-                adOut.historyMark(key='OVERSUB', stomp=False)  
+                adOut.history_mark(key='OVERSUB', stomp=False)  
                 
                 # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
                 # and updating logger with updated/added time stamps
@@ -642,7 +642,7 @@ def overscan_subtract_gmosNEW(adInputs, fl_vardq='AUTO', biassec='',
                                  str(nbiascontam))
                 ######## make it handle biassec argument of this function#######
                 ########## so in here would be if biassec!='', and another section for if is not nbiascontam:...#######
-                biassecStr = sciExtIn.getKeyValue('BIASSEC')    ########### convert this to use overscan_section() descriptor when exists, but with pretty=True
+                biassecStr = sciExtIn.get_key_value('BIASSEC')    ########### convert this to use overscan_section() descriptor when exists, but with pretty=True
                 
                 ######### make a func or mode nbiascontam to handle this
                 biassecList = string.sectionStrToIntList(biassecStr) #####
@@ -708,10 +708,10 @@ def overscan_subtract_gmosNEW(adInputs, fl_vardq='AUTO', biassec='',
                 # trimmed biassec
                 overscanMean = sciExtIn.data[bsLt[0]:bsLt[1],bsLt[2]:bsLt[3]].mean()
                 
-                sciExtIn.setKeyValue('OVERRMS',rmsStr,"Overscan RMS value from colbias")
-                sciExtIn.setKeyValue("OVERSCAN", overscanMean, "Overscan mean value")
-                log.stdinfo('RMS in the overscan region found to be '+sciExtIn.getKeyValue('OVERRMS'))
-                log.stdinfo('mean of the overscan region found to be '+str(sciExtIn.getKeyValue('OVERSCAN')))
+                sciExtIn.set_key_value('OVERRMS',rmsStr,"Overscan RMS value from colbias")
+                sciExtIn.set_key_value("OVERSCAN", overscanMean, "Overscan mean value")
+                log.stdinfo('RMS in the overscan region found to be '+sciExtIn.get_key_value('OVERRMS'))
+                log.stdinfo('mean of the overscan region found to be '+str(sciExtIn.get_key_value('OVERSCAN')))
                 
                 # add or update the VAR frames if requested.
                 ## We don't need to update the DQ frams as they are un-effected
@@ -845,9 +845,9 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
                 log.fullinfo('~'*50, category='header')
                 log.fullinfo('SCI extension number '+str(sciExt.extver())+
                              ' keywords updated/added:\n', 'header')
-                log.fullinfo('NAXIS1= '+str(sciExt.getKeyValue('NAXIS1')),
+                log.fullinfo('NAXIS1= '+str(sciExt.get_key_value('NAXIS1')),
                             category='header')
-                log.fullinfo('NAXIS2= '+str(sciExt.getKeyValue('NAXIS2')),
+                log.fullinfo('NAXIS2= '+str(sciExt.get_key_value('NAXIS2')),
                              category='header')
                 log.fullinfo('DATASEC= '+newDataSecStr, category='header')
                 log.fullinfo('TRIMSEC= '+datasecStr, category='header')
@@ -857,9 +857,9 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
             sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERTRIM')       
             
             # Setting 'TRIMMED' to 'yes' in the PHU and updating the log
-            adOut.phuSetKeyValue('TRIMMED','yes','Overscan section trimmed')
+            adOut.phu_set_key_value('TRIMMED','yes','Overscan section trimmed')
             log.fullinfo('Another PHU keywords added:\n', 'header')
-            log.fullinfo('TRIMMED = '+adOut.phuGetKeyValue('TRIMMED')+'\n', 
+            log.fullinfo('TRIMMED = '+adOut.phu_get_key_value('TRIMMED')+'\n', 
                          category='header')
             
             # Appending to output list
@@ -1035,7 +1035,7 @@ def subtract_bias(adInputs, biases=None ,fl_vardq='AUTO', fl_trim=False,
                 
                 # Varifying gireduce was actually ran on the file
                 # then logging file names of successfully reduced files
-                if adOut.phuGetKeyValue('GIREDUCE'): 
+                if adOut.phu_get_key_value('GIREDUCE'): 
                     log.fullinfo('\nFile '+clm.preCLimageNames()[0]+
                                  ' was bias subracted successfully')
                     log.fullinfo('New file name is: '+adOut.filename)
@@ -1046,12 +1046,12 @@ def subtract_bias(adInputs, biases=None ,fl_vardq='AUTO', fl_trim=False,
 
                 # Reseting the value set by gireduce to just the filename
                 # for clarity
-                adOut.phuSetKeyValue('BIASIM', 
+                adOut.phu_set_key_value('BIASIM', 
                                      os.path.basename(bias.filename)) 
                 
                 # Updating log with new BIASIM header key
                 log.fullinfo('Another PHU keywords added:\n', 'header')
-                log.fullinfo('BIASIM = '+adOut.phuGetKeyValue('BIASIM')+'\n', 
+                log.fullinfo('BIASIM = '+adOut.phu_get_key_value('BIASIM')+'\n', 
                              category='header')
            
                 # Appending to output list
@@ -1133,7 +1133,7 @@ def subtract_biasNEW(adInputs, biases=None, fl_vardq='AUTO', outNames=None, suff
         
         # Loop through the inputs 
         for ad in adInputs:  
-            if ad.phuGetKeyValue('BIASIM'):
+            if ad.phu_get_key_value('BIASIM'):
                 # bias image has all ready been subtracted, so don't do it again
                 adOut = ad
             else:
@@ -1150,7 +1150,7 @@ def subtract_biasNEW(adInputs, biases=None, fl_vardq='AUTO', outNames=None, suff
                 adOut = ad.sub(bias)
             
                 # adding name of bias image used for subtraction to PHU
-                adOut.phuSetKeyValue('BIASIM',os.path.basename(bias.filename), 'bias image subtracted')
+                adOut.phu_set_key_value('BIASIM',os.path.basename(bias.filename), 'bias image subtracted')
                 
             # adding or replacing current VAR's with new ones
             for sciExt in adOut['SCI']:

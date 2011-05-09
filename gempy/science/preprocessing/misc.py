@@ -38,14 +38,14 @@ def nonlinearity_correct(input=None, output=None, suffix=None):
         for ad in input_list:
             # Check whether nonlinearity_correct has been run on the data
             # before
-            if ad.phuGetKeyValue(timestampkey):
+            if ad.phu_get_key_value(timestampkey):
                 log.warning('%s has already been corrected for non-linearity' \
                     % (ad.filename))
                 adout = ad
             else:
                 # Store the original name of the file in the header of the
                 # output object
-                ad.storeOriginalName()
+                ad.store_original_name()
                 # Create the output object by making a 'deep copy' of the input
                 # object.
                 adout = deepcopy(ad)
@@ -84,7 +84,7 @@ def nonlinearity_correct(input=None, output=None, suffix=None):
                 # Loop over the extensions in each input object
                 for ext in adout:
                     # Get the size of the raw pixel data
-                    naxis2 = ext.getKeyValue('NAXIS2')
+                    naxis2 = ext.get_key_value('NAXIS2')
                     # Get the raw pixel data
                     raw_pixel_data = ext.data
                     # Divide the raw pixel data by the number of coadds
