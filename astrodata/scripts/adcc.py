@@ -195,7 +195,7 @@ class ReduceInstanceManager(object):
                     print "adcc115: loaded ",ad.filename
                     from copy import deepcopy
 
-                    numsci = ad.countExts("SCI")
+                    numsci = ad.count_exts("SCI")
                     if numsci > 2:
                         sci = ad[("SCI",2)]                    
                     else:

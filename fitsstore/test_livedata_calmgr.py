@@ -15,7 +15,7 @@ desc_dict = {'instrument':ad.instrument(),
              'amp_read_area':ad.amp_read_area(asDict=True),
              'ut_datetime':ad.ut_datetime(),
              'exposure_time':ad.exposure_time(),
-             'nodandshuffle':ad.isType('GMOS_NODANDSHUFFLE')
+             'nodandshuffle':ad.is_type('GMOS_NODANDSHUFFLE')
              }
 type_list = ad.types
 ad.close()

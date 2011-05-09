@@ -392,7 +392,7 @@ class MyHandler(BaseHTTPRequestHandler):
                             recname = recdict[key]                        
                             self.wfile.write("<br/><b>Default Recipe(s)</b>:%s (<i>due to type</i>: %s)"
                                                 % (recname, key))
-                        alldesc = ad.allDescriptors()
+                        alldesc = ad.all_descriptors()
                         self.wfile.write("<br/><b>Descriptors</b>:\n")
                         self.wfile.write('<table style="margin-left:4em">\n')
                         adkeys = alldesc.keys()
@@ -668,7 +668,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write("<html><body>\n")
                 self.wfile.write('<h2>%s</h2>\n' % name)
                 self.wfile.write(ad.infostr(asHTML=True))
-                alld = ad.allDescriptors()
+                alld = ad.all_descriptors()
                 self.wfile.write(
                         """
                         <table cellspacing="2px">

@@ -721,7 +721,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
     # for the types that are used to load the recipe and primitives
     
     if (options.astrotype == None):
-        types = infiles[0].getTypes()
+        types = infiles[0].get_types()
     else:
         types = [options.astrotype]
             

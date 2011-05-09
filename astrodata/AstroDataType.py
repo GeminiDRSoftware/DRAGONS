@@ -174,7 +174,7 @@ class PHUReq(Requirement):
             #before checking the value, check if it exists
             # get list of keys
             if (mods_re):
-                cleanreqkeylist = AstroData.reHeaderKeys(cleanreqkeyPRE,hdulist[0].header)
+                cleanreqkeylist = AstroData.re_header_keys(cleanreqkeyPRE,hdulist[0].header)
                 if (cleanreqkeylist == None or len(cleanreqkeylist) == 0):
                     # no keys match, if this is a prohibited flag, return true
                     if (mods_prohibit == True):
@@ -1006,7 +1006,7 @@ class ClassificationLibrary (object):
         """
         
         if  isinstance(dataset, AstroData.AstroData):
-            hdulist = dataset.getHDUList()
+            hdulist = dataset.get_hdulist()
             freeHDUList = True
         else:
             if  (not isinstance(dataset, pyfits.HDUList)):
@@ -1020,7 +1020,7 @@ class ClassificationLibrary (object):
             # if type not in library, it's NOT that
             return False         
         if freeHDUList == True:
-            hdulist = dataset.releaseHDUList()
+            hdulist = dataset.release_hdulist()
         
         return retval
     
@@ -1136,7 +1136,7 @@ class ClassificationLibrary (object):
                 raise()
                 
         elif isinstance(dataset, AstroData.AstroData):
-            hdulist = dataset.getHDUList()
+            hdulist = dataset.get_hdulist()
             closeHdulist = False
         else:
             hdulist = dataset

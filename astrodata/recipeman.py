@@ -120,7 +120,7 @@ ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filenam
 reclist = rl.getApplicableRecipes(infile)
 recdict = rl.getApplicableRecipes(infile, collate=True)
 
-types = gd.getTypes()
+types = gd.get_types()
 print "\nProcessing dataset %s\n\tRecipes found by type:" % infile
 for typ in recdict.keys():
     recs = recdict[typ]

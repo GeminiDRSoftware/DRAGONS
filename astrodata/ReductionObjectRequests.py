@@ -74,7 +74,7 @@ class DisplayRequest( ReductionObjectRequest ):
     '''
     The request to display a list of fits files.
     '''
-    #disID - displayID - displayList
+    #disID - display_id - displayList
     def __init__( self, disID=None, disList=[] ):
         super( DisplayRequest, self ).__init__()
         self.disID = disID
@@ -100,7 +100,7 @@ class DisplayRequest( ReductionObjectRequest ):
             filedict = {}
             f.update({os.path.basename(i.filename): filedict })
             filedict.update({"filename":i.filename})
-            filedict.update({"displayID":i.ad.displayID()})
+            filedict.update({"display_id":i.ad.display_id()})
         return d
 
 class GetStackableRequest( ReductionObjectRequest ):

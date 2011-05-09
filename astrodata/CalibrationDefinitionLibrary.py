@@ -114,7 +114,7 @@ class CalibrationDefinitionLibrary( object ):
             reqEvents.append(cr)
             if (False): # old code to delete
                 calIndex = self.generateCalIndex( caltype)
-                print "CDL56:", calIndex, input.ad.getTypes(prune=True)
+                print "CDL56:", calIndex, input.ad.get_types(prune=True)
 
                 retDict = gdpgutil.pickConfig( input.ad,  calIndex )
                 key = retDict.keys()[0]

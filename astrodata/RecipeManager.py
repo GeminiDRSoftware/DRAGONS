@@ -1319,7 +1319,7 @@ class RecipeLibrary(object):
                                     % (astrotype, name, src))
         elif dataset != None:
             gd, bnc = openIfName(dataset)
-            types = gd.getTypes()
+            types = gd.get_types()
             rec = None
             for typ in types:
                 rec = self.retrieveRecipe(name, astrotype=typ, inherit=False)
@@ -1356,7 +1356,7 @@ class RecipeLibrary(object):
             else:
                 raise BadArgument()
             # get the types
-            types = astrod.getTypes()
+            types = astrod.get_types()
         else:
             types = [astrotype]
         # look up recipes, fill list
@@ -1647,7 +1647,7 @@ def %(name)s(self,cfgObj):
         if explicitType:
             types = [explicitType]
         else:
-            types = astrod.getTypes()
+            types = astrod.get_types()
             
         # look up recipes, fill list
         reclist = []

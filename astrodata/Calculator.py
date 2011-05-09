@@ -111,7 +111,7 @@ class Calculator(object):
             retval = eval("dataset."+keylow+"(asList=True)")
         else:
             # print "C148: Gathering ", str(keyname)
-            for ext in dataset.getHDUList():
+            for ext in dataset.get_hdulist():
                 #print "KAPLAH"
                 try:
                     retval = ext.header[str(keyname)]

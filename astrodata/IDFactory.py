@@ -5,11 +5,11 @@ import re
 from astrodata.AstroData import AstroData
 import Descriptors
 #------------------------------------------------------------------------------ 
-version_index = {"stackID":"1_0", "recipeID":"1_0", "displayID":"1_0"}
+version_index = {"stackID":"1_0", "recipeID":"1_0", "display_id":"1_0"}
 
 def generateFingerprint( dataset, version = "1_0"):
     h = hashlib.md5()
-    fullid = repr(dataset.types)+repr(dataset.allDescriptors())
+    fullid = repr(dataset.types)+repr(dataset.all_descriptors())
     h.update(fullid)
     return h.hexdigest()
     
@@ -66,7 +66,7 @@ def generateDisplayID( dataset, version ):
     @return: A display id.
     @rtype: string  
     '''
-    if version != version_index['displayID']:
+    if version != version_index['display_id']:
         try:
             # designed to call generateStackableID_
             idFunc = getattr( globals()['IDFactory'], 'generateDisplayID_' + version )

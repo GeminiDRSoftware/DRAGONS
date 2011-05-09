@@ -86,7 +86,7 @@ def clusterTypes( datalist ):
             print ( "gdbputil 85: Bad Argument: '%(data)s' '%(astr)s'" %{'data':str(type(data)), 'astr':str(AstroData)} )
             raise
         
-        types = tuple( data.getTypes() )
+        types = tuple( data.get_types() )
         if clusterIndex.has_key( types ):
             dlist = clusterIndex[types]
             dlist.append( data )
@@ -161,9 +161,9 @@ def pickConfig(dataset, index, style = "unique"):
     
     candidates = {}
     if style == "unique":
-        types = ad.getTypes(prune=True)
+        types = ad.get_types(prune=True)
     else:
-        types = ad.getTypes()
+        types = ad.get_types()
         
     # print "\nGU58:", types, "\nindex:",index, "\n"
     # only one type can imply a package

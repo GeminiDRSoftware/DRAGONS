@@ -50,7 +50,7 @@ def div(numerator, denominator):
     num = numerator
     den = denominator 
     # Preparing the output astrodata instance
-    out = AstroData.prepOutput(inputAry=num, clobber=False) 
+    out = AstroData.prep_output(inputAry=num, clobber=False) 
 
     # Check to see if the denominator is of type dict, list or float
     if isinstance(den, dict) or isinstance(den, list) or \
@@ -96,7 +96,7 @@ def div(numerator, denominator):
                 # Append updated SCI extension to the output
                 out.append(outsci)
                 # Check there are VAR frames to operate on
-                if num.countExts('VAR') == num.countExts('SCI'): 
+                if num.count_exts('VAR') == num.count_exts('SCI'): 
                     # Start with the out VAR HDU being the current 
                     outvar = deepcopy(num[('VAR', extver)])
                     # Multiplying the VAR frames by the float^2
@@ -104,7 +104,7 @@ def div(numerator, denominator):
                     # Append the updated VAR frame to the output
                     out.append(outvar)
                 # Check there are DQ frames to operate on
-                if num.countExts('DQ') == num.countExts('SCI'):  
+                if num.count_exts('DQ') == num.count_exts('SCI'):  
                     # Start with the out DQ HDU being the current 
                     outdq = deepcopy(num[('DQ', extver)])
                     # Not changing anything in the DQ frame's data, 
@@ -137,8 +137,8 @@ def div(numerator, denominator):
                     
                     # Check there are an equal numbers of VAR and SCI frames to 
                     # operate on in both the numerator and denominator
-                    if num.countExts('VAR') == den.countExts('VAR') == \
-                    num.countExts('SCI'): 
+                    if num.count_exts('VAR') == den.count_exts('VAR') == \
+                    num.count_exts('SCI'): 
                         # Start with the out VAR HDU being the current 
                         outvar = deepcopy(num[('VAR', extver)])
                         
@@ -156,8 +156,8 @@ def div(numerator, denominator):
                         out.append(outvar)
                         
                     # Check there are an equal number of DQ frames to operate on 
-                    if num.countExts('DQ') == den.countExts('DQ') == \
-                    num.countExts('SCI'):  
+                    if num.count_exts('DQ') == den.count_exts('DQ') == \
+                    num.count_exts('SCI'):  
                         # Start with the out DQ HDU being the current 
                         outdq = deepcopy(num[('DQ', extver)])
                                                                   
@@ -217,7 +217,7 @@ def mult(inputA, inputB):
     inA = inputA
     inB = inputB 
     # Preparing the output astrodata instance
-    out = AstroData.prepOutput(inputAry=inA, clobber=False)
+    out = AstroData.prep_output(inputAry=inA, clobber=False)
 
     # Check to see if the denominator is of type dict, list or float
     if isinstance(inB, dict) or isinstance(inB, list) or \
@@ -261,7 +261,7 @@ def mult(inputA, inputB):
                 # Append updated SCI extension to the output  
                 out.append(outsci)
                 # Check there are VAR frames to operate on
-                if inA.countExts('VAR') == inA.countExts('SCI'): 
+                if inA.count_exts('VAR') == inA.count_exts('SCI'): 
                     # Start with the out VAR HDU being the current 
                     outvar = deepcopy(inA[('VAR', extver)])
                     # Multiplying the VAR frames by the float^2
@@ -270,7 +270,7 @@ def mult(inputA, inputB):
                     # Append the updated VAR frame to the output
                     out.append(outvar)
                 # Check there are DQ frames to operate on
-                if inA.countExts('DQ') == inA.countExts('SCI'):   
+                if inA.count_exts('DQ') == inA.count_exts('SCI'):   
                     # Start with the out DQ HDU being the current  
                     outdq = deepcopy(inA[('DQ', extver)])
                     # Not changing anything in the DQ frame's data, 
@@ -302,8 +302,8 @@ def mult(inputA, inputB):
                     
                     # Check there are an equal numbers of VAR and SCI frames to 
                     # operate on in both the inputs
-                    if inA.countExts('VAR') == inB.countExts('VAR') == \
-                    inA.countExts('SCI'): 
+                    if inA.count_exts('VAR') == inB.count_exts('VAR') == \
+                    inA.count_exts('SCI'): 
                         # Start with the out VAR HDU being the current 
                         outvar = deepcopy(inA[('VAR', extver)])
                         
@@ -321,8 +321,8 @@ def mult(inputA, inputB):
                         out.append(outvar)
                         
                     # Check there are an equal number of DQ frames to operate on
-                    if inA.countExts('DQ') == inB.countExts('DQ') == \
-                    inA.countExts('SCI'):   
+                    if inA.count_exts('DQ') == inB.count_exts('DQ') == \
+                    inA.count_exts('SCI'):   
                         outdq = deepcopy(inA[('DQ', extver)])    
                         # Perform bitwise-or 'adding' DQ frames 
                         outdq.data = np.bitwise_or(inA[('DQ', extver)].data, 
@@ -376,7 +376,7 @@ def add(inputA, inputB):
     inA = inputA
     inB = inputB 
     # Preparing the output astrodata instance
-    out = AstroData.prepOutput(inputAry=inA, clobber=False)
+    out = AstroData.prep_output(inputAry=inA, clobber=False)
     
     # Check if inputB is of type float, if so, perform the float specific
     # addition calculations     
@@ -398,13 +398,13 @@ def add(inputA, inputB):
                 # ie no change, just propagate the frames
                 
                 # Check there are VAR frames to propagate
-                if inA.countExts('VAR') == inA.countExts('SCI'): 
+                if inA.count_exts('VAR') == inA.count_exts('SCI'): 
                     # Start with the out VAR HDU being the current
                     outvar = deepcopy(inA[('VAR', extver)])
                     # Just propagate VAR frames to the output
                     out.append(outvar) 
                 # Check there are DQ frames to propagate   
-                if inA.countExts('DQ') == inA.countExts('SCI'): 
+                if inA.count_exts('DQ') == inA.count_exts('SCI'): 
                     # Start with the out DQ HDU being the current 
                     outdq = deepcopy(inA[('DQ', extver)])   
                     # Just propagate DQ frames to the output
@@ -434,8 +434,8 @@ def add(inputA, inputB):
                     
                     # Check there are an equal numbers of VAR and SCI frames to 
                     # operate on in both the inputs
-                    if inA.countExts('VAR') == inB.countExts('VAR') == \
-                    inA.countExts('SCI'): 
+                    if inA.count_exts('VAR') == inB.count_exts('VAR') == \
+                    inA.count_exts('SCI'): 
                         # Start with the out VAR HDU being the current 
                         outvar = deepcopy(inA[('VAR', extver)])
                         
@@ -447,8 +447,8 @@ def add(inputA, inputB):
                         out.append(outvar)
                         
                     # Check there are an equal number of DQ frames to operate on
-                    if inA.countExts('DQ') == inB.countExts('DQ') == \
-                    inA.countExts('SCI'):  
+                    if inA.count_exts('DQ') == inB.count_exts('DQ') == \
+                    inA.count_exts('SCI'):  
                         outdq = deepcopy(inA[('DQ', extver)])   
                         # Performing bitwise-or 'adding' DQ frames 
                         outdq.data = np.bitwise_or(inA[('DQ', extver)].data, 
@@ -502,7 +502,7 @@ def sub(inputA, inputB):
     inA = inputA
     inB = inputB 
     # Preparing the output astrodata instance
-    out=AstroData.prepOutput(inputAry = inA, clobber = False)
+    out=AstroData.prep_output(inputAry = inA, clobber = False)
     
     # Check if inputB is of type float, if so, perform the float specific
     # addition calculations
@@ -525,13 +525,13 @@ def sub(inputA, inputB):
                 # ie no change, just propagate the frames
                 
                 # Check there are VAR frames to propagate
-                if inA.countExts('VAR') == inA.countExts('SCI'): 
+                if inA.count_exts('VAR') == inA.count_exts('SCI'): 
                     # Start with the out VAR HDU being the current
                     outvar = deepcopy(inA[('VAR', extver)])
                     # Just propagate VAR frames to the output
                     out.append(outvar) 
                     # ie there are DQ frames to operate on 
-                if inA.countExts('DQ') == inA.countExts('SCI'): 
+                if inA.count_exts('DQ') == inA.count_exts('SCI'): 
                     # Start with the out DQ HDU being the current 
                     outdq = deepcopy(inA[('DQ', extver)]) 
                     # Just propagate DQ frames to the output  
@@ -561,8 +561,8 @@ def sub(inputA, inputB):
                     
                     # Check there are an equal numbers of VAR frames to 
                     # operate on
-                    if inA.countExts('VAR') == inB.countExts('VAR') == \
-                    inA.countExts('SCI'): 
+                    if inA.count_exts('VAR') == inB.count_exts('VAR') == \
+                    inA.count_exts('SCI'): 
                         # Start with the out VAR HDU being the current 
                         outvar = deepcopy(inA[('VAR', extver)])
                         # Creating the output VAR frame following
@@ -572,8 +572,8 @@ def sub(inputA, inputB):
                         # Append the updated out VAR frame to the output
                         out.append(outvar)
                     # Check there are an equal number of DQ frames to operate on
-                    if inA.countExts('DQ') == inB.countExts('DQ') == \
-                    inA.countExts('SCI'):  
+                    if inA.count_exts('DQ') == inB.count_exts('DQ') == \
+                    inA.count_exts('SCI'):  
                         # Start with the out DQ HDU being the current
                         outdq = deepcopy(inA[('DQ', extver)])       
                         # Performing bitwise-or 'adding' DQ frames 

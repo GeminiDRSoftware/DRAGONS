@@ -140,7 +140,7 @@ class AstroDataRecord( ReductionContextRecord ):
         
     def __str__(self):
         rets = """
-    displayID = %s
+    display_id = %s
     filename  = %s
     timestamp = %s
     parent    = %s

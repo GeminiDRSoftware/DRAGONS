@@ -405,7 +405,7 @@ def applyStructureByType(dataset):
     @return: The number of structures applied
     @rtype: int
     """
-    types = dataset.getTypes()
+    types = dataset.get_types()
     applied = 0
     for typ in types:
         # see if there is a structure

@@ -86,7 +86,7 @@ class OutputExists(ADExcept):
             
 
 #FUNCTIONS
-def reHeaderKeys(rekey, header):
+def re_header_keys(rekey, header):
     """
     :param rekey: a regular expresion to match to keys in header
     :type rekey: string
@@ -507,14 +507,14 @@ integrates other functionality.
         # Return fully copied AD instance
         return adReturn
     
-    def getFilename(self):
+    def get_filename(self):
         return self._filename
-    def setFilename(self, newfn):
+    def set_filename(self, newfn):
         if self.mode == "readonly":
             self.mode = "update"
         self._filename = newfn
 
-    filename = property(getFilename, setFilename, None, "The filename member is "
+    filename = property(get_filename, set_filename, None, "The filename member is "
                 "monitored so that the mode can be changed from readonly when the "
                 "filename is changed.")
     
@@ -600,7 +600,7 @@ integrates other functionality.
         """
         # print "AD416", type(index), index
         if type(index) == tuple:
-            index = self.getIntExt(index, hduref=True)
+            index = self.get_int_ext(index, hduref=True)
         # print "AD416", type(index), index
             
         
@@ -651,23 +651,23 @@ integrates other functionality.
                      
         return rets
         
-    def exceptIfSingle(self):
+    def except_if_single(self):
         if len(self.hdulist) != 2:
             raise SingleHDUMemberExcept()
             
     def extname(self):
-        self.exceptIfSingle()
+        self.except_if_single()
         return self.hdulist[1].header.get("EXTNAME", None)
         
     def extver(self):
-        self.exceptIfSingle()
+        self.except_if_single()
         retv = self.hdulist[1].header.get("EXTVER", None)
         if retv:
             retv = int(retv)
         return retv
         
 
-    def getData(self):
+    def get_data(self):
         """
         :raise: gdExcept if AstroData instance has more than one extension 
             (not including PHU).
@@ -675,7 +675,7 @@ integrates other functionality.
         :rtype: pyfits.ndarray
 
 
-        The *getData(..)* member is the function behind the property-style
+        The *get_data(..)* member is the function behind the property-style
         "data" member and returns appropriate HDU's data member(s) specifically
         for the case in which the AstroData instance has ONE HDU (in addition to
         the PHU). This allows a single-extension AstroData, such as AstroData
@@ -698,12 +698,12 @@ integrates other functionality.
             retv = hdl[1].data
         else:
             # print "gd207: %d" % len(hdl)
-            raise ADExcept("getData must be called on single extension instances")
+            raise ADExcept("get_data must be called on single extension instances")
             
         self.relhdul()
         return retv
 
-    def setData(self, newdata):
+    def set_data(self, newdata):
         """
         :param newdata: new data objects
         :type newdata: numarray.numarraycore.NumArray
@@ -729,16 +729,16 @@ integrates other functionality.
         self.relhdul()
         return
     
-    data = property(getData, setData, None, """
+    data = property(get_data, set_data, None, """
             The data property can only be used for single-HDU AstroData
             instances, such as those returned during iteration. It is a property
-            attribute which uses *getData(..)* and *setData(..)* to access the
+            attribute which uses *get_data(..)* and *set_data(..)* to access the
             data members with "=" syntax. To set the data member, use *ad.data =
             newdata*, where *newdata* must be a numpy array. To get the data
             member, use *npdata = ad.data*.
             """)
     
-    def getHeader(self, extension = None):
+    def get_header(self, extension = None):
         """
         :return: header
         :rtype: pyfits.Header
@@ -746,7 +746,7 @@ integrates other functionality.
         :raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
             (note: The PHU is not considered an extension in this case)
         
-        The getHeader(..) function returns the header member for Single-HDU
+        The get_header(..) function returns the header member for Single-HDU
         AstroData instances (which are those that have only one extension plus
         PHU). This case  can be assured when iterating over extensions using
         AstroData, e.g.::
@@ -771,7 +771,7 @@ integrates other functionality.
             self.relhdul()
             return retv
             
-    def setHeader(self, header, extension=None):
+    def set_header(self, header, extension=None):
         """
         :param header: pyfits Header to set for given extension
         
@@ -786,7 +786,7 @@ integrates other functionality.
         
         :raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
 
-        The setHeader(..) function sets the extension header member for single
+        The set_header(..) function sets the extension header member for single
         extension (which are those that have only one extension plus PHU). This
         case  is assured when iterating over extensions using AstroData, e.g.::
 
@@ -804,18 +804,18 @@ integrates other functionality.
         else:
             self.hdulist[extension].header = header
                     
-    header = property(getHeader,setHeader, None, """
+    header = property(get_header,set_header, None, """
                 The header property can only be used for single-HDU AstroData
                 instances, such as those returned during iteration. It is a
-                property attribute which uses *getHeader(..)* and
-                *setHeader(..)* to access the header member with the "=" syntax.
+                property attribute which uses *get_header(..)* and
+                *set_header(..)* to access the header member with the "=" syntax.
                 To set the header member, use *ad.header = newheader*, where
                 *newheader* must be a pyfits.Header object. To get the header
                 member, use *hduheader = ad.header*.
                 """
                 )
 
-    def getHeaders(self):
+    def get_headers(self):
         """
         Function returns header member(s) for all extension (except PHU).
         :return: list of pyfits.Header instances
@@ -831,10 +831,10 @@ integrates other functionality.
         self.relhdul()
         return retary
 
-    def hasSingleHDU(self):
+    def has_single_hdu(self):
         return len(self.hdulist) == 2
     
-    def allDescriptorNames(self):
+    def all_descriptor_names(self):
         funs = dir(CalculatorInterface)
         descs = []
         for fun in funs:
@@ -842,8 +842,8 @@ integrates other functionality.
                 descs.append(fun)
         return descs
         
-    def allDescriptors(self):
-        funs = self.allDescriptorNames()
+    def all_descriptors(self):
+        funs = self.all_descriptor_names()
         rdict = {}
         for fun in funs:
             # print "AD727:", repr(fun)
@@ -857,7 +857,7 @@ integrates other functionality.
         return rdict
         
     
-    def getIntExt(self, extension, hduref=False):
+    def get_int_ext(self, extension, hduref=False):
         """getInxExt takes an extension index, either an integer
         or (EXTNAME, EXTVER) tuple, and returns the index location
         of the extension.  If hduref is set to True, then the index
@@ -882,7 +882,7 @@ integrates other functionality.
                             return i
         return None
     
-    def renameExt(self, name, ver = None, force = True):
+    def rename_ext(self, name, ver = None, force = True):
         """
         :param name: New "EXTNAME" for the given extension.
         :type name: string
@@ -892,7 +892,7 @@ integrates other functionality.
 
         Note: This member only works on single extension AstroData instances.
 
-        The renameExt() function is used in order to rename an HDU with a new
+        The rename_ext() function is used in order to rename an HDU with a new
         EXTNAME and EXTVER based identifier.  Merely changing the EXTNAME and 
         EXTEVER values in the extensions pyfits.Header are not sufficient.
         Though the values change in the pyfits.Header object, there are special
@@ -917,7 +917,7 @@ integrates other functionality.
         
         if ver == None:
             ver = 1
-        if not self.hasSingleHDU():
+        if not self.has_single_hdu():
             raise SingleHDUMemberExcept("ad.setExtname(%s,%s)"%(str(name), str(ver)))
         
         if True:
@@ -930,7 +930,7 @@ integrates other functionality.
             hdu.name = name
             hdu._extver = ver
             # print "AD553:", repr(hdu.__class__)
-    setExtname = renameExt
+    setExtname = rename_ext
             
             
 
@@ -1025,7 +1025,7 @@ integrates other functionality.
                 raise ADExcept("discover types failed")
 
         # do inferences
-        if inferRAW and self.isType("RAW"):
+        if inferRAW and self.is_type("RAW"):
             
             # for raw, if no extensions are named
             # infer the name as "SCI"
@@ -1125,10 +1125,10 @@ integrates other functionality.
         hdul.writeto(fname)
             
     
-    def getHDUList(self):
+    def get_hdulist(self):
         """
         This function retrieves the HDUList. NOTE: The HDUList should also be "released"
-        by calling L{releaseHDUList}, as access is reference-counted. This function is
+        by calling L{release_hdulist}, as access is reference-counted. This function is
         also aliased to L{gethdul(..)<gethdul>}.
         :return: The AstroData's HDUList as returned by pyfits.open()
         :rtype: pyfits.HDUList
@@ -1136,16 +1136,16 @@ integrates other functionality.
         self.hdurefcount = self.hdurefcount + 1
         return self.hdulist
                 
-    gethdul = getHDUList # function alias
+    gethdul = get_hdulist # function alias
     
-    def releaseHDUList(self):
+    def release_hdulist(self):
         """
         This function will release a reference to the HDUList... don't call unless you have called
-        L{getHDUList} at some prior point. Note, this function is aliased to L{relhdul(..)<relhdul>}.
+        L{get_hdulist} at some prior point. Note, this function is aliased to L{relhdul(..)<relhdul>}.
         """
         self.hdurefcount = self.hdurefcount - 1
         return
-    relhdul = releaseHDUList # function alias
+    relhdul = release_hdulist # function alias
             
     def getClassificationLibrary(self):
         """
@@ -1163,7 +1163,7 @@ integrates other functionality.
 	                
         return self.classificationLibrary
     
-    def pruneTypelist(self, typelist):
+    def prune_typelist(self, typelist):
         cl = self.getClassificationLibrary()
         retary = typelist;
         pary = []
@@ -1178,7 +1178,7 @@ integrates other functionality.
         return pary
 
     
-    def getTypes(self, prune = False):
+    def get_types(self, prune = False):
         """
         :param prune: flag which controls 'pruning' the returned type list so that only the
               leaf node type for a given set of related types is returned.
@@ -1186,7 +1186,7 @@ integrates other functionality.
         :returns: a list of classification names that apply to this data
         :rtype: list of strings
 
-        The getTypes(..) function returns a list of type names, where type names
+        The get_types(..) function returns a list of type names, where type names
         are as always, strings. It is possible to "prune" the list so that only
         leaf nodes are returned, which is useful when features (such as descriptors)
         are set and leaf node settings take priority.  
@@ -1198,8 +1198,8 @@ integrates other functionality.
         instrument-modes, with instrument types branching from the general
         observatory type, (e.g. "GEMINI"). 
         
-        To retrieve only status types, use getStatus(..); to retreive just
-        typological types use getTypology(..).  Note that the system does not
+        To retrieve only status types, use get_status(..); to retreive just
+        typological types use get_typology(..).  Note that the system does not
         enforce what checks are actually performed by types in each category,
         that is, one could miscategorize a type when authoring a configuration
         package. Both classifications use the same DataClassification objects to
@@ -1220,7 +1220,7 @@ integrates other functionality.
             # ClassificationLibrary.discoverTypes()
             #  basic algo: run through types, if one is a supertype of another, 
             #  remove the supertype
-            retary = self.pruneTypelist(retary)
+            retary = self.prune_typelist(retary)
             
         
         return retary
@@ -1257,7 +1257,7 @@ integrates other functionality.
         else:
             return self.types
         
-    def getStatus(self, prune=False):
+    def get_status(self, prune=False):
         """
         This function returns the set of type names (strings) which apply to
         this dataset and which come from the status section of the AstroData
@@ -1275,7 +1275,7 @@ integrates other functionality.
         """
         retary = self.discoverStatus()
         if prune:
-            retary = self.pruneTypelist(retary)
+            retary = self.prune_typelist(retary)
 
         return retary
     
@@ -1293,7 +1293,7 @@ integrates other functionality.
             
         return self.typesStatus
 
-    def getTypology(self):
+    def get_typology(self):
         """
         This function returns the set of type names (strings) which apply to
         this dataset and which come from the typology section of the AstroData
@@ -1309,7 +1309,7 @@ integrates other functionality.
         
         retary = self.discoverTypology()
         if prune:
-            retary = self.pruneTypelist(retary)
+            retary = self.prune_typelist(retary)
         return retary
 
     def discoverTypology(self):
@@ -1327,7 +1327,7 @@ integrates other functionality.
         return self.typesTypology
 
         
-    def isType(self, *typenames):
+    def is_type(self, *typenames):
         """
         :param typename: specifies the type name to check.
         :type typename: string
@@ -1337,13 +1337,13 @@ integrates other functionality.
         This function checks the AstroData object to see if it is the
         given type(s) and returns True if so.
         
-        :note: "AstroData.checkType(..)" is an alias for "AstroData.isType(..)".
+        :note: "AstroData.checkType(..)" is an alias for "AstroData.is_type(..)".
         
         """
         if (self.types == None):
             cl = self.getClassificationLibrary()
             self.types = cl.discoverTypes(self)
-            typestrs = self.getTypes()
+            typestrs = self.get_types()
         for typen in typenames:
             if typen in self.types:
                 pass
@@ -1351,41 +1351,41 @@ integrates other functionality.
                 return False
                 
         return True
-    checkType = isType
+    checkType = is_type
 
-    def rePHUKeys(self, rekey):
+    def re_phukeys(self, rekey):
         """
         :param rekey: A regular expression
         :type rekey: string
         :returns: a list of keys from the PHU that matched C{rekey}
         :rtype: list
         
-        The rePHUKeys(..) function returns all keys in this dataset's PHU which
+        The re_phukeys(..) function returns all keys in this dataset's PHU which
         match the given  regular expression.
         
         """
         phuh = self.hdulist[0].header
         
-        retset = reHeaderKeys(rekey, phuh)
+        retset = re_header_keys(rekey, phuh)
             
         return retset
             
     # PHU manipulations
-    def phuGetKeyValue(self, key):
+    def phu_get_key_value(self, key):
         """
         :param key: name of header value to retrieve
         :type key: string
         :rtype: string
         :returns: the key's value as string or None if not present.
 
-        The phuGetKeyValue(..) function returns the value associated with the
+        The phu_get_key_value(..) function returns the value associated with the
         given key within the primary header unit
         of the dataset. The value is returned as a string (storage format)
         and must be converted as necessary by the caller.
         
         """
         try:
-            hdus = self.getHDUList()
+            hdus = self.get_hdulist()
             retval = hdus[0].header[key]
             if isinstance(retval, pyfits.core.Undefined):
                 raise Errors.UndefinedKeyError()
@@ -1396,10 +1396,10 @@ integrates other functionality.
         except:
             setattr(self, 'exception_info', sys.exc_info()[1])
             return None
-    phuValue = phuGetKeyValue
+    phuValue = phu_get_key_value
     phuHeader = phuValue
     
-    def phuSetKeyValue(self, key, value, comment = None):
+    def phu_set_key_value(self, key, value, comment = None):
         """
         :param key: name of PHU header value to set
         :type key: string
@@ -1408,7 +1408,7 @@ integrates other functionality.
         :param comment: value to be put in the comment part of the header key
         :type comment: string
         
-        The phuSetKeyValue(..) function is used to set the value  (and
+        The phu_set_key_value(..) function is used to set the value  (and
         optionally the comment) associated with a given key in the primary
         header unit of the dataset. The value argument will be converted to
         string, so it must have a string operator member function or be passed
@@ -1418,17 +1418,17 @@ integrates other functionality.
         hdus[0].header.update(key, value, comment)
         return
         
-    def getPHU(self):
+    def get_phu(self):
         return self.hdulist[0]
     
-    def setPHU(self, phu):
+    def set_phu(self, phu):
         self.hdulist[0] = phu
         return
         
-    phu = property(getPHU, setPHU)
+    phu = property(get_phu, set_phu)
 
             
-    def translateIntExt(self, integer):
+    def translate_int_ext(self, integer):
         """This function is used internally to support AstroData
         instances associated with a subset of the full MEF file
         associated with this instance. This function, if this instance
@@ -1452,14 +1452,14 @@ integrates other functionality.
 #            print "AD874:", repr(self.extensions)
 #            return self.extensions[integer]
     
-    def getKeyValue(self, key):
+    def get_key_value(self, key):
         """
         :param key: name of header value to set
         :type key: string
         :returns: the specified value
         :rtype: string
 
-        The getKeyValue(..) function is used to get the value associated
+        The get_key_value(..) function is used to get the value associated
         with a given key in the data-header unit of a single-HDU
         AstroData instance (such as returned by iteration). The value argument will be converted to
         string, so it must have a string operator member function or be passed
@@ -1483,12 +1483,12 @@ integrates other functionality.
                         
         """
         if len(self.hdulist) == 2:
-            return self.extGetKeyValue(0,key)
+            return self.ext_get_key_value(0,key)
         else:
             raise ADExcept("getHeaderValue must be called on single extension instance")
-    getHeaderValue = getKeyValue
+    getHeaderValue = get_key_value
 
-    def setKeyValue(self, key, value, comment=None):
+    def set_key_value(self, key, value, comment=None):
         """
         :param key: name of data header value to set
         :type key: string
@@ -1497,7 +1497,7 @@ integrates other functionality.
         :param comment: value to be put in the comment part of the header key
         :type comment: string
         
-        The setKeyValue(..) function is used to set the value (and optionally
+        The set_key_value(..) function is used to set the value (and optionally
         the comment) associated
         with a given key in the data-header of a single-HDU AstroData instance.
                 
@@ -1518,11 +1518,11 @@ integrates other functionality.
             
         """
         if len(self.hdulist) == 2:
-            self.extSetKeyValue(0, key, value, comment)
+            self.ext_set_key_value(0, key, value, comment)
         else:
-            raise ADExcept("setKeyValue must be called on single extension instance")
+            raise ADExcept("set_key_value must be called on single extension instance")
            
-    def extGetKeyValue(self, extension, key):
+    def ext_get_key_value(self, extension, key):
         """
         :param extension: identifies which extension, either an integer index 
             or (EXTNAME, EXTVER) tuple
@@ -1534,11 +1534,11 @@ integrates other functionality.
 
         This function returns the value from the given extension's
         header, with "0" being the first data extension.  To get
-        values from the PHU use phuGetKeyValue(..).
+        values from the PHU use phu_get_key_value(..).
         """
         
         if type(extension) == int:
-            extension = self.translateIntExt(extension)
+            extension = self.translate_int_ext(extension)
         #make sure extension is in the extensions list
         #@@TODO: remove these self.extensions lists
         
@@ -1562,7 +1562,7 @@ integrates other functionality.
             return None
         # print "AD914:", key, "=",retval
     
-    def extSetKeyValue(self, extension, key, value, comment=None):
+    def ext_set_key_value(self, extension, key, value, comment=None):
         """
         :param extension: identifies which extension, either an integer index 
                           or (EXTNAME, EXTVER) tuple
@@ -1574,7 +1574,7 @@ integrates other functionality.
         :param comment: value to be put in the comment part of the header key
         :type comment: string
 
-        The extSetKeyValue(..) function is used to set the value (and optionally
+        The ext_set_key_value(..) function is used to set the value (and optionally
         the comment) associated with a given key in the header unit of the given
         extension within the dataset. This function sets the value in the
         given extension's header, with "0" being the first data extension.  To
@@ -1586,7 +1586,7 @@ integrates other functionality.
             #  1-relative base of the hdulist, but leaves tuple extensions
             #  as is.
             #print "AD892: pre-ext", extension
-            extension = self.translateIntExt(extension)
+            extension = self.translate_int_ext(extension)
             #print "AD892: ext", extension
             
         #make sure extension is in the extensions list if present
@@ -1618,7 +1618,7 @@ integrates other functionality.
             self.hdulist.info()
         else:
             print self.infostr()       
-    def displayID(self):
+    def display_id(self):
         import IDFactory
         return IDFactory.generateStackableID(self)
  
@@ -1626,7 +1626,7 @@ integrates other functionality.
         
     # MID LEVEL MEF INFORMATION
     #
-    def countExts(self, extname):
+    def count_exts(self, extname):
         """
         :param extname: the name of the extension, equivalent to the
                         value associated with the "EXTNAME" key in the extension header.
@@ -1634,7 +1634,7 @@ integrates other functionality.
         :returns: number of extensions of that name
         :rtype: int
         
-        The countExts(..) function counts the extensions of a given name
+        The count_exts(..) function counts the extensions of a given name
         (as stored in the HDUs "EXTVER" header). 
 
         """
@@ -1656,7 +1656,7 @@ integrates other functionality.
         
         return count
         
-    def getHDU(self, extid):
+    def get_hdu(self, extid):
         """
         :param extid: specifies the extention (pyfits.HDU) to return.
         :type extid: int | tuple
@@ -1668,13 +1668,13 @@ integrates other functionality.
         """
         return self.hdulist[extid]
         
-    def getPHUHeader(self):
-        return self.getHDU(0).header
+    def get_phuheader(self):
+        return self.get_hdu(0).header
             
-    def historyMark(self, key=None, comment=None, stomp=True):
+    def history_mark(self, key=None, comment=None, stomp=True):
         """
         This function will add the timestamp type keys to the astrodata instance's PHU.
-        The default will be to update the GEM-TLM key by just calling ad.historyMark() 
+        The default will be to update the GEM-TLM key by just calling ad.history_mark() 
         without any input vals. Value stored is the UT time in the same format as the CL scripts.
         The GEM-TLM key will be updated along with the specified key automatically.
         
@@ -1696,27 +1696,27 @@ integrates other functionality.
         
         # Updating PHU with specified key and GEM-TLM    
         if key !=None:
-            self.phuSetKeyValue(key,self.tlm,comment)
-            self.phuSetKeyValue('GEM-TLM',self.tlm,'UT Last modification with GEMINI')
+            self.phu_set_key_value(key,self.tlm,comment)
+            self.phu_set_key_value('GEM-TLM',self.tlm,'UT Last modification with GEMINI')
         # Only updating the GEM-TLM PHU key
         else:
-             self.phuSetKeyValue('GEM-TLM',self.tlm,'UT Last modification with GEMINI')     
+             self.phu_set_key_value('GEM-TLM',self.tlm,'UT Last modification with GEMINI')     
         
         # Returning the current time for logging if desired
         return self.tlm        
     
-    def storeOriginalName(self):
+    def store_original_name(self):
         """
         This function will add the key 'ORIGNAME' to PHU of an astrodata object 
         containing the filename when object was instantiated (without any directory info, ie. the basename).
         
-        If key has all ready been added (ie. has undergone processing where storeOriginalName was performed before),
+        If key has all ready been added (ie. has undergone processing where store_original_name was performed before),
         then the value original filename is just returned.  If the key is there, but does not
         match the original filename of the object, then the original name is returned, NOT the 
-        value in the PHU. The value in the PHU can always be found using ad.phuGetKeyValue('ORIGNAME').
+        value in the PHU. The value in the PHU can always be found using ad.phu_get_key_value('ORIGNAME').
         """
         # Grabbing value of 'ORIGNAME' from PHU
-        phuOrigFilename = self.phuGetKeyValue('ORIGNAME')
+        phuOrigFilename = self.phu_get_key_value('ORIGNAME')
         # Grabbing value of astrodata instances private member
         # '__origFilename' if it exists
         origFilename = self.__origFilename
@@ -1728,7 +1728,7 @@ integrates other functionality.
             raise ADExcept('Error, '+self.filename+' failed to have its original filename stored when astrodata instantiated it')
         elif (phuOrigFilename is None) and (origFilename is not None):
             # phu key doesn't exist yet, so add it
-            self.phuSetKeyValue('ORIGNAME', origFilename, 'Original name of file prior to processing')
+            self.phu_set_key_value('ORIGNAME', origFilename, 'Original name of file prior to processing')
         # The check below is extra at the moment, but could be useful in the future
         elif (phuOrigFilename is not None) and (origFilename is not None):
             # phu key exists, so check if it matches private members value
@@ -1829,7 +1829,7 @@ def correlate( *iary):
             outlist.append(outrow)
     return outlist    
 
-def prepOutput(inputAry = None, name = None, clobber = False):
+def prep_output(inputAry = None, name = None, clobber = False):
     """
     :param inputAry: The input array from which propagated content (such as
         the  source PHU) will be taken. Note: the zero-th element in the list
@@ -1839,11 +1839,11 @@ def prepOutput(inputAry = None, name = None, clobber = False):
     
     :param name: File name to use for returned AstroData, optional.
     
-    :param clobber: By default prepOutput(..) checks to see if a file of the
+    :param clobber: By default prep_output(..) checks to see if a file of the
         given name already exists, and will raise an exception if found.
         Set *clobber* to *True* to override this behavior and potentially
         overwrite the extant file.  The datset on disk will not be overwritten
-        as a direct result of prepOutput, which only prepares the object
+        as a direct result of prep_output, which only prepares the object
         in memory, but will occur when the AstroData object returned is 
         written (i.e. *ad.write()*)). 
     :type clobber: bool
@@ -1853,18 +1853,18 @@ def prepOutput(inputAry = None, name = None, clobber = False):
         and with type-specific associated  data-header units such as
         binary table Mask Definition tables (aka MDF).
         
-        ..info: File will not have been written to disk by prepOutput(..).
+        ..info: File will not have been written to disk by prep_output(..).
     :rtype: AstroData
 
-    The prepOutput(..) function creates a new AstroData object ready for
+    The prep_output(..) function creates a new AstroData object ready for
     appending output information (i.e. *ad.append(..)*).  While you can also
     create an empty AstroData object by giving no arguments to the AstroData
-    constructor  (i.e. *ad = AstroData()*), *prepOutput(..)* exists for the
+    constructor  (i.e. *ad = AstroData()*), *prep_output(..)* exists for the
     common case where a new dataset object is intended as the output of
     come combinatorial process on a list of source dataset, and some information
     from the source inputs must be propagated. 
     
-    The *prepOutput(..)* function makes use of this knowledge to ensure the
+    The *prep_output(..)* function makes use of this knowledge to ensure the
     file meets standards in what is considered a complete output file given
     such a combination.  In the future this function can make use of dataset
     history and structure definitions in the ADCONFIG configuration space. As
