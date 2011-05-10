@@ -2,6 +2,7 @@ from datetime import datetime
 from time import strptime
 
 from astrodata import Descriptors
+from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
@@ -408,7 +409,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         ext.extver()):str(gain_setting)})
         else:
             # Can you return the gain_setting without using the raw gain value?
-            raise Errors.DescriptorTypeError()
+            return DescriptorValue("N/A", format = "db", name = "gain_setting", pytype = str)
+            # OLD -> raise Errors.DescriptorTypeError()
         
         return ret_gain_setting
     
