@@ -321,6 +321,7 @@ integrates other functionality.
         else:
             if (self.hdulist != None):
                 self.hdulist.close()
+                self.hdulist = None
     
     def __contains__(self, ext):
         try:
