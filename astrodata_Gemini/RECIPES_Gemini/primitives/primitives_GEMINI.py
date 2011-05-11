@@ -11,7 +11,7 @@ from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 from gempy.science import calibrate as cal
 from gempy.science import geminiScience as gs
-from gempy.science import preprocessing as pp
+#from gempy.science import preprocessing as pp
 from primitives_GENERAL import GENERALPrimitives
 
 class GEMINIPrimitives(GENERALPrimitives):
