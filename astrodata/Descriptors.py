@@ -582,11 +582,11 @@ def getCalculator(dataset):
         
     """
     #NOTE: Handle hdulist as well as AstroData instance as 'dataset'?
-    types = dataset.discoverTypes()
+    types = dataset.discover_types()
     calcs = []
     
     # use classification library from dataset's context
-    cl = dataset.getClassificationLibrary()
+    cl = dataset.get_classification_library()
     
     calc = None
     for typ in types:

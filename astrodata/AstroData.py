@@ -183,7 +183,7 @@ integrates other functionality.
     extensions = None
     tlm=None
     # ClassificationLibrary Singleton, must be retrieved through
-    #   getClassificationLibrary()
+    #   get_classification_library()
     classificationLibrary = None
 
     def __init__(self, dataset=None, mode="readonly", exts = None, extInsts = None,
@@ -1019,7 +1019,7 @@ integrates other functionality.
         #if mode != 'append':
         if len(self.hdulist):
             try:
-                self.discoverTypes()
+                self.discover_types()
             except KeyboardInterrupt:
                 raise
             except:
@@ -1148,7 +1148,7 @@ integrates other functionality.
         return
     relhdul = release_hdulist # function alias
             
-    def getClassificationLibrary(self):
+    def get_classification_library(self):
         """
         This function will return a handle to the ClassificationLibrary.  NOTE: the ClassificationLibrary
         is a singleton, this call will either return the currently extant instance or, if not extant,
@@ -1165,7 +1165,7 @@ integrates other functionality.
         return self.classificationLibrary
     
     def prune_typelist(self, typelist):
-        cl = self.getClassificationLibrary()
+        cl = self.get_classification_library()
         retary = typelist;
         pary = []
         for typ in retary:
@@ -1214,7 +1214,7 @@ integrates other functionality.
         which make use of the distinction.
         """
         
-        retary = self.discoverTypes()
+        retary = self.discover_types()
         if prune :
             # since there is no particular order to identifying types, I've deced to do this
             # here rather than try to build the list with this in mind (i.e. passing prune to
@@ -1226,7 +1226,7 @@ integrates other functionality.
         
         return retary
         
-    def discoverTypes(self, all  = False):
+    def discover_types(self, all  = False):
         """
         :param all: a flag which  controls how the classes are returned... if
             True, then the function will return a dictionary of three lists,
@@ -1242,7 +1242,7 @@ integrates other functionality.
         instance,  identified by their string names.
         """
         if (self.types == None):
-            cl = self.getClassificationLibrary()
+            cl = self.get_classification_library()
 
             alltypes = cl.discoverTypes(self, all=True)
             self.types = alltypes["all"]
@@ -1274,13 +1274,13 @@ integrates other functionality.
         :returns: a list of string classification names
         :rtype: list of strings
         """
-        retary = self.discoverStatus()
+        retary = self.discover_status()
         if prune:
             retary = self.prune_typelist(retary)
 
         return retary
     
-    def discoverStatus(self):
+    def discover_status(self):
         """
         This function returns the set of processing types applicable to 
         this dataset.
@@ -1289,8 +1289,8 @@ integrates other functionality.
         """
 
         if (self.typesStatus == None):
-            cl = self.getClassificationLibrary()
-            self.typesStatus = cl.discoverStatus(self)
+            cl = self.get_classification_library()
+            self.typesStatus = cl.discover_status(self)
             
         return self.typesStatus
 
@@ -1308,12 +1308,12 @@ integrates other functionality.
         :returns: a list of classification name strings
         :rtype: list of strings"""
         
-        retary = self.discoverTypology()
+        retary = self.discover_typology()
         if prune:
             retary = self.prune_typelist(retary)
         return retary
 
-    def discoverTypology(self):
+    def discover_typology(self):
         """
         This function returns a list of classification names
         for typology related classifications, as apply to this
@@ -1322,8 +1322,8 @@ integrates other functionality.
         :rtype: list
         """
         if (self.typesTypology == None):
-            cl = self.getClassificationLibrary()
-            self.typesTypology = cl.discoverTypology(self)
+            cl = self.get_classification_library()
+            self.typesTypology = cl.discover_typology(self)
             
         return self.typesTypology
 
@@ -1342,7 +1342,7 @@ integrates other functionality.
         
         """
         if (self.types == None):
-            cl = self.getClassificationLibrary()
+            cl = self.get_classification_library()
             self.types = cl.discoverTypes(self)
             typestrs = self.get_types()
         for typen in typenames:

@@ -157,7 +157,7 @@ def pickConfig(dataset, index, style = "unique"):
     inheritance.
     """
     ad,obn = openIfName(dataset)
-    cl = ad.getClassificationLibrary()
+    cl = ad.get_classification_library()
     
     candidates = {}
     if style == "unique":

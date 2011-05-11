@@ -193,22 +193,22 @@ class DataSpider(object):
                         if (stringway):
 
                             if (onlyTypology == onlyStatus):
-                                dtypes = self.classificationLibrary.discoverTypes(fname)
+                                dtypes = self.classificationLibrary.discover_types(fname)
                             elif (onlyTypology):
-                                dtypes = self.classificationLibrary.discoverTypology(fname)
+                                dtypes = self.classificationLibrary.discover_typology(fname)
                             elif (onlyStatus):
-                                dtypes = self.classificationLibrary.discoverStatus(fname)
+                                dtypes = self.classificationLibrary.discover_status(fname)
 
                         else:
                             # this is the AstroData Class way
                             # to ask the file itself
 
                             if (onlyTypology == onlyStatus):
-                                dtypes = fl.discoverTypes()
+                                dtypes = fl.discover_types()
                             elif (onlyTypology):
-                                dtypes = fl.discoverTypology()
+                                dtypes = fl.discover_typology()
                             elif (onlyStatus):
-                                dtypes = fl.discoverStatus()
+                                dtypes = fl.discover_status()
                             if verbose:
                                 print "DS130:", repr(dtypes)
 
@@ -536,22 +536,22 @@ class DataSpider(object):
                         if (stringway):
 
                             if (onlyTypology == onlyStatus):
-                                dtypes = self.classificationLibrary.discoverTypes(fname)
+                                dtypes = self.classificationLibrary.discover_types(fname)
                             elif (onlyTypology):
-                                dtypes = self.classificationLibrary.discoverTypology(fname)
+                                dtypes = self.classificationLibrary.discover_typology(fname)
                             elif (onlyStatus):
-                                dtypes = self.classificationLibrary.discoverStatus(fname)
+                                dtypes = self.classificationLibrary.discover_status(fname)
 
                         else:
                             # this is the AstroData Class way
                             # to ask the file itself
 
                             if (onlyTypology == onlyStatus):
-                                dtypes = fl.discoverTypes()
+                                dtypes = fl.discover_types()
                             elif (onlyTypology):
-                                dtypes = fl.discoverTypology()
+                                dtypes = fl.discover_typology()
                             elif (onlyStatus):
-                                dtypes = fl.discoverStatus()
+                                dtypes = fl.discover_status()
                             if verbose:
                                 print "DS130:", repr(dtypes)
 
