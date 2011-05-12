@@ -50,7 +50,7 @@ def div(numerator, denominator):
     num = numerator
     den = denominator 
     # Preparing the output astrodata instance
-    out = AstroData.prep_output(inputAry=num, clobber=False) 
+    out = AstroData.prep_output(input_ary=num, clobber=False) 
 
     # Check to see if the denominator is of type dict, list or float
     if isinstance(den, dict) or isinstance(den, list) or \
@@ -217,7 +217,7 @@ def mult(inputA, inputB):
     inA = inputA
     inB = inputB 
     # Preparing the output astrodata instance
-    out = AstroData.prep_output(inputAry=inA, clobber=False)
+    out = AstroData.prep_output(input_ary=inA, clobber=False)
 
     # Check to see if the denominator is of type dict, list or float
     if isinstance(inB, dict) or isinstance(inB, list) or \
@@ -376,7 +376,7 @@ def add(inputA, inputB):
     inA = inputA
     inB = inputB 
     # Preparing the output astrodata instance
-    out = AstroData.prep_output(inputAry=inA, clobber=False)
+    out = AstroData.prep_output(input_ary=inA, clobber=False)
     
     # Check if inputB is of type float, if so, perform the float specific
     # addition calculations     
@@ -502,7 +502,7 @@ def sub(inputA, inputB):
     inA = inputA
     inB = inputB 
     # Preparing the output astrodata instance
-    out=AstroData.prep_output(inputAry = inA, clobber = False)
+    out=AstroData.prep_output(input_ary = inA, clobber = False)
     
     # Check if inputB is of type float, if so, perform the float specific
     # addition calculations

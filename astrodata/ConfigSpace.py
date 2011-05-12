@@ -103,6 +103,9 @@ class ConfigSpace(object):
                             # print "ISADIR"
                             subdirs = os.listdir(path)
                             for subpath in subdirs:
+                                fullpath = os.path.join(path, subpath)
+                                if not os.path.isdir(fullpath):
+                                    continue
                                 if PACKAGEMARKER in subpath:
                                     subsubpaths = os.listdir(os.path.join(path,subpath))
                                     for subsubpath in subsubpaths:

@@ -667,7 +667,7 @@ class MyHandler(BaseHTTPRequestHandler):
         
                 self.wfile.write("<html><body>\n")
                 self.wfile.write('<h2>%s</h2>\n' % name)
-                self.wfile.write(ad.infostr(asHTML=True))
+                self.wfile.write(ad.infostr(as_html=True))
                 alld = ad.all_descriptors()
                 self.wfile.write(
                         """

@@ -621,11 +621,11 @@ integrates other functionality.
         elif isinstance(moredata. pyfits.core._AllHDU):
             self.hdulist.insert(index, moredata)
                
-    def infostr(self, asHTML = False):
+    def infostr(self, as_html = False):
         """
-        :param asHTML: boolean that indicates if the string should be HTML
+        :param as_html: boolean that indicates if the string should be HTML
                        formatted or not
-        :type asHTML: bool
+        :type as_html: bool
         
         The infostr(..) function is used to get a string ready for display
         either as plain text or HTML.  It provides AstroData-relative
@@ -635,7 +635,7 @@ integrates other functionality.
         The format of this string is subject to change and is at the moment 
         quite minimal.
         """
-        if not asHTML:
+        if not as_html:
             rets = ""
             rets += self.filename+"\n"
             for ext in self:
@@ -1604,8 +1604,8 @@ integrates other functionality.
         self.relhdul()
         return 
    
-    def info(self, pyrafVersion = False):
-        """The info(..) function prints self.infostr() unless pyrafVersion is
+    def info(self, pyraf_version = False):
+        """The info(..) function prints self.infostr() unless pyraf_version is
         set to true the pyfits.HDUList.info(..) function
         on this instance's "hdulist" member.  This function outputs information
         about the datasets HDUList to standard out. The output can be misleading
@@ -1615,7 +1615,7 @@ integrates other functionality.
         which returns the report as a string.
         AstroData.info() is maintained for convienience and low level debugging.
         """
-        if pyrafVersion:
+        if pyraf_version:
             self.hdulist.info()
         else:
             print self.infostr()       
@@ -1751,16 +1751,16 @@ integrates other functionality.
         adOut=arith.div(self,denominator)
         return adOut
 
-    def mult(self,inputB):
-        adOut=arith.mult(self,inputB)
+    def mult(self,input_b):
+        adOut=arith.mult(self,input_b)
         return adOut
     
-    def add(self,inputB):
-        adOut=arith.add(self,inputB)
+    def add(self,input_b):
+        adOut=arith.add(self,input_b)
         return adOut
     
-    def sub(self,inputB):
-        adOut=arith.sub(self,inputB)
+    def sub(self,input_b):
+        adOut=arith.sub(self,input_b)
         return adOut
     
 # SERVICE FUNCTIONS and FACTORIES
@@ -1830,13 +1830,13 @@ def correlate( *iary):
             outlist.append(outrow)
     return outlist    
 
-def prep_output(inputAry = None, name = None, clobber = False):
+def prep_output(input_ary = None, name = None, clobber = False):
     """
-    :param inputAry: The input array from which propagated content (such as
+    :param input_ary: The input array from which propagated content (such as
         the  source PHU) will be taken. Note: the zero-th element in the list
         is  used as the reference dataset, for PHU or other items which require
         a particular reference.
-    :type inputAry: list of AstroData Instances
+    :type input_ary: list of AstroData Instances
     
     :param name: File name to use for returned AstroData, optional.
     
@@ -1878,20 +1878,20 @@ def prep_output(inputAry = None, name = None, clobber = False):
     
     + Ensures that all standard headers  are in place in the new file, using the
       configuration .
-    + Copy the PHU of the reference image (inputAry[0]). 
+    + Copy the PHU of the reference image (input_ary[0]). 
     + Propagate associated information such as the MDF in the case of a MOS 
         observation, configurable by the Astrodata Structures system. 
     """ 
-    if inputAry == None: 
+    if input_ary == None: 
         raise gdExcept() 
         return None
 
-    if type(inputAry) != list:
-        iary = [inputAry]
+    if type(input_ary) != list:
+        iary = [input_ary]
     else:
-        iary = inputAry
+        iary = input_ary
     
-    #get PHU from inputAry[0].hdulist
+    #get PHU from input_ary[0].hdulist
     hdl = iary[0].gethdul()
     outphu = copy(hdl[0])
     outphu.header = outphu.header.copy()
@@ -1905,7 +1905,7 @@ def prep_output(inputAry = None, name = None, clobber = False):
     
     retgd = AstroData(newhdulist, mode = "update")
     # Ensuring the prepared output has the __origFilename private variable
-    retgd._AstroData__origFilename = inputAry._AstroData__origFilename
+    retgd._AstroData__origFilename = input_ary._AstroData__origFilename
     
     if name != None:
         if os.path.exists(name):
