@@ -229,7 +229,11 @@ for desc in descripts:
         outfile.close()
     else:
         print outstr
-    
+    numfailed = len(re.findall("FAILED", outstr))
+    if numfailed > 0:
+        print "Total adtest_dv_operators failures = ",numfailed
+        print "="*80 + "\n"
+        raise "TEST FAILED" 
 
 
 
