@@ -52,7 +52,7 @@ logger.info("Starting checking...")
 i=0
 j=0
 for dfid in list:
-  # Search for it by ID (is there a better way?)
+  # Search for it by _id (is there a better way?)
   df=session.query(DiskFile).filter(DiskFile.id == dfid[0]).one()
   if(not df.file.exists()):
     # This one doesn't actually exist
