@@ -27,14 +27,14 @@ class CalibrationRecord( ReductionContextRecord ):
     filename = None
     source = "all"
     
-    def __init__(self, sciFilename, filename, caltype, timestamp = None, source="all"):
+    def __init__(self, sci_filename, filename, caltype, timestamp = None, source="all"):
         super( CalibrationRecord, self ).__init__( timestamp )
-        self.sciFilename = sciFilename
+        self.sciFilename = sci_filename
         self.filename = filename
         self.caltype = caltype
         self.source = source
     
-    def asDict(self):
+    def as_dict(self):
         retd = {"caltype": self.caltype,
                 "filename": self.filename,
                 "source": self.source
@@ -43,7 +43,7 @@ class CalibrationRecord( ReductionContextRecord ):
         
     def __str__(self):
         rets = """
-    sciFilename = %s
+    sci_filename = %s
     caltype     = %s
     filename    = %s
     timestamp   = %s""" % (  os.path.basename(self.sciFilename), 
@@ -91,7 +91,7 @@ class FringeRecord( ReductionContextRecord ):
     def __str__(self):
         rets = '''
 fringeID   = %s
-listID     = %s
+list_id     = %s
 filelist   = %s
 timestamp = %s
 ''' % ( str(self.fringeid), str(self.listid), str(self.filelist), self.timestamp )
@@ -114,7 +114,7 @@ class AstroDataRecord( ReductionContextRecord ):
     ad = None
     parent = None
     
-    def __init__(self, filename, displayID=None, timestamp=None, ad=None, parent=None, load = True):
+    def __init__(self, filename, display_id=None, timestamp=None, ad=None, parent=None, load = True):
         super( AstroDataRecord, self ).__init__( timestamp )
         #print "RCR110:", type(filename), isinstance(filename, AstroData)
         if isinstance(filename, AstroData):
@@ -133,8 +133,8 @@ class AstroDataRecord( ReductionContextRecord ):
             return
         else:
             raise "BAD ARGUMENT"
-        ##@@TODO: displayID may be obsolete
-        self.displayID = displayID
+        ##@@TODO: display_id may be obsolete
+        self.displayID = display_id
     def load(self):
         self.ad = AstroData(self.filename)
         
