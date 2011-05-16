@@ -53,7 +53,7 @@ class ConfigSpace(object):
         self.configdirs = {}
         self.configpacks = []
     
-    def configWalk(self, spacename):
+    def config_walk(self, spacename):
         """This function can be iterated over in the style of os.walk()
         @param spacename: name of the space, "types", "statustypes",
         "descriptors", or "structures".
@@ -61,9 +61,9 @@ class ConfigSpace(object):
         @returns: via yeild, a (root, dirn, files) tuple"""
         
         if spacename == "recipes":
-            dirs = self.getRecipeDirs()
+            dirs = self.get_recipe_dirs()
         else:
-            dirs = self.getConfigDirs(spacename)
+            dirs = self.get_config_dirs(spacename)
         # print "C67: dirs: ", dirs
         for directory in dirs:
             for elem in os.walk(directory):
@@ -72,7 +72,7 @@ class ConfigSpace(object):
                 if goodpath:
                     yield elem
             
-    def getConfigDirs(self, spacename):
+    def get_config_dirs(self, spacename):
         """This function returns a list of directories to walk for a given 
         configuration space.
         @param spacename: name of the config space to collect directories for
@@ -103,9 +103,6 @@ class ConfigSpace(object):
                             # print "ISADIR"
                             subdirs = os.listdir(path)
                             for subpath in subdirs:
-                                fullpath = os.path.join(path, subpath)
-                                if not os.path.isdir(fullpath):
-                                    continue
                                 if PACKAGEMARKER in subpath:
                                     subsubpaths = os.listdir(os.path.join(path,subpath))
                                     for subsubpath in subsubpaths:
@@ -125,7 +122,7 @@ class ConfigSpace(object):
         
         return adconfdirs
 
-    def getRecipeDirs(self):
+    def get_recipe_dirs(self):
         """This function returns a list of directories to walk for a given 
         configuration space.
         @param spacename: name of the config space to collect directories for
@@ -165,6 +162,8 @@ class ConfigSpace(object):
                         # print "ISADIR"
                         subdirs = os.listdir(path)
                         for subpath in subdirs:
+                            if not os.path.isdir(os.path.join(path,subpath)):
+                                continue
                             if PACKAGEMARKER in subpath:
                                 subsubpaths = os.listdir(os.path.join(path,subpath))
                                 for subsubpath in subsubpaths:
@@ -183,7 +182,7 @@ class ConfigSpace(object):
         self.recipedirs = adconfdirs
         return adconfdirs
 
-    def generalWalk( self, dir, exts=[] ):
+    def general_walk( self, dir, exts=[] ):
         '''
         A generalized walk, that ignores all the .svn / .cvs folders. I found this can be a little useful, 
         although it will probably be thrown out at some point.
@@ -218,22 +217,22 @@ class ConfigSpace(object):
         print
         
         
-def configWalk( spacename = None):
+def config_walk( spacename = None):
     global cs
     if (cs == None):
         cs = ConfigSpace()
         
-    for trip in cs.configWalk(spacename):
+    for trip in cs.config_walk(spacename):
         yield trip\
 
-def generalWalk( spacename="", exts=[]):
+def general_walk( spacename="", exts=[]):
     global cs
     if (cs == None):
         cs = ConfigSpace()
         
-    return cs.generalWalk( spacename, exts )
+    return cs.general_walk( spacename, exts )
 
-def lookupPath(name):
+def lookup_path(name):
     """This module level function takes a lookup name and returns a path to the file."""
     global cs
     if (cs == None):

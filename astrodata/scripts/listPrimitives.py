@@ -43,7 +43,7 @@ pin = PrimInspect(options)
 #Proceed to show Primitives
 pin.datasets = options.datasets
 pin.astrotypes = options.astrotypes
-pin.buildDictionaries()
+pin.build_dictionaries()
 primsets = pin.primsdict.keys()
 
 primsets.sort(pin.primsetcmp)
@@ -63,7 +63,7 @@ for primset in primsets:
         cl = pin.name2class[ nam ]
         pin.show("\n\n%2d. ${BOLD}%s${NORMAL}\n" %(count,cl.astrotype))
         primlist = pin.primsdictKBN[nam]
-        pin.showSetInfo(nam, cl, primlist) 
+        pin.show_set_info(nam, cl, primlist) 
         count+=1
     else:
         pin.showPrims(nam)

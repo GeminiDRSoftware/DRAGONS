@@ -60,7 +60,7 @@ if options.test2:
             hdu2.name = ""
     # if test1 is run first and you do not rename it will not infer
     # even though it is all blank.
-    testhdulist[1].name = "MDF"
+    testhdulist[1].name = "SCI"
     for hdu in testhdulist[1:]:
         alist.append(hdu.name)
     print "\tList of ext. names of input:", repr(alist)

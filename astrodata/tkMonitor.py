@@ -35,7 +35,7 @@ class StatusBar:
         
     def timer(self, *args):
         if self.co != None:
-            if not self.co.isPaused():
+            if not self.co.is_paused():
                 rightnow = datetime.now()
                 timeused = rightnow - self.dt
                 self.total = self.total - timeused
@@ -67,7 +67,7 @@ class TkRecipeControl( threading.Thread):
     mainWindow = None
     killed = False
     
-    def __init__(self, recipe=None, recipes=None, bThread=True):
+    def __init__(self, recipe=None, recipes=None, b_thread=True):
         if recipes != None: # then it has a list interface please
             self.recipes = copy(recipes)
         elif recipe !=None:
@@ -75,12 +75,12 @@ class TkRecipeControl( threading.Thread):
         else:
             raise GUIExcept()
         
-        if (bThread):
+        if (b_thread):
             threading.Thread.__init__(self)
         else:
             self.run()
             
-    def newControlWindow(self, recipe, context):
+    def new_control_window(self, recipe, context):
         self.cmdQueue.append( 
             { "cmd": "newRecipe", 
               "recipe" : recipe,
@@ -106,7 +106,7 @@ class TkRecipeControl( threading.Thread):
             }
         )
     
-    def iqLog(self, name, val, timestr):
+    def iq_log(self, name, val, timestr):
         self.cmdQueue.append(
             {   "cmd":"iqlog",
                 "name":name,
@@ -115,7 +115,7 @@ class TkRecipeControl( threading.Thread):
             }
         )
             
-    def setContext(self, co):
+    def set_context(self, co):
         self.co = co
         if (self.control != None):
             self.control.co = co
@@ -161,7 +161,7 @@ class TkRecipeControl( threading.Thread):
         self.iqscroll.config(command=self.iqLogText.yview)
         
         #start command queue timer
-        self.mainWindow.after(100, self.processCmdQueue)
+        self.mainWindow.after(100, self.process_cmd_queue)
                 
         self.mainWindow.geometry("+0+0")
         self.mainWindow.update()
@@ -183,7 +183,7 @@ class TkRecipeControl( threading.Thread):
         self.mainWindow.quit()
         self.killed=True
         
-    def processCmdQueue(self):
+    def process_cmd_queue(self):
         # to reschedule this function on a tk timer
         reschedule = True
         
@@ -234,7 +234,7 @@ class TkRecipeControl( threading.Thread):
                 rc = RecipeControl(controlFrame, controlWindow)
                 
                 rc.co = context
-                rc.co.addCallback("pause", rc.sgPause)
+                rc.co.add_callback("pause", rc.sg_pause)
                 monitorFrame = Frame(cw)
                 MonitorRecipe(monitorFrame).co = context
                 
@@ -253,12 +253,12 @@ class TkRecipeControl( threading.Thread):
                 controlWindow.geometry(geomstr)
                 self.initX += 25 #string.atoi(mong.group("w"))+5
                 self.initY += 20
-                self.setContext(context)
+                self.set_context(context)
                 
                 #self.monitor = MonitorWindow(root)
         
         if reschedule:
-            self.pcqid = self.mainWindow.after(10, self.processCmdQueue)
+            self.pcqid = self.mainWindow.after(10, self.process_cmd_queue)
             
 class RecipeControl:
     co = None
@@ -289,12 +289,12 @@ class RecipeControl:
             else:
                 self.bPaused = True
                 self.pauseBtn.configure(text="resume")
-                self.co.requestPause()
+                self.co.request_pause()
             
 
     def cancel(self):
         if self.co:
-            self.co.isFinished(True)
+            self.co.is_finished(True)
         
         
     def poll(self):
@@ -302,7 +302,7 @@ class RecipeControl:
         # if self.co != None:
         #    print "co",self.co
         
-    def sgPause(self):
+    def sg_pause(self):
         """callback for system generated pause"""
         if not self.bPaused:
             self.bPaused = True
@@ -310,7 +310,7 @@ class RecipeControl:
 
     def cancel(self):
         if self.co:
-            self.co.isFinished(True)
+            self.co.is_finished(True)
         
         
     def poll(self):
@@ -360,7 +360,7 @@ class MonitorRecipe:
         if self.co != None:
             sh = self.co.stephistory
             
-            if self.co.pauseRequested():
+            if self.co.pause_requested():
                 if not self.alreadyWaitingForPause:
                     self.textWdg.insert(END, "...waiting for pause...\n", "info")
                     self.alreadyWaitingForPause = True
@@ -394,7 +394,7 @@ class MonitorRecipe:
                     
                     if marktype == "begin":
                         # put inputs
-                        self.textWdg.insert(END, self.co.inputsAsStr() + "\n", "data")
+                        self.textWdg.insert(END, self.co.inputs_as_str() + "\n", "data")
                         self.textWdg.insert(END, unichr(8595)+"\n","arrow")
                     
                         self.textWdg.insert(END, stepname+"\n", "bold")
@@ -410,7 +410,7 @@ class MonitorRecipe:
                     if marktype == "end":
                         indent = sh[mark]["indent"]
                         # print "TK292: ",indent
-                        beginmark = self.co.getBeginMark(stepname, indent = indent)
+                        beginmark = self.co.get_begin_mark(stepname, indent = indent)
                         # print "TK293: ", beginmark, "\n", sh[mark]
                         if beginmark == None:
                             raise "Bad PROBLEM\nCorrupted stephistory\n END with no BEGIN"

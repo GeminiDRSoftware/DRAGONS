@@ -84,9 +84,9 @@ class DisplayService(object):
         # can also be done externally (in reduce, for example).
         #=======================================================================
         if 'avgcomb_' in ad.filename:
-            fid = 'STACKED_' + IDFactory.generateStackableID( ad )
+            fid = 'STACKED_' + IDFactory.generate_stackable_id( ad )
         else:
-            fid = IDFactory.generateStackableID( ad )
+            fid = IDFactory.generate_stackable_id( ad )
 
         return fid
 #------------------------------------------------------------------------------ 
@@ -102,9 +102,9 @@ class DisplayService(object):
 #        print 'GDS 66:'
         if type(ad) is not astrodata.AstroData:
             ad = AstroData( ad )
-        desc = Descriptors.getCalculator( ad )
+        desc = Descriptors.get_calculator( ad )
         
-        displayfunc = desc.fetchValue( 'display', ad )
+        displayfunc = desc.fetch_value( 'display', ad )
         
         if displayfunc is None:
             # This occurs when there is specific display function for the given tool.
@@ -121,7 +121,7 @@ class DisplayService(object):
             self.ds9.set( 'regions delete all' )
         
         displayfunc( ad.filename, frame=framenumber, fl_imexam=False,
-                     Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr())
+                     Stdout = coi.get_iraf_stdout(), Stderr = coi.get_iraf_stderr())
 #------------------------------------------------------------------------------ 
     def markText(self, xcoord, ycoord, text='', ad=None, fid=None):
         '''

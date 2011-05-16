@@ -84,17 +84,17 @@ class PrimInspect():
         if self.options.makeOutputFile:
             self.fhandler.close()
         
-    def createModule_list(self):
+    def create_module_list(self):
         if len(self.astrotypes) or len(self.datasets):
             if self.astrotypes:
                 self.astrotypes.sort()
             for typ in self.astrotypes:
-                ps = rl.retrievePrimitiveSet(astrotype = typ)        
+                ps = rl.retrieve_primitive_set(astrotype = typ)        
                 if ps != None:
                     self.module_list.extend(ps)
             for dataset in self.datasets:
                 ad = AstroData(dataset)
-                ps = rl.retrievePrimitiveSet(dataset = ad)
+                ps = rl.retrieve_primitive_set(dataset = ad)
                 s = "%(ds)s-->%(typ)s" % {"ds": dataset, "typ": ps[0].astrotype}
                 p = " "*(SW - len(s))
                 self.show("${YELLOW}"+s+p+"${NORMAL}")
@@ -103,7 +103,7 @@ class PrimInspect():
         else:
             for key in primtypes:
                 try:
-                    self.module_list.extend(rl.retrievePrimitiveSet(astrotype = key))
+                    self.module_list.extend(rl.retrieve_primitive_set(astrotype = key))
                 except:
                     self.show("${RED}ERROR: cannot load primitive set for astrotype %s${NORMAL}"
                                     % key)
@@ -115,7 +115,7 @@ class PrimInspect():
     # get a sorted list of primitive sets, sorted with parents first
 
             
-    def getPrimList( self, cl ):
+    def get_prim_list( self, cl ):
         plist = []
         for key in cl.__dict__:
             doappend = True
@@ -134,23 +134,23 @@ class PrimInspect():
         plist.sort()
         return plist
     
-    def constructPrimsDict( self, primset ):
-        self.primsdict.update( { primset:self.getPrimList( primset.__class__ ) } )
+    def construct_prims_dict( self, primset ):
+        self.primsdict.update( { primset:self.get_prim_list( primset.__class__ ) } )
     
-    def constructPrimsclassDict( self, startclass ):
+    def construct_primsclass_dict( self, startclass ):
         if startclass.__name__== "PrimitiveSet":
             return
         self.name2class.update( {startclass.__name__:startclass} )
-        self.primsdictKBN.update( { startclass.__name__:self.getPrimList( startclass ) } )
+        self.primsdictKBN.update( { startclass.__name__:self.get_prim_list( startclass ) } )
         for base in startclass.__bases__:
-            self.constructPrimsclassDict( base )
+            self.construct_primsclass_dict( base )
     
-    def buildDictionaries(self):
-        self.createModule_list()
+    def build_dictionaries(self):
+        self.create_module_list()
         for primset in self.module_list:
             pname = primset.__class__.__name__
-            self.constructPrimsDict(primset)
-            self.constructPrimsclassDict(primset.__class__)
+            self.construct_prims_dict(primset)
+            self.construct_primsclass_dict(primset.__class__)
             self.class2instance.update({pname:primset})
       
 
@@ -174,11 +174,11 @@ class PrimInspect():
         if instance:
             cl = self.name2class[primsetname]
             ps = instance
-            psl = rl.retrievePrimitiveSet(astrotype= instance.astrotype)
+            psl = rl.retrieve_primitive_set(astrotype= instance.astrotype)
         elif primsetname in self.class2instance:
             ps = self.class2instance[primsetname]
             cl = ps.__class__
-            psl = rl.retrievePrimitiveSet(astrotype= ps.astrotype)
+            psl = rl.retrieve_primitive_set(astrotype= ps.astrotype)
         else:
             return None
         verb = False # prim == "exit"
@@ -189,7 +189,7 @@ class PrimInspect():
             for ops in psl:
                 
                 # reason for this comparison: make this work even
-                # if retrievePrimitiveSet returns new instances...
+                # if retrieve_primitive_set returns new instances...
                 if ps.__class__.__name__ == ops.__class__.__name__:
                     before = False
                     if verb : print "lP209: found this by by class name", repr(ops)
@@ -225,7 +225,7 @@ class PrimInspect():
             return fp
         return None
     
-    def showSetInfo(self, primsetname, cl, primlist):        
+    def show_set_info(self, primsetname, cl, primlist):        
         sfull = getsourcefile(cl)
         sdir = os.path.dirname(sfull)
         sfil = os.path.basename(sfull)
@@ -292,7 +292,7 @@ class PrimInspect():
             self.show("${BOLD}"+'_'*SW+"${NORMAL}")
             if self.options.showInfo:
                 self.show("\n${BOLD}%s${NORMAL}\n" % (cl.astrotype))
-                self.showSetInfo(primsetname, cl, primlist) 
+                self.show_set_info(primsetname, cl, primlist) 
             else:
                 self.show("\n${BOLD}%s ${NORMAL}(%s)\n" % (cl.astrotype, primsetname))
             self.show("-"*SW)

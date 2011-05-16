@@ -7,14 +7,14 @@ import Descriptors
 #------------------------------------------------------------------------------ 
 version_index = {"stackID":"1_0", "recipeID":"1_0", "display_id":"1_0"}
 
-def generateFingerprint( dataset, version = "1_0"):
+def generate_fingerprint( dataset, version = "1_0"):
     h = hashlib.md5()
     fullid = repr(dataset.types)+repr(dataset.all_descriptors())
     h.update(fullid)
     return h.hexdigest()
     
     
-def generateStackableID( dataset, version = "1_0" ):
+def generate_stackable_id( dataset, version = "1_0" ):
     '''
     Generate an ID from which all similar stackable data will have in common.
     
@@ -49,11 +49,11 @@ def generateStackableID( dataset, version = "1_0" ):
     elif type(dataset) == AstroData:
         ID = version + "_" + dataset.phuValue('OBSID') + "_" + dataset.phuValue('OBJECT')
         
-    ID = makeIdSafeForFilename(ID)
+    ID = make_id_safe_for_filename(ID)
     return ID
     # return shaObj.hexdigest()
   
-def generateDisplayID( dataset, version ):
+def generate_display_id( dataset, version ):
     '''
     Generate an ID from which all similar stackable data will have in common.
     
@@ -91,9 +91,9 @@ def generateDisplayID( dataset, version ):
     # return shaObj.hexdigest()
 
 
-def generateAstroDataID( dataset, version="1_0" ):
+def generate_astro_data_id( dataset, version="1_0" ):
     '''
-    An ID to be used to identify AstroData types. This is used for:
+    An _id to be used to identify AstroData types. This is used for:
     
     1) Calibrations:
     
@@ -104,7 +104,7 @@ def generateAstroDataID( dataset, version="1_0" ):
     biasCorrect
     
     Because of the prepare step, the calibration key determined at getProcessedBias will not 
-    match biasCorrect because (N2009..., bias) will not match (gN2009..., bias). By using an astroID,
+    match biasCorrect because (N2009..., bias) will not match (gN2009..., bias). By using an astro_id,
     you can avoid this issue as you will have (DATALAB, bias). So, any steps inbetween getProcessedBias and
     biasCorrect will have no impact.
     
@@ -123,17 +123,17 @@ def generateAstroDataID( dataset, version="1_0" ):
     '''
     if type(dataset) == str:
         ad = AstroData( dataset )
-        desc = Descriptors.getCalculator( ad )
-        return desc.fetchValue('DATALAB', ad)
+        desc = Descriptors.get_calculator( ad )
+        return desc.fetch_value('DATALAB', ad)
     elif type( dataset ) == AstroData:
-        desc = Descriptors.getCalculator( dataset )
-        return desc.fetchValue('DATALAB', dataset)
+        desc = Descriptors.get_calculator( dataset )
+        return desc.fetch_value('DATALAB', dataset)
     else:
         raise "BAD ARGUMENT TYPE"
     
-def generateFringeListID( dataset, version='1_0' ):
+def generate_fringe_list_id( dataset, version='1_0' ):
     '''
-    Generate an ID from which all similar stackable data will have in common.
+    Generate an _id from which all similar stackable data will have in common.
     
     @param dataset: Input AstroData instance or fits filename.
     @type dataset: AstroData instances or str
@@ -144,8 +144,8 @@ def generateFringeListID( dataset, version='1_0' ):
     @return: A stackable id.
     @rtype: string
     '''
-    return generateStackableID( dataset, version )
+    return generate_stackable_id( dataset, version )
     
-def makeIdSafeForFilename(ID):
-    return re.sub(" ", "_", ID)
+def make_id_safe_for_filename(_id):
+    return re.sub(" ", "_", _id)
 

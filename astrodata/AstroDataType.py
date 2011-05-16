@@ -4,7 +4,7 @@ import os
 import AstroData
 import sys
 import sre_constants
-from ConfigSpace import configWalk
+from ConfigSpace import config_walk
 
 verbose = False
 verboseLoadTypes = True
@@ -27,7 +27,7 @@ class Requirement(object):
     def __and__(self, andwith):
         return AndReq([self, andwith])
 
-    def satisfiedBy(self, hdulist):
+    def satisfied_by(self, hdulist):
         return False
 
 class OrReq(Requirement):
@@ -48,9 +48,9 @@ class OrReq(Requirement):
             else:
                 self.orList.append(arg)
         
-    def satisfiedBy(self, hdulist):
+    def satisfied_by(self, hdulist):
         for req in self.orList:
-            if req.satisfiedBy(hdulist) == True:
+            if req.satisfied_by(hdulist) == True:
                 return True
         return False    
 OR=OrReq
@@ -59,8 +59,8 @@ class NotReq(Requirement):
     req = None
     def __init__(self, req):
         self.req = req
-    def satisfiedBy(self, hdulist):
-        return not self.req.satisfiedBy(hdulist)
+    def satisfied_by(self, hdulist):
+        return not self.req.satisfied_by(hdulist)
 NOT=NotReq
         
 class AndReq(Requirement):
@@ -80,9 +80,9 @@ class AndReq(Requirement):
                 self.andList.extend(arg)
             else:
                 self.andList.append(arg)
-    def satisfiedBy(self, hdulist):
+    def satisfied_by(self, hdulist):
         for req in self.andList:
-            if not req.satisfiedBy(hdulist):
+            if not req.satisfied_by(hdulist):
                 return False
         
         return True
@@ -100,15 +100,15 @@ class ClassReq(Requirement):
                 
         self.typeReqs = lst
     
-    def satisfiedBy(self, hdulist):
+    def satisfied_by(self, hdulist):
         numreqs = len (self.typeReqs)
         numsatisfied = 0
         numviolated  = 0
-        library = getClassificationLibrary()
+        library = get_classification_library()
         for typ in self.typeReqs:
             #print "type(%s)" % typ
             if (verbt) : print "ADT127 TYPES:", self.typeReqs
-            if (library.checkType(typ, hdulist)):   #'hdulist' should be called 'hdulist'
+            if (library.check_type(typ, hdulist)):   #'hdulist' should be called 'hdulist'
                 if(verbt) : print "satisfied"
                 numsatisfied = numsatisfied + 1
             else:
@@ -126,7 +126,7 @@ class PHUReq(Requirement):
         
         self.phuReqs = phureqs
         
-    def satisfiedBy(self, hdulist):
+    def satisfied_by(self, hdulist):
         try:
             phuCards = hdulist[0].header.ascard
             phuCardsKeys = phuCards.keys()
@@ -336,7 +336,7 @@ class DataClassification(object):
         "TELESCOP": "Name of the Observatory, Gemini-South or Gemini-North"
         }
    
-    def addChild(self, child):
+    def add_child(self, child):
         if self.children == None:
             self.children = []
         if self.childDCOs == None:
@@ -346,7 +346,7 @@ class DataClassification(object):
         if child not in self.childDCOs:
             self.childDCOs.append(child)
         
-    def assertType(self, hdulist):
+    def assert_type(self, hdulist):
         """
         This function will check to see if the given HDUList instance is
         of its classification. Currently this function checks PHU keys
@@ -368,11 +368,11 @@ class DataClassification(object):
             
         # New Requirement style
         if (self.requirement):
-            return self.requirement.satisfiedBy(hdulist)
+            return self.requirement.satisfied_by(hdulist)
         else:
             return False
             
-    def isSubtypeOf(self,supertype):
+    def is_subtype_of(self,supertype):
         """This function is used to check type relationships. For this type to be
             a "subtype" of the given type both must occur in a linked tree.
             A
@@ -397,13 +397,13 @@ class DataClassification(object):
             #easy to check by string if in typeReqs (aka parent types)
             return True
         else:
-            if self.parentDCO and self.parentDCO.isSubtypeOf(supertype):
+            if self.parentDCO and self.parentDCO.is_subtype_of(supertype):
                 return True
             
         # didn't make it... no one is the super
         return False
         
-    def getSuperTypes( self, appendTo=None ):
+    def get_super_types( self, append_to=None ):
         '''
         Returns a list of all immediate parents.
         
@@ -411,19 +411,19 @@ class DataClassification(object):
         get the name of the type, simply take an element from the list use the '.name'.
         @rtype: list
         '''
-        if appendTo == None:
+        if append_to == None:
             superTypes = []
         else:
-            superTypes = appendTo
+            superTypes = append_to
         
         
         if self.parentDCO:
             superTypes.append(self.parentDCO)
-            superTypes = self.parentDCO.getSuperTypes(appendTo=superTypes)
+            superTypes = self.parentDCO.get_super_types(append_to=superTypes)
         # print "ADT421:", self.name, repr(self.parentDCO), repr(superTypes)
         return superTypes # Removes duplicates in the offchance there are some
         
-    def getAllSuperTypes( self, height=0 ):
+    def get_all_super_types( self, height=0 ):
         '''
         Returns a list of all parents and grandparents of self in level order of self. Within each
         level, sorting is based on how typereqs was input. For example, if typereqs = [a,b,d,c], then
@@ -439,7 +439,7 @@ class DataClassification(object):
         @rtype: list
         '''
         
-        immediate_superTypes = self.getSuperTypes()
+        immediate_superTypes = self.get_super_types()
         all_superTypes = immediate_superTypes
         
         if height <= 0 or height > 1000:
@@ -449,7 +449,7 @@ class DataClassification(object):
         while counter < height:
             next_superTypes = []
             for superType in immediate_superTypes:
-                temp = superType.getSuperTypes()
+                temp = superType.get_super_types()
                 next_superTypes += temp
                 all_superTypes += temp
             immediate_superTypes = list( set(next_superTypes) ) # Remove duplicates
@@ -483,7 +483,7 @@ class DataClassification(object):
             for typ in self.walk(style="children"):
                 yield typ
     
-    def pythonClass(self):
+    def python_class(self):
         ''' This function generates a DataClassification Class based on self.
         The purpose of this is to support classification editors.
         @returns: a string containing python source code for this instance. Note, of 
@@ -510,7 +510,7 @@ newtypes.append(%(typename)s())
         
         return code 
               
-    def writeClass(self):
+    def write_class(self):
         '''Generates python code and writes it to fullpath if not protected.  Note, to
         "protect" a file one must access the .py definition directly and set 
         'editprotect = True.
@@ -529,14 +529,14 @@ newtypes.append(%(typename)s())
         can be checked.
         '''
         if (self.editprotect == False):
-            code = self.pythonClass()
+            code = self.python_class()
             outf = open(self.fullpath, "w")
             outf.write(code)
             outf.close()
         
         
         
-    def htmlEditForm(self):
+    def html_edit_form(self):
         '''This function returns a full HTML block of text ready to present as a web form
         to allow for online editing of types. This supports the browser/web based
         editing interface for DataClassification types.
@@ -634,7 +634,7 @@ newtypes.append(%(typename)s())
         
         return editFormPage
         
-    def htmlDoc(self):
+    def html_doc(self):
         '''
         This function returns a string representation for an HTML table which documents this
         particular classification using the definition itself. Note that the C{usage} member
@@ -723,7 +723,7 @@ newtypes.append(%(typename)s())
 
     # graphviz section, uses DOT language to make directed graphs
     # of the type dictionary
-    def gvizLinks(self, direct = None, assDict = None):
+    def gviz_links(self, direct = None, ass_dict = None):
         """
         This function supports the automatic generation of a class graph
         driven by the Classification Library. This system builds a script
@@ -738,9 +738,9 @@ newtypes.append(%(typename)s())
         nodestr = ""
         nodestr += self.gvizNodes()
 
-        if assDict and (self.name in assDict.keys()):
+        if ass_dict and (self.name in ass_dict.keys()):
             fromlist = []
-            obs = assDict[self.name]
+            obs = ass_dict[self.name]
             primsetgroup = self.name+"PrimitiveSets"
             oblist = []
             for ob in obs:
@@ -776,7 +776,7 @@ newtypes.append(%(typename)s())
                         "to":self.name, 
                         "url": ("typedict.py#%s" % self.name )
                     }
-                links, nodes = self.parentDCO.gvizLinks(direct=direct, assDict = assDict)
+                links, nodes = self.parentDCO.gviz_links(direct=direct, ass_dict = ass_dict)
                 linkstr += links
                 nodestr += nodes
         elif direct == "child":
@@ -785,7 +785,7 @@ newtypes.append(%(typename)s())
                 self.children.sort()
                 # print "AdT743:", repr (self.children), repr(self.childDCOs)
                 for childname in self.children:
-                    child = self.library.getTypeObj(childname)
+                    child = self.library.get_type_obj(childname)
                     if not child:
                         raise "not a child!"
                     linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
@@ -793,14 +793,14 @@ newtypes.append(%(typename)s())
                             "to":child.name, 
                             "url": ("typedict.py#%s" % child.name )
                         }
-                    links, nodes = child.gvizLinks(direct=direct, assDict = assDict)
+                    links, nodes = child.gviz_links(direct=direct, ass_dict = ass_dict)
                     linkstr += links
                     nodestr += nodes
             
         # print "ATD735: %s linkstr=%s" %( self.name, linkstr)
         return (linkstr,nodestr)
         
-    def gvizNode(self):
+    def gviz_node(self):
         """This function supports the automatic generation of a class graph
         which is driven by the Classification Library. This function returns
         a "dot language" representation of the node, which can contain things
@@ -812,7 +812,7 @@ newtypes.append(%(typename)s())
         nodestr = "%(name)s [shape=house, URL=\"typedict.py#%(name)s\",tooltip=\"%(tip)s\"];\n" \
                   % {"name":self.name,"tip":self.usage.replace("\n", "")}
         return nodestr
-    gvizNodes = gvizNode
+    gvizNodes = gviz_node
 
               
 class CLAlreadyExists:
@@ -880,7 +880,7 @@ class ClassificationLibrary (object):
                 
         return self.classificationLibrary
     
-    The L{AstroData.getClassificationLibrary} function retrieves the instance handle 
+    The L{AstroData.get_classification_library} function retrieves the instance handle 
     this way.
     
     This method is slated to be replaced, to avoid being affected by the change
@@ -947,7 +947,7 @@ class ClassificationLibrary (object):
  
         self.load_types("types", self.typesDict, self.typologyDict)
         self.load_types("status", self.typesDict, self.statusDict)
-        self.traceParents()
+        self.trace_parents()
         
     def load_types(self, spacename,globaldict, tdict):
         """
@@ -959,7 +959,7 @@ class ClassificationLibrary (object):
         and it is important to add the new class to the C{newtypes} variable
         in the definition file, or else the load function will not see it.
         """
-        for root, dirn, files in configWalk(spacename):
+        for root, dirn, files in config_walk(spacename):
             #print "_+_+",root, dirn,files
             for dfile in files:
                 if (re.match(self.definitionsStorageREMask, dfile)):
@@ -989,10 +989,10 @@ class ClassificationLibrary (object):
             typo = tdict[typ]
             # print "ADT910:" , typ
             if typo.parent:
-                tdict[typo.parent].addChild(typo)
+                tdict[typo.parent].add_child(typo)
 
 
-    def checkType(self, typename, dataset):
+    def check_type(self, typename, dataset):
         """
         This function will check to see if a given type applies to a given dataset.
         
@@ -1015,7 +1015,7 @@ class ClassificationLibrary (object):
             hdulist = dataset
         
         if typename in self.typesDict:
-            retval = self.typesDict[typename].assertType(hdulist)
+            retval = self.typesDict[typename].assert_type(hdulist)
         else:
             # if type not in library, it's NOT that
             return False         
@@ -1024,16 +1024,16 @@ class ClassificationLibrary (object):
         
         return retval
     
-    def isNameOfType(self, typename):
+    def is_name_of_type(self, typename):
         if typename in self.typesDict:
             return True
         else:
             return False
             
-    def getAvailableTypes(self):
+    def get_available_types(self):
         return self.typesDict.keys()
         
-    def getTypeObj(self,typename):
+    def get_type_obj(self,typename):
         """Generally users do not need DataClassification instances, however
         if you really do need that object, say to write an editor... this function
         will retrieve it.
@@ -1050,13 +1050,13 @@ class ClassificationLibrary (object):
         except KeyError:
             return None
             
-    def typeIsChildOf(self, typename, parenttyp):
-        child = self.getTypeObj(typename)
-        parent = self.getTypeObj(parenttyp)
+    def type_is_child_of(self, typename, parenttyp):
+        child = self.get_type_obj(typename)
+        parent = self.get_type_obj(parenttyp)
         
-        return child.isSubtypeOf(parenttyp)
+        return child.is_subtype_of(parenttyp)
 
-    def discoverTypes(self, dataset, all = False):
+    def discover_types(self, dataset, all = False):
         """This function returns a list of string names for the classifications
         which apply to this dataset.
         @param dataset: the data set in question
@@ -1073,8 +1073,8 @@ class ClassificationLibrary (object):
         @rtype: list or dict of lists
                 """
         
-        retarya = self.discoverClassifications(dataset, self.typologyDict)
-        retaryb = self.discoverClassifications(dataset, self.statusDict)
+        retarya = self.discover_classifications(dataset, self.typologyDict)
+        retaryb = self.discover_classifications(dataset, self.statusDict)
         retary = []
         retary.extend(retarya)
         retary.extend(retaryb)
@@ -1089,9 +1089,9 @@ class ClassificationLibrary (object):
             return retdict
         else:
             return retary
-        # return self.discoverClassifications(dataset, self.typesDict)
+        # return self.discover_classifications(dataset, self.typesDict)
     
-    def discoverStatus(self, dataset):
+    def discover_status(self, dataset):
         """This function returns a list of string names for the processing
         status related classifications
         which apply to this dataset.
@@ -1101,9 +1101,9 @@ class ClassificationLibrary (object):
         @rtype: list of strings
         """
         
-        return self.discoverClassifications(dataset, self.statusDict)
+        return self.discover_classifications(dataset, self.statusDict)
         
-    def discoverTypology(self, dataset):
+    def discover_typology(self, dataset):
         """This function returns a list of string names for the typological
         classifications
         which apply to this dataset.
@@ -1112,9 +1112,9 @@ class ClassificationLibrary (object):
         @returns: the data type classifications which apply to the given dataset
         @rtype: list of strings
         """
-        return self.discoverClassifications(dataset, self.typologyDict)
+        return self.discover_classifications(dataset, self.typologyDict)
         
-    def discoverClassifications(self, dataset, classificationDict):
+    def discover_classifications(self, dataset, classification_dict):
         """
         discoverClassificatons will return a list of classifications ("data types").
         'dataset' should be an HDUList or AstroData instance.
@@ -1141,8 +1141,8 @@ class ClassificationLibrary (object):
         else:
             hdulist = dataset
             
-        for tkey,tobj in classificationDict.items():
-            if (tobj.assertType(hdulist)):
+        for tkey,tobj in classification_dict.items():
+            if (tobj.assert_type(hdulist)):
                 typeList.append(tobj.name)
                 
         if (closeHdulist):
@@ -1151,7 +1151,7 @@ class ClassificationLibrary (object):
         return typeList
 
 
-    def traceParents(self):
+    def trace_parents(self):
         """DataClassifications are generally specified by name for the user
         and only the AstroDataType module cares about the actual dataclassification
         object.  However, it's needed in order to trace precedence when assigning
@@ -1166,11 +1166,11 @@ class ClassificationLibrary (object):
         for typ in self.typesDict.keys():
             dco = self.typesDict[typ]
             if dco.parent:
-                dco.parentDCO = self.getTypeObj(dco.parent)
-                dco.parentDCO.addChild(dco)
+                dco.parentDCO = self.get_type_obj(dco.parent)
+                dco.parentDCO.add_child(dco)
                 
         
-    def htmlDoc(self):
+    def html_doc(self):
         '''
         Produces a full HTML page of documentation on the current classification 
         dictionary, aka Type Dictionary.
@@ -1198,13 +1198,13 @@ class ClassificationLibrary (object):
         
         for tkey in skeys:
             tobj = self.typesDict[tkey]
-            thisdiv = tobj.htmlDoc()
+            thisdiv = tobj.html_doc()
             divs = ''.join([divs, thisdiv, "<br/><br/>"])
         
         retstr = page_templ % { "cldiv": divs } 
         return retstr
 
-    def gvizDoc(self, writeout = False, astrotype = None, assDict = None):
+    def gviz_doc(self, writeout = False, astrotype = None, ass_dict = None):
         """This function generates output in the "dot" language, which
             is used as input for the graphviz "dot" program which creates
             directed graphs in many different outputs.  We are interested
@@ -1246,13 +1246,13 @@ class ClassificationLibrary (object):
         if astrotype:
             # parents
             tobj = self.typesDict[astrotype]
-            gvlink, gvnodes = tobj.gvizLinks(direct="parent", assDict = assDict)
+            gvlink, gvnodes = tobj.gviz_links(direct="parent", ass_dict = ass_dict)
             gvizlinks = gvlink
             gviznodes = gvnodes
-            gvlink, gvnodes = tobj.gvizLinks(direct="child", assDict = assDict)
+            gvlink, gvnodes = tobj.gviz_links(direct="child", ass_dict = ass_dict)
             gvizlinks += gvlink
             gviznodes += gvnodes
-            gvlink, gvnodes = tobj.gvizLinks(direct="self", assDict = assDict)
+            gvlink, gvnodes = tobj.gviz_links(direct="self", ass_dict = ass_dict)
             gvizlinks += gvlink
             gviznodes += gvnodes
             
@@ -1261,7 +1261,7 @@ class ClassificationLibrary (object):
             skeys.sort()
             for tkey in skeys:
                 tobj = self.typesDict[tkey]
-                links, nodes = tobj.gvizLinks(assDict=assDict)
+                links, nodes = tobj.gviz_links(ass_dict=ass_dict)
                 gvizlinks = gvizlinks + links
                 gviznodes = gviznodes + nodes
 
@@ -1278,7 +1278,7 @@ class ClassificationLibrary (object):
         
 # @@DOCPROJECT@@: done pass 1
 
-def getClassificationLibrary():
+def get_classification_library():
     try:
         classificationLibrary = ClassificationLibrary()
         return classificationLibrary

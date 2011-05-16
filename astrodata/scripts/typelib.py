@@ -12,7 +12,7 @@ except:
     print "couldn't import pydot"
     pass
     
-cl = getClassificationLibrary()
+cl = get_classification_library()
 # print repr(cl.typesDict)
 #FROM COMMANDLINE WHEN READY
 parser = OptionParser()
@@ -49,13 +49,13 @@ if (astrotype):
     displaytype = astrotype
 else:
     displaytype = "GEMINI"
-    typeobjs = cl.getAvailableTypes();
+    typeobjs = cl.get_available_types();
 
 lasttyp = None
 lastnode = None
 #nodes and annotations
 for typename in args:
-    typeobj = cl.getTypeObj(typename)
+    typeobj = cl.get_type_obj(typename)
     ndict = {}
     edict = {}
     adict = {} # contains node list keyed by type
@@ -175,7 +175,7 @@ for typename in args:
     nsvg.close()
 
 
-if False:# a = cl.gvizDoc(astrotype= astrotype, writeout = True, assDict = assdict)
+if False:# a = cl.gviz_doc(astrotype= astrotype, writeout = True, ass_dict = assdict)
     import webbrowser
     # url = "file://"+os.path.join(os.path.abspath("."), "gemdtype.viz.svg")
     url = "file://"+os.path.join(os.path.abspath("."), displaytype +"-tree.svg")

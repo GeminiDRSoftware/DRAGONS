@@ -42,7 +42,7 @@ import astrodata
 from astrodata import RecipeManager
 from astrodata.AstroData import ADExcept, ADNOTFOUND
 from astrodata.AstroData import AstroData
-from astrodata.AstroDataType import getClassificationLibrary
+from astrodata.AstroDataType import get_classification_library
 from astrodata.RecipeManager import ReductionContext
 from astrodata.RecipeManager import RecipeLibrary
 from astrodata.RecipeManager import RecipeExcept
@@ -225,7 +225,7 @@ def command_line():
         pfile = file(options.paramfile)
         astrotype = None
         primname = None
-        cl = getClassificationLibrary()
+        cl = get_classification_library()
         
         i = 0
         lines = []
@@ -269,7 +269,7 @@ def command_line():
                     if len(name)== 0:
                         astrotype = None
                         primname = None
-                    elif cl.isNameOfType(name):
+                    elif cl.is_name_of_type(name):
                         astrotype = name
                     else:
                         primname = name
@@ -317,9 +317,9 @@ def command_line():
         clrFile = None
         
         co = ReductionContext()
-        co.restoreCalIndex(calindfile)
+        co.restore_cal_index(calindfile)
         co.calibrations = {}
-        co.persistCalIndex( calindfile )
+        co.persist_cal_index( calindfile )
         log.status("Calibration cache index cleared")
         import shutil
         
@@ -380,11 +380,11 @@ def command_line():
         # @@TODO: Need testing if passed in calibration type is valid.
         
         co = ReductionContext()
-        co.restoreCalIndex(calindfile)
+        co.restore_cal_index(calindfile)
         for arg in infile:
 
-            co.addCal( AstroData(arg), options.cal_type, os.path.abspath(options.add_cal) )
-        co.persistCalIndex( calindfile )
+            co.add_cal( AstroData(arg), options.cal_type, os.path.abspath(options.add_cal) )
+        co.persist_cal_index( calindfile )
         print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
         sys.exit(0)
         
@@ -398,14 +398,14 @@ def command_line():
         # @@TODO: Need testing if passed in calibration type is valid.
 
         co = ReductionContext()
-        co.restoreCalIndex(calindfile)
+        co.restore_cal_index(calindfile)
         for arg in infile:
             try:
-                co.rmCal( arg, options.cal_type )
+                co.rm_cal( arg, options.cal_type )
             except:
                 print arg + ' had no ' + options.cal_type
         print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
-        co.persistCalIndex( calindfile )
+        co.persist_cal_index( calindfile )
         sys.exit(0)
         
     # parameters from command line and/or parameter file
@@ -437,9 +437,9 @@ def command_line():
         
     fups = RecipeManager.UserParams()
     for up in clups:
-        fups.addUserParam(up)
+        fups.add_user_param(up)
     for up in pfups:
-        fups.addUserParam(up)
+        fups.add_user_param(up)
     options.userParams = fups
     options.globalParams = {}
     options.globalParams.update(clgparms)
@@ -451,11 +451,11 @@ def command_line():
 from astrodata import Proxies
 # I think it best to start the adcc always, since it wants the reduceServer I prefer not
 # to provide to every component that wants to use the adcc as an active-library
-adccpid = Proxies.startADCC()
+adccpid = Proxies.start_adcc()
   
 # launch xmlrpc interface for control and communication
 reduceServer = Proxies.ReduceServer()
-prs = Proxies.PRSProxy.getADCC(reduceServer=reduceServer)
+prs = Proxies.PRSProxy.get_adcc(reduce_server=reduceServer)
 
 usePRS = True
 
@@ -464,12 +464,12 @@ usePRS = True
 # called once per substep (every yeild in any primitive when struck)
 # registered with the reduction object
 # !!!! we import this from ReductionObjects.py now
-from astrodata.ReductionObjects import commandClause
+from astrodata.ReductionObjects import command_clause
 def OLDcommandClause(ro, coi):
 
     global prs
     
-    coi.processCmdReq()
+    coi.process_cmd_req()
     while (coi.paused):
         time.sleep(.100)
     if co.finished:
@@ -483,17 +483,17 @@ def OLDcommandClause(ro, coi):
         if rqTyp == CalibrationRequest:
             fn = rq.filename
             typ = rq.caltype
-            calname = coi.getCal(fn, typ)
+            calname = coi.get_cal(fn, typ)
             # print "r399:", "handling calibrations"
             if calname == None:
                 # Do the calibration search
                 calurl = None
                 if usePRS and prs == None:
                     # print "r454: getting prs"
-                    prs = Proxies.PRSProxy.getADCC()
+                    prs = Proxies.PRSProxy.get_adcc()
                     
                 if usePRS:
-                    calurl = prs.calibrationSearch( rq )
+                    calurl = prs.calibration_search( rq )
                 
                 # print "r396:", calurl
                 if calurl == None:
@@ -508,10 +508,10 @@ def OLDcommandClause(ro, coi):
                               }
                 calfname = os.path.join(coi[storenames[typ]], os.path.basename(calurl))
                 if os.path.exists(calfname):
-                    coi.addCal(fn, typ, calfname)
+                    coi.add_cal(fn, typ, calfname)
                 else:
-                    coi.addCal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
-                coi.persistCalIndex( calindfile )
+                    coi.add_cal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
+                coi.persist_cal_index( calindfile )
                 calname = calurl
             else:
                 msg += '%s already stored.\n' %(str(typ))
@@ -523,8 +523,8 @@ def OLDcommandClause(ro, coi):
             #print '-'*30
 
         elif rqTyp == UpdateStackableRequest:
-            coi.stackAppend(rq.stkID, rq.stkList, stkindfile)
-            coi.persistStkIndex( stkindfile )
+            coi.stack_append(rq.stk_id, rq.stk_list, stkindfile)
+            coi.persist_stk_index( stkindfile )
         elif rqTyp == GetStackableRequest:
             pass
             # Don't actually do anything, because this primitive allows the control system to
@@ -533,12 +533,12 @@ def OLDcommandClause(ro, coi):
             #print "RD172: GET STACKABLE REQS:", rq
         elif rqTyp == DisplayRequest:
             # process display request
-            nd = rq.toNestedDicts()
+            nd = rq.to_nested_dicts()
             #print "r508:", repr(nd)
             if usePRS and prs == None:
                 # print "r454: getting prs"
-                prs = Proxies.PRSProxy.getADCC()
-            prs.displayRequest(nd)
+                prs = Proxies.PRSProxy.get_adcc()
+            prs.display_request(nd)
                 
                    
         elif rqTyp == ImageQualityRequest:
@@ -556,21 +556,21 @@ def OLDcommandClause(ro, coi):
                 st = time.time()
                 if (useTK):
                     iqlog = "%s: %s = %s\n"
-                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ellMean)
+                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ell_mean)
                     seeing = iqlog % (gemdate(timestamp=rq.timestamp),"seeing", rq.fwhmMean)
                     log.status(ell)
                     log.status(seeing)
                     timestr = gemdate(timestamp = rq.timestamp)
 
-                    cw.iqLog(co.inputs[0].filename, '', timestr)
-                    cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
-                    cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
-                    cw.iqLog('', '-'*14, timestr)
+                    cw.iq_log(co.inputs[0].filename, '', timestr)
+                    cw.iq_log("mean ellipticity", str(rq.ell_mean), timestr)
+                    cw.iq_log("seeing", str(rq.fwhmMean)  , timestr)
+                    cw.iq_log('', '-'*14, timestr)
                
                # $$$ next three lines are commented out as the display server
                # $$$ is not in use anymore.
                # elif ds.ds9 is not None:
-               #     dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
+               #     dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ell_mean) )
                #     ds.markText( 0, 2200, dispText )
 
 
@@ -580,7 +580,7 @@ def OLDcommandClause(ro, coi):
                     tmpFilename = 'tmpfile.tmp'
                     tmpFile = open( tmpFilename, 'w' )
                     coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
-                                                                     'ell':str(rq.ellMean)}
+                                                                     'ell':str(rq.ell_mean)}
                     tmpFile.write( coords )
                     tmpFile.close()
                     #print 'r165: importing iraf again'
@@ -592,7 +592,7 @@ def OLDcommandClause(ro, coi):
                 #print 'RED422:', (et - st)
 
     
-    coi.clearRqs()      
+    coi.clear_rqs()      
 
 
     #dump the reduction context object 
@@ -639,7 +639,7 @@ if (generate_pycallgraphs):
     pycallgraph.start_trace()
 
 if options.intelligence:
-    typeIndex = gdpgutil.clusterTypes( allinputs )
+    typeIndex = gdpgutil.cluster_types( allinputs )
     # If there was super intelligence, it would determine ordering. For now, it will 
     # run recipes in simple ordering, (i.e. the order values() is returned in).
     allinputs = typeIndex.values()
@@ -685,14 +685,14 @@ for infiles in allinputs: #for dealing with multiple sets of files.
     i += 1
     
     # get ReductionObject for this dataset
-    #ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") 
+    #ro = rl.retrieve_reduction_object(astrotype="GMOS_IMAGE") 
     # can be done by filename
     #@@REFERENCEIMAGE: used to retrieve/build correct reduction object
     try:
         if (options.astrotype == None):
-            ro = rl.retrieveReductionObject(infiles[0]) 
+            ro = rl.retrieve_reduction_object(infiles[0]) 
         else:
-            ro = rl.retrieveReductionObject(astrotype = options.astrotype)
+            ro = rl.retrieve_reduction_object(astrotype = options.astrotype)
     except:
         reduceServer.finished=True
         try:
@@ -702,15 +702,15 @@ for infiles in allinputs: #for dealing with multiple sets of files.
         raise
 
     # add command clause
-    ro.registerCommandClause(commandClause)
+    ro.register_command_clause(command_clause)
         
     if options.recipename == None:
         if options.astrotype == None:
-            reclist = rl.getApplicableRecipes(infiles[0]) #**
-            recdict = rl.getApplicableRecipes(infiles[0], collate=True) #**
+            reclist = rl.get_applicable_recipes(infiles[0]) #**
+            recdict = rl.get_applicable_recipes(infiles[0], collate=True) #**
         else:
-            reclist = rl.getApplicableRecipes(astrotype = options.astrotype)
-            recdict = rl.getApplicableRecipes(astrotype = options.astrotype, collate = True)
+            reclist = rl.get_applicable_recipes(astrotype = options.astrotype)
+            recdict = rl.get_applicable_recipes(astrotype = options.astrotype, collate = True)
     else:
         #force recipe
         reclist = [options.recipename]
@@ -811,7 +811,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                         co.update({"rtf":True})
                     #print "r739:stack index file", stkindfile
                     # @@NAME: stackIndexFile, location for persistent stack list cache
-                    co.setCacheFile("stackIndexFile", stkindfile)
+                    co.set_cache_file("stackIndexFile", stkindfile)
                     co.ro = ro
                     # @@DOC: put cachedirs in context
                     for cachename in cachedict:
@@ -819,16 +819,16 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     co.update({"cachedict":cachedict})
                     # rc.["storedcals"] will be the proper directory
 
-                    co.restoreCalIndex(calindfile)
-                    # old local stack stuff co.restoreStkIndex( stkindfile )
+                    co.restore_cal_index(calindfile)
+                    # old local stack stuff co.restore_stk_index( stkindfile )
 
                     # add input files
                     if infiles:
-                        co.addInput(infiles)
-                    co.setIrafStdout(irafstdout)
-                    co.setIrafStderr(irafstdout)
+                        co.add_input(infiles)
+                    co.set_iraf_stdout(irafstdout)
+                    co.set_iraf_stderr(irafstdout)
 
-                    # odl way rl.retrieveParameters(infile[0], co, rec)
+                    # odl way rl.retrieve_parameters(infile[0], co, rec)
                     if hasattr(options, "userParams"):
                         co.userParams = options.userParams
                     if hasattr(options, "globalParams"):
@@ -851,7 +851,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                         # this is hopefully not really needed
                         # did it to give the tk thread a chance to get running
                         time.sleep(.1)
-                    cw.newControlWindow(rec,co)
+                    cw.new_control_window(rec,co)
                     cw.mainWindow.protocol("WM_DELETE_WINDOW", co.finish) 
 
 
@@ -867,7 +867,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     userPrimSet = newmodule.userPrimSet
 
                     userPrimSet.astrotype = ro.curPrimType
-                    ro.addPrimSet(userPrimSet)
+                    ro.add_prim_set(userPrimSet)
 
 
                 if rawrec == False:
@@ -884,24 +884,24 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                         rname = re.sub("recipe.", "", os.path.basename(rec))
                     rf = open(rec)
                     rsrc = rf.read()
-                    prec = rl.composeRecipe(rname, rsrc)
-                    rfunc = rl.compileRecipe(rname, prec)
-                    ro = rl.bindRecipe(ro, rname, rfunc)
+                    prec = rl.compose_recipe(rname, rsrc)
+                    rfunc = rl.compile_recipe(rname, prec)
+                    ro = rl.bind_recipe(ro, rname, rfunc)
                     rec = rname
                 elif "(" in rec:
                     # print "r819:", rec
                     rsrc = rec
                     rname = "userCommand%d" % cmdnum
-                    prec = rl.composeRecipe(rname, rsrc)
+                    prec = rl.compose_recipe(rname, rsrc)
                     # log.debug(prec)
-                    rfunc = rl.compileRecipe(rname, prec)
-                    ro = rl.bindRecipe(ro, rname, rfunc)
+                    rfunc = rl.compile_recipe(rname, prec)
+                    ro = rl.bind_recipe(ro, rname, rfunc)
                     rec = rname
                 else:
                     if options.astrotype:
-                        rl.loadAndBindRecipe(ro, rec, astrotype=options.astrotype)
+                        rl.load_and_bind_recipe(ro, rec, astrotype=options.astrotype)
                     else:
-                        rl.loadAndBindRecipe(ro,rec, dataset=infile[0])
+                        rl.load_and_bind_recipe(ro,rec, dataset=infile[0])
                 if (useTK):
                     cw.running(rec)
 
@@ -927,7 +927,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 if (True): # try:
                     ro.run(rec, co)
                     #for coi in ro.substeps(rec, co):
-                    #    ro.executeCommandClause()
+                    #    ro.execute_command_clause()
                         # filteredstdout.addFilter(primfilter)
                     # filteredstdout.removeFilter(primfilter)
                 #######
@@ -937,10 +937,10 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 #######
                 #######
             except KeyboardInterrupt:
-                co.isFinished(True)
+                co.is_finished(True)
                 if (useTK):
                     cw.quit()
-                co.persistCalIndex(calindfile)
+                co.persist_cal_index(calindfile)
                 print "Ctrl-C Exit"
                 prs.unregister()
                 sys.exit(0)
@@ -954,15 +954,15 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 if reduceServer:
                     #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
                     Proxies.reduceServer.finished=True
-                co.persistCalIndex(calindfile)
+                co.persist_cal_index(calindfile)
                 if (bReportHistory):
-                    co.reportHistory()
-                    rl.reportHistory()
-                co.isFinished(True)
+                    co.report_history()
+                    rl.report_history()
+                co.is_finished(True)
                 if (useTK):
                     cw.killed = True
                     cw.quit()
-                co.persistCalIndex(calindfile)
+                co.persist_cal_index(calindfile)
                 
                 # RAISE THE EXCEPTION AGAIN
                 if interactiveMode != True:
@@ -978,17 +978,17 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     traceback.print_exc()
                     print "\n Type 'exit' to exit."
                     
-            co.persistCalIndex(calindfile)
+            co.persist_cal_index(calindfile)
 
             if (bReportHistory):
 
                 log.error( "CONTEXT HISTORY")
                 log.error( "---------------")
 
-                co.reportHistory()
-                rl.reportHistory()
+                co.report_history()
+                rl.report_history()
 
-            co.isFinished(True)
+            co.is_finished(True)
         if interactiveMode == True:
             reclist = ["USER"]
         else:
@@ -1001,7 +1001,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             cw.mainWindow.after_cancel(cw.pcqid)
             if True: #cw.killed == True:
                 raw_input("Press Enter to Close Monitor Windows:")
-            # After ID print cw.pcqid
+            # After _id print cw.pcqid
             cw.mainWindow.quit()
         except:
             cw.mainWindow.quit()    
@@ -1015,7 +1015,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
         for th in threading.enumerate():
             print str(th)
         sleep(5.)
-    # print co.reportHistory()
+    # print co.report_history()
     # main()
     # don't leave the terminal in another color/mode, that's rude
     

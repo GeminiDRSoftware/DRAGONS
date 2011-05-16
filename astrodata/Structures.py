@@ -2,7 +2,7 @@
 import os, sys, re
 import AstroData
 
-from ConfigSpace import configWalk
+from ConfigSpace import config_walk
 
 # some common defines mainly for Structure Definition Modules
 # these are standard strings, these variable save typing quotes
@@ -100,7 +100,7 @@ class Part(object):
             self.required=required
             self.structClass = structClass
             if structClass != None:
-                self.structInst = instantiateStruct(structClass)
+                self.structInst = instantiate_struct(structClass)
                 self.structInst.otherReqs = otherReqs.copy()
             self.arrayBy = arrayBy
             self.structName = name
@@ -165,7 +165,7 @@ class Structure(object):
             if arrayBy != None:
                 # then this part is an array
                 # create associateByList
-                associateList = getConcreteArrayByValues(dataset, arrayBy = arrayBy, reqs = self.otherReqs)
+                associateList = get_concrete_array_by_values(dataset, array_by = arrayBy, reqs = self.otherReqs)
                 # for each concrete association
                 newPartAry = PartList(None, 
                                 arrayBy = arrayBy, 
@@ -242,7 +242,7 @@ class Structure(object):
             if isinstance(part,list):
                 newmem = []
                 for subpart in part:
-                    exts = subpart.structInst.getExtensions()
+                    exts = subpart.structInst.get_extensions()
                     newds = AstroData.AstroData(dataset, extInsts = exts)
                     newmem.append(newds)
                     subpart.structInst.project(newds)                    
@@ -263,7 +263,7 @@ class Structure(object):
                     print "projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
             elif isinstance(part, Part):
                 if (part.structInst != None):
-                    exts = part.structInst.getExtensions()
+                    exts = part.structInst.get_extensions()
                     newds = AstroData.AstroData(dataset, extInsts = exts)
                 else:
                     newds = None
@@ -282,11 +282,11 @@ class Structure(object):
             else:
                 # only options... how did a non-Part class get here?
                 raise StructureExcept("Non Part Class found in part array - fatal flaw")
-    def getExtensions(self):
+    def get_extensions(self):
         retary = []
         for part in self.partInsts:
             if part.structInst != None:
-                exts = part.structInst.getExtensions()
+                exts = part.structInst.get_extensions()
                 if exts != None:
                     retary += exts
         return retary
@@ -351,10 +351,10 @@ class ExtID(object):
         # I don't do anything, my container, a Structure instance does this
         pass
     
-    def getExtensions(self):
+    def get_extensions(self):
         """
         This function returns the extension identified by this node. 
-        C{getExtensions()} Should be called only after "find" has been
+        C{get_extensions()} Should be called only after "find" has been
         called, and is part of the structure projection process.
         @return: the extension previously found in call to C{find(..)}
         @rtype: an HDU instance
@@ -397,7 +397,7 @@ class ExtID(object):
 #functions
 
 
-def applyStructureByType(dataset):
+def apply_structure_by_type(dataset):
     """ Apply all structures to dataset based on which types apply to
     the given dataset
     @param dataset: dataset to apply structure to
@@ -417,7 +417,7 @@ def applyStructureByType(dataset):
         
         if structstr != None:
             applied += 1
-            structObj = instantiateStruct(structstr)
+            structObj = instantiate_struct(structstr)
             #@@TODO: what if this is false... not handling at all
             structObj.find(dataset)
             structObj.printout(dataset)
@@ -434,14 +434,14 @@ def applyStructureByType(dataset):
     
     return applied
 
-def instantiateStruct(structstr):
+def instantiate_struct(structstr):
     modname = structstr.split(".")[0]
     exec "import " + modname
     return eval (structstr)
 
-def getConcreteArrayByValues(dataset, arrayBy, reqs = None):
-    if arrayBy == None:
-        raise StructureExcept("Structure.py: cannot get concrete values; arrayBy == None")
+def get_concrete_array_by_values(dataset, array_by, reqs = None):
+    if array_by == None:
+        raise StructureExcept("Structure.py: cannot get concrete values; array_by == None")
     
     retlist = []
     
@@ -466,14 +466,14 @@ def getConcreteArrayByValues(dataset, arrayBy, reqs = None):
             # might mean there were no extra reqs...
             # ncv == New Concrete Value (to add to retlist)
             try:
-                ncv = eheader[arrayBy]
+                ncv = eheader[array_by]
                 if ncv.value not in retlist:
                     retlist.append(ncv.value)
             except KeyError:
                 # just means this extension doesn't have a concrete value to contribute
                 # which also means it won't be found in this part of the structure
                 # which obviously means it has not passed... MUST HAVE whatever
-                # the arrayBy key is...
+                # the array_by key is...
                 pass
             
     return retlist
@@ -501,7 +501,7 @@ if (True): # was firstrun logic... python interpreter makes sure this module onl
     # and exec the structureIndex.***.py files
     # These indexes are meant to append it to the centralDescriptorIndex
     
-    for root, dirn, files in configWalk("structures"):
+    for root, dirn, files in config_walk("structures"):
         sys.path.append(root)
         for sfilename in files:
             if (re.match(structureIndexREMask, sfilename)):

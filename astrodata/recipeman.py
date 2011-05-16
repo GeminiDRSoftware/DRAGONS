@@ -49,26 +49,26 @@ if (options.createcalindex):
     infile   = "./recipedata/N20020606S0141.fits"
     biasfile = "./recipedata/N20020507S0045_bias.fits"
     flatfile = "./recipedata/N20020606S0149_flat.fits"
-    co.addCal(infile, "bias", biasfile)
-    co.addCal(infile, "flat", flatfile)
+    co.add_cal(infile, "bias", biasfile)
+    co.add_cal(infile, "flat", flatfile)
     if not os.path.exists(".reducecache"):
         os.mkdir(".reducecache")
-    co.persistCalIndex("./.reducecache/calindex.pkl")
+    co.persist_cal_index("./.reducecache/calindex.pkl")
     
     # This is an ugly addition, but it also ensures that the 2009 fits file has its
     # calibrations as well...so getProcessedBias works.
     infile   = "./recipedata/N20091002S0219.fits"
     biasfile = "./recipedata/N20090822S0207_bias.fits"
     flatfile = "./recipedata/N20090823S0102_flat.fits"
-    co.addCal(infile, "bias", biasfile)
-    co.addCal(infile, "flat", flatfile)
-    co.persistCalIndex("./.reducecache/calindex.pkl")
+    co.add_cal(infile, "bias", biasfile)
+    co.add_cal(infile, "flat", flatfile)
+    co.persist_cal_index("./.reducecache/calindex.pkl")
     earlyExit = True
     print "    CREATED ./.reducecache/calindex.pkl"
 
 if (options.showcalindex):
     co = ReductionContext()
-    co.restoreCalIndex("./.reducecache/calindex.pkl")
+    co.restore_cal_index("./.reducecache/calindex.pkl")
     print "\nCONTENTS OF ./.reducecache/calindex.pkl"
     cs = co.calsummary()
     if cs == "":
@@ -115,10 +115,10 @@ gd = GeminiData(infile)
 # start the Gemini Specific class code
 
 rl = RecipeLibrary()
-ro = rl.retrieveReductionObject(astrotype="GMOS_IMAGE") # can be done by filename
+ro = rl.retrieve_reduction_object(astrotype="GMOS_IMAGE") # can be done by filename
 
-reclist = rl.getApplicableRecipes(infile)
-recdict = rl.getApplicableRecipes(infile, collate=True)
+reclist = rl.get_applicable_recipes(infile)
+recdict = rl.get_applicable_recipes(infile, collate=True)
 
 types = gd.get_types()
 print "\nProcessing dataset %s\n\tRecipes found by type:" % infile
@@ -143,24 +143,24 @@ for rec in reclist:
         co = ReductionContext()
         
         # add input file
-        co.addInput(infile)
+        co.add_input(infile)
         # add biases
-        co.addCal(infile, "bias", biasfile)
-        co.addCal(infile, "flat", flatfile)
+        co.add_cal(infile, "bias", biasfile)
+        co.add_cal(infile, "flat", flatfile)
         co.update({"adata":adatadir})
         if (useTK):
             while cw.bReady == False:
                 # this is hopefully not really needed
                 # did it to give the tk thread a chance to get running
                 time.sleep(.1)
-            cw.newControlWindow(rec,co)
+            cw.new_control_window(rec,co)
             cw.mainWindow.protocol("WM_DELETE_WINDOW", co.finish) 
 
 
         # @@TODO:evaluate use of init for each recipe vs. for all recipes
         ro.init(co)
         print "running recipe '%s'" % rec
-        rl.loadAndBindRecipe(ro,rec, file=infile)
+        rl.load_and_bind_recipe(ro,rec, file=infile)
         if (useTK):
             cw.running(rec)
             
@@ -168,7 +168,7 @@ for rec in reclist:
         # CONTROL LOOP #
         ################
         for coi in ro.substeps(rec, co):
-            coi.processCmdReq()
+            coi.process_cmd_req()
             while (coi.paused):
                 time.sleep(.100)
             if co.finished:
@@ -178,16 +178,16 @@ for rec in reclist:
             for rq in coi.rorqs:
                 fn = rq.filename
                 typ = rq.caltype
-                calname = coi.getCal(fn, typ)
+                calname = coi.get_cal(fn, typ)
                 #print fn, typ, calname
                 if calname == None:
-                    coi.addCal(fn, typ, None)
+                    coi.add_cal(fn, typ, None)
                     
             for rq in coi.stkrqs:
                 print "RM144: STACKABLE REQS:", rq
     
     except KeyboardInterrupt:
-        co.isFinished(True)
+        co.is_finished(True)
         if (useTK):
             cw.quit()
         print "Ctrl-C Exit"
@@ -196,9 +196,9 @@ for rec in reclist:
         print "CONTEXT AFTER FATAL ERROR"
         print "--------------------------"
         if (bReportHistory):
-            co.reportHistory()
-            rl.reportHistory()
-        co.isFinished(True)
+            co.report_history()
+            rl.report_history()
+        co.is_finished(True)
         raise
 
     if (bReportHistory):
@@ -206,10 +206,10 @@ for rec in reclist:
         print "CONTEXT HISTORY"
         print "---------------"
 
-        co.reportHistory()
-        rl.reportHistory()
+        co.report_history()
+        rl.report_history()
         
-    co.isFinished(True)
+    co.is_finished(True)
 
 if useTK:
     try:
@@ -217,7 +217,7 @@ if useTK:
         cw.mainWindow.after_cancel(cw.pcqid)
         if cw.killed == True:
             raw_input("Press Enter to Close Monitor Windows:")
-        # After ID print cw.pcqid
+        # After _id print cw.pcqid
         cw.mainWindow.quit()
     except:
         raise
@@ -231,7 +231,7 @@ while (False):
     for th in threading.enumerate():
         print str(th)
     sleep(5.)
-# print co.reportHistory()
+# print co.report_history()
 # main()
     
 

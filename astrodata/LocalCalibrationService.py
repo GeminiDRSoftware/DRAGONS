@@ -21,13 +21,13 @@ class CalibrationService( object ):
     calDirectory = None
     calList = []
     
-    def __init__( self, calDirectoryURIs=["."], mode="local_disk" ):
+    def __init__( self, cal_directory_uris=["."], mode="local_disk" ):
         
         print ("Loading Calibration Service Available Directories")
         # calList will contain absolute paths/filenames
         self.calList = []
-        for path in calDirectoryURIs:
-            for cpath in ConfigSpace.generalWalk(path, [".fits"]):
+        for path in cal_directory_uris:
+            for cpath in ConfigSpace.general_walk(path, [".fits"]):
                 self.calList.append(cpath)
                 
     
@@ -41,12 +41,12 @@ class CalibrationService( object ):
         # 1) set up, and send out appropriate messages
         # 2) while !not shutdown or restart message:
         # 3)  wait on message
-        # 4)  when request received, basically thread pool or exec() a processRequest or One run CalService
+        # 4)  when request received, basically thread pool or exec() a process_request or One run CalService
         # 5)  Child sends out processedRequestMessage and is terminates
         # 6) shutdown or r      estart
     
     
-    def processRequest( self, message ):
+    def process_request( self, message ):
         '''
         
         
@@ -58,20 +58,20 @@ class CalibrationService( object ):
         # 3) return results in output message for message bus.
     
     
-    def search( self, calRq ):
+    def search( self, cal_rq ):
         '''
         Searches the various fits files collecting valid calibrations and eventually returning a
         sorted list of based on the priorities.
         
-        @param calRq: The Calibration Request. For this localized version, it contains only the most
+        @param cal_rq: The Calibration Request. For this localized version, it contains only the most
         critical information, but on the PRS, this would be a message.
-        @type calRq: CalibrationRequest instance.
+        @type cal_rq: CalibrationRequest instance.
         
         @return: A sorted list of calibration pathnames.
         @rtype: list
         '''
         
-        inputfile = calRq.filename
+        inputfile = cal_rq.filename
         urilist = []     
         
         # print "LCS73:", self.calList
@@ -80,19 +80,19 @@ class CalibrationService( object ):
                 
             # print "CS90: Checking if '" + calfile + "' is viable."
             ad = AstroData( calfile )
-            desc = Descriptors.getCalculator( ad )
+            desc = Descriptors.get_calculator( ad )
             
-            if not self.searchIdentifiers( calRq.identifiers, desc, ad ):
+            if not self.search_identifiers( cal_rq.identifiers, desc, ad ):
                 # print "FAILED IDENTIFIERS"
                 continue
-            if not self.searchCriteria( calRq.criteria, desc, ad ):
+            if not self.search_criteria( cal_rq.criteria, desc, ad ):
                 # print "FAILED CRITERIA"
                 continue
 
             # print "CS98: This '" + calfile + "' succeeded!"
             urilist.append( (calfile, desc, ad) )
             
-        urilist = self.sortPriority( urilist, calRq.priorities )
+        urilist = self.sort_priority( urilist, cal_rq.priorities )
         
         #print "CS96 urilist --\n", urilist
         if urilist == []:
@@ -102,7 +102,7 @@ class CalibrationService( object ):
         return urilist
     
     
-    def searchIdentifiers( self, identifiers, desc, ad ):
+    def search_identifiers( self, identifiers, desc, ad ):
         '''
         Will perform the 'identifier' search  -- matching values must be identical.
         
@@ -117,13 +117,13 @@ class CalibrationService( object ):
         '''
         
         for prop in identifiers.keys():
-            if not self.compareProperty( {prop:identifiers[prop]}, desc, ad ):
+            if not self.compare_property( {prop:identifiers[prop]}, desc, ad ):
                 #print "LCS108{Failed on:", prop
                 return False
         return True
     
     
-    def searchCriteria( self, criteria, desc, ad, err=400000. ):
+    def search_criteria( self, criteria, desc, ad, err=400000. ):
         '''
         Will perform the 'criteria' search  -- matching values must be identical or within tolerable error.
         
@@ -142,7 +142,7 @@ class CalibrationService( object ):
         '''
         
         for prop in criteria.keys():
-            compareRet = self.compareProperty( {prop:criteria[prop]}, desc, ad )
+            compareRet = self.compare_property( {prop:criteria[prop]}, desc, ad )
             # print "Property:", prop,criteria[prop]
             if type( compareRet ) == bool:
                 if not compareRet:
@@ -156,7 +156,7 @@ class CalibrationService( object ):
         return True
     
     
-    def sortPriority( self, listoffits, priorities ):
+    def sort_priority( self, listoffits, priorities ):
         '''
         Will sort the listoffits based on the priorities.       .
         
@@ -177,7 +177,7 @@ class CalibrationService( object ):
         for ffile, desc, ad in listoffits:
             sortvalue = []
             for prior in priorities.keys():
-                compareRet = self.compareProperty( {prior:priorities[prior]}, desc, ad )
+                compareRet = self.compare_property( {prior:priorities[prior]}, desc, ad )
                 sortvalue.append( compareRet )
             sortvalue.append( ffile )
             # What sortvalue looks like at this point: [priority1, priority2, priority3, ..., file]
@@ -195,7 +195,7 @@ class CalibrationService( object ):
         return sortList
     
     
-    def compareProperty( self, prop, desc, ad):
+    def compare_property( self, prop, desc, ad):
         '''
         Compares a property (in xml calibration sense), to the headers of a calibration fits file.
         
@@ -208,10 +208,10 @@ class CalibrationService( object ):
         @return: The difference of the values if non-string, or True or False if string.
         @type: int, float, or None
         '''
-        compareOn, compareAttrs, extension, typ, compValue = self.getCompareInfo( prop )
+        compareOn, compareAttrs, extension, typ, compValue = self.get_compare_info( prop )
         # Use the descriptor to obtain header key or 'tag'(i.e. filternames) values.
         
-        retVal = desc.fetchValue( compareOn, ad )
+        retVal = desc.fetch_value( compareOn, ad )
 
         if compareOn.upper() == "OBSEPOCH":
             conRetVal = self.convertGemToUnixTime( retVal )
@@ -237,7 +237,7 @@ class CalibrationService( object ):
             return False
     
     
-    def getCompareInfo( self, prop ):
+    def get_compare_info( self, prop ):
         '''
         Unpacks the calibration request dict and tuple.
         '''

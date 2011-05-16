@@ -321,7 +321,6 @@ integrates other functionality.
         else:
             if (self.hdulist != None):
                 self.hdulist.close()
-                self.hdulist = None
     
     def __contains__(self, ext):
         try:
@@ -1023,7 +1022,9 @@ integrates other functionality.
             except KeyboardInterrupt:
                 raise
             except:
+                raise
                 raise ADExcept("discover types failed")
+                
 
         # do inferences
         if inferRAW and self.is_type("RAW"):
@@ -1171,8 +1172,8 @@ integrates other functionality.
         for typ in retary:
             notSuper = True
             for supertype in retary:
-                sto = cl.getTypeObj(supertype)
-                if sto.isSubtypeOf(typ):
+                sto = cl.get_type_obj(supertype)
+                if sto.is_subtype_of(typ):
                     notSuper = False
             if notSuper:
                 pary.append(typ)
@@ -1218,7 +1219,7 @@ integrates other functionality.
         if prune :
             # since there is no particular order to identifying types, I've deced to do this
             # here rather than try to build the list with this in mind (i.e. passing prune to
-            # ClassificationLibrary.discoverTypes()
+            # ClassificationLibrary.discover_types()
             #  basic algo: run through types, if one is a supertype of another, 
             #  remove the supertype
             retary = self.prune_typelist(retary)
@@ -1244,7 +1245,7 @@ integrates other functionality.
         if (self.types == None):
             cl = self.get_classification_library()
 
-            alltypes = cl.discoverTypes(self, all=True)
+            alltypes = cl.discover_types(self, all=True)
             self.types = alltypes["all"]
             self.typesStatus = alltypes["status"]
             self.typesTypology = alltypes["typology"]
@@ -1343,7 +1344,7 @@ integrates other functionality.
         """
         if (self.types == None):
             cl = self.get_classification_library()
-            self.types = cl.discoverTypes(self)
+            self.types = cl.discover_types(self)
             typestrs = self.get_types()
         for typen in typenames:
             if typen in self.types:
@@ -1621,7 +1622,7 @@ integrates other functionality.
             print self.infostr()       
     def display_id(self):
         import IDFactory
-        return IDFactory.generateStackableID(self)
+        return IDFactory.generate_stackable_id(self)
  
         
         

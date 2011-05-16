@@ -2,9 +2,9 @@ import os
 import ConfigSpace
 import pyfits
 
-def getLookupTable(modname, *lookup):
+def get_lookup_table(modname, *lookup):
     """
-        getLookupTable() is used to get lookup table style sets of variables
+        get_lookup_table() is used to get lookup table style sets of variables
         from a common facility, allowing the storage in common (global) space
         so that multiple scripts can refer to one lookup table
         without having to manage where this table is stored.  E.g. the Calculator
@@ -27,7 +27,7 @@ def getLookupTable(modname, *lookup):
     @type lookup: string
     """
 
-    modname = ConfigSpace.lookupPath(modname)
+    modname = ConfigSpace.lookup_path(modname)
     if ".py" in modname:
         f = file(modname)
       

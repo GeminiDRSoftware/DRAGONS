@@ -61,7 +61,7 @@ class Calculator(object):
     throwExceptions = True 
         
     stdkeyDict = globalStdkeyDict
-    def fetchPHUValue(self, keyname, dataset):
+    def fetch_phuvalue(self, keyname, dataset):
         """This utility functioin fetches a header value from the PHU of the
         given dataset. The C{keyname} given is from the standardized key names
         and are mapped into actual standard PHU header name.
@@ -83,7 +83,7 @@ class Calculator(object):
         return retval
     
     
-    def fetchValue( self, keyname, dataset ):
+    def fetch_value( self, keyname, dataset ):
         """
         A test utility function that, given a keyname, whether it be something in the header like 'INSTRUME'
         or something not in the header like 'FILTERNAME', it will either return the value from the associated

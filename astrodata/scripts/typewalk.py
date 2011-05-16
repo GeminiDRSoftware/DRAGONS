@@ -103,7 +103,7 @@ terminal.forceHeight = options.forceHeight
 # start the Gemini Specific class code
 
 dt = DataSpider()
-cl = dt.getClassificationLibrary()
+cl = dt.get_classification_library()
 
 showStack = True
 if (options.listdescriptors):
@@ -122,7 +122,7 @@ if (options.listdescriptors):
         qdescs = [ '"%s"' % s for s in descs]
         print "["+", ".join(qdescs)+"]"
 elif (options.htmldoc):
-    print cl.htmlDoc()
+    print cl.html_doc()
 else:
     try:
         osd = options.showdescriptors

@@ -2,7 +2,7 @@
 import sys,os
 import re
 
-"""This module contains a factory, L{getCalculator}, which will return 
+"""This module contains a factory, L{get_calculator}, which will return 
 the appropriate Calculator instance for the given dataset,
 according to the Descriptor configuration files. There is no Descriptor
 class, the classes in question are the Calculators. This function is used
@@ -18,7 +18,7 @@ call the appropriate member function of the calculator associated with
 their dataset.
 """
 from astrodata import Errors
-from ConfigSpace import configWalk
+from ConfigSpace import config_walk
 DESCRIPTORSPACE = "descriptors"
 
 import inspect
@@ -139,16 +139,16 @@ class DescriptorValue():
         else:
             self.format = None
         # do after object is set up
-        self.val = self.isCollapsable() # note, tricky thing, doesn't return true, returns value
+        self.val = self.is_collapsable() # note, tricky thing, doesn't return true, returns value
     
     
     def __float__(self):
-        value = self.collapseDictVal()
+        value = self.collapse_dict_val()
         return float(value)
     
     
     def __int__(self):
-        value = self.collapseDictVal()
+        value = self.collapse_dict_val()
         return int(value)
     
     
@@ -156,30 +156,30 @@ class DescriptorValue():
         format = self.format
         # do any automatic format heuristics
         if format == None:
-            val = self.isCollapsable()
+            val = self.is_collapsable()
             if val == None:
-                format = "asDict"
+                format = "as_dict"
             else:
                 format = "value"
         
         # produce known formats
         retstr = "Unknown Format For DescriptorValue"
-        if  format == "asDict":
+        if  format == "as_dict":
             retstr = str(self.dictVal)
         elif format == "db" or format == "value":
-            val = self.isCollapsable()
+            val = self.is_collapsable()
             if val != None:
                 retstr = str(val)
             else:
                 parts = [str(val) for val in self.dictVal.values()]
                 retstr = "+".join(parts)
         elif format == "value":
-            val = self.isCollapsable()
+            val = self.is_collapsable()
         return retstr
     
     
-    def collapseDictVal(self):
-        value = self.isCollapsable()
+    def collapse_dict_val(self):
+        value = self.is_collapsable()
         if value == None:
             raise DescriptorValueBadCast("\n"
                 "Cannot convert DescriptorValue to scaler " 
@@ -193,26 +193,26 @@ class DescriptorValue():
    
     
     
-    def convertValueTo(self, newUnits, newType = None):
-        # retval = self.unit.convert(self.val, newUnits)
+    def convert_value_to(self, new_units, new_type = None):
+        # retval = self.unit.convert(self.val, new_units)
         newDict = copy(self.dictVal)
         for key in self.dictVal:
             val = self.dictVal[key]
-            newval = self.unit.convert(val, newUnits)
-            if newType:
-                newval = newType(newval)
+            newval = self.unit.convert(val, new_units)
+            if new_type:
+                newval = new_type(newval)
             else:
                 if self.pytype != None:
                     newval = self.pytype(newval)
             newDict.update({key:newval})
             
-        if newType:
-            pytype = newType
+        if new_type:
+            pytype = new_type
         else:
             pytype = self.pytype
             
         retval = DescriptorValue(   newDict, 
-                                    unit= newUnits, 
+                                    unit= new_units, 
                                     pytype = pytype,
                                     name = self.name,
                                     format = self.format)
@@ -220,16 +220,16 @@ class DescriptorValue():
         return retval
 
     
-    def forDB(self):
+    def for_db(self):
         oldformat = self.format
         self.format = "db"
-        val = self.asPytype()
+        val = self.as_pytype()
         self.format = oldformat
         if type(val) == tuple:
             val = str(val)
         return val
-    def asPytype(self):
-        self.val = self.isCollapsable()
+    def as_pytype(self):
+        self.val = self.is_collapsable()
         if self.val == None:
             curform = self.format
             retstr =  str(self)
@@ -240,7 +240,7 @@ class DescriptorValue():
             return self.val
     
     # alias
-    forNumpy = asPytype
+    forNumpy = as_pytype
             
     
     def info(self):
@@ -263,7 +263,7 @@ descriptor value for: %(name)s
               }
 
     
-    def isCollapsable(self):
+    def is_collapsable(self):
         oldvalue = None
         for key in self.dictVal:
             value = self.dictVal[key]
@@ -279,17 +279,17 @@ descriptor value for: %(name)s
     
         
     def overloaded(self, other):
-        val = self.isCollapsable()
+        val = self.is_collapsable()
         
         if val == None:
             raise Errors.DescriptorValueTypeError("DescriptorValue contains complex result (differs for different extension) and cannot be used as a simple %s" % str(self.pytype))
         else:
             if type(val) != self.pytype:
-                val = self.asPytype()
+                val = self.as_pytype()
         myfuncname = whocalledme()
         
         if isinstance(other, DescriptorValue):
-            other = other.asPytype()
+            other = other.as_pytype()
         if True: # always try the following and let it raise #hasattr(val, myfuncname):
             try:
                 op = None
@@ -312,8 +312,8 @@ descriptor value for: %(name)s
         print "DISASTERDISASTERDISASTERDISASTERDISASTERDISASTERDISASTER"
 #        mytype = self.pytype
 #        if isinstance(other, DescriptorValue):
-#            other = other.asPytype()
-#            #print "D282:", other, type(other), self.asPytype(), type(self.asPytype()), self.pytype
+#            other = other.as_pytype()
+#            #print "D282:", other, type(other), self.as_pytype(), type(self.as_pytype()), self.pytype
 #        othertype = type(other)
 #        
 #        if mytype == float and othertype == int:
@@ -342,8 +342,8 @@ descriptor value for: %(name)s
 #
 #        
 #        #print "D273:", myfuncname, "->", otherfuncname
-#        if hasattr(self.asPytype(), myfuncname):
-#            evalstr = "self.asPytype().%s(other)" % myfuncname
+#        if hasattr(self.as_pytype(), myfuncname):
+#            evalstr = "self.as_pytype().%s(other)" % myfuncname
 #            retval = eval(evalstr)
 #            retval = outtype(retval)
 #            return retval
@@ -356,23 +356,23 @@ descriptor value for: %(name)s
 #        raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),otherfuncname))
     
     
-    def overloadedCmp(self,other):
-        val = self.isCollapsable()
+    def overloaded_cmp(self,other):
+        val = self.is_collapsable()
         
         if val == None:
             raise Errors.DescriptorValueTypeError("DescriptorValue contains complex result (differs for different extension) and cannot be used as a simple %s" % str(self.pytype))
         else:
             if type(val) != self.pytype:
-                val = self.asPytype()
+                val = self.as_pytype()
                 
         #myfuncname = whocalledme()
         
         if isinstance(other, DescriptorValue):
-            other = other.asPytype()
+            other = other.as_pytype()
 
         othertype = type(other)
         
-        mine = self.asPytype()
+        mine = self.as_pytype()
         
         if hasattr(mine, "__eq__"):
             try:
@@ -471,7 +471,7 @@ descriptor value for: %(name)s
         return self.overloaded(other)
     __and__.operation = "val & other"
     def __cmp__(self, other):
-        return self.overloadedCmp(other)
+        return self.overloaded_cmp(other)
     #__cmp__.operation = "cmp(val, other)"
     
     def __lshift__(self, other):
@@ -527,7 +527,7 @@ if (True):
     centralCalculatorIndex = {}
     loadedCalculatorIndex = {}
     # WALK the config space as a directory structure
-    for root, dirn, files in configWalk(DESCRIPTORSPACE):
+    for root, dirn, files in config_walk(DESCRIPTORSPACE):
         if root not in sys.path:
 	        sys.path.append(root)
         if True:
@@ -564,7 +564,7 @@ firstrun = False
 from Calculator import Calculator
 
 # Module Level Function(s)
-def getCalculator(dataset):
+def get_calculator(dataset):
     """ This function gets the Calculator instance appropriate for 
     the specified dataset.
     Conflicts, arising from Calculators being associated with more than one
@@ -599,14 +599,14 @@ def getCalculator(dataset):
                 calctype = newcalctype
             else:
                 # if the new calc is related to a type that the old
-                nt = cl.getTypeObj(newcalctype)
-                if nt.isSubtypeOf(calctype):
+                nt = cl.get_type_obj(newcalctype)
+                if nt.is_subtype_of(calctype):
                 # subtypes "win" calculator type assignment "conflicts"
                     calc = newcalc
                     calctype = newcalctype
                 else:
-                    ot = cl.getTypeObj(calctype)
-                    if not ot.isSubtypeOf(nt):
+                    ot = cl.get_type_obj(calctype)
+                    if not ot.is_subtype_of(nt):
                         # if more than one type applies, they must have a subtype
                         raise dExcept()
         except KeyError:

@@ -3,7 +3,7 @@ import sys
 from astrodata.AstroData import AstroData
 import AstroDataType
 
-from ReductionContextRecords import AstroDataRecord
+from cache_files import AstroDataRecord
 from copy import copy
 
 #removed old logger, calls changed to prints, need to incorporate new logger
@@ -22,7 +22,7 @@ class GDPGUtilExcept:
 
 #------------------------------------------------------------------------------ 
 
-def checkDataSet( filenames ):
+def check_data_set( filenames ):
     '''
     Takes a list or individual AstroData, filenames, and then verifies and
     returns list of AstroData instances. Will crash if bad arguments.
@@ -53,7 +53,7 @@ def checkDataSet( filenames ):
 
 #------------------------------------------------------------------------------ 
 
-def clusterTypes( datalist ):
+def cluster_types( datalist ):
     '''
     Given a list or singleton of filenames, or AstroData, generate an index of AstroData based on 
     types (e.g. So each file can run under the same recipe).
@@ -74,7 +74,7 @@ def clusterTypes( datalist ):
     #log.debug( 'Importing AstroData' )
     from astrodata.AstroData import AstroData
     
-    datalist = checkDataSet( datalist )
+    datalist = check_data_set( datalist )
     
     clusterIndex = {}
     
@@ -99,10 +99,10 @@ def clusterTypes( datalist ):
 
 #------------------------------------------------------------------------------ 
 
-def openIfName(dataset):
+def open_if_name(dataset):
     """Utility function to handle accepting datasets as AstroData
-    instances or string filenames. Works in conjunction with closeIfName.
-    The way it works, openIfName opens returns an GeminiData isntance"""
+    instances or string filenames. Works in conjunction with close_if_name.
+    The way it works, open_if_name opens returns an GeminiData isntance"""
     
     bNeedsClosing = False
     if type(dataset) == str:
@@ -115,35 +115,35 @@ def openIfName(dataset):
         bNeedsClosing = False
         gd = dataset.ad
     else:
-        raise GDPGUtilExcept("BadArgument in recipe utility function: openIfName(..)\n MUST be filename (string) or GeminiData instrument")
+        raise GDPGUtilExcept("BadArgument in recipe utility function: open_if_name(..)\n MUST be filename (string) or GeminiData instrument")
     
     return (gd, bNeedsClosing)
     
     
-def closeIfName(dataset, bNeedsClosing):
+def close_if_name(dataset, b_needs_closing):
     """Utility function to handle accepting datasets as AstroData
-    instances or string filenames. Works in conjunction with openIfName."""
+    instances or string filenames. Works in conjunction with open_if_name."""
 
-    if bNeedsClosing == True:
+    if b_needs_closing == True:
         dataset.close()
     
     return
 
 
-def DEADFUNCTIONinheritConfig(typ, index, cl = None):
+def _deadfunctioninherit_config(typ, index, cl = None):
     # print "GU34:", typ, str(index)
     if cl == None:
-        cl = AstroDataType.getClassificationLibrary()
+        cl = AstroDataType.get_classification_library()
 
     if typ in index:
         #print "GU51:", typ, index[typ]
         return {typ:index[typ]}
     else:
-        typo = cl.getTypeObj(typ)
-        supertypos = typo.getSuperTypes()
+        typo = cl.get_type_obj(typ)
+        supertypos = typo.get_super_types()
         cfgs = {}
         for supertypo in supertypos:
-            cfg = inheritConfig(supertypo.name, index, cl = cl)
+            cfg = inherit_config(supertypo.name, index, cl = cl)
             if cfg != None:
                 cfgs.update(cfg)
         if len(cfgs) == 0:
@@ -151,12 +151,12 @@ def DEADFUNCTIONinheritConfig(typ, index, cl = None):
         else:
             return cfgs
 
-def pickConfig(dataset, index, style = "unique"):
+def pick_config(dataset, index, style = "unique"):
     """Pick config will pick the appropriate config for the style.
     NOTE: currently style must be unique, a unique config is chosen using
     inheritance.
     """
-    ad,obn = openIfName(dataset)
+    ad,obn = open_if_name(dataset)
     cl = ad.get_classification_library()
     
     candidates = {}
@@ -172,14 +172,14 @@ def pickConfig(dataset, index, style = "unique"):
     # to grandparent.
     # for style="unique" the end result must be just one
     # configuration object returned.
-    def inheritConfig(typ, index):
+    def inherit_config(typ, index):
         # print "gd168:", typ
         if typ in index.keys():
             return (typ,index[typ])
         else:
-            typo = cl.getTypeObj(typ)
+            typo = cl.get_type_obj(typ)
             if typo.parent:
-                return inheritConfig(typo.parent, index)
+                return inherit_config(typo.parent, index)
             else:
                 return None  
                 
@@ -193,7 +193,7 @@ def pickConfig(dataset, index, style = "unique"):
             if cand:
                 candidates.update({typ:cand})
         else:
-            candtuple = inheritConfig(typ, index)
+            candtuple = inherit_config(typ, index)
             if candtuple:
                 candidates.update({candtuple[0]:candtuple[1]})        
     k = candidates.keys()
@@ -204,7 +204,7 @@ def pickConfig(dataset, index, style = "unique"):
     candscopy = copy(candidates)
     for cantyp in candscopy.keys():
         for partyp in candscopy.keys():
-            if cl.typeIsChildOf(cantyp, partyp):
+            if cl.type_is_child_of(cantyp, partyp):
                 if partyp in candidates:
                     del(candidates[partyp])
     # print "gu205:", repr(candidates)
@@ -213,7 +213,7 @@ def pickConfig(dataset, index, style = "unique"):
     # print "GU211:", repr(candidates)
     if len(k) == 0:
         for typ in types:
-            candtuple = inheritConfig(typ, index)
+            candtuple = inherit_config(typ, index)
             if candtuple:
                 candidates.update({candtuple[0]:candtuple[1]})
 
@@ -244,5 +244,5 @@ def pickConfig(dataset, index, style = "unique"):
             s = "NO CONFIG for %s" % (ad.filename)
             raise GDPGUtilExcept(s)
             
-    closeIfName(ad, obn)
+    close_if_name(ad, obn)
     return candidates

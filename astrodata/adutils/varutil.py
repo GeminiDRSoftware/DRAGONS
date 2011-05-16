@@ -190,8 +190,8 @@ def calculateInitialVarianceArray(sciExt=None):
         # var = (read noise/gain)**2 + max(data,0.0)/gain
                         
         # Retrieving necessary values (read noise, gain)
-        readNoise=sciExt.read_noise().asPytype()
-        gain = sciExt.gain().asPytype()
+        readNoise=sciExt.read_noise().as_pytype()
+        gain = sciExt.gain().as_pytype()
         # Creating (read noise/gain) constant
         rnOverG=readNoise/gain
         # Convert negative numbers (if they exist) to zeros

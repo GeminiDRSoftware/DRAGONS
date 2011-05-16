@@ -27,7 +27,7 @@ class FitsStorageSetup(object):
         self.fs_config = FSC_TEMPLATE % { "startingdir":cwd}
         self.fs_logdir = os.path.join(self.fitsstoredir, "logs")
         
-    def isSetup(self):
+    def is_setup(self):
         
         try:
             from fitsstore import FitsStorageConfig
@@ -52,7 +52,7 @@ class FitsStorageSetup(object):
     def setup(self):
         """ setup can cafely be called on existing databases.  It ensures setup
         when done."""
-        if self.isSetup():
+        if self.is_setup():
             return
         if not os.path.exists(self.fitsstoredir):
             os.mkdir(self.fitsstoredir)

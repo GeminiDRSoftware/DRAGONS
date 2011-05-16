@@ -1,3 +1,5 @@
+
+
 #Copyright Jon Berg , turtlemeat.com
 
 import string,cgi,time
@@ -246,7 +248,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 # which will be obivous if you uncomment and find cmdHistoy is no longer a 
                 # member of this class, it is instead the displayCmdHistory, a TSCmdQueue
                 # instance.
-                #self.wfile.write("\n".join(repr(self.state.rim.cmdHistory[start:]).split(" ")))        
+                #self.wfile.write("\n".join(repr(self.state.rim.cmd_history[start:]).split(" ")))        
                 return 
                 
             if parms["path"] == "/recipeindex.xml":
@@ -254,7 +256,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-type',	'text/xml')
                 self.end_headers()
                 
-                self.wfile.write(rl.getRecipeIndex(asXML=True))
+                self.wfile.write(rl.getRecipeIndex(as_xml=True))
                 return
              
             if parms["path"].startswith("/summary"):
@@ -358,7 +360,7 @@ class MyHandler(BaseHTTPRequestHandler):
             if parms["path"] == "/recipecontent":
                 if "recipe" in parms:
                     recipe = parms["recipe"][0]
-                    content = rl.retrieveRecipe(recipe)
+                    content = rl.retrieve_recipe(recipe)
                     self.send_response(200)
                     self.send_header('Content-type',	'text/plain')
                     self.end_headers()
@@ -385,7 +387,7 @@ class MyHandler(BaseHTTPRequestHandler):
                         self.wfile.write("<b>Name</b>: %s \n" % os.path.basename(ad.filename))
                         self.wfile.write("<br/><b>Path</b>: %s \n" % os.path.abspath(ad.filename))
                         self.wfile.write("<br/><b>Types</b>: %s\n" % ", ".join(ad.types))
-                        recdict = rl.getApplicableRecipes(ad, collate = True)
+                        recdict = rl.get_applicable_recipes(ad, collate = True)
                         keys = recdict.keys()
                         keys.sort()
                         for key in keys:
@@ -418,7 +420,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 # returned in xml  self.wfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
 
                 #self.wfile.write("<html><body>")
-                self.wfile.write(rl.listRecipes(asXML = True) )
+                self.wfile.write(rl.list_recipes(as_xml = True) )
                 #self.wfile.write("</body></html>")
                 return
             
@@ -444,9 +446,9 @@ class MyHandler(BaseHTTPRequestHandler):
                 dirdict = self.getDirdict()
                 ds = dirdict.dataSpider
                 
-                #print "prsw181: before asXML"
-                xml = dirdict.asXML()
-                #print "prsw185: after asXML"
+                #print "prsw181: before as_xml"
+                xml = dirdict.as_xml()
+                #print "prsw185: after as_xml"
                 
                 self.send_response(200)
                 self.send_header('Content-type',	'text/xml')
@@ -658,7 +660,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 print "prsw514:", repr(realpath)
                 
                 name = realpath[-1]
-                fname = dirdict.getFullPath(name)
+                fname = dirdict.get_full_path(name)
                 ad = AstroData(fname)
 
                 self.send_response(200)

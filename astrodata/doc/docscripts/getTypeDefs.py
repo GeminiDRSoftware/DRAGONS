@@ -15,7 +15,7 @@ os.mkdir(outdir)
     
 from astrodata import AstroDataType as ADT
 
-cl = ADT.getClassificationLibrary()
+cl = ADT.get_classification_library()
 
 typesdict = cl.typesDict
 # source files with types covered

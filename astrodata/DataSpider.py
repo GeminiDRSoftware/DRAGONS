@@ -5,7 +5,7 @@ from AstroData import *
 ldebug = False
 verbose = False
 from astrodata.adutils import terminal
-from ReductionContextRecords import AstroDataRecord
+from cache_files import AstroDataRecord
 import subprocess
 import os
 from copy import copy,deepcopy
@@ -17,7 +17,7 @@ if uselocalcalserv: # takes WAY TOO LONG~!!!!!!
     from astrodata.LocalCalibrationService import CalibrationService
     from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary # For xml calibration requests
 
-def shallowWalk(directory):
+def shallow_walk(directory):
     global batchno
     opti = False
     if opti:
@@ -67,12 +67,12 @@ class DataSpider(object):
     def __init__(self, context = None):
         # ==== member vars ====
         self.contextType = context
-        self.classificationLibrary = self.getClassificationLibrary()
+        self.classificationLibrary = self.get_classification_library()
         if uselocalcalserv:
             self.calService = CalibrationService()
             self.calDefLib = CalibrationDefinitionLibrary()
         
-    def getClassificationLibrary(self):
+    def get_classification_library(self):
         # @@todo: handle context here
         if (self.classificationLibrary == None):
             try:
@@ -125,7 +125,7 @@ class DataSpider(object):
         ldebug = False
         dirnum = 0
         if stayTop == True:
-            walkfunc  = shallowWalk
+            walkfunc  = shallow_walk
             if opti:
                 print "Doing a shallow walk"
         else:
@@ -467,7 +467,7 @@ class DataSpider(object):
         ldebug = False
         dirnum = 0
         if stayTop == True:
-            walkfunc  = shallowWalk
+            walkfunc  = shallow_walk
             if opti:
                 print "Doing a shallow walk"
         else:
@@ -600,12 +600,12 @@ class DataSpider(object):
                             firstfile = False
 
                             #dirdict tending
-                            dirdict.addDir(fullroot)
-                            dirdict.addFile(tfile, root=fullroot)
+                            dirdict.add_dir(fullroot)
+                            dirdict.add_file(tfile, root=fullroot)
                             sys.stdout.write("+")
                             sys.stdout.flush()
                             if tfile != "":
-                                dirdict.addFileProp(tfile, root= fullroot, propname="types", propval=dtypes)
+                                dirdict.add_file_prop(tfile, root= fullroot, propname="types", propval=dtypes)
                             # new line at the end of the output
                             # print ""
 
@@ -618,7 +618,7 @@ class DataSpider(object):
                                 for sd in sdl:
                                     maxlen = max(len(sd),maxlen)
                                     
-                                # print "DS595:", repr(fl.gain(asDict=True))
+                                # print "DS595:", repr(fl.gain(as_dict=True))
                                 # print "DS596:", repr(fl.amp_read_area(asList = True))
                                 for sd in sdl:
                                     #print "DS242:", sd
@@ -667,7 +667,7 @@ class DataSpider(object):
                             if (showCals == True):
                                 adr = AstroDataRecord(fl)
                                 for caltyp in ["bias", "twilight"]:
-                                    rq = self.calDefLib.getCalReq([adr],caltyp)[0]
+                                    rq = self.calDefLib.get_cal_req([adr],caltyp)[0]
                                     try:
                                         cs = "%s" % (str(self.calService.search(rq)[0]))
                                     except:
@@ -720,7 +720,7 @@ class DirDict(object):
         self.rootdir = os.path.abspath(rootdir)
         self.direntry = DirEntry("",parent=self)
         self.entryDict = {}
-    def reportEntry( self, name, path):
+    def report_entry( self, name, path):
         self.entryDict.update({name:path})
         
     def reldir(self, dirname):
@@ -729,7 +729,7 @@ class DirDict(object):
         else:
             return dirname[len(self.rootdir):]
             
-    def addDir(self, path):
+    def add_dir(self, path):
         # print "DS746: adding path", path
         if path[:len(self.rootdir)] != self.rootdir:
             raise "can't add that bad directory! "+path
@@ -741,9 +741,9 @@ class DirDict(object):
             # print "DS753: having subdir add path if need be"
             pathlist = path2list(relpath)
             rpathlist = copy(pathlist)
-            self.direntry.addDir(rpathlist)
+            self.direntry.add_dir(rpathlist)
 
-    def addFile(self, filename, root = None):
+    def add_file(self, filename, root = None):
         if root == None:
             base = os.path.basename(filename)
             dirn = os.path.dirname(filename)
@@ -754,15 +754,15 @@ class DirDict(object):
         # print "DS765:", repr(dirn)
         dirlist = path2list(self.reldir(dirn))
         # print "DS767:", repr(dirlist)
-        self.direntry.addFile(FileEntry(base,dirn), dirlist)        
+        self.direntry.add_file(FileEntry(base,dirn), dirlist)        
         
         
-    def addFileProp(self, filename, root=None, propname = None, propval = None):
+    def add_file_prop(self, filename, root=None, propname = None, propval = None):
         #print "\nDS775:", repr(filename), repr(root)
-        targfileent=self.direntry.findFileEntry(filename, root)
+        targfileent=self.direntry.find_file_entry(filename, root)
         #print "DS777:",repr(targfileent), repr(filename), repr(root)
         #print "DS778:",targfileent.fullpath()
-        targfileent.addProp(propname, propval)
+        targfileent.add_prop(propname, propval)
             
     def fullpath(self):
         return self.rootdir
@@ -772,14 +772,14 @@ class DirDict(object):
             #print "DS760:", direntry.path, direntry.fullpath(),direntry
             yield direntry
             
-    def getFullPath(self,filename):
+    def get_full_path(self,filename):
         if filename in self.entryDict:
             return os.path.join(self.entryDict[filename], filename)
         else:
             return None
             
-    def asXML(self):
-        return self.direntry.asXML()
+    def as_xml(self):
+        return self.direntry.as_xml()
           
 class DirEntry(object):
     path = None
@@ -800,10 +800,10 @@ class DirEntry(object):
             raise "this shouldn't happen, maybe a security breach"
         else:
             return dirname[len(root):]
-    def reportEntry(self, name, path):
-        self.parent.reportEntry(name, path)
+    def report_entry(self, name, path):
+        self.parent.report_entry(name, path)
         
-    def addDir(self, pathlist):
+    def add_dir(self, pathlist):
         subdir = pathlist.pop(0)
         if subdir not in self.dirs.keys():
             #print "DS774: adding subdir:", subdir
@@ -812,9 +812,9 @@ class DirEntry(object):
         
         #print "consumable pathlist:", pathlist
         if len(pathlist)>0:
-            self.dirs[subdir].addDir(pathlist)
+            self.dirs[subdir].add_dir(pathlist)
             
-    def addFile(self, base, dirlist):
+    def add_file(self, base, dirlist):
         #$ print "DS795:", repr(dirlist)
         if len(dirlist)==0:
             # it's my file!
@@ -825,7 +825,7 @@ class DirEntry(object):
             if tdir not in self.dirs:
                 raise "broken tree search, no place for file"
             else:
-                self.dirs[tdir].addFile(base, dirlist)
+                self.dirs[tdir].add_file(base, dirlist)
               
     def fullpath(self):
         rets = os.path.join(self.parent.fullpath(),self.path)
@@ -837,7 +837,7 @@ class DirEntry(object):
                 for dent in self.dirs[dekey].dirwalk():
                     yield dent
                 
-    def findFileEntry(self,filename,root=None, dirlist = None):
+    def find_file_entry(self,filename,root=None, dirlist = None):
         if root == None:
             base = os.path.basename(filename)
             dirn = os.path.dirname(filename)
@@ -845,7 +845,7 @@ class DirEntry(object):
             dirn = os.path.join(root,os.path.dirname(filename))
             base = os.path.basename(filename)
 
-        self.reportEntry(base, dirn)
+        self.report_entry(base, dirn)
 
         if dirlist == None:
             # print "DS852:", repr(dirn), repr(self.reldir(dirn))
@@ -866,10 +866,10 @@ class DirEntry(object):
             if tdir not in self.dirs:
                 raise "broken tree search, file address invalid"
             else:
-                return self.dirs[tdir].findFileEntry(base, dirn, dirlist)
+                return self.dirs[tdir].find_file_entry(base, dirn, dirlist)
             
             
-    def asXML(self, top = True):
+    def as_xml(self, top = True):
         rtemp = """
         <dirEntry %(id)s name="%(dirname)s">
         %(files)s\n
@@ -901,7 +901,7 @@ class DirEntry(object):
         rdirs = ""
         if len(dirs)>0:
             for dirn in dirs:
-                rdirs += self.dirs[dirn].asXML(top=False)               
+                rdirs += self.dirs[dirn].as_xml(top=False)               
         
         return rtemp % { "dirname"  : self.fullpath(),
                          "files"    : rfiles,
@@ -926,6 +926,6 @@ class FileEntry(object):
         #print "DS865: FileEntry #", id(self)
         return os.path.join(self.parent.fullpath(), self.basename)
         
-    def addProp(self, name, val):
+    def add_prop(self, name, val):
         self.props.update({name:val})
         

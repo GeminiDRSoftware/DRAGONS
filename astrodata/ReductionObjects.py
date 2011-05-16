@@ -43,18 +43,18 @@ class ReductionObject(object):
         self.context = rc
         return rc
     
-    def executeCommandClause(self, rc):
+    def execute_command_clause(self, rc):
         cmdclause = self.FUNCcommandClause
         if cmdclause:
             cmdclause(self, rc)
             
-    def newPrimitiveSet(self, primtype = None, btype = "EXTERNAL"):
+    def new_primitive_set(self, primtype = None, btype = "EXTERNAL"):
         a = PrimitiveSet()
         a.btype = "RECIPE"
         a.astrotype = primtype
         return a
      
-    def parameterProp(self, param, prop= "default"):
+    def parameter_prop(self, param, prop= "default"):
         if self.curPrimType not in self.primDict:
             return None
         prims = self.primDict[self.curPrimType]
@@ -66,7 +66,7 @@ class ReductionObject(object):
                     return prim.paramDict[self.curPrimName][param][prop]
         return None
         
-    def parmDictByTag(self, prim, tag):
+    def parm_dict_by_tag(self, prim, tag):
         if self.curPrimType not in self.primDict:
             return {}
         primsets = self.primDict[self.curPrimType]
@@ -98,17 +98,17 @@ class ReductionObject(object):
         prevprimname = self.curPrimName
         self.curPrimName = primname
         # check to see current primitive set type is correct
-        correctPrimType = self.recipeLib.discoverCorrectPrimType(context)
+        correctPrimType = self.recipeLib.discover_correct_prim_type(context)
         # will be NONE if there are no current inputs, maintain current
         # curPrimType
         if correctPrimType and correctPrimType != self.curPrimType:
             print "RO98:", repr(correctPrimType), repr(self.curPrimType)
-            newprimset  = self.recipeLib.retrievePrimitiveSet(astrotype=correctPrimType)
-            self.addPrimSet(newprimset)
+            newprimset  = self.recipeLib.retrieve_primitive_set(astrotype=correctPrimType)
+            self.add_prim_set(newprimset)
             self.curPrimType = correctPrimType
-        self.recipeLib.checkAndBind(self, primname, context=context) 
+        self.recipeLib.check_and_bind(self, primname, context=context) 
         # print "substeps(%s,%s)" % (primname, str(cfgobj))
-        primset = self.getPrimSet(primname)
+        primset = self.get_prim_set(primname)
         if hasattr(primset, primname):
             prim = eval("primset.%s" % primname)
         else:
@@ -126,7 +126,7 @@ class ReductionObject(object):
         # this primset may have been initted, it takes the context
         # which may have changed
         primset.init(context)
-        context.parameterCollate(self.curPrimType, primset, primname)
+        context.parameter_collate(self.curPrimType, primset, primname)
         from RecipeManager import SettingFixedParam
         try:
             for rc in prim(context):
@@ -134,7 +134,7 @@ class ReductionObject(object):
                 # @@note2: no, this yields and the command loop act that way
                 # @@.....: and it is in run, which caps the yields which must
                 # @@.....: call the command clause.
-                if rc.isFinished():
+                if rc.is_finished():
                     break
                 yield rc
         except SettingFixedParam, e:
@@ -161,10 +161,10 @@ class ReductionObject(object):
         # @@..... a caller which either runs/calls it at the top of the loop.
         for cfg in self.substeps(primname, cfgobj):
             ## call command clause
-            if cfg.isFinished():
+            if cfg.is_finished():
                 break
-            self.executeCommandClause(cfg)
-            if cfg.isFinished():
+            self.execute_command_clause(cfg)
+            if cfg.is_finished():
                 break
             pass
         
@@ -172,10 +172,10 @@ class ReductionObject(object):
     # run is alias for runstep
     run = runstep
     
-    def registerCommandClause(self, function):
+    def register_command_clause(self, function):
         self.FUNCcommandClause = function
         
-    def joinParamDicts(self, newprimset, primsetary):
+    def join_param_dicts(self, newprimset, primsetary):
         # make sure all paramDicts are the same object
         if len(primsetary)>0:
             paramdict0 = primsetary[0].paramDict
@@ -187,10 +187,10 @@ class ReductionObject(object):
         paramdict0.update(newprimset.paramDict)
         newprimset.paramDict = paramdict0               
         
-    def addPrimSet(self,primset):
+    def add_prim_set(self,primset):
         if type(primset) == list:
             for ps in primset:
-                self.addPrimSet(ps)
+                self.add_prim_set(ps)
             return
             
         if primset.astrotype == None:
@@ -204,10 +204,10 @@ class ReductionObject(object):
             self.primDict.update({primset.astrotype:[]})
         primset.ro = self
         primsetary = self.primDict[primset.astrotype]
-        self.joinParamDicts(primset, primsetary)
+        self.join_param_dicts(primset, primsetary)
         primsetary.append (primset)
     
-    def getPrimSet(self, primname, astrotype = None):
+    def get_prim_set(self, primname, astrotype = None):
         # print "RO110:", astrotype, self.curPrimType
         primsetary = self.primDict[self.curPrimType]
         # print "RO112:" , primsetary
@@ -232,11 +232,11 @@ class PrimitiveSet(object):
         return
     pthide_init = True
         
-    def acquireParamDict(self):
+    def acquire_param_dict(self):
         # run through class hierarchy
         wpdict = {} # whole pdict, to return
         # print "RO134:"
-        parlist = self.getParentModules(type(self),[])
+        parlist = self.get_parent_modules(type(self),[])
         for parmod in parlist:
             # module names of this module and parents, in order
             # load the paramDict
@@ -276,7 +276,7 @@ class PrimitiveSet(object):
         # but make this function call that one.                            
         self.paramDict = wpdict
         
-    def getParentModules(self, cls, appendList):
+    def get_parent_modules(self, cls, append_list):
         """This method returns a list of parent modules for primitives
         which can be used to mirror inheritance behavior in parameter
         dictionaries, used to store meta-data about parameters (such as
@@ -286,12 +286,12 @@ class PrimitiveSet(object):
         parameters for a given primtive set."""
         
         if "primitives_" in cls.__module__:
-            appendList.append(cls.__module__)
+            append_list.append(cls.__module__)
             for bcls in cls.__bases__:
-                bcls.getParentModules(self, bcls, appendList)
-        return appendList
+                bcls.get_parent_modules(self, bcls, append_list)
+        return append_list
 
-from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
+from cache_files import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
 from astrodata.ReductionObjectRequests import CalibrationRequest,\
         UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
         ImageQualityRequest
@@ -304,14 +304,14 @@ adatadir = "./recipedata/"
 calindfile = "./.reducecache/calindex.pkl"
 stkindfile = "./.reducecache/stkindex.pkl"
 
-def commandClause(ro, coi):
+def command_clause(ro, coi):
     global prs
     global log
     
     if log==None:
         log = gemLog.getGeminiLog()
         
-    coi.processCmdReq()
+    coi.process_cmd_req()
     while (coi.paused):
         time.sleep(.100)
     if coi.finished:
@@ -325,18 +325,18 @@ def commandClause(ro, coi):
         if rqTyp == CalibrationRequest:
             fn = rq.filename
             typ = rq.caltype
-            calname = coi.getCal(fn, typ)
+            calname = coi.get_cal(fn, typ)
             # print "r399:", "handling calibrations"
             if calname == None:
                 # Do the calibration search
                 calurl = None
                 if usePRS and prs == None:
                     # print "r454: getting prs"
-                    prs = Proxies.PRSProxy.getADCC()
+                    prs = Proxies.PRSProxy.get_adcc()
                     
                 if usePRS:
                     # print "RO316:", repr(rq)
-                    calurl = prs.calibrationSearch( rq )
+                    calurl = prs.calibration_search( rq )
                 
                 # print "r396:", calurl
                 if calurl == None:
@@ -354,10 +354,10 @@ def commandClause(ro, coi):
                               }
                 calfname = os.path.join(coi[storenames[typ]], os.path.basename(calurl))
                 if os.path.exists(calfname):
-                    coi.addCal(fn, typ, calfname)
+                    coi.add_cal(fn, typ, calfname)
                 else:
-                    coi.addCal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
-                coi.persistCalIndex()
+                    coi.add_cal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
+                coi.persist_cal_index()
                 calname = calurl
             else:
                 msg += '%s already stored.\n' %(str(typ))
@@ -369,8 +369,8 @@ def commandClause(ro, coi):
             #print '-'*30
 
         elif rqTyp == UpdateStackableRequest:
-            coi.stackAppend(rq.stkID, rq.stkList, stkindfile)
-            coi.persistStkIndex( stkindfile )
+            coi.stack_append(rq.stk_id, rq.stk_list, stkindfile)
+            coi.persist_stk_index( stkindfile )
         elif rqTyp == GetStackableRequest:
             pass
             # Don't actually do anything, because this primitive allows the control system to
@@ -379,12 +379,12 @@ def commandClause(ro, coi):
             #print "RD172: GET STACKABLE REQS:", rq
         elif rqTyp == DisplayRequest:
             # process display request
-            nd = rq.toNestedDicts()
+            nd = rq.to_nested_dicts()
             #print "r508:", repr(nd)
             if usePRS and prs == None:
                 # print "r454: getting prs"
-                prs = Proxies.PRSProxy.getADCC()
-            prs.displayRequest(nd)
+                prs = Proxies.PRSProxy.get_adcc()
+            prs.display_request(nd)
                 
                    
         elif rqTyp == ImageQualityRequest:
@@ -402,21 +402,21 @@ def commandClause(ro, coi):
                 st = time.time()
                 if (useTK):
                     iqlog = "%s: %s = %s\n"
-                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ellMean)
+                    ell    = iqlog % (gemdate(timestamp=rq.timestamp),"mean ellipticity", rq.ell_mean)
                     seeing = iqlog % (gemdate(timestamp=rq.timestamp),"seeing", rq.fwhmMean)
                     log.status(ell)
                     log.status(seeing)
                     timestr = gemdate(timestamp = rq.timestamp)
 
-                    cw.iqLog(co.inputs[0].filename, '', timestr)
-                    cw.iqLog("mean ellipticity", str(rq.ellMean), timestr)
-                    cw.iqLog("seeing", str(rq.fwhmMean)  , timestr)
-                    cw.iqLog('', '-'*14, timestr)
+                    cw.iq_log(co.inputs[0].filename, '', timestr)
+                    cw.iq_log("mean ellipticity", str(rq.ell_mean), timestr)
+                    cw.iq_log("seeing", str(rq.fwhmMean)  , timestr)
+                    cw.iq_log('', '-'*14, timestr)
                
                # $$$ next three lines are commented out as the display server
                # $$$ is not in use anymore.
                # elif ds.ds9 is not None:
-               #     dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ellMean) )
+               #     dispText = 'fwhm=%s\nelli=%s\n' %( str(rq.fwhmMean), str(rq.ell_mean) )
                #     ds.markText( 0, 2200, dispText )
 
 
@@ -426,7 +426,7 @@ def commandClause(ro, coi):
                     tmpFilename = 'tmpfile.tmp'
                     tmpFile = open( tmpFilename, 'w' )
                     coords = '100 2100 fwhm=%(fwhm)s\n100 2050 elli=%(ell)s\n' %{'fwhm':str(rq.fwhmMean),
-                                                                     'ell':str(rq.ellMean)}
+                                                                     'ell':str(rq.ell_mean)}
                     tmpFile.write( coords )
                     tmpFile.close()
                     #print 'r165: importing iraf again'
@@ -439,7 +439,7 @@ def commandClause(ro, coi):
 
     # note: will this throw away rq's, should throw exception?  review
     # why do this, better to assert it IS empty than empty it!
-    # coi.clearRqs()
+    # coi.clear_rqs()
     
     #dump the reduction context object 
     if coi['rtf']:

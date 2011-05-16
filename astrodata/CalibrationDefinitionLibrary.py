@@ -44,26 +44,26 @@ class CalibrationDefinitionLibrary( object ):
         Goes into ConfigSpace and gets all the file URIs to create a XML index.
         '''
         self.xmlIndex = {}
-        self.updateXmlIndex()
+        self.update_xml_index()
         # instantiate the logger object and put into the global variable 
         self.log = gemLog.getGeminiLog()
             
         
-    def updateXmlIndex(self):
+    def update_xml_index(self):
         '''
         Re-updates the xml index, could be useful if this becomes long running and there are changes to
         the xml files, etc.
         '''
         self.xmlIndex = {}
         try:
-            for dpath, dnames, files in ConfigSpace.configWalk( "xmlcalibrations" ):
+            for dpath, dnames, files in ConfigSpace.config_walk( "xmlcalibrations" ):
                 for file in files:
                     self.xmlIndex.update( {file:os.path.join(str(dpath), file)} )
             #print "CDL30", self.xmlIndex
         except:
             raise "Could not load XML Index."
        
-    def getCalReq(self, inputs, caltype, writeInput = True):
+    def get_cal_req(self, inputs, caltype, write_input = True):
         """
         For each input finds astrodata type to find corresponding xml file,
         loads the file.         
@@ -82,8 +82,8 @@ class CalibrationDefinitionLibrary( object ):
         for inp in inputs:
             cr = CalibrationRequest()
             # print "CDL56:", repr(inp), inp.filename, str(inp)
-            # @@REVIEW: writeInput is a bad name... you write outputs!
-            if writeInput == True:
+            # @@REVIEW: write_input is a bad name... you write outputs!
+            if write_input == True:
                 if os.path.exists(inp.filename):
                     # then asked to write something already on disk and we
                     # don't want to blindly clobber... throw informative error
@@ -108,15 +108,15 @@ class CalibrationDefinitionLibrary( object ):
                                 "assume it is unchanged since loading.")
             cr.filename = inp.filename
             cr.caltype = caltype
-            # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the ID
+            # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the _id
             cr.datalabel = str(inp.data_label())
             
             reqEvents.append(cr)
             if (False): # old code to delete
-                calIndex = self.generateCalIndex( caltype)
+                calIndex = self.generate_cal_index( caltype)
                 print "CDL56:", calIndex, input.ad.get_types(prune=True)
 
-                retDict = gdpgutil.pickConfig( input.ad,  calIndex )
+                retDict = gdpgutil.pick_config( input.ad,  calIndex )
                 key = retDict.keys()[0]
                 filename = calIndex[key]            
 
@@ -130,20 +130,20 @@ class CalibrationDefinitionLibrary( object ):
                     calXMLFile.close()
 
                 # childNodes is the <query> tag(s)           
-                calReqEvent = self.parseQuery( xmlDom.childNodes[0], caltype, input.ad )            
+                calReqEvent = self.parse_query( xmlDom.childNodes[0], caltype, input.ad )            
                 reqEvents.append(calReqEvent)
         # Goes to reduction context object to add to queue
         return reqEvents
     
     
-    def parseQuery(self, xmlDomQueryNode, caltype, inputf ):
+    def parse_query(self, xml_dom_query_node, caltype, inputf ):
         '''
         Parses a query from XML Calibration File and returns a Calibration
         request event with the corresponding information. Unfinished: priority 
         parsing value
         
-        @param xmlDomQueryNode: a query XML Dom Node; ie <DOM Element: query at 0x921392c>
-        @type xmlDomQueryNode: Dom Element
+        @param xml_dom_query_node: a query XML Dom Node; ie <DOM Element: query at 0x921392c>
+        @type xml_dom_query_node: Dom Element
         
         @param caltype: Calibration, ie bias, flat, dark, etc.
         @type caltype: string
@@ -157,7 +157,7 @@ class CalibrationDefinitionLibrary( object ):
        
         calReqEvent = CalibrationRequest()
         calReqEvent.caltype = caltype
-        query = xmlDomQueryNode
+        query = xml_dom_query_node
         
         if not query.hasAttribute("id"):
             raise "Improperly formed. QUERY needs an id, for example 'bias'."
@@ -173,7 +173,7 @@ class CalibrationDefinitionLibrary( object ):
             ad = AstroData( inputf )
         else:
             raise RuntimeError("Bad Argument: Wrong Type, '%(val)s' '%(typ)s'." %{'val':str(inputf),'typ':str(type(inputf))})
-        desc = Descriptors.getCalculator( ad )
+        desc = Descriptors.get_calculator( ad )
         #===============================================================
         # IDENTIFIERS
         #===============================================================
@@ -186,7 +186,7 @@ class CalibrationDefinitionLibrary( object ):
         
         for child in identifiers.getElementsByTagName( "property" ):
             #creates dictionary object with multiple values    
-            temp = self.parseProperty(child, desc, ad)  
+            temp = self.parse_property(child, desc, ad)  
             #print "CDL112:", temp         
             calReqEvent.identifiers.update( temp ) 
         
@@ -203,9 +203,9 @@ class CalibrationDefinitionLibrary( object ):
         #print 'Using the following criteria:'
         
         for child in criteria.getElementsByTagName( "property" ):
-            crit = self.parseProperty( child, desc, ad )
+            crit = self.parse_property( child, desc, ad )
             calReqEvent.criteria.update( crit )      
-            # print self.strProperty( crit )
+            # print self.str_property( crit )
         
         #===============================================================
         # PRIORITIES
@@ -217,20 +217,20 @@ class CalibrationDefinitionLibrary( object ):
             raise "Improperly formed. XML calibration has no priorities"
         
         for child in priorities.getElementsByTagName( "property" ):
-            calReqEvent.priorities.update( self.parseProperty(child, desc, ad) )
+            calReqEvent.priorities.update( self.parse_property(child, desc, ad) )
         
         
         calReqEvent.filename = inputf
         return calReqEvent
     
                   
-    def parseProperty( self, propertyNode, desc, ad ):
+    def parse_property( self, property_node, desc, ad ):
         '''
         Parses a xmldom property, returning a {key:(extension,elemType,value)}.
         
-        @param propertyNode: xmlDom Element, that should be a 'property'. Consult the xml calibration file
+        @param property_node: xmlDom Element, that should be a 'property'. Consult the xml calibration file
         definitions for more information.
-        @type propertyNode:  Dom Element
+        @type property_node:  Dom Element
         
         @param desc: Descriptor for the type ad.
         @type desc: Calculator
@@ -242,36 +242,36 @@ class CalibrationDefinitionLibrary( object ):
         @rtype: dict
         '''
         #--KEY-------------------------------------------------------------------------- 
-        if not propertyNode.hasAttribute( "key" ):
+        if not property_node.hasAttribute( "key" ):
             raise "Improperly formed XML calibration. A 'key' attribute is missing in one " + \
                 "of the 'property' elements."
-        key = propertyNode.getAttribute( "key" )
+        key = property_node.getAttribute( "key" )
         
         #--EXT-------------------------------------------------------------------------- 
         # This might become obsolete
         extension = "PHU"
-        if propertyNode.hasAttribute( "extension" ):
-            extension = propertyNode.getAttribute( "extension" )
+        if property_node.hasAttribute( "extension" ):
+            extension = property_node.getAttribute( "extension" )
         
         #--TYP-------------------------------------------------------------------------- 
         # This might become obsolete
         elemType = "string"
-        if propertyNode.hasAttribute( "type" ):
-            elemType = propertyNode.getAttribute( "type" )
+        if property_node.hasAttribute( "type" ):
+            elemType = property_node.getAttribute( "type" )
         
         #--VAL-------------------------------------------------------------------------- 
-        if propertyNode.hasAttribute( "value" ) and propertyNode.getAttribute( "value" ) != "":
-            value = propertyNode.getAttribute( "value" )
+        if property_node.hasAttribute( "value" ) and property_node.getAttribute( "value" ) != "":
+            value = property_node.getAttribute( "value" )
         else:
-            value = desc.fetchValue( str(key), ad )
+            value = desc.fetch_value( str(key), ad )
         
         return {key:(extension,elemType,value)}
     
     
-    def generateCalIndex( self, caltype ):
+    def generate_cal_index( self, caltype ):
         '''
         Generate a xml URI index for each caltype. This could seem kind of inefficient, but 
-        this is used to take advantage of the generalized utility function pickConfig.
+        this is used to take advantage of the generalized utility function pick_config.
         
         @param caltype: The calibration needed to generate the index.
         @type caltype: string    
@@ -293,7 +293,7 @@ class CalibrationDefinitionLibrary( object ):
         return calIndex
 
     
-    def strProperty(self, prop):
+    def str_property(self, prop):
         '''
         A cleaner way to print properties out.
         

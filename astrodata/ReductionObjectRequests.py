@@ -45,7 +45,7 @@ class CalibrationRequest( ReductionObjectRequest ):
         self.caltype = None#caltype
         self.source = source
         
-    def asDict(self):
+    def as_dict(self):
         retd = {}
         retd.update({"filename": self.filename,
                      "caltype": self.caltype,
@@ -55,7 +55,7 @@ class CalibrationRequest( ReductionObjectRequest ):
         # print "ROR50:", retd
         return retd
         
-    def fromDict(self, params):
+    def from_dict(self, params):
         self.filename = params["filename"] if "filename" in params else None
         self.caltype = params["caltype"] if "caltype" in params else None
         self.datalabel = params["datalabel"] if "datalabel" in params else None
@@ -75,20 +75,20 @@ class DisplayRequest( ReductionObjectRequest ):
     The request to display a list of fits files.
     '''
     #disID - display_id - displayList
-    def __init__( self, disID=None, disList=[] ):
+    def __init__( self, dis_id=None, dis_list=[] ):
         super( DisplayRequest, self ).__init__()
-        self.disID = disID
-        self.disList = disList
+        self.disID = dis_id
+        self.disList = dis_list
         
         
     def __str__(self):
         tempStr = super( DisplayRequest, self ).__str__()
-        tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
+        tempStr = tempStr + "_id: " + str( self.disID ) + "\n" + \
                     "DISPLAY LIST: " + str( self.disList )
         
         return tempStr
         
-    def toNestedDicts(self):
+    def to_nested_dicts(self):
         d = {} # overall dict, single elements keyed with display
                 # the command level
         f = {} # filename based dict
@@ -108,13 +108,13 @@ class GetStackableRequest( ReductionObjectRequest ):
     The request to get the stackable list. (More of a PRS issue as updating the stack 
     already does this.)
     '''
-    def __init__( self, stkID=None ):
+    def __init__( self, stk_id=None ):
         super( GetStackableRequest, self ).__init__()
-        self.stkID = stkID
+        self.stkID = stk_id
         
     def __str__(self):
         tempStr = super( GetStackableRequest, self ).__str__()
-        tempStr = tempStr + "ID: " + str( self.stkID )
+        tempStr = tempStr + "_id: " + str( self.stkID )
         
         return tempStr
 
@@ -123,17 +123,17 @@ class ImageQualityRequest( ReductionObjectRequest ):
     A request to publish image quality metrics to the message bus or in the case
     of stand-alone mode, display overlays, etc. (Demo)
     '''
-    def __init__( self, ad, ellMean, ellSigma, fWHMMean, fWHMSigma ):
+    def __init__( self, ad, ell_mean, ell_sigma, f_whmmean, f_whmsigma ):
         super( ImageQualityRequest, self ).__init__()
         #
         self.ad = ad
         self.filename = ad.filename
-        self.ellMean = ellMean
-        self.ellSigma = ellSigma
-        self.fwhmMean = fWHMMean
-        self.fwhmSigma = fWHMSigma
-        desc = Descriptors.getCalculator( ad )
-        self.pixelScale = desc.fetchValue( 'PIXSCALE', ad ) # doesn't work, need to use ad.pixel_scale()
+        self.ellMean = ell_mean
+        self.ellSigma = ell_sigma
+        self.fwhmMean = f_whmmean
+        self.fwhmSigma = f_whmsigma
+        desc = Descriptors.get_calculator( ad )
+        self.pixelScale = desc.fetch_value( 'PIXSCALE', ad ) # doesn't work, need to use ad.pixel_scale()
         self.seeing = self.fwhmMean# * self.pixelScale
         
     def __str__(self):
@@ -146,7 +146,7 @@ Ellipticity Sigma:  %(esig)s
 FWHM Mean:          %(fmea)s
 FWHM Sigma:         %(fsig)s
 Seeing:             %(seei)s
-PixelScale:         %(pixs)s""" %{'name':self.filename, 'emea':self.ellMean, 'esig':self.ellSigma, 'fmea':self.fwhmMean,
+PixelScale:         %(pixs)s""" %{'name':self.filename, 'emea':self.ell_mean, 'esig':self.ell_sigma, 'fmea':self.fwhmMean,
       'fsig':self.fwhmSigma, 'seei':self.seeing, 'pixs':self.pixelScale}
         
         tempStr = tempStr + super( ImageQualityRequest, self ).__str__()
@@ -157,15 +157,15 @@ class UpdateStackableRequest( ReductionObjectRequest ):
     '''
     Contains all relevant information to request updating the stackable index.
     '''
-    def __init__( self, stkID=None, stkList=[] ):
+    def __init__( self, stk_id=None, stk_list=[] ):
         super( UpdateStackableRequest, self ).__init__()
-        self.stkID = stkID
-        self.stkList = stkList
+        self.stkID = stk_id
+        self.stkList = stk_list
     
         
     def __str__(self):
         tempStr = super( UpdateStackableRequest, self ).__str__()
-        tempStr = tempStr + "ID: " + str( self.stkID ) + "\n" + \
+        tempStr = tempStr + "_id: " + str( self.stkID ) + "\n" + \
                     "STACKABLE LIST: " + str( self.stkList )
         
         return tempStr

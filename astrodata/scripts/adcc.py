@@ -126,7 +126,7 @@ class ReduceInstanceManager(object):
         self.reducecmds = xmlrpclib.ServerProxy("http://localhost:%d/" % options.reduceport, allow_none=True)
         print "started"
         try:
-            self.reducecmds.prsReady()
+            self.reducecmds.prs_ready()
         except socket.error:
             print "prs50: no reduce instances running"
         self.reducedict = {}
@@ -171,7 +171,7 @@ class ReduceInstanceManager(object):
         
     def stackIDsGet(self, cachefile = None):
         # print "adcc153:"
-        retval = self.stackKeeper.getStackIDs(cachefile)
+        retval = self.stackKeeper.get_stack_ids(cachefile)
         return retval
         
            
@@ -273,7 +273,7 @@ if True: # future feature
         traceback.print_exc()
     try:
         fss = FitsStorageSetup() # note: uses current working directory!!!
-        if not fss.isSetup():
+        if not fss.is_setup():
             print """Automated Dataflow Coordination Center:
     The local fits storage database has not been initialized for this
     directory.  This database allows reductions run in the same directory
@@ -303,7 +303,7 @@ adccdir = getPersistDir()
 if os.path.exists(racefile):
     print "ADCC263: adcc already has lockfile"
     from astrodata.Proxies import PRSProxy
-    adcc = PRSProxy.getADCC(checkOnce = True)
+    adcc = PRSProxy.get_adcc(check_once = True)
     if adcc == None:
         print "ADCC267: no adcc running, clearing lockfile"
         os.remove(racefile)

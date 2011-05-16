@@ -16,12 +16,12 @@ class ReduceCommands(object):
     prsready = False
     reduceServer = None
     
-    def __init__(self, reduceServer):
-        self.reduceServer = reduceServer
+    def __init__(self, reduce_server):
+        self.reduceServer = reduce_server
     def get_version(self):
         return [("ReduceXMLRPS", "0.1")]
 
-    def prsReady(self):
+    def prs_ready(self):
         self.prsready = True
         reduceServer.prsready = True
             
@@ -36,15 +36,15 @@ class ReduceServer(object):
     def __init__(self):
         global reduceServer
         from threading import Thread
-        self.xmlrpcthread = Thread(None, self.startListening, "reducexmlrpc")
+        self.xmlrpcthread = Thread(None, self.start_listening, "reducexmlrpc")
         self.xmlrpcthread.start() 
         reduceServer = self
         
-    def startListening(self):
+    def start_listening(self):
         findingport = True
         while(findingport):
             try:
-                # print "p44: startListening on ", self.listenport, self.xmlrpcthread
+                # print "p44: start_listening on ", self.listenport, self.xmlrpcthread
                 server = SimpleXMLRPCServer(("localhost", self.listenport), allow_none=True, logRequests=False)
                 findingport = False
                 # print "p47: Reduce xmlrpc listening on port %d..." % self.listenport
@@ -70,7 +70,7 @@ class ReduceServer(object):
             print '^C received, shutting down server'
             server.socket.close()
 
-def startADCC(callerlockfile = None):
+def start_adcc(callerlockfile = None):
     import tempfile
     import os
     
@@ -141,7 +141,7 @@ class PRSProxy(object):
     xmlrpcthread = None
     reduceServer = None
             
-    def __init__(self, reduceServer = None, port = None):
+    def __init__(self, reduce_server = None, port = None):
         # retrieving global logger and creating it if None
         global log
         if log==None:
@@ -152,7 +152,7 @@ class PRSProxy(object):
                 self.prsport = port
             #self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
             self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
-            self.reduceServer = reduceServer
+            self.reduceServer = reduce_server
             PRSProxy._class_prs = self # .prs
             self.found = True
         except socket.error:
@@ -160,7 +160,7 @@ class PRSProxy(object):
             raise "NOPE"
         
     @classmethod
-    def getADCC(cls, reduceServer = None, checkOnce = False):
+    def get_adcc(cls, reduce_server = None, check_once = False):
         # note: the correct ADCC will store it's info in .adcc/adccinfo.py
         racefile = ".adcc/adccinfo.py"
         if not os.path.exists(racefile):
@@ -179,7 +179,7 @@ class PRSProxy(object):
         newProxy = None
 
         found = False
-        newProxy = PRSProxy(reduceServer = reduceServer, port = info["xmlrpc_port"])
+        newProxy = PRSProxy(reduce_server = reduce_server, port = info["xmlrpc_port"])
         newProxy.httpport = info["http_port"]
         newProxy.localCalUrl = "http://localhost:%s/calsearch.xml" % newProxy.httpport
         if not found:           
@@ -200,8 +200,8 @@ class PRSProxy(object):
                 newProxy.found = True
                 if PDEB:
                     print "P111: about to register"
-                if reduceServer:
-                    details =  {"port":reduceServer.listenport}
+                if reduce_server:
+                    details =  {"port":reduce_server.listenport}
                 else:
                     details = {}
                 newProxy.register( details)
@@ -211,7 +211,7 @@ class PRSProxy(object):
                 newProxy.found = False
                 sys.stdout.write(".")
                 sleep(.1)
-                if checkOnce:
+                if check_once:
                     newProxy = None
                     break
                 # try again
@@ -220,11 +220,11 @@ class PRSProxy(object):
         return newProxy
 
     @classmethod
-    def OLDgetPRSProxy(cls, start = False, proxy = None, reduceServer = None):
+    def _oldget_prsproxy(cls, start = False, proxy = None, reduce_server = None):
         if  type(cls._class_prs) != type(None):
             proxy = cls._class_prs
             start = False
-            print "P101:", repr(dir(proxy)), repr(proxy), repr(reduceServer)
+            print "P101:", repr(dir(proxy)), repr(proxy), repr(reduce_server)
             return cls._class_prs
                     
         newProxy = None
@@ -234,15 +234,15 @@ class PRSProxy(object):
             if proxy == None:
                 
                     
-                newProxy = PRSProxy(reduceServer = reduceServer)
+                newProxy = PRSProxy(reduce_server = reduce_server)
                 newProxy.version = newProxy.get_version()
             
                 if (PDEB):
                     print "P102: newProxy id", id(newProxy), newProxy.found
                     print "P100: checking for proxy up"
             else:
-                if reduceServer:
-                    proxy.reduceServer = reduceServer
+                if reduce_server:
+                    proxy.reduce_server = reduce_server
                 
                 newProxy = proxy
                 newProxy.version = newProxy.get_version()
@@ -254,8 +254,8 @@ class PRSProxy(object):
             newProxy.found = True
             if PDEB:
                 print "P111: about to register"
-            if reduceServer:
-                details =  {"port":reduceServer.listenport}
+            if reduce_server:
+                details =  {"port":reduce_server.listenport}
             else:
                 details = {}
             newProxy.register(os.getpid(), details)
@@ -280,7 +280,7 @@ class PRSProxy(object):
                                                         , "w")
                 prsargs = ["adcc.py",
                                         "--invoked",
-                                        #"--reduce-port", "%d" % reduceServer.listenport,
+                                        #"--reduce-port", "%d" % reduce_server.listenport,
                                         "--reduce-pid", "%d" % os.getpid(),
                                         
                                         ]
@@ -298,17 +298,17 @@ class PRSProxy(object):
                     print "P150: waiting"
                 # After this version call, we know it's up, we keep this
                 # proxy, and start listening for commands
-                if reduceServer:
-                    # if there was a reduceServer then wait to hear a response
-                    while reduceServer.prsready == False:
+                if reduce_server:
+                    # if there was a reduce_server then wait to hear a response
+                    while reduce_server.prsready == False:
                         if (PDEB):
                             print "P155: sleeping .1"
                         sleep(.1)
 
-                newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduceServer = reduceServer)
+                newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduce_server = reduce_server)
                 if (PDEB):
                     print "P160:", type(newProxy.found)
-                    print "P161:", newProxy.version, newProxy.finished, newProxy.reduceServer
+                    print "P161:", newProxy.version, newProxy.finished, newProxy.reduce_server
                 
                 if newProxy.found:
                     notfound = False
@@ -347,15 +347,15 @@ class PRSProxy(object):
                 print "unregistered from the prs"
         
             
-    def calibrationSearch(self, calRq):
+    def calibration_search(self, cal_rq):
         if self.found == False:
             return None
         else:
             PDEB = False
-            calrqdict = calRq.asDict()
+            calrqdict = cal_rq.as_dict()
             if (PDEB):
                 print "P165:", repr(calrqdict)
-            cal = self.prs.calibrationSearch(calrqdict)
+            cal = self.prs.calibration_search(calrqdict)
             if (PDEB):
                 print "P167:", cal
             PDEB = False
@@ -364,8 +364,8 @@ class PRSProxy(object):
         self.version = self.prs.get_version()
         return self.version
         
-    def displayRequest(self, rq):
-        self.prs.displayRequest(rq)
+    def display_request(self, rq):
+        self.prs.display_request(rq)
         return 
             
 
