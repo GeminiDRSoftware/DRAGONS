@@ -48,7 +48,7 @@ def standardize_headers_gemini(adinput=None, output_names=None, suffix=None):
         output_list = []
         # Loop over each input object in the input list
         for ad in adinput_list:
-            # Create the output object by making a "deep copy" of the input
+            # Create the output object by making a "deep cmd_index" of the input
             # object.
             output = deepcopy(ad)
             # Check whether validate_data_f2 has been run on the data
@@ -152,7 +152,7 @@ def standardize_headers_gmos(adinput=None, output_names=None, suffix=None):
             suffix=suffix)
         # Loop over each input object in the input list
         for ad in intermediate_list:
-            # Create the output object by making a "deep copy" of the input
+            # Create the output object by making a "deep cmd_index" of the input
             # object.
             output = deepcopy(ad)
             # Check whether validate_data_f2 has been run on the data
@@ -229,7 +229,7 @@ def standardize_headers_f2(adinput=None, output_names=None, suffix=None):
             suffix=suffix)
         # Loop over each input object in the input list
         for ad in intermediate_list:
-            # Create the output object by making a "deep copy" of the input
+            # Create the output object by making a "deep cmd_index" of the input
             # object.
             output = deepcopy(ad)
             # Check whether validate_data_f2 has been run on the data
@@ -395,9 +395,9 @@ def standardize_structure_gmos(adinput=None, output_names=None, suffix=None,
                     if os.path.exists(MDFfilename):
                         MDF = AstroData(MDFfilename)
                     # If not there, see if it is in lookups/GMOS/MDF dir
-                    elif os.path.exists(lookupPath("Gemini/GMOS/MDF/"+
+                    elif os.path.exists(lookup_path("Gemini/GMOS/MDF/"+
                                                    MDFfilename)):
-                        MDF = AstroData(lookupPath("Gemini/GMOS/MDF/"+
+                        MDF = AstroData(lookup_path("Gemini/GMOS/MDF/"+
                                                    MDFfilename))
                     else:
                         log.critical("MDF file "+MDFfilename+" was not found "+

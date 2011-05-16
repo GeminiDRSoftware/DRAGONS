@@ -55,9 +55,9 @@ def nonlinearity_correct(input=None, output=None, suffix=None):
                 log.info('Setting the output filename to %s' % adout.filename)
                 # Get the appropriate information using the descriptors
                 coadds = adout.coadds()
-                read_mode = adout.read_mode().asPytype()
+                read_mode = adout.read_mode().as_pytype()
                 total_exposure_time = adout.exposure_time()
-                well_depth_setting = adout.well_depth_setting().asPytype()
+                well_depth_setting = adout.well_depth_setting().as_pytype()
                 if coadds is None or read_mode is None or \
                     total_exposure_time is None or well_depth_setting is None:
                     # The descriptor functions return None if a value cannot be

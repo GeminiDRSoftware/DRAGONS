@@ -4,11 +4,11 @@ import re
 
 def removeComponentID(instr):
     """
-    Remove a component ID from a filter name
+    Remove a component _id from a filter name
     :param instr: the filter name
     :type instr: string
     :rtype: string
-    :return: the filter name with the component ID removed
+    :return: the filter name with the component _id removed
     """
     m = re.match (r"(?P<filt>.*?)_G(.*?)", instr)
     if not m:

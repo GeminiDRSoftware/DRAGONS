@@ -128,7 +128,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 
                 if gemini.gifringe.status:
                     raise ScienceError('gifringe failed for inputs '+
-                                 rc.inputsAsStr())
+                                 rc.inputs_as_str())
                 else:
                     log.status('Exited the gifringe CL script successfully')
                     

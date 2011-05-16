@@ -115,7 +115,7 @@ def add_bpm(adinput=None, output_names=None, suffix=None, bpm=None,
                     if matchSize:
                         # Getting the data section as a int list of form:
                         # [y1, y2, x1, x2] 0-based and non-inclusive
-                        datsecList = sciExt.data_section().asPytype()
+                        datsecList = sciExt.data_section().as_pytype()
                         dsl = datsecList
                         datasecShape = (dsl[1]-dsl[0], dsl[3]-dsl[2])
                         
@@ -284,7 +284,7 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                     
                     # Getting the data section as a int list of form:
                     # [y1, y2, x1, x2] 0-based and non-inclusive
-                    datsecList = sciExt.data_section().asPytype()
+                    datsecList = sciExt.data_section().as_pytype()
                     dsl = datsecList
                     datasecShape = (dsl[1]-dsl[0], dsl[3]-dsl[2])
                     
@@ -312,8 +312,8 @@ def add_dq(adInputs, fl_nonlinear=True, fl_saturated=True, outNames=None,
                                            dtype=np.int16)
                     saturatedArray = np.zeros(sciExt.data.shape, 
                                               dtype=np.int16)
-                    linear = sciExt.non_linear_level().asPytype()
-                    saturated = sciExt.saturation_level().asPytype()
+                    linear = sciExt.non_linear_level().as_pytype()
+                    saturated = sciExt.saturation_level().as_pytype()
 
                     if (linear is not None) and (fl_nonlinear): 
                         log.debug('Performing an np.where to find '+
@@ -537,7 +537,7 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None):
             log.debug('Calling ad.mult to convert pixel units from '+
                       'ADU to electrons')
 
-            adOut = ad.mult(ad['SCI'].gain(asDict=True))  
+            adOut = ad.mult(ad['SCI'].gain(as_dict=True))  
             
             log.status('ad.mult completed converting the pixel units'+
                        ' to electrons')  
@@ -896,7 +896,7 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
                              datName+ ', was removed from disk.')
                 
             # iqdata is list of tuples with image quality metrics
-            # (ellMean, ellSig, fwhmMean, fwhmSig)
+            # (ell_mean, ellSig, fwhmMean, fwhmSig)
             # First check if it is empty (ie. gemiq failed in someway)
             if len(iqdata) == 0:
                 log.warning('Problem Measuring IQ Statistics, '+

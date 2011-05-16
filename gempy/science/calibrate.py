@@ -11,7 +11,7 @@ from copy import deepcopy
 from astrodata.AstroData import AstroData
 from astrodata.adutils import varutil
 from astrodata.adutils.gemutil import pyrafLoader
-from astrodata.ConfigSpace import lookupPath
+from astrodata.ConfigSpace import lookup_path
 from astrodata.Errors import ScienceError
 from gempy import geminiTools as gemt
 from gempy import managers as man
@@ -817,7 +817,7 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
                 # as a direct string from header
                 datasecStr = str(sciExt.data_section(pretty=True))
                 # int list of form [y1, y2, x1, x2] 0-based and non-inclusive
-                datsecList = sciExt.data_section().asPytype()
+                datsecList = sciExt.data_section().as_pytype()
                 dsl = datsecList
                 
                 # Updating logger with the section being kept
@@ -1513,7 +1513,7 @@ def scale_fringe_to_science(fringes=None, sciInputs=None, statsec=None,
                         
                         # Getting the data section as a int list of form:
                         # [y1, y2, x1, x2] 0-based and non-inclusive
-                        datsecAlist = sciExtA.data_section().asPytype()
+                        datsecAlist = sciExtA.data_section().as_pytype()
                         dAl = datsecAlist
                         # Take 100 pixels off each side
                         curStatsecList = [dAl[0]+100,dAl[1]-100,dAl[2]+100,
@@ -1568,7 +1568,7 @@ def scale_fringe_to_science(fringes=None, sciInputs=None, statsec=None,
             # Using mult from the arith toolbox to perform the scaling of 
             # A (fringe input) to B (science input), it does deepcopy
             # so none needed here.
-            adOut = adA.mult(inputB=scaleDict)          
+            adOut = adA.mult(input_b=scaleDict)          
             
             # renaming the output ad filename
             adOut.filename = outNames[count]

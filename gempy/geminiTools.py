@@ -83,7 +83,7 @@ def checkInputsMatch(adInsA=None, adInsB=None):
                 raise Errors.ToolboxError('Extensions have different binning')
         
             # Check filter
-            if sciA.filter_name().asPytype()!=sciB.filter_name().asPytype():
+            if sciA.filter_name().as_pytype()!=sciB.filter_name().as_pytype():
                 log.error('Extensions have different filters')
                 raise Errors.ToolboxError('Extensions have different filters')
         

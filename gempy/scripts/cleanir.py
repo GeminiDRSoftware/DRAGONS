@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+c#!/usr/bin/env python
 #
 # 2007 Jul 8  - Andrew W Stephens - alpha version
 # 2007 Jul 9  - AWS - beta version

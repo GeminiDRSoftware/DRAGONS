@@ -7,7 +7,7 @@
 import os, sys
 from copy import deepcopy
 from astrodata.AstroData import AstroData
-from astrodata.ConfigSpace import lookupPath
+from astrodata.ConfigSpace import lookup_path
 from astrodata.Errors import ScienceError
 from gempy import managers as man
 
