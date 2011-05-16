@@ -46,13 +46,13 @@ def cadcCRC(filename):
 
   return retary
   
-# commented out but left for reference, how an AstroData ID could be
+# commented out but left for reference, how an AstroData _id could be
 # gotten using the IDFactory
 #def cadcCRC_ADID(filename):
 #    from astrodata import AstroData
 #    from astrodata import IDFactory
 #    ad = AstroData(filename)
-#    retary = IDFactory.generateFingerprint( ad)
+#    retary = IDFactory.generate_fingerprint( ad)
 #    return retary
 
 def md5sumfile(f):

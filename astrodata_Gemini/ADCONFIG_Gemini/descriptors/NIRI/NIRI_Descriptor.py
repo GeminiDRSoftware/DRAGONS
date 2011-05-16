@@ -22,15 +22,15 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         self.niriSpecDict = \
-            Lookups.getLookupTable('Gemini/NIRI/NIRISpecDict',
+            Lookups.get_lookup_table('Gemini/NIRI/NIRISpecDict',
                                    'niriSpecDict')
         self.niriFilternameMapConfig = \
-            Lookups.getLookupTable('Gemini/NIRI/NIRIFilterMap',
+            Lookups.get_lookup_table('Gemini/NIRI/NIRIFilterMap',
                                    'niriFilternameMapConfig')
         self.makeFilternameMap()
         
         self.nsappwave = \
-            Lookups.getLookupTable('Gemini/IR/nsappwavepp.fits', 1)
+            Lookups.get_lookup_table('Gemini/IR/nsappwavepp.fits', 1)
     
     def central_wavelength(self, dataset, asMicrometers=False, \
         asNanometers=False, asAngstroms=False, **args):
@@ -153,7 +153,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # return MIRROR like GMOS
             disperser = 'MIRROR'
         if stripID and disperser is not 'MIRROR':
-            # Return the disperser string with the component ID stripped
+            # Return the disperser string with the component _id stripped
             ret_disperser = string.removeComponentID(disperser)
         else:
             # Return the disperser string
@@ -281,7 +281,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # return MIRROR like GMOS
             pupil_mask = 'MIRROR'
         if stripID and pupil_mask is not 'MIRROR':
-            # Return the pupil mask string with the component ID stripped
+            # Return the pupil mask string with the component _id stripped
             ret_pupil_mask = string.removeComponentID(pupil_mask)
         else:
             # Return the pupil_mask string

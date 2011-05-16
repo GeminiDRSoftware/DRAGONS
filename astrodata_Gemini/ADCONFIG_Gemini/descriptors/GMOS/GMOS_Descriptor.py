@@ -2,7 +2,6 @@ from datetime import datetime
 from time import strptime
 
 from astrodata import Descriptors
-from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
@@ -25,20 +24,20 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         # self.gmosampsGain = \
-        #     Lookups.getLookupTable('Gemini/GMOS/GMOSAmpTables',
+        #     Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
         #                            'gmosampsGain')
         # self.gmosampsGainBefore20060831 = \
-        #     Lookups.getLookupTable('Gemini/GMOS/GMOSAmpTables',
+        #     Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
         #                            'gmosampsGainBefore20060831')
         
         # Slightly more efficient: we can get both at once since they are in
         # the same lookup space
         self.gmosampsGain, self.gmosampsGainBefore20060831 = \
-            Lookups.getLookupTable('Gemini/GMOS/GMOSAmpTables',
+            Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
                                    'gmosampsGain',
                                    'gmosampsGainBefore20060831')
         self.gmosampsRdnoise, self.gmosampsRdnoiseBefore20060831 = \
-            Lookups.getLookupTable('Gemini/GMOS/GMOSAmpTables',
+            Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
                                    'gmosampsRdnoise',
                                    'gmosampsRdnoiseBefore20060831')
     
@@ -350,10 +349,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     if hasattr(ext, 'exception_info'):
                         raise ext.exception_info
                 # Get the gain setting and read speed setting values using the
-                # appropriate descriptors. Use asPytype() to return the values
+                # appropriate descriptors. Use as_pytype() to return the values
                 # as the default python type, rather than an object
-                read_speed_setting = dataset.read_speed_setting().asPytype()
-                gain_setting = dataset.gain_setting().asPytype()
+                read_speed_setting = dataset.read_speed_setting().as_pytype()
+                gain_setting = dataset.gain_setting().as_pytype()
                 if read_speed_setting is None or gain_setting is None:
                     # The descriptor functions return None if a value cannot be
                     # found and stores the exception info. Re-raise the
@@ -409,8 +408,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         ext.extver()):str(gain_setting)})
         else:
             # Can you return the gain_setting without using the raw gain value?
-            return DescriptorValue("N/A", format = "db", name = "gain_setting", pytype = str)
-            # OLD -> raise Errors.DescriptorTypeError()
+            raise Errors.DescriptorTypeError()
         
         return ret_gain_setting
     
@@ -552,10 +550,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     if hasattr(ext, 'exception_info'):
                         raise ext.exception_info
                 # Get the gain setting and read speed setting values using the
-                # appropriate descriptors. Use asPytype() to return the values
+                # appropriate descriptors. Use as_pytype() to return the values
                 # as the default python type, rather than an object
-                read_speed_setting = dataset.read_speed_setting().asPytype()
-                gain_setting = dataset.gain_setting().asPytype()
+                read_speed_setting = dataset.read_speed_setting().as_pytype()
+                gain_setting = dataset.gain_setting().as_pytype()
                 if read_speed_setting is None or gain_setting is None:
                     # The descriptor function returns None if a value cannot be
                     # found and stores the exception info. Re-raise the

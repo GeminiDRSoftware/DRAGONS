@@ -54,7 +54,7 @@
         'userOverride'  : False,
         },
     },
- 'getCal':{
+ 'get_cal':{
     'source':{
         'default'       : 'all',
         'type'          : 'str',

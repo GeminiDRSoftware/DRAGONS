@@ -20,10 +20,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         self.nifsArrayDict = \
-            Lookups.getLookupTable('Gemini/NIFS/NIFSArrayDict',
+            Lookups.get_lookup_table('Gemini/NIFS/NIFSArrayDict',
                                    'nifsArrayDict')
         self.nifsConfigDict = \
-            Lookups.getLookupTable('Gemini/NIFS/NIFSConfigDict',
+            Lookups.get_lookup_table('Gemini/NIFS/NIFSConfigDict',
                                    'nifsConfigDict')
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
@@ -157,11 +157,11 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def pixel_scale(self, dataset, **args):
         # Get the focal plane mask, disperser and filter values using the
-        # appropriate descriptors. Use asPytype() to return the values as the
+        # appropriate descriptors. Use as_pytype() to return the values as the
         # default python type, rather than an object
-        focal_plane_mask = dataset.focal_plane_mask().asPytype()
-        disperser = dataset.disperser().asPytype()
-        filter_name = dataset.filter_name().asPytype()
+        focal_plane_mask = dataset.focal_plane_mask().as_pytype()
+        disperser = dataset.disperser().as_pytype()
+        filter_name = dataset.filter_name().as_pytype()
         if focal_plane_mask is None or disperser is None or \
             filter_name is None:
             # The descriptor functions return None if a value cannot be found

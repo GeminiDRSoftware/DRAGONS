@@ -76,7 +76,7 @@ class DescriptorDescriptor:
                        '        :param dataset: the data set\n' + \
                        '        :type dataset: AstroData\n' + \
                        '        :param stripID: set to True to remove the ' + \
-                       'component ID from the \n                        ' + \
+                       'component _id from the \n                        ' + \
                        'returned %(name)s value\n' % {'name':name} + \
                        '        :type stripID: Python boolean\n' + \
                        '        :param pretty: set to True to return a ' + \
@@ -93,7 +93,7 @@ class DescriptorDescriptor:
                        '        :param dataset: the data set\n' + \
                        '        :type dataset: AstroData\n' + \
                        '        :param format: the return format\n' + \
-                       '                       set to asDict to return a ' + \
+                       '                       set to as_dict to return a ' + \
                        'dictionary, where the number ' + \
                        '\n                       of dictionary elements ' + \
                        'equals the number of pixel data ' + \
@@ -108,7 +108,7 @@ class DescriptorDescriptor:
                        'as default (i.e., format=None)\n' + \
                        '        :rtype: dictionary containing one or more ' + \
                        '%(rtype)s(s) ' % {'rtype':rtype} + \
-                       '(format=asDict)\n' + \
+                       '(format=as_dict)\n' + \
                        '        :return: the %(dname)s' \
                        % {'dname':dname}
 
@@ -221,7 +221,7 @@ class CalculatorInterface:
         to ensure the descriptor is loaded.  This way we avoid
         loading it if it is not needed.'''
         if self.descriptorCalculator is None:
-            self.descriptorCalculator = Descriptors.getCalculator(self, **args)
+            self.descriptorCalculator = Descriptors.get_calculator(self, **args)
 """
 out = ""
 

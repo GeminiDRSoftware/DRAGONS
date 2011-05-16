@@ -12,7 +12,7 @@ desc_dict = {'instrument':ad.instrument(),
              'detector_y_bin':ad.detector_y_bin(),
              'read_speed_setting':ad.read_speed_setting(),
              'gain_setting':ad.gain_setting(),
-             'amp_read_area':ad.amp_read_area(asDict=True),
+             'amp_read_area':ad.amp_read_area(as_dict=True),
              'ut_datetime':ad.ut_datetime(),
              'exposure_time':ad.exposure_time(),
              'nodandshuffle':ad.is_type('GMOS_NODANDSHUFFLE')

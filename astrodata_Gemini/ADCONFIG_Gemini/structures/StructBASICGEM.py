@@ -25,25 +25,25 @@ class StructGemBundle(Structure):
 class StructGemBundleArray(Structure):
     parts = {
         "bundles" : {structure: "StructBASICGEM.StructGemBundle()",
-                    arrayBy : "EXTVER"}
+                    array_by : "EXTVER"}
         }
 
 class StructSpecArray(Structure):
     parts = {
         "spectra" : {structure: "StructBASICGEM.StructGemBundle()",
-                     arrayBy : "EXTVER" },
+                     array_by : "EXTVER" },
         "mdf" : {structure: "StructBASICGEM.ExtMDF()", retain:True }
         }
     
 class StructChopArray(Structure):
     parts = {
         "chops" : {structure: "StructBASICGEM.StructGemBundle()",
-                  arrayBy : "CHOP" }
+                  array_by : "CHOP" }
     }
 
 class StructNodChopTree(Structure):
     parts = {
         "nods" : { structure: "StructBASICGEM.StructChopArray()",
-                arrayBy : "NOD" }
+                array_by : "NOD" }
         }
         

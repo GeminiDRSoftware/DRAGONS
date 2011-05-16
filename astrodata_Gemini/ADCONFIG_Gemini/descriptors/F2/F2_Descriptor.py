@@ -18,10 +18,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         self.f2ArrayDict = \
-            Lookups.getLookupTable('Gemini/F2/F2ArrayDict',
+            Lookups.get_lookup_table('Gemini/F2/F2ArrayDict',
                                    'f2ArrayDict')
         self.nifsConfigDict = \
-            Lookups.getLookupTable('Gemini/F2/F2ConfigDict',
+            Lookups.get_lookup_table('Gemini/F2/F2ConfigDict',
                                    'f2ConfigDict')
     
     def data_section(self, dataset, pretty=False, **args):

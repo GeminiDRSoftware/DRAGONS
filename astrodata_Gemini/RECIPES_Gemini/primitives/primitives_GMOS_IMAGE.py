@@ -59,7 +59,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             pyraf, gemini, yes, no = pyrafLoader()
             # Call the normalize_flat_image_gmos user level function
             output = cal.normalize_flat_image_gmos(
-                input=rc.getInputs(style="AD"),
+                input=rc.get_inputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"],
                 fl_trim=rc["fl_trim"],
@@ -67,7 +67,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 fl_vardq="AUTO")
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -107,13 +107,13 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         try:
             # Call the standardize_structure_gmos user level function
             output = sdz.standardize_structure_gmos(
-                adinput=rc.getInputs(style="AD"),
+                adinput=rc.get_inputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"],
                 addMDF=rc["addMDF"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))

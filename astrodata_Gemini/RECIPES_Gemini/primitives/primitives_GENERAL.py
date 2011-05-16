@@ -43,25 +43,25 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
         add = True # rc["inputs"]
         if add:
-            rc.addInput(files)
+            rc.add_input(files)
         yield rc
         
     def copy(self, rc):
-        for ad in rc.getInputsAsAstroData():
+        for ad in rc.get_inputs_as_astro_data():
             from copy import deepcopy
             nd = deepcopy(ad)
             nd.filename = "copy_"+os.path.basename(ad.filename)
-            rc.reportOutput(nd)
+            rc.report_output(nd)
         yield rc
     def setInputs(self, rc):
         files = rc["files"]
         if files != None:
             a = files.split(" ")
             if len(a)>0:
-                rc.addInput(a)
+                rc.add_input(a)
         yield rc
     def clearInputs(self, rc):
-        rc.clearInput()
+        rc.clear_input()
         yield rc
         
     def listDir(self,rc):

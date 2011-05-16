@@ -168,7 +168,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         if pretty:
             stripID = True
         if stripID:
-            # Return the decker string with the component ID stripped
+            # Return the decker string with the component _id stripped
             ret_decker = string.removeComponentID(decker)
         else:
             # Return the decker string
@@ -251,7 +251,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         if pretty:
             stripID = True
         if stripID:
-            # Return the disperser string with the component ID stripped
+            # Return the disperser string with the component _id stripped
             ret_disperser = string.removeComponentID(disperser)
         else:
             # Return the disperser string
@@ -334,7 +334,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if stripID:
-            # Strip the component ID from the two filter name values
+            # Strip the component _id from the two filter name values
             filter1 = string.removeComponentID(filter1)
             filter2 = string.removeComponentID(filter2)
         # Return a dictionary with the keyword names as the key and the filter
@@ -370,7 +370,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if stripID:
-            # Return the focal plane mask string with the component ID stripped
+            # Return the focal plane mask string with the component _id stripped
             ret_focal_plane_mask = \
                 string.removeComponentID(focal_plane_mask)
         else:
@@ -412,14 +412,14 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_mdf_row_id = {}
-        # The MDF row ID can only be obtained from data that does not have an
-        # AstroData Type of IMAGE and that has been cut (since the MDF row ID
+        # The MDF row _id can only be obtained from data that does not have an
+        # AstroData Type of IMAGE and that has been cut (since the MDF row _id
         # keyword is written during the cut step). As there is no CUT type yet,
         # just check whether the dataset has been prepared.
         if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
             # Loop over the science extensions of the dataset
             for ext in dataset['SCI']:
-                # Get the MDF row ID from the header of each pixel data
+                # Get the MDF row _id from the header of each pixel data
                 # extension
                 mdf_row_id = \
                     ext.get_key_value(globalStdkeyDict['key_mdf_row_id'])
@@ -430,7 +430,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     # CalculatorInterface.
                     if hasattr(ext, 'exception_info'):
                         raise ext.exception_info
-                # Return a dictionary with the MDF row ID integer as the
+                # Return a dictionary with the MDF row _id integer as the
                 # value
                 ret_mdf_row_id.update({(ext.extname(), \
                     ext.extver()):int(mdf_row_id)})

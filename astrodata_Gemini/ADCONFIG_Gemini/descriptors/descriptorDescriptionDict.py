@@ -29,7 +29,7 @@ descriptorDescDict = {
     'central_wavelength \n                            value in units of ' +
     'Angstroms\n' +
     '        :type asAngstroms: Python boolean\n' +
-    '        :param format: set to asDict to return a dictionary, where the ' +
+    '        :param format: set to as_dict to return a dictionary, where the ' +
     'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
@@ -48,7 +48,7 @@ descriptorDescDict = {
     'data_section \n                       value in the form [x1:x2,y1:y2] ' +
     'that uses 1-based \n                       indexing\n' +
     '        :type pretty: Python boolean\n' +
-    '        :param format: set to asDict to return a dictionary, where the ' +
+    '        :param format: set to as_dict to return a dictionary, where the ' +
     'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
@@ -61,7 +61,7 @@ descriptorDescDict = {
     '        :rtype: string that uses 1-based indexing in the form ' +
     '[x1:x2,y1:y2] \n                (pretty=True)\n' +
     '        :rtype: dictionary containing one or more of the above return ' +
-    'types \n                (format=asDict)\n' +
+    'types \n                (format=as_dict)\n' +
     '        :return: the section of the data of the observation',
     # detector_section
     'detector_section':'Return the detector_section value\n' +
@@ -71,7 +71,7 @@ descriptorDescDict = {
     '                       detector_section value in the form ' +
     '[x1:x2,y1:y2] that \n                       uses 1-based indexing\n' +
     '        :type pretty: Python boolean\n' +
-    '        :param format: set to asDict to return a dictionary, where the ' +
+    '        :param format: set to as_dict to return a dictionary, where the ' +
     'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
@@ -84,7 +84,7 @@ descriptorDescDict = {
     '        :rtype: string that uses 1-based indexing in the form ' +
     '[x1:x2,y1:y2] \n                (pretty=True)\n' +
     '        :rtype: dictionary containing one or more of the above return ' +
-    'types \n                (format=asDict)\n' +
+    'types \n                (format=as_dict)\n' +
     '        :return: the detector section of the observation',
     # dispersion
     'dispersion':'Return the dispersion value\n' +
@@ -102,7 +102,7 @@ descriptorDescDict = {
     'dispersion \n                            value in units of ' +
     'Angstroms\n' +
     '        :type asAngstroms: Python boolean\n' +
-    '        :param format: set to asDict to return a dictionary, where the ' +
+    '        :param format: set to as_dict to return a dictionary, where the ' +
     'number \n                       of dictionary elements equals the ' +
     'number of pixel data \n                       extensions in the image. ' +
     'The key of the dictionary is \n                       an (EXTNAME, ' +
@@ -110,7 +110,7 @@ descriptorDescDict = {
     'key is the integer index of the extension.\n' +
     '        :type format: string\n' +
     '        :rtype: float as default (i.e., format=None)\n' +
-    '        :rtype: dictionary containing one or more float(s) (format=asDict)\n' +
+    '        :rtype: dictionary containing one or more float(s) (format=as_dict)\n' +
     '        :return: the dispersion (in meters per pixel as default) of ' +
     'the \n                 observation',
     # ut_datetime
@@ -198,12 +198,12 @@ detailedNameDict = {
         '\'partnerCal\', \'acq\', \n                 \'acqCal\' or ' +
         '\'dayCal\') of the observation',
     'observation_epoch':'epoch (in years) at the start of the observation',
-    'observation_id':'ID (e.g., GN-2011A-Q-123-45) of the observation',
+    'observation_id':'_id (e.g., GN-2011A-Q-123-45) of the observation',
     'observation_type':'type (either \'OBJECT\', \'DARK\', \'FLAT\', ' +
     '\'ARC\', \'BIAS\' or \n                 \'MASK\') of the observation',
     'pixel_scale':'pixel scale (in arcsec per pixel) of the observation',
     'prism':'prism used for the observation',
-    'program_id':'Gemini program ID (e.g., GN-2011A-Q-123) of the \n' +
+    'program_id':'Gemini program _id (e.g., GN-2011A-Q-123) of the \n' +
     '                 observation',
     'pupil_mask':'pupil mask used for the observation',
     'qa_state':'quality assessment state (either \'Undefined\', \'Pass\', \n' +
@@ -249,7 +249,7 @@ detailedNameDict = {
                    }
 
 # Use the asDictArgDict dictionary to change the standard doc string of a
-# descriptor to include the format=asDict argument description for those
+# descriptor to include the format=as_dict argument description for those
 # descriptors that access keywords in the headers of the pixel data
 # extensions. The default return type is 'no'. Add to this dictionary using
 # the format <descriptor>:'yes',
@@ -266,7 +266,7 @@ asDictArgDict = {
 
 # Use the stripIDArgDict dictionary to change the standard doc string of a
 # descriptor to include the stripID and pretty argument descriptions for those
-# descriptors that return values with a Gemini ID associated with them. The
+# descriptors that return values with a Gemini _id associated with them. The
 # default return type is 'no'. Add to this dictionary using the format
 # <descriptor>:'yes',
 

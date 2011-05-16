@@ -55,14 +55,14 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
-                       set to asDict to return a dictionary, where the number 
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :rtype: dictionary containing one or more string(s) (format=asDict)
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
         :return: the composite string containing the name of the detector
                  amplifier (ampname) and the readout area of the CCD (detsec) 
                  used for the observation
@@ -236,7 +236,7 @@ class CalculatorInterface:
         :param asAngstroms: set to True to return the central_wavelength 
                             value in units of Angstroms
         :type asAngstroms: Python boolean
-        :param format: set to asDict to return a dictionary, where the number 
+        :param format: set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
@@ -369,7 +369,7 @@ class CalculatorInterface:
                        value in the form [x1:x2,y1:y2] that uses 1-based 
                        indexing
         :type pretty: Python boolean
-        :param format: set to asDict to return a dictionary, where the number 
+        :param format: set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
@@ -381,7 +381,7 @@ class CalculatorInterface:
         :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
                 (pretty=True)
         :rtype: dictionary containing one or more of the above return types 
-                (format=asDict)
+                (format=as_dict)
         :return: the section of the data of the observation
         """
         try:
@@ -461,7 +461,7 @@ class CalculatorInterface:
         Return the decker value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component ID from the 
+        :param stripID: set to True to remove the component _id from the 
                         returned decker value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -510,7 +510,7 @@ class CalculatorInterface:
                        detector_section value in the form [x1:x2,y1:y2] that 
                        uses 1-based indexing
         :type pretty: Python boolean
-        :param format: set to asDict to return a dictionary, where the number 
+        :param format: set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
@@ -522,7 +522,7 @@ class CalculatorInterface:
         :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
                 (pretty=True)
         :rtype: dictionary containing one or more of the above return types 
-                (format=asDict)
+                (format=as_dict)
         :return: the detector section of the observation
         """
         try:
@@ -562,14 +562,14 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
-                       set to asDict to return a dictionary, where the number 
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :rtype: dictionary containing one or more integer(s) (format=asDict)
+        :rtype: dictionary containing one or more integer(s) (format=as_dict)
         :return: the binning of the x-axis of the detector used for the 
                  observation
         """
@@ -610,14 +610,14 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
-                       set to asDict to return a dictionary, where the number 
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :rtype: dictionary containing one or more integer(s) (format=asDict)
+        :rtype: dictionary containing one or more integer(s) (format=as_dict)
         :return: the binning of the y-axis of the detector used for the 
                  observation
         """
@@ -657,7 +657,7 @@ class CalculatorInterface:
         Return the disperser value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component ID from the 
+        :param stripID: set to True to remove the component _id from the 
                         returned disperser value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -711,14 +711,14 @@ class CalculatorInterface:
         :param asAngstroms: set to True to return the dispersion 
                             value in units of Angstroms
         :type asAngstroms: Python boolean
-        :param format: set to asDict to return a dictionary, where the number 
+        :param format: set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :rtype: dictionary containing one or more float(s) (format=asDict)
+        :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the dispersion (in meters per pixel as default) of the 
                  observation
         """
@@ -881,7 +881,7 @@ class CalculatorInterface:
         Return the filter_name value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component ID from the 
+        :param stripID: set to True to remove the component _id from the 
                         returned filter_name value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -927,7 +927,7 @@ class CalculatorInterface:
         Return the focal_plane_mask value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component ID from the 
+        :param stripID: set to True to remove the component _id from the 
                         returned focal_plane_mask value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -973,14 +973,14 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
-                       set to asDict to return a dictionary, where the number 
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :rtype: dictionary containing one or more float(s) (format=asDict)
+        :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the gain (in electrons per ADU) of the observation
         """
         try:
@@ -1019,7 +1019,7 @@ class CalculatorInterface:
         Return the grating value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component ID from the 
+        :param stripID: set to True to remove the component _id from the 
                         returned grating value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -1188,14 +1188,14 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
-                       set to asDict to return a dictionary, where the number 
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :rtype: dictionary containing one or more integer(s) (format=asDict)
+        :rtype: dictionary containing one or more integer(s) (format=as_dict)
         :return: the corresponding reference row in the MDF
         """
         try:
@@ -1487,7 +1487,7 @@ class CalculatorInterface:
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the ID (e.g., GN-2011A-Q-123-45) of the observation
+        :return: the _id (e.g., GN-2011A-Q-123-45) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1649,7 +1649,7 @@ class CalculatorInterface:
         Return the prism value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component ID from the 
+        :param stripID: set to True to remove the component _id from the 
                         returned prism value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -1697,7 +1697,7 @@ class CalculatorInterface:
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the Gemini program ID (e.g., GN-2011A-Q-123) of the 
+        :return: the Gemini program _id (e.g., GN-2011A-Q-123) of the 
                  observation
         """
         try:
@@ -2074,14 +2074,14 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
-                       set to asDict to return a dictionary, where the number 
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :rtype: dictionary containing one or more float(s) (format=asDict)
+        :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the estimated readout noise (in electrons) of the observation
         """
         try:
@@ -2204,7 +2204,7 @@ class CalculatorInterface:
         Return the slit value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component ID from the 
+        :param stripID: set to True to remove the component _id from the 
                         returned slit value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -2482,14 +2482,14 @@ class CalculatorInterface:
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
-                       set to asDict to return a dictionary, where the number 
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :rtype: dictionary containing one or more float(s) (format=asDict)
+        :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the reference pixel of the central wavelength of the 
                  observation
         """
@@ -2654,5 +2654,5 @@ class CalculatorInterface:
         to ensure the descriptor is loaded.  This way we avoid
         loading it if it is not needed.'''
         if self.descriptorCalculator is None:
-            self.descriptorCalculator = Descriptors.getCalculator(self, **args)
+            self.descriptorCalculator = Descriptors.get_calculator(self, **args)
 

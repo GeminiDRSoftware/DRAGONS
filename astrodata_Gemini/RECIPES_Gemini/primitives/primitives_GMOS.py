@@ -4,7 +4,7 @@
 import os, shutil, sys
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
-from astrodata.ConfigSpace import lookupPath
+from astrodata.ConfigSpace import lookup_path
 from astrodata.data import AstroData
 from astrodata import Errors
 from gempy import geminiTools as gt
@@ -56,15 +56,15 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to add the BPM frame(s) to the input data')
             
             #$$$$$$$$$$$$$ TO BE callibration search, correct when ready $$$$$$$
-            BPM_11 = AstroData(lookupPath('Gemini/GMOS/BPM/GMOS_BPM_11.fits'))
-            BPM_22 = AstroData(lookupPath('Gemini/GMOS/BPM/GMOS_BPM_22.fits'))
+            BPM_11 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_11.fits'))
+            BPM_22 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_22.fits'))
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             # Instantiate a list of suitable BPMs to be passed to addBPM func 
             BPMlist = []
             
             # Loop through inputs and load up BPMlist
-            for ad in rc.getInputs(style='AD'):
+            for ad in rc.get_inputs(style='AD'):
                 ### This section might need to be upgraded in the future for more 
                 ### general use instead of just 1x1 and 2x2 imaging
                 if ad[('SCI',1)].get_key_value('CCDSUM')=='1 1':
@@ -78,14 +78,14 @@ class GMOSPrimitives(GEMINIPrimitives):
    
             log.debug('Calling geminiScience.addBPM function')
             
-            adOutputs = gs.add_bpm(adInputs=rc.getInputs(style='AD'), 
+            adOutputs = gs.add_bpm(adInputs=rc.get_inputs(style='AD'), 
                                          BPMs=BPMlist,matchSize=True, 
                                          suffix=rc['suffix'])           
             
             log.status('geminiScience.addBPM completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs)   
+            rc.report_output(adOutputs)   
                 
             log.status('*FINISHED* adding the BPM to the inputs') 
         except:
@@ -166,8 +166,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                     
                 # this version had the display id conversion code which we'll need to redo
                 # code above just uses the loop index as frame number
-                #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.disID), fl_imexam=iraf.no,
-                #    Stdout = coi.getIrafStdout(), Stderr = coi.getIrafStderr() )
+                #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.dis_id), fl_imexam=iraf.no,
+                #    Stdout = coi.get_iraf_stdout(), Stderr = coi.get_iraf_stderr() )
                 
             log.status('*FINISHED* displaying the images of the input data')
         except:
@@ -197,7 +197,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             packagePath = sys.argv[0].split('gemini_python')[0]
             calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
             
-            for ad in rc.getInputs(style='AD'):
+            for ad in rc.get_inputs(style='AD'):
                 if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
                     log.error('NO 1x1 PROCESSED BIAS YET TO USE')
                     raise 'error'
@@ -208,7 +208,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                                                        'biases', biasfilename)):
                         shutil.copy(packagePath+calPath+biasfilename, 
                                     '.reducecache/storedcals/retrievedbiases')
-                    rc.addCal(ad,'bias', 
+                    rc.add_cal(ad,'bias', 
                               os.path.join('.reducecache/storedcals/retrieve'+
                                            'dbiases',biasfilename))
                 else:
@@ -242,7 +242,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             packagePath=sys.argv[0].split('gemini_python')[0]
             calPath='gemini_python/test_data/test_cal_files/processed_flats/'
             
-            for ad in rc.getInputs(style='AD'):
+            for ad in rc.get_inputs(style='AD'):
                 if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
                     log.error('NO 1x1 PROCESSED BIAS YET TO USE')
                     raise 'error'
@@ -253,7 +253,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                                                        flatfilename)):
                         shutil.copy(packagePath+calPath+flatfilename, 
                                     '.reducecache/storedcals/retrievedflats')
-                    rc.addCal(ad,'flat', os.path.join('.reducecache/storedca'+
+                    rc.add_cal(ad,'flat', os.path.join('.reducecache/storedca'+
                                                       'ls/retrievedflats', 
                                                       flatfilename))
                 else:
@@ -300,7 +300,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug('Calling geminiScience.mosaicDetectors function')
             
             adOutputs = gs.mosaic_detectors(
-                                            adInputs=rc.getInputs(style='AD'), 
+                                            adInputs=rc.get_inputs(style='AD'), 
                                         fl_paste=rc['fl_paste'], 
                                         interp_function=rc['interp_function'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'])           
@@ -308,7 +308,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('geminiScience.mosaicDetectors completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs) 
+            rc.report_output(adOutputs) 
                 
             log.status('*FINISHED* mosaicing the input images')
         except:
@@ -353,7 +353,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug('Calling calibrate.overscanSubtract function')
             
             adOutputs = cal.overscan_subtract_gmosNEW(  ###########
-                                        adInputs=rc.getInputs(style='AD'), 
+                                        adInputs=rc.get_inputs(style='AD'), 
                                         fl_trim=rc['fl_trim'], 
                                         biassec=rc['biassec'], 
                                         fl_vardq='AUTO', suffix=rc['suffix'])           
@@ -361,7 +361,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('calibrate.overscan_subtract completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs)
+            rc.report_output(adOutputs)
             
             log.status('*FINISHED* subtracting the overscan from the '+
                        'input data')
@@ -393,13 +393,13 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             log.debug('Calling calibrate.overscanTrim function')
             
-            adOutputs = cal.overscan_trim(adInputs=rc.getInputs(style='AD'),     
+            adOutputs = cal.overscan_trim(adInputs=rc.get_inputs(style='AD'),     
                                                         suffix=rc['suffix'])           
             
             log.status('geminiScience.overscanTrim completed successfully')
               
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs)   
+            rc.report_output(adOutputs)   
                 
             log.status('*FINISHED* trimming the overscan region from the input data')
         except:
@@ -446,12 +446,12 @@ class GMOSPrimitives(GEMINIPrimitives):
         try:
             # Call the standardize_headers_gmos user level function
             output = sdz.standardize_headers_gmos(
-                adinput=rc.getInputs(style='AD'),
+                adinput=rc.get_inputs(style='AD'),
                 output_names=rc['output_names'],
                 suffix=rc['suffix'])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -487,12 +487,12 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('*STARTING* to standardize the structure (GMOS)')                         
             log.debug('Calling standardize.standardize_structure_gmos')
             adOutputs = sdz.standardize_structure_gmos(
-                                            adInputs=rc.getInputs(style='AD'),
+                                            adInputs=rc.get_inputs(style='AD'),
                                                         addMDF=rc['addMDF'],     
                                                         suffix=rc['suffix'])
             
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs) 
+            rc.report_output(adOutputs) 
             
             log.status('*FINISHED* standardizing the structure (GMOS)')        
         except:
@@ -547,8 +547,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             # all the same. Then gireduce can be called in a loop with 
             # one flat and one bias, this will work well with the CLManager
             # as that was how i wrote this prim originally.
-            adOne = rc.getInputs(style='AD')[0]
-            #processedBias = AstroData(rc.getCal(adOne,'bias'))
+            adOne = rc.get_inputs(style='AD')[0]
+            #processedBias = AstroData(rc.get_cal(adOne,'bias'))
             ####################BULL CRAP FOR TESTING ########################## 
             from copy import deepcopy
             processedBias = deepcopy(adOne)
@@ -560,18 +560,18 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.status('Using bias '+processedBias.filename+' to correct the inputs')
             log.debug('Calling calibrate.subtract_bias function')
             
-            #adOutputs = calibrate.subtract_biasNEW(adInputs=rc.getInputs(style='AD'), 
+            #adOutputs = calibrate.subtract_biasNEW(adInputs=rc.get_inputs(style='AD'), 
             #                             biases=processedBias, fl_vardq=rc['fl_vardq'], 
             #                             fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
             #                             suffix=rc['suffix'])   
-            adOutputs = cal.subtract_biasNEW(adInputs=rc.getInputs(style='AD'), 
+            adOutputs = cal.subtract_biasNEW(adInputs=rc.get_inputs(style='AD'), 
                                          biases=processedBias, fl_vardq=rc['fl_vardq'], 
                                          suffix=rc['suffix'])            
             
             log.status('calibrate.subtract_bias completed successfully')
                 
             # Reporting the updated files to the reduction context
-            rc.reportOutput(adOutputs)   
+            rc.report_output(adOutputs)   
             
             log.status('*FINISHED* subtracting the bias from the input flats')
         except:
@@ -607,13 +607,13 @@ class GMOSPrimitives(GEMINIPrimitives):
         log.debug(gt.log_message('primitive', 'validateData', 'starting'))
         try:
             # Call the validate_data_gmos user level function
-            output = sdz.validate_data_gmos(adinput=rc.getInputs(style='AD'),
+            output = sdz.validate_data_gmos(adinput=rc.get_inputs(style='AD'),
                                             output_names=rc['output_names'],
                                             suffix=rc['suffix'],
                                             repair=rc['repair'])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))

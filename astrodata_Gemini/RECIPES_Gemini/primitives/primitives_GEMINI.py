@@ -11,7 +11,7 @@ from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 from gempy.science import calibrate as cal
 from gempy.science import geminiScience as gs
-#from gempy.science import preprocessing as pp
+from gempy.science import preprocessing as pp
 from primitives_GENERAL import GENERALPrimitives
 
 class GEMINIPrimitives(GENERALPrimitives):
@@ -60,13 +60,13 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Call the addBPM primitive
             rc.run("addBPM")
             # Call the add_dq user level function
-            output = gs.add_dq(adInputs=rc.getInputs(style="AD"),
+            output = gs.add_dq(adInputs=rc.get_inputs(style="AD"),
                                fl_nonlinear=rc["fl_nonlinear"],
                                fl_saturated=rc["fl_saturated"],
                                suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -99,10 +99,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             purpose = rc["purpose"]
             if purpose is None:
                 purpose = ""
-            # Call the rqStackUpdate method
-            rc.rqStackUpdate(purpose=purpose)
+            # Call the rq_stack_update method
+            rc.rq_stack_update(purpose=purpose)
             # Write the files in the stack to disk if they do not already exist
-            for ad in rc.getInputs(style="AD"):
+            for ad in rc.get_inputs(style="AD"):
                 if not os.path.exists(ad.filename):
                     log.fullinfo("writing %s to disk" % ad.filename,
                                  category="list")
@@ -141,7 +141,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Initialize the list of output AstroData objects
             adoutput_list = []
             # Loop over each input AstroData object in the input list
-            for ad in rc.getInputs(style="AD"):
+            for ad in rc.get_inputs(style="AD"):
                 # Check whether the addVAR primitive has been run previously
                 if ad.phu_get_key_value("ADDVAR"):
                     log.warning("%s has already been processed by addVAR" \
@@ -158,7 +158,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
             # Report the list of output AstroData objects to the reduction
             # context
-            rc.reportOutput(adoutput_list)
+            rc.report_output(adoutput_list)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -187,11 +187,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "aduToElectrons", "starting"))
         try:
             # Call the adu_to_electrons user level function
-            output = gs.adu_to_electrons(adInputs=rc.getInputs(style="AD"),
+            output = gs.adu_to_electrons(adInputs=rc.get_inputs(style="AD"),
                                          suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -205,7 +205,7 @@ class GEMINIPrimitives(GENERALPrimitives):
     
     def clearCalCache(self, rc):
         # print "pG61:", rc.calindfile
-        rc.persistCalIndex(rc.calindfile, newindex={})
+        rc.persist_cal_index(rc.calindfile, newindex={})
         scals = rc["storedcals"]
         if scals:
             if os.path.exists(scals):
@@ -229,7 +229,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         try:
-            rc.rqDisplay(display_id=rc["display_id"])
+            rc.rq_display(display_id=rc["display_id"])
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -265,8 +265,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "divideByFlat", "starting"))
         try:
             # Retrieving the appropriate flat for the first of the inputs
-            adOne = rc.getInputs(style="AD")[0]
-            #processedFlat = AstroData(rc.getCal(adOne,"flat"))
+            adOne = rc.get_inputs(style="AD")[0]
+            #processedFlat = AstroData(rc.get_cal(adOne,"flat"))
             ###################BULL CRAP FOR TESTING ######################### 
             from copy import deepcopy
             processedFlat = deepcopy(adOne)
@@ -279,12 +279,12 @@ class GEMINIPrimitives(GENERALPrimitives):
                 raise Errors.PrimitiveError("Invalid processed flat " +
                                             "retrieved")
             # Call the divide_by_flat user level function
-            output = cal.divide_by_flat(adInputs=rc.getInputs(style="AD"),
+            output = cal.divide_by_flat(adInputs=rc.get_inputs(style="AD"),
                                         flats=processedFlat,
                                         suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -301,7 +301,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         if caltype is None:
             log.critical("Requested a calibration no particular " +
                          "calibration type")
-            raise Errors.PrimitiveError("getCal: %s was None" % caltype)
+            raise Errors.PrimitiveError("get_cal: %s was None" % caltype)
         source = rc["source"]
         if source is None:
             source = "all"
@@ -316,12 +316,12 @@ class GEMINIPrimitives(GENERALPrimitives):
         if source == "local":
             localSource = True
         
-        inps = rc.getInputsAsAstroData()
+        inps = rc.get_inputs_as_astro_data()
         
         if localSource:
-            rc.rqCal(caltype, inps, source="local")
+            rc.rq_cal(caltype, inps, source="local")
             for ad in inps:
-                cal = rc.getCal(ad, caltype)
+                cal = rc.get_cal(ad, caltype)
                 if cal is None:
                     print "get central"
                 else:
@@ -353,12 +353,12 @@ class GEMINIPrimitives(GENERALPrimitives):
             purpose = ""
         try:
             for inp in rc.inputs:
-                sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
+                sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
             for sid in sidset:
-                stacklist = rc.getStack(sid) #.filelist
+                stacklist = rc.get_stack(sid) #.filelist
                 log.fullinfo("List for stack id=%s" % sid, category="list")
                 for f in stacklist:
-                    rc.reportOutput(f)
+                    rc.report_output(f)
                     log.fullinfo("   %s" % os.path.basename(f),
                                  category="list")
         except:
@@ -373,7 +373,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         This primitive will check the files in the lists that are on disk,
         and then update the inputs list to include all members of the list.
         """
-        rc.rqCal("bias", rc.getInputs(style="AD"))
+        rc.rq_cal("bias", rc.get_inputs(style="AD"))
         yield rc
     
     def getProcessedDark(self, rc):
@@ -381,7 +381,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         A primitive to search and return the appropriate calibration dark from
         a server for the given inputs.
         """
-        rc.rqCal("dark", rc.getInputs(style="AD"))
+        rc.rq_cal("dark", rc.get_inputs(style="AD"))
         yield rc
     
     def getProcessedFlat(self, rc):
@@ -390,7 +390,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         a server for the given inputs.
         
         """
-        rc.rqCal("flat", rc.getInputs(style="AD"))
+        rc.rq_cal("flat", rc.get_inputs(style="AD"))
         yield rc
     
     def measureIQ(self, rc):
@@ -429,13 +429,13 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "measureIQ", "starting"))
         try:
             # Call the measure_iq user level function
-            output = gs.measure_iq(adInputs=rc.getInputs(style="AD"),
+            output = gs.measure_iq(adInputs=rc.get_inputs(style="AD"),
                                    function=rc["function"],
                                    display=rc["display"],
                                    qa=rc["qa"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -455,11 +455,11 @@ class GEMINIPrimitives(GENERALPrimitives):
                                 "starting"))
         try:
             # Call the nonlinearity_correct user level function
-            output = pp.nonlinearity_correct(input=rc.getInputs(style="AD"),
+            output = pp.nonlinearity_correct(input=rc.get_inputs(style="AD"),
                                              suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -479,11 +479,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         try:
             # Call the normalize_flat user level function
             output = cal.normalize_flat_image(
-                adInputs=rc.getInputs(style="AD"),
+                adInputs=rc.get_inputs(style="AD"),
                 suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -492,7 +492,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def pause(self, rc):
-        rc.requestPause()
+        rc.request_pause()
         yield rc
     
     def setContext(self, rc):
@@ -519,7 +519,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 log.warning("There are no calibrations in the cache.")
         else:
             for adr in rc.inputs:
-                sid = IDFactory.generateAstroDataID(adr.ad)
+                sid = IDFactory.generate_astro_data_id(adr.ad)
                 num = 0
                 for calkey in rc.calibrations:
                     if sid in calkey :
@@ -558,10 +558,10 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "scaleFringeToScience",
                                 "starting"))
         try:
-            inputs = rc.getInputs(style="AD", category="standard")
+            inputs = rc.get_inputs(style="AD", category="standard")
             fringes = []
             for input in inputs:
-                fringes.append(AstroData(rc.getCal(input, "fringe")))
+                fringes.append(AstroData(rc.get_cal(input, "fringe")))
             # Call the scale_fringe_to_science user level function
             output = cal.scale_fringe_to_science(fringes=fringes,
                                                  sciInputs=inputs,
@@ -569,8 +569,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                                                  suffix=rc["suffix"])
             # Report the output of the user level function (the scaled fringes)
             # and the original science inputs to the reduction context. 
-            rc.reportOutput(output, category="fringe")
-            rc.reportOutput(inputs, category="standard")
+            rc.report_output(output, category="fringe")
+            rc.report_output(inputs, category="standard")
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -621,15 +621,15 @@ class GEMINIPrimitives(GENERALPrimitives):
             purpose = ""
         # print "pG710"
         if purpose == "all":
-            allsids = rc.getStackIDs()
+            allsids = rc.get_stack_ids()
             # print "pG713:", repr(allsids)
             for sid in allsids:
                 sidset.add(sid)
         else:
             for inp in rc.inputs:
-                sidset.add(purpose+IDFactory.generateStackableID(inp.ad))
+                sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
         for sid in sidset:
-            stacklist = rc.getStack(sid) #.filelist
+            stacklist = rc.get_stack(sid) #.filelist
             log.status("List for stack id=%s" % sid, category="list")
             if len(stacklist) > 0:
                 for f in stacklist:
@@ -652,7 +652,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        rcparams = rc.paramNames()
+        rcparams = rc.param_names()
         if (rc["show"]):
             toshows = rc["show"].split(":")
             for toshow in toshows:
@@ -666,10 +666,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             for param in rcparams:
                 log.fullinfo("%s = %s" % (param, repr(rc[param])),
                              category="parameters")
-        # print "all",repr(rc.parmDictByTag("showParams", "all"))
-        # print "iraf",repr(rc.parmDictByTag("showParams", "iraf"))
-        # print "test",repr(rc.parmDictByTag("showParams", "test"))
-        # print "sdf",repr(rc.parmDictByTag("showParams", "sdf"))
+        # print "all",repr(rc.parm_dict_by_tag("showParams", "all"))
+        # print "iraf",repr(rc.parm_dict_by_tag("showParams", "iraf"))
+        # print "test",repr(rc.parm_dict_by_tag("showParams", "test"))
+        # print "sdf",repr(rc.parm_dict_by_tag("showParams", "sdf"))
         # print repr(dir(rc.ro.primDict[rc.ro.curPrimType][0]))
         
         yield rc
@@ -724,14 +724,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "stackFrames", "starting"))
         try:
             # Call the stack_frames user level function
-            output = gs.stack_frames(adInputs=rc.getInputs(style="AD"),
+            output = gs.stack_frames(adInputs=rc.get_inputs(style="AD"),
                                      fl_vardq=rc["fl_vardq"],
                                      fl_dqprop=rc["fl_dqprop"],
                                      method=rc["method"],
                                      suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -761,7 +761,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         try:
-            for ad in rc.getInputs(style="AD"):
+            for ad in rc.get_inputs(style="AD"):
                 # Updating the file name with the suffix for this primitive and
                 # then reporting the new file to the reduction context
                 log.debug("Calling gt.fileNameUpdater on %s" % ad.filename)
@@ -807,7 +807,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         try:
-            for ad in rc.getInputs(style="AD"):
+            for ad in rc.get_inputs(style="AD"):
                 # Updating the file name with the suffix for this primitive and
                 # then reporting the new file to the reduction context
                 log.debug("Calling gt.fileNameUpdater on %s" % ad.filename)
@@ -855,8 +855,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "subtractDark", "starting"))
         try:
             # Retrieving the appropriate dark for the first of the inputs
-            adOne = rc.getInputs(style="AD")[0]
-            #processedDark = AstroData(rc.getCal(adOne,"dark"))
+            adOne = rc.get_inputs(style="AD")[0]
+            #processedDark = AstroData(rc.get_cal(adOne,"dark"))
             ###################BULL CRAP FOR TESTING ######################### 
             from copy import deepcopy
             processedDark = deepcopy(adOne)
@@ -868,12 +868,12 @@ class GEMINIPrimitives(GENERALPrimitives):
                 raise Errors.PrimitiveError("Invalid processed dark " +
                                             "retrieved")
             # Call the subtract_dark user level function
-            output = cal.subtract_dark(adInputs=rc.getInputs(style="AD"),
+            output = cal.subtract_dark(adInputs=rc.get_inputs(style="AD"),
                                        darks=processedDark,
                                        suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -910,8 +910,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "subtractFringe", "starting"))
         try:
             # Retrieving the appropriate fringe for the first of the inputs
-            adOne = rc.getInputs(style="AD")[0]
-            #fringes=rc.getInputs(style="AD", category="fringe")
+            adOne = rc.get_inputs(style="AD")[0]
+            #fringes=rc.get_inputs(style="AD", category="fringe")
             ###################BULL CRAP FOR TESTING ######################### 
             from copy import deepcopy
             fringes = deepcopy(adOne)
@@ -919,12 +919,12 @@ class GEMINIPrimitives(GENERALPrimitives):
             fringes.phu_set_key_value("ORIGNAME","TEMPNAMEforFRINGE.fits")
             ##################################################################
             # Call the subtract_fringe user level function
-            output = cal.subtract_fringe(adInputs=rc.getInputs(style="AD"),
+            output = cal.subtract_fringe(adInputs=rc.get_inputs(style="AD"),
                                          fringes=fringes, 
                                          suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output, category="standard")
+            rc.report_output(output, category="standard")
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -996,7 +996,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             if rc["suffix"] and rc["prefix"]:
                 log.critical("The input will have %s pre pended and %s post " +
                              "pended onto it" % (rc["prefix"], rc["suffix"]))
-            for ad in rc.getInputs(style="AD"):
+            for ad in rc.get_inputs(style="AD"):
                 # If the value of "suffix" was set, then set the file name 
                 # to be written to disk to be postpended by it
                 if rc["suffix"]:
@@ -1016,7 +1016,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 elif rc["outfilename"]:
                     # Check that there is not more than one file to be written
                     # to this file name, if so throw exception
-                    if len(rc.getInputs(style="AD")) > 1:
+                    if len(rc.get_inputs(style="AD")) > 1:
                         message = """
                             More than one file was requested to be written to
                             the same name %s""" % (rc["outfilename"])

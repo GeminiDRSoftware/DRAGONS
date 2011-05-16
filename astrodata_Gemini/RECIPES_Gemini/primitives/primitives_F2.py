@@ -2,7 +2,7 @@ import sys
 
 from astrodata import AstroData
 from astrodata.adutils import gemLog
-from astrodata.ConfigSpace import lookupPath
+from astrodata.ConfigSpace import lookup_path
 from gempy import geminiTools as gt
 from gempy.science import geminiScience as gs
 from gempy.science import standardization as sdz
@@ -52,16 +52,16 @@ class F2Primitives(GEMINIPrimitives):
         log.debug(gt.log_message("primitive", "addBPM", "starting"))
         try:
             # Load the BPM file into AstroData
-            bpm = AstroData(lookupPath("Gemini/F2/BPM/F2_bpm.fits"))
+            bpm = AstroData(lookup_path("Gemini/F2/BPM/F2_bpm.fits"))
             # Call the add_bpm user level function
             output = gs.add_bpm(
-                adinput=rc.getInputs(style="AD"),
+                adinput=rc.get_inputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"],
                 bpm=bpm)
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -89,12 +89,12 @@ class F2Primitives(GEMINIPrimitives):
         try:
             # Call the standardize_headers_f2 user level function
             output = sdz.standardize_headers_f2(
-                adinput=rc.getInputs(style="AD"),
+                adinput=rc.get_inputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -122,12 +122,12 @@ class F2Primitives(GEMINIPrimitives):
         try:
             # Call the standardize_structure_f2 user level function
             output = sdz.standardize_structure_f2(
-                adinput=rc.getInputs(style="AD"),
+                adinput=rc.get_inputs(style="AD"),
                 output_names=rc["output_names"],
                 suffix=rc["suffix"])
             # Report the output of the user level function to the reduction
             # context
-            rc.reportOutput(output)
+            rc.report_output(output)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))
@@ -155,7 +155,7 @@ class F2Primitives(GEMINIPrimitives):
             # Initialize the list of output AstroData objects
             adoutput_list = []
             # Loop over each input AstroData object in the input list
-            for ad in rc.getInputs(style="AD"):
+            for ad in rc.get_inputs(style="AD"):
                 # Check whether the validateData primitive has been run
                 # previously
                 if ad.phu_get_key_value("VALDATA"):
@@ -175,7 +175,7 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
             # Report the list of output AstroData objects to the reduction
             # context
-            rc.reportOutput(adoutput_list)
+            rc.report_output(adoutput_list)
         except:
             # Log the message from the exception
             log.critical(repr(sys.exc_info()[1]))

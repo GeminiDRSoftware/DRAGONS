@@ -20,10 +20,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         self.gnirsArrayDict = \
-            Lookups.getLookupTable('Gemini/GNIRS/GNIRSArrayDict',
+            Lookups.get_lookup_table('Gemini/GNIRS/GNIRSArrayDict',
                                    'gnirsArrayDict')
         self.gnirsConfigDict = \
-            Lookups.getLookupTable('Gemini/GNIRS/GNIRSConfigDict',
+            Lookups.get_lookup_table('Gemini/GNIRS/GNIRSConfigDict',
                                    'gnirsConfigDict')
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
@@ -31,8 +31,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             stripID = True
         # GNIRS contains two dispersers - the grating and the prism. Get the
         # grating and the prism values using the appropriate descriptors
-        grating = dataset.grating(stripID=stripID, pretty=pretty).asPytype()
-        prism = dataset.prism(stripID=stripID, pretty=pretty).asPytype()
+        grating = dataset.grating(stripID=stripID, pretty=pretty).as_pytype()
+        prism = dataset.prism(stripID=stripID, pretty=pretty).as_pytype()
         if grating is None or prism is None:
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
@@ -61,7 +61,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # mechanism and the decker mechanism. Get the slit and the decker
         # values using the appropriate descriptors
         slit = dataset.slit(stripID=stripID, pretty=pretty)
-        decker = dataset.decker(stripID=stripID, pretty=pretty).asPytype()
+        decker = dataset.decker(stripID=stripID, pretty=pretty).as_pytype()
         if slit is None or decker is None:
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
@@ -131,7 +131,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # /mm is literally '/mm'
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
         # _G is literally '_G'
-        # nnnn is the 4 digit component ID.
+        # nnnn is the 4 digit component _id.
         cre = re.compile('([\d/m]+)([A-Z]*)(_G)(\d+)')
         m = cre.match(grating)
         if m:
@@ -207,7 +207,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Get the camera using the appropriate descriptor
-        camera = dataset.camera().asPytype()
+        camera = dataset.camera().as_pytype()
         if camera is None:
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
@@ -248,7 +248,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
         # + is a literal '+'
         # prism is the actual prism name
-        # nnnn is the 4 digit component ID.
+        # nnnn is the 4 digit component _id.
         cre = re.compile('([LBSR]*\+)*([A-Z]*)(_G)(\d+)')
         m = cre.match(prism)
         if m:
@@ -372,7 +372,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         Note that in GNIRS all the slits are machined into one physical piece
         of metal, which is on a slide - the mechanism simply slides the slide
         along to put the right slit in the beam. Thus all the slits have the
-        same componenet ID as they're they same physical compononet.
+        same componenet _id as they're they same physical compononet.
         """
         # Get the slit value from the header of the PHU.
         slit = dataset.phu_get_key_value(globalStdkeyDict['key_slit'])
