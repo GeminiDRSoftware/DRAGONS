@@ -17,8 +17,8 @@ class DescriptorDescriptor:
         \"\"\"
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "%(name)s")
-            if not hasattr(self.descriptorCalculator, "%(name)s"):
+            #print hasattr(self.descriptor_calculator, "%(name)s")
+            if not hasattr(self.descriptor_calculator, "%(name)s"):
                 key = "key_"+"%(name)s"
                 #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
                 #print "mkCI12:", key in SDKD.globalStdkeyDict
@@ -28,7 +28,7 @@ class DescriptorDescriptor:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.%(name)s(self, **args)
+                retval = self.descriptor_calculator.%(name)s(self, **args)
             
             %(pytypeimport)s
             ret = DescriptorValue( retval, 
@@ -38,8 +38,8 @@ class DescriptorDescriptor:
                                    pytype = %(pytype)s )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -213,15 +213,15 @@ from astrodata import Errors
 
 class CalculatorInterface:
 
-    descriptorCalculator = None
+    descriptor_calculator = None
 %(descriptors)s
 # UTILITY FUNCTIONS, above are descriptor thunks            
     def _lazyloadCalculator(self, **args):
         '''Function to put at top of all descriptor members
         to ensure the descriptor is loaded.  This way we avoid
         loading it if it is not needed.'''
-        if self.descriptorCalculator is None:
-            self.descriptorCalculator = Descriptors.get_calculator(self, **args)
+        if self.descriptor_calculator is None:
+            self.descriptor_calculator = Descriptors.get_calculator(self, **args)
 """
 out = ""
 

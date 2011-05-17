@@ -109,7 +109,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def coadds(self, dataset, **args):
         # Get the number of coadds from the header of the PHU. The number of
         # coadds keyword may be defined in a local key dictionary
-        # (stdkeyDict<INSTRUMENT>) but is read from the updated global key
+        # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
         # dictionary (globalStdkeyDict).
         coadds = dataset.phu_get_key_value(globalStdkeyDict['key_coadds'])
         if coadds is None:
@@ -239,7 +239,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword may be defined in a local key dictionary
-        # (stdkeyDict<INSTRUMENT>) but is read from the updated global key
+        # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
         # dictionary (globalStdkeyDict)
         disperser = dataset.phu_get_key_value(globalStdkeyDict['key_disperser'])
         if disperser is None:
@@ -321,7 +321,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Get the two filter name values from the header of the PHU. The two
         # filter name keywords may be defined in a local key dictionary
-        # (stdkeyDict<INSTRUMENT>) but are read from the updated global key
+        # (stdkey_dict<INSTRUMENT>) but are read from the updated global key
         # dictionary (globalStdkeyDict)
         key_filter1 = globalStdkeyDict['key_filter1']
         key_filter2 = globalStdkeyDict['key_filter2']
@@ -790,7 +790,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # Get the reference pixel of the central wavelength from the header
             # of each pixel data extension. The reference pixel of the central
             # wavelength keyword may be defined in a local key dictionary
-            # (stdkeyDict<INSTRUMENT>) but is read from the updated global key
+            # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
             # dictionary (globalStdkeyDict)
             wavelength_reference_pixel = ext.get_key_value\
                 (globalStdkeyDict['key_wavelength_reference_pixel'])
