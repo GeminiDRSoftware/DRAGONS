@@ -170,7 +170,7 @@ class CalibrationGMOS(Calibration):
     # The science amp_read_area must be equal or substring of the arc amp_read_area
     query = query.filter(Gmos.amp_read_area.like('%'+self.descriptors['amp_read_area']+'%'))
 
-    # Should we insist on the program _id matching?
+    # Should we insist on the program ID matching?
     if(sameprog):
       query = query.filter(Header.program_id==self.descriptors['program_id'])
 

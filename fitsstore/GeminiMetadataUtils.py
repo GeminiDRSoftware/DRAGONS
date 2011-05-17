@@ -159,7 +159,7 @@ def gmos_gratingname(string):
   could be confused with a filter or band (eg 'H'). Also most of the use cases 
   for this are where gratings are swapped.
 
-  This function doesn't match or return the component _id.
+  This function doesn't match or return the component ID.
 
   If the string argument matches a grating, we return the official name for
   that grating.
@@ -233,8 +233,8 @@ class GeminiDataLabel:
   * datalabel: The datalabel provided. If the class could cannot
                make sense of the datalabel string passed in,
                this field will be empty.
-  * projectid: The Project _id
-  * observation_id: The Observation _id
+  * projectid: The Project ID
+  * observation_id: The Observation ID
   * obsnum: The Observation Number within the project
   * dlnum: The Dataset Number within the observation
   * project: A GeminiProject object for the project this is part of
@@ -272,12 +272,12 @@ obscre = re.compile(obsre)
 
 class GeminiObservation:
   """
-  The GeminiObservation class parses an observation _id
+  The GeminiObservation class parses an observation ID
 
   Simply instantiate the class with an observation id string
   then reference the following data members:
 
-  * observation_id: The observation _id provided. If the class cannot
+  * observation_id: The observation ID provided. If the class cannot
            make sense of the string passed in, this field will
            be empty
   * project: A GeminiProject object for the project this is part of
@@ -309,13 +309,13 @@ cecre=re.compile('G[NS]-((?:CAL)|(?:ENG))(20\d\d[01]\d[0123]\d)')
 
 class GeminiProject:
   """
-  The GeminiProject class parses a Gemini Project _id and provides
+  The GeminiProject class parses a Gemini Project ID and provides
   various useful information deduced from it.
 
-  Simply instantiate the class with a project _id string, then
+  Simply instantiate the class with a project ID string, then
   referernce the following data members:
 
-  * program_id: The program _id passed in. If the class could not 
+  * program_id: The program ID passed in. If the class could not 
             make sense of the string, this will be empty.
   * iscal: a Boolean that is true if this is a CAL project
   * iseng: a Boolean that is true if this is an ENG project
