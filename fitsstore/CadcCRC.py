@@ -46,7 +46,7 @@ def cadcCRC(filename):
 
   return retary
   
-# commented out but left for reference, how an AstroData _id could be
+# commented out but left for reference, how an AstroData ID could be
 # gotten using the IDFactory
 #def cadcCRC_ADID(filename):
 #    from astrodata import AstroData
