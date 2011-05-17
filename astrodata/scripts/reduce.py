@@ -440,7 +440,7 @@ def command_line():
         fups.add_user_param(up)
     for up in pfups:
         fups.add_user_param(up)
-    options.userParams = fups
+    options.user_params = fups
     options.globalParams = {}
     options.globalParams.update(clgparms)
     options.globalParams.update(pfgparms)
@@ -829,8 +829,8 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     co.set_iraf_stderr(irafstdout)
 
                     # odl way rl.retrieve_parameters(infile[0], co, rec)
-                    if hasattr(options, "userParams"):
-                        co.userParams = options.userParams
+                    if hasattr(options, "user_params"):
+                        co.user_params = options.user_params
                     if hasattr(options, "globalParams"):
                         for pkey in options.globalParams.keys():
                             co.update({pkey:options.globalParams[pkey]})
@@ -845,7 +845,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 co.update({'logLevel':options.logLevel}) #$$$$$$$$$ right place to do this??    
                 co.update({'logName':options.logName}) #$$$$$$$$$ right place to do this??      
                 co.update({'logType':'main'})        #$$$$$$$$$ right place to do this?? SHould we make this param more global?
-                # print "r352:", repr(co.userParams.userParamDict)
+                # print "r352:", repr(co.user_params.user_param_dict)
                 if (useTK):
                     while cw.bReady == False:
                         # this is hopefully not really needed

@@ -67,7 +67,7 @@ firstrun = True
 
 
 class DescriptorValue():
-    dictVal = None
+    dict_val = None
     val = None
     name = None
     pytype = None
@@ -84,7 +84,7 @@ class DescriptorValue():
             self.pytype = pytype = type(initval)
         originalinitval = initval
         if isinstance(initval, DescriptorValue):
-            initval = initval.dictVal
+            initval = initval.dict_val
             
         # pytype logic
         if pytype:
@@ -119,11 +119,11 @@ class DescriptorValue():
         unit = self.unit
 
         if isinstance(initval, dict):
-            self.dictVal = initval
+            self.dict_val = initval
             val = None
         else:
             self.val = initval
-            self.dictVal = {"*":initval}
+            self.dict_val = {"*":initval}
         
         #NOTE:
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
@@ -165,13 +165,13 @@ class DescriptorValue():
         # produce known formats
         retstr = "Unknown Format For DescriptorValue"
         if  format == "as_dict":
-            retstr = str(self.dictVal)
+            retstr = str(self.dict_val)
         elif format == "db" or format == "value":
             val = self.is_collapsable()
             if val != None:
                 retstr = str(val)
             else:
-                parts = [str(val) for val in self.dictVal.values()]
+                parts = [str(val) for val in self.dict_val.values()]
                 retstr = "+".join(parts)
         elif format == "value":
             val = self.is_collapsable()
@@ -195,9 +195,9 @@ class DescriptorValue():
     
     def convert_value_to(self, new_units, new_type = None):
         # retval = self.unit.convert(self.val, new_units)
-        newDict = copy(self.dictVal)
-        for key in self.dictVal:
-            val = self.dictVal[key]
+        newDict = copy(self.dict_val)
+        for key in self.dict_val:
+            val = self.dict_val[key]
             newval = self.unit.convert(val, new_units)
             if new_type:
                 newval = new_type(newval)
@@ -240,33 +240,33 @@ class DescriptorValue():
             return self.val
     
     # alias
-    forNumpy = as_pytype
+    for_numpy = as_pytype
             
     
     def info(self):
         dvstr = ""
-        keys = self.dictVal.keys()
+        keys = self.dict_val.keys()
         keys.sort()
         for key in keys:
             
             dvstr += str(key)
             dvstr += ": "
-            dvstr += str(self.dictVal[key])
+            dvstr += str(self.dict_val[key])
             dvstr += "\n                      "
         retstr = """\
 descriptor value for: %(name)s
         single value: %(val)s
-    extension values: %(dictVal)s
+    extension values: %(dict_val)s
         """ % {"name":self.name,
                "val": repr(self.val),
-               "dictVal":dvstr
+               "dict_val":dvstr
               }
 
     
     def is_collapsable(self):
         oldvalue = None
-        for key in self.dictVal:
-            value = self.dictVal[key]
+        for key in self.dict_val:
+            value = self.dict_val[key]
             if oldvalue == None:
                 oldvalue = value
             else:

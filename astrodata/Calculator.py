@@ -60,7 +60,7 @@ class Calculator(object):
     usage = ""
     throwExceptions = True 
         
-    stdkeyDict = globalStdkeyDict
+    stdkey_dict = globalStdkeyDict
     def fetch_phuvalue(self, keyname, dataset):
         """This utility functioin fetches a header value from the PHU of the
         given dataset. The C{keyname} given is from the standardized key names
@@ -74,7 +74,7 @@ class Calculator(object):
         @rtype: depends on type of header value"""
         
         try:
-            keynm = self.stdkeyDict[keyname]
+            keynm = self.stdkey_dict[keyname]
             retval = dataset.phuValue(keynm)
         except KeyError:
             # LOGMESSAGE OR raise CalculatorExcept("          Standard Descriptor Key \"%s\" not in PHU (generic descriptor fails)" % keyname)

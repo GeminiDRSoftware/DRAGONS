@@ -62,7 +62,7 @@ for primset in primsets:
     if options.showSetsOnly:
         cl = pin.name2class[ nam ]
         pin.show("\n\n%2d. ${BOLD}%s${NORMAL}\n" %(count,cl.astrotype))
-        primlist = pin.primsdictKBN[nam]
+        primlist = pin.primsdict_kbn[nam]
         pin.show_set_info(nam, cl, primlist) 
         count+=1
     else:

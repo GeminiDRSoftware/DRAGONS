@@ -109,7 +109,7 @@ class AstroDataRecord( ReductionContextRecord ):
     Contains any metadata related to output/input within the ReductionContext.
     This is used specifically in the ReductionContext records inputs and outputs.
     '''
-    displayID = None
+    display_id = None
     filename = None
     ad = None
     parent = None
@@ -134,7 +134,7 @@ class AstroDataRecord( ReductionContextRecord ):
         else:
             raise "BAD ARGUMENT"
         ##@@TODO: display_id may be obsolete
-        self.displayID = display_id
+        self.display_id = display_id
     def load(self):
         self.ad = AstroData(self.filename)
         
@@ -144,5 +144,5 @@ class AstroDataRecord( ReductionContextRecord ):
     filename  = %s
     timestamp = %s
     parent    = %s
-    astrodata = %s \n""" % ( str(self.displayID), str(self.filename), self.timestamp, self.parent, str(self.ad) )
+    astrodata = %s \n""" % ( str(self.display_id), str(self.filename), self.timestamp, self.parent, str(self.ad) )
         return rets  

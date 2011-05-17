@@ -323,8 +323,8 @@ class MonitorRecipe:
     co = None
     lastTS = None
     durlablist = None # duration labels list for "begin" marks
-    alreadyPaused = False
-    alreadyWaitingForPause = False
+    already_paused = False
+    already_waiting_for_pause = False
     def __init__(self, window):
         self.window = window
     
@@ -361,15 +361,15 @@ class MonitorRecipe:
             sh = self.co.stephistory
             
             if self.co.pause_requested():
-                if not self.alreadyWaitingForPause:
+                if not self.already_waiting_for_pause:
                     self.textWdg.insert(END, "...waiting for pause...\n", "info")
-                    self.alreadyWaitingForPause = True
+                    self.already_waiting_for_pause = True
             else:
-                self.alreadyWaitingForPause = False
+                self.already_waiting_for_pause = False
             if self.co.paused:
                 
-                if not self.alreadyPaused:
-                    self.alreadyPaused = True
+                if not self.already_paused:
+                    self.already_paused = True
                     self.textWdg.insert(END, "PAUSED\n", "warn")
                     label = Label(self.textWdg, foreground="#c0c000",text="duration")
                     self.textWdg.insert(END, " ", "text")
@@ -377,7 +377,7 @@ class MonitorRecipe:
                     self.textWdg.insert(END, " \n", "text")
                     self.durlablist.update({("pause",0):(label,datetime.now())})
             else:
-                self.alreadyPaused = False
+                self.already_paused = False
                 if ("pause",0) in self.durlablist:
                     del (self.durlablist[("pause",0)])
                     

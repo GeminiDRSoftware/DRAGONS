@@ -38,7 +38,7 @@ class PrimInspect():
     astrotypes = None
     primsdict = None
     name2class = None
-    primsdictKBN = None
+    primsdict_kbn = None
     class2instance = None
     options = None
     
@@ -51,7 +51,7 @@ class PrimInspect():
         self.astrotypes = []
         self.primsdict = {}
         self.name2class = {}
-        self.primsdictKBN = {}
+        self.primsdict_kbn = {}
         self.class2instance = {}
         self.options = options
         if self.options.verbose:
@@ -141,7 +141,7 @@ class PrimInspect():
         if startclass.__name__== "PrimitiveSet":
             return
         self.name2class.update( {startclass.__name__:startclass} )
-        self.primsdictKBN.update( { startclass.__name__:self.get_prim_list( startclass ) } )
+        self.primsdict_kbn.update( { startclass.__name__:self.get_prim_list( startclass ) } )
         for base in startclass.__bases__:
             self.construct_primsclass_dict( base )
     
@@ -155,8 +155,8 @@ class PrimInspect():
       
 
     def firstprim(self, primsetname, prim):
-        if primsetname in self.primsdictKBN:
-            if prim in self.primsdictKBN[primsetname]:
+        if primsetname in self.primsdict_kbn:
+            if prim in self.primsdict_kbn[primsetname]:
                 return primsetname
             else:
                 cl = self.name2class[primsetname]
@@ -234,7 +234,7 @@ class PrimInspect():
         inherit = 'None'
         inherit_list=[]
         for base in cl.__bases__:
-            if base.__name__ in self.primsdictKBN:
+            if base.__name__ in self.primsdict_kbn:
                 inherit_list.append( base.__name__ )
                 inherit = 'Yes'
         self.show("  Inheritance      : ${BOLD}"+inherit+"${NORMAL}")
@@ -249,7 +249,7 @@ class PrimInspect():
             for inherited in inherit_list:
                 self.show("                   : (from ${BOLD}"+inherited+"${NORMAL}")
                 if len(inherit_list) < 2:
-                    iprimlist = self.primsdictKBN[inherited]
+                    iprimlist = self.primsdict_kbn[inherited]
                     itot = itot + (len(iprimlist) - overrides_count)
                     len_iprimlist = str( len(iprimlist) - overrides_count )
                     self.show("                   : inherited ${BOLD}"+len_iprimlist+"${NORMAL} primitives")
@@ -275,10 +275,10 @@ class PrimInspect():
             firstset = False
             
         if firstset == True:
-            primlist = self.primsdictKBN[primsetname]
+            primlist = self.primsdict_kbn[primsetname]
             primset = copy(primlist)
         else:
-            myprimset = Set(self.primsdictKBN[primsetname])
+            myprimset = Set(self.primsdict_kbn[primsetname])
             givenprimset = Set(primset)
             
             prims = myprimset - givenprimset
@@ -334,7 +334,7 @@ class PrimInspect():
                 if pdat == None:
                     primsetinst = self.class2instance[primsetname]
                     paramdicttype = primsetinst.astrotype
-                    paramdict = primsetinst.paramDict
+                    paramdict = primsetinst.param_dict
                     
                     pdat = (paramdicttype,paramdict)
                 else:
@@ -369,7 +369,7 @@ class PrimInspect():
         
                         
         for base in cl.__bases__:
-            if base.__name__ in self.primsdictKBN:
+            if base.__name__ in self.primsdict_kbn:
                 self.showPrims(  base.__name__,
                             primset = primset, 
                             i = i, indent = indent+2, 

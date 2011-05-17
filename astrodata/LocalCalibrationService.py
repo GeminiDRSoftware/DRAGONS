@@ -18,7 +18,7 @@ class CalibrationService( object ):
               
     '''
     
-    calDirectory = None
+    cal_directory = None
     calList = []
     
     def __init__( self, cal_directory_uris=["."], mode="local_disk" ):

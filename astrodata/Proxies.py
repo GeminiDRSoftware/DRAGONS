@@ -14,10 +14,10 @@ PDEB = False
 
 class ReduceCommands(object):
     prsready = False
-    reduceServer = None
+    reduce_server = None
     
     def __init__(self, reduce_server):
-        self.reduceServer = reduce_server
+        self.reduce_server = reduce_server
     def get_version(self):
         return [("ReduceXMLRPS", "0.1")]
 
@@ -139,7 +139,7 @@ class PRSProxy(object):
     httpport = None
     reducecmds = None
     xmlrpcthread = None
-    reduceServer = None
+    reduce_server = None
             
     def __init__(self, reduce_server = None, port = None):
         # retrieving global logger and creating it if None
@@ -152,7 +152,7 @@ class PRSProxy(object):
                 self.prsport = port
             #self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
             self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
-            self.reduceServer = reduce_server
+            self.reduce_server = reduce_server
             PRSProxy._class_prs = self # .prs
             self.found = True
         except socket.error:

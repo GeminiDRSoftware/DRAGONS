@@ -62,25 +62,25 @@ class DataSpider(object):
     """
     hdulist = None
     contextType = None
-    classificationLibrary = None
-    calSearch = None
+    classification_library = None
+    cal_search = None
     def __init__(self, context = None):
         # ==== member vars ====
         self.contextType = context
-        self.classificationLibrary = self.get_classification_library()
+        self.classification_library = self.get_classification_library()
         if uselocalcalserv:
             self.calService = CalibrationService()
             self.calDefLib = CalibrationDefinitionLibrary()
         
     def get_classification_library(self):
         # @@todo: handle context here
-        if (self.classificationLibrary == None):
+        if (self.classification_library == None):
             try:
-                self.classificationLibrary = ClassificationLibrary()
+                self.classification_library = ClassificationLibrary()
             except CLAlreadyExists, s:
-                self.classificationLibrary = s.clInstance
+                self.classification_library = s.clInstance
                 
-        return self.classificationLibrary
+        return self.classification_library
         
     def dumpinfo(self):
 	    #print self.hdulist.info()
@@ -193,11 +193,11 @@ class DataSpider(object):
                         if (stringway):
 
                             if (onlyTypology == onlyStatus):
-                                dtypes = self.classificationLibrary.discover_types(fname)
+                                dtypes = self.classification_library.discover_types(fname)
                             elif (onlyTypology):
-                                dtypes = self.classificationLibrary.discover_typology(fname)
+                                dtypes = self.classification_library.discover_typology(fname)
                             elif (onlyStatus):
-                                dtypes = self.classificationLibrary.discover_status(fname)
+                                dtypes = self.classification_library.discover_status(fname)
 
                         else:
                             # this is the AstroData Class way
@@ -536,11 +536,11 @@ class DataSpider(object):
                         if (stringway):
 
                             if (onlyTypology == onlyStatus):
-                                dtypes = self.classificationLibrary.discover_types(fname)
+                                dtypes = self.classification_library.discover_types(fname)
                             elif (onlyTypology):
-                                dtypes = self.classificationLibrary.discover_typology(fname)
+                                dtypes = self.classification_library.discover_typology(fname)
                             elif (onlyStatus):
-                                dtypes = self.classificationLibrary.discover_status(fname)
+                                dtypes = self.classification_library.discover_status(fname)
 
                         else:
                             # this is the AstroData Class way

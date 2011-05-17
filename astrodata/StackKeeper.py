@@ -231,10 +231,10 @@ class FringeKeeper:
     '''
     A data structure for accessing stackable lists.
     '''
-    stackLists = None
+    stack_lists = None
     
     def __init__(self):
-        self.stackLists = {}
+        self.stack_lists = {}
     
     def add(self, list_id, astro_id, addtostack):
         '''
@@ -249,22 +249,22 @@ class FringeKeeper:
         if type(addtostack) != list:
             addtostack = [addtostack]
             
-        if list_id not in self.stackLists:
-            self.stackLists.update( {list_id:FringeRecord(list_id, astro_id, [])} )
+        if list_id not in self.stack_lists:
+            self.stack_lists.update( {list_id:FringeRecord(list_id, astro_id, [])} )
         
         ##@@FIXME: This code seems pointless if the code above sets it to a list. Check into it.
         if type(addtostack) == list:
             # A quick way to perform diff on a list.
             # This code may not be necessary, but it is nice for testing, so you
             # do not have the same file being added to stackables.
-            addtostack = list( set(addtostack) - set(self.stackLists[_id].filelist) )
+            addtostack = list( set(addtostack) - set(self.stack_lists[_id].filelist) )
         else:
             # Assumed it is StackableRecord [Although this does not happen at the time I am
             # writing this, I have a feeling it will].
             # This will also convert the addtostack to a list
-            addtostack = list( set(addtostack.filelist) - set(self.stackLists[_id].filelist) )
-        self.stackLists[_id].filelist.extend(addtostack)
-        # print "SK40: STACKLIST AFTER ADD:", self.stackLists[_id]
+            addtostack = list( set(addtostack.filelist) - set(self.stack_lists[_id].filelist) )
+        self.stack_lists[_id].filelist.extend(addtostack)
+        # print "SK40: STACKLIST AFTER ADD:", self.stack_lists[_id]
         
 
     def get(self, _id):
@@ -277,14 +277,14 @@ class FringeKeeper:
         @return: List of files for stacking.
         @rtype: list of str
         '''
-        if _id not in self.stackLists:
+        if _id not in self.stack_lists:
             return None
         else:
-            return self.stackLists[_id]
+            return self.stack_lists[_id]
 
     def __str__(self):
         tempstr = ""
-        for item in self.stackLists.values():
+        for item in self.stack_lists.values():
             tempstr += str(item) + "\n"
         return tempstr
     

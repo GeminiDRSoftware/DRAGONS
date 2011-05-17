@@ -171,12 +171,12 @@ integrates other functionality.
     hdulist = None
     hdurefcount = 0
     mode = "readonly"
-    descriptorCalculator = None
+    descriptor_calculator = None
     descriptorFormat = None
     # index is for iterator behavior
     index = 0
     # for subdata
-    borrowedHDUList = False # if we took the hdul from another GD instance
+    borrowed_hdulist = False # if we took the hdul from another GD instance
     container = None # AstroData instance we took hdul from
     
     # None means "all", otherwise, an array of extensions
@@ -184,7 +184,7 @@ integrates other functionality.
     tlm=None
     # ClassificationLibrary Singleton, must be retrieved through
     #   get_classification_library()
-    classificationLibrary = None
+    classification_library = None
 
     def __init__(self, dataset=None, mode="readonly", exts = None, extInsts = None,
                     header = None, data = None, store = None, storeClobber = False):
@@ -315,7 +315,7 @@ integrates other functionality.
         in that case some other instance "owns" the pyfits HDUs instance.
         """
         
-        if self.borrowedHDUList:
+        if self.borrowed_hdulist:
             self.container.relhdul()
             self.hdulist = None
         else:
@@ -563,7 +563,7 @@ integrates other functionality.
         close the original hdulist because gd will actually own the hold on that
         HDUList and its related file."""
         
-        if self.borrowedHDUList:
+        if self.borrowed_hdulist:
             self.container.relhdul()
             self.hdulist = None
         else:
@@ -908,7 +908,7 @@ integrates other functionality.
         """
         # @@TODO: change to use STSCI provided function.
         
-        if force != True and self.borrowedHDUList:
+        if force != True and self.borrowed_hdulist:
             raise ADExcept("cannot setExtname on subdata")
         
         if type(name) == tuple:
@@ -967,7 +967,7 @@ integrates other functionality.
             inferRAW = False
             self.filename = source.filename
             self.__origFilename = source.filename
-            self.borrowedHDUList = True
+            self.borrowed_hdulist = True
             self.container = source
             # @@REVISIT: should this cache copy of types be here?
             # probably not... works now where type is PHU dependent, but
@@ -1157,13 +1157,13 @@ integrates other functionality.
         :return: A reference to the system classification library
         :rtype: L{ClassificationLibrary}
         """
-        if (self.classificationLibrary == None):
+        if (self.classification_library == None):
             try:
-                self.classificationLibrary = ClassificationLibrary()
+                self.classification_library = ClassificationLibrary()
             except CLAlreadyExists, s:
-                self.classificationLibrary = s.clInstance
+                self.classification_library = s.clInstance
 	                
-        return self.classificationLibrary
+        return self.classification_library
     
     def prune_typelist(self, typelist):
         cl = self.get_classification_library()
@@ -1339,7 +1339,7 @@ integrates other functionality.
         This function checks the AstroData object to see if it is the
         given type(s) and returns True if so.
         
-        :note: "AstroData.checkType(..)" is an alias for "AstroData.is_type(..)".
+        :note: "AstroData.check_type(..)" is an alias for "AstroData.is_type(..)".
         
         """
         if (self.types == None):
@@ -1353,7 +1353,7 @@ integrates other functionality.
                 return False
                 
         return True
-    checkType = is_type
+    check_type = is_type
 
     def re_phukeys(self, rekey):
         """

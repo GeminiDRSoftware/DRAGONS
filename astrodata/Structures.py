@@ -57,19 +57,19 @@ class Part(object):
     #: This is the name this part will have as a member variable of the
     #: AstroData instance 
     #: into which it is projected.
-    structName = None
+    struct_name = None
     #: The instance of the Structure or ExtID instance at this point in 
     #: the hierarchy.
-    structInst = None   
-    #: The string name of the structClass at this point in the structure.
-    structClass = None
+    struct_inst = None   
+    #: The string name of the struct_class at this point in the structure.
+    struct_class = None
     #: A string name of the header variable use to array this part.
-    arrayBy = None
+    array_by = None
     #: A boolean indicating if this part is required or not
     required = True
     #: Either None or a dictionary of header requirements inherited from 
     #: up the hierarchy
-    otherReqs = None # requirements given by superstructure
+    other_reqs = None # requirements given by superstructure
     
     def __init__(self, structClass = None, arrayBy = None, 
                     name=None, otherReqs={}, required=True):
@@ -98,13 +98,13 @@ class Part(object):
             raise StructureExcept("Can't use Part to initialize part... doesn't work like that")
         else:
             self.required=required
-            self.structClass = structClass
+            self.struct_class = structClass
             if structClass != None:
-                self.structInst = instantiate_struct(structClass)
-                self.structInst.otherReqs = otherReqs.copy()
-            self.arrayBy = arrayBy
-            self.structName = name
-            self.otherReqs = otherReqs.copy()
+                self.struct_inst = instantiate_struct(structClass)
+                self.struct_inst.other_reqs = otherReqs.copy()
+            self.array_by = arrayBy
+            self.struct_name = name
+            self.other_reqs = otherReqs.copy()
             
 class PartList(Part, list):
     """This class is for a part that is an array.
@@ -173,7 +173,7 @@ class Structure(object):
                                 otherReqs = self.otherReqs, 
                                 required=required)
                 for associateVal in associateList:
-                    # define otherReqs to pass in, the one we got as an arg
+                    # define other_reqs to pass in, the one we got as an arg
                     # plus the arrayBy:associateVal addition
                     addReqs = self.otherReqs.copy()
                     addReqs.update({arrayBy:associateVal})
@@ -197,28 +197,28 @@ class Structure(object):
                     self.partInsts.append(newPart)
         
         # do the find... arrays of structure/ExtIDs should exist
-        # and otherReqs should have been communicated to the leaves in the 
+        # and other_reqs should have been communicated to the leaves in the 
         # instantiation process.
         for part in self.partInsts:
             if isinstance(part,list):
                 for subpart in part:
                     # @@TODO: make this a function call in common with block below
-                    bFound = subpart.structInst.find(dataset)
+                    bFound = subpart.struct_inst.find(dataset)
                     if bFound == False:
                         if part.required == False:
-                            part.structInst = None
+                            part.struct_inst = None
                         else:
-                            errstr = str(subpart.otherReqs)
+                            errstr = str(subpart.other_reqs)
                             raise StructureExcept("Temporary Exception... failure when required == True\n" + errstr)
                             
                             return False
             else:
-                bFound = part.structInst.find(dataset)
+                bFound = part.struct_inst.find(dataset)
                 if bFound == False:
                     if part.required == False:
-                        part.structInst = None
+                        part.struct_inst = None
                     else:
-                        errstr = str(part.otherReqs)
+                        errstr = str(part.other_reqs)
                         raise StructureExcept("Temporary Exception... failure when required == True"+ errstr)
                         return False
         
@@ -242,18 +242,18 @@ class Structure(object):
             if isinstance(part,list):
                 newmem = []
                 for subpart in part:
-                    exts = subpart.structInst.get_extensions()
+                    exts = subpart.struct_inst.get_extensions()
                     newds = AstroData.AstroData(dataset, extInsts = exts)
                     newmem.append(newds)
-                    subpart.structInst.project(newds)                    
-                newmemstr = "dataset.%s" % part.structName
+                    subpart.struct_inst.project(newds)                    
+                newmemstr = "dataset.%s" % part.struct_name
                 # check if this is already projected... note, we WANT an attributeerror
                 # here to ensure the attribute is not already projected.
                 # NOTE: this may not be the behavior we want eventually, but right now
                 # this will help us avoid conflicts.
                 try:
                     testattr = eval(newmemstr)
-                    raise ProjectionExcept('Projection Conflict, member "%s" already exists' % part.structName)
+                    raise ProjectionExcept('Projection Conflict, member "%s" already exists' % part.struct_name)
                 except AttributeError:
                     pass
                 
@@ -262,31 +262,31 @@ class Structure(object):
                 if (self.cdebug):
                     print "projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
             elif isinstance(part, Part):
-                if (part.structInst != None):
-                    exts = part.structInst.get_extensions()
+                if (part.struct_inst != None):
+                    exts = part.struct_inst.get_extensions()
                     newds = AstroData.AstroData(dataset, extInsts = exts)
                 else:
                     newds = None
-                newmemstr = "dataset.%s" % part.structName
+                newmemstr = "dataset.%s" % part.struct_name
                 try:
                     testattr = eval(newmemstr)
-                    raise ProjectionExcept('Projection Conflict, member "%s" already exists' % part.structName)
+                    raise ProjectionExcept('Projection Conflict, member "%s" already exists' % part.struct_name)
                 except AttributeError:
                     pass
                 projectstr = "%s = newds" % newmemstr
                 if (self.cdebug):
                     print "projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
                 exec(projectstr)
-                if part.structInst != None:
-                    part.structInst.project(newds)
+                if part.struct_inst != None:
+                    part.struct_inst.project(newds)
             else:
                 # only options... how did a non-Part class get here?
                 raise StructureExcept("Non Part Class found in part array - fatal flaw")
     def get_extensions(self):
         retary = []
         for part in self.partInsts:
-            if part.structInst != None:
-                exts = part.structInst.get_extensions()
+            if part.struct_inst != None:
+                exts = part.struct_inst.get_extensions()
                 if exts != None:
                     retary += exts
         return retary
@@ -301,14 +301,14 @@ class Structure(object):
                 i = 0
                 for subpart in part:
                     i += 1
-                    if (subpart.structInst != None):
-                        fix = "%s[%d]" % (subpart.structName, i)
+                    if (subpart.struct_inst != None):
+                        fix = "%s[%d]" % (subpart.struct_name, i)
                         print "%sGD.%s%s" % (indent,prefix,fix)
-                        subpart.structInst.printout(dataset, prefix = prefix+fix+".", nest = nest+1)
+                        subpart.struct_inst.printout(dataset, prefix = prefix+fix+".", nest = nest+1)
             else:
-                if (part.structInst != None):
-                    print "%sGD.%s%s" % (indent, prefix, part.structName)
-                    part.structInst.printout(dataset, prefix = prefix+part.structName+".", nest = nest+1)
+                if (part.struct_inst != None):
+                    print "%sGD.%s%s" % (indent, prefix, part.struct_name)
+                    part.struct_inst.printout(dataset, prefix = prefix+part.struct_name+".", nest = nest+1)
             
             
 class ExtID(object):
@@ -320,15 +320,15 @@ class ExtID(object):
     innately (e.g. "EXTNAME" should be "SCI") but will have some of the
     recognition requirements given to it (e.g. told to find "EXTVER" == 2)
     as a result of requirements from higher in the structure tree.
-    @ivar headReqs: a dictionary which contains extension header keys as keys,
+    @ivar head_reqs: a dictionary which contains extension header keys as keys,
     and identifying values within the map values.
-    @type headReqs: dictionary
+    @type head_reqs: dictionary
     """
-    headReqs = None
+    head_reqs = None
     extension = None # Note: this is (should be) a single extension 
                      # .. AstroData instance
     cdebug = False
-    otherReqs = None
+    other_reqs = None
     def printout(self, dataset, prefix = "", nest=0):
         indent = ""
         for i in range(0,nest):
@@ -371,9 +371,9 @@ class ExtID(object):
         this ExtID seeks.
         @type dataset: AstroData instance
         """
-        allReqs = self.headReqs.copy()
-        if self.otherReqs != None:
-            allReqs.update(self.otherReqs)
+        allReqs = self.head_reqs.copy()
+        if self.other_reqs != None:
+            allReqs.update(self.other_reqs)
             
         if (self.cdebug):
             print "ExtID: finding:\n\t%s" % str(allReqs)

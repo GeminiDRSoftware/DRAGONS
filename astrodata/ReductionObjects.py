@@ -29,7 +29,7 @@ class ReductionObject(object):
     primDict = None
     curPrimType = None
     curPrimName = None
-    FUNCcommandClause = None
+    _funccommand_clause = None
     
     def __init__(self):
         self.primDict= {}
@@ -44,7 +44,7 @@ class ReductionObject(object):
         return rc
     
     def execute_command_clause(self, rc):
-        cmdclause = self.FUNCcommandClause
+        cmdclause = self._funccommand_clause
         if cmdclause:
             cmdclause(self, rc)
             
@@ -59,11 +59,11 @@ class ReductionObject(object):
             return None
         prims = self.primDict[self.curPrimType]
         for prim in prims:
-            if self.curPrimName in prim.paramDict:
-                if ((param in prim.paramDict[self.curPrimName]) 
+            if self.curPrimName in prim.param_dict:
+                if ((param in prim.param_dict[self.curPrimName]) 
                     and 
-                    (prop  in prim.paramDict[self.curPrimName][param])):
-                    return prim.paramDict[self.curPrimName][param][prop]
+                    (prop  in prim.param_dict[self.curPrimName][param])):
+                    return prim.param_dict[self.curPrimName][param][prop]
         return None
         
     def parm_dict_by_tag(self, prim, tag):
@@ -71,10 +71,10 @@ class ReductionObject(object):
             return {}
         primsets = self.primDict[self.curPrimType]
         retd = {}
-        # for each primset assigned this type, check paramDict in order
+        # for each primset assigned this type, check param_dict in order
         for primset in primsets:
-            if prim in primset.paramDict:
-                params = primset.paramDict[prim]
+            if prim in primset.param_dict:
+                params = primset.param_dict[prim]
             else:
                 continue
             for pkey in params.keys():
@@ -173,19 +173,19 @@ class ReductionObject(object):
     run = runstep
     
     def register_command_clause(self, function):
-        self.FUNCcommandClause = function
+        self._funccommand_clause = function
         
     def join_param_dicts(self, newprimset, primsetary):
         # make sure all paramDicts are the same object
         if len(primsetary)>0:
-            paramdict0 = primsetary[0].paramDict
+            paramdict0 = primsetary[0].param_dict
         else:
-            paramdict0 = newprimset.paramDict
+            paramdict0 = newprimset.param_dict
         for primset in primsetary:
-            if primset.paramDict != paramdict0:
+            if primset.param_dict != paramdict0:
                 raise ReductionExcept("ParamDict not coherent")
-        paramdict0.update(newprimset.paramDict)
-        newprimset.paramDict = paramdict0               
+        paramdict0.update(newprimset.param_dict)
+        newprimset.param_dict = paramdict0               
         
     def add_prim_set(self,primset):
         if type(primset) == list:
@@ -196,10 +196,10 @@ class ReductionObject(object):
         if primset.astrotype == None:
             raise ReductionExcept("Primitive Set astrotype is None, fatal error, corrupt configuration")
         if primset.btype == "RECIPE":
-            if hasattr(primset,"paramDict") and primset.paramDict != None:
-                print repr(primset.paramDict)
-                raise ReductionExcept("Primitive btype=RECIPE should not have a paramDict")
-            primset.paramDict = {}
+            if hasattr(primset,"param_dict") and primset.param_dict != None:
+                print repr(primset.param_dict)
+                raise ReductionExcept("Primitive btype=RECIPE should not have a param_dict")
+            primset.param_dict = {}
         if not self.primDict.has_key(primset.astrotype):
             self.primDict.update({primset.astrotype:[]})
         primset.ro = self
@@ -224,7 +224,7 @@ class PrimitiveSet(object):
     btype = "PRIMITIVE"
     filename = None
     directory = None
-    paramDict = None
+    param_dict = None
     def __init__(self):
         pass
         
@@ -239,7 +239,7 @@ class PrimitiveSet(object):
         parlist = self.get_parent_modules(type(self),[])
         for parmod in parlist:
             # module names of this module and parents, in order
-            # load the paramDict
+            # load the param_dict
             exec("import " + parmod)
             filename = eval(parmod +".__file__")
             # @@NAMING CONVENTION RELIANCE
@@ -274,7 +274,7 @@ class PrimitiveSet(object):
                             wpdict[primname].update({param:pdict[primname][param]})
         # to make version that returns this instead of set it, just return wpdict
         # but make this function call that one.                            
-        self.paramDict = wpdict
+        self.param_dict = wpdict
         
     def get_parent_modules(self, cls, append_list):
         """This method returns a list of parent modules for primitives

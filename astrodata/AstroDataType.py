@@ -72,16 +72,16 @@ class AndReq(Requirement):
         @type args: Instances of classes descending from
         AstroDataType.Requirement.
     """
-    andList = None
+    and_list = None
     def __init__(self, *args):
-        self.andList = []
+        self.and_list = []
         for arg in args:
             if hasattr(arg,'__iter__'):
-                self.andList.extend(arg)
+                self.and_list.extend(arg)
             else:
-                self.andList.append(arg)
+                self.and_list.append(arg)
     def satisfied_by(self, hdulist):
-        for req in self.andList:
+        for req in self.and_list:
             if not req.satisfied_by(hdulist):
                 return False
         
@@ -872,13 +872,13 @@ class ClassificationLibrary (object):
     To make this work it is not advised to instantiate the ClassificationLibrary in a single regular call like
     C{cl = ClassificationLibrary()}, instead, use code such as the following::
     
-      if (self.classificationLibrary == None):
+      if (self.classification_library == None):
             try:
-                self.classificationLibrary = ClassificationLibrary()
+                self.classification_library = ClassificationLibrary()
             except CLAlreadyExists, s:
-                self.classificationLibrary = s.clInstance
+                self.classification_library = s.clInstance
                 
-        return self.classificationLibrary
+        return self.classification_library
     
     The L{AstroData.get_classification_library} function retrieves the instance handle 
     this way.
@@ -1286,7 +1286,7 @@ def get_classification_library():
         return s.clInstance
     return None
 
-    return self.classificationLibrary
+    return self.classification_library
     print dir(ClassificationLibrary)
     if ClassificationLibrary.__single != None:
         return ClassificationLibrary.__single

@@ -70,33 +70,33 @@ class UserParam(object):
         self.value = value
         
 class UserParams(object):
-    userParamDict = None
+    user_param_dict = None
     def get_user_param(self, astrotype, primname):
-        if self.userParamDict == None:
+        if self.user_param_dict == None:
             return None
-        if astrotype not in self.userParamDict:
+        if astrotype not in self.user_param_dict:
             return None
-        if primname not in self.userParamDict[astrotype]:
+        if primname not in self.user_param_dict[astrotype]:
             return None
-        return self.userParamDict[astrotype][primname]
+        return self.user_param_dict[astrotype][primname]
         
     def add_user_param(self, userparam):
         up = userparam
         if userparam == None:
             return
-        if self.userParamDict == None:
-            self.userParamDict = {}
+        if self.user_param_dict == None:
+            self.user_param_dict = {}
             
-        if up.astrotype not in self.userParamDict:
-            self.userParamDict.update({up.astrotype: {}})
+        if up.astrotype not in self.user_param_dict:
+            self.user_param_dict.update({up.astrotype: {}})
         
-        if up.primname not in self.userParamDict[up.astrotype]:
-            self.userParamDict[up.astrotype].update({up.primname: {}})
+        if up.primname not in self.user_param_dict[up.astrotype]:
+            self.user_param_dict[up.astrotype].update({up.primname: {}})
             
-        if up.param in self.userParamDict[up.astrotype][up.primname]:
+        if up.param in self.user_param_dict[up.astrotype][up.primname]:
             raise RecipeExcept("Parameter (%s.%s%s) already set by user" % (up.astrotype, up.primname, up.param))
         else:
-            self.userParamDict[up.astrotype][up.primname].update({up.param:up.value})
+            self.user_param_dict[up.astrotype][up.primname].update({up.param:up.value})
             
 class ReductionContext(dict):
     """The ReductionContext is used by primitives and recipiesen, hidden in the later case,
@@ -104,29 +104,29 @@ class ReductionContext(dict):
     running environments, from pipelines to command line interactive reduction.
     """
     inputs = None
-    originalInputs = None
-    inputsHistory = None
+    original_inputs = None
+    inputs_history = None
     outputs = None
     calibrations = None
     rorqs = None
     status = "EXTANT"
     reason = "EXTANT"
-    cmdRequest = "NONE"
+    cmd_request = "NONE"
     hostname = None
-    displayName = None
+    display_name = None
     stephistory = None
     stackeep = None
     calindfile = None
-    displayMode = None
-    displayID = None
+    display_mode = None
+    display_id = None
     irafstdout = None
     irafstderr = None
     callbacks = None
     arguments = None
     cache_files = None
     _localparms = None # dictionary with local args (given in recipe as args, generally)
-    userParams = None # meant to be UserParams instance
-    proxyID = 1 # used to ensure uniqueness
+    user_params = None # meant to be UserParams instance
+    proxy_id = 1 # used to ensure uniqueness
     ro = None
     #------------------------------------------------------------------------------ 
     cmd_history = None
@@ -139,13 +139,13 @@ class ReductionContext(dict):
         self.cmd_index = {}
         self.inputs = []
         self.callbacks = {}
-        self.inputsHistory = []
+        self.inputs_history = []
         self.calibrations = {}
         self.rorqs = []
         self.outputs = {"standard":[]}
         self.stephistory = {}
         self.hostname = socket.gethostname()
-        self.displayName = None
+        self.display_name = None
         self.arguments = []
         self.cache_files = {}
         # TESTING
@@ -215,7 +215,7 @@ class ReductionContext(dict):
         tempStr = ""
         tempStr = tempStr + "REDUCTION CONTEXT OBJECT (CO)\n" + \
             "inputs = " + str(self.inputs) + \
-            "\ninputsHistory =  " + str(self.inputsHistory) + \
+            "\ninputsHistory =  " + str(self.inputs_history) + \
             "\ncalibrations = \n" + self.calsummary() + \
             "\nrorqs = " 
         if self.rorqs != []:
@@ -234,7 +234,7 @@ class ReductionContext(dict):
             tempStr = tempStr + str(self.outputs)
         #"stephistory = " + str( self.stephistory ) + \
         tempStr = tempStr + "\nhostname = " + str(self.hostname) + \
-            "\ndisplayName = " + str(self.displayName) + \
+            "\ndisplayName = " + str(self.display_name) + \
             "\ncdl = " + str(self.cdl) + \
             "\nindent = " + str(self.indent) + \
             "\nstackeep = " + str(self.stackeep)
@@ -298,7 +298,7 @@ class ReductionContext(dict):
     def add_input(self, filenames):
         '''
         Add input to be processed the next batch around. If this is the first input being added,
-        it is also added to originalInputs.
+        it is also added to original_inputs.
         
         @param filenames: Inputs you want added.
         @type filenames: list, AstroData, str 
@@ -309,8 +309,8 @@ class ReductionContext(dict):
         ##@@TODO: Approve that this is acceptable. (i.e. should it be done here or after the first 
         ## round is complete?)
         origFlag = False
-        if self.originalInputs is None or self.originalInputs == []:
-            self.originalInputs = []
+        if self.original_inputs is None or self.original_inputs == []:
+            self.original_inputs = []
             origFlag = True
         
         for filename in filenames:
@@ -328,8 +328,8 @@ class ReductionContext(dict):
             if filename not in self.inputs:
                 self.inputs.append(filename)
             if origFlag:
-                if filename not in self.originalInputs:
-                    self.originalInputs.append(filename)        
+                if filename not in self.original_inputs:
+                    self.original_inputs.append(filename)        
        
     def add_rq(self, rq):
         '''
@@ -364,11 +364,11 @@ class ReductionContext(dict):
     
     def cal_filename(self, caltype):
         """returns a local filename for a retrieved calibration"""
-        if self.originalInputs == None:
-            self.originalInputs = deepcopy(self.inputs)
-        if len(self.originalInputs) == 0:
+        if self.original_inputs == None:
+            self.original_inputs = deepcopy(self.inputs)
+        if len(self.original_inputs) == 0:
             return None
-        #elif len(self.originalInputs) == 1:
+        #elif len(self.original_inputs) == 1:
         #    adID = idFac.generate_astro_data_id(self.inputs[0].ad)
         #    key = (adID, caltype)
         #    infile = os.path.basename(self.inputs[0].filename)
@@ -378,7 +378,7 @@ class ReductionContext(dict):
         #        return None
         else:
             retl = {}
-            for inp in self.originalInputs:
+            for inp in self.original_inputs:
                 key = (idFac.generate_astro_data_id(inp.ad), caltype)
                 calfile = self.calibrations[key].filename
                 infile = os.path.basename(inp.filename)
@@ -402,7 +402,7 @@ class ReductionContext(dict):
         return rets
     
     def check_control(self):
-        return self.cmdRequest
+        return self.cmd_request
     
     def clear_rqs(self, rtype=None):
         '''
@@ -417,7 +417,7 @@ class ReductionContext(dict):
                     self.rorqs.remove(rq)
     
     def control(self, cmd="NONE"):
-        self.cmdRequest = cmd
+        self.cmd_request = cmd
     
     def end(self, stepname):
         key = datetime.now()
@@ -442,8 +442,8 @@ class ReductionContext(dict):
             # don't do this if the set is empty, it's a non-IO primitive
             ##@@TODO: The below if statement could be redundant because this is done
             # in addInputs
-            if self.originalInputs == None:
-                self.originalInputs = deepcopy(self.inputs)
+            if self.original_inputs == None:
+                self.original_inputs = deepcopy(self.inputs)
             
             #print "OUTPUTS:", self.outputs["standard"]
             newinputlist = []
@@ -626,12 +626,12 @@ class ReductionContext(dict):
         and sets the localparms member."""
         
         # @@HERE: is where parameter metadata is respected, or not
-        if primname in primset.paramDict:
+        if primname in primset.param_dict:
             # localparms should always be defined by here
             # users can never override argument in recipes (too confusing)
             correctUPD = None
-            if self.userParams != None:
-                correctUPD = self.userParams.get_user_param(astrotype, primname)
+            if self.user_params != None:
+                correctUPD = self.user_params.get_user_param(astrotype, primname)
                 if correctUPD != None:
                     for param in correctUPD.keys():
                         if param in self.localparms:
@@ -643,13 +643,13 @@ class ReductionContext(dict):
                             exs += "\t\trecipe setting = %s\n" % self.localparms[param]
                             raise SettingFixedParam(exs)
                             
-            # use primset.paramDict to update self.localparms
-            for param in primset.paramDict[primname].keys():
+            # use primset.param_dict to update self.localparms
+            for param in primset.param_dict[primname].keys():
                 # @@NAMING: naming of default value in parameter dictionary hardcoded
                 # print "RM571:", param, repr(self.localparms), repr(self), param in self
                 if param in self.localparms or param in self:
-                    repOvrd = ("recipeOverride" not in primset.paramDict[primname][param])\
-                                 or primset.paramDict[primname][param]["recipeOverride"]
+                    repOvrd = ("recipeOverride" not in primset.param_dict[primname][param])\
+                                 or primset.param_dict[primname][param]["recipeOverride"]
                     # then it's already in there, check metadata
                     # @@NAMING: "recipeOverride" used in RecipeManager code
                     if not repOvrd:
@@ -658,21 +658,21 @@ class ReductionContext(dict):
                         exs += "\tprimitive = %s\n" % primname
                         exs += "\tparameter = %s\n" % str(param)
                         exs += "\t\tattempt to set to = %s\n" % self.localparms[param]
-                        exs += "\t\tfixed setting = %s\n" % primset.paramDict[primname][param]["default"]
+                        exs += "\t\tfixed setting = %s\n" % primset.param_dict[primname][param]["default"]
                         raise SettingFixedParam(exs)
                 if param not in self.localparms and param not in self:
-                    if "default" in primset.paramDict[primname][param]:
-                        self.localparms.update({param:primset.paramDict[primname][param]["default"]})
+                    if "default" in primset.param_dict[primname][param]:
+                        self.localparms.update({param:primset.param_dict[primname][param]["default"]})
                 # print "rm606:", param, repr(self.localparms)
                 
             # about to add user paramets... some of which may be in the global context (and not in correct UPD)
             # strictly speaking these may not have been added by the user but we consider it user space
             # and at any rate expect it to not be overrided by ANY means (we may want a diferent flag
             # than userOverride
-            for param in primset.paramDict[primname].keys():
+            for param in primset.param_dict[primname].keys():
                 # if this param is already set in the context... there is a problem, it's not to be set.
-                userOvrd = ("userOverride" not in primset.paramDict[primname][param])\
-                             or primset.paramDict[primname][param]["userOverride"]
+                userOvrd = ("userOverride" not in primset.param_dict[primname][param])\
+                             or primset.param_dict[primname][param]["userOverride"]
                 if param in self:
                     # note: if it's in self.localparms, that's due to legal behavior above... primitives
                     # parameters (as passed in recipes) are always added to the localparms space
@@ -683,15 +683,15 @@ class ReductionContext(dict):
                         exs += "\tprimitive = %s\n" % primname
                         exs += "\tparameter = %s\n" % str(param)
                         exs += "\t\tattempt to set to = %s\n" % self[param]
-                        exs += "\t\tfixed setting = %s\n" % primset.paramDict[primname][param]["default"]
+                        exs += "\t\tfixed setting = %s\n" % primset.param_dict[primname][param]["default"]
 
                         raise SettingFixedParam(exs, astrotype = astrotype)
             
             # users override everything else if  it gets here... and is allowed
             if correctUPD:
                 for param in correctUPD:
-                    userOvrd = ("userOverride" not in primset.paramDict[primname][param])\
-                                 or primset.paramDict[primname][param]["userOverride"]
+                    userOvrd = ("userOverride" not in primset.param_dict[primname][param])\
+                                 or primset.param_dict[primname][param]["userOverride"]
                     if param in self.localparms or param in self:
                         
                         if not userOvrd:
@@ -700,7 +700,7 @@ class ReductionContext(dict):
                             exs += "\tprimitive = %s\n" % primname
                             exs += "\tparameter = %s\n" % str(param)
                             exs += "\t\tattempt to set to = %s\n" % correctUPD[param]
-                            exs += "\t\tfixed setting = %s\n" % primset.paramDict[primname][param]["default"]
+                            exs += "\t\tfixed setting = %s\n" % primset.param_dict[primname][param]["default"]
                             
                             raise SettingFixedParam(exs, astrotype = astrotype)
                         else:
@@ -742,8 +742,8 @@ class ReductionContext(dict):
             if line != "":
                 break;
         # cleanname not used!
-        name = "proxy_recipe%d"%self.proxyID
-        self.proxyID += 1
+        name = "proxy_recipe%d"%self.proxy_id
+        self.proxy_id += 1
         # print "RM630:", stepname
         self.ro.recipeLib.load_and_bind_recipe(self.ro, name, src=stepname)
         return self.ro.runstep(name, self)
@@ -768,7 +768,7 @@ class ReductionContext(dict):
     def request_pause(self):
         self.control("pause") 
     def pause_requested(self):
-        return self.cmdRequest == "pause"
+        return self.cmd_request == "pause"
     #--------------------------------------------------------------------------- 
     #------------------ PAUSE ----------------------------------------------------
     def paramsummary(self):
@@ -824,7 +824,7 @@ class ReductionContext(dict):
     
     def persist_fringe_index(self, filename):
         try:
-            pickle.dump(self.fringes.stackLists, open(filename, "w"))
+            pickle.dump(self.fringes.stack_lists, open(filename, "w"))
         except:
             raise 'Could not persist the fringe cache.'
             
@@ -832,7 +832,7 @@ class ReductionContext(dict):
         self.stackKeeper.persist(filename)
         #try:
         #    #print "RM80:", self.stackeep
-        #    pickle.dump(self.stackeep.stackLists, open(filename, "w"))
+        #    pickle.dump(self.stackeep.stack_lists, open(filename, "w"))
         #except:
         #    print "Could not persist the stackable cache."
         #    raise
@@ -902,8 +902,8 @@ class ReductionContext(dict):
                 outfile.close()
     
     def process_cmd_req(self):
-        if self.cmdRequest == "pause":
-            self.cmdRequest = "NONE"
+        if self.cmd_request == "pause":
+            self.cmd_request = "NONE"
             self.pause()
             
     def remove_callback(self, name, function):
@@ -1016,7 +1016,7 @@ class ReductionContext(dict):
             raise RecipeExcept("You may only use " + 
                 "'standard' category output at this time.")
         if type(inp) == str:
-            self.outputs[category].append(AstroDataRecord(inp, self.displayID, load=load))
+            self.outputs[category].append(AstroDataRecord(inp, self.display_id, load=load))
         elif isinstance(inp, AstroData):
             self.outputs[category].append(AstroDataRecord(inp))
         elif type(inp) == list:
@@ -1028,7 +1028,7 @@ class ReductionContext(dict):
                     #@@.....: a primitive that needs it's output checked!
                     if not os.path.exists(temp[0]):
                         raise "LAST PRIMITIVE FAILED: %s does not exist" % temp[0]
-                    orecord = AstroDataRecord(temp[0], self.displayID, parent=temp[1], load=load)
+                    orecord = AstroDataRecord(temp[0], self.display_id, parent=temp[1], load=load)
                     #print 'RM370:', orecord
                 elif isinstance(temp, AstroData):
                     # print "RM891:", type(temp)
@@ -1036,7 +1036,7 @@ class ReductionContext(dict):
                 elif type(temp) == str:
                     if not os.path.exists(temp):
                         raise "LAST PRIMITIVE FAILED."
-                    orecord = AstroDataRecord(temp, self.displayID , load=load)
+                    orecord = AstroDataRecord(temp, self.display_id , load=load)
                 else:
                     raise "RM292 type: " + str(type(temp))
                 #print "RM344:", orecord
@@ -1054,7 +1054,7 @@ class ReductionContext(dict):
         
         '''
         if os.path.exists(filename):
-            self.fringes.stackLists = pickle.load(open(filename, 'r'))
+            self.fringes.stack_lists = pickle.load(open(filename, 'r'))
         else:
             pickle.dump({}, open(filename, 'w'))
                             
@@ -1100,7 +1100,7 @@ class ReductionContext(dict):
         if type(caltype) != str:
             raise RecipeExcept("caltype not string, type = " + str( type(caltype)))
         if inputs is None:
-            addToCmdQueue = self.cdl.get_cal_req(self.originalInputs, caltype, write_input=True)
+            addToCmdQueue = self.cdl.get_cal_req(self.original_inputs, caltype, write_input=True)
         else:
             addToCmdQueue = self.cdl.get_cal_req(inputs, caltype, write_input=True)
         for re in addToCmdQueue:
@@ -1133,12 +1133,12 @@ class ReductionContext(dict):
     def rq_iq(self, ad, e_m, e_s, f_m, f_s):
         iqReq = ImageQualityRequest(ad, e_m, e_s, f_m, f_s)
         self.add_rq(iqReq)
-    rqIQput = rq_iq
+    rq_iqput = rq_iq
         
     def rq_stack_get(self, purpose = ""):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        for orig in self.originalInputs:
+        for orig in self.original_inputs:
             Sid = purpose + idFac.generate_stackable_id(orig.ad, ver)
             stackUEv = GetStackableRequest()
             stackUEv.stkID = Sid
@@ -1157,7 +1157,7 @@ class ReductionContext(dict):
             stackUEv.stkList = inp.filename
             self.add_rq(stackUEv)
     #better name?
-    rqStackPut = rq_stack_update
+    rq_stack_put = rq_stack_update
     
     def set_cache_file(self, key, filename):
         filename = os.path.abspath(filename)
