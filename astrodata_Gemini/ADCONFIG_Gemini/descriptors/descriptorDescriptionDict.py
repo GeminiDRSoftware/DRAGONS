@@ -198,12 +198,12 @@ detailedNameDict = {
         '\'partnerCal\', \'acq\', \n                 \'acqCal\' or ' +
         '\'dayCal\') of the observation',
     'observation_epoch':'epoch (in years) at the start of the observation',
-    'observation_id':'_id (e.g., GN-2011A-Q-123-45) of the observation',
+    'observation_id':'ID (e.g., GN-2011A-Q-123-45) of the observation',
     'observation_type':'type (either \'OBJECT\', \'DARK\', \'FLAT\', ' +
     '\'ARC\', \'BIAS\' or \n                 \'MASK\') of the observation',
     'pixel_scale':'pixel scale (in arcsec per pixel) of the observation',
     'prism':'prism used for the observation',
-    'program_id':'Gemini program _id (e.g., GN-2011A-Q-123) of the \n' +
+    'program_id':'Gemini program ID (e.g., GN-2011A-Q-123) of the \n' +
     '                 observation',
     'pupil_mask':'pupil mask used for the observation',
     'qa_state':'quality assessment state (either \'Undefined\', \'Pass\', \n' +
@@ -266,7 +266,7 @@ asDictArgDict = {
 
 # Use the stripIDArgDict dictionary to change the standard doc string of a
 # descriptor to include the stripID and pretty argument descriptions for those
-# descriptors that return values with a Gemini _id associated with them. The
+# descriptors that return values with a Gemini ID associated with them. The
 # default return type is 'no'. Add to this dictionary using the format
 # <descriptor>:'yes',
 

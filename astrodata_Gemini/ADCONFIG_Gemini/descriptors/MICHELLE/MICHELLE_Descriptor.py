@@ -53,7 +53,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
-        # The MICHELLE filters don't have _id strings, so we just ignore the
+        # The MICHELLE filters don't have ID strings, so we just ignore the
         # stripID and pretty options
         if filter_name == 'NBlock':
             ret_filter_name = 'blank'

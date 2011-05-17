@@ -131,7 +131,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # /mm is literally '/mm'
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
         # _G is literally '_G'
-        # nnnn is the 4 digit component _id.
+        # nnnn is the 4 digit component ID.
         cre = re.compile('([\d/m]+)([A-Z]*)(_G)(\d+)')
         m = cre.match(grating)
         if m:
@@ -248,7 +248,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
         # + is a literal '+'
         # prism is the actual prism name
-        # nnnn is the 4 digit component _id.
+        # nnnn is the 4 digit component ID.
         cre = re.compile('([LBSR]*\+)*([A-Z]*)(_G)(\d+)')
         m = cre.match(prism)
         if m:
@@ -372,7 +372,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         Note that in GNIRS all the slits are machined into one physical piece
         of metal, which is on a slide - the mechanism simply slides the slide
         along to put the right slit in the beam. Thus all the slits have the
-        same componenet _id as they're they same physical compononet.
+        same component ID as they're they same physical component.
         """
         # Get the slit value from the header of the PHU.
         slit = dataset.phu_get_key_value(globalStdkeyDict['key_slit'])

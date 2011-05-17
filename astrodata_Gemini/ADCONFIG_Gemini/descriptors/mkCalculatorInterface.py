@@ -76,7 +76,7 @@ class DescriptorDescriptor:
                        '        :param dataset: the data set\n' + \
                        '        :type dataset: AstroData\n' + \
                        '        :param stripID: set to True to remove the ' + \
-                       'component _id from the \n                        ' + \
+                       'component ID from the \n                        ' + \
                        'returned %(name)s value\n' % {'name':name} + \
                        '        :type stripID: Python boolean\n' + \
                        '        :param pretty: set to True to return a ' + \

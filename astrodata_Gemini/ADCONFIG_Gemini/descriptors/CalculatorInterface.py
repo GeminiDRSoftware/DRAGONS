@@ -461,7 +461,7 @@ class CalculatorInterface:
         Return the decker value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component _id from the 
+        :param stripID: set to True to remove the component ID from the 
                         returned decker value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -657,7 +657,7 @@ class CalculatorInterface:
         Return the disperser value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component _id from the 
+        :param stripID: set to True to remove the component ID from the 
                         returned disperser value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -881,7 +881,7 @@ class CalculatorInterface:
         Return the filter_name value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component _id from the 
+        :param stripID: set to True to remove the component ID from the 
                         returned filter_name value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -927,7 +927,7 @@ class CalculatorInterface:
         Return the focal_plane_mask value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component _id from the 
+        :param stripID: set to True to remove the component ID from the 
                         returned focal_plane_mask value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -1019,7 +1019,7 @@ class CalculatorInterface:
         Return the grating value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component _id from the 
+        :param stripID: set to True to remove the component ID from the 
                         returned grating value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -1487,7 +1487,7 @@ class CalculatorInterface:
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the _id (e.g., GN-2011A-Q-123-45) of the observation
+        :return: the ID (e.g., GN-2011A-Q-123-45) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -1649,7 +1649,7 @@ class CalculatorInterface:
         Return the prism value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component _id from the 
+        :param stripID: set to True to remove the component ID from the 
                         returned prism value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
@@ -1697,7 +1697,7 @@ class CalculatorInterface:
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the Gemini program _id (e.g., GN-2011A-Q-123) of the 
+        :return: the Gemini program ID (e.g., GN-2011A-Q-123) of the 
                  observation
         """
         try:
@@ -2204,7 +2204,7 @@ class CalculatorInterface:
         Return the slit value
         :param dataset: the data set
         :type dataset: AstroData
-        :param stripID: set to True to remove the component _id from the 
+        :param stripID: set to True to remove the component ID from the 
                         returned slit value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 

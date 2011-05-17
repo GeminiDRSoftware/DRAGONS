@@ -66,7 +66,7 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         if pretty:
             stripID = True
         if stripID:
-            # Strip the component _id from the two filter name values
+            # Strip the component ID from the two filter name values
             filter_r = string.removeComponentID(filter_r)
             filter_b = string.removeComponentID(filter_b)
         # Return a dictionary with the keyword names as the key and the filter
