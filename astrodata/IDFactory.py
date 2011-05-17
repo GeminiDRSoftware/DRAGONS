@@ -93,7 +93,7 @@ def generate_display_id( dataset, version ):
 
 def generate_astro_data_id( dataset, version="1_0" ):
     '''
-    An _id to be used to identify AstroData types. This is used for:
+    An id to be used to identify AstroData types. This is used for:
     
     1) Calibrations:
     
@@ -133,7 +133,7 @@ def generate_astro_data_id( dataset, version="1_0" ):
     
 def generate_fringe_list_id( dataset, version='1_0' ):
     '''
-    Generate an _id from which all similar stackable data will have in common.
+    Generate an id from which all similar stackable data will have in common.
     
     @param dataset: Input AstroData instance or fits filename.
     @type dataset: AstroData instances or str
@@ -146,6 +146,6 @@ def generate_fringe_list_id( dataset, version='1_0' ):
     '''
     return generate_stackable_id( dataset, version )
     
-def make_id_safe_for_filename(_id):
-    return re.sub(" ", "_", _id)
+def make_id_safe_for_filename(id):
+    return re.sub(" ", "_", id)
 

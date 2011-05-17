@@ -83,7 +83,7 @@ class DisplayRequest( ReductionObjectRequest ):
         
     def __str__(self):
         tempStr = super( DisplayRequest, self ).__str__()
-        tempStr = tempStr + "_id: " + str( self.disID ) + "\n" + \
+        tempStr = tempStr + "ID: " + str( self.disID ) + "\n" + \
                     "DISPLAY LIST: " + str( self.disList )
         
         return tempStr
@@ -114,7 +114,7 @@ class GetStackableRequest( ReductionObjectRequest ):
         
     def __str__(self):
         tempStr = super( GetStackableRequest, self ).__str__()
-        tempStr = tempStr + "_id: " + str( self.stkID )
+        tempStr = tempStr + "ID: " + str( self.stkID )
         
         return tempStr
 
@@ -123,15 +123,15 @@ class ImageQualityRequest( ReductionObjectRequest ):
     A request to publish image quality metrics to the message bus or in the case
     of stand-alone mode, display overlays, etc. (Demo)
     '''
-    def __init__( self, ad, ell_mean, ell_sigma, f_whmmean, f_whmsigma ):
+    def __init__( self, ad, ell_mean, ell_sigma, fwhm_mean, fwhm_sigma ):
         super( ImageQualityRequest, self ).__init__()
         #
         self.ad = ad
         self.filename = ad.filename
         self.ellMean = ell_mean
         self.ellSigma = ell_sigma
-        self.fwhmMean = f_whmmean
-        self.fwhmSigma = f_whmsigma
+        self.fwhmMean = fwhm_mean
+        self.fwhmSigma = fwhm_sigma
         desc = Descriptors.get_calculator( ad )
         self.pixelScale = desc.fetch_value( 'PIXSCALE', ad ) # doesn't work, need to use ad.pixel_scale()
         self.seeing = self.fwhmMean# * self.pixelScale
@@ -165,7 +165,7 @@ class UpdateStackableRequest( ReductionObjectRequest ):
         
     def __str__(self):
         tempStr = super( UpdateStackableRequest, self ).__str__()
-        tempStr = tempStr + "_id: " + str( self.stkID ) + "\n" + \
+        tempStr = tempStr + "ID: " + str( self.stkID ) + "\n" + \
                     "STACKABLE LIST: " + str( self.stkList )
         
         return tempStr

@@ -723,7 +723,7 @@ newtypes.append(%(typename)s())
 
     # graphviz section, uses DOT language to make directed graphs
     # of the type dictionary
-    def gviz_links(self, direct = None, ass_dict = None):
+    def gviz_links(self, direct = None, assign_dict = None):
         """
         This function supports the automatic generation of a class graph
         driven by the Classification Library. This system builds a script
@@ -738,9 +738,9 @@ newtypes.append(%(typename)s())
         nodestr = ""
         nodestr += self.gvizNodes()
 
-        if ass_dict and (self.name in ass_dict.keys()):
+        if assign_dict and (self.name in assign_dict.keys()):
             fromlist = []
-            obs = ass_dict[self.name]
+            obs = assign_dict[self.name]
             primsetgroup = self.name+"PrimitiveSets"
             oblist = []
             for ob in obs:
@@ -776,7 +776,7 @@ newtypes.append(%(typename)s())
                         "to":self.name, 
                         "url": ("typedict.py#%s" % self.name )
                     }
-                links, nodes = self.parentDCO.gviz_links(direct=direct, ass_dict = ass_dict)
+                links, nodes = self.parentDCO.gviz_links(direct=direct, assign_dict = assign_dict)
                 linkstr += links
                 nodestr += nodes
         elif direct == "child":
@@ -793,7 +793,7 @@ newtypes.append(%(typename)s())
                             "to":child.name, 
                             "url": ("typedict.py#%s" % child.name )
                         }
-                    links, nodes = child.gviz_links(direct=direct, ass_dict = ass_dict)
+                    links, nodes = child.gviz_links(direct=direct, assign_dict = assign_dict)
                     linkstr += links
                     nodestr += nodes
             
@@ -1204,7 +1204,7 @@ class ClassificationLibrary (object):
         retstr = page_templ % { "cldiv": divs } 
         return retstr
 
-    def gviz_doc(self, writeout = False, astrotype = None, ass_dict = None):
+    def gviz_doc(self, writeout = False, astrotype = None, assign_dict = None):
         """This function generates output in the "dot" language, which
             is used as input for the graphviz "dot" program which creates
             directed graphs in many different outputs.  We are interested
@@ -1246,13 +1246,13 @@ class ClassificationLibrary (object):
         if astrotype:
             # parents
             tobj = self.typesDict[astrotype]
-            gvlink, gvnodes = tobj.gviz_links(direct="parent", ass_dict = ass_dict)
+            gvlink, gvnodes = tobj.gviz_links(direct="parent", assign_dict = assign_dict)
             gvizlinks = gvlink
             gviznodes = gvnodes
-            gvlink, gvnodes = tobj.gviz_links(direct="child", ass_dict = ass_dict)
+            gvlink, gvnodes = tobj.gviz_links(direct="child", assign_dict = assign_dict)
             gvizlinks += gvlink
             gviznodes += gvnodes
-            gvlink, gvnodes = tobj.gviz_links(direct="self", ass_dict = ass_dict)
+            gvlink, gvnodes = tobj.gviz_links(direct="self", assign_dict = assign_dict)
             gvizlinks += gvlink
             gviznodes += gvnodes
             
@@ -1261,7 +1261,7 @@ class ClassificationLibrary (object):
             skeys.sort()
             for tkey in skeys:
                 tobj = self.typesDict[tkey]
-                links, nodes = tobj.gviz_links(ass_dict=ass_dict)
+                links, nodes = tobj.gviz_links(assign_dict=assign_dict)
                 gvizlinks = gvizlinks + links
                 gviznodes = gviznodes + nodes
 

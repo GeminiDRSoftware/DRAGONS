@@ -175,7 +175,7 @@ for typename in args:
     nsvg.close()
 
 
-if False:# a = cl.gviz_doc(astrotype= astrotype, writeout = True, ass_dict = assdict)
+if False:# a = cl.gviz_doc(astrotype= astrotype, writeout = True, assign_dict = assdict)
     import webbrowser
     # url = "file://"+os.path.join(os.path.abspath("."), "gemdtype.viz.svg")
     url = "file://"+os.path.join(os.path.abspath("."), displaytype +"-tree.svg")

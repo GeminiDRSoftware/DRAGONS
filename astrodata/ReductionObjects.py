@@ -29,7 +29,7 @@ class ReductionObject(object):
     primDict = None
     curPrimType = None
     curPrimName = None
-    _funccommand_clause = None
+    funccommand_clause = None
     
     def __init__(self):
         self.primDict= {}
@@ -44,7 +44,7 @@ class ReductionObject(object):
         return rc
     
     def execute_command_clause(self, rc):
-        cmdclause = self._funccommand_clause
+        cmdclause = self.funccommand_clause
         if cmdclause:
             cmdclause(self, rc)
             
@@ -173,7 +173,7 @@ class ReductionObject(object):
     run = runstep
     
     def register_command_clause(self, function):
-        self._funccommand_clause = function
+        self.funccommand_clause = function
         
     def join_param_dicts(self, newprimset, primsetary):
         # make sure all paramDicts are the same object

@@ -26,7 +26,7 @@ class StackKeeper(object):
     '''
     A data structure for accessing stackable lists.
     It keeps a dictionary indexed by the cachefile name, which
-    contain a dict keyed by stack _id, with a list of filenames as the value.
+    contain a dict keyed by stack id, with a list of filenames as the value.
     '''
     # stack dirs
     adcc = None
@@ -49,12 +49,12 @@ class StackKeeper(object):
         self.local = local
         self.shared = shared
     
-    def add(self, _id, addtostack, cachefile = None):
+    def add(self, id, addtostack, cachefile = None):
         '''
-        Add a list of stackables for a given _id. If the _id does not exist, make a new stackable list.
+        Add a list of stackables for a given id. If the id does not exist, make a new stackable list.
         
-        @param _id: An id based off that derived from IDFactory.getStackableID. 
-        @type _id: str
+        @param id: An id based off that derived from IDFactory.getStackableID. 
+        @type id: str
         
         @param addtostack: A list of files for stacking or a StackableRecord instance.
         @type addtostack: list or StackableRecord  
@@ -74,7 +74,7 @@ class StackKeeper(object):
         if self.local == False:
             abscf = os.path.abspath(cachefile)
             #print "SK75: remote add to %s of %s" % (abscf, repr(addtostack))
-            self.adcc.prs.stackPut(_id, addtostack, abscf)
+            self.adcc.prs.stackPut(id, addtostack, abscf)
             return 
             
         # this is the local storage, in general use this is the instance
@@ -88,15 +88,15 @@ class StackKeeper(object):
             
         stacksDict = self.cacheIndex[cachefile]
         # print "SK88: %s:%s" % (cachefile, repr(stacksDict))
-        if _id not in stacksDict:
-            stacksDict.update( {_id:StackableRecord(_id,[])} )
+        if id not in stacksDict:
+            stacksDict.update( {id:StackableRecord(id,[])} )
 
         # print "SK89:"   
         # @@REVIEW
         # could use set to handle duplicates but I am not sure
         # I want to lose the ordered nature of this list
-        #stacksDict[_id].filelist.extend(addtostack)
-        flist = stacksDict[_id].filelist
+        #stacksDict[id].filelist.extend(addtostack)
+        flist = stacksDict[id].filelist
         for ftoadd in addtostack:
             if ftoadd not in flist:
                 flist.append(ftoadd)
@@ -122,12 +122,12 @@ class StackKeeper(object):
         return []           
         
 
-    def get(self, _id, cachefile = None):
+    def get(self, id, cachefile = None):
         '''
-        Get the stackable list for a given _id.
+        Get the stackable list for a given id.
         
-        @param _id: An id based off that derived from IDFactory.getStackableID.
-        @type _id: str
+        @param id: An id based off that derived from IDFactory.getStackableID.
+        @type id: str
         
         @return: List of files for stacking.
         @rtype: list of str
@@ -136,7 +136,7 @@ class StackKeeper(object):
         cachefile = os.path.abspath(cachefile)
         if self.local == False:
             #print "SK136: remote stack request"
-            retval = self.adcc.prs.stackGet(_id, cachefile)
+            retval = self.adcc.prs.stackGet(id, cachefile)
             #print "SK138:", repr(retval)
             return retval
         else:
@@ -157,11 +157,11 @@ class StackKeeper(object):
 
         stacksDict = self.cacheIndex[cachefile]
                     
-        if _id not in stacksDict:
+        if id not in stacksDict:
             self.lock.release()
             return []
         else:
-            scopy = copy(stacksDict[_id].filelist)
+            scopy = copy(stacksDict[id].filelist)
             self.lock.release() 
             return scopy
             
@@ -238,10 +238,10 @@ class FringeKeeper:
     
     def add(self, list_id, astro_id, addtostack):
         '''
-        Add a list of stackables for a given _id. If the _id does not exist, make a new stackable list.
+        Add a list of stackables for a given id. If the id does not exist, make a new stackable list.
         
-        @param _id: An id based off that derived from IDFactory.getStackableID. 
-        @type _id: str
+        @param id: An id based off that derived from IDFactory.getStackableID. 
+        @type id: str
         
         @param addtostack: A list of files for stacking or a StackableRecord instance.
         @type addtostack: list or StackableRecord  
@@ -257,30 +257,30 @@ class FringeKeeper:
             # A quick way to perform diff on a list.
             # This code may not be necessary, but it is nice for testing, so you
             # do not have the same file being added to stackables.
-            addtostack = list( set(addtostack) - set(self.stack_lists[_id].filelist) )
+            addtostack = list( set(addtostack) - set(self.stack_lists[id].filelist) )
         else:
             # Assumed it is StackableRecord [Although this does not happen at the time I am
             # writing this, I have a feeling it will].
             # This will also convert the addtostack to a list
-            addtostack = list( set(addtostack.filelist) - set(self.stack_lists[_id].filelist) )
-        self.stack_lists[_id].filelist.extend(addtostack)
-        # print "SK40: STACKLIST AFTER ADD:", self.stack_lists[_id]
+            addtostack = list( set(addtostack.filelist) - set(self.stack_lists[id].filelist) )
+        self.stack_lists[id].filelist.extend(addtostack)
+        # print "SK40: STACKLIST AFTER ADD:", self.stack_lists[id]
         
 
-    def get(self, _id):
+    def get(self, id):
         '''
-        Get the stackable list for a given _id.
+        Get the stackable list for a given id.
         
-        @param _id: An id based off that derived from IDFactory.getStackableID.
-        @type _id: str
+        @param id: An id based off that derived from IDFactory.getStackableID.
+        @type id: str
         
         @return: List of files for stacking.
         @rtype: list of str
         '''
-        if _id not in self.stack_lists:
+        if id not in self.stack_lists:
             return None
         else:
-            return self.stack_lists[_id]
+            return self.stack_lists[id]
 
     def __str__(self):
         tempstr = ""

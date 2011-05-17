@@ -130,7 +130,7 @@ def close_if_name(dataset, b_needs_closing):
     return
 
 
-def _deadfunctioninherit_config(typ, index, cl = None):
+def deadfunctioninherit_config(typ, index, cl = None):
     # print "GU34:", typ, str(index)
     if cl == None:
         cl = AstroDataType.get_classification_library()

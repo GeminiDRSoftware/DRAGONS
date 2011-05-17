@@ -800,7 +800,7 @@ def tape(req, things):
 
     req.write("<HR>")
     for tape in list:
-      req.write("<H2>_id: %d, Label: %s, Set: %d</H2>" % (tape.id, tape.label, tape.set))
+      req.write("<H2>ID: %d, Label: %s, Set: %d</H2>" % (tape.id, tape.label, tape.set))
       req.write("<UL>")
       req.write("<LI>First Write: %s UTC - Last Write: %s UTC</LI>" % (tape.firstwrite, tape.lastwrite))
       req.write("<LI>Last Verified: %s UTC</LI>" % tape.lastverified)
@@ -925,7 +925,7 @@ def tapewrite(req, things):
           session.close()
           return apache.OK
         if(tapequery.count() > 1):
-          req.write("<P>Found multiple tapes by label search. Please give the _id instead</P>")
+          req.write("<P>Found multiple tapes by label search. Please give the ID instead</P>")
           req.write("</body></html>")
           return apache.OK
         tape = query.one()
@@ -935,7 +935,7 @@ def tapewrite(req, things):
     tws = query.all()
 
     for tw in tws:
-      req.write("<h2>_id: %d; Tape _id: %d; Tape Label: %s; File Number: %d</h2>" % (tw.id, tw.tape_id, tw.tape.label, tw.filenum))
+      req.write("<h2>ID: %d; Tape ID: %d; Tape Label: %s; File Number: %d</h2>" % (tw.id, tw.tape_id, tw.tape.label, tw.filenum))
       req.write("<UL>")
       req.write("<LI>Start Date: %s UTC - End Date: %s UTC</LI>" % (tw.startdate, tw.enddate))
       req.write("<LI>Succeeded: %s</LI>" % tw.suceeded)
@@ -983,10 +983,10 @@ def tapefile(req, things):
 
     req.write('<TABLE border=0>')
     req.write('<TR class=tr_head>')
-    req.write('<TH>TapeFile _id</TH>')
-    req.write('<TH>TapeWrite _id</TH>')
+    req.write('<TH>TapeFile ID</TH>')
+    req.write('<TH>TapeWrite ID</TH>')
     req.write('<TH>TapeWrite Start Date</TH>')
-    req.write('<TH>Tape _id</TH>')
+    req.write('<TH>Tape ID</TH>')
     req.write('<TH>Tape Label</TH>')
     req.write('<TH>File Num on Tape</TH>')
     req.write('<TH>Filename</TH>')
@@ -1047,7 +1047,7 @@ def taperead(req, things):
     req.write('<TR class=tr_head>')
     req.write('<TH>Filename</TH>')
     req.write('<TH>MD5</TH>')
-    req.write('<TH>Tape _id</TH>')
+    req.write('<TH>Tape ID</TH>')
     req.write('<TH>Tape Label</TH>')
     req.write('<TH>File Num on Tape</TH>')
     req.write('<TH>Requester</TH>')
@@ -1130,7 +1130,7 @@ def notification(req, things):
     list = query.all()
 
     for notif in list:
-      req.write("<H2>Notification _id: %d - %s</H2>" % (notif.id, notif.label))
+      req.write("<H2>Notification ID: %d - %s</H2>" % (notif.id, notif.label))
       req.write("<UL>")
       req.write("<LI>Data Selection: %s</LI>" % notif.selection)
       req.write("<LI>Email To: %s</LI>" % notif.to)
@@ -1697,7 +1697,7 @@ def sayselection(selection):
   """
   string = ""
 
-  defs = {'program_id': 'Program _id', 'observation_id': 'Observation _id', 'data_label': 'Data Label', 'date': 'Date', 'daterange': 'Daterange', 'inst':'Instrument', 'observation_type':'ObsType', 'observation_class': 'ObsClass', 'filename': 'Filename', 'gmos_grating': 'GMOS Grating', 'gmos_focal_plane_mask': 'GMOS FP Mask', 'caltype': 'Calibration Type', 'caloption': 'Calibration Option'}
+  defs = {'program_id': 'Program ID', 'observation_id': 'Observation ID', 'data_label': 'Data Label', 'date': 'Date', 'daterange': 'Daterange', 'inst':'Instrument', 'observation_type':'ObsType', 'observation_class': 'ObsClass', 'filename': 'Filename', 'gmos_grating': 'GMOS Grating', 'gmos_focal_plane_mask': 'GMOS FP Mask', 'caltype': 'Calibration Type', 'caloption': 'Calibration Option'}
   for key in defs:
     if key in selection:
       string += "; %s: %s" % (defs[key], selection[key])
@@ -1866,7 +1866,7 @@ def curation_report(req, things):
     req.write('<h2>Duplicate Datalabel Rows:</h2>')
     if dupdata != []:
       # Write the table headers
-      req.write('<table border=0><tr class=tr_head><th>DiskFile _id</th><th>FileName</th><th>DataLabel</th></tr>')
+      req.write('<table border=0><tr class=tr_head><th>DiskFile ID</th><th>FileName</th><th>DataLabel</th></tr>')
       # Makes a list of diskfile ids such that every duplicate found has only one diskfile id
       for val in dupdata:
         this_ans = val

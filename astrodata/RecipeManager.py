@@ -578,10 +578,10 @@ class ReductionContext(dict):
         # print "RM565:", repr(retval)
         return retval
  
-    def get_stack(self, _id):
+    def get_stack(self, id):
         cachefile = self.get_cache_file("stackIndexFile")
         # print "RM563:", cachefile
-        retval = self.stackeep.get(_id, cachefile )
+        retval = self.stackeep.get(id, cachefile )
         # print "RM565:", repr(retval)
         return retval
  
@@ -1177,12 +1177,12 @@ class ReductionContext(dict):
         self.irafstdout = so
         return
     
-    def stack_append(self, _id, files, cachefile = None):
-        self.stackeep.add(_id, files, cachefile)
+    def stack_append(self, id, files, cachefile = None):
+        self.stackeep.add(id, files, cachefile)
         
-    def stack_inputs_as_str(self, _id):        
+    def stack_inputs_as_str(self, id):        
         #pass back the stack files as strings
-        stack = self.stackeep.get(_id)
+        stack = self.stackeep.get(id)
         return ",".join(stack.filelist)
     
     def step_moment(self, stepname, mark):

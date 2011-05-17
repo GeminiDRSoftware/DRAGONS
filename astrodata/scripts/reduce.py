@@ -1001,7 +1001,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             cw.mainWindow.after_cancel(cw.pcqid)
             if True: #cw.killed == True:
                 raw_input("Press Enter to Close Monitor Windows:")
-            # After _id print cw.pcqid
+            # After ID print cw.pcqid
             cw.mainWindow.quit()
         except:
             cw.mainWindow.quit()    
