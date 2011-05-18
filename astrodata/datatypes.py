@@ -1,1 +1,1 @@
-from AstroDataTypes import *
+from AstroDataType import *
