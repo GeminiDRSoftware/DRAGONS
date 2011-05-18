@@ -1,5 +1,3 @@
-import sys
-
 from astrodata import AstroData
 from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookup_path
@@ -12,7 +10,7 @@ class F2Primitives(GEMINIPrimitives):
     """
     This is the class containing all of the primitives for the FLAMINGOS-2
     level of the type hierarchy tree. It inherits all the primitives from the
-    level above, "GEMINIPrimitives".
+    level above, 'GEMINIPrimitives'.
     """
     astrotype = "F2"
     
@@ -50,22 +48,31 @@ class F2Primitives(GEMINIPrimitives):
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "addBPM", "starting"))
-        try:
-            # Load the BPM file into AstroData
+        # Load the BPM file into AstroData
+        if rc["bpm"]:
+            bpm = rc["bpm"]
+        else:
             bpm = AstroData(lookup_path("Gemini/F2/BPM/F2_bpm.fits"))
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Check whether the addBPM primitive has been run previously
+            if ad.phu_get_key_value("ADDBPM"):
+                log.warning("%s has already been processed by addBPM" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
             # Call the add_bpm user level function
-            output = gs.add_bpm(
-                adinput=rc.get_inputs(style="AD"),
-                output_names=rc["output_names"],
-                suffix=rc["suffix"],
-                bpm=bpm)
-            # Report the output of the user level function to the reduction
-            # context
-            rc.report_output(output)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
+            ad = gs.add_bpm(adinput=ad, bpm=bpm)
+            # Append the output AstroData object (which is currently in the
+            # form of a list) to the list of output AstroData objects
+            adoutput_list.append(ad[0])
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
         
         yield rc 
     
@@ -86,19 +93,27 @@ class F2Primitives(GEMINIPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeHeaders",
                                  "starting"))
-        try:
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Check whether the standardizeHeaders primitive has been run
+            # previously
+            if ad.phu_get_key_value("SDZHDRS"):
+                log.warning("%s has already been processed by " \
+                            "standardizeHeaders" % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
             # Call the standardize_headers_f2 user level function
-            output = sdz.standardize_headers_f2(
-                adinput=rc.get_inputs(style="AD"),
-                output_names=rc["output_names"],
-                suffix=rc["suffix"])
-            # Report the output of the user level function to the reduction
-            # context
-            rc.report_output(output)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
+            ad = sdz.standardize_headers_f2(adinput=ad)
+            # Append the output AstroData object (which is currently in the
+            # form of a list) to the list of output AstroData objects
+            adoutput_list.append(ad[0])
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
         
         yield rc 
     
@@ -119,19 +134,27 @@ class F2Primitives(GEMINIPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeStructure",
                                  "starting"))
-        try:
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Check whether the standardizeStructure primitive has been run
+            # previously
+            if ad.phu_get_key_value("SDZSTRUC"):
+                log.warning("%s has already been processed by " \
+                            "standardizeStructure" % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
             # Call the standardize_structure_f2 user level function
-            output = sdz.standardize_structure_f2(
-                adinput=rc.get_inputs(style="AD"),
-                output_names=rc["output_names"],
-                suffix=rc["suffix"])
-            # Report the output of the user level function to the reduction
-            # context
-            rc.report_output(output)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
+            ad = sdz.standardize_structure_f2(adinput=ad)
+            # Append the output AstroData object (which is currently in the
+            # form of a list) to the list of output AstroData objects
+            adoutput_list.append(ad[0])
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
         
         yield rc
     
@@ -145,40 +168,30 @@ class F2Primitives(GEMINIPrimitives):
                          'status', 'fullinfo' ...)
         :type loglevel: integer or string
         """
-        # Instantiate the log. This needs to be done outside of the try
-        # block, since the log object is used in the except block
+        # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        try:
-            # Log the standard "starting primitive" debug message
-            log.debug(gt.log_message("primitive", "validateData", "starting"))
-            # Initialize the list of output AstroData objects
-            adoutput_list = []
-            # Loop over each input AstroData object in the input list
-            for ad in rc.get_inputs(style="AD"):
-                # Check whether the validateData primitive has been run
-                # previously
-                if ad.phu_get_key_value("VALDATA"):
-                    log.warning("%s has already been processed by " \
-                                "validateData" % (ad.filename))
-                    # Append the input AstroData object to the list of output
-                    # AstroData objects without further processing
-                    adoutput_list.append(ad)
-                    continue
-                # Call the validate_data_f2 user level function
-                ad = sdz.validate_data_f2(adinput=ad,
-                                          output_names=rc["output_names"],
-                                          suffix=rc["suffix"],
-                                          repair=rc["repair"])
-                # Append the output AstroData object to the list of output
-                # AstroData objects
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "validateData", "starting"))
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Check whether the validateData primitive has been run previously
+            if ad.phu_get_key_value("VALDATA"):
+                log.warning("%s has already been processed by validateData" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
                 adoutput_list.append(ad)
-            # Report the list of output AstroData objects to the reduction
-            # context
-            rc.report_output(adoutput_list)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
+                continue
+            # Call the validate_data_f2 user level function
+            ad = sdz.validate_data_f2(adinput=ad, repair=rc["repair"])
+            # Append the output AstroData object (which is currently in the
+            # form of a list) to the list of output AstroData objects
+            adoutput_list.append(ad[0])
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
         
         yield rc
