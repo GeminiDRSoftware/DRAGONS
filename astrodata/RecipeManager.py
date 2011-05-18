@@ -1707,7 +1707,7 @@ def %(name)s(self,cfgObj):
 #: recipeIndexREMask used to identify which files by filename
 #: are those with tables relating type names to structure types
 primitivesIndexREMask = r"primitivesIndex\.(?P<modname>.*?)\.py$"
-recipeIndexREMask = r"recipe_index\.(?P<modname>.*?)\.py$"
+recipeIndexREMask = r"recipeIndex\.(?P<modname>.*?)\.py$"
 parameterIndexREMask = r"parametersIndex\.(?P<modname>.*?)\.py$"
 #theorectically could be automatically correlated by modname
 
