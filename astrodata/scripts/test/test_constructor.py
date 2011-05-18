@@ -18,16 +18,16 @@ def checkad(ad):
         print("\tad[%s,%s] type is astrodata.AstroData" % (ext.extname(), ext.extver()))
     ad.close()
 
-def constructor_test_1():
-    """TEST 1:  Create AstroData instance using filename.
+def constructor_test1():
+    """constructor: test1 -Create AstroData instance using filename.
     """
     print("\n\tTest input file: %s" % testfile)
     ad = AstroData(testfile)
     print("\tad = AstroData(%s)" % ad.filename)
     checkad(ad)
 
-def constructor_test_2():
-    """TEST 2:  Create AstroData instance using hdulist.
+def constructor_test2():
+    """constructor: test2 -Create AstroData instance using hdulist.
     """
     print("\n\tTest input file: %s" % testfile)
     hdulist = pyfits.open(testfile)
@@ -36,8 +36,8 @@ def constructor_test_2():
     checkad(ad)
     hdulist.close()
 
-def constructor_test_3():
-    """TEST 3:  Create AstroData instance using phu and data.
+def constructor_test3():
+    """constructor: test3 -Create AstroData instance using phu and data.
     """
     print("\n\tTest input file: %s" % testfile)
     hdulist = pyfits.open(testfile)

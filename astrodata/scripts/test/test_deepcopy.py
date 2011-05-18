@@ -1,55 +1,39 @@
-import sys, os
-from astrodata import AstroData
+import sys
+import os
 from optparse import OptionParser
 from copy import deepcopy
 
-parser = OptionParser()
-parser.set_description(
-"""AstroData Test: Deepcopy.\n
-Created by C.Allen, K.Dement, 01May2011.""" )
+from nose.tools import *
 
-parser.add_option('--test1', action='store_true', dest='test1', default=False,
-                   help='run test1:')
-parser.add_option('--test2', action='store_true', dest='test2', default=False,
-                   help='run test2:')
-parser.add_option('--test3', action='store_true', dest='test3', default=False,
-                   help='run test3:')
-(options,  args) = parser.parse_args()
+import adtest_utils
+from astrodata import AstroData
 
-if not options.test1 and not options.test2 and not options.test3:
-    options.test1 = True
-    options.test2 = True
-    options.test3 = True
+testfile = adtest_utils.testdatafile_1
 
-print "\n", "_"*57,"\n\n\t\tAstroData TEST: deepcopy\n"
-if len(args) is 1:
-    ad = AstroData(args[0])
-    print "** ad Testdata: " + args[0]
-else:
-    testdatafile = "../../../../test_data/recipedata/N20090703S0163.fits"
-    ad = AstroData(testdatafile)
-    print "** Testdata: " + testdatafile
-adDeepcopy = deepcopy(ad)
-
-if options.test1:
+def deepcopy_test_1():
+    """deepcopy: test1 -Compare hdulist object ids between ad and deepcopy(ad).
+    """
+    print("\n\tTest input file: %s" % testfile)
+    ad = AstroData(testfile)
+    adDeepcopy = deepcopy(ad)
     adIdlist = []
     adDeepcopyIdlist = []
     for ext in ad:
         adIdlist.append(id(ext.hdulist[1]))
     for dext in adDeepcopy:
         adDeepcopyIdlist.append(id(dext.hdulist[1]))
-    print "TEST 1: Compare hdulist ids"
     print "\t        ad hdulist ids:", adIdlist
     print "\tadDeepcopy hdulist ids:", adDeepcopyIdlist
-    try:
-        assert adIdlist is not adDeepcopyIdlist
-    except:
-        print "\t>> FAILED: hdulist ids match\n"
-        raise AssertionError
-    print "\t>> PASSED: hdulist ids are different\n"
+    assert_not_equal(adIdlist, adDeepcopyIdlist, msg="hdulist ids are equal")
+    ad.close()
+    adDeepcopy.close()
 
-if options.test2:
-    print "TEST 2: Check attribute retention"
+def deepcopy_test_2():
+    """deepcopy: test2 -Check that attribute change does not affect deepcopy.
+    """
+    print("\n\tTest input file: %s" % testfile)
+    ad = AstroData(testfile)
+    adDeepcopy = deepcopy(ad)
     print "\tad._AstroData__origFilename = "
     print "\t\t", ad._AstroData__origFilename
     savedFilename = ad._AstroData__origFilename
@@ -57,15 +41,7 @@ if options.test2:
     print "\tad._AstroData__origFilename = ",ad._AstroData__origFilename
     print "\tadDeepcopy._AstroData__origFilename = "
     print "\t\t",adDeepcopy._AstroData__origFilename 
-    try:
-        assert adDeepcopy._AstroData__origFilename is savedFilename
-    except:
-        print "\t>> FAILED: Original name is not the same after deepcopy\n"
-        raise AssertionError
-    print "\t>> PASSED: Original name is preserved by deepcopy\n" 
-
-if options.test3:
-    print "Test3: Under Construction\n"
-
-print "_"*57,"\n"
-
+    eq_(adDeepcopy._AstroData__origFilename, savedFilename,
+            msg="The attribute __origFilename has been altered in deepcopy")
+    ad.close()
+    adDeepcopy.close()
