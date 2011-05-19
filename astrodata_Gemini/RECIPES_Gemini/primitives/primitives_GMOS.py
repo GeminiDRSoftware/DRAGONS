@@ -77,7 +77,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 #$$$ NOT REALLY SURE THIS IS THE APPROPRIATE ACTION HERE
                 raise
    
-            ad = gs.add_bpm(adinput=ad,bpm=bpm)
+            ad = sdz.add_bpm(adinput=ad,bpm=bpm)
             adoutput_list.append(ad[0])
             
         # Report the updated files to the reduction context

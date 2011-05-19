@@ -2,7 +2,6 @@ from astrodata import AstroData
 from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookup_path
 from gempy import geminiTools as gt
-from gempy.science import geminiScience as gs
 from gempy.science import standardization as sdz
 from primitives_GEMINI import GEMINIPrimitives
 
@@ -66,7 +65,7 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the add_bpm user level function
-            ad = gs.add_bpm(adinput=ad, bpm=bpm)
+            ad = sdz.add_bpm(adinput=ad, bpm=bpm)
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])

@@ -7,8 +7,10 @@ from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+from gempy import qa
 from gempy.science import geminiScience as gs
 from gempy.science import preprocessing as pp
+from gempy.science import standardization as sdz
 from primitives_GENERAL import GENERALPrimitives
 
 class GEMINIPrimitives(GENERALPrimitives):
@@ -60,7 +62,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object output by the addBPM primitive
         for ad in rc.get_inputs(style="AD"):
             # Call the add_dq user level function
-            ad = gs.add_dq(adinput=ad)
+            ad = sdz.add_dq(adinput=ad)
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
@@ -136,7 +138,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the add_var user level function
-            ad = gs.add_var(adinput=ad)
+            ad = sdz.add_var(adinput=ad)
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
@@ -175,7 +177,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the adu_to_electrons user level function
-            ad = gs.adu_to_electrons(adinput=ad)
+            ad = pp.adu_to_electrons(adinput=ad)
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
@@ -396,7 +398,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the measure_iq user level function
-            ad = gs.measure_iq(adinput=ad, function=rc["function"],
+            ad = qa.measure_iq(adinput=ad, function=rc["function"],
                                display=rc["display"], qa=rc["qa"])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
