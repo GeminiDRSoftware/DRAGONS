@@ -6,6 +6,127 @@ import numpy as np
 from astrodata import Errors
 from gempy import geminiTools as gt
 
+def adu_to_electrons(adInputs, outNames=None, suffix=None):
+    """
+    This function will convert the inputs from having pixel values in ADU to 
+    that of electrons by use of the arith 'toolbox'.
+    
+    Either a 'main' type logger object, if it exists, or a null logger 
+    (ie, no log file, no messages to screen) will be retrieved/created in the 
+    ScienceFunctionManager and used within this function.
+
+    Note: 
+    the SCI extensions of the input AstroData objects must have 'GAIN'
+    header key values available to multiply them by for conversion to 
+    e- units.
+          
+    :param adInputs: Astrodata inputs to be converted to Electron pixel units
+    :type adInputs: Astrodata objects, either a single or a list of objects
+    
+    :param outNames: filenames of output(s)
+    :type outNames: 
+        String, either a single or a list of strings of same length as adInputs.
+    
+    :param suffix: 
+        string to add on the end of the input filenames 
+        (or outNames if not None) for the output filenames.
+    :type suffix: string
+    
+    """
+    
+    # Instantiate ScienceFunctionManager object
+    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
+                                      funcName='adu_to_electrons')
+    # Perform start up checks of the inputs, prep/check of outnames, and get log
+    adInputs, outNames, log = sfm.startUp()
+    
+    try:
+        # Set up counter for looping through outNames list
+        count=0
+        
+        # Creating empty list of ad's to be returned that will be filled below
+        adOutputs=[]
+        
+        # Do the work on each ad in the inputs
+        for ad in adInputs:
+            log.fullinfo('calling ad.mult on '+ad.filename)
+            
+            # mult in this primitive will multiply the SCI frames by the
+            # frame's gain, VAR frames by gain^2 (if they exist) and leave
+            # the DQ frames alone (if they exist).
+            log.debug('Calling ad.mult to convert pixel units from '+
+                      'ADU to electrons')
+
+            adOut = ad.mult(ad['SCI'].gain(as_dict=True))  
+            
+            log.status('ad.mult completed converting the pixel units'+
+                       ' to electrons')  
+            
+            # Updating SCI headers
+            for sciExt in adOut['SCI']:
+                # Retrieving this SCI extension's gain
+                gainorigDict = sciExt.gain()
+                gainorig = gainorigDict[(sciExt.extname(), sciExt.extver())] 
+                # Updating this SCI extension's header keys
+                sciExt.header.update('GAINORIG', gainorig, 
+                                   'Gain prior to unit conversion (e-/ADU)')
+                sciExt.header.update('GAIN', 1.0, 
+                                  'Physical units is electrons') 
+                sciExt.header.update('BUNIT','electrons' , 'Physical units')
+                # Logging the changes to the header keys
+                log.fullinfo('SCI extension number '+str(sciExt.extver())+
+                             ' keywords updated/added:\n', 
+                             category='header')
+                log.fullinfo('GAINORIG = '+str(gainorig), 
+                             category='header' )
+                log.fullinfo('GAIN = '+str(1.0), category='header' )
+                log.fullinfo('BUNIT = '+'electrons', category='header' )
+                log.fullinfo('-'*50, category='header')
+                
+            # Updating VAR headers if they exist (not updating any 
+            # DQ headers as no changes were made to them here)  
+            for varExt in adOut['VAR']:
+                # Ensure there are no GAIN and GAINORIG header keys for 
+                # the VAR extension. No errors are thrown if they aren't 
+                # there initially, so all good not to check ahead. 
+                del varExt.header['GAINORIG']
+                del varExt.header['GAIN']
+                
+                # Updating then logging the change to the BUNIT 
+                # key in the VAR header
+                varExt.header.update('BUNIT','electrons squared' , 
+                                   'Physical units')
+                # Logging the changes to the VAR extensions header keys
+                log.fullinfo('VAR extension number '+str(varExt.extver())+
+                             ' keywords updated/added:\n',
+                              category='header')
+                log.fullinfo('BUNIT = '+'electrons squared', 
+                             category='header' )
+                log.fullinfo('-'*50, category='header')
+            
+            # Updating GEM-TLM (automatic) and ADU2ELEC time stamps to the PHU
+            # and updating logger with updated/added time stamps
+            sfm.markHistory(adOutputs=adOut, historyMarkKey='ADU2ELEC')
+
+            # renaming the output ad filename
+            adOut.filename = outNames[count]
+                    
+            log.status('File name updated to '+adOut.filename+'\n')
+            
+            # Appending to output list
+            adOutputs.append(adOut)
+
+            count=count+1
+        
+        log.status('**FINISHED** the adu_to_electrons function')
+        # Return the outputs list, even if there is only one output
+        return adOutputs
+    except:
+        # logging the exact message from the actual exception that was raised
+        # in the try block. Then raising a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise                                          
+
 def nonlinearity_correct(input=None, output=None, suffix=None):
     """
     Run on raw or nprepared Gemini NIRI data, this script calculates and
