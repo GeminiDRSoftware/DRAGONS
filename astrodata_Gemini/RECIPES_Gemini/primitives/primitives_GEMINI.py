@@ -7,7 +7,6 @@ from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
-from gempy.science import calibrate as cal
 from gempy.science import geminiScience as gs
 from gempy.science import preprocessing as pp
 from primitives_GENERAL import GENERALPrimitives
@@ -247,8 +246,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             raise Errors.PrimitiveError("Invalid processed flat " +
                                         "retrieved")
         # Call the divide_by_flat user level function
-        output = cal.divide_by_flat(adinput=rc.get_inputs(style="AD"),
-                                    flats=processedFlat)
+        output = pp.divide_by_flat(adinput=rc.get_inputs(style="AD"),
+                                   flats=processedFlat)
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(output)
@@ -464,7 +463,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the normalize_flat user level function
-            ad = cal.normalize_flat_image(adinput=ad)
+            ad = pp.normalize_flat_image(adinput=ad)
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
@@ -555,8 +554,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the scale_fringe_to_science user level function
-            ad = cal.scale_fringe_to_science(adinput=ad, fringes=fringes,
-                                             statScale=rc["statScale"])
+            ad = pp.scale_fringe_to_science(adinput=ad, fringes=fringes,
+                                            statScale=rc["statScale"])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
@@ -824,8 +823,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             raise Errors.PrimitiveError("Invalid processed dark " +
                                         "retrieved")
         # Call the subtract_dark user level function
-        output = cal.subtract_dark(adInputs=rc.get_inputs(style="AD"),
-                                   darks=processedDark)
+        output = pp.subtract_dark(adInputs=rc.get_inputs(style="AD"),
+                                  darks=processedDark)
         # Report the output of the user level function to the reduction
         # context
         rc.report_output(output)
@@ -865,8 +864,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         fringes.phu_set_key_value("ORIGNAME","TEMPNAMEforFRINGE.fits")
         ##################################################################
         # Call the subtract_fringe user level function
-        output = cal.subtract_fringe(adInputs=rc.get_inputs(style="AD"),
-                                     fringes=fringes) 
+        output = pp.subtract_fringe(adInputs=rc.get_inputs(style="AD"),
+                                    fringes=fringes) 
         # Report the output of the user level function to the reduction
         # context
         rc.report_output(output, category="standard")

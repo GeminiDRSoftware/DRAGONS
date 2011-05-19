@@ -4,7 +4,7 @@
 import sys
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
-from gempy.science import calibrate as cal
+from gempy.science import preprocessing as pp
 from gempy.science import standardization as sdz
 from primitives_GMOS import GMOSPrimitives
 
@@ -46,7 +46,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
-
         adoutput_list = []
         for ad in rc.get_inputs(style='AD'):
             if ad.phu_get_key_value('GIFLAT'):
@@ -55,9 +54,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            ad = cal.normalize_flat_image_gmos(adinput=ad,
-                                               trim=rc["trim"],
-                                               overscan=rc["overscan"])
+            ad = pp.normalize_flat_image_gmos(adinput=ad,
+                                              trim=rc["trim"],
+                                              overscan=rc["overscan"])
             adoutput_list.append(ad[0])
 
         rc.report_output(output)

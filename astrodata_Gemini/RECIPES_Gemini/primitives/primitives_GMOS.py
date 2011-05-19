@@ -8,8 +8,8 @@ from astrodata.ConfigSpace import lookup_path
 from astrodata.data import AstroData
 from astrodata import Errors
 from gempy import geminiTools as gt
-from gempy.science import calibrate as cal
 from gempy.science import geminiScience as gs
+from gempy.science import preprocessing as pp
 from gempy.science import standardization as sdz
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
@@ -310,11 +310,12 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
 
-            ad = cal.overscan_subtract_gmosNEW(adinput=ad, trim=rc['trim'], 
-                                               overscan_section=rc['overscan_section'])
+            ad = pp.overscan_subtract_gmosNEW(adinput=ad, trim=rc['trim'], 
+                                              overscan_section=rc['overscan_section'])
             adoutput_list.append(ad[0])
 
         rc.report_output(adOutputs)
+
         yield rc    
 
     def overscanTrim(self,rc):
@@ -340,10 +341,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            ad = cal.overscan_trim(adinput=ad)
+            ad = pp.overscan_trim(adinput=ad)
             adoutput_list.append(ad[0])
-            
+
         rc.report_output(adOutputs)   
+
         yield rc
          
     def standardizeHeaders(self,rc):
@@ -455,12 +457,12 @@ class GMOSPrimitives(GEMINIPrimitives):
                               comment='fake key to trick CL that GBIAS was ran')
             ####################################################################
             log.status('Using bias '+processedBias.filename+' to correct the inputs')
-            
-            ad = cal.subtract_biasNEW(adinput=ad, 
-                                      bias=processedBias)
+            ad = pp.subtract_biasNEW(adinput=ad, 
+                                     bias=processedBias)
             adoutput_list.append(ad[0])
 
         rc.report_output(output)
+
         yield rc
     
     def validateData(self, rc):
