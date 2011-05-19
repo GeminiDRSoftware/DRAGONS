@@ -1,16 +1,12 @@
 #Author: Kyle Mede, June 2010
 # Skeleton originally written by Craig Allen, callen@gemini.edu
-#from Reductionobjects import Reductionobject
-from primitives_GMOS import GMOSPrimitives, pyrafLoader
-# All GEMINI IRAF task wrappers.
-import time
-from astrodata.adutils import filesystem
+
+import sys
 from astrodata.adutils import gemLog
-from astrodata import IDFactory
-from astrodata import Descriptors
-from astrodata.data import AstroData
-from astrodata.Errors import PrimitiveError
-from gempy import geminiTools as gemt
+from gempy import geminiTools as gt
+from gempy.science import calibrate as cal
+from gempy.science import standardization as sdz
+from primitives_GMOS import GMOSPrimitives
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """

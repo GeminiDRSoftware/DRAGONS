@@ -1,12 +1,11 @@
-{"standardizeStructure":{
-    "suffix":{
-        # String to be post pended to the output of standardizeStructure
-        "default"       : "_sdzStruct",
+{"normalizeFlat":{
+    "trim":{
+        "default"       : False,
         "recipeOverride": True,
-        "type"          : "str",
+        "type"          : "bool",
         "userOverride"  : False,
         },
-    "addMDF":{
+    "overscan":{
         "default"       : False,
         "recipeOverride": True,
         "type"          : "bool",

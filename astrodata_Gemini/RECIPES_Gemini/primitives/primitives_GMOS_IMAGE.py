@@ -3,7 +3,6 @@
 
 import sys
 from astrodata.adutils import gemLog
-from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy.science import calibrate as cal
 from gempy.science import standardization as sdz
@@ -31,18 +30,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         future by replacing giflat with a Python equivilent with more
         appropriate options for the recipe system. 
         
-        :param suffix: Value to be post pended onto each input name(s) to
-                       create the output name(s).
-        :type suffix: string
+        :param overscan: Subtract the overscan level from the frames?
+        :type overscan: Python boolean (True/False)
         
-        :param fl_over: Subtract the overscan level from the frames?
-        :type fl_over: Python boolean (True/False)
-        
-        :param fl_trim: Trim the overscan region from the frames?
-        :type fl_trim: Python boolean (True/False)
-        
-        :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False)
+        :param trim: Trim the overscan region from the frames?
+        :type trim: Python boolean (True/False)
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
@@ -54,69 +46,50 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
-        try:
-            # Load the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader()
-            # Call the normalize_flat_image_gmos user level function
-            output = cal.normalize_flat_image_gmos(
-                input=rc.get_inputs(style="AD"),
-                output_names=rc["output_names"],
-                suffix=rc["suffix"],
-                fl_trim=rc["fl_trim"],
-                fl_over=rc["fl_over"],
-                fl_vardq="AUTO")
-            # Report the output of the user level function to the reduction
-            # context
-            rc.report_output(output)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
-        
-        yield rc 
+
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('GIFLAT'):
+                log.warning('%s has already been processed by normalizeFlat' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+            
+            ad = cal.normalize_flat_image_gmos(adinput=ad,
+                                               trim=rc["trim"],
+                                               overscan=rc["overscan"])
+            adoutput_list.append(ad[0])
+
+        rc.report_output(output)
+        yield rc
     
     def standardizeStructure(self,rc):
         """
-        This primitive will to add an MDF to the inputs if they are of type
-        SPECT, those of type IMAGE will be handled by the standardizeStructure
-        in the primitives_GMOS_IMAGE set where no MDF will be added. The
+        This primitive will not add a MDF, for GMOS images. The
         user level function standardize_structure_gmos in
         gempy.science.standardization is utilized to do the work for this
-        primitive.
+        primitive.  Currently this function just passes input back without
+        modification, except TLM stamp.
         
-        :param suffix: Value to be post pended onto each input name(s) to 
-                       create the output name(s).
-        :type suffix: string
-        
-        :param addMDF: A flag to turn on/off appending the appropriate MDF 
-                       file to the inputs.
-        :type addMDF: Python boolean (True/False)
-                      default: True
-                      
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (i.e.,
                         'critical', 'status', 'fullinfo'...)
         """
-        # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "standardizeStructure",
-                                "starting"))
-        try:
-            # Call the standardize_structure_gmos user level function
-            output = sdz.standardize_structure_gmos(
-                adinput=rc.get_inputs(style="AD"),
-                output_names=rc["output_names"],
-                suffix=rc["suffix"],
-                addMDF=rc["addMDF"])
-            # Report the output of the user level function to the reduction
-            # context
-            rc.report_output(output)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
-        
-        yield rc 
+        log.debug(gt.log_message("primitive", "standardizeStructure", "starting"))
+
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('STDSTRUC'):
+                log.warning('%s has already been processed by standardizeStructure' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue            
+
+            ad = sdz.standardize_structure_gmos(adinput=ad)
+            adoutput_list.append(ad[0])
+
+        rc.report_output(output)
+        yield rc

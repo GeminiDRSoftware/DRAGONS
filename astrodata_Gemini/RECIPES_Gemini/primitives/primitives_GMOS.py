@@ -41,59 +41,48 @@ class GMOSPrimitives(GEMINIPrimitives):
         Using this approach, rather than appending the BPM in the addDQ allows
         for specialized BPM processing to be done in the instrument specific
         primitive sets where it belongs.                          
-        
-        :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
-        :type suffix: string
-        
+
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
+                        screen. OR the message level as a string (ie. 'critical'
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            log.status('*STARTING* to add the BPM frame(s) to the input data')
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'addBPM', 'starting'))
             
-            #$$$$$$$$$$$$$ TO BE callibration search, correct when ready $$$$$$$
-            BPM_11 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_11.fits'))
-            BPM_22 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_22.fits'))
-            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        adoutput_list = []
+
+        #$$$$$$$$$$$$$ TO BE callibration search, correct when ready $$$$$$$
+        BPM_11 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_11.fits'))
+        BPM_22 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_22.fits'))
+        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
-            # Instantiate a list of suitable BPMs to be passed to addBPM func 
-            BPMlist = []
-            
-            # Loop through inputs and load up BPMlist
-            for ad in rc.get_inputs(style='AD'):
-                ### This section might need to be upgraded in the future for more 
-                ### general use instead of just 1x1 and 2x2 imaging
-                if ad[('SCI',1)].get_key_value('CCDSUM')=='1 1':
-                    BPMlist.append(BPM_11)
-                elif ad[('SCI',1)].get_key_value('CCDSUM')=='2 2':
-                    BPMlist.append(BPM_22)
-                else:
-                    log.error('CCDSUM is not 1x1 or 2x2')
-                    #$$$ NOT REALLY SURE THIS IS THE APPROPRIATE ACTION HERE
-                    raise
+        # Loop through inputs, adding appropriate mask
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('ADDBPM'):
+                log.warning('%s has already been processed by addBPM' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+
+            ### This section might need to be upgraded in the future
+            ### for more general use instead of just 1x1 and 2x2 imaging
+            if ad[('SCI',1)].get_key_value('CCDSUM')=='1 1':
+                bpm = BPM_11
+            elif ad[('SCI',1)].get_key_value('CCDSUM')=='2 2':
+                bpm = BPM_22
+            else:
+                log.error('CCDSUM is not 1x1 or 2x2')
+                #$$$ NOT REALLY SURE THIS IS THE APPROPRIATE ACTION HERE
+                raise
    
-            log.debug('Calling geminiScience.addBPM function')
+            ad = gs.add_bpm(adinput=ad,bpm=bpm)
+            adoutput_list.append(ad[0])
             
-            adOutputs = gs.add_bpm(adInputs=rc.get_inputs(style='AD'), 
-                                         BPMs=BPMlist,matchSize=True, 
-                                         suffix=rc['suffix'])           
-            
-            log.status('geminiScience.addBPM completed successfully')
+        # Report the updated files to the reduction context
+        rc.report_output(adoutput_list)   
                 
-            # Reporting the updated files to the reduction context
-            rc.report_output(adOutputs)   
-                
-            log.status('*FINISHED* adding the BPM to the inputs') 
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
         yield rc       
 
     def display(self, rc):
@@ -107,75 +96,68 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            #from astrodata.adutils.future import gemDisplay
-            #ds = gemDisplay.getDisplayService()
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'display', 'starting'))
+
+        
+        # Loading and bringing the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()
             
-            log.status('*STARTING* to display the images of the input data')
-            
-            # Loading and bringing the pyraf related modules into the name-space
-            pyraf, gemini, yes, no = pyrafLoader()
-            
-            # Ensuring image buffer is large enough to handle GMOS images
-            pyraf.iraf.set(stdimage='imtgmos')              
+        # Ensuring image buffer is large enough to handle GMOS images
+        pyraf.iraf.set(stdimage='imtgmos')              
                 
-            for i in range(0, len(rc.inputs)):  
-                # Retrieving the input object for this increment from the RC 
-                inputRecord = rc.inputs[i]
+        for i in range(0, len(rc.inputs)):  
+            # Retrieving the input object for this increment from the RC 
+            inputRecord = rc.inputs[i]
                 
-                # Creating a dictionary of the parameters set by definition of the primitive 
-                clPrimParams = {
+            # Creating a dictionary of the parameters set by 
+            # definition of the primitive 
+            clPrimParams = {
                 'image'         :inputRecord.filename,
                 # Using the increment value (+1) for the frame value
                 'frame'         :i+1,
                 'fl_imexam'     :no,
                 # Retrieving the observatory key from the PHU
                 'observatory'   :inputRecord.ad.phu_get_key_value('OBSERVAT')
-                                }
+                }
                 
-                # Grabbing the default parameters dictionary and updating 
-                # it with the above dictionary
-                clParamsDict = CLDefaultParamsDict('gdisplay')
-                clParamsDict.update(clPrimParams)
+            # Grabbing the default parameters dictionary and updating 
+            # it with the above dictionary
+            clParamsDict = CLDefaultParamsDict('gdisplay')
+            clParamsDict.update(clPrimParams)
                 
-                # Logging the values in the prim parameter dictionaries
-                log.fullinfo('\nParameters dictated by the definition of the '+
+            # Logging the values in the prim parameter dictionaries
+            log.fullinfo('\nParameters dictated by the definition of the '+
                          'primitive:\n', 
                          category='parameters')
-                gt.logDictParams(clPrimParams)
+            gt.logDictParams(clPrimParams)
                 
-                log.debug('Calling the gdisplay CL script for input list '+
-                              inputRecord.filename)
+            log.debug('Calling the gdisplay CL script for input list '+
+                      inputRecord.filename)
                 
-                try:
-                    gemini.gmos.gdisplay(**clParamsDict)
+            try:
+                gemini.gmos.gdisplay(**clParamsDict)
                     
-                    if gemini.gmos.gdisplay.status:
-                        raise PrimitiveError('gdisplay failed for input '+
-                                     inputRecord.filename)
-                    else:
-                        log.status('Exited the gdisplay CL script successfully')
+                if gemini.gmos.gdisplay.status:
+                    raise PrimitiveError('gdisplay failed for input '+
+                                         inputRecord.filename)
+                else:
+                    log.status('Exited the gdisplay CL script successfully')
                         
-                except:
-                    # This exception should allow for a smooth exiting if there is an 
-                    # error with gdisplay, most likely due to DS9 not running yet
-                    log.error('ERROR occurred while trying to display '+
-                              str(inputRecord.filename)
-                                +', ensure that DS9 is running and try again')
+            except:
+                # This exception should allow for a smooth exiting if there is an 
+                # error with gdisplay, most likely due to DS9 not running yet
+                log.error('ERROR occurred while trying to display '+
+                          str(inputRecord.filename)
+                          +', ensure that DS9 is running and try again')
                     
-                # this version had the display id conversion code which we'll need to redo
-                # code above just uses the loop index as frame number
-                #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.dis_id), fl_imexam=iraf.no,
-                #    Stdout = coi.get_iraf_stdout(), Stderr = coi.get_iraf_stderr() )
+            # this version had the display id conversion code which we'll need to redo
+            # code above just uses the loop index as frame number
+            #gemini.gmos.gdisplay( inputRecord.filename, ds.displayID2frame(rq.dis_id),
+            #                      fl_imexam=iraf.no,
+            #    Stdout = coi.get_iraf_stdout(), Stderr = coi.get_iraf_stderr() )
                 
-            log.status('*FINISHED* displaying the images of the input data')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
         yield rc
 
     def localGetProcessedBias(self,rc):
@@ -192,34 +174,30 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            packagePath = sys.argv[0].split('gemini_python')[0]
-            calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'localGetProcessedBias', 'starting'))
+
+        packagePath = sys.argv[0].split('gemini_python')[0]
+        calPath = 'gemini_python/test_data/test_cal_files/processed_biases/'
             
-            for ad in rc.get_inputs(style='AD'):
-                if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
-                    log.error('NO 1x1 PROCESSED BIAS YET TO USE')
-                    raise 'error'
-                elif ad.ext_get_key_value(1,'CCDSUM') == '2 2':
-                    biasfilename = 'N20020214S022_preparedBias.fits'
-                    if not os.path.exists(os.path.join('.reducecache/'+
-                                                       'storedcals/retrievd'+
-                                                       'biases', biasfilename)):
-                        shutil.copy(packagePath+calPath+biasfilename, 
-                                    '.reducecache/storedcals/retrievedbiases')
-                    rc.add_cal(ad,'bias', 
-                              os.path.join('.reducecache/storedcals/retrieve'+
-                                           'dbiases',biasfilename))
-                else:
-                    log.error('CCDSUM is not 1x1 or 2x2 for the input flat!!')
+        for ad in rc.get_inputs(style='AD'):
+            if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
+                log.error('NO 1x1 PROCESSED BIAS YET TO USE')
+                raise 'error'
+            elif ad.ext_get_key_value(1,'CCDSUM') == '2 2':
+                biasfilename = 'N20020214S022_preparedBias.fits'
+                if not os.path.exists(os.path.join('.reducecache/'+
+                                                   'storedcals/retrieved'+
+                                                   'biases', biasfilename)):
+                    shutil.copy(packagePath+calPath+biasfilename, 
+                                '.reducecache/storedcals/retrievedbiases')
+                rc.add_cal(ad,'bias', 
+                           os.path.join('.reducecache/storedcals/retrieve'+
+                                        'dbiases',biasfilename))
+            else:
+                log.error('CCDSUM is not 1x1 or 2x2 for the input flat')
            
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
         yield rc
    
     def localGetProcessedFlat(self,rc):
@@ -238,33 +216,28 @@ class GMOSPrimitives(GEMINIPrimitives):
                         , 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            packagePath=sys.argv[0].split('gemini_python')[0]
-            calPath='gemini_python/test_data/test_cal_files/processed_flats/'
+        log.debug(gt.log_message('primitive', 'localGetProcessedFlat', 'starting'))
+
+        packagePath=sys.argv[0].split('gemini_python')[0]
+        calPath='gemini_python/test_data/test_cal_files/processed_flats/'
             
-            for ad in rc.get_inputs(style='AD'):
-                if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
-                    log.error('NO 1x1 PROCESSED BIAS YET TO USE')
-                    raise 'error'
-                elif ad.ext_get_key_value(1,'CCDSUM') == '2 2':
-                    flatfilename = 'N20020211S156_preparedFlat.fits'
-                    if not os.path.exists(os.path.join('.reducecache/storedca'+
-                                                       'ls/retrievedflats', 
-                                                       flatfilename)):
-                        shutil.copy(packagePath+calPath+flatfilename, 
-                                    '.reducecache/storedcals/retrievedflats')
-                    rc.add_cal(ad,'flat', os.path.join('.reducecache/storedca'+
-                                                      'ls/retrievedflats', 
-                                                      flatfilename))
-                else:
-                    log.error('CCDSUM is not 1x1 or 2x2 for the input image!!')
-           
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
+        for ad in rc.get_inputs(style='AD'):
+            if ad.ext_get_key_value(1,'CCDSUM') == '1 1':
+                log.error('NO 1x1 PROCESSED BIAS YET TO USE')
+                raise 'error'
+            elif ad.ext_get_key_value(1,'CCDSUM') == '2 2':
+                flatfilename = 'N20020211S156_preparedFlat.fits'
+                if not os.path.exists(os.path.join('.reducecache/storedcals/'+
+                                                   'retrievedflats', 
+                                                   flatfilename)):
+                    shutil.copy(packagePath+calPath+flatfilename, 
+                                '.reducecache/storedcals/retrievedflats')
+                rc.add_cal(ad,'flat', os.path.join('.reducecache/storedcals/'+
+                                                   'retrievedflats', 
+                                                   flatfilename))
+            else:
+                log.error('CCDSUM is not 1x1 or 2x2 for the input image!!')
+
         yield rc
 
     def mosaicDetectors(self,rc):
@@ -272,51 +245,38 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive will mosaic the SCI frames of the input images, 
         along with the VAR and DQ frames if they exist.  
         
-        :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
-        :type suffix: string
+        :param tile: tile images instead of mosaic
+        :type tile: Python boolean (True/False), default is False
         
-        :param fl_paste: Paste images instead of mosaic?
-        :type fl_paste: Python boolean (True/False), default is False
-        
-        :param interp_function: Type of interpolation function to use accross the chip gaps
-        :type interp_function: string, options: 'linear', 'nearest', 'poly3', 
-                               'poly5', 'spine3', 'sinc'.
+        :param interpolator: Type of interpolation function to use accross
+                             the chip gaps
+        :type interpolator: string, options: 'linear', 'nearest', 'poly3', 
+                            'poly5', 'spine3', 'sinc'.
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'mosaicDetectors', 'starting'))
         
-        # loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
-        
-        try:
-            log.status('*STARTING* to mosaic the input images SCI extensions'+
-                       ' together')
-            
-            log.debug('Calling geminiScience.mosaicDetectors function')
-            
-            adOutputs = gs.mosaic_detectors(
-                                            adInputs=rc.get_inputs(style='AD'), 
-                                        fl_paste=rc['fl_paste'], 
-                                        interp_function=rc['interp_function'], 
-                                        fl_vardq='AUTO', suffix=rc['suffix'])           
-            
-            log.status('geminiScience.mosaicDetectors completed successfully')
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('MOSAIC'):
+                log.warning('%s has already been processed by mosaicDetectors' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
                 
-            # Reporting the updated files to the reduction context
-            rc.report_output(adOutputs) 
+            ad = gs.mosaic_detectors(adinput=ad, 
+                                     tile=rc['tile'], 
+                                     interpolator=rc['interpolator'])           
+            
+            adoutput_list.append(ad[0])
                 
-            log.status('*FINISHED* mosaicing the input images')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
+        rc.report_output(adoutput_list)                
         yield rc
 
     def overscanSubtract(self,rc):
@@ -324,53 +284,37 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
         
-        :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
-        :type suffix: string
+        :param trim: Trim the overscan region from the frames?
+        :type trim: Python boolean (True/False)
         
-        :param fl_trim: Trim the overscan region from the frames?
-        :type fl_trim: Python boolean (True/False)
-        
-        :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False)
-            
-        :param biassec: biassec parameter of format '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
-        :type biassec: string. default: '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' is ideal for 2x2 GMOS data.
-    
+        :param overscan_section: biassec parameter of format 
+                                 '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+        :type overscan_section: string. default: 
+                                '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
+                                is ideal for 2x2 GMOS data.
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'overscanSubtract', 'starting'))
         
-        try:
-            log.status('*STARTING* to subtract the overscan from the inputs')
-            
-            log.debug('Calling calibrate.overscanSubtract function')
-            
-            adOutputs = cal.overscan_subtract_gmosNEW(  ###########
-                                        adInputs=rc.get_inputs(style='AD'), 
-                                        fl_trim=rc['fl_trim'], 
-                                        biassec=rc['biassec'], 
-                                        fl_vardq='AUTO', suffix=rc['suffix'])           
-            
-            log.status('calibrate.overscan_subtract completed successfully')
-                
-            # Reporting the updated files to the reduction context
-            rc.report_output(adOutputs)
-            
-            log.status('*FINISHED* subtracting the overscan from the '+
-                       'input data')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('OVERSUB'):
+                log.warning('%s has already been processed by overscanSubtract' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+
+            ad = cal.overscan_subtract_gmosNEW(adinput=ad, trim=rc['trim'], 
+                                               overscan_section=rc['overscan_section'])
+            adoutput_list.append(ad[0])
+
+        rc.report_output(adOutputs)
         yield rc    
 
     def overscanTrim(self,rc):
@@ -378,36 +322,28 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive uses AstroData to trim the overscan region 
         from the input images and update their headers.
         
-        :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
-        :type suffix: string
-        
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            log.status('*STARTING* to trim the overscan region from the input data')
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+
+        log.debug(gt.log_message('primitive', 'overscanTrim', 'starting'))
+        
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('OVERTRIM'):
+                log.warning('%s has already been processed by overscanTrim' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
             
-            log.debug('Calling calibrate.overscanTrim function')
+            ad = cal.overscan_trim(adinput=ad)
+            adoutput_list.append(ad[0])
             
-            adOutputs = cal.overscan_trim(adInputs=rc.get_inputs(style='AD'),     
-                                                        suffix=rc['suffix'])           
-            
-            log.status('geminiScience.overscanTrim completed successfully')
-              
-            # Reporting the updated files to the reduction context
-            rc.report_output(adOutputs)   
-                
-            log.status('*FINISHED* trimming the overscan region from the input data')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
+        rc.report_output(adOutputs)   
         yield rc
          
     def standardizeHeaders(self,rc):
@@ -418,45 +354,31 @@ class GMOSPrimitives(GEMINIPrimitives):
         specific keywords.
         
         Either a 'main' type logger object, if it exists, or a null logger
-        (i.e., no log file, no messages to screen) will be retrieved/created in
-        the ScienceFunctionManager and used within this function.
+        (i.e., no log file, no messages to screen) will be retrieved
+        and used within this function.
           
-        :param input: Astrodata inputs to have their headers standardized
-        :type input: Astrodata objects, either a single or a list of objects
-    
-        :param outNames: filenames of output(s)
-        :type outNames: String, either a single or a list of strings of same 
-                        length as input.
-    
-        :param suffix: Value to be post pended onto each input name(s) to 
-                       create the output name(s).
-        :type suffix: string
-        
         :param loglevel: Verbosity setting for log messages to the screen.
                          0 = nothing to screen, 6 = everything to screen. OR
                          the message level as a string (i.e., 'critical',
                          'status', 'fullinfo' ...)
         :type loglevel: integer or string
         """
-        # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc['logType'],
                                   logLevel=rc['logLevel'])
-        # Log the standard 'starting primitive' debug message
         log.debug(gt.log_message('primitive', 'standardizeHeaders', 'starting'))
-        try:
-            # Call the standardize_headers_gmos user level function
-            output = sdz.standardize_headers_gmos(
-                adinput=rc.get_inputs(style='AD'),
-                output_names=rc['output_names'],
-                suffix=rc['suffix'])
-            # Report the output of the user level function to the reduction
-            # context
-            rc.report_output(output)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
-        
+
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('STDHDRSI'):
+                log.warning('%s has already been processed by standardizeHeaders' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+ 
+            ad = sdz.standardize_headers_gmos(adinput=ad)
+            adoutput_list.append(ad[0])
+
+        rc.report_output(output)
         yield rc
 
     def standardizeStructure(self,rc):
@@ -468,13 +390,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         The Science Function standardize_structure_gmos in standardize.py is
         utilized to do the work for this primitive.
         
-        :param suffix: Value to be post pended onto each input name(s) to 
-                       create the output name(s).
-        :type suffix: string
-        
-        :param addMDF: A flag to turn on/off appending the appropriate MDF 
+        :param add_mdf: A flag to turn on/off appending the appropriate MDF 
                        file to the inputs.
-        :type addMDF: Python boolean (True/False)
+        :type add_mdf: Python boolean (True/False)
                       default: True
                       
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -482,26 +400,23 @@ class GMOSPrimitives(GEMINIPrimitives):
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-        log = gemLog.getGeminiLog(logType=rc['logType'], logLevel=rc['logLevel'])
-        try:           
-            log.status('*STARTING* to standardize the structure (GMOS)')                         
-            log.debug('Calling standardize.standardize_structure_gmos')
-            adOutputs = sdz.standardize_structure_gmos(
-                                            adInputs=rc.get_inputs(style='AD'),
-                                                        addMDF=rc['addMDF'],     
-                                                        suffix=rc['suffix'])
-            
-            # Reporting the updated files to the reduction context
-            rc.report_output(adOutputs) 
-            
-            log.status('*FINISHED* standardizing the structure (GMOS)')        
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
-        yield rc     
+        log = gemLog.getGeminiLog(logType=rc['logType'], 
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'standardizeStructure', 'starting'))
+
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('STDSTRUC'):
+                log.warning('%s has already been processed by standardizeStructure' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+
+            ad = sdz.standardize_structure_gmos(adinput=ad, add_mdf=rc['add_mdf'])
+            adoutput_list.append(ad[0])
+
+        rc.report_output(output)
+        yield rc
     
     def subtractBias(self, rc):
         """
@@ -513,73 +428,39 @@ class GMOSPrimitives(GEMINIPrimitives):
         in the future by replacing the use of the gireduce
         with a Python routine to do the bias subtraction.
         
-        :param suffix: Value to be post pended onto each input name(s) to 
-                         create the output name(s).
-        :type suffix: string
-        
-        :param fl_over: Subtract the overscan?
-        :type fl_over: Python boolean (True/False), default is False
-        
-        :param fl_trim: Trim the overscan region from the frames?
-        :type fl_trim: Python boolean (True/False), default is False. 
-                       Note: This value cannot be set during a recipe or from 
-                       reduce command line call, only in the parameter file.
-        
-        :param fl_vardq: Create variance and data quality frames?
-        :type fl_vardq: Python boolean (True/False)
-        
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
                         screen. OR the message level as a string (ie. 'critical'  
                         , 'status', 'fullinfo'...)
         """
-#        # Loading and bringing the pyraf related modules into the name-space
-#        pyraf, gemini, yes, no = pyrafLoader()
-        
-        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
-        try:
-            log.status('*STARTING* to subtract the bias from the inputs')
-            
-            # Getting the bias file for the first file of the inputs and 
-            # assuming it is the same for all the inputs. This should be 
-            # corrected in the future to be more intelligent and get the 
-            # correct bias for each input individually if they are not 
-            # all the same. Then gireduce can be called in a loop with 
-            # one flat and one bias, this will work well with the CLManager
-            # as that was how i wrote this prim originally.
-            adOne = rc.get_inputs(style='AD')[0]
-            #processedBias = AstroData(rc.get_cal(adOne,'bias'))
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'subtractBias', 'starting'))
+
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('SUBBIAS'):
+                log.warning('%s has already been processed by subtractBias' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+
+            #processedBias = AstroData(rc.get_cal(ad,'bias'))
             ####################BULL CRAP FOR TESTING ########################## 
             from copy import deepcopy
-            processedBias = deepcopy(adOne)
+            processedBias = deepcopy(ad)
             processedBias.filename = 'TEMPNAMEforBIAS.fits'
             processedBias.phu_set_key_value('ORIGNAME','TEMPNAMEforBIAS.fits')
             processedBias.history_mark(key='GBIAS', 
                               comment='fake key to trick CL that GBIAS was ran')
             ####################################################################
             log.status('Using bias '+processedBias.filename+' to correct the inputs')
-            log.debug('Calling calibrate.subtract_bias function')
             
-            #adOutputs = calibrate.subtract_biasNEW(adInputs=rc.get_inputs(style='AD'), 
-            #                             biases=processedBias, fl_vardq=rc['fl_vardq'], 
-            #                             fl_trim=rc['fl_trim'], fl_over=rc['fl_over'], 
-            #                             suffix=rc['suffix'])   
-            adOutputs = cal.subtract_biasNEW(adInputs=rc.get_inputs(style='AD'), 
-                                         biases=processedBias, fl_vardq=rc['fl_vardq'], 
-                                         suffix=rc['suffix'])            
-            
-            log.status('calibrate.subtract_bias completed successfully')
-                
-            # Reporting the updated files to the reduction context
-            rc.report_output(adOutputs)   
-            
-            log.status('*FINISHED* subtracting the bias from the input flats')
-        except:
-            # logging the exact message from the actual exception that was 
-            # raised in the try block. Then raising a general PrimitiveError 
-            # with message.
-            log.critical(repr(sys.exc_info()[1]))
-            raise 
+            ad = cal.subtract_biasNEW(adinput=ad, 
+                                      bias=processedBias)
+            adoutput_list.append(ad[0])
+
+        rc.report_output(output)
         yield rc
     
     def validateData(self, rc):
@@ -589,10 +470,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         later steps in the reduction process. If there are issues with the
         data, the flag 'repair' can be used to turn on the feature to repair it
         or not (e.g., validateData(repair=True)). 
-        
-        :param suffix: Value to be post pended onto each input name(s) to 
-                       create the output name(s).
-        :type suffix: string
         
         :param loglevel: Verbosity setting for log messages to the screen.
                          0 = nothing to screen, 6 = everything to screen. OR
@@ -605,18 +482,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                                   logLevel=rc['logLevel'])
         # Log the standard 'starting primitive' debug message
         log.debug(gt.log_message('primitive', 'validateData', 'starting'))
-        try:
-            # Call the validate_data_gmos user level function
-            output = sdz.validate_data_gmos(adinput=rc.get_inputs(style='AD'),
-                                            output_names=rc['output_names'],
-                                            suffix=rc['suffix'],
-                                            repair=rc['repair'])
-            # Report the output of the user level function to the reduction
-            # context
-            rc.report_output(output)
-        except:
-            # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
-            raise
-        
+
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('VALDATA'):
+                log.warning('%s has already been processed by validateData' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+
+            ad = sdz.validate_data_gmos(adinput=ad, repair=rc['repair'])
+            adoutput_list.append(ad[0])
+
+        rc.report_output(output)
         yield rc
