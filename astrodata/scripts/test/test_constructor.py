@@ -2,6 +2,8 @@ import sys
 import os
 
 import pyfits
+from nose.plugins.skip import Skip, SkipTest
+
 import astrodata
 from astrodata import AstroData
 import adtest_utils
@@ -39,13 +41,13 @@ def constructor_test2():
 def constructor_test3():
     """constructor: test3 -Create AstroData instance using phu and data.
     """
+    raise SkipTest
     print("\n\tTest input file: %s" % testfile)
     hdulist = pyfits.open(testfile)
     ad = AstroData(header=hdulist[0], data=[hdulist[1],hdulist[2],hdulist[3]])
     print("\tad = AstroData(hdulist)")
     checkad(ad)
     hdulist.close()
-
 
 
 
