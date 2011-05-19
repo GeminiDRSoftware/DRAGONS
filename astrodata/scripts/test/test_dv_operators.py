@@ -97,32 +97,35 @@ def dv_operators_test1():
 
 
     descripts = ["detector_y_bin","pixel_scale","observation_id"]      
-    ops = ["+","-","*","/","//","%","**", "<<",">>", "^", "<", "<=", ">",">=","==",]
-    #ops = ["+","%","**"]
+    ops = ["+","-","*","/","//","%","**", "<<",">>", "^", "<", "<=", ">", \
+            ">=","==",]
+    #ops = ["%"]#,"+","**"]
     exprs = []
-    operands = ['"hi"', 10., 10.]
+    operands = [10, 10., "'hi'"]
     dvoperands = ["intdv","floatdv","stringdv"]
 
     #Create Permutations for operators and operands
     for op in ops:
-        for operand in operands:
-            expr = "%(lop)s %(op)s %(rop)s" % { "lop": "dval",
-                                                "rop": repr(operand),
-                                                "op":  op}
-            exprs.append(expr)
-            expr = "%(lop)s %(op)s %(rop)s" % { "lop": repr(operand),
-                                                "rop": "dval",
-                                                "op":  op}
-            exprs.append(expr)
-        for dvo in dvoperands:
-            expr = "%(lop)s %(op)s %(rop)s" % { "lop": "dval",
-                                                "rop": dvo,
-                                                "op":  op}
-            exprs.append(expr)
-            expr = "%(lop)s %(op)s %(rop)s" % { "lop": dvo,
-                                                "rop": "dval",
-                                                "op":  op}
-            exprs.append(expr)
+        if len(operands) > 0:
+            for operand in operands:
+                expr = "%(lop)s %(op)s %(rop)s" % { "lop": "dval",
+                                                    "rop": repr(operand),
+                                                    "op":  op}
+                exprs.append(expr)
+                expr = "%(lop)s %(op)s %(rop)s" % { "lop": repr(operand),
+                                                    "rop": "dval",
+                                                    "op":  op}
+                exprs.append(expr)
+        if len(dvoperands) > 0:
+            for dvo in dvoperands:
+                expr = "%(lop)s %(op)s %(rop)s" % { "lop": "dval",
+                                                    "rop": dvo,
+                                                    "op":  op}
+                exprs.append(expr)
+                expr = "%(lop)s %(op)s %(rop)s" % { "lop": dvo,
+                                                    "rop": "dval",
+                                                    "op":  op}
+                exprs.append(expr)
         expr = "%(lop)s %(op)s %(rop)s" % { "lop": "dval",
                                             "rop": "dval",
                                             "op":  op}
@@ -226,27 +229,27 @@ def dv_operators_test1():
     
     # Use re module to calculate report
     output_string = outstr
-    passtotal = re.compile(r'\b||Passed Test:\b')
+    passtotal = re.compile("\|\|Passed Test")
     pass_total = len(passtotal.findall(output_string))
-    passwithemd = re.compile(r'\b||Passed Test: ExceptionMsgsDiff\b')
-    pass_with_emd = len(passwithemd.findall(output_sring))
-    passwithee = re.compile(r'\b||Passed Test: ExpectedException\b')
+    passwithemd = re.compile("\|\|Passed Test: ExceptionMsgsDiff")
+    pass_with_emd = len(passwithemd.findall(output_string))
+    passwithee = re.compile("\|\|Passed Test: ExpectedException")
     pass_with_ee = len(passwithee.findall(output_string))
-    fail = re.compile(r'\b||FAILED Test::\b')
+    fail = re.compile("\|\|FAILED Test")
     fail_ = len(fail.findall(output_string))
     pass_without_e = pass_total - (pass_with_emd + pass_with_ee)
     
     # print REPORT
-    print("Ran %i operator comparison test(s)  " % (pass_total + fail_ - 4))
-    print("\n%i test(s) PASSED " % pass_tota)
-    print("(%i test(s) passed without throwing exceptions)" % \
-        passed_without_e)
-    print("(%i test(s) passed with the same expected exceptions)" % \
-        passed_with_ee)
-    print("(%i test(s) passed with different expected exceptions)" % \
-        passed_with_emd)
-    print("\n%i test(s) FAILED, run in verbose mode to see more details" % \
-        fail_)
+    print("Ran %i operator comparison tests" % (pass_total + fail_))
+    if pass_with_ee > 0:
+        print("\t(%i passed with the same expected exceptions)" % \
+            pass_with_ee)
+    if pass_with_emd > 0:
+        print("\t(%i passed with different expected exceptions)" % \
+            pass_with_emd)
+    if fail_ > 0:
+        print("%i FAILED"  % fail_)
+        print("\t(run in verbose mode to see more details)")
     print("_"*80 + "\n\n")
 
 
