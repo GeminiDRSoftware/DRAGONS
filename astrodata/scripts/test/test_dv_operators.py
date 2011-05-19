@@ -3,41 +3,43 @@ import os
 import re
 
 from nose.tools import *
+from nose.plugins.skip import Skip, SkipTest
 
 from astrodata import AstroData
 from astrodata import Errors
 import adtest_utils
 
 testfile = adtest_utils.testdatafile_1
-# use verbose to print out extra detail for failures
-verbose = False
+# use debug to print out extra detail for failures
+# '_' is appended to verbose to prevent nose collision
+debug = False
 
 # helper function
-def result_handler(msg, cmsg, exval, cexval, verbose, outstr):
+def result_handler(msg, cmsg, exval, cexval, debug, outstr):
     if msg == cmsg: 
         outstr += "Passed Test: ExpectedException\n"
-        if verbose:
-            outstr += " "*50 +"Except:" + msg
+        if debug:
+            outstr += " " * 50 +"Except:" + msg
 
     elif exval is None and cexval is None:
         outstr += "Passed Test: ExceptionMsgsDiff\n"
-        if verbose:
-            outstr += " "*50 + "DV Test Except:" + msg
-            outstr += "\n" + " "*50 + "Control Except:" + cmsg
+        if debug:
+            outstr += " " * 50 + "DV Test Except:" + msg
+            outstr += "\n" + " " * 50 + "Control Except:" + cmsg
     elif exval is not None and cexval is None:
-        outstr += "FAILED Test: Passed DV Test but threw Exception in Control\n"
-        outstr += " "*50 + "DV Test Result:" + exval
-        outstr += "\n" + " "*50 + "Control Except:" + cmsg
+        outstr += "FAILED Test: Exception in Control operator, not in python"
+        outstr += "\n" + " " * 50 + "DV Test Result:" + exval
+        outstr += "\n" + " " * 50 + "Control Except:" + cmsg
     elif exval is None and cexval is not None:
-        outstr += "FAILED Test: Passed Control Test but threw Exception in DV Test\n"
-        outstr += " "*50 + "Control Test Result:" + cexval
+        outstr += "FAILED Test: Exception in DV operator, not in python\n"
+        outstr += " " * 50 + "Control Test Result:" + cexval
         outstr += "\n" + " "*50 + "DV Test Except:" + msg
     else:
         outstr += "FAILED Test:\n"
-        outstr += " "*50 + "DV Test Except:" + msg
-        outstr += "\n" + " "*50 + "DV Test Result:" + exval
-        outstr += "\n" + " "*50 + "Control Except:" + cmsg
-        outstr += "\n" + " "*50 + "Control Test Result:" +cexval
+        outstr += " " * 50 + "DV Test Except:" + msg
+        outstr += "\n" + " " * 50 + "DV Test Result:" + exval
+        outstr += "\n" + " " * 50 + "Control Except:" + cmsg
+        outstr += "\n" + " " * 50 + "Control Test Result:" +cexval
     return outstr
 
 
@@ -45,6 +47,7 @@ def result_handler(msg, cmsg, exval, cexval, verbose, outstr):
 def dv_operators_test1():
     """dv_operators: test1 -Python operators vs. descriptor value operators 
     """
+    #raise SkipTest
     ad = AstroData(testfile)
     outstr = ""
     outstr += "\nTestfile: " + testfile
@@ -149,68 +152,77 @@ def dv_operators_test1():
                     if len(exvalAsString) > 15:
                         exvalAsString = exvalAsString[0:11] + "..."
                     oute = "%s%s%s%s" % ( expr,
-                                            " "*(20-le),
+                                            " "*(20 - le),
                                             " ==> ", 
                                             exvalAsString)
                     
-                    oute += " "*(45-len(oute))
+                    oute += " " * (45 - len(oute))
                 except Errors.IncompatibleOperand:
-                    oute = "IncompatibleOperand: type(dval)= %s " % str(dval.pytype) + expr
+                    oute = "IncompatibleOperand: type(dval)= %s " % \
+                        str(dval.pytype) + expr
                     exval = "FAILED!"
                     outstr += oute
                 except TypeError, e:
-                    oute = "(%s) TypeError: %s" %(expr,str(e))
+                    oute = "(%s) TypeError: %s" % (expr,str(e))
                     exval = "FAILED!"
                     msg = str(e)
                 except Errors.DescriptorValueTypeError, e:
                     le = len(expr)
                     oute = "%s%s%s" % ( expr,
-                                          " "*(20-le),
+                                          " " * (20 - le),
                                           " ==> DVtypeError")
                     exval = None
                     msg = str(e)
-                    oute += " "*(45-len(oute))
+                    oute += " " * (45 - len(oute))
                 except OverflowError, e:
                     le = len(expr)
                     oute = '%s%s%s' % ( expr,
-                                          ' '*(20-le),
+                                          ' ' * (20 - le),
                                           ' ==> OverflowError')
                     exval = None
                     msg = str(e)
-                    oute += ' '*(45-len(oute))
+                    oute += ' ' * (45 - len(oute))
                     
-                outstr += oute +"||"
+                outstr += oute + "||"
                 try:
                     controlexpr = re.sub("dval", repr(pydval), expr)
                     cexval = eval(controlexpr)
                 except TypeError, e:
                     cmsg = str(e)
                     cexval = None
-                    outstr = result_handler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr = result_handler(msg, cmsg, exval, cexval , \
+                        debug, outstr)
                     continue
                 except Errors.DescriptorValueTypeError, e:
                     csmg = str(e)
                     cexval = None
-                    outstr = result_handler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr = result_handler(msg, cmsg, exval, cexval , \
+                        debug, outstr)
                     continue
                 except Errors.IncompatibleOperand, e:
                     csmg = str(e)
                     cexval = None
-                    outstr = result_handler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr = result_handler(msg, cmsg, exval, cexval , \
+                        debug, outstr)
                     continue
                 except:
                     cexval = None
-                    outstr += result_handler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr = result_handler(msg, cmsg, exval, cexval , \
+                        debug, outstr)
                     continue
                 
                 if type(cexval) != type(exval):
-                    outstr += "FAILED Test: Types Differ " + str(type(exval)) + str(type(cexval))
-                    outstr += "\n" + " "*50 + "   Test Result = " + repr(exval) 
-                    outstr += "\n" + " "*50 + "Control Result = " + repr(cexval) + "\n"
+                    outstr += "FAILED Test: Types Differ " + \
+                        str(type(exval)) + str(type(cexval))
+                    outstr += "\n" + " " * 50 + "   Test Result = " + \
+                        repr(exval) 
+                    outstr += "\n" + " " * 50 + "Control Result = " + \
+                        repr(cexval) + "\n"
                 elif cexval != exval:
-                    outstr += "FAILED Test: Results Differ "  + str(exval) + " != "+str(cexval)
-                    outstr += " "*50,"   Test Result = " + exval 
-                    outstr += " "*50,"Control Result = " + cexval
+                    outstr += "FAILED Test: Results Differ "  + str(exval) + \
+                        " != " + str(cexval)
+                    outstr += " " * 50, "   Test Result = " + exval 
+                    outstr += " " * 50, "Control Result = " + cexval
                 else:
                     outstr += "Passed Test\n"
 
@@ -249,10 +261,6 @@ def dv_operators_test1():
             pass_with_emd)
     if fail_ > 0:
         print("%i FAILED"  % fail_)
-        print("\t(run in verbose mode to see more details)")
+        print("\t(run in debug mode to see more details)")
     print("_"*80 + "\n\n")
-
-
-    
-
 
