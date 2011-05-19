@@ -13,7 +13,7 @@ testfile = adtest_utils.testdatafile_1
 verbose = False
 
 # helper function
-def resultHandler(msg,cmsg,exval,cexval,verbose,outstr):
+def result_handler(msg, cmsg, exval, cexval, verbose, outstr):
     if msg == cmsg: 
         outstr += "Passed Test: ExpectedException\n"
         if verbose:
@@ -80,18 +80,21 @@ def dv_operators_test1():
     outstr += "      stringdv:" + str(stringdv) + " (raw_cc)\n"
     outstr += "_"*80 + "\n"
 
-    descripts = ["airmass", "amp_read_area", "azimuth", "camera", "cass_rotator_pa",
-     "central_wavelength", "coadds", "data_label", "data_section", "dec", "decker",
-     "detector_section", "detector_x_bin", "detector_y_bin", "disperser",
-     "dispersion", "dispersion_axis", "elevation", "exposure_time", "filter_name",
-     "focal_plane_mask", "gain", "gain_setting", "grating", "instrument",
-     "local_time", "mdf_row_id", "nod_count", "nod_pixels", "non_linear_level",
-     "object", "observation_class", "observation_epoch", "observation_id",
+    descripts = ["airmass", "amp_read_area", "azimuth", "camera",
+     "cass_rotator_pa", "central_wavelength", "coadds", "data_label",
+     "data_section", "dec", "decker", "detector_section", "detector_x_bin",
+     "detector_y_bin", "disperser", "dispersion", "dispersion_axis",
+     "elevation", "exposure_time", "filter_name", "focal_plane_mask", "gain",
+     "gain_setting", "grating", "instrument", "local_time", "mdf_row_id",
+     "nod_count", "nod_pixels", "non_linear_level", "object",
+     "observation_class", "observation_epoch", "observation_id",
      "observation_type", "pixel_scale", "prism", "program_id", "pupil_mask",
      "qa_state", "ra", "raw_bg", "raw_cc", "raw_iq", "raw_wv", "read_mode",
-     "read_noise", "read_speed_setting", "saturation_level", "slit", "telescope",
-     "ut_date", "ut_datetime", "ut_time", "wavefront_sensor",
-     "wavelength_reference_pixel", "well_depth_setting", "x_offset", "y_offset"]
+     "read_noise", "read_speed_setting", "saturation_level", "slit",
+     "telescope", "ut_date", "ut_datetime", "ut_time", "wavefront_sensor",
+     "wavelength_reference_pixel", "well_depth_setting", "x_offset",
+     "y_offset"]
+
 
     descripts = ["detector_y_bin","pixel_scale","observation_id"]      
     ops = ["+","-","*","/","//","%","**", "<<",">>", "^", "<", "<=", ">",">=","==",]
@@ -180,21 +183,21 @@ def dv_operators_test1():
                 except TypeError, e:
                     cmsg = str(e)
                     cexval = None
-                    outstr = resultHandler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr = result_handler(msg,cmsg,exval,cexval,verbose,outstr)
                     continue
                 except Errors.DescriptorValueTypeError, e:
                     csmg = str(e)
                     cexval = None
-                    outstr = resultHandler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr = result_handler(msg,cmsg,exval,cexval,verbose,outstr)
                     continue
                 except Errors.IncompatibleOperand, e:
                     csmg = str(e)
                     cexval = None
-                    outstr = resultHandler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr = result_handler(msg,cmsg,exval,cexval,verbose,outstr)
                     continue
                 except:
                     cexval = None
-                    outstr += resultHandler(msg,cmsg,exval,cexval,verbose,outstr)
+                    outstr += result_handler(msg,cmsg,exval,cexval,verbose,outstr)
                     continue
                 
                 if type(cexval) != type(exval):
@@ -220,6 +223,33 @@ def dv_operators_test1():
             raise
         outstr += "_"*80 + "\n"
     print outstr        
+    
+    # Use re module to calculate report
+    output_string = outstr
+    passtotal = re.compile(r'\b||Passed Test:\b')
+    pass_total = len(passtotal.findall(output_string))
+    passwithemd = re.compile(r'\b||Passed Test: ExceptionMsgsDiff\b')
+    pass_with_emd = len(passwithemd.findall(output_sring))
+    passwithee = re.compile(r'\b||Passed Test: ExpectedException\b')
+    pass_with_ee = len(passwithee.findall(output_string))
+    fail = re.compile(r'\b||FAILED Test::\b')
+    fail_ = len(fail.findall(output_string))
+    pass_without_e = pass_total - (pass_with_emd + pass_with_ee)
+    
+    # print REPORT
+    print("Ran %i operator comparison test(s)  " % (pass_total + fail_ - 4))
+    print("\n%i test(s) PASSED " % pass_tota)
+    print("(%i test(s) passed without throwing exceptions)" % \
+        passed_without_e)
+    print("(%i test(s) passed with the same expected exceptions)" % \
+        passed_with_ee)
+    print("(%i test(s) passed with different expected exceptions)" % \
+        passed_with_emd)
+    print("\n%i test(s) FAILED, run in verbose mode to see more details" % \
+        fail_)
+    print("_"*80 + "\n\n")
+
+
     
 
 
