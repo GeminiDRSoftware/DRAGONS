@@ -291,7 +291,7 @@ class PrimitiveSet(object):
                 bcls.get_parent_modules(self, bcls, append_list)
         return append_list
 
-from cache_files import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
+from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
 from astrodata.ReductionObjectRequests import CalibrationRequest,\
         UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
         ImageQualityRequest

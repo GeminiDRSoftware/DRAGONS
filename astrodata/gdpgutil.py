@@ -3,7 +3,7 @@ import sys
 from astrodata.AstroData import AstroData
 import AstroDataType
 
-from cache_files import AstroDataRecord
+from ReductionContextRecords import AstroDataRecord
 from copy import copy
 
 #removed old logger, calls changed to prints, need to incorporate new logger

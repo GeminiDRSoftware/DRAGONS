@@ -3,7 +3,7 @@ from copy import copy
 from threading import RLock
 import pickle
 
-from cache_files import StackableRecord, FringeRecord
+from ReductionContextRecords import StackableRecord, FringeRecord
 import Proxies
 
 class SKExcept:

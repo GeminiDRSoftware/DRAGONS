@@ -18,7 +18,7 @@ import gdpgutil
 from gdpgutil import pick_config
 import IDFactory as idFac # id hashing functions
 from ParamObject import PrimitiveParameter
-from cache_files import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
+from ReductionContextRecords import CalibrationRecord, StackableRecord, AstroDataRecord, FringeRecord
 import ReductionObjects
 from ReductionObjects import ReductionObject
 from ReductionObjectRequests import UpdateStackableRequest, GetStackableRequest, DisplayRequest, \
