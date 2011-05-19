@@ -6,9 +6,9 @@ from nose.plugins.skip import Skip, SkipTest
 
 import astrodata
 from astrodata import AstroData
-import adtest_utils
+import file_urls
 
-testfile = adtest_utils.testdatafile_1
+testfile = file_urls.testdatafile_1
 
 def checkad(ad):
     assert ad.mode != None
@@ -21,7 +21,7 @@ def checkad(ad):
     ad.close()
 
 def constructor_test1():
-    """constructor: test1 -Create AstroData instance using filename.
+    """CONSTRUCTOR: test1 -Create AstroData instance using filename
     """
     print("\n\tTest input file: %s" % testfile)
     ad = AstroData(testfile)
@@ -29,7 +29,7 @@ def constructor_test1():
     checkad(ad)
 
 def constructor_test2():
-    """constructor: test2 -Create AstroData instance using hdulist.
+    """CONSTRUCTOR: test2 -Create AstroData instance using hdulist
     """
     print("\n\tTest input file: %s" % testfile)
     hdulist = pyfits.open(testfile)
@@ -39,7 +39,7 @@ def constructor_test2():
     hdulist.close()
 
 def constructor_test3():
-    """constructor: test3 -Create AstroData instance using phu and data.
+    """CONSTRUCTOR: test3 -Create AstroData instance using phu and data
     """
     raise SkipTest
     print("\n\tTest input file: %s" % testfile)

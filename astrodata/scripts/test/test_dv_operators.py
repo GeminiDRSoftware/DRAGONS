@@ -7,9 +7,9 @@ from nose.plugins.skip import Skip, SkipTest
 
 from astrodata import AstroData
 from astrodata import Errors
-import adtest_utils
+import file_urls
 
-testfile = adtest_utils.testdatafile_1
+testfile = file_urls.testdatafile_1
 # use debug to print out extra detail for failures
 # '_' is appended to verbose to prevent nose collision
 debug = False
@@ -45,7 +45,7 @@ def result_handler(msg, cmsg, exval, cexval, debug, outstr):
 
 
 def dv_operators_test1():
-    """dv_operators: test1 -Python operators vs. descriptor value operators 
+    """DV_OPERATORS: test1 -Python operators vs. descriptor value operators 
     """
     #raise SkipTest
     ad = AstroData(testfile)

@@ -5,13 +5,13 @@ from copy import deepcopy
 
 from nose.tools import *
 
-import adtest_utils
+import file_urls 
 from astrodata import AstroData
 
-testfile = adtest_utils.testdatafile_1
+testfile = file_urls.testdatafile_1
 
 def deepcopy_test_1():
-    """deepcopy: test1 -Compare hdulist object ids between ad and deepcopy(ad).
+    """DEEPCOPY: test1 -Compare hdulist object ids between ad and deepcopy(ad)
     """
     print("\n\tTest input file: %s" % testfile)
     ad = AstroData(testfile)
@@ -29,7 +29,7 @@ def deepcopy_test_1():
     adDeepcopy.close()
 
 def deepcopy_test_2():
-    """deepcopy: test2 -Check that attribute change does not affect deepcopy.
+    """DEEPCOPY: test2 -Check that attribute change does not affect deepcopy
     """
     print("\n\tTest input file: %s" % testfile)
     ad = AstroData(testfile)

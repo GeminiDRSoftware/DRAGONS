@@ -5,12 +5,12 @@ import pyfits
 from nose.tools import *
 
 from astrodata import AstroData
-import adtest_utils
+import file_urls
 
-testfile = adtest_utils.testdatafile_1
+testfile = file_urls.testdatafile_1
 
 def inferred_extname_test1():
-    """inferred_extname: test1 -Check extension names are inferred 'SCI'.
+    """INFERRED_EXTNAME: test1 -Check extension names are inferred 'SCI'
     """
     alist = []
     blist = []
@@ -32,7 +32,7 @@ def inferred_extname_test1():
     blist = []
 
 def inferred_extname_test2():
-    """inferred_extname: test2 -Inferred naming off when input ext named.
+    """INFERRED_EXTNAME: test2 -Inferred naming off when input ext named
     """
     testhdulist = pyfits.open(testfile)
     alist = []
