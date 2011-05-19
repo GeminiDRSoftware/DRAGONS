@@ -50,7 +50,7 @@ def dv_operators_test1():
     #raise SkipTest
     ad = AstroData(testfile)
     outstr = ""
-    outstr += "\nTestfile: " + testfile
+    outstr += "\n\tTest input file: " + testfile
     outstr += '''\n\n** Summary: 
         A descriptor value (DV) is first tested as itself, a 
         Descriptor Value class instance, versus a data type of 
@@ -72,12 +72,12 @@ def dv_operators_test1():
         "Passed Test: ExceptionMsgsDiff" 
             both operators threw an exception with different messages
         "FAILED Test:..."
-            both operators have completely different results.\n\n
+            both operators have completely different results.
         '''
     intdv = ad.detector_x_bin()
     floatdv = ad.exposure_time()
     stringdv = ad.raw_cc()
-    outstr += "** DV operands:\n"
+    outstr += "\n** DV operands:\n"
     outstr += "         intdv:" + str(intdv) + " (detector_x_bin)\n"
     outstr += "       floatdv:" + str(floatdv) + " (exposure_time)\n"
     outstr += "      stringdv:" + str(stringdv) + " (raw_cc)\n"
