@@ -26,7 +26,7 @@
         "type"          : "str",
         "userOverride"  : False,
         },
-    "addMDF":{
+    "add_mdf":{
         "default"       : True,
         "recipeOverride": True,
         "type"          : "bool",
