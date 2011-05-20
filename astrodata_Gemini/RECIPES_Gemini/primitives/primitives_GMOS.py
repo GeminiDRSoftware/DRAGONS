@@ -276,6 +276,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             adoutput_list.append(ad[0])
                 
+        # Report the list of output AstroData objects to the reduction
+        # context
         rc.report_output(adoutput_list)                
         yield rc
 
@@ -310,11 +312,13 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
 
-            ad = pp.overscan_subtract_gmosNEW(adinput=ad, trim=rc['trim'], 
-                                              overscan_section=rc['overscan_section'])
+            ad = pp.overscan_subtract_gmos(adinput=ad, trim=rc['trim'], 
+                                       overscan_section=rc['overscan_section'])
             adoutput_list.append(ad[0])
 
-        rc.report_output(adOutputs)
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
 
         yield rc    
 
@@ -345,7 +349,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                                   overscan_section=rc["overscan_section"])
             adoutput_list.append(ad[0])
 
-        rc.report_output(adOutputs)   
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)   
 
         yield rc
          
@@ -390,10 +396,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
-        
         yield rc
 
     def standardizeStructure(self,rc):
@@ -441,10 +447,10 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
-        
         yield rc
     
     def subtractBias(self, rc):
@@ -484,11 +490,13 @@ class GMOSPrimitives(GEMINIPrimitives):
                               comment='fake key to trick CL that GBIAS was ran')
             ####################################################################
             log.status('Using bias '+processedBias.filename+' to correct the inputs')
-            ad = pp.subtract_biasNEW(adinput=ad, 
-                                     bias=processedBias)
+            ad = pp.subtract_bias(adinput=ad, 
+                                  bias=processedBias)
             adoutput_list.append(ad[0])
 
-        rc.report_output(output)
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
 
         yield rc
     
@@ -523,7 +531,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            # Call the my_science_step user level function
+            # Call the validate_data_gmos user level function
             ad = sdz.validate_data_gmos(adinput=ad, repair=rc['repair'])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects

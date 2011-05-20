@@ -53,6 +53,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                               trim=rc["trim"],
                                               overscan=rc["overscan"])
             adoutput_list.append(ad[0])
-        
-        rc.report_output(output)
+
+        rc.report_output(adoutput_list)
         yield rc
+    
