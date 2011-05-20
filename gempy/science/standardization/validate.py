@@ -89,9 +89,7 @@ def validate_data_gmos(adinput=None, repair=False):
                                         "validate_data_gmos" % (ad.filename))
             # Validate the input AstroData object. Ensure that the input have
             # 1, 3, 6 or 12 extensions
-            log.info("Raw GMOS data should only have 1, 3, 6 or 12 " +
-                     "extensions ... checking")
-            numext = output.count_exts("SCI")
+            numext = ad.count_exts("SCI")
             if (numext != 1 and numext != 3 and numext != 6 and numext != 12):
                 if repair:
                     # This would be where we would attempt to repair the data 
@@ -101,7 +99,10 @@ def validate_data_gmos(adinput=None, repair=False):
                     raise Errors.Error("The number of extensions in %s do " +
                                        "match with the number of extensions " +
                                        "expected in raw GMOS data." \
-                                       % output.filename)
+                                       % ad.filename)
+            else:
+                log.info("The GMOS input file has been validated: %s " \
+                         "contains %d extensions" % (ad.filename, numext))
             # Add the appropriate time stamps to the PHU
             gt.markHistory(adinput=ad, keyword=keyword)
             gt.markHistory(adinput=ad, keyword="PREPARE")
