@@ -7,9 +7,9 @@ from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
-from gempy import qa
-from gempy.science import geminiScience as gs
 from gempy.science import preprocessing as pp
+from gempy.science import qa
+from gempy.science import stack as sk
 from gempy.science import standardization as sdz
 from primitives_GENERAL import GENERALPrimitives
 
@@ -699,7 +699,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "stackFrames", "starting"))
         # Call the stack_frames user level function
-        adoutput = gs.stack_frames(adinput=rc.get_inputs(style="AD"),
+        adoutput = sk.stack_frames(adinput=rc.get_inputs(style="AD"),
                                    method=rc["method"])
         # Report the list containing a single AstroData object to the reduction
         # context

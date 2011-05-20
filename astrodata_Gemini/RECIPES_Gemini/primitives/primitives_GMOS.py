@@ -8,8 +8,8 @@ from astrodata.ConfigSpace import lookup_path
 from astrodata.data import AstroData
 from astrodata import Errors
 from gempy import geminiTools as gt
-from gempy.science import geminiScience as gs
 from gempy.science import preprocessing as pp
+from gempy.science import resample as rs
 from gempy.science import standardization as sdz
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
@@ -270,7 +270,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
                 
-            ad = gs.mosaic_detectors(adinput=ad, 
+            ad = rs.mosaic_detectors(adinput=ad, 
                                      tile=rc['tile'], 
                                      interpolator=rc['interpolator'])           
             
