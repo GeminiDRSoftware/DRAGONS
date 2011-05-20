@@ -434,7 +434,6 @@ class GMOSPrimitives(GEMINIPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            print "YOYO!", rc["add_mdf"]
             # Call the standardize_structure_gmos user level function
             ad = sdz.standardize_structure_gmos(adinput=ad,
                                                 add_mdf=rc['add_mdf'],
