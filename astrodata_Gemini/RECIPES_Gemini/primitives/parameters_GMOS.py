@@ -9,7 +9,7 @@
         "userOverride"  : False,
         },
     },
-{"mosaicDetectors":{
+ "mosaicDetectors":{
     "suffix":{
         # String to be post pended to the output of mosaicDetectors
         "default"       : "_mosaicked",

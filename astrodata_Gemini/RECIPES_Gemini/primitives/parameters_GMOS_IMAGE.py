@@ -17,7 +17,7 @@
 # The standardizeStructure primitive is actually located in the
 # primtives_GMOS.py file, but the addMDF parameter should be set to False as
 # default for data with an AstroData Type of IMAGE.
-{"standardizeStructure":{
+ "standardizeStructure":{
     "suffix":{
         # String to be post pended to the output of standardizeStructure
         "default"       : "_sdzStruct",
