@@ -1,8 +1,3 @@
-from astrodata import AstroData
-from astrodata.adutils import gemLog
-from astrodata.ConfigSpace import lookup_path
-from gempy import geminiTools as gt
-from gempy.science import standardization as sdz
 from primitives_F2 import F2Primitives
 
 class F2_IMAGEPrimitives(F2Primitives):
