@@ -221,19 +221,64 @@ def log_message(function, name, message_type):
     else:
         full_function_name = function
     if message_type == 'calling':
-        message = 'Calling the %s %s' % (full_function_name, name)
+        message = 'Calling the %s %s' \
+                  % (full_function_name, name)
     if message_type == 'starting':
-        message = 'Starting the %s %s' % (full_function_name, name)
+        message = 'Starting the %s %s' \
+                  % (full_function_name, name)
     if message_type == 'finishing':
-        message = 'Finishing the %s %s' % (full_function_name, name)
+        message = 'Finishing the %s %s' \
+                  % (full_function_name, name)
     if message_type == 'completed':
-        message = 'The %s %s completed successfully' % (name,
-                                                        full_function_name)
+        message = 'The %s %s completed successfully' \
+                  % (name, full_function_name)
     if message:
         return message
     else:
         return None
 
+def markHistory(adinput=None, keyword=None):
+    """
+    The function to use near the end of a python user level function to 
+    add a history_mark timestamp to all the outputs indicating when and what
+    function was just performed on them, then logging the new historyMarkKey
+    PHU key and updated 'GEM-TLM' key values due to history_mark.
+    
+    Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
+    automatically everytime wrapUp is called.
+    
+    :param adOutputs: List of astrodata instance(s) to perform history_mark 
+                      on.
+    :type adOutputs: Either a single or multiple astrodata instances in a 
+                     list.
+    
+    :param historyMarkKey: The PHU header key to write the current UT time 
+    :type historyMarkKey: Under 8 character, all caps, string.
+                          If None, then only 'GEM-TLM' is added/updated.
+    """
+    # Instantiate the log
+    log = gemLog.getGeminiLog()
+
+    # Loop over each input AstroData object in the input list
+    for ad in adinput:
+        # Add the 'GEM-TLM' keyword (automatic) and the keyword specified by
+        # the 'keyword' parameter to the PHU. If 'keyword' is None,
+        # history_mark will still add the 'GEM-TLM' keyword
+        ad.history_mark(key=keyword, stomp=False)
+        
+        log.fullinfo('*'*50, category='header')
+        log.fullinfo('File = %s' % ad.filename, category='header')
+        log.fullinfo('~'*50, category='header')
+        log.fullinfo("PHU keyword GEM-TLM = %s updated" \
+                     % (ad.phu_get_key_value('GEM-TLM')),
+                     category='header')
+        # Only log the following message if the 'keyword' parameter was defined
+        if keyword is not None:
+            log.fullinfo("PHU keyword %s = %s updated" \
+                         % (keyword, ad.phu_get_key_value(keyword)),
+                         category='header')
+        log.fullinfo('-'*50, category='header')
+        
 def pyrafBoolean(pythonBool):
     """
     A very basic function to reduce code repetition that simply 'casts' any 
