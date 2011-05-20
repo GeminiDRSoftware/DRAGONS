@@ -1,11 +1,6 @@
-# Author: Kyle Mede. 2010
-# Skeleton originally written by Craig Allen, callen@gemini.edu
-
-import sys
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 from gempy.science import preprocessing as pp
-from gempy.science import standardization as sdz
 from primitives_GMOS import GMOSPrimitives
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
@@ -58,37 +53,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                               trim=rc["trim"],
                                               overscan=rc["overscan"])
             adoutput_list.append(ad[0])
-
-        rc.report_output(output)
-        yield rc
-    
-    def standardizeStructure(self,rc):
-        """
-        This primitive will not add a MDF, for GMOS images. The
-        user level function standardize_structure_gmos in
-        gempy.science.standardization is utilized to do the work for this
-        primitive.  Currently this function just passes input back without
-        modification, except TLM stamp.
         
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        log.debug(gt.log_message("primitive", "standardizeStructure", "starting"))
-
-        adoutput_list = []
-        for ad in rc.get_inputs(style='AD'):
-            if ad.phu_get_key_value('STDSTRUC'):
-                log.warning('%s has already been processed by standardizeStructure' %
-                            (ad.filename))
-                adoutput_list.append(ad)
-                continue            
-
-            ad = sdz.standardize_structure_gmos(adinput=ad)
-            adoutput_list.append(ad[0])
-
         rc.report_output(output)
         yield rc
