@@ -2,7 +2,7 @@
 # in the primitives_F2_IMAGE.py file, in alphabetical order.
 
 # The standardizeStructure primitive is actually located in the primtives_F2.py
-# file, but the addMDF parameter should be set to False as default for data
+# file, but the add_mdf parameter should be set to False as default for data
 # with an AstroData Type of IMAGE.
 {"standardizeStructure":{
     "suffix":{
@@ -12,7 +12,7 @@
         "type"          : "str",
         "userOverride"  : False,
         },
-    "addMDF":{
+    "add_mdf":{
         "default"       : False,
         "recipeOverride": True,
         "type"          : "bool",
