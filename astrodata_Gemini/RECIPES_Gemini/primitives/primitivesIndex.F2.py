@@ -4,4 +4,5 @@
 
 localPrimitiveIndex = {
     "F2": ("primitives_F2.py", "F2Primitives"),
+    "F2_IMAGE": ("primitives_F2_IMAGE.py", "F2_IMAGEPrimitives"),
     }
