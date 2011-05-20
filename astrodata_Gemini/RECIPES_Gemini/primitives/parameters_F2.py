@@ -1,3 +1,5 @@
+# This parameter file contains the parameters related to the primitives located
+# in the primitives_F2.py file, in alphabetical order.
 {"addBPM":{
     "suffix":{
         # String to be post pended to the output of addBPM

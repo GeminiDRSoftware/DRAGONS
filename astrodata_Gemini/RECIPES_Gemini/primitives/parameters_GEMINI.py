@@ -1,21 +1,11 @@
+# This parameter file contains the parameters related to the primitives located
+# in the primitives_GEMINI.py file, in alphabetical order.
 {"addDQ":{
     "suffix":{
         # String to be post pended to the output of addDQ
         "default"       : "_dqAdded",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : True,
-        },
-    "fl_saturated":{
-        "default"       : True,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : True,
-        },
-    "fl_nonlinear":{
-        "default"       : True,
-        "recipeOverride": True,
-        "type"          : "bool",
         "userOverride"  : True,
         },
     },
@@ -53,8 +43,14 @@
         "type"          : "str",
         "userOverride"  : False,
         },
+    "flat":{
+        "default"       : None,
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
     },
- "get_cal":{
+ "getCal":{
     "source":{
         "default"       : "all",
         "type"          : "str",
@@ -130,6 +126,12 @@
         "type"          : "str",
         "userOverride"  : False,
         },
+    "fringe":{
+        "default"       : None,
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
     "statScale":{
         "default"       : True,
         "recipeOverride": True,
@@ -171,18 +173,6 @@
         "type"          : "str",
         "userOverride"  : False,
         },
-    "fl_dqprop":{
-        "default"       : True,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : True,
-        },
-    "fl_vardq":{
-        "default"       : True,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : True,
-        },
     "method":{
         "default"       : "average",
         "recipeOverride": True,
@@ -214,6 +204,12 @@
         "type"          : "str",
         "userOverride"  : False,
         },
+    "dark":{
+        "default"       : None,
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
     },
  "subtractFringe":{
     "suffix":{
@@ -222,6 +218,12 @@
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : False,
+        },
+    "fringe":{
+        "default"       : None,
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
         },
     },
  "writeOutputs":{
@@ -256,4 +258,4 @@
         "userOverride"  : True,
         },
     },
- }
+}
