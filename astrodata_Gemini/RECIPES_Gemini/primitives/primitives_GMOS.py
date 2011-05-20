@@ -341,7 +341,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            ad = pp.overscan_trim(adinput=ad)
+            ad = pp.overscan_trim(adinput=ad, trim=rc["trim"],
+                                  overscan_section=rc["overscan_section"])
             adoutput_list.append(ad[0])
 
         rc.report_output(adOutputs)   
