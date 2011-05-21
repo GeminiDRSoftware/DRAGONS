@@ -258,7 +258,9 @@ def markHistory(adinput=None, keyword=None):
     """
     # Instantiate the log
     log = gemLog.getGeminiLog()
-
+    # If adinput is a single AstroData object, put it in a list
+    if not isinstance(adinput, list):
+        adinput = [adinput]
     # Loop over each input AstroData object in the input list
     for ad in adinput:
         # Add the 'GEM-TLM' keyword (automatic) and the keyword specified by
@@ -296,7 +298,7 @@ def pyrafBoolean(pythonBool):
                                   ' passed in was not True or False, and ' \
                                   ' thats just crazy talk :P')
 
-def updateKeyValue(adinput=None, function=None, value=None, extname=None):
+def update_key_value(adinput=None, function=None, value=None, extname=None):
     """
     This function updates keywords in the headers of the input dataset,
     performs logging of the changes and writes history keyword related to the
@@ -318,21 +320,23 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
     """
     log = gemLog.getGeminiLog()
     historyComment = None
-    update = False
+    write_history = False
     keyAndCommentDict = {
-        'pixel_scale()':['PIXSCALE', 'Pixel scale in Y in [arcsec/pixel]'],
-        'gain()':['GAIN', 'Gain [e-/ADU]'],
-        'dispersion_axis()':['DISPAXIS','Dispersion axis'],
+        'bunit':['BUNIT', 'Physical units'],
         'count_exts("SCI")':['NSCIEXT', 'Number of science extensions'],
+        'dispersion_axis()':['DISPAXIS','Dispersion axis'],
+        'filter_name(stripID=True, pretty=True)':
+            ['FILTER', 'Combined filter name'],
+        'gain()':['GAIN', 'Gain [electrons/ADU]'],
+        'non_linear_level()':['NONLINEA', 'Non-linear regime [ADU]'],
+        'numext':['NEXTEND', 'Number of extensions'],
+        'pixel_scale()':['PIXSCALE', 'Pixel scale [arcsec/pixel]'],
+        'read_noise()':['RDNOISE', 'Estimated read noise [electrons]'],
+        'saturation_level()':['SATLEVEL', 'Saturation level [ADU]'],
         # store_original_name() actually all ready writes to the PHU, but
         # doubling it doesn't hurt.
         'store_original_name()':
             ['ORIGNAME', 'Original filename prior to processing'],
-        'read_noise()':['RDNOISE', 'readout noise in [e-]'],
-        'non_linear_level()':['NONLINEA', 'Non-linear regime level in [ADU]'],
-        'saturation_level()':['SATLEVEL', 'Saturation level in [ADU]'],
-        'bunit':['BUNIT', 'Physical units'],
-        'len(output)':['NEXTEND', 'Number of extensions'],
                         }
     # Extract key and comment for input function from above dict
     if function not in keyAndCommentDict:
@@ -346,16 +350,15 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
         original_value = adinput.phu_get_key_value(key)
         if original_value is not None:
             # The keyword exists, so store a history comment for later use
-            log.debug("Keyword %s=%s already exists in the PHU" \
+            log.debug("Keyword %s = %s already exists in the PHU" \
                   % (key, original_value))
             comment = '(UPDATED) %s' % comment
             msg = "updated"
-            historyComment = "Raw keyword %s=%s was overwritten in the PHU " \
-                             "by AstroData" % (key, original_value)
+            historyComment = "The keyword %s = %s was overwritten in the " \
+                             "PHU by AstroData" % (key, original_value)
         else:
             comment = '(NEW) %s' % comment
             msg = "added"
-
         # Use exec to perform the requested function on input
         try:
             exec('output_value = adinput.%s' % function)
@@ -363,37 +366,53 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
             output_value = value
         # Only update the keyword value in the PHU if it is different from the
         # value already in the PHU
-        log.debug ("Original value=%s, Output value=%s" \
+        log.debug ("Original value = %s, Output value = %s" \
                   % (original_value, output_value))
         if output_value is not None:
             if output_value != original_value:
                 # Update the header and write a history comment
-                adinput.phu_set_key_value(key, output_value, comment)
-                log.fullinfo("PHU keyword %s=%s %s" \
-                             % (key, adinput.phu_get_key_value(key), msg),
-                             category='header')
-                # Only need to write a history comment if the value in the
-                # header is actually overwritten
+                adinput.phu_set_key_value(key, str(output_value), comment)
+                log.info("PHU keyword %s = %s %s" \
+                         % (key, adinput.phu_get_key_value(key), msg),
+                         category='header')
                 if original_value is None:
-                    historyComment = "New keyword %s=%s was written to the " \
-                                     "PHU by AstroData" % (key, output_value)
+                    # A new keyword was written to the PHU. Update the
+                    # historyComment accordingly.
+                    historyComment = "New keyword %s = %s was written to " \
+                                     "the PHU by AstroData" \
+                                     % (key, adinput.phu_get_key_value(key))
+                else:
+                    historyComment = "The keyword %s = %s was overwritten " \
+                                     "with a new value of %s in the PHU by " \
+                                     "AstroData" \
+                                     % (key, original_value,
+                                        adinput.phu_get_key_value(key))
                 adinput.get_phuheader().add_history(historyComment)
-                log.fullinfo('History comment added: %s' % historyComment)
+                log.fullinfo(historyComment, category="history")
+            else:
+                # The keyword value in the pixel data extension is the same
+                # as the new value just determined.
+                log.info("PHU keyword %s = %s already exists" \
+                         % (key, adinput.phu_get_key_value(key)),
+                         category="header")
+        else:
+            log.info("No value found for keyword %s" % (key))
     else:
         if extname is None:
             extname = "SCI"
+        # Get the PHU here so that we can write history to the PHU in the loop
+        # below
+        phu = adinput.get_phuheader()
         for ext in adinput[extname]:
             # Check to see whether the keyword is already in the pixel data
             # extension 
             original_value = ext.get_key_value(key)
             if original_value is not None:
-                log.debug("Keyword %s=%s already in extension %s,%s" \
+                # The keyword exists, so store a history comment for later use
+                log.debug("Keyword %s = %s already in extension %s,%s" \
                           % (key, original_value, extname, ext.extver()))
                 comment = '(UPDATED) %s' % comment
                 msg = "updated"
-                historyComment = "Raw keyword %s=%s was overwritten in " \
-                                 "extension %s,%s" % (key, original_value,
-                                                      extname, ext.extver())
             else:
                 comment = '(NEW) %s' % comment
                 msg = "added"
@@ -404,17 +423,38 @@ def updateKeyValue(adinput=None, function=None, value=None, extname=None):
                 output_value = value
             # Only update the keyword value in the pixel data extension if it
             # is different from the value already in the pixel data extension
-            if original_value is not None and output_value is not None:
+            log.debug ("Original value = %s, Output value = %s" \
+                       % (original_value, output_value))
+            if output_value is not None:
                 if output_value != original_value:
                     # Update the header and write a history comment
-                    ext.set_key_value(key, output_value, comment)
-                    log.fullinfo("%s,%s keyword %s=%s %s" \
-                                 % (extname, ext.extver(), key,
-                                    ext.get_key_value(key), msg),
-                                 category="header")
-                    # Only need to write a history comment if the value in the
-                    # header is actually overwritten
-                    if output_value != original_value:
-                        adinput.get_phuheader().add_history(historyComment)
-                        log.fullinfo('History comment added: %s' \
-                                     % historyComment)
+                    ext.set_key_value(key, str(output_value), comment)
+                    log.info("%s,%s keyword %s = %s %s" \
+                             % (extname, ext.extver(), key,
+                                ext.get_key_value(key), msg),
+                             category="header")
+                    if original_value is None:
+                        # A new keyword was written to the pixel data
+                        # extension. Update the historyComment accordingly.
+                        historyComment = "New keyword %s = %s was written " \
+                                         "to extension %s,%s by AstroData" \
+                                         % (key, ext.get_key_value(key),
+                                            extname, ext.extver())
+                    else:
+                        historyComment = "The keyword %s = %s was " \
+                                         "overwritten with a new value of " \
+                                         "%s in extension %s,%s by AstroData" \
+                                         % (key, original_value,
+                                         ext.get_key_value(key), extname,
+                                         ext.extver())
+
+                    phu.add_history(historyComment)
+                    log.fullinfo(historyComment, category="history")
+                else:
+                    # The keyword value in the pixel data extension is the same
+                    # as the new value just determined.
+                    log.info("%s,%s keyword %s = %s already exists" \
+                             % (extname, ext.extver(), key,
+                                ext.get_key_value(key)), category="header")
+            else:
+                log.info("No value found for keyword %s" % (key))
