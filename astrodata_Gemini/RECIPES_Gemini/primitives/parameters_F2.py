@@ -8,6 +8,12 @@
         "type"          : "str",
         "userOverride"  : False,
         },
+    "bpm":{
+        "default"       : None,
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
     },
  "standardizeHeaders":{
     "suffix":{
