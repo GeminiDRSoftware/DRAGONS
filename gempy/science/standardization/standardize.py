@@ -176,11 +176,12 @@ def standardize_headers_gmos(adinput=None):
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
-            # Check whether the my_science_step user level function has been
-            # run previously
+            # Check whether the standardize_headers_gmos user level function
+            # has been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
-                                        "my_science_step" % (ad.filename))
+                                        "standardize_headers_gmos" \
+                                        % (ad.filename))
             # Standardize the headers of the input AstroData object. First,
             # update the keywords in the headers that are common to all Gemini
             # data. The standardize_headers_gemini user level function returns
