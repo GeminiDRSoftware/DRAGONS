@@ -9,9 +9,8 @@ addDQ
 #nonlinearityCorrect
 aduToElectrons
 addVAR
-#getProcessedDark
-#darkCorrect
+#removeThermalEmissionFromFlat
 stackFrames
 #normalizeFlat
 storeProcessedFlat
-writeOutputs(suffix='_flat', strip=True)
+writeOutputs(suffix="_flat", strip=True)
