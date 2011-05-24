@@ -27,9 +27,9 @@
         },
     "add_mdf":{
         "default"       : False,
-        "recipeOverride": True,
+        "recipeOverride": False,
         "type"          : "bool",
-        "userOverride"  : True,
+        "userOverride"  : False,
         },
     },
 }

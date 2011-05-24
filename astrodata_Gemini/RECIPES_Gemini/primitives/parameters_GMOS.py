@@ -53,7 +53,7 @@
         "userOverride"  : False,
         },
     "overscan_section":{
-        "default"       : "[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]",
+        "default"       : "",
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : True,
@@ -66,18 +66,6 @@
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : False,
-        },
-    "trim":{
-        "default"       : False,
-        "recipeOverride": False,
-        "type"          : "bool",
-        "userOverride"  : False,
-        },
-    "overscan_section":{
-        "default"       : "[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]",
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : True,
         },
     },
  "standardizeHeaders":{

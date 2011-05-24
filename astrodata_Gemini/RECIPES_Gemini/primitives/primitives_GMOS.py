@@ -292,7 +292,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         :param overscan_section: biassec parameter of format 
                                  '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
         :type overscan_section: string. default: 
-                                '[1:25,1:2304],[1:32,1:2304],[1025:1056,1:2304]' 
+                                '[2:25,1:2304],[2:25,1:2304],[1032:1055,1:2304]'
                                 is ideal for 2x2 GMOS data.
         
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -345,8 +345,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            ad = pp.overscan_trim(adinput=ad, trim=rc["trim"],
-                                  overscan_section=rc["overscan_section"])
+            ad = pp.overscan_trim(adinput=ad)
             adoutput_list.append(ad[0])
 
         # Report the list of output AstroData objects to the reduction
