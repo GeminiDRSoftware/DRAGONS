@@ -1041,7 +1041,7 @@ class ScienceFunctionManager():
                     # Both "suffix" and "output_names" are undefined
                     raise Errors.OutputError()
             elif len(self.output_names) == 1:
-                log.status("A single output name is defined")
+                self.log.status("A single output name is defined")
                 first_adinput = self.adinput[0]
                 output_name = gt.fileNameUpdater(
                     infilename=first_adinput.filename,
@@ -1066,5 +1066,5 @@ class ScienceFunctionManager():
             return (self.adinput, self.output_names, self.log)
         except:
             # Log the message from the exception
-            log.critical(repr(sys.exc_info()[1]))
+            self.log.critical(repr(sys.exc_info()[1]))
             raise
