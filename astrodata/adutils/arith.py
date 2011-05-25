@@ -1,25 +1,20 @@
-#Author: Kyle Mede, Aug 2010
-# This module provides functions that perform numpy operations on astrodata
-# objects
+# This module contains functions that perform numpy operations on the input
+# dataset
 
-import os
-
-import pyfits as pf
 import numpy as np
 from copy import deepcopy
 import astrodata
 from astrodata.AstroData import AstroData
-from astrodata.adutils import varutil
 from astrodata.Errors import ArithError
 
 def div(numerator, denominator):
     """
-    A function to divide a input science image by another image(or flat) or 
-    a floating point integer. If the denominator is an AstroData MEF then 
-    this function will loop through the SCI, VAR and DQ frames
-    to divide each SCI of the numerator by the denominator SCI of 
-    the same EXTVER. It will apply a bitwise-or to the DQ frames to 
-    preserve their binary formats. 
+    The div function divides an AstroData object (numerator) by another
+    AstroData object or a single value (denominator). If inputB is an AstroData
+    object, the mult function will multiple each science, variance and data
+    quality extension in the inputA AstroData object with the corresponding
+    science, variance and data quality extension in the inputB AstroData
+    object.
     
     The VAR frames output will follow:
     
@@ -39,308 +34,199 @@ def div(numerator, denominator):
     @param denominator: denominator to divide the numerator by
     @type denominator:  a MEF of SCI, VAR and DQ frames in the form of an 
                         AstroData instance, a float list, a single float 
-                        (list must be in order of the SCI extension EXTVERs) OR 
+                        (list must be in order of the SCI extension EXTVERs) OR
                         a dictionary of the format 
                         {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
                         of the SCI extensions and ## are the corresponding 
                         float values to divide that extension by.
                         
     """
-    # Rename inputs to shorter names to save typing
-    num = numerator
-    den = denominator 
-    # Preparing the output astrodata instance
-    out = AstroData.prep_output(input_ary=num, clobber=False) 
-
-    # Check to see if the denominator is of type dict, list or float
-    if isinstance(den, dict) or isinstance(den, list) or \
-    isinstance(den, float):
-        """ Creating the dictionary if input is a float or float list 
-            Dictionary format will follow:
-            {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-            of the SCI extensions and ## are the corresponding 
-            float values to divide that extension by"""
-            
+    # Check to see if the denominator is a dictionary, list, float or int
+    if isinstance(denominator, dict) or isinstance(denominator, list) or \
+       isinstance(denominator, float) or isinstance(denominator, int):
         # Create a dictionary of identical values for each extension if the 
         # input is a single float
-        if isinstance(den, float): 
-            denDict = {}
-            for ext in num['SCI']:
+        if isinstance(denominator, float) or isinstance(denominator, int): 
+            denominator_dict = {}
+            for ext in numerator["SCI"]:
                 # Retrieve the EXTVER for this extension
                 extver = ext.extver()
                 # Add element to the dictionary for this extension
-                denDict[('SCI', extver)] = den
-                #print repr(denDict)
-        # Create a dictionary if the input is a list of floats 
-        if isinstance(den, list):    
-            denDict = {}
-            for ext in num['SCI']:
+                denominator_dict[("SCI", extver)] = denominator
+        # Create a dictionary if the input is a list of values
+        if isinstance(denominator, list):    
+            denominator_dict = {}
+            for ext in numerator["SCI"]:
                 extver = ext.extver()
-                denDict[('SCI', extver)] = den[extver-1]
-                #print repr(denDict)
-        # Just rename the variable if denominator is all ready a dictionary
-        if isinstance(den, dict):
-            denDict = den
+                denominator_dict[("SCI", extver)] = denominator[extver-1]
+        # Just rename the variable if denominator is already a dictionary
+        if isinstance(denominator, dict):
+            denominator_dict = denominator
         
-        # Perform the calculations for when the denominator is a dictionary
-        for sci in num['SCI']:
+        # The denominator is now stored in a dictionary
+        for sci in numerator["SCI"]:
             # Retrieve the extension version for this extension
             extver = sci.extver()
-            # Retrieving the float value for this extension from the dictionary
-            val = denDict[('SCI', extver)]
-            # Start with the out SCI HDU being the current 
-            outsci = deepcopy(num[('SCI', extver)]) 
-            try:
-                # Divide SCI data array by this extensions float value
-                outsci.data = np.divide(num[('SCI', extver)].data, val)  
-                # Append updated SCI extension to the output
-                out.append(outsci)
-                # Check there are VAR frames to operate on
-                if num.count_exts('VAR') == num.count_exts('SCI'): 
-                    # Start with the out VAR HDU being the current 
-                    outvar = deepcopy(num[('VAR', extver)])
-                    # Multiplying the VAR frames by the float^2
-                    outvar.data = np.multiply(num[('VAR', extver)].data, val*val)
-                    # Append the updated VAR frame to the output
-                    out.append(outvar)
-                # Check there are DQ frames to operate on
-                if num.count_exts('DQ') == num.count_exts('SCI'):  
-                    # Start with the out DQ HDU being the current 
-                    outdq = deepcopy(num[('DQ', extver)])
-                    # Not changing anything in the DQ frame's data, 
-                    # just propagate it to the output
-                    out.append(outdq) 
-            except:
-                raise
+            # Retrieving the denominator for this extension from the dictionary
+            denominator = denominator_dict[("SCI", extver)]
+            # Divide the science extension by the denominator
+            sci.data = np.divide(numerator[("SCI", extver)].data, denominator)
+            # Update the variance extension if it exists in the numerator
+            if numerator["VAR", extver]:
+                # Multiplying the variance extension by the denominator^2
+                numerator["VAR", extver].data = np.multiply(
+                    numerator[("VAR", extver)].data, denominator*denominator)
             
     # Check to see if the denominator is of type astrodata.AstroData.AstroData
-    elif isinstance(den, astrodata.AstroData) or \
-                                isinstance(den, astrodata.AstroData.AstroData):
-        # Loop through the SCI extensions 
-        for sci in num['SCI']:
+    elif isinstance(denominator, astrodata.AstroData.AstroData):
+        # Loop over each science extension in the input AstroData object
+        for sci in numerator["SCI"]:
             # Retrieving the version of this extension
             extver = sci.extver()
-            # Start with the out SCI HDU being the current, 
-            # we assume there are at least SCI extensions in the input
-            outsci = deepcopy(num[('SCI', extver)]) 
-        
-            try:
-                # Making sure arrays are same size/shape
-                if num[('SCI', extver)].data.shape == \
-                den[('SCI', extver)].data.shape: 
-                    # Dividing the numerator SCI frames by those of the 
-                    # denominator
-                    outsci.data = np.divide(num[('SCI', extver)].data, 
-                                          den[('SCI', extver)].data)
-                    # Appending the updated SCI frame to the output
-                    out.append(outsci)
-                    
-                    # Check there are an equal numbers of VAR and SCI frames to 
-                    # operate on in both the numerator and denominator
-                    if num.count_exts('VAR') == den.count_exts('VAR') == \
-                    num.count_exts('SCI'): 
-                        # Start with the out VAR HDU being the current 
-                        outvar = deepcopy(num[('VAR', extver)])
-                        
-                        # Creating the output VAR frame following 
-                        # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
-                        # using the varianceArrayCalculator() function
-                        outvar.data = varutil.varianceArrayCalculator(
-                                                      sciExtA=inA['SCI',extver],
-                                                      sciExtB=inB['SCI',extver],
-                                                      sciOut=outsci,
-                                                      varExtA=inA['VAR',extver],
-                                                      varExtB=inB['VAR',extver],
-                                                      div=True)
-                        # Append the updated out VAR frame to the output
-                        out.append(outvar)
-                        
-                    # Check there are an equal number of DQ frames to operate on 
-                    if num.count_exts('DQ') == den.count_exts('DQ') == \
-                    num.count_exts('SCI'):  
-                        # Start with the out DQ HDU being the current 
-                        outdq = deepcopy(num[('DQ', extver)])
-                                                                  
-                        # Perform a bitwise-or 'adding'  on DQ frames 
-                        outdq.data = np.bitwise_or(num[('DQ', extver)].data, 
-                                                 den[('DQ', extver)].data)
-                        # Append the updated out DQ frame to the output
-                        out.append(outdq)
-                        
-                # If arrays are different sizes then raise an exception
-                else:
-                    raise ArithError('different numbers of SCI, VAR extensions')
-            except:
-                raise 
+            # Make sure arrays are same size/shape
+            if numerator[("SCI", extver)].data.shape != \
+               denominator[("SCI", extver)].data.shape:
+                raise Errors.Error("The input science extensions %s and %s " \
+                                   "are not the same size" \
+                                   % (numerator[("SCI", extver)],
+                                      denominator[("SCI", extver)]))
+            # Divide the science extension in the numerator by the
+            # science extension in the denominator
+            numerator[("SCI", extver)].data = np.divide(
+                numerator[("SCI", extver)].data,
+                denominator[("SCI", extver)].data)
+            # Update the variance extension in the numerator if a variance
+            # extension exists in the denominator
+            if numerator["VAR", extver] and denominator["VAR", extver]:
+                # Creating the output VAR frame following 
+                # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
+                # using the varianceArrayCalculator() function
+                numerator["VAR", extver].data = \
+                varutil.varianceArrayCalculator(
+                    sciExtA=numerator["SCI",extver],
+                    sciExtB=denominator["SCI",extver],
+                    varExtA=numerator["VAR",extver],
+                    varExtB=denominator["VAR",extver], div=True)
+            # Update the data quality extension in the numeratory if a data
+            # quality extension exists in the denominator
+            if numerator["DQ", extver] and denominator["DQ", extver]:
+                numerator["DQ", extver].data = np.bitwise_or(
+                    numerator[("DQ", extver)].data,
+                    denominator[("DQ", extver)].data)
 
     # If the input was not of type astrodata, float, float list or dictionary
     # then raise an exception
     else:
         raise 
     # Return the fully updated output astrodata object      
-    return out       
+    return numerator
                 
-def mult(inputA, inputB):
+def mult(input1, input2):
     """
-    A function to multiply a input science image by another image(or flat) 
-    or a floating point integer. If inputB is an AstroData MEF then this 
-    function will loop through the SCI, VAR and DQ frames to multiply each 
-    SCI of the inputA by the inputB SCI of the same EXTVER. It will apply a 
-    bitwise-or to the DQ frames to preserve their binary formats.
+    The mult function multiplies an AstroData object (inputA) by another
+    AstroData object or a single value (input2). If input2 is an AstroData
+    object, the mult function will multiple each science, variance and data
+    quality extension in the input1 AstroData object with the corresponding
+    science, variance and data quality extension in the input2 AstroData
+    object.
     
     The VAR frames output will follow:
     
-    If denominator is an AstroData instance:
-    varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) ), 
-    where A=numerator and B=denominator frames.
+    If input2 is an AstroData instance:
+    varOut=sciOut^2 * ( var1/(sci1^2) + var2/(sci2^2) ), 
     Else:
-    varOut=varA * float^2
+    varOut=var1 * float^2
     
-    If inputB is a float integer then only the SCI frames of the inputA 
-    are each multiplied by the float.
+    If input2 is a single value, only the science extensions of the input1
+    AstroData object are multiplied by the single value.
     
-    @param inputA: input image to be multiplied by the inputB
-    @type inputA: a MEF or single extension fits file in the form of an 
+    @param input1: input image to be multiplied by the input2
+    @type input1: a MEF or single extension fits file in the form of an 
                   AstroData instance
     
-    @param inputB: input to multiply the inputA by
-    @type inputB:   a MEF of SCI, VAR and DQ frames in the form of an AstroData 
+    @param input2: input to multiply the input1 by
+    @type input2:   a MEF of SCI, VAR and DQ frames in the form of an AstroData
                     instance, a float list or a single float (list must be 
                     in order of the SCI extension EXTVERs) OR a dictionary 
                     of the format {('SCI',#):##,('SCI',#):##...} 
                     where # are the EXTVERs of the SCI extensions 
                     and ## are the corresponding float values 
                     to multiply that extension by.   
-                    
     """
-    # Rename inputs to shorter names to save typing
-    inA = inputA
-    inB = inputB 
-    # Preparing the output astrodata instance
-    out = AstroData.prep_output(input_ary=inA, clobber=False)
-
-    # Check to see if the denominator is of type dict, list or float
-    if isinstance(inB, dict) or isinstance(inB, list) or \
-    isinstance(inB, float):
-        """ Creating the dictionary if input is a float or float list 
-            Dictionary format will follow:
-            {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-            of the SCI extensions and ## are the corresponding 
-            float values to divide that extension by. """
-            
+    # Check to see if input2 is a dictionary, list or float - what about int?
+    if isinstance(input2, dict) or isinstance(input2, list) or \
+       isinstance(input2, float):
         # Create a dictionary of identical values for each extension if the 
         # input is a single float
-        if isinstance(inB, float): 
-            inBDict = {}
-            for ext in inA['SCI']:
-                 # Retrieve the EXTVER for this extension
+        if isinstance(input2, float):
+            input2_dict = {}
+            for ext in input1["SCI"]:
+                # Retrieve the EXTVER for this extension
                 extver = ext.extver()
                 # Add element to the dictionary for this extension
-                inBDict[('SCI', extver)] = inB
-        # Create a dictionary if the input is a list of floats        
-        if isinstance(inB, list):    
-            inBDict = {}
-            for ext in inA['SCI']:
+                input2_dict[("SCI", extver)] = input2
+        # Create a dictionary if the input is a list of values
+        if isinstance(input2, list):    
+            input2_dict = {}
+            for ext in input1["SCI"]:
                 extver = ext.extver()
-                inBDict[('SCI', extver)] = inB[extver-1]
-        # Just rename the variable if denominator is all ready a dictionary
-        if isinstance(inB, dict):
-            inBDict = inB
+                input2_dict[("SCI", extver)] = input2[extver-1]
+        # Just rename the variable if input2 is already a dictionary
+        if isinstance(input2, dict):
+            input2_dict = input2
         
-        # Perform the calculations for when the denominator is a dictionary
-        for sci in inA['SCI']:
+        # input2 is now stored in a dictionary
+        for sci in input1["SCI"]:
             # Retrieve the extension version for this extension
             extver = sci.extver()
-            # Retrieving the float value for this extension from the dictionary
-            val = inBDict[('SCI', extver)]
-            # Start with the out SCI HDU being the current 
-            outsci = deepcopy(inA[('SCI', extver)]) 
-            try:
-                # Multiply SCI data array by this extensions float value
-                outsci.data=np.multiply(inA[('SCI', extver)].data, val)
-                # Append updated SCI extension to the output  
-                out.append(outsci)
-                # Check there are VAR frames to operate on
-                if inA.count_exts('VAR') == inA.count_exts('SCI'): 
-                    # Start with the out VAR HDU being the current 
-                    outvar = deepcopy(inA[('VAR', extver)])
-                    # Multiplying the VAR frames by the float^2
-                    outvar.data = np.multiply(inA[('VAR', extver)].data, 
-                                              val*val)
-                    # Append the updated VAR frame to the output
-                    out.append(outvar)
-                # Check there are DQ frames to operate on
-                if inA.count_exts('DQ') == inA.count_exts('SCI'):   
-                    # Start with the out DQ HDU being the current  
-                    outdq = deepcopy(inA[('DQ', extver)])
-                    # Not changing anything in the DQ frame's data, 
-                    # just propagate it to the output
-                    out.append(outdq) 
-            except:
-                raise 
+            # Retrieving the input2 value for this extension from the
+            # dictionary
+            input2 = input2_dict[("SCI", extver)]
+            # Multiply the science extension by the input2 value
+            sci.data = np.multiply(sci.data, input2)
+            # Update the variance extension if it exists in the numerator
+            if input1["VAR", extver]:
+                # Multiplying the variance extension by the input2^2
+                input1["VAR", extver].data = np.multiply(
+                    input1[("VAR", extver)].data, input2*input2)
     
-    # Check to see if the denominator is of type astrodata.AstroData.AstroData
-    elif isinstance(inB, astrodata.AstroData) or \
-                                isinstance(inB, astrodata.AstroData.AstroData):
-        # Loop through the SCI extensions
-        for sci in inA['SCI']:
+    # Check to see if input2 is of type astrodata.AstroData.AstroData
+    elif isinstance(input2, astrodata.AstroData.AstroData):
+        # Loop over each science extension in the input AstroData object
+        for sci in input1["SCI"]:
             # Retrieving the version of this extension
             extver = sci.extver()
-            # Start with the out SCI HDU being the current, 
-            # we assume there are at least SCI extensions in the input
-            outsci = deepcopy(inA[('SCI', extver)]) 
-            
-            try:
-                # Making sure arrays are same size/shape
-                if inA[('SCI', extver)].data.shape == \
-                inB[('SCI', extver)].data.shape: 
-                    #  Multiplying the SCI frames of the inputs
-                    outsci.data = np.multiply(inA[('SCI', extver)].data, 
-                                            inB[('SCI', extver)].data)
-                    # Appending the updated SCI frame to the output
-                    out.append(outsci)
-                    
-                    # Check there are an equal numbers of VAR and SCI frames to 
-                    # operate on in both the inputs
-                    if inA.count_exts('VAR') == inB.count_exts('VAR') == \
-                    inA.count_exts('SCI'): 
-                        # Start with the out VAR HDU being the current 
-                        outvar = deepcopy(inA[('VAR', extver)])
-                        
-                        # Creating the output VAR frame following 
-                        # varOut=sciOut^2 * ( varA/(sciA^2) + varB/(sciB^2) )
-                        # using the varianceArrayCalculator() function
-                        outvar.data = varutil.varianceArrayCalculator(
-                                                      sciExtA=inA['SCI',extver],
-                                                      sciExtB=inB['SCI',extver],
-                                                      sciOut=outsci,
-                                                      varExtA=inA['VAR',extver],
-                                                      varExtB=inB['VAR',extver],
-                                                      mult=True)
-                        # Append the updated out VAR frame to the output
-                        out.append(outvar)
-                        
-                    # Check there are an equal number of DQ frames to operate on
-                    if inA.count_exts('DQ') == inB.count_exts('DQ') == \
-                    inA.count_exts('SCI'):   
-                        outdq = deepcopy(inA[('DQ', extver)])    
-                        # Perform bitwise-or 'adding' DQ frames 
-                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, 
-                                                   inB[('DQ', extver)].data)
-                        # Append the updated out DQ frame to the output 
-                        out.append(outdq)
-                # If arrays are different sizes then raise an exception
-                else:
-                    raise ArithError('different numbers of SCI, VAR extensions')
-            except:
-                raise 
+            # Make sure arrays are same size/shape
+            if input1[("SCI", extver)].data.shape == \
+               input2[("SCI", extver)].data.shape: 
+                # Multiply the science extensions together
+                sci.data = np.multiply(input1[("SCI", extver)].data,
+                                       input2[("SCI", extver)].data)
+                # Update the variance extension in input1 if a variance
+                # extension exists in input2
+                if input1["VAR", extver] and input2["VAR", extver]:
+                    # Creating the output VAR frame following 
+                    # varOut=sciOut^2 * ( var1/(sci1^2) + var2/(sci2^2) )
+                    # using the varianceArrayCalculator() function
+                    input1["VAR", extver].data = \
+                                  varutil.varianceArrayCalculator(
+                        sciExtA=input1["SCI",extver],
+                        sciExtB=input2["SCI",extver], sciOut=outsci,
+                        varExtA=input1["VAR",extver],
+                        varExtB=input2["VAR",extver], mult=True)
+                # Update the data quality extension in input1 if a data quality
+                # extension exists in input2
+                if input1["DQ", extver] and input2["DQ", extver]:
+                    input1["DQ", extver].data = np.bitwise_or(
+                        input1[("DQ", extver)].data,
+                        input2[("DQ", extver)].data)
 
     # If the input was not of type astrodata, float, float list or dictionary
     # then raise an exception
     else:
         raise    
-    # Return the fully updated output astrodata object 
-    return out   
+    # Return the fully updated output astrodata object
+    return input1
 
 def add(inputA, inputB):
     """
@@ -412,8 +298,7 @@ def add(inputA, inputB):
             except:
                 raise
     # Check to see if the denominator is of type astrodata.AstroData.AstroData
-    elif isinstance(inB, astrodata.AstroData) or \
-                                isinstance(inB, astrodata.AstroData.AstroData):
+    elif isinstance(inB, astrodata.AstroData.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -540,8 +425,7 @@ def sub(inputA, inputB):
                 raise
             
     # Check to see if the denominator is of type astrodata.AstroData.AstroData
-    elif isinstance(inB, astrodata.AstroData) or \
-                                isinstance(inB, astrodata.AstroData.AstroData):
+    elif isinstance(inB, astrodata.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
