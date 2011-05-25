@@ -51,6 +51,15 @@ def adu_to_electrons(adinput):
                      "the science extension by the gain = %s" % \
                      (ad.filename, gain))
             ad = ad.mult(gain)
+            # Update the physical units keyword in the header of the AstroData
+            # object. Formatting so logger looks organized for these messages
+            log.fullinfo("*"*50, category="header")
+            log.fullinfo("File = %s" % ad.filename, category="header")
+            log.fullinfo("~"*50, category="header")
+            # Data now has units of electrons
+            gt.update_key_value(adinput=ad, function="bunit",
+                                value="electrons", extname="SCI")
+            log.fullinfo("-"*50, category="header") 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             # Append the output AstroData object to the list of output
