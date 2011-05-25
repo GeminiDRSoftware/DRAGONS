@@ -1,12 +1,13 @@
 # This module contains miscellaneous user level functions related to the
 # preprocessing of the input dataset
 
-from copy import deepcopy
+import sys
 import numpy as np
 from astrodata import Errors
+from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 
-def adu_to_electrons(adInputs, outNames=None, suffix=None):
+def adu_to_electrons(adinput):
     """
     This function will convert the inputs from having pixel values in ADU to 
     that of electrons by use of the arith 'toolbox'.
@@ -19,115 +20,52 @@ def adu_to_electrons(adInputs, outNames=None, suffix=None):
     the SCI extensions of the input AstroData objects must have 'GAIN'
     header key values available to multiply them by for conversion to 
     e- units.
-          
-    :param adInputs: Astrodata inputs to be converted to Electron pixel units
-    :type adInputs: Astrodata objects, either a single or a list of objects
     
-    :param outNames: filenames of output(s)
-    :type outNames: 
-        String, either a single or a list of strings of same length as adInputs.
-    
-    :param suffix: 
-        string to add on the end of the input filenames 
-        (or outNames if not None) for the output filenames.
-    :type suffix: string
-    
+    :param adinput: Astrodata inputs to be converted to Electron pixel units
+    :type adinput: Astrodata objects, either a single or a list of objects
     """
-    
-    # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
-                                      funcName='adu_to_electrons')
-    # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
-    
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+    # If adinput is a single AstroData object, put it in a list
+    if not isinstance(adinput, list):
+        adinput = [adinput]
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    keyword = "ADUTOELE"
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
     try:
-        # Set up counter for looping through outNames list
-        count=0
-        
-        # Creating empty list of ad's to be returned that will be filled below
-        adOutputs=[]
-        
-        # Do the work on each ad in the inputs
-        for ad in adInputs:
-            log.fullinfo('calling ad.mult on '+ad.filename)
-            
-            # mult in this primitive will multiply the SCI frames by the
-            # frame's gain, VAR frames by gain^2 (if they exist) and leave
-            # the DQ frames alone (if they exist).
-            log.debug('Calling ad.mult to convert pixel units from '+
-                      'ADU to electrons')
-
-            adOut = ad.mult(ad['SCI'].gain(as_dict=True))  
-            
-            log.status('ad.mult completed converting the pixel units'+
-                       ' to electrons')  
-            
-            # Updating SCI headers
-            for sciExt in adOut['SCI']:
-                # Retrieving this SCI extension's gain
-                gainorigDict = sciExt.gain()
-                gainorig = gainorigDict[(sciExt.extname(), sciExt.extver())] 
-                # Updating this SCI extension's header keys
-                sciExt.header.update('GAINORIG', gainorig, 
-                                   'Gain prior to unit conversion (e-/ADU)')
-                sciExt.header.update('GAIN', 1.0, 
-                                  'Physical units is electrons') 
-                sciExt.header.update('BUNIT','electrons' , 'Physical units')
-                # Logging the changes to the header keys
-                log.fullinfo('SCI extension number '+str(sciExt.extver())+
-                             ' keywords updated/added:\n', 
-                             category='header')
-                log.fullinfo('GAINORIG = '+str(gainorig), 
-                             category='header' )
-                log.fullinfo('GAIN = '+str(1.0), category='header' )
-                log.fullinfo('BUNIT = '+'electrons', category='header' )
-                log.fullinfo('-'*50, category='header')
-                
-            # Updating VAR headers if they exist (not updating any 
-            # DQ headers as no changes were made to them here)  
-            for varExt in adOut['VAR']:
-                # Ensure there are no GAIN and GAINORIG header keys for 
-                # the VAR extension. No errors are thrown if they aren't 
-                # there initially, so all good not to check ahead. 
-                del varExt.header['GAINORIG']
-                del varExt.header['GAIN']
-                
-                # Updating then logging the change to the BUNIT 
-                # key in the VAR header
-                varExt.header.update('BUNIT','electrons squared' , 
-                                   'Physical units')
-                # Logging the changes to the VAR extensions header keys
-                log.fullinfo('VAR extension number '+str(varExt.extver())+
-                             ' keywords updated/added:\n',
-                              category='header')
-                log.fullinfo('BUNIT = '+'electrons squared', 
-                             category='header' )
-                log.fullinfo('-'*50, category='header')
-            
-            # Updating GEM-TLM (automatic) and ADU2ELEC time stamps to the PHU
-            # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='ADU2ELEC')
-
-            # renaming the output ad filename
-            adOut.filename = outNames[count]
-                    
-            log.status('File name updated to '+adOut.filename+'\n')
-            
-            # Appending to output list
-            adOutputs.append(adOut)
-
-            count=count+1
-        
-        log.status('**FINISHED** the adu_to_electrons function')
-        # Return the outputs list, even if there is only one output
-        return adOutputs
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            # Check whether the adu_to_electrons user level function has been
+            # run previously
+            if ad.phu_get_key_value(keyword):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "adu_to_electrons" % (ad.filename))
+            # Loop over each science extension in each input AstroData object
+            for ext in ad["SCI"]:
+                # Get the gain value using the appropriate descriptors
+                gain = ext.gain().as_pytype()
+                # Multiply the science extension by the gain and the variance
+                # extension by the gain squared
+                log.info("Converting %s[%s,%s] from ADU to electrons by " \
+                         "multiplying by the gain = %s" % \
+                         (ad.filename, ext.extname(), ext.extver(), gain))
+                ext = ext.mult(gain)
+            # Add the appropriate time stamps to the PHU
+            gt.markHistory(adinput=ad, keyword=keyword)
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+        # Return the list of output AstroData objects
+        return adoutput_list
     except:
-        # logging the exact message from the actual exception that was raised
-        # in the try block. Then raising a general ScienceError with message.
+        # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
-        raise                                          
+        raise
 
-def nonlinearity_correct(input=None, output=None, suffix=None):
+def nonlinearity_correct(adinput=None):
     """
     Run on raw or nprepared Gemini NIRI data, this script calculates and
     applies a per-pixel linearity correction based on the counts in the pixel,
@@ -139,139 +77,167 @@ def nonlinearity_correct(input=None, output=None, suffix=None):
     uncorrectable pixels, or do we want to just add those pixels to the DQ
     plane with a specific value?
     """
-    # Perform checks on the input AstroData instances specified by the 'input'
-    # parameter, determine the name of the output AstroData instances using
-    # the 'output' and 'suffix' parameters, and instantiate the log using the
-    # ScienceFunctionManager
-    sfm = gt.ScienceFunctionManager(adInputs=input,
-                                    outNames=output,
-                                    suffix=suffix,
-                                    funcName='nonlinearity_correct')
-    input_list, output_names_list, log = sfm.startUp()
-    # Define the keyword to be used to time stamp this user level function
-    timestampkey = 'LINCORR'
-    # Set up a counter to keep track of the output names in the 'output' list
-    count = 0
-    # Initialise output object list
-    output_list = []
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+    # If adinput is a single AstroData object, put it in a list
+    if not isinstance(adinput, list):
+        adinput = [adinput]
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    keyword = "LINCORR"
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
     try:
-        # Loop over each input object in the input list
-        for ad in input_list:
-            # Check whether nonlinearity_correct has been run on the data
-            # before
-            if ad.phu_get_key_value(timestampkey):
-                log.warning('%s has already been corrected for non-linearity' \
-                    % (ad.filename))
-                adout = ad
-            else:
-                # Store the original name of the file in the header of the
-                # output object
-                ad.store_original_name()
-                # Create the output object by making a 'deep copy' of the input
-                # object.
-                adout = deepcopy(ad)
-                # Set the output file name of the output object
-                adout.filename = output_names_list[count]
-                count += count
-                log.info('Setting the output filename to %s' % adout.filename)
-                # Get the appropriate information using the descriptors
-                coadds = adout.coadds()
-                read_mode = adout.read_mode().as_pytype()
-                total_exposure_time = adout.exposure_time()
-                well_depth_setting = adout.well_depth_setting().as_pytype()
-                if coadds is None or read_mode is None or \
-                    total_exposure_time is None or well_depth_setting is None:
-                    # The descriptor functions return None if a value cannot be
-                    # found and stores the exception info. Re-raise the
-                    # exception.
-                    if hasattr(adout, 'exception_info'):
-                        raise adout.exception_info
-                # Check the raw exposure time (i.e., per coadd). First, convert
-                # the total exposure time returned by the descriptor back to
-                # the raw exposure time
-                exposure_time = total_exposure_time / coadds
-                if exposure_time > 600.:
-                    log.critical('The raw exposure time is outside the ' + \
-                        'range used to derive correction.')
-                    raise Errors.InvalidValueError()
-                # Check the read mode and well depth setting values
-                if read_mode == 'Invalid' or well_depth_setting == 'Invalid':
-                    raise Errors.CalcError()
-                # Print the descriptor values
-                log.info('The number of coadds = %s' % coadds)
-                log.info('The read mode = %s' % read_mode)
-                log.info('The total exposure time = %s' % total_exposure_time)
-                log.info('The well depth = %s' % well_depth_setting)
-                # Loop over the extensions in each input object
-                for ext in adout:
-                    # Get the size of the raw pixel data
-                    naxis2 = ext.get_key_value('NAXIS2')
-                    # Get the raw pixel data
-                    raw_pixel_data = ext.data
-                    # Divide the raw pixel data by the number of coadds
-                    if coadds > 1:
-                        raw_pixel_data = raw_pixel_data / coadds
-                    # Determine the mean of the raw pixel data
-                    raw_mean_value = np.mean(raw_pixel_data)
-                    log.info('The mean value of the raw pixel data in ' +
-                        '%s is %.8f' % (ext.filename, raw_mean_value))
-                    # Create the key used to access the coefficients that are
-                    # used to correct for non-linearity
-                    key = (read_mode, naxis2, well_depth_setting)
-                    # Get the coefficients from the lookup table
-                    if lincorlookup[key]:
-                        maximum_counts, coeff1, coeff2, coeff3 = \
-                            lincorlookup[key]
-                    else:
-                        raise Errors.TableKeyError()
-                    log.info('Coefficients used = %.12f, %.9e, %.9e' % \
-                        (coeff1, coeff2, coeff3))
-                    # Create a new array that contains the corrected pixel data
-                    corrected_pixel_data = raw_pixel_data + \
-                        coeff2 * raw_pixel_data**2 + coeff3 * raw_pixel_data**3
-                    # nirlin replaces pixels greater than maximum_counts with 0
-                    # Set the pixels to 0 if they have a value greater than the
-                    # maximum counts
-                    #log.info('Setting pixels to zero if above %f' % \
-                    #    maximum_counts)
-                    #corrected_pixel_data[corrected_pixel_data > \
-                    # maximum_counts] = 0
-                    # Should probably add the above to the DQ plane
-                    # Multiply the corrected pixel data by the number of coadds
-                    if coadds > 1:
-                        corrected_pixel_data = corrected_pixel_data * coadds
-                    # Write the corrected pixel data to the output object
-                    ext.data = corrected_pixel_data
-                    # Determine the mean of the corrected pixel data
-                    corrected_mean_value = np.mean(ext.data)
-                    log.info('The mean value of the corrected pixel data in ' +
-                        '%s is %.8f' % (ext.filename, corrected_mean_value))
-                # Correct the exposure time by adding coeff1
-                total_exposure_time = total_exposure_time + coeff1
-                log.info('The corrected total exposure time = %f' % \
-                    total_exposure_time)
-                # Add the appropriate time stamps to the PHU
-                sfm.markHistory(adOutputs=adout, historyMarkKey=timestampkey)
-            # Append the output object to the output list
-            output_list.append(adout)
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            # Check whether the nonlinearity_correct user level function has
+            # been run previously
+            if ad.phu_get_key_value(keyword):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "nonlinearity_correct" % (ad.filename))
+            # Get the appropriate information using the descriptors
+            coadds = ad.coadds()
+            read_mode = ad.read_mode().as_pytype()
+            total_exposure_time = ad.exposure_time()
+            well_depth_setting = ad.well_depth_setting().as_pytype()
+            if coadds is None or read_mode is None or \
+                total_exposure_time is None or well_depth_setting is None:
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the
+                # exception.
+                if hasattr(ad, "exception_info"):
+                    raise ad.exception_info
+            # Check the raw exposure time (i.e., per coadd). First, convert
+            # the total exposure time returned by the descriptor back to
+            # the raw exposure time
+            exposure_time = total_exposure_time / coadds
+            if exposure_time > 600.:
+                log.critical("The raw exposure time is outside the " + \
+                    "range used to derive correction.")
+                raise Errors.InvalidValueError()
+            # Check the read mode and well depth setting values
+            if read_mode == "Invalid" or well_depth_setting == "Invalid":
+                raise Errors.CalcError()
+            # Print the descriptor values
+            log.info("The number of coadds = %s" % coadds)
+            log.info("The read mode = %s" % read_mode)
+            log.info("The total exposure time = %s" % total_exposure_time)
+            log.info("The well depth = %s" % well_depth_setting)
+            # Loop over each science extension in each input AstroData object
+            for ext in ad["SCI"]:
+                # Get the size of the raw pixel data
+                naxis2 = ext.get_key_value("NAXIS2")
+                # Get the raw pixel data
+                raw_pixel_data = ext.data
+                # Divide the raw pixel data by the number of coadds
+                if coadds > 1:
+                    raw_pixel_data = raw_pixel_data / coadds
+                # Determine the mean of the raw pixel data
+                raw_mean_value = np.mean(raw_pixel_data)
+                log.info("The mean value of the raw pixel data in " +
+                    "%s is %.8f" % (ext.filename, raw_mean_value))
+                # Create the key used to access the coefficients that are
+                # used to correct for non-linearity
+                key = (read_mode, naxis2, well_depth_setting)
+                # Get the coefficients from the lookup table
+                if lincorlookup[key]:
+                    maximum_counts, coeff1, coeff2, coeff3 = \
+                        lincorlookup[key]
+                else:
+                    raise Errors.TableKeyError()
+                log.info("Coefficients used = %.12f, %.9e, %.9e" % \
+                    (coeff1, coeff2, coeff3))
+                # Create a new array that contains the corrected pixel data
+                corrected_pixel_data = raw_pixel_data + \
+                    coeff2 * raw_pixel_data**2 + coeff3 * raw_pixel_data**3
+                # nirlin replaces pixels greater than maximum_counts with 0
+                # Set the pixels to 0 if they have a value greater than the
+                # maximum counts
+                #log.info("Setting pixels to zero if above %f" % \
+                #    maximum_counts)
+                #corrected_pixel_data[corrected_pixel_data > \
+                # maximum_counts] = 0
+                # Should probably add the above to the DQ plane
+                # Multiply the corrected pixel data by the number of coadds
+                if coadds > 1:
+                    corrected_pixel_data = corrected_pixel_data * coadds
+                # Write the corrected pixel data to the output object
+                ext.data = corrected_pixel_data
+                # Determine the mean of the corrected pixel data
+                corrected_mean_value = np.mean(ext.data)
+                log.info("The mean value of the corrected pixel data in " +
+                    "%s is %.8f" % (ext.filename, corrected_mean_value))
+            # Correct the exposure time by adding coeff1
+            total_exposure_time = total_exposure_time + coeff1
+            log.info("The corrected total exposure time = %f" % \
+                total_exposure_time)
+            # Add the appropriate time stamps to the PHU
+            gt.markHistory(adinput=ad, keyword=keyword)
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+        # Return the list of output AstroData objects
+        return adoutput_list
     except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
         raise
-
-    # Return the output list
-    return output_list
 
 lincorlookup = {
     # In the following form for NIRI data:
-    #('read_mode', naxis2, 'well_depth_setting'):
+    #("read_mode", naxis2, "well_depth_setting"):
     #    (maximum counts, exposure time correction, gamma, eta)
-    ('Low Background', 1024, 'Shallow'):
+    ("Low Background", 1024, "Shallow"):
         (12000, 1.2662732, 7.3877618e-06, 1.940645271e-10),
-    ('Medium Background', 1024, 'Shallow'):
+    ("Medium Background", 1024, "Shallow"):
         (12000, 0.09442515154, 3.428783846e-06, 4.808353308e-10),
-    ('Medium Background', 256, 'Shallow'):
+    ("Medium Background", 256, "Shallow"):
         (12000, 0.01029262589, 6.815415667e-06, 2.125210479e-10),
-    ('High Background', 1024, 'Shallow'):
+    ("High Background", 1024, "Shallow"):
         (12000, 0.009697324059, 3.040036696e-06, 4.640788333e-10),
-    ('High Background', 1024, 'Deep'):
+    ("High Background", 1024, "Deep"):
         (21000, 0.007680816203, 3.581914163e-06, 1.820403678e-10),
                }
+            
+#### THE BELOW SHOULD BE UPDATED USING MULT IN ARITH TOOLBOX
+#            # Updating SCI headers
+#            for sciExt in adOut["SCI"]:
+#                # Retrieving this SCI extension"s gain
+#                gainorigDict = sciExt.gain()
+#                gainorig = gainorigDict[(sciExt.extname(), sciExt.extver())] 
+#                # Updating this SCI extension"s header keys
+#                sciExt.header.update("GAINORIG", gainorig, 
+#                                   "Gain prior to unit conversion (e-/ADU)")
+#                sciExt.header.update("GAIN", 1.0, 
+#                                  "Physical units is electrons") 
+#                sciExt.header.update("BUNIT","electrons" , "Physical units")
+#                # Logging the changes to the header keys
+#                log.fullinfo("SCI extension number "+str(sciExt.extver())+
+#                             " keywords updated/added:\n", 
+#                             category="header")
+#                log.fullinfo("GAINORIG = "+str(gainorig), 
+#                             category="header" )
+#                log.fullinfo("GAIN = "+str(1.0), category="header" )
+#                log.fullinfo("BUNIT = "+"electrons", category="header" )
+#                log.fullinfo("-"*50, category="header")
+#            # Updating VAR headers if they exist (not updating any 
+#            # DQ headers as no changes were made to them here)
+#            for varExt in adOut["VAR"]:
+#                # Ensure there are no GAIN and GAINORIG header keys for 
+#                # the VAR extension. No errors are thrown if they aren"t 
+#                # there initially, so all good not to check ahead. 
+#                del varExt.header["GAINORIG"]
+#                del varExt.header["GAIN"]
+#                
+#                # Updating then logging the change to the BUNIT 
+#                # key in the VAR header
+#                varExt.header.update("BUNIT","electrons squared" , 
+#                                   "Physical units")
+#                # Logging the changes to the VAR extensions header keys
+#                log.fullinfo("VAR extension number "+str(varExt.extver())+
+#                             " keywords updated/added:\n",
+#                              category="header")
+#                log.fullinfo("BUNIT = "+"electrons squared", 
+#                             category="header" )
+#                log.fullinfo("-"*50, category="header")
