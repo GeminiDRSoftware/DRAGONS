@@ -43,16 +43,14 @@ def adu_to_electrons(adinput):
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "adu_to_electrons" % (ad.filename))
-            # Loop over each science extension in each input AstroData object
-            for ext in ad["SCI"]:
-                # Get the gain value using the appropriate descriptors
-                gain = ext.gain().as_pytype()
-                # Multiply the science extension by the gain and the variance
-                # extension by the gain squared
-                log.info("Converting %s[%s,%s] from ADU to electrons by " \
-                         "multiplying by the gain = %s" % \
-                         (ad.filename, ext.extname(), ext.extver(), gain))
-                ext = ext.mult(gain)
+            # Get the gain value using the appropriate descriptors
+            gain = ad.gain().as_pytype()
+            # Multiply the science extension by the gain and the variance
+            # extension by the gain squared
+            log.info("Converting %s from ADU to electrons by multiplying " \
+                     "the science extension by the gain = %s" % \
+                     (ad.filename, gain))
+            ad = ad.mult(gain)
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             # Append the output AstroData object to the list of output
