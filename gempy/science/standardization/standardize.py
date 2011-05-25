@@ -254,6 +254,9 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                 if len(ext.data.shape) == 3:
                     # Remove the single-dimensional axis from the pixel data
                     ext.data = np.squeeze(ext.data)
+                    if len(ext.data.shape) == 2:
+                        log.info("Removed third extension from %s" \
+                                 % ad.filename)
                     if len(ext.data.shape) == 3:
                         # The np.squeeze method only removes a dimension from
                         # the array if it is equal to 1. In this case, the
