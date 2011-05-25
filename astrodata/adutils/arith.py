@@ -32,14 +32,13 @@ def div(numerator, denominator):
                      AstroData instance
     
     @param denominator: denominator to divide the numerator by
-    @type denominator:  a MEF of SCI, VAR and DQ frames in the form of an 
-                        AstroData instance, a float list, a single float 
-                        (list must be in order of the SCI extension EXTVERs) OR
-                        a dictionary of the format 
-                        {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
-                        of the SCI extensions and ## are the corresponding 
-                        float values to divide that extension by.
-                        
+    @type denominator: a MEF of SCI, VAR and DQ frames in the form of an 
+                       AstroData instance, a float list, a single float 
+                       (list must be in order of the SCI extension EXTVERs) OR
+                       a dictionary of the format 
+                       {('SCI',#):##,('SCI',#):##...} where # are the EXTVERs 
+                       of the SCI extensions and ## are the corresponding 
+                       float values to divide that extension by.
     """
     # Check to see if the denominator is a dictionary, list, float or int
     if isinstance(denominator, dict) or isinstance(denominator, list) or \
@@ -54,7 +53,7 @@ def div(numerator, denominator):
                 # Add element to the dictionary for this extension
                 denominator_dict[("SCI", extver)] = denominator
         # Create a dictionary if the input is a list of values
-        if isinstance(denominator, list):    
+        if isinstance(denominator, list):
             denominator_dict = {}
             for ext in numerator["SCI"]:
                 extver = ext.extver()
@@ -113,12 +112,12 @@ def div(numerator, denominator):
                 numerator["DQ", extver].data = np.bitwise_or(
                     numerator[("DQ", extver)].data,
                     denominator[("DQ", extver)].data)
-
+    
     # If the input was not of type astrodata, float, float list or dictionary
     # then raise an exception
     else:
         raise 
-    # Return the fully updated output astrodata object      
+    # Return the fully updated output astrodata object
     return numerator
                 
 def mult(input1, input2):
@@ -145,20 +144,20 @@ def mult(input1, input2):
                   AstroData instance
     
     @param input2: input to multiply the input1 by
-    @type input2:   a MEF of SCI, VAR and DQ frames in the form of an AstroData
-                    instance, a float list or a single float (list must be 
-                    in order of the SCI extension EXTVERs) OR a dictionary 
-                    of the format {('SCI',#):##,('SCI',#):##...} 
-                    where # are the EXTVERs of the SCI extensions 
-                    and ## are the corresponding float values 
-                    to multiply that extension by.   
+    @type input2: a MEF of SCI, VAR and DQ frames in the form of an AstroData
+                  instance, a float list or a single float (list must be 
+                  in order of the SCI extension EXTVERs) OR a dictionary 
+                  of the format {('SCI',#):##,('SCI',#):##...} 
+                  where # are the EXTVERs of the SCI extensions 
+                  and ## are the corresponding float values 
+                  to multiply that extension by.
     """
-    # Check to see if input2 is a dictionary, list or float - what about int?
+    # Check to see if input2 is a dictionary, list, float or int
     if isinstance(input2, dict) or isinstance(input2, list) or \
-       isinstance(input2, float):
+       isinstance(input2, float) or isinstance(input2, int):
         # Create a dictionary of identical values for each extension if the 
         # input is a single float
-        if isinstance(input2, float):
+        if isinstance(input2, float) or isinstance(input2, int):
             input2_dict = {}
             for ext in input1["SCI"]:
                 # Retrieve the EXTVER for this extension
@@ -166,7 +165,7 @@ def mult(input1, input2):
                 # Add element to the dictionary for this extension
                 input2_dict[("SCI", extver)] = input2
         # Create a dictionary if the input is a list of values
-        if isinstance(input2, list):    
+        if isinstance(input2, list):
             input2_dict = {}
             for ext in input1["SCI"]:
                 extver = ext.extver()
@@ -220,11 +219,11 @@ def mult(input1, input2):
                     input1["DQ", extver].data = np.bitwise_or(
                         input1[("DQ", extver)].data,
                         input2[("DQ", extver)].data)
-
+    
     # If the input was not of type astrodata, float, float list or dictionary
     # then raise an exception
     else:
-        raise    
+        raise
     # Return the fully updated output astrodata object
     return input1
 
