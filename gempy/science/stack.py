@@ -140,7 +140,7 @@ def stack_frames(adInputs, fl_vardq=True, fl_dqprop=True, method='average',
                 
                 # Updating GEM-TLM (automatic) and COMBINE time stamps to the PHU
                 # and updating logger with updated/added time stamps
-                sfm.markHistory(adOutputs=adOutputs, historyMarkKey='COMBINE')
+                sfm.mark_history(adOutputs=adOutputs, historyMarkKey='COMBINE')
             else:
                 raise Errors.ScienceError('One of the inputs has not been prepared,'+
                 'the combine function can only work on prepared data.')

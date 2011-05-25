@@ -34,8 +34,8 @@ def validate_data_f2(adinput=None, repair=False):
             # Validate the input AstroData object. ACTUALLY DO SOMETHING HERE?
             log.info("No validation required for FLAMINGOS-2")
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
-            gt.markHistory(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword="PREPARE")
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -104,8 +104,8 @@ def validate_data_gmos(adinput=None, repair=False):
                 log.info("The GMOS input file has been validated: %s " \
                          "contains %d extensions" % (ad.filename, numext))
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
-            gt.markHistory(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword="PREPARE")
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)

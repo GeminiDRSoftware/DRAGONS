@@ -187,7 +187,7 @@ def overscan_subtract_gmos(adInputs, fl_trim=False, fl_vardq='AUTO',
                 
                 # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
                 # and updating logger with updated/added time stamps
-                sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERSUB')
+                sfm.mark_history(adOutputs=adOut, historyMarkKey='OVERSUB')
         else:
             raise Errors.ScienceError('One of the inputs has not been prepared, the '+
             'overscan_subtract_gmos function can only work on prepared data.')
@@ -533,7 +533,7 @@ def overscan_trim(adInputs, outNames=None, suffix=None):
                     
             # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='OVERTRIM')       
+            sfm.mark_history(adOutputs=adOut, historyMarkKey='OVERTRIM')       
             
             # Setting 'TRIMMED' to 'yes' in the PHU and updating the log
             adOut.phu_set_key_value('TRIMMED','yes','Overscan section trimmed')
@@ -721,7 +721,7 @@ def subtract_bias(adInputs, biases=None ,fl_vardq='AUTO', fl_trim=False,
   
                 # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
                 # and updating logger with updated/added time stamps
-                sfm.markHistory(adOutputs=adOut, historyMarkKey='BIASCORR')
+                sfm.mark_history(adOutputs=adOut, historyMarkKey='BIASCORR')
 
                 # Reseting the value set by gireduce to just the filename
                 # for clarity
@@ -873,7 +873,7 @@ def subtract_biasNEW(adInputs, biases=None, fl_vardq='AUTO', outNames=None, suff
             
             # Updating GEM-TLM (automatic) and SUBBIAS time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='SUBBIAS')
+            sfm.mark_history(adOutputs=adOut, historyMarkKey='SUBBIAS')
         
             # Appending to output list
             adOutputs.append(adOut)

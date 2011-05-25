@@ -85,7 +85,7 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
             
             # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='FLATCORR')
+            sfm.mark_history(adOutputs=adOut, historyMarkKey='FLATCORR')
             
             # renaming the output ad filename
             adOut.filename = outNames[count]
@@ -168,7 +168,7 @@ def normalize_flat_image(adInputs, outNames=None, suffix=None):
             
             # Updating GEM-TLM (automatic) and NORMFLAT time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='NORMFLAT')
+            sfm.mark_history(adOutputs=adOut, historyMarkKey='NORMFLAT')
         
             # Appending to output list
             adOutputs.append(adOut)
@@ -310,7 +310,7 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
         
             # Updating GEM-TLM (automatic) and COMBINE time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOutputs, historyMarkKey='GIFLAT')    
+            sfm.mark_history(adOutputs=adOutputs, historyMarkKey='GIFLAT')    
         else:
             raise Errors.ScienceError('One of the inputs has not been prepared,'+
             'the normalizeFlat function can only work on prepared data.')

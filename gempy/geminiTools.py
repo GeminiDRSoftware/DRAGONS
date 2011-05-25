@@ -237,7 +237,7 @@ def log_message(function, name, message_type):
     else:
         return None
 
-def markHistory(adinput=None, keyword=None):
+def mark_history(adinput=None, keyword=None):
     """
     The function to use near the end of a python user level function to 
     add a history_mark timestamp to all the outputs indicating when and what
@@ -247,13 +247,13 @@ def markHistory(adinput=None, keyword=None):
     Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
     automatically everytime wrapUp is called.
     
-    :param adOutputs: List of astrodata instance(s) to perform history_mark 
+    :param adinput: List of astrodata instance(s) to perform history_mark 
                       on.
-    :type adOutputs: Either a single or multiple astrodata instances in a 
+    :type adinput: Either a single or multiple astrodata instances in a 
                      list.
     
-    :param historyMarkKey: The PHU header key to write the current UT time 
-    :type historyMarkKey: Under 8 character, all caps, string.
+    :param keyword: The PHU header key to write the current UT time 
+    :type keyword: Under 8 character, all caps, string.
                           If None, then only 'GEM-TLM' is added/updated.
     """
     # Instantiate the log
@@ -266,7 +266,7 @@ def markHistory(adinput=None, keyword=None):
         # Add the 'GEM-TLM' keyword (automatic) and the keyword specified by
         # the 'keyword' parameter to the PHU. If 'keyword' is None,
         # history_mark will still add the 'GEM-TLM' keyword
-        ad.history_mark(key=keyword, stomp=False)
+        ad.history_mark(key=keyword, stomp=True)
         
         log.fullinfo('*'*50, category='header')
         log.fullinfo('File = %s' % ad.filename, category='header')
@@ -320,7 +320,6 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
     """
     log = gemLog.getGeminiLog()
     historyComment = None
-    write_history = False
     keyAndCommentDict = {
         'bunit':['BUNIT', 'Physical units'],
         'count_exts("SCI")':['NSCIEXT', 'Number of science extensions'],

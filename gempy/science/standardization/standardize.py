@@ -63,8 +63,8 @@ def standardize_headers_f2(adinput=None):
                                     extname="SCI")
             log.fullinfo("-"*50, category="header")
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
-            gt.markHistory(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword="PREPARE")
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -137,8 +137,8 @@ def standardize_headers_gemini(adinput=None):
                                 extname="SCI")
             log.fullinfo("-"*50, category="header") 
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
-            gt.markHistory(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword="PREPARE")
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -209,8 +209,8 @@ def standardize_headers_gmos(adinput=None):
                                     extname="SCI")
             log.fullinfo("-"*50, category="header")
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
-            gt.markHistory(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword="PREPARE")
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -274,8 +274,8 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                 # Call the add_mdf_f2 user level function
                 ad = add_mdf_f2(adinput=ad, mdf=mdf)
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
-            gt.markHistory(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword="PREPARE")
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -351,8 +351,8 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
                 # Call the add_mdf_gmos user level function
                 ad = add_mdf_gmos(adinput=ad, mdf=mdf)
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
-            gt.markHistory(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword="PREPARE")
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)

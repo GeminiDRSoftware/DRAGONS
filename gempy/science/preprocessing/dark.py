@@ -76,7 +76,7 @@ def subtract_dark(adInputs, darks=None, outNames=None, suffix=None):
             
             # Updating GEM-TLM (automatic) and SUBDARK time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='SUBDARK')
+            sfm.mark_history(adOutputs=adOut, historyMarkKey='SUBDARK')
         
             # Appending to output list
             adOutputs.append(adOut)

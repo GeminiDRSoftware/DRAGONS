@@ -138,7 +138,7 @@ def make_fringe_frame_imaging(adInputs, fl_vardq='AUTO', method='median',
                 
                 # Updating GEM-TLM (automatic) and COMBINE time stamps to the PHU
                 # and updating logger with updated/added time stamps
-                sfm.markHistory(adOutputs=adOutputs, historyMarkKey='FRINGE')
+                sfm.mark_history(adOutputs=adOutputs, historyMarkKey='FRINGE')
             else:
                 raise Errors.ScienceError('One of the inputs has not been prepared,'+
                 'the combine function can only work on prepared data.')
@@ -347,7 +347,7 @@ def scale_fringe_to_science(fringes=None, sciInputs=None, statsec=None,
             
             # Updating GEM-TLM (automatic) and SUBDARK time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='SCALEA2B')
+            sfm.mark_history(adOutputs=adOut, historyMarkKey='SCALEA2B')
         
             # Appending to output list
             adOutputs.append(adOut)
@@ -437,7 +437,7 @@ def subtract_fringe(adInputs, fringes=None, outNames=None, suffix=None):
             
             # Updating GEM-TLM (automatic) and SUBFRINGE time stamps to the PHU
             # and updating logger with updated/added time stamps
-            sfm.markHistory(adOutputs=adOut, historyMarkKey='SUBFRING')
+            sfm.mark_history(adOutputs=adOut, historyMarkKey='SUBFRING')
         
             # Appending to output list
             adOutputs.append(adOut)

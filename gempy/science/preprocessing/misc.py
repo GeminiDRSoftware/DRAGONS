@@ -54,7 +54,7 @@ def adu_to_electrons(adinput):
                          (ad.filename, ext.extname(), ext.extver(), gain))
                 ext = ext.mult(gain)
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=keyword)
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -173,7 +173,7 @@ def nonlinearity_correct(adinput=None):
             log.info("The corrected total exposure time = %f" % \
                 total_exposure_time)
             # Add the appropriate time stamps to the PHU
-            gt.markHistory(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=keyword)
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
