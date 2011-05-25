@@ -164,7 +164,7 @@ def add_var(adinput=None):
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
     
-    :param adInputs: Astrodata inputs to have DQ extensions added to
+    :param adInputs: Astrodata inputs to have VAR extensions added to
     :type adInputs: Astrodata objects, either a single or a list of objects
     
     :param outNames: filenames of output(s)
@@ -204,13 +204,13 @@ def add_var(adinput=None):
                 # Create the header for the variance extension
                 var_header = varutil.createInitialVarianceHeader(
                     extver=ext.extver(), shape=var_array.shape)
-                # Create a DQ AstroData object
+                # Create a VAR AstroData object
                 var = AstroData(header=var_header, data=var_array)
                 # Name the extension appropriately
                 var.rename_ext("VAR", ver=ext.extver())
-            # Append the DQ AstroData object to the input AstroData object
+            # Append the VAR AstroData object to the input AstroData object
             ad.append(moredata=var)
-            log.status("Adding the DQ extension to the input AstroData " \
+            log.status("Adding the VAR extension to the input AstroData " \
                        "object %s" % (ad.filename))
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
