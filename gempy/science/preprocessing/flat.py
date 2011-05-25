@@ -146,6 +146,8 @@ def normalize_flat_image(adinput):
                 mean = np.mean(ext.data)
                 # Divide the science extension by the mean value of the science
                 # extension
+                log.info("Normalizing %s[%s,%d] by dividing by the mean = %f" \
+                         % (ad.filename, ext.extname(), ext.extver(), mean))
                 ext = ext.div(mean)
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
