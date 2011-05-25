@@ -4,9 +4,10 @@
 import sys
 import numpy as np
 from astrodata import Errors
+from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
-from gempy import managers as man
+from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
@@ -41,7 +42,7 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = mgr.ScienceFunctionManager(adInputs, outNames, suffix,
                                       funcName='divide_by_flat') 
     # Perform start up checks of the inputs, prep/check of outnames, and get log
     adInputs, outNames, log = sfm.startUp()
@@ -107,83 +108,57 @@ def divide_by_flat(adInputs, flats=None, outNames=None, suffix=None):
         raise   
     
 
-def normalize_flat_image(adInputs, outNames=None, suffix=None):
+def normalize_flat_image(adinput):
     """
-    This function will normalize each SCI frame of the inputs and take care of
-    the VAR and DQ frames if they exist.  
-    
-    This is all conducted in pure Python through the arith "toolbox" of 
-    astrodata. 
+    The normalize_flat_image user level function will normalize each science
+    extension of the input AstroData object(s) and automatically update the
+    variance and data quality extensions, if they exist.
        
     Either a 'main' type logger object, if it exists, or a null logger 
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
     
-    :param adInputs: Astrodata input flat(s) to be combined and normalized
-    :type adInputs: Astrodata objects, either a single or a list of objects
-    
-    :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length 
-                    as adInputs.
-    
-    :param suffix:
-            string to add on the end of the input filenames 
-            (or outNames if not None) for the output filenames.
-    :type suffix: string
+    :param adinput: Astrodata input flat(s) to be combined and normalized
+    :type adinput: Astrodata
     """
-    # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
-                                             funcName='normalize_flat_image') 
-    # Perform start up checks of the inputs, prep/check of outnames, and get log
-    adInputs, outNames, log = sfm.startUp()
-    
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+    # If adinput is a single AstroData object, put it in a list
+    if not isinstance(adinput, list):
+        adinput = [adinput]
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    keyword = "NORMFLAT"
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
     try:
-        # Set up counter for looping through outNames list
-        count=0
-        
-        # Creating empty list of ad's to be returned that will be filled below
-        adOutputs=[]
-        
-        # Loop through the inputs to perform the non-linear and saturated
-        # pixel searches of the SCI frames to update the BPM frames into
-        # full DQ frames. 
-        for ad in adInputs:  
-            # create an empty dict to load up with the mean of each SCI frame
-            meanDict={}
-            # loop through SCI extensions to load up dict with
-            for ext in ad['SCI']:
-                # calculate the mean of the current SCI frame
-                meanDict[('SCI',ext.extver())] = np.mean(ext.data)
-           
-            # divide each SCI by its mean and handle the updates to the DQ 
-            # and VAR frames.
-            # the div function of the arith toolbox performs a deepcopy so
-            # it doesn't need to be done here. 
-            adOut = ad.div(meanDict)
-            
-            # renaming the output ad filename
-            adOut.filename = outNames[count]
-                    
-            log.status('File name updated to '+adOut.filename+'\n')
-            
-            # Updating GEM-TLM (automatic) and NORMFLAT time stamps to the PHU
-            # and updating logger with updated/added time stamps
-            sfm.mark_history(adOutputs=adOut, historyMarkKey='NORMFLAT')
-        
-            # Appending to output list
-            adOutputs.append(adOut)
-    
-            count=count+1
-                
-        log.status('**FINISHED** the normalize_flat_image function')
-        # Return the outputs (list or single, matching adInputs)
-        return adOutputs
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            # Check whether the normalize_flat_image user level function has
+            # been run previously
+            if ad.phu_get_key_value(keyword):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "normalize_flat_image" % (ad.filename))
+            # Loop over each science extension in each input AstroData object
+            for ext in ad["SCI"]:
+                # Calculate the mean value of the science extension
+                mean = np.mean(ext.data)
+                # Divide the science extension by the mean value of the science
+                # extension
+                ext = ext.div(mean)
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=keyword)
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+        # Return the list of output AstroData objects
+        return adoutput_list
     except:
-        # logging the exact message from the actual exception that was raised
-        # in the try block. Then raising a general ScienceError with message.
+        # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
-        raise 
-    
+        raise
+
 def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,  
                                 fl_vardq='AUTO', outNames=None, suffix=None):
     """
@@ -229,7 +204,7 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
     
     """
     # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, outNames, suffix,
+    sfm = mgr.ScienceFunctionManager(adInputs, outNames, suffix,
                                        funcName='normalize_flat_image_gmos', 
                                        combinedInputs=True)
     # Perform start up checks of the inputs, prep/check of outnames, and get log
@@ -248,13 +223,13 @@ def normalize_flat_image_gmos(adInputs, fl_trim=False, fl_over=False,
         
         # Preparing input files, lists, parameters... for input to 
         # the CL script
-        clm=man.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
+        clm=mgr.CLManager(imageIns=adInputs, imageOutsNames=outNames,  
                            suffix=suffix, funcName='normalizeFlat', 
                            log=log, combinedImages=True)
         
         # Check the status of the CLManager object, True=continue, False= issue warning
         if clm.status:                 
-            # Creating a dictionary of the parameters set by the man.CLManager 
+            # Creating a dictionary of the parameters set by the mgr.CLManager 
             # or the definition of the function 
             clPrimParams = {
               'inflats'     :clm.imageInsFiles(type='listFile'),
