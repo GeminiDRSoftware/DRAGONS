@@ -741,8 +741,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Write the bias frame to disk
             ad.write(os.path.join(rc["storedbiases"], ad.filename), 
                      clobber=rc["clob"])
-            log.fullinfo("Bias written to %s/%s" % (rc["storedbiases"],
-                                                    ad.filename))
+            log.fullinfo("Bias written to %s" % (rc["storedbiases"]))
         
         yield rc
     
@@ -780,8 +779,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Write the flat frame to disk
             ad.write(os.path.join(rc["storedflats"], ad.filename), 
                      clobber=rc["clob"])
-            log.fullinfo("Flat written to %s/%s" % (rc["storedflats"],
-                                                    ad.filename))
+            log.fullinfo("Flat written to %s" % (rc["storedflats"])),
         
         yield rc
     
