@@ -26,65 +26,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         GEMINIPrimitives.init(self, rc)
         return rc
      
-    def addBPM(self,rc):
-        """
-        This primitive is used by the general addDQ primitive of 
-        primitives_GEMINI to add the appropriate BPM (Bad Pixel Mask)
-        to the inputs.  This function will add the BPM as frames matching
-        that of the SCI frames and ensure the BPM's data array is the same 
-        size as that of the SCI data array. If the SCI array is larger 
-        (say SCI's were overscan trimmed, but BPMs were not), the BPMs will 
-        have their arrays padded with zero's to match the sizes and use the 
-        data_section descriptor on the SCI data arrays to ensure the match is
-        a correct fit.
-        
-        Using this approach, rather than appending the BPM in the addDQ allows
-        for specialized BPM processing to be done in the instrument specific
-        primitive sets where it belongs.                          
-
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'
-                        , 'status', 'fullinfo'...)
-        """
-        log = gemLog.getGeminiLog(logType=rc['logType'],
-                                  logLevel=rc['logLevel'])
-        log.debug(gt.log_message('primitive', 'addBPM', 'starting'))
-            
-        adoutput_list = []
-
-        #$$$$$$$$$$$$$ TO BE callibration search, correct when ready $$$$$$$
-        BPM_11 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_11.fits'))
-        BPM_22 = AstroData(lookup_path('Gemini/GMOS/BPM/GMOS_BPM_22.fits'))
-        #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-            
-        # Loop through inputs, adding appropriate mask
-        for ad in rc.get_inputs(style='AD'):
-            if ad.phu_get_key_value('ADDBPM'):
-                log.warning('%s has already been processed by addBPM' %
-                            (ad.filename))
-                adoutput_list.append(ad)
-                continue
-
-            ### This section might need to be upgraded in the future
-            ### for more general use instead of just 1x1 and 2x2 imaging
-            if ad[('SCI',1)].get_key_value('CCDSUM')=='1 1':
-                bpm = BPM_11
-            elif ad[('SCI',1)].get_key_value('CCDSUM')=='2 2':
-                bpm = BPM_22
-            else:
-                log.error('CCDSUM is not 1x1 or 2x2')
-                #$$$ NOT REALLY SURE THIS IS THE APPROPRIATE ACTION HERE
-                raise
-   
-            ad = sdz.add_bpm(adinput=ad,bpm=bpm)
-            adoutput_list.append(ad[0])
-            
-        # Report the updated files to the reduction context
-        rc.report_output(adoutput_list)   
-                
-        yield rc       
-
     def display(self, rc):
         """ 
         This is a primitive for displaying GMOS data.
@@ -93,8 +34,8 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
+                        screen. OR the message level as a string (i.e.,
+                        'critical', 'status', 'fullinfo'...)
         """
         log = gemLog.getGeminiLog(logType=rc['logType'],
                                   logLevel=rc['logLevel'])
