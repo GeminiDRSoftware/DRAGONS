@@ -2,6 +2,7 @@
 # dataset
 
 import sys
+import numpy as np
 from astrodata import Errors
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
@@ -18,7 +19,7 @@ def standardize_headers_f2(adinput=None):
         adinput = [adinput]
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "STDHDRSI"
+    keyword = "SDZHDRSI"
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
@@ -97,7 +98,7 @@ def standardize_headers_gemini(adinput=None):
         adinput = [adinput]
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "STDHDRSG"
+    keyword = "SDZHDRSG"
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
@@ -170,7 +171,7 @@ def standardize_headers_gmos(adinput=None):
         adinput = [adinput]
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "STDHDRSI"
+    keyword = "SDZHDRSI"
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
@@ -245,8 +246,23 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_structure_f2" \
                                         % (ad.filename))
-            # Standardize the structure of the input AstroData object.
-            # ACTUALLY DO SOMETHING HERE?
+            # Standardize the structure of the input AstroData
+            # object. Raw FLAMINGOS-2 data have three dimensions (i.e.,
+            # 2048x2048x1), so check whether the third extension has a length
+            # of one and remove it
+            for ext in ad:
+                if len(ext.data.shape) == 3:
+                    # Remove the single-dimensional axis from the pixel data
+                    ext.data = np.squeeze(ext.data)
+                    if len(ext.data.shape) == 3:
+                        # The np.squeeze method only removes a dimension from
+                        # the array if it is equal to 1. In this case, the
+                        # third dimension contains multiple datasets. Need to
+                        # deal with this as some point
+                        pass
+                    log.debug("Dimensions of %s[%s,%d] = %s" \
+                              % (ad.filename, ext.extname(), ext.extver(), \
+                              str(ext.data.shape)))
             if add_mdf:
                 # Check whether the input AstroData object has an AstroData 
                 # Type of IMAGE, since MDFs should only be added to
