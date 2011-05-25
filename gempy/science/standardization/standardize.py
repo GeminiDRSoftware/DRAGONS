@@ -274,8 +274,8 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                     raise Errors.InputError("Cannot add an MDF to %s, since " \
                                             "it has an AstroData Type of " \
                                             "'IMAGE'" % (ad.filename))
-                # Call the add_mdf_f2 user level function
-                ad = add_mdf_f2(adinput=ad, mdf=mdf)
+                # Call the add_mdf user level function
+                ad = add_mdf(adinput=ad, mdf=mdf)
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
@@ -351,8 +351,8 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
                     raise Errors.InputError("Cannot add an MDF to %s, since " \
                                             "it has an AstroData Type of " \
                                             "'IMAGE'" % (ad.filename))
-                # Call the add_mdf_gmos user level function
-                ad = add_mdf_gmos(adinput=ad, mdf=mdf)
+                # Call the add_mdf user level function
+                ad = add_mdf(adinput=ad, mdf=mdf)
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
