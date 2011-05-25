@@ -57,10 +57,6 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            # Call the addBPM primitive
-            rc.run("addBPM")
-        # Loop over each input AstroData object output by the addBPM primitive
-        for ad in rc.get_inputs(style="AD"):
             # Call the add_dq user level function
             ad = sdz.add_dq(adinput=ad)
             # Append the output AstroData object (which is currently in the
