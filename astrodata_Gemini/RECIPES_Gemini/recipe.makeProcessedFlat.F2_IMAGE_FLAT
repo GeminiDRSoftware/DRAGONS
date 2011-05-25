@@ -6,11 +6,15 @@
 
 prepare
 addDQ
+writeOutputs(suffix="_dq", strip=True)
 #nonlinearityCorrect
 aduToElectrons
+writeOutputs(suffix="_aduToEle", strip=True)
 addVAR
+writeOutputs(suffix="_var", strip=True)
 #removeThermalEmissionFromFlat
 stackFrames
-#normalizeFlat
-storeProcessedFlat
+writeOutputs(suffix="_stack", strip=True)
+normalizeFlat
 writeOutputs(suffix="_flat", strip=True)
+storeProcessedFlat
