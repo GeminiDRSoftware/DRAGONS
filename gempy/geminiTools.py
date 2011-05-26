@@ -11,7 +11,7 @@ from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata import Errors
 
-def checkInputsMatch(adInsA=None, adInsB=None):
+def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
     """
     This function will check if the inputs match.  It will check the filter,
     binning and shape/size of the every SCI frames in the inputs.
@@ -32,7 +32,7 @@ def checkInputsMatch(adInsA=None, adInsB=None):
     
     # Check inputs are both matching length lists or single objects
     if (adInsA is None) or (adInsB is None):
-        log.error('Neither A or B inputs can be None')
+        log.error('Neither A nor B inputs can be None')
         raise Errors.ToolboxError('Either A or B inputs were None')
     if isinstance(adInsA,list):
         if isinstance(adInsB,list):
@@ -82,10 +82,13 @@ def checkInputsMatch(adInsA=None, adInsB=None):
                 log.error('Extensions have different binning')
                 raise Errors.ToolboxError('Extensions have different binning')
         
-            # Check filter
-            if sciA.filter_name().as_pytype()!=sciB.filter_name().as_pytype():
-                log.error('Extensions have different filters')
-                raise Errors.ToolboxError('Extensions have different filters')
+            # Check filter if desired
+            if check_filter:
+                if (sciA.filter_name().as_pytype() != 
+                    sciB.filter_name().as_pytype()):
+                    log.error('Extensions have different filters')
+                    raise Errors.ToolboxError('Extensions have different ' +
+                                              'filters')
         
         log.status('Inputs match')    
 
