@@ -507,6 +507,16 @@ class CLManager(object):
         """
         types = ad.get_types()
         if 'GMOS' in types:
+            if 'PREPARED' in types:
+                gprep = ad.phu_get_key_value('GPREPARE')
+                if gprep is None:
+                    prepare_date = ad.phu_get_key_value('PREPARE')
+                    print prepare_date
+                    ad.phu_set_key_value('GPREPARE', prepare_date, 
+                                         'UT Time stamp for GPREPARE')
+                else:
+                    ad.phu_set_key_value('PREPARE', gprep, 
+                                         'UT Time stamp for GPREPARE')
             try:
                 if 'GMOS_IMAGE' in types:
                     typeStr = 'IMAGE'
@@ -535,6 +545,7 @@ class CLManager(object):
         """
         if 'GMOS' in ad.get_types():
             del ad.get_phu().header['OBSMODE']
+            del ad.get_phu().header['GPREPARE']
         return ad
     
     def postCLloads(self):
