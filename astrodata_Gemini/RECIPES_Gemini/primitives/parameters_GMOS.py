@@ -31,12 +31,6 @@
         "type"          : "str",
         "userOverride"  : False,
         },
-    "trim":{
-        "default"       : False,
-        "recipeOverride": False,
-        "type"          : "bool",
-        "userOverride"  : False,
-        },
     "overscan_section":{
         "default"       : "",
         "recipeOverride": True,

@@ -227,9 +227,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
         
-        :param trim: Trim the overscan region from the frames?
-        :type trim: Python boolean (True/False)
-        
         :param overscan_section: biassec parameter of format 
                                  '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
         :type overscan_section: string. default: 
@@ -253,7 +250,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
 
-            ad = pp.overscan_subtract_gmos(adinput=ad, trim=rc['trim'], 
+            ad = pp.overscan_subtract_gmos(adinput=ad,
                                        overscan_section=rc['overscan_section'])
             adoutput_list.append(ad[0])
 
@@ -421,13 +418,13 @@ class GMOSPrimitives(GEMINIPrimitives):
                 continue
 
             #processedBias = AstroData(rc.get_cal(ad,'bias'))
-            ####################BULL CRAP FOR TESTING ########################## 
+            ####################BULL CRAP FOR TESTING ##########################
             from copy import deepcopy
             processedBias = deepcopy(ad)
             processedBias.filename = 'TEMPNAMEforBIAS.fits'
             processedBias.phu_set_key_value('ORIGNAME','TEMPNAMEforBIAS.fits')
             processedBias.history_mark(key='GBIAS', 
-                              comment='fake key to trick CL that GBIAS was ran')
+                             comment='fake key to trick CL that GBIAS was ran')
             ####################################################################
             log.status('Using bias '+processedBias.filename+' to correct the inputs')
             ad = pp.subtract_bias(adinput=ad, 
