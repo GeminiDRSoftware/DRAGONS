@@ -713,6 +713,44 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def storeProcessedDark(self, rc):
+        """
+        This should be a primitive that interacts with the calibration system 
+        (MAYBE) but that isn't up and running yet. Thus, this will just strip 
+        the extra postfixes to create the 'final' name for the 
+        makeProcessedDark outputs and write them to disk in a storedcals
+        folder.
+        
+        :param clob: Write over any previous file with the same name that
+                     all ready exists?
+        :type clob: Python boolean (True/False)
+                    default: False
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (i.e.,
+                        'critical', 'status', 'fullinfo'...)
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "storeProcessedDark",
+                                 "starting"))
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Updating the file name with the suffix for this primitive and
+            # then report the new file to the reduction context
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_dark",
+                                             strip=True)
+            log.status("File name of stored dark is %s" % ad.filename)
+            # Write the dark frame to disk
+            ad.write(os.path.join(rc["storeddarks"], ad.filename), 
+                     clobber=rc["clob"])
+            log.fullinfo("Dark written to %s" % (rc["storeddarks"]))
+        
+        yield rc
+    
     def storeProcessedFlat(self, rc):
         """
         This should be a primitive that interacts with the calibration 
