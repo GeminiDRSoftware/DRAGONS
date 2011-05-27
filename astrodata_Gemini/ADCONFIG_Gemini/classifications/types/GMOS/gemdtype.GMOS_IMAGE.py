@@ -6,6 +6,7 @@ class GMOS_IMAGE(DataClassification):
     parent = "GMOS"
     requirement = AND([  ISCLASS("GMOS"),
                          PHU(MASKTYP="0"),
+                         PHU(MASKNAME="None"),
                          PHU(GRATING="MIRROR")  ])
 
 newtypes.append(GMOS_IMAGE())

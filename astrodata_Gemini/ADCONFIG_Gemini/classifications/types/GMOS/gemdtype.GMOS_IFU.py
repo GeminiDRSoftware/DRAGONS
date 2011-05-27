@@ -5,6 +5,7 @@ class GMOS_IFU(DataClassification):
         """
     parent = "GMOS_SPECT"
     requirement = AND([  ISCLASS("GMOS_SPECT"),
-                         PHU(MASKTYP="-1")  ])
+                         PHU(MASKTYP="-1"),
+                         PHU(MASKNAME="IFU*")  ])
 
 newtypes.append(GMOS_IFU())

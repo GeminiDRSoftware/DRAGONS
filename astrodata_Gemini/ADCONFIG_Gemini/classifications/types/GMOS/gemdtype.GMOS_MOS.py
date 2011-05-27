@@ -6,6 +6,7 @@ class GMOS_MOS(DataClassification):
     parent = "GMOS_SPECT"
     requirement = AND([  ISCLASS("GMOS_SPECT"),
                          PHU(MASKTYP="1"),
-                         PHU({"{prohibit}MASKNAME": ".*arcsec"})  ])
+                         PHU({"{prohibit}MASKNAME": ".*arcsec"}),
+                         PHU({"{prohibit}MASKNAME": "IFU*"})  ])
 
 newtypes.append(GMOS_MOS())

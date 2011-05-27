@@ -8,6 +8,7 @@ class GMOS_SPECT(DataClassification):
     parent = "GMOS"
     requirement = AND([  ISCLASS("GMOS"),
                          PHU({"{prohibit}MASKTYP": "0"}),
+                         PHU({"{prohibit}MASKNAME": "None"}),
                          PHU({"{prohibit}GRATING": "MIRROR"}),
                          NOT(ISCLASS("GMOS_BIAS"))  ])
 
