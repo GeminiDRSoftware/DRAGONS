@@ -28,8 +28,8 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
     The inputs to this function MUST be prepared.
 
     Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
+    (ie, no log file, no messages to screen) will be retrieved/created 
+    and used within this function.
 
     FOR FUTURE
     This function has many GMOS dependencies that would be great to work out
@@ -65,12 +65,12 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
     adoutput_list = []    
     
     try: 
-        # loading and bringing the pyraf related modules into the name-space
+        # load and bring the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader() 
        
         for ad in adinput:
 
-            # To clean up log and screen if multiple inputs
+            # Clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')
 
             # Determine whether VAR/DQ needs to be propagated
@@ -82,19 +82,29 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
                 fl_vardq=no
 
             
-            # Preparing input files, lists, parameters... for input to 
+            # Prepare input files, lists, parameters... for input to 
             # the CL script
             clm=man.CLManager(imageIns=ad, suffix='_out',
                               funcName='overscanSubtract', log=log)
 
             # Check the status of the CLManager object, 
-            #True=continue, False= issue warning
+            # True=continue, False= issue warning
             if not clm.status:                     
                 raise Errors.ScienceError('One of the inputs has not been ' +
                                           'prepared, the ' + 
                                           'overscan_subtract_gmos function ' +
                                           'can only work on prepared data.')
 
+            # Take care of the overscan_section->nbiascontam param
+            if overscan_section != '':
+                nbiascontam = clm.nbiascontam(adinput, overscan_section)
+                log.fullinfo('nbiascontam parameter was updated to = '+
+                             str(nbiascontam))
+            else: 
+                # Do not try to calculate it, just use default value of 4.
+                log.fullinfo('Using default nbiascontam parameter = 4')
+                nbiascontam = 4
+            
             # Parameters set by the man.CLManager or the definition 
             # of the primitive 
             clPrimParams = {
@@ -109,28 +119,18 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
               'fl_vardq'   :fl_vardq,
                           }
             
-            # Taking care of the overscan_section->nbiascontam param
-            if overscan_section != '':
-                nbiascontam = clm.nbiascontam(adinput, overscan_section)
-                log.fullinfo('nbiascontam parameter was updated to = '+
-                             str(nbiascontam))
-            else: 
-                # Do not try to calculate it, just use default value of 4.
-                log.fullinfo('Using default nbiascontam parameter = 4')
-                nbiascontam = 4
-            
             # Parameters from the Parameter file that are adjustable by the user
             clSoftcodedParams = {
                # pyrafBoolean converts the python booleans to pyraf ones
                'nbiascontam':nbiascontam
                                }
-            # Grabbing the default params dict and updating it with 
+            # Grab the default params dict and update it with 
             # the two above dicts
             clParamsDict = CLDefaultParamsDict('gireduce')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
-            
-            # Logging the parameters that were not defaults
+
+            # Log the parameters that were not defaults
             log.fullinfo('\nParameters set automatically:', 
                          category='parameters')
             # Loop through the parameters in the clPrimParams dictionary
@@ -153,26 +153,26 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
             else:
                 log.status('Exited the gireduce CL script successfully')
             
-            # Renaming CL outputs and loading them back into memory, and 
-            # cleaning up the intermediate tmp files written to disk
+            # Rename CL outputs and load them back into memory, and 
+            # clean up the intermediate tmp files written to disk
             # refOuts and arrayOuts are None here
             imageOuts, refOuts, arrayOuts = clm.finishCL() 
             
             ad_out = imageOuts[0]
             ad_out.filename = ad.filename
             
-            # Verifying gireduce was actually ran on the file
+            # Verify gireduce was actually ran on the file
             if ad_out.phu_get_key_value('GIREDUCE'): 
                 # If gireduce was ran, then log the changes to the files 
                 # it made
                 log.fullinfo('\nFile '+ad_out.filename+
                              ' had its overscan subtracted successfully')
                 
-            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
-            # and updating logger with updated/added time stamps
+            # Update GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and update logger with updated/added time stamps
             gt.mark_history(adinput=ad_out, keyword=keyword)
         
-            adoutput_list.append(imageOuts[0])
+            adoutput_list.append(ad_out)
 
         # Return the outputs list, even if there is only one output
         return adoutput_list
@@ -190,8 +190,8 @@ def overscan_trim(adinput=None):
     NOTE: The inputs to this function MUST be prepared. 
     
     Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
+    (ie, no log file, no messages to screen) will be retrieved/created 
+    and used within this function.
     
     :param adinput: Astrodata inputs to have DQ extensions added to
     :type adinput: Astrodata objects, either a single or a list of objects
@@ -215,7 +215,7 @@ def overscan_trim(adinput=None):
         # Loop through the inputs
         for ad in adinput:  
                              
-            # To clean up log and screen if multiple inputs
+            # Clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    
 
             for sciExt in ad['SCI']:
@@ -225,26 +225,26 @@ def overscan_trim(adinput=None):
                 varExt = ad['VAR',extver]
                 dqExt = ad['VAR',extver]
                 
-                # Getting the data section 
+                # Get the data section 
                 # as a direct string from header
                 datasecStr = str(sciExt.data_section(pretty=True))
                 # int list of form [y1, y2, x1, x2] 0-based and non-inclusive
                 dsl = sciExt.data_section().as_pytype()
                 
-                # Updating logger with the section being kept
+                # Update logger with the section being kept
                 log.stdinfo('\nfor '+ad.filename+' extension '+
                             str(sciExt.extver())+
                             ', keeping the data from the section '+
                             datasecStr,'science')
 
-                # Trimming the data section from input SCI array
-                # and making it the new SCI data
+                # Trim the data section from input SCI array
+                # and make it the new SCI data
                 # NOTE: first elements of arrays in python are inclusive
                 #       while last ones are exclusive, thus a 1 must be 
                 #       added for the final element to be included.
                 sciExt.data=sciExt.data[dsl[0]:dsl[1],dsl[2]:dsl[3]]
 
-                # Updating header keys to match new dimensions
+                # Update header keys to match new dimensions
                 newDataSecStr = '[1:'+str(dsl[3]-dsl[2])+',1:'+\
                                 str(dsl[1]-dsl[0])+']' 
                 sciExt.header['NAXIS1'] = dsl[3]-dsl[2]
@@ -253,13 +253,13 @@ def overscan_trim(adinput=None):
                 sciExt.header.update('TRIMSEC', datasecStr, 
                                    'Data section prior to trimming')
 
-                # update WCS reference pixel coordinate
+                # Update WCS reference pixel coordinate
                 crpix1 = sciExt.get_key_value('CRPIX1') - dsl[2]
                 crpix2 = sciExt.get_key_value('CRPIX2') - dsl[0]
                 sciExt.header['CRPIX1'] = crpix1
                 sciExt.header['CRPIX2'] = crpix2
 
-                # if VAR and DQ planes present, update them to match
+                # If VAR and DQ planes present, update them to match
                 if varExt is not None:
                     varExt.data=varExt.data[dsl[0]:dsl[1],dsl[2]:dsl[3]]
                     varExt.header['NAXIS1'] = dsl[3]-dsl[2]
@@ -285,7 +285,7 @@ def overscan_trim(adinput=None):
                     dqExt.header['CRPIX2'] = crpix2
 
 
-                # Updating logger with updated/added keywords to each SCI frame
+                # Update logger with updated/added keywords to each SCI frame
                 log.fullinfo('*'*50, category='header')
                 log.fullinfo('File = '+ad.filename, category='header')
                 log.fullinfo('~'*50, category='header')
@@ -298,26 +298,24 @@ def overscan_trim(adinput=None):
                 log.fullinfo('DATASEC= '+newDataSecStr, category='header')
                 log.fullinfo('TRIMSEC= '+datasecStr, category='header')
                     
-            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
-            # and updating logger with updated/added time stamps
+            # Update GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and update logger with updated/added time stamps
             gt.mark_history(adinput=ad, keyword=keyword)       
             
-            # Setting 'TRIMMED' to 'yes' in the PHU and updating the log
+            # Set 'TRIMMED' to 'yes' in the PHU and update the log
             ad.phu_set_key_value('TRIMMED','yes','Overscan section trimmed')
             log.fullinfo('Another PHU keyword added:', 'header')
             log.fullinfo('TRIMMED = '+ad.phu_get_key_value('TRIMMED')+'\n', 
                          category='header')
             
-            # Appending to output list
+            # Append to output list
             adoutput_list.append(ad)
 
-        log.status('**FINISHED** the overscan_trim function')
-        
         # Return the outputs list, even if there is only one output
         return adoutput_list
     except:
-        # logging the exact message from the actual exception that was raised
-        # in the try block. Then raising a general ScienceError with message.
+        # log the exact message from the actual exception that was raised
+        # in the try block. Then raise a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
         raise 
 
@@ -334,8 +332,8 @@ def subtract_bias(adinput=None, bias=None):
     NOTE: The inputs to this function MUST be prepared. 
 
     Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
+    (ie, no log file, no messages to screen) will be retrieved/created
+    and used within this function.
     
     :param adinput: Astrodata inputs to be bias subtracted
     :type adinput: Astrodata objects, either a single or a list of objects
@@ -351,8 +349,7 @@ def subtract_bias(adinput=None, bias=None):
     # instantiate log
     log = gemLog.getGeminiLog()
 
-
-    # make adinput and bias a list if they are not already
+    # make adinput and bias into lists if they are not already
     if not isinstance(adinput,list):
         adinput = [adinput]
     if not isinstance(bias,list):
@@ -366,18 +363,18 @@ def subtract_bias(adinput=None, bias=None):
      
     try:
         
-        # checking the inputs have matching filters, binning and SCI shapes.
+        # check the inputs have matching binning and SCI shapes.
         gt.checkInputsMatch(adInsA=bias, adInsB=adinput, check_filter=False) 
         
-        # loading and bringing the pyraf related modules into the name-space
+        # load and bring the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader()
             
-        # Performing work in a loop, so that different biases may be
+        # Perform work in a loop, so that different biases may be
         # used for each input as gireduce only allows one bias input per run.
         count=0
         for ad in adinput:
             
-            # To clean up log and screen if multiple inputs
+            # Clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    
             
             # Determine whether VAR/DQ needs to be propagated
@@ -388,20 +385,13 @@ def subtract_bias(adinput=None, bias=None):
             else:
                 fl_vardq=no
             
-            # Getting the right bias frame for this input
+            # Get the right bias frame for this input
             if len(bias)>1:
                 this_bias = bias[count]
             else:
                 this_bias = bias[0]
 
-            if this_bias is None:
-                raise Errors.ScienceError('There must be at least one ' +
-                                          'processed bias provided, the ' +
-                                          '"bias" parameter ' +
-                                          'must not be None.')
-    
-                
-            # Preparing input files, lists, parameters... for input to 
+            # Prepare input files, lists, parameters... for input to 
             # the CL script
             clm = man.CLManager(imageIns=ad, suffix='_out',
                                 refIns=this_bias,
@@ -439,13 +429,13 @@ def subtract_bias(adinput=None, bias=None):
                 # pyrafBoolean converts the python booleans to pyraf ones
                 }
 
-            # Grabbing the default params dict and updating it 
+            # Grab the default params dict and update it 
             # with the two above dicts
             clParamsDict = CLDefaultParamsDict('gireduce')
             clParamsDict.update(clPrimParams)
             clParamsDict.update(clSoftcodedParams)
             
-            # Logging the parameters that were not defaults
+            # Log the parameters that were not defaults
             log.fullinfo('\nParameters set automatically:', 
                          category='parameters')
             # Loop through the parameters in the clPrimParams
@@ -469,8 +459,8 @@ def subtract_bias(adinput=None, bias=None):
             else:
                 log.status('Exited the gireduce CL script successfully')
                     
-            # Renaming CL outputs and loading them back into memory 
-            # and cleaning up the intermediate temp files written to disk
+            # Rename CL outputs and load them back into memory 
+            # and clean up the intermediate temp files written to disk
             # refOuts and arrayOuts are None here
             imageOuts, refOuts, arrayOuts = clm.finishCL() 
                 
@@ -479,27 +469,27 @@ def subtract_bias(adinput=None, bias=None):
             ad_out = imageOuts[0]
             ad_out.filename = ad.filename
                 
-            # Verifying gireduce was actually ran on the file
-            # then logging file names of successfully reduced files
+            # Verify gireduce was actually ran on the file
+            # then log file names of successfully reduced files
             if ad_out.phu_get_key_value('GIREDUCE'): 
                 log.fullinfo('\nFile '+ad_out.filename+
                              ' was bias-subtracted successfully')
   
-            # Updating GEM-TLM (automatic) and BIASCORR time stamps to the PHU
-            # and updating logger with updated/added time stamps
+            # Update GEM-TLM (automatic) and BIASCORR time stamps to the PHU
+            # and update logger with updated/added time stamps
             gt.mark_history(adinput=ad_out, keyword=keyword)
 
-            # Resetting the value set by gireduce to just the filename
+            # Reset the value set by gireduce to just the filename
             # for clarity
             ad_out.phu_set_key_value('BIASIM', 
                                     os.path.basename(this_bias.filename)) 
                 
-            # Updating log with new BIASIM header key
+            # Update log with new BIASIM header key
             log.fullinfo('Another PHU keyword added:', 'header')
             log.fullinfo('BIASIM = '+ad_out.phu_get_key_value('BIASIM')+'\n', 
                          category='header')
            
-            # Appending to output list
+            # Append to output list
             adoutput_list.append(ad_out)
 
             count = count+1
@@ -510,8 +500,8 @@ def subtract_bias(adinput=None, bias=None):
         # Return the outputs list, even if there is only one output
         return adoutput_list
     except:
-        # logging the exact message from the actual exception that was raised
-        # in the try block. Then raising a general ScienceError with message.
+        # log the exact message from the actual exception that was raised
+        # in the try block. Then raise a general ScienceError with message.
         log.critical(repr(sys.exc_info()[1]))
         raise 
     
