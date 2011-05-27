@@ -100,15 +100,6 @@
         "userOverride"  : True,
         },
     },
- "normalizeFlat":{
-    "suffix":{
-        # String to be post pended to the output of normalizeFlat
-        "default"       : "_normalized",
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : False,
-        },
-    },
  "pause":{
     "message":{
         "default"       : "Pausing Reduction by Control System Request",
