@@ -15,6 +15,6 @@ writeOutputs(suffix="_var", strip=True)
 #removeThermalEmissionFromFlat
 stackFrames
 writeOutputs(suffix="_stack", strip=True)
-normalizeFlat
+normalize
 writeOutputs(suffix="_flat", strip=True)
 storeProcessedFlat
