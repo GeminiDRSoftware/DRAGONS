@@ -1,13 +1,10 @@
 from datetime import datetime
 from time import strptime
 
-from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.Calculator import Calculator
 from gempy import string
 import GemCalcUtil
-
 from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
@@ -22,23 +19,15 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     gmosampsRdnoiseBefore20060831 = None
     
     def __init__(self):
-        # self.gmosampsGain = \
-        #     Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
-        #                            'gmosampsGain')
-        # self.gmosampsGainBefore20060831 = \
-        #     Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
-        #                            'gmosampsGainBefore20060831')
-        
-        # Slightly more efficient: we can get both at once since they are in
-        # the same lookup space
+        # We can get both at once since they are in the same lookup space
         self.gmosampsGain, self.gmosampsGainBefore20060831 = \
             Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
-                                   'gmosampsGain',
-                                   'gmosampsGainBefore20060831')
+                                     'gmosampsGain',
+                                     'gmosampsGainBefore20060831')
         self.gmosampsRdnoise, self.gmosampsRdnoiseBefore20060831 = \
             Lookups.get_lookup_table('Gemini/GMOS/GMOSAmpTables',
-                                   'gmosampsRdnoise',
-                                   'gmosampsRdnoiseBefore20060831')
+                                     'gmosampsRdnoise',
+                                     'gmosampsRdnoiseBefore20060831')
         GEMINI_DescriptorCalc.__init__(self)
     
     def amp_read_area(self, dataset, **args):
@@ -54,9 +43,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # updated global key dictionary (self._specifickey_dict)
             ampname = ext.get_key_value(self._specifickey_dict['key_ampname'])
             if ampname is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             # Get the pretty (1-based indexing) readout area of the CCD
@@ -72,13 +61,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             amp_read_area = "'%s':%s" % (ampname, detsec)
             # Return a dictionary with the composite amp_read_area string as
             # the value
-            ret_amp_read_area.update({(ext.extname(), \
-                ext.extver()):str(amp_read_area)})
+            ret_amp_read_area.update({
+                (ext.extname(), ext.extver()):str(amp_read_area)})
         
         return ret_amp_read_area
     
-    def central_wavelength(self, dataset, asMicrometers=False, \
-        asNanometers=False, asAngstroms=False, **args):
+    def central_wavelength(self, dataset, asMicrometers=False,
+                           asNanometers=False, asAngstroms=False, **args):
         # Currently for GMOS data, the central wavelength is recorded in
         # nanometers
         input_units = 'nanometers'
@@ -102,20 +91,19 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # central wavelength keyword is defined in the local key dictionary
         # (stdkeyDictGMOS) but is read from the updated global key dictionary
         # (self._specifickey_dict)
-        raw_central_wavelength = \
-            dataset.phu_get_key_value(self._specifickey_dict['key_central_wavelength'])
+        raw_central_wavelength = dataset.phu_get_key_value(
+            self._specifickey_dict['key_central_wavelength'])
         if raw_central_wavelength is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Use the utilities function convert_units to convert the central
         # wavelength value from the input units to the output units
-        ret_central_wavelength = \
-            GemCalcUtil.convert_units(input_units=input_units, \
-            input_value=float(raw_central_wavelength), \
-             output_units=output_units)
+        ret_central_wavelength = GemCalcUtil.convert_units(
+            input_units=input_units, input_value=float(raw_central_wavelength),
+            output_units=output_units)
         
         return ret_central_wavelength
     
@@ -132,16 +120,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # key dictionary (self._specifickey_dict)
             ccdsum = ext.get_key_value(self._specifickey_dict['key_ccdsum'])
             if ccdsum is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             detector_x_bin, detector_y_bin = ccdsum.split()
             # Return a dictionary with the binning of the x-axis integer as the
             # value
-            ret_detector_x_bin.update({(ext.extname(), \
-                ext.extver()):int(detector_x_bin)})
+            ret_detector_x_bin.update({
+                (ext.extname(), ext.extver()):int(detector_x_bin)})
         
         return ret_detector_x_bin
     
@@ -158,28 +146,30 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # key dictionary (self._specifickey_dict)
             ccdsum = ext.get_key_value(self._specifickey_dict['key_ccdsum'])
             if ccdsum is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             detector_x_bin, detector_y_bin = ccdsum.split()
             # Return a dictionary with the binning of the y-axis integer as the
             # value
-            ret_detector_y_bin.update({(ext.extname(), \
-                ext.extver()):int(detector_y_bin)})
+            ret_detector_y_bin.update({
+                (ext.extname(), ext.extver()):int(detector_y_bin)})
         
         return ret_detector_y_bin
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictGMOS) but
-        # is read from the updated global key dictionary (self._specifickey_dict)
-        disperser = dataset.phu_get_key_value(self._specifickey_dict['key_disperser'])
+        # is read from the updated global key dictionary
+        # (self._specifickey_dict)
+        disperser = dataset.phu_get_key_value(
+            self._specifickey_dict['key_disperser'])
         if disperser is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if pretty:
@@ -189,8 +179,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if stripID:
             if pretty:
                 # Return the stripped and pretty disperser string
-                ret_disperser = \
-                    string.removeComponentID(disperser).strip('+')
+                ret_disperser = string.removeComponentID(disperser).strip('+')
             else:
                 # Return the stripped disperser string
                 ret_disperser = string.removeComponentID(disperser)
@@ -200,8 +189,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_disperser
     
-    def dispersion(self, dataset, asMicrometers=False, asNanometers=False, \
-        asAngstroms=False, **args):
+    def dispersion(self, dataset, asMicrometers=False, asNanometers=False,
+                   asAngstroms=False, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
@@ -230,33 +219,33 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # extension. The dispersion keyword is defined in the local key
             # dictionary (stdkeyDictGMOS) but is read from the updated global
             # key dictionary (self._specifickey_dict)
-            raw_dispersion = \
-                ext.get_key_value(self._specifickey_dict['key_dispersion'])
+            raw_dispersion = ext.get_key_value(
+                self._specifickey_dict['key_dispersion'])
             if raw_dispersion is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             # Use the utilities function convert_units to convert the
             # dispersion value from the input units to the output units
-            dispersion = \
-                GemCalcUtil.convert_units(input_units=input_units, \
-                input_value=float(raw_dispersion), output_units=output_units)
+            dispersion = GemCalcUtil.convert_units(
+                input_units=input_units, input_value=float(raw_dispersion),
+                output_units=output_units)
             # Return a dictionary with the dispersion float as the value
-            ret_dispersion.update({(ext.extname(), \
-                ext.extver()):float(dispersion)})
+            ret_dispersion.update({
+                (ext.extname(), ext.extver()):float(dispersion)})
         
         return ret_dispersion
     
     def exposure_time(self, dataset, **args):
         # Get the exposure time from the header of the PHU
-        exposure_time = \
-            dataset.phu_get_key_value(self._specifickey_dict['key_exposure_time'])
+        exposure_time = dataset.phu_get_key_value(
+            self._specifickey_dict['key_exposure_time'])
         if exposure_time is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It 
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Sanity check for times when the GMOS DC is stoned
@@ -273,12 +262,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # plane mask keyword is defined in the local key dictionary
         # (stdkeyDictGMOS) but is read from the updated global key dictionary
         # (self._specifickey_dict)
-        focal_plane_mask = \
-            dataset.phu_get_key_value(self._specifickey_dict['key_focal_plane_mask'])
+        focal_plane_mask = dataset.phu_get_key_value(
+            self._specifickey_dict['key_focal_plane_mask'])
         if focal_plane_mask is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if focal_plane_mask == 'None':
@@ -316,10 +305,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # from the header of the PHU. The ampinteg keyword is defined in
             # the local key dictionary (stdkeyDictGMOS) but is read from the
             # updated global key dictionary (self._specifickey_dict)
-            ampinteg = dataset.phu_get_key_value(self._specifickey_dict['key_ampinteg'])
+            ampinteg = dataset.phu_get_key_value(
+                self._specifickey_dict['key_ampinteg'])
             if ampinteg is None:
-                # The phu_get_key_value() function returns None if a value cannot
-                # be found and stores the exception info. Re-raise the
+                # The phu_get_key_value() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, 'exception_info'):
                     raise dataset.exception_info
@@ -340,7 +330,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
                 # read from the updated global key dictionary
                 # (self._specifickey_dict)
-                ampname = ext.get_key_value(self._specifickey_dict['key_ampname'])
+                ampname = ext.get_key_value(
+                    self._specifickey_dict['key_ampname'])
                 if ampname is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
@@ -392,9 +383,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Get the gain from the header of each pixel data extension.
                 gain = ext.get_key_value(self._specifickey_dict['key_gain'])
                 if gain is None:
-                    # The get_key_value() function returns None if a value cannot
-                    # be found and stores the exception info. Re-raise the
-                    # exception. It will be dealt with by the
+                    # The get_key_value() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
                     # CalculatorInterface.
                     if hasattr(ext, 'exception_info'):
                         raise ext.exception_info
@@ -404,8 +395,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     gain_setting = 'low'
                 # Return a dictionary with the gain setting string as the
                 # value
-                ret_gain_setting.update({(ext.extname(), \
-                        ext.extver()):str(gain_setting)})
+                ret_gain_setting.update({
+                    (ext.extname(), ext.extver()):str(gain_setting)})
         else:
             # Can you return the gain_setting without using the raw gain value?
             raise Errors.DescriptorTypeError()
@@ -418,11 +409,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if 'GMOS_NODANDSHUFFLE' in dataset.types:
             # Get the number of nod and shuffle cycles from the header of the
             # PHU
-            nod_count = \
-                dataset.phu_get_key_value(self._specifickey_dict['key_nod_count'])
+            nod_count = dataset.phu_get_key_value(
+                self._specifickey_dict['key_nod_count'])
             if nod_count is None:
-                # The phu_get_key_value() function returns None if a value cannot
-                # be found and stores the exception info. Re-raise the
+                # The phu_get_key_value() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, 'exception_info'):
                     raise dataset.exception_info
@@ -439,11 +430,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if 'GMOS_NODANDSHUFFLE' in dataset.types:
             # Get the number of pixel rows the charge is shuffled by from the
             # header of the PHU
-            nod_pixels = \
-                dataset.phu_get_key_value(self._specifickey_dict['key_nod_pixels'])
+            nod_pixels = dataset.phu_get_key_value(
+                self._specifickey_dict['key_nod_pixels'])
             if nod_pixels is None:
-                # The phu_get_key_value() function returns None if a value cannot
-                # be found and stores the exception info. Re-raise the
+                # The phu_get_key_value() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, 'exception_info'):
                     raise dataset.exception_info
@@ -500,27 +491,28 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if 'PREPARED' in dataset.types:
             # Loop over the science extensions in the dataset
             for ext in dataset['SCI']:
-                read_noise = \
-                    ext.get_key_value(self._specifickey_dict['key_read_noise'])
+                read_noise = ext.get_key_value(
+                    self._specifickey_dict['key_read_noise'])
                 if read_noise is None:
-                    # The get_key_value() function returns None if a value cannot
-                    # be found and stores the exception info. Re-raise the
-                    # exception. It will be dealt with by the
+                    # The get_key_value() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
                     # CalculatorInterface.
                     if hasattr(ext, 'exception_info'):
                         raise ext.exception_info
                 # Return a dictionary with the read noise float as the value
-                ret_read_noise.update({(ext.extname(), \
-                    ext.extver()):float(read_noise)})
+                ret_read_noise.update({
+                    (ext.extname(), ext.extver()):float(read_noise)})
         else:
             # Get the amplifier integration time (ampinteg) and the UT date
             # from the header of the PHU. The ampinteg keyword is defined in
             # the local key dictionary (stdkeyDictGMOS) but is read from the
             # updated global key dictionary (self._specifickey_dict)
-            ampinteg = dataset.phu_get_key_value(self._specifickey_dict['key_ampinteg'])
+            ampinteg = dataset.phu_get_key_value(
+                self._specifickey_dict['key_ampinteg'])
             if ampinteg is None:
-                # The phu_get_key_value() function returns None if a value cannot
-                # be found and stores the exception info. Re-raise the
+                # The phu_get_key_value() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, 'exception_info'):
                     raise dataset.exception_info
@@ -541,7 +533,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # defined in the local key dictionary (stdkeyDictGMOS) but is
                 # read from the updated global key dictionary
                 # (self._specifickey_dict)
-                ampname = ext.get_key_value(self._specifickey_dict['key_ampname'])
+                ampname = ext.get_key_value(
+                    self._specifickey_dict['key_ampname'])
                 if ampname is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
@@ -570,13 +563,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 else:
                     if read_noise_key in getattr(self,
                         'gmosampsRdnoiseBefore20060831[read_noise_key]'):
-                        read_noise = \
-                            self.gmosampsRdnoiseBefore20060831[read_noise_key]
+                        read_noise = self.gmosampsRdnoiseBefore20060831[
+                            read_noise_key]
                     else:
                         raise Errors.TableKeyError()
                 # Return a dictionary with the read noise float as the value
-                ret_read_noise.update({(ext.extname(), \
-                    ext.extver()):float(read_noise)})
+                ret_read_noise.update({
+                    (ext.extname(), ext.extver()):float(read_noise)})
         
         return ret_read_noise
     
@@ -588,10 +581,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # PHU. The ampinteg keyword is defined in the local key dictionary
         # (stdkeyDictGMOS) but is read from the updated global key dictionary
         # (self._specifickey_dict)
-        ampinteg = dataset.phu_get_key_value(self._specifickey_dict['key_ampinteg'])
+        ampinteg = dataset.phu_get_key_value(
+            self._specifickey_dict['key_ampinteg'])
         if ampinteg is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
