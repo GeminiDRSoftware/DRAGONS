@@ -1,11 +1,7 @@
 import datetime, os, re
 import dateutil.parser
 
-from astrodata import AstroData
-from astrodata import Descriptors
 from astrodata import Errors
-from astrodata import Lookups
-from astrodata.Calculator import Calculator
 from gempy import string
 import GemCalcUtil
 from StandardGEMINIKeyDict import stdkeyDictGEMINI
@@ -18,11 +14,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     
     def airmass(self, dataset, **args):
         # Get the airmass value from the header of the PHU
-        airmass = dataset.phu_get_key_value(self._specifickey_dict['key_airmass'])
+        airmass = dataset.phu_get_key_value(
+            self._specifickey_dict['key_airmass'])
         if airmass is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Validate the airmass value
@@ -43,12 +40,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     
     def cass_rotator_pa(self, dataset, **args):
         # Get the cassegrain rotator position angle from the header of the PHU
-        cass_rotator_pa = \
-            dataset.phu_get_key_value(self._specifickey_dict['key_cass_rotator_pa'])
+        cass_rotator_pa = dataset.phu_get_key_value(
+            self._specifickey_dict['key_cass_rotator_pa'])
         if cass_rotator_pa is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Validate the cassegrain rotator position angle value
@@ -59,8 +56,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_cass_rotator_pa
     
-    def central_wavelength(self, dataset, asMicrometers=False, \
-        asNanometers=False, asAngstroms=False, **args):
+    def central_wavelength(self, dataset, asMicrometers=False,
+                           asNanometers=False, asAngstroms=False, **args):
         # For most Gemini data, the central wavelength is recorded in
         # micrometers
         input_units = 'micrometers'
@@ -81,12 +78,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # return the central wavelength in the default units of meters
             output_units = 'meters'
         # Get the central wavelength value from the header of the PHU.
-        raw_central_wavelength = dataset.phu_get_key_value\
-            (self._specifickey_dict['key_central_wavelength'])
+        raw_central_wavelength = dataset.phu_get_key_value(
+            self._specifickey_dict['key_central_wavelength'])
         if raw_central_wavelength is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         else:
@@ -97,9 +94,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         else:
             # Use the utilities function convert_units to convert the central
             # wavelength value from the input units to the output units
-            ret_central_wavelength = \
-                GemCalcUtil.convert_units(input_units=input_units, \
-                input_value=central_wavelength, \
+            ret_central_wavelength = GemCalcUtil.convert_units(
+                input_units=input_units, input_value=central_wavelength,
                 output_units=output_units)
         
         return ret_central_wavelength
@@ -109,7 +105,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # coadds keyword may be defined in a local key dictionary
         # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
         # dictionary (self._specifickey_dict).
-        coadds = dataset.phu_get_key_value(self._specifickey_dict['key_coadds'])
+        coadds = dataset.phu_get_key_value(
+            self._specifickey_dict['key_coadds'])
         if coadds is None:
             # Return 1 as the default value for the number of coadds for Gemini
             # data
@@ -127,26 +124,25 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Loop over the science extensions in the dataset
         for ext in dataset['SCI']:
             # Get the data section from the header of each pixel data extension
-            raw_data_section = \
-                ext.get_key_value(self._specifickey_dict['key_data_section'])
+            raw_data_section = ext.get_key_value(
+                self._specifickey_dict['key_data_section'])
             if raw_data_section is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the data section string that uses
                 # 1-based indexing as the value
-                ret_data_section.update({(ext.extname(), \
-                    ext.extver()):str(raw_data_section)})
+                ret_data_section.update({
+                    (ext.extname(), ext.extver()):str(raw_data_section)})
             else:
                 # Return a dictionary with the data section list that uses
                 # 0-based, non-inclusive indexing as the value
-                data_section = \
-                    string.sectionStrToIntList(raw_data_section)
-                ret_data_section.update({(ext.extname(), \
-                    ext.extver()):data_section})
+                data_section = string.sectionStrToIntList(raw_data_section)
+                ret_data_section.update({
+                    (ext.extname(), ext.extver()):data_section})
         
         return ret_data_section
     
@@ -156,11 +152,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         slit to create the short slits used in the cross dispersed modes.
         """
         # Get the decker position from the header of the PHU
-        decker = dataset.phu_get_key_value(self._specifickey_dict['key_decker'])
+        decker = dataset.phu_get_key_value(
+            self._specifickey_dict['key_decker'])
         if decker is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if pretty:
@@ -183,26 +180,26 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         for ext in dataset['SCI']:
             # Get the detector section from the header of each pixel data
             # extension
-            raw_detector_section = \
-                ext.get_key_value(self._specifickey_dict['key_detector_section'])
+            raw_detector_section = ext.get_key_value(
+                self._specifickey_dict['key_detector_section'])
             if raw_detector_section is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the detector section string that 
                 # uses 1-based indexing as the value
-                ret_detector_section.update({(ext.extname(), \
-                    ext.extver()):str(raw_detector_section)})
+                ret_detector_section.update({
+                    (ext.extname(), ext.extver()):str(raw_detector_section)})
             else:
                 # Return a dictionary with the detector section list that 
                 # uses 0-based, non-inclusive indexing as the value
-                detector_section = \
-                    string.sectionStrToIntList(raw_detector_section)
-                ret_detector_section.update({(ext.extname(), \
-                    ext.extver()):detector_section})
+                detector_section = string.sectionStrToIntList(
+                    raw_detector_section)
+                ret_detector_section.update({
+                    (ext.extname(), ext.extver()):detector_section})
         
         return ret_detector_section
     
@@ -215,8 +212,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         for ext in dataset['SCI']:
             # Return a dictionary with the binning of the x-axis integer (set
             # to 1 as default for Gemini data) as the value
-            ret_detector_x_bin.update({(ext.extname(), \
-                ext.extver()):int(1)})
+            ret_detector_x_bin.update({
+                (ext.extname(), ext.extver()):int(1)})
         
         return ret_detector_x_bin
     
@@ -229,8 +226,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         for ext in dataset['SCI']:
             # Return a dictionary with the binning of the y-axis integer (set
             # to 1 as default for Gemini data) as the value
-            ret_detector_y_bin.update({(ext.extname(), \
-                ext.extver()):int(1)})
+            ret_detector_y_bin.update({
+                (ext.extname(), ext.extver()):int(1)})
         
         return ret_detector_y_bin
     
@@ -239,11 +236,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # keyword may be defined in a local key dictionary
         # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
         # dictionary (self._specifickey_dict)
-        disperser = dataset.phu_get_key_value(self._specifickey_dict['key_disperser'])
+        disperser = dataset.phu_get_key_value(
+            self._specifickey_dict['key_disperser'])
         if disperser is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if pretty:
@@ -270,8 +268,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             for ext in dataset['SCI']:
                 # Get the dispersion axis from the header of each pixel data
                 # extension
-                dispersion_axis = \
-                    ext.get_key_value(self._specifickey_dict['key_dispersion_axis'])
+                dispersion_axis = ext.get_key_value(
+                    self._specifickey_dict['key_dispersion_axis'])
                 if dispersion_axis is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
@@ -281,8 +279,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                         raise ext.exception_info
                 # Return a dictionary with the dispersion axis integer as
                 # the value
-                ret_dispersion_axis.update({(ext.extname(), \
-                    ext.extver()):int(dispersion_axis)})
+                ret_dispersion_axis.update({
+                    (ext.extname(), ext.extver()):int(dispersion_axis)})
         else:
             raise Errors.DescriptorTypeError()
         
@@ -290,12 +288,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     
     def exposure_time(self, dataset, **args):
         # Get the exposure time value from the header of the PHU
-        exposure_time = \
-            dataset.phu_get_key_value(self._specifickey_dict['key_exposure_time'])
+        exposure_time = dataset.phu_get_key_value(
+            self._specifickey_dict['key_exposure_time'])
         if exposure_time is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # If the data have been prepared, take the (total) exposure time value
@@ -326,9 +324,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         filter1 = dataset.phu_get_key_value(key_filter1)
         filter2 = dataset.phu_get_key_value(key_filter2)
         if filter1 is None or filter2 is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if stripID:
@@ -350,8 +348,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 ret_filter_name = 'blank'
         else:
             # Return a dictionary with the filter name string as the value
-            ret_filter_name.update({key_filter1:str(filter1), \
-                key_filter2:str(filter2)})
+            ret_filter_name.update({key_filter1:str(filter1),
+                                    key_filter2:str(filter2)})
         
         return ret_filter_name
     
@@ -359,18 +357,17 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         if pretty:
             stripID = True
         # Get the focal plane mask value from the header of the PHU.
-        focal_plane_mask = \
-            dataset.phu_get_key_value(self._specifickey_dict['key_focal_plane_mask'])
+        focal_plane_mask = dataset.phu_get_key_value(
+            self._specifickey_dict['key_focal_plane_mask'])
         if focal_plane_mask is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if stripID:
             # Return the focal plane mask string with the component ID stripped
-            ret_focal_plane_mask = \
-                string.removeComponentID(focal_plane_mask)
+            ret_focal_plane_mask = string.removeComponentID(focal_plane_mask)
         else:
             # Return the focal plane mask string
             ret_focal_plane_mask = str(focal_plane_mask)
@@ -387,11 +384,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     
     def local_time(self, dataset, **args):
         # Get the local time from the header of the PHU
-        local_time = dataset.phu_get_key_value(self._specifickey_dict['key_local_time'])
+        local_time = dataset.phu_get_key_value(
+            self._specifickey_dict['key_local_time'])
         if local_time is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Validate the local time value. The assumption is that the standard
@@ -419,8 +417,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             for ext in dataset['SCI']:
                 # Get the MDF row ID from the header of each pixel data
                 # extension
-                mdf_row_id = \
-                    ext.get_key_value(self._specifickey_dict['key_mdf_row_id'])
+                mdf_row_id = ext.get_key_value(
+                    self._specifickey_dict['key_mdf_row_id'])
                 if mdf_row_id is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
@@ -430,8 +428,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                         raise ext.exception_info
                 # Return a dictionary with the MDF row ID integer as the
                 # value
-                ret_mdf_row_id.update({(ext.extname(), \
-                    ext.extver()):int(mdf_row_id)})
+                ret_mdf_row_id.update({
+                    (ext.extname(), ext.extver()):int(mdf_row_id)})
         else:
             raise Errors.DescriptorTypeError()
         
@@ -462,26 +460,26 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         for ext in dataset['SCI']:
             # Get the overscan section from the header of each pixel data
             # extension
-            raw_overscan_section = \
-                ext.get_key_value(self._specifickey_dict['key_overscan_section'])
+            raw_overscan_section = ext.get_key_value(
+                self._specifickey_dict['key_overscan_section'])
             if raw_overscan_section is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the overscan section string that 
                 # uses 1-based indexing as the value
-                ret_overscan_section.update({(ext.extname(), \
-                    ext.extver()):str(raw_overscan_section)})
+                ret_overscan_section.update({
+                    (ext.extname(), ext.extver()):str(raw_overscan_section)})
             else:
                 # Return a dictionary with the overscan section list that 
                 # uses 0-based, non-inclusive indexing as the value
-                overscan_section = \
-                    string.sectionStrToIntList(raw_overscan_section)
-                ret_overscan_section.update({(ext.extname(), \
-                    ext.extver()):overscan_section})
+                overscan_section = string.sectionStrToIntList(
+                    raw_overscan_section)
+                ret_overscan_section.update({
+                    (ext.extname(), ext.extver()):overscan_section})
         
         return ret_overscan_section
     
@@ -507,14 +505,14 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # the header of the PHU. The rawpireq and rawgemqa keywords are
         # defined in the local key dictionary (stdkeyDictGEMINI) but are read
         # from the updated global key dictionary (self._specifickey_dict)
-        rawpireq = dataset.phu_get_key_value\
-            (self._specifickey_dict['key_raw_pi_requirements_met'])
-        rawgemqa = dataset.phu_get_key_value\
-            (self._specifickey_dict['key_raw_gemini_qa'])
+        rawpireq = dataset.phu_get_key_value(
+            self._specifickey_dict['key_raw_pi_requirements_met'])
+        rawgemqa = dataset.phu_get_key_value(
+            self._specifickey_dict['key_raw_gemini_qa'])
         if rawpireq is None or rawgemqa is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Calculate the derived QA state
@@ -545,8 +543,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_ut_date
     
-    def ut_datetime(self, dataset, strict=False, dateonly=False, \
-        timeonly=False, **args):
+    def ut_datetime(self, dataset, strict=False, dateonly=False,
+                    timeonly=False, **args):
         # First, we try and figure out the date, looping through several
         # header keywords that might tell us. DATE-OBS can also give us a full
         # date-time combination, so we check for this too.
@@ -752,9 +750,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         pwfs1 = dataset.phu_get_key_value(self._specifickey_dict['key_pwfs1'])
         pwfs2 = dataset.phu_get_key_value(self._specifickey_dict['key_pwfs2'])
         if aowfs is None or oiwfs is None or pwfs1 is None or pwfs2 is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # If any of the probes are guiding, add them to the list
@@ -790,18 +788,19 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # wavelength keyword may be defined in a local key dictionary
             # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
             # dictionary (self._specifickey_dict)
-            wavelength_reference_pixel = ext.get_key_value\
-                (self._specifickey_dict['key_wavelength_reference_pixel'])
+            wavelength_reference_pixel = ext.get_key_value(
+                self._specifickey_dict['key_wavelength_reference_pixel'])
             if wavelength_reference_pixel is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, 'exception_info'):
                     raise ext.exception_info
             # Return a dictionary with the reference pixel of the central
             # wavelength float as the value
-            ret_wavelength_reference_pixel.update({(ext.extname(), \
-                ext.extver()):float(wavelength_reference_pixel)})
+            ret_wavelength_reference_pixel.update({
+                (ext.extname(), ext.extver()):
+                float(wavelength_reference_pixel)})
         
         return ret_wavelength_reference_pixel
     
