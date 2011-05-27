@@ -37,26 +37,17 @@ class GENERALPrimitives(PrimitiveSet):
         
         yield rc
     
+    def clearInputs(self, rc):
+        rc.clear_input()
+        
+        yield rc
+    
     def copy(self, rc):
         for ad in rc.get_inputs_as_astro_data():
             from copy import deepcopy
             nd = deepcopy(ad)
             nd.filename = "copy_"+os.path.basename(ad.filename)
             rc.report_output(nd)
-        
-        yield rc
-    
-    def setInputs(self, rc):
-        files = rc["files"]
-        if files != None:
-            a = files.split(" ")
-            if len(a)>0:
-                rc.add_input(a)
-        
-        yield rc
-    
-    def clearInputs(self, rc):
-        rc.clear_input()
         
         yield rc
     
@@ -79,5 +70,14 @@ class GENERALPrimitives(PrimitiveSet):
             log.status("No FITS files")
         else:
             log.status("\n\t".join(sfiles))
+        
+        yield rc
+    
+    def setInputs(self, rc):
+        files = rc["files"]
+        if files != None:
+            a = files.split(" ")
+            if len(a)>0:
+                rc.add_input(a)
         
         yield rc
