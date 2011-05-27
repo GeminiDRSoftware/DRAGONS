@@ -15,7 +15,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         GMOSPrimitives.init(self, rc)
         return rc
     
-    def normalizeFlat(self, rc):
+    def normalize(self, rc):
         """
         This primitive will combine the input flats and then normalize them
         using the CL script giflat.
@@ -40,11 +40,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
+        log.debug(gt.log_message("primitive", "normalize", "starting"))
         adoutput_list = []
         for ad in rc.get_inputs(style='AD'):
             if ad.phu_get_key_value('GIFLAT'):
-                log.warning('%s has already been processed by normalizeFlat' %
+                log.warning('%s has already been processed by normalize' %
                             (ad.filename))
                 adoutput_list.append(ad)
                 continue
