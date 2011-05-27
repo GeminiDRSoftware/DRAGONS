@@ -1,0 +1,12 @@
+# This recipe performs the standardization and corrections needed to convert 
+# the raw input dark images into a single stacked dark image. This output 
+# processed dark is stored on disk using storeProcessedDark and has a name 
+# equal to the name of the first input dark image with "_dark.fits" appended.
+
+prepare
+addDQ
+#nonlinearityCorrect
+aduToElectrons
+addVAR
+stackFrames
+storeProcessedDark
