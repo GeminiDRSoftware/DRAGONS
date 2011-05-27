@@ -1,12 +1,11 @@
 import sys
-import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
 
 class CalculatorInterface:
 
-    descriptorCalculator = None
+    descriptor_calculator = None
 
     def airmass(self, format=None, **args):
         """
@@ -20,18 +19,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "airmass")
-            if not hasattr(self.descriptorCalculator, "airmass"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "airmass")
+            if not hasattr(self.descriptor_calculator, "airmass"):
                 key = "key_"+"airmass"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.airmass(self, **args)
+                retval = self.descriptor_calculator.airmass(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -41,8 +41,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -69,18 +69,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "amp_read_area")
-            if not hasattr(self.descriptorCalculator, "amp_read_area"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "amp_read_area")
+            if not hasattr(self.descriptor_calculator, "amp_read_area"):
                 key = "key_"+"amp_read_area"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.amp_read_area(self, **args)
+                retval = self.descriptor_calculator.amp_read_area(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -90,8 +91,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -110,18 +111,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "azimuth")
-            if not hasattr(self.descriptorCalculator, "azimuth"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "azimuth")
+            if not hasattr(self.descriptor_calculator, "azimuth"):
                 key = "key_"+"azimuth"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.azimuth(self, **args)
+                retval = self.descriptor_calculator.azimuth(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -131,8 +133,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -151,18 +153,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "camera")
-            if not hasattr(self.descriptorCalculator, "camera"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "camera")
+            if not hasattr(self.descriptor_calculator, "camera"):
                 key = "key_"+"camera"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.camera(self, **args)
+                retval = self.descriptor_calculator.camera(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -172,8 +175,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -193,18 +196,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "cass_rotator_pa")
-            if not hasattr(self.descriptorCalculator, "cass_rotator_pa"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "cass_rotator_pa")
+            if not hasattr(self.descriptor_calculator, "cass_rotator_pa"):
                 key = "key_"+"cass_rotator_pa"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.cass_rotator_pa(self, **args)
+                retval = self.descriptor_calculator.cass_rotator_pa(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -214,8 +218,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -249,18 +253,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "central_wavelength")
-            if not hasattr(self.descriptorCalculator, "central_wavelength"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "central_wavelength")
+            if not hasattr(self.descriptor_calculator, "central_wavelength"):
                 key = "key_"+"central_wavelength"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.central_wavelength(self, **args)
+                retval = self.descriptor_calculator.central_wavelength(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -270,8 +275,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -290,18 +295,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "coadds")
-            if not hasattr(self.descriptorCalculator, "coadds"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "coadds")
+            if not hasattr(self.descriptor_calculator, "coadds"):
                 key = "key_"+"coadds"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.coadds(self, **args)
+                retval = self.descriptor_calculator.coadds(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -311,8 +317,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -331,18 +337,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "data_label")
-            if not hasattr(self.descriptorCalculator, "data_label"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "data_label")
+            if not hasattr(self.descriptor_calculator, "data_label"):
                 key = "key_"+"data_label"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.data_label(self, **args)
+                retval = self.descriptor_calculator.data_label(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -352,8 +359,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -386,18 +393,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "data_section")
-            if not hasattr(self.descriptorCalculator, "data_section"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "data_section")
+            if not hasattr(self.descriptor_calculator, "data_section"):
                 key = "key_"+"data_section"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.data_section(self, **args)
+                retval = self.descriptor_calculator.data_section(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -407,8 +415,8 @@ class CalculatorInterface:
                                    pytype = list )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -427,18 +435,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "dec")
-            if not hasattr(self.descriptorCalculator, "dec"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "dec")
+            if not hasattr(self.descriptor_calculator, "dec"):
                 key = "key_"+"dec"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.dec(self, **args)
+                retval = self.descriptor_calculator.dec(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -448,8 +457,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -472,18 +481,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "decker")
-            if not hasattr(self.descriptorCalculator, "decker"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "decker")
+            if not hasattr(self.descriptor_calculator, "decker"):
                 key = "key_"+"decker"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.decker(self, **args)
+                retval = self.descriptor_calculator.decker(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -493,8 +503,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -527,18 +537,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "detector_section")
-            if not hasattr(self.descriptorCalculator, "detector_section"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "detector_section")
+            if not hasattr(self.descriptor_calculator, "detector_section"):
                 key = "key_"+"detector_section"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.detector_section(self, **args)
+                retval = self.descriptor_calculator.detector_section(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -548,8 +559,8 @@ class CalculatorInterface:
                                    pytype = list )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -575,18 +586,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "detector_x_bin")
-            if not hasattr(self.descriptorCalculator, "detector_x_bin"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "detector_x_bin")
+            if not hasattr(self.descriptor_calculator, "detector_x_bin"):
                 key = "key_"+"detector_x_bin"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.detector_x_bin(self, **args)
+                retval = self.descriptor_calculator.detector_x_bin(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -596,8 +608,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -623,18 +635,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "detector_y_bin")
-            if not hasattr(self.descriptorCalculator, "detector_y_bin"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "detector_y_bin")
+            if not hasattr(self.descriptor_calculator, "detector_y_bin"):
                 key = "key_"+"detector_y_bin"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.detector_y_bin(self, **args)
+                retval = self.descriptor_calculator.detector_y_bin(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -644,8 +657,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -668,18 +681,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "disperser")
-            if not hasattr(self.descriptorCalculator, "disperser"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "disperser")
+            if not hasattr(self.descriptor_calculator, "disperser"):
                 key = "key_"+"disperser"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.disperser(self, **args)
+                retval = self.descriptor_calculator.disperser(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -689,8 +703,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -724,18 +738,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "dispersion")
-            if not hasattr(self.descriptorCalculator, "dispersion"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "dispersion")
+            if not hasattr(self.descriptor_calculator, "dispersion"):
                 key = "key_"+"dispersion"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.dispersion(self, **args)
+                retval = self.descriptor_calculator.dispersion(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -745,8 +760,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -765,18 +780,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "dispersion_axis")
-            if not hasattr(self.descriptorCalculator, "dispersion_axis"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "dispersion_axis")
+            if not hasattr(self.descriptor_calculator, "dispersion_axis"):
                 key = "key_"+"dispersion_axis"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.dispersion_axis(self, **args)
+                retval = self.descriptor_calculator.dispersion_axis(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -786,8 +802,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -806,18 +822,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "elevation")
-            if not hasattr(self.descriptorCalculator, "elevation"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "elevation")
+            if not hasattr(self.descriptor_calculator, "elevation"):
                 key = "key_"+"elevation"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.elevation(self, **args)
+                retval = self.descriptor_calculator.elevation(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -827,8 +844,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -847,18 +864,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "exposure_time")
-            if not hasattr(self.descriptorCalculator, "exposure_time"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "exposure_time")
+            if not hasattr(self.descriptor_calculator, "exposure_time"):
                 key = "key_"+"exposure_time"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.exposure_time(self, **args)
+                retval = self.descriptor_calculator.exposure_time(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -868,8 +886,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -893,18 +911,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "filter_name")
-            if not hasattr(self.descriptorCalculator, "filter_name"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "filter_name")
+            if not hasattr(self.descriptor_calculator, "filter_name"):
                 key = "key_"+"filter_name"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.filter_name(self, **args)
+                retval = self.descriptor_calculator.filter_name(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -914,8 +933,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -938,18 +957,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "focal_plane_mask")
-            if not hasattr(self.descriptorCalculator, "focal_plane_mask"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "focal_plane_mask")
+            if not hasattr(self.descriptor_calculator, "focal_plane_mask"):
                 key = "key_"+"focal_plane_mask"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.focal_plane_mask(self, **args)
+                retval = self.descriptor_calculator.focal_plane_mask(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -959,8 +979,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -985,18 +1005,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "gain")
-            if not hasattr(self.descriptorCalculator, "gain"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "gain")
+            if not hasattr(self.descriptor_calculator, "gain"):
                 key = "key_"+"gain"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.gain(self, **args)
+                retval = self.descriptor_calculator.gain(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1006,8 +1027,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1030,18 +1051,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "grating")
-            if not hasattr(self.descriptorCalculator, "grating"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "grating")
+            if not hasattr(self.descriptor_calculator, "grating"):
                 key = "key_"+"grating"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.grating(self, **args)
+                retval = self.descriptor_calculator.grating(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1051,8 +1073,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1071,18 +1093,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "gain_setting")
-            if not hasattr(self.descriptorCalculator, "gain_setting"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "gain_setting")
+            if not hasattr(self.descriptor_calculator, "gain_setting"):
                 key = "key_"+"gain_setting"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.gain_setting(self, **args)
+                retval = self.descriptor_calculator.gain_setting(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1092,8 +1115,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1112,18 +1135,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "instrument")
-            if not hasattr(self.descriptorCalculator, "instrument"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "instrument")
+            if not hasattr(self.descriptor_calculator, "instrument"):
                 key = "key_"+"instrument"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.instrument(self, **args)
+                retval = self.descriptor_calculator.instrument(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1133,8 +1157,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1153,18 +1177,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "local_time")
-            if not hasattr(self.descriptorCalculator, "local_time"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "local_time")
+            if not hasattr(self.descriptor_calculator, "local_time"):
                 key = "key_"+"local_time"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.local_time(self, **args)
+                retval = self.descriptor_calculator.local_time(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1174,8 +1199,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1200,18 +1225,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "mdf_row_id")
-            if not hasattr(self.descriptorCalculator, "mdf_row_id"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "mdf_row_id")
+            if not hasattr(self.descriptor_calculator, "mdf_row_id"):
                 key = "key_"+"mdf_row_id"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.mdf_row_id(self, **args)
+                retval = self.descriptor_calculator.mdf_row_id(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1221,8 +1247,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1242,18 +1268,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "nod_count")
-            if not hasattr(self.descriptorCalculator, "nod_count"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "nod_count")
+            if not hasattr(self.descriptor_calculator, "nod_count"):
                 key = "key_"+"nod_count"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.nod_count(self, **args)
+                retval = self.descriptor_calculator.nod_count(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1263,8 +1290,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1284,18 +1311,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "nod_pixels")
-            if not hasattr(self.descriptorCalculator, "nod_pixels"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "nod_pixels")
+            if not hasattr(self.descriptor_calculator, "nod_pixels"):
                 key = "key_"+"nod_pixels"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.nod_pixels(self, **args)
+                retval = self.descriptor_calculator.nod_pixels(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1305,8 +1333,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1326,18 +1354,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "non_linear_level")
-            if not hasattr(self.descriptorCalculator, "non_linear_level"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "non_linear_level")
+            if not hasattr(self.descriptor_calculator, "non_linear_level"):
                 key = "key_"+"non_linear_level"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.non_linear_level(self, **args)
+                retval = self.descriptor_calculator.non_linear_level(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1347,8 +1376,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1367,18 +1396,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "object")
-            if not hasattr(self.descriptorCalculator, "object"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "object")
+            if not hasattr(self.descriptor_calculator, "object"):
                 key = "key_"+"object"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.object(self, **args)
+                retval = self.descriptor_calculator.object(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1388,8 +1418,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1409,18 +1439,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "observation_class")
-            if not hasattr(self.descriptorCalculator, "observation_class"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "observation_class")
+            if not hasattr(self.descriptor_calculator, "observation_class"):
                 key = "key_"+"observation_class"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.observation_class(self, **args)
+                retval = self.descriptor_calculator.observation_class(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1430,8 +1461,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1450,18 +1481,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "observation_epoch")
-            if not hasattr(self.descriptorCalculator, "observation_epoch"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "observation_epoch")
+            if not hasattr(self.descriptor_calculator, "observation_epoch"):
                 key = "key_"+"observation_epoch"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.observation_epoch(self, **args)
+                retval = self.descriptor_calculator.observation_epoch(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1471,8 +1503,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1491,18 +1523,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "observation_id")
-            if not hasattr(self.descriptorCalculator, "observation_id"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "observation_id")
+            if not hasattr(self.descriptor_calculator, "observation_id"):
                 key = "key_"+"observation_id"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.observation_id(self, **args)
+                retval = self.descriptor_calculator.observation_id(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1512,8 +1545,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1533,18 +1566,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "observation_type")
-            if not hasattr(self.descriptorCalculator, "observation_type"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "observation_type")
+            if not hasattr(self.descriptor_calculator, "observation_type"):
                 key = "key_"+"observation_type"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.observation_type(self, **args)
+                retval = self.descriptor_calculator.observation_type(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1554,8 +1588,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1574,18 +1608,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "overscan_section")
-            if not hasattr(self.descriptorCalculator, "overscan_section"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "overscan_section")
+            if not hasattr(self.descriptor_calculator, "overscan_section"):
                 key = "key_"+"overscan_section"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.overscan_section(self, **args)
+                retval = self.descriptor_calculator.overscan_section(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1595,8 +1630,8 @@ class CalculatorInterface:
                                    pytype = list )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1615,18 +1650,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "pixel_scale")
-            if not hasattr(self.descriptorCalculator, "pixel_scale"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "pixel_scale")
+            if not hasattr(self.descriptor_calculator, "pixel_scale"):
                 key = "key_"+"pixel_scale"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.pixel_scale(self, **args)
+                retval = self.descriptor_calculator.pixel_scale(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1636,8 +1672,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1660,18 +1696,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "prism")
-            if not hasattr(self.descriptorCalculator, "prism"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "prism")
+            if not hasattr(self.descriptor_calculator, "prism"):
                 key = "key_"+"prism"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.prism(self, **args)
+                retval = self.descriptor_calculator.prism(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1681,8 +1718,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1702,18 +1739,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "program_id")
-            if not hasattr(self.descriptorCalculator, "program_id"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "program_id")
+            if not hasattr(self.descriptor_calculator, "program_id"):
                 key = "key_"+"program_id"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.program_id(self, **args)
+                retval = self.descriptor_calculator.program_id(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1723,8 +1761,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1743,18 +1781,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "pupil_mask")
-            if not hasattr(self.descriptorCalculator, "pupil_mask"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "pupil_mask")
+            if not hasattr(self.descriptor_calculator, "pupil_mask"):
                 key = "key_"+"pupil_mask"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.pupil_mask(self, **args)
+                retval = self.descriptor_calculator.pupil_mask(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1764,8 +1803,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1785,18 +1824,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "qa_state")
-            if not hasattr(self.descriptorCalculator, "qa_state"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "qa_state")
+            if not hasattr(self.descriptor_calculator, "qa_state"):
                 key = "key_"+"qa_state"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.qa_state(self, **args)
+                retval = self.descriptor_calculator.qa_state(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1806,8 +1846,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1826,18 +1866,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "ra")
-            if not hasattr(self.descriptorCalculator, "ra"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "ra")
+            if not hasattr(self.descriptor_calculator, "ra"):
                 key = "key_"+"ra"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.ra(self, **args)
+                retval = self.descriptor_calculator.ra(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1847,8 +1888,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1868,18 +1909,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "raw_bg")
-            if not hasattr(self.descriptorCalculator, "raw_bg"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "raw_bg")
+            if not hasattr(self.descriptor_calculator, "raw_bg"):
                 key = "key_"+"raw_bg"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.raw_bg(self, **args)
+                retval = self.descriptor_calculator.raw_bg(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1889,8 +1931,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1910,18 +1952,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "raw_cc")
-            if not hasattr(self.descriptorCalculator, "raw_cc"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "raw_cc")
+            if not hasattr(self.descriptor_calculator, "raw_cc"):
                 key = "key_"+"raw_cc"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.raw_cc(self, **args)
+                retval = self.descriptor_calculator.raw_cc(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1931,8 +1974,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1952,18 +1995,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "raw_iq")
-            if not hasattr(self.descriptorCalculator, "raw_iq"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "raw_iq")
+            if not hasattr(self.descriptor_calculator, "raw_iq"):
                 key = "key_"+"raw_iq"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.raw_iq(self, **args)
+                retval = self.descriptor_calculator.raw_iq(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -1973,8 +2017,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -1994,18 +2038,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "raw_wv")
-            if not hasattr(self.descriptorCalculator, "raw_wv"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "raw_wv")
+            if not hasattr(self.descriptor_calculator, "raw_wv"):
                 key = "key_"+"raw_wv"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.raw_wv(self, **args)
+                retval = self.descriptor_calculator.raw_wv(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2015,8 +2060,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2039,18 +2084,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "read_mode")
-            if not hasattr(self.descriptorCalculator, "read_mode"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "read_mode")
+            if not hasattr(self.descriptor_calculator, "read_mode"):
                 key = "key_"+"read_mode"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.read_mode(self, **args)
+                retval = self.descriptor_calculator.read_mode(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2060,8 +2106,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2086,18 +2132,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "read_noise")
-            if not hasattr(self.descriptorCalculator, "read_noise"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "read_noise")
+            if not hasattr(self.descriptor_calculator, "read_noise"):
                 key = "key_"+"read_noise"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.read_noise(self, **args)
+                retval = self.descriptor_calculator.read_noise(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2107,8 +2154,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2128,18 +2175,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "read_speed_setting")
-            if not hasattr(self.descriptorCalculator, "read_speed_setting"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "read_speed_setting")
+            if not hasattr(self.descriptor_calculator, "read_speed_setting"):
                 key = "key_"+"read_speed_setting"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.read_speed_setting(self, **args)
+                retval = self.descriptor_calculator.read_speed_setting(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2149,8 +2197,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2170,18 +2218,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "saturation_level")
-            if not hasattr(self.descriptorCalculator, "saturation_level"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "saturation_level")
+            if not hasattr(self.descriptor_calculator, "saturation_level"):
                 key = "key_"+"saturation_level"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.saturation_level(self, **args)
+                retval = self.descriptor_calculator.saturation_level(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2191,8 +2240,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2215,18 +2264,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "slit")
-            if not hasattr(self.descriptorCalculator, "slit"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "slit")
+            if not hasattr(self.descriptor_calculator, "slit"):
                 key = "key_"+"slit"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.slit(self, **args)
+                retval = self.descriptor_calculator.slit(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2236,8 +2286,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2256,18 +2306,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "telescope")
-            if not hasattr(self.descriptorCalculator, "telescope"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "telescope")
+            if not hasattr(self.descriptor_calculator, "telescope"):
                 key = "key_"+"telescope"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.telescope(self, **args)
+                retval = self.descriptor_calculator.telescope(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2277,8 +2328,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2297,18 +2348,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "ut_date")
-            if not hasattr(self.descriptorCalculator, "ut_date"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "ut_date")
+            if not hasattr(self.descriptor_calculator, "ut_date"):
                 key = "key_"+"ut_date"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.ut_date(self, **args)
+                retval = self.descriptor_calculator.ut_date(self, **args)
             
             from datetime import datetime
             ret = DescriptorValue( retval, 
@@ -2318,8 +2370,8 @@ class CalculatorInterface:
                                    pytype = datetime )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2363,18 +2415,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "ut_datetime")
-            if not hasattr(self.descriptorCalculator, "ut_datetime"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "ut_datetime")
+            if not hasattr(self.descriptor_calculator, "ut_datetime"):
                 key = "key_"+"ut_datetime"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.ut_datetime(self, **args)
+                retval = self.descriptor_calculator.ut_datetime(self, **args)
             
             from datetime import datetime
             ret = DescriptorValue( retval, 
@@ -2384,8 +2437,8 @@ class CalculatorInterface:
                                    pytype = datetime )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2404,18 +2457,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "ut_time")
-            if not hasattr(self.descriptorCalculator, "ut_time"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "ut_time")
+            if not hasattr(self.descriptor_calculator, "ut_time"):
                 key = "key_"+"ut_time"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.ut_time(self, **args)
+                retval = self.descriptor_calculator.ut_time(self, **args)
             
             from datetime import datetime
             ret = DescriptorValue( retval, 
@@ -2425,8 +2479,8 @@ class CalculatorInterface:
                                    pytype = datetime )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2447,18 +2501,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "wavefront_sensor")
-            if not hasattr(self.descriptorCalculator, "wavefront_sensor"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "wavefront_sensor")
+            if not hasattr(self.descriptor_calculator, "wavefront_sensor"):
                 key = "key_"+"wavefront_sensor"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.wavefront_sensor(self, **args)
+                retval = self.descriptor_calculator.wavefront_sensor(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2468,8 +2523,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2495,18 +2550,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "wavelength_reference_pixel")
-            if not hasattr(self.descriptorCalculator, "wavelength_reference_pixel"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "wavelength_reference_pixel")
+            if not hasattr(self.descriptor_calculator, "wavelength_reference_pixel"):
                 key = "key_"+"wavelength_reference_pixel"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.wavelength_reference_pixel(self, **args)
+                retval = self.descriptor_calculator.wavelength_reference_pixel(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2516,8 +2572,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2537,18 +2593,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "well_depth_setting")
-            if not hasattr(self.descriptorCalculator, "well_depth_setting"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "well_depth_setting")
+            if not hasattr(self.descriptor_calculator, "well_depth_setting"):
                 key = "key_"+"well_depth_setting"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.well_depth_setting(self, **args)
+                retval = self.descriptor_calculator.well_depth_setting(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2558,8 +2615,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2578,18 +2635,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "x_offset")
-            if not hasattr(self.descriptorCalculator, "x_offset"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "x_offset")
+            if not hasattr(self.descriptor_calculator, "x_offset"):
                 key = "key_"+"x_offset"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.x_offset(self, **args)
+                retval = self.descriptor_calculator.x_offset(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2599,8 +2657,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2619,18 +2677,19 @@ class CalculatorInterface:
         """
         try:
             self._lazyloadCalculator()
-            #print hasattr(self.descriptorCalculator, "y_offset")
-            if not hasattr(self.descriptorCalculator, "y_offset"):
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "y_offset")
+            if not hasattr(self.descriptor_calculator, "y_offset"):
                 key = "key_"+"y_offset"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
             else:
-                retval = self.descriptorCalculator.y_offset(self, **args)
+                retval = self.descriptor_calculator.y_offset(self, **args)
             
             
             ret = DescriptorValue( retval, 
@@ -2640,8 +2699,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
-            if (self.descriptorCalculator is None 
-                or self.descriptorCalculator.throwExceptions == True):
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
                 raise
             else:
                 #print "NONE BY EXCEPTION"
@@ -2653,6 +2712,6 @@ class CalculatorInterface:
         '''Function to put at top of all descriptor members
         to ensure the descriptor is loaded.  This way we avoid
         loading it if it is not needed.'''
-        if self.descriptorCalculator is None:
-            self.descriptorCalculator = Descriptors.get_calculator(self, **args)
+        if self.descriptor_calculator is None:
+            self.descriptor_calculator = Descriptors.get_calculator(self, **args)
 

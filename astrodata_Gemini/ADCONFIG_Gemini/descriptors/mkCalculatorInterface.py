@@ -17,13 +17,14 @@ class DescriptorDescriptor:
         \"\"\"
         try:
             self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
             #print hasattr(self.descriptor_calculator, "%(name)s")
             if not hasattr(self.descriptor_calculator, "%(name)s"):
                 key = "key_"+"%(name)s"
-                #print "mkCI10:",key, repr(SDKD.globalStdkeyDict)
-                #print "mkCI12:", key in SDKD.globalStdkeyDict
-                if key in SDKD.globalStdkeyDict.keys():
-                    retval = self.phu_get_key_value(SDKD.globalStdkeyDict[key])
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -206,7 +207,6 @@ descriptors =   [   DD("airmass", pytype=float),
                 ]
 
 wholeout = """import sys
-import StandardDescriptorKeyDict as SDKD
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors

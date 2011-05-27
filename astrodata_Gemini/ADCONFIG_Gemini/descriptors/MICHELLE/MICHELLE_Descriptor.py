@@ -2,26 +2,22 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata.Calculator import Calculator
 
-from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardMICHELLEKeyDict import stdkeyDictMICHELLE
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    globalStdkeyDict.update(stdkeyDictMICHELLE)
-    
-    def __init__(self):
-        pass
+    _update_stdkey_dict = stdkeyDictMICHELLE
     
     def exposure_time(self, dataset, **args):
         # Get the exposure time and the number of extensions from the header of
         # the PHU. The exposure time and the number of extensions keywords are
         # defined in the local key dictionary (stdkeyDictMICHELLE) but are read
-        # from the updated global key dictionary (globalStdkeyDict)
+        # from the updated global key dictionary (self._specifickey_dict)
         exposure_time = \
-            dataset.phu_get_key_value(globalStdkeyDict['key_exposure_time'])
-        extensions = dataset.phu_get_key_value(globalStdkeyDict['key_numext'])
+            dataset.phu_get_key_value(self._specifickey_dict['key_exposure_time'])
+        extensions = dataset.phu_get_key_value(self._specifickey_dict['key_numext'])
         if exposure_time is None or extensions is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -44,9 +40,9 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Get the filter name value from the header of the PHU. The filter name
         # keyword is defined in the local key dictionary (stdkeyDictMICHELLE)
-        # but is read from the updated global key dictionary (globalStdkeyDict)
+        # but is read from the updated global key dictionary (self._specifickey_dict)
         filter_name = \
-            dataset.phu_get_key_value(globalStdkeyDict['key_filter_name'])
+            dataset.phu_get_key_value(self._specifickey_dict['key_filter_name'])
         if filter_name is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -66,8 +62,8 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
     def read_mode(self, dataset, **args):
         # Get the read mode from the header of the PHU. The read mode is
         # defined in the local key dictionary (stdkeyDictMICHELLE) but is read
-        # from the updated global key dictionary (globalStdkeyDict)
-        read_mode = dataset.phu_get_key_value(globalStdkeyDict['key_read_mode'])
+        # from the updated global key dictionary (self._specifickey_dict)
+        read_mode = dataset.phu_get_key_value(self._specifickey_dict['key_read_mode'])
         if read_mode is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It

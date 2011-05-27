@@ -4,14 +4,13 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from gempy import string
 
-from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardF2KeyDict import stdkeyDictF2
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    globalStdkeyDict.update(stdkeyDictF2)
+    _update_stdkey_dict = stdkeyDictF2
     
     f2ArrayDict = None
     f2ConfigDict = None
@@ -23,6 +22,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         self.nifsConfigDict = \
             Lookups.get_lookup_table('Gemini/F2/F2ConfigDict',
                                    'f2ConfigDict')
+        GEMINI_DescriptorCalc.__init__(self)
     
     def data_section(self, dataset, pretty=False, **args):
         data_section = "[1:2048,1:2048]"
@@ -41,8 +41,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -64,8 +64,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -95,8 +95,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -118,8 +118,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It

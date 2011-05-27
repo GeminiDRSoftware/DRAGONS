@@ -5,13 +5,11 @@ from astrodata.Calculator import Calculator
 
 import GemCalcUtil
 import re
-
-from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGenericKeyDict import stdkeyDictGeneric
 
 class Generic_DescriptorCalc(Calculator):
     # Updating the global key dict with the local dict of this descriptor class
-    globalStdkeyDict.update(stdkeyDictGeneric)
+    _udpate_stdkey_dict = stdkeyDictGeneric
     
     def ut_date(self, dataset, **args):
         """
@@ -22,7 +20,7 @@ class Generic_DescriptorCalc(Calculator):
         @return: the UT date of the observation (YYYY-MM-DD)
         """
         hdu = dataset.hdulist
-        ut_date = hdu[0].header[globalStdkeyDict['key_ut_date']]
+        ut_date = hdu[0].header[self._specifickey_dict['key_ut_date']]
         
         # Validate the result. The definition is taken from the FITS
         # standard document v3.0. Must be YYYY-MM-DD or

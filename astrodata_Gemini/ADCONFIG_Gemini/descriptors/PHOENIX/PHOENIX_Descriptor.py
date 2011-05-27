@@ -5,21 +5,17 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from gempy import astrotools
 
-from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardPHOENIXKeyDict import stdkeyDictPHOENIX
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    globalStdkeyDict.update(stdkeyDictPHOENIX)
-    
-    def __init__(self):
-        pass
+    _update_stdkey_dict = stdkeyDictPHOENIX
     
     def dec(self, dataset, **args):
         # Get the declination from the header of the PHU
-        dec = dataset.phu_get_key_value(globalStdkeyDict['key_dec'])
+        dec = dataset.phu_get_key_value(self._specifickey_dict['key_dec'])
         if dec is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -35,8 +31,8 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the filter name value from the header of the PHU. The filter name
         # keyword is defined in the local key dictionary (stdkeyDictPHOENIX)
         # but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        filter_name = dataset.phu_get_key_value(globalStdkeyDict['key_filter'])
+        # (self._specifickey_dict)
+        filter_name = dataset.phu_get_key_value(self._specifickey_dict['key_filter'])
         if filter_name is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -56,7 +52,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def ra(self, dataset, **args):
         # Get the declination from the header of the PHU
-        ra = dataset.phu_get_key_value(globalStdkeyDict['key_ra'])
+        ra = dataset.phu_get_key_value(self._specifickey_dict['key_ra'])
         if ra is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It

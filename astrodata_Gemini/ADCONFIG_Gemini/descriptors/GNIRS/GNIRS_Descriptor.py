@@ -6,14 +6,13 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from gempy import string
 
-from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardGNIRSKeyDict import stdkeyDictGNIRS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    globalStdkeyDict.update(stdkeyDictGNIRS)
+    _update_stdkey_dict = stdkeyDictGNIRS
     
     gnirsArrayDict = None
     gnirsConfigDict = None
@@ -25,6 +24,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         self.gnirsConfigDict = \
             Lookups.get_lookup_table('Gemini/GNIRS/GNIRSConfigDict',
                                    'gnirsConfigDict')
+        GEMINI_DescriptorCalc.__init__(self)
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
@@ -86,8 +86,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     def gain(self, dataset, **args):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictGNIRS) but
-        # is read from the updated global key dictionary (globalStdkeyDict)
-        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
+        # is read from the updated global key dictionary (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
         if biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -119,7 +119,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         descriptor function repairs the header values to only list the grating.
         """
         # Get the grating value from the header of the PHU.
-        grating = dataset.phu_get_key_value(globalStdkeyDict['key_grating'])
+        grating = dataset.phu_get_key_value(self._specifickey_dict['key_grating'])
         if grating is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -145,8 +145,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     def non_linear_level(self, dataset, **args):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictGNIRS) but
-        # is read from the updated global key dictionary (globalStdkeyDict)
-        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
+        # is read from the updated global key dictionary (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
         if biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -197,9 +197,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def pixel_scale(self, dataset, **args):
         # Get the prism, decker and disperser from the header of the PHU.
-        prism = dataset.phu_get_key_value(globalStdkeyDict['key_prism'])
-        decker = dataset.phu_get_key_value(globalStdkeyDict['key_decker'])
-        disperser = dataset.phu_get_key_value(globalStdkeyDict['key_grating'])
+        prism = dataset.phu_get_key_value(self._specifickey_dict['key_prism'])
+        decker = dataset.phu_get_key_value(self._specifickey_dict['key_decker'])
+        disperser = dataset.phu_get_key_value(self._specifickey_dict['key_grating'])
         if prism is None or decker is None or disperser is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -237,7 +237,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         function repairs the header values to only list the prism.
         """
         # Get the prism value from the header of the PHU.
-        prism = dataset.phu_get_key_value(globalStdkeyDict['key_prism'])
+        prism = dataset.phu_get_key_value(self._specifickey_dict['key_prism'])
         if prism is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -264,9 +264,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # of digital averages (ndavgs) from the header of the PHU. The lnrs and
         # ndavgs keywords are defined in the local key dictionary
         # (stdkeyDictGNIRS) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
-        ndavgs = dataset.phu_get_key_value(globalStdkeyDict['key_ndavgs'])
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
+        ndavgs = dataset.phu_get_key_value(self._specifickey_dict['key_ndavgs'])
         if lnrs is None or ndavgs is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -292,10 +292,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # pairs (lnrs) and the number of digital averages (ndavgs) from the
         # header of the PHU. The biasvolt, lnrs and ndavgs keywords are
         # defined in the local key dictionary (stdkeyDictGNIRS) but are read
-        # from the updated global key dictionary (globalStdkeyDict)
-        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
-        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
-        ndavgs = dataset.phu_get_key_value(globalStdkeyDict['key_ndavgs'])
+        # from the updated global key dictionary (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
+        ndavgs = dataset.phu_get_key_value(self._specifickey_dict['key_ndavgs'])
         if biasvolt is None or lnrs is None or ndavgs is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -333,8 +333,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The
         # biasvolt keyword is defined in the local key dictionary
         # (stdkeyDictGNIRS) but is read from the updated global key dictionary
-        # (globalStdkeyDict)
-        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
+        # (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
         if biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -375,7 +375,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         same component ID as they're they same physical component.
         """
         # Get the slit value from the header of the PHU.
-        slit = dataset.phu_get_key_value(globalStdkeyDict['key_slit'])
+        slit = dataset.phu_get_key_value(self._specifickey_dict['key_slit'])
         if slit is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -393,8 +393,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The
         # biasvolt keyword is defined in the local key dictionary
         # (stdkeyDictGNIRS) but is read from the updated global key dictionary
-        # (globalStdkeyDict)
-        biasvolt = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
+        # (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
         if biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It

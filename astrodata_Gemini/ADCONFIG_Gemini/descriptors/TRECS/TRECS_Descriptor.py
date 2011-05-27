@@ -4,17 +4,13 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 import GemCalcUtil
 
-from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardTRECSKeyDict import stdkeyDictTRECS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    globalStdkeyDict.update(stdkeyDictTRECS)
-    
-    def __init__(self):
-        pass
+    _update_stdkey_dict = stdkeyDictTRECS
     
     def central_wavelength(self, dataset, asMicrometers=False, \
         asNanometers=False, asAngstroms=False, **args):
@@ -39,8 +35,8 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             output_units = 'meters'
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
-        # is read from the updated global key dictionary (globalStdkeyDict)
-        disperser = dataset.phu_get_key_value(globalStdkeyDict['key_disperser'])
+        # is read from the updated global key dictionary (self._specifickey_dict)
+        disperser = dataset.phu_get_key_value(self._specifickey_dict['key_disperser'])
         if disperser is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -86,9 +82,9 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             output_units = 'meters'
         # Get the dispersion value from the header of the PHU. The dispersion
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
-        # is read from the updated global key dictionary (globalStdkeyDict)
+        # is read from the updated global key dictionary (self._specifickey_dict)
         raw_dispersion = \
-            dataset.phu_get_key_value(globalStdkeyDict['key_dispersion'])
+            dataset.phu_get_key_value(self._specifickey_dict['key_dispersion'])
         if raw_dispersion is None:
             # The get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -114,8 +110,8 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
     def gain(self, dataset, **args):
         # Get the bias value (biaslevel) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
-        # is read from the updated global key dictionary (globalStdkeyDict)
-        biaslevel = dataset.phu_get_key_value(globalStdkeyDict['key_bias'])
+        # is read from the updated global key dictionary (self._specifickey_dict)
+        biaslevel = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
         if biaslevel is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It

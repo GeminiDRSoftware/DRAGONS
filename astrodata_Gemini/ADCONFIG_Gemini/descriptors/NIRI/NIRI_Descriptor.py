@@ -7,14 +7,13 @@ from astrodata.Calculator import Calculator
 from gempy import string
 import GemCalcUtil 
 
-from StandardDescriptorKeyDict import globalStdkeyDict
 from StandardNIRIKeyDict import stdkeyDictNIRI
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
 class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    globalStdkeyDict.update(stdkeyDictNIRI)
+    _update_stdkey_dict = stdkeyDictNIRI
     
     niriFilternameMapConfig = None
     niriFilternameMap = {}
@@ -31,6 +30,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         self.nsappwave = \
             Lookups.get_lookup_table('Gemini/IR/nsappwavepp.fits', 1)
+        GEMINI_DescriptorCalc.__init__(self)
     
     def central_wavelength(self, dataset, asMicrometers=False, \
         asNanometers=False, asAngstroms=False, **args):
@@ -100,12 +100,12 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # Get the region of interest from the header of each pixel data
             # extension. The region of interest keywords are defined in the
             # local key dictionary (stdkeyDictNIRI) but is read from the
-            # updated global key dictionary (globalStdkeyDict). The values
+            # updated global key dictionary (self._specifickey_dict). The values
             # from the header use 0-based indexing.
-            x_start = ext.get_key_value(globalStdkeyDict['key_lowrow'])
-            x_end = ext.get_key_value(globalStdkeyDict['key_hirow'])
-            y_start = ext.get_key_value(globalStdkeyDict['key_lowcol'])
-            y_end = ext.get_key_value(globalStdkeyDict['key_hicol'])
+            x_start = ext.get_key_value(self._specifickey_dict['key_lowrow'])
+            x_end = ext.get_key_value(self._specifickey_dict['key_hirow'])
+            y_start = ext.get_key_value(self._specifickey_dict['key_lowcol'])
+            y_end = ext.get_key_value(self._specifickey_dict['key_hicol'])
             if x_start is None or x_end is None or y_start is None or \
                 y_end is None:
                 # The get_key_value() function returns None if a value cannot be
@@ -136,8 +136,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # wheels are in an uncollimated beam. Get the key_filter3 filter name
         # value from the header of the PHU. The filter name keyword is defined
         # in the local key dictionary (stdkeyDictNIRI) but is read from the
-        # updated global key dictionary (globalStdkeyDict)
-        filter3 = dataset.phu_get_key_value(globalStdkeyDict['key_filter3'])
+        # updated global key dictionary (self._specifickey_dict)
+        filter3 = dataset.phu_get_key_value(self._specifickey_dict['key_filter3'])
         if filter3 is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -169,10 +169,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the three filter name values from the header of the PHU. The
         # three filter name keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but is read from the updated global key dictionary
-        # (globalStdkeyDict)
-        filter1 = dataset.phu_get_key_value(globalStdkeyDict['key_filter1'])
-        filter2 = dataset.phu_get_key_value(globalStdkeyDict['key_filter2'])
-        filter3 = dataset.phu_get_key_value(globalStdkeyDict['key_filter3'])
+        # (self._specifickey_dict)
+        filter1 = dataset.phu_get_key_value(self._specifickey_dict['key_filter1'])
+        filter2 = dataset.phu_get_key_value(self._specifickey_dict['key_filter2'])
+        filter3 = dataset.phu_get_key_value(self._specifickey_dict['key_filter3'])
         if filter1 is None or filter2 is None or filter3 is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -238,11 +238,11 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the WCS matrix elements from the header of the PHU. The WCS
         # matrix elements keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        cd11 = dataset.phu_get_key_value(globalStdkeyDict['key_cd11'])
-        cd12 = dataset.phu_get_key_value(globalStdkeyDict['key_cd12'])
-        cd21 = dataset.phu_get_key_value(globalStdkeyDict['key_cd21'])
-        cd22 = dataset.phu_get_key_value(globalStdkeyDict['key_cd22'])
+        # (self._specifickey_dict)
+        cd11 = dataset.phu_get_key_value(self._specifickey_dict['key_cd11'])
+        cd12 = dataset.phu_get_key_value(self._specifickey_dict['key_cd12'])
+        cd21 = dataset.phu_get_key_value(self._specifickey_dict['key_cd21'])
+        cd22 = dataset.phu_get_key_value(self._specifickey_dict['key_cd22'])
         if cd11 is None or cd12 is None or cd21 is None or cd22 is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -264,8 +264,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the key_filter3 filter name value from the header of the PHU.
         # The filter name keyword is defined in the local key dictionary
         # (stdkeyDictNIRI) but is read from the updated global key dictionary
-        # (globalStdkeyDict)
-        filter3 = dataset.phu_get_key_value(globalStdkeyDict['key_filter3'])
+        # (self._specifickey_dict)
+        filter3 = dataset.phu_get_key_value(self._specifickey_dict['key_filter3'])
         if filter3 is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -294,9 +294,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # of digital averages (ndavgs) from the header of the PHU. The lnrs and
         # ndavgs keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        lnrs = dataset.phu_get_key_value(globalStdkeyDict['key_lnrs'])
-        ndavgs = dataset.phu_get_key_value(globalStdkeyDict['key_ndavgs'])
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
+        ndavgs = dataset.phu_get_key_value(self._specifickey_dict['key_ndavgs'])
         if lnrs is None or ndavgs is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -380,9 +380,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # (avdduc and avdet, respectively) from the header of the PHU. The
         # avdduc and avdet keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
-        # (globalStdkeyDict)
-        avdduc = dataset.phu_get_key_value(globalStdkeyDict['key_avdduc'])
-        avdet = dataset.phu_get_key_value(globalStdkeyDict['key_avdet'])
+        # (self._specifickey_dict)
+        avdduc = dataset.phu_get_key_value(self._specifickey_dict['key_avdduc'])
+        avdet = dataset.phu_get_key_value(self._specifickey_dict['key_avdet'])
         if avdduc is None or avdet is None:
             # The phu_get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
