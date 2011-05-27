@@ -1,8 +1,0 @@
-# This mini-recipe will retrieve the current list for the input and then 
-# use it to produce a single list (stack) and normalized flat calibration file.
-# Must have the list prepared by the addToList primitive before calling 
-# makeNormalizedFlat.
-
-getList
-#showInputs
-normalizeFlat
