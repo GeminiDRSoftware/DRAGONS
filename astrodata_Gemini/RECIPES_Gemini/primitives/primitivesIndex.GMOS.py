@@ -6,5 +6,4 @@ localPrimitiveIndex = {
     "GMOS": ("primitives_GMOS.py", "GMOSPrimitives"),
     "GMOS_IMAGE": ("primitives_GMOS_IMAGE.py", "GMOS_IMAGEPrimitives"),
     "GMOS_SPECT": ("primitives_GMOS_SPECT.py", "GMOS_SPECTPrimitives"),
-    "GMOS_LS_ARC": ("primitives_GMOS_LS_ARC.py", "GMOS_LS_ARCPrimitives"),
     }
