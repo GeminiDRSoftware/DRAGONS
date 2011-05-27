@@ -183,10 +183,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def crashReduce(self, rc):
-        raise "Crashing"
-        yield rc
-    
     def clearCalCache(self, rc):
         # print "pG61:", rc.calindfile
         rc.persist_cal_index(rc.calindfile, newindex={})
@@ -200,6 +196,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 if not os.path.exists(cachedir):
                     os.mkdir(cachedir)
         
+        yield rc
+     
+    def crashReduce(self, rc):
+        raise "Crashing"
         yield rc
     
     def display(self, rc):
@@ -439,78 +439,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def normalizeFlat(self, rc):
-        """
-        This primitive normalises the input flat
-        """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
-            # Check whether the normalizeFlat primitive has been run previously
-            if ad.phu_get_key_value("NORMFLAT"):
-                log.warning("%s has already been processed by normalizeFlat" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
-            # Call the normalize_flat user level function
-            ad = pp.normalize_flat_image(adinput=ad)
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
-    
     def pause(self, rc):
         rc.request_pause()
         yield rc
-    
-    def setContext(self, rc):
-        rc.update(rc.localparms)
-        yield rc
-    
-    def showCals(self, rc):
-        """
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        if str(rc["showcals"]).lower() == "all":
-            num = 0
-            # print "pG256: showcals=all", repr (rc.calibrations)
-            for calkey in rc.calibrations:
-                num += 1
-                log.fullinfo(rc.calibrations[calkey], category="calibrations")
-            if (num == 0):
-                log.warning("There are no calibrations in the cache.")
-        else:
-            for adr in rc.inputs:
-                sid = IDFactory.generate_astro_data_id(adr.ad)
-                num = 0
-                for calkey in rc.calibrations:
-                    if sid in calkey :
-                        num += 1
-                        log.fullinfo(rc.calibrations[calkey], 
-                                     category="calibrations")
-            if (num == 0):
-                log.warning("There are no calibrations in the cache.")
-        
-        yield rc
-    ptusage_showCals="Used to show calibrations currently in cache for inputs."
     
     def scaleFringeToScience(self, rc):
         """
@@ -563,6 +494,43 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.report_output(rc.get_inputs(style="AD"), category="main")
         
         yield rc
+    
+    def setContext(self, rc):
+        rc.update(rc.localparms)
+        yield rc
+    
+    def showCals(self, rc):
+        """
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (i.e.,
+                        'critical', 'status', 'fullinfo'...)
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        if str(rc["showcals"]).lower() == "all":
+            num = 0
+            # print "pG256: showcals=all", repr (rc.calibrations)
+            for calkey in rc.calibrations:
+                num += 1
+                log.fullinfo(rc.calibrations[calkey], category="calibrations")
+            if (num == 0):
+                log.warning("There are no calibrations in the cache.")
+        else:
+            for adr in rc.inputs:
+                sid = IDFactory.generate_astro_data_id(adr.ad)
+                num = 0
+                for calkey in rc.calibrations:
+                    if sid in calkey :
+                        num += 1
+                        log.fullinfo(rc.calibrations[calkey], 
+                                     category="calibrations")
+            if (num == 0):
+                log.warning("There are no calibrations in the cache.")
+        
+        yield rc
+    ptusage_showCals="Used to show calibrations currently in cache for inputs."
     
     def showInputs(self, rc):
         """
