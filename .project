@@ -10,8 +10,14 @@
 			<arguments>
 			</arguments>
 		</buildCommand>
+		<buildCommand>
+			<name>org.psem2m.eclipse.ipojo.ipojoBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
 	</buildSpec>
 	<natures>
 		<nature>org.python.pydev.pythonNature</nature>
+		<nature>org.psem2m.eclipse.ipojo.iPojoNature</nature>
 	</natures>
 </projectDescription>
