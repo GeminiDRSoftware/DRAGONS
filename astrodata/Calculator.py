@@ -4,6 +4,7 @@ except ImportError:
     globalStdkeyDict = {}
     pass
     
+from copy import copy
 class CalculatorExcept:
     """This class is an exception class for the Calculator module"""
     
@@ -61,6 +62,20 @@ class Calculator(object):
     throwExceptions = True 
         
     stdkey_dict = globalStdkeyDict
+    _specifickey_dict = None
+    _update_stdkey_dict = None
+    
+    def __init__(self):
+        #print "C69: %s \n%s \n%s" % (repr(self), 
+        #                         repr(self._update_stdkey_dict),
+        #                         repr(self.stdkey_dict) )
+        stdkeydict = copy(self.stdkey_dict)
+        if self._update_stdkey_dict != None:
+            #print "C74: updated"
+            stdkeydict.update(self._update_stdkey_dict)
+        self._specifickey_dict = stdkeydict
+        # print "C79:", self._specifickey_dict["key_central_wavelength"]
+        
     def fetch_phuvalue(self, keyname, dataset):
         """This utility functioin fetches a header value from the PHU of the
         given dataset. The C{keyname} given is from the standardized key names
