@@ -344,8 +344,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 ret_filter_name.update({key_filter2:str(filter2)})
             if len(ret_filter_name) == 0:
                 ret_filter_name = 'open'
-            if ('Block' or 'Dark') in (filter1 or filter2):
+            if 'Block' in filter1 or 'Block' in filter2:
                 ret_filter_name = 'blank'
+            if 'Dark' in filter1 or 'Dark' in filter2:
+                ret_filter_name = 'blank'
+            if 'DK' in filter1 or 'DK' in filter2:
+                ret_filter_name = 'dark'
         else:
             # Return a dictionary with the filter name string as the value
             ret_filter_name.update({key_filter1:str(filter1),
