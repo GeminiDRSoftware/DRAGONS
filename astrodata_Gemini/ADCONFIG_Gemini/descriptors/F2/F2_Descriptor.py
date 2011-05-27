@@ -16,12 +16,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     f2ConfigDict = None
     
     def __init__(self):
-        self.f2ArrayDict = \
-            Lookups.get_lookup_table('Gemini/F2/F2ArrayDict',
-                                   'f2ArrayDict')
-        self.nifsConfigDict = \
-            Lookups.get_lookup_table('Gemini/F2/F2ConfigDict',
-                                   'f2ConfigDict')
+        self.f2ArrayDict = Lookups.get_lookup_table(
+            'Gemini/F2/F2ArrayDict', 'f2ArrayDict')
+        self.nifsConfigDict = Lookups.get_lookup_table(
+            'Gemini/F2/F2ConfigDict', 'f2ConfigDict')
         GEMINI_DescriptorCalc.__init__(self)
     
     def data_section(self, dataset, pretty=False, **args):
@@ -44,9 +42,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # (self._specifickey_dict)
         lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if lnrs in getattr(self, 'f2ArrayDict'):
@@ -67,9 +65,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # (self._specifickey_dict)
         lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         # Get the saturation level using the appropriate descriptor
@@ -98,9 +96,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # (self._specifickey_dict)
         lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if lnrs in getattr(self, 'f2ArrayDict'):
@@ -121,9 +119,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # (self._specifickey_dict)
         lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
         if lnrs is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
         if lnrs in getattr(self, 'f2ArrayDict'):
@@ -136,3 +134,29 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_saturation_level
     
     f2ArrayDict = None
+    
+    def x_offset(self, dataset, **args):
+        # Get the y offset from the header of the PHU.
+        y_offset = dataset.phu_get_key_value(globalStdkeyDict['key_yoffset'])
+        if y_offset is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        ret_x_offset = -y_offset
+        
+        return ret_x_offset
+    
+    def y_offset(self, dataset, **args):
+        # Get the x offset from the header of the PHU.
+        x_offset = dataset.phu_get_key_value(globalStdkeyDict['key_xoffset'])
+        if x_offset is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, 'exception_info'):
+                raise dataset.exception_info
+        ret_y_offset = -x_offset
+        
+        return ret_y_offset
