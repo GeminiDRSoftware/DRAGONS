@@ -1,9 +1,0 @@
-# This mini-recipe will retrieve the list for the current input and then 
-# produce a single average combination of all the files in the list.
-# The output will be a single file with the name of the first file in the list
-# with the postfix '_avgcomb.fits'.
-
-#showInputs
-getList
-#showInputs
-stackFrames(method="average", suffix="_avgstack")
