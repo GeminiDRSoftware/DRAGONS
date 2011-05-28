@@ -3,7 +3,7 @@ try:
 except ImportError:
     globalStdkeyDict = {}
     pass
-    
+import inspect  
 from copy import copy
 class CalculatorExcept:
     """This class is an exception class for the Calculator module"""
@@ -70,9 +70,20 @@ class Calculator(object):
         #                         repr(self._update_stdkey_dict),
         #                         repr(self.stdkey_dict) )
         stdkeydict = copy(self.stdkey_dict)
-        if self._update_stdkey_dict != None:
-            #print "C74: updated"
-            stdkeydict.update(self._update_stdkey_dict)
+        
+        selfmro = list(inspect.getmro(self.__class__))
+        #print "C75:", repr(selfmro)
+        selfmro.reverse()
+        for cls in selfmro:
+            if not hasattr(cls, "_update_stdkey_dict"):
+                #print "C78:", repr(cls)
+                continue
+            if cls._update_stdkey_dict != None:
+                #print "C81: updated",repr(cls), repr(cls._update_stdkey_dict)
+                stdkeydict.update(cls._update_stdkey_dict)
+            else:
+                pass
+                #print "C85: no update for", repr(cls)
         self._specifickey_dict = stdkeydict
         # print "C79:", self._specifickey_dict["key_central_wavelength"]
         
