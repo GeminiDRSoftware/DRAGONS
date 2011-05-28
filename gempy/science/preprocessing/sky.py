@@ -10,7 +10,8 @@ from gempy import geminiTools as gt
 from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
-def make_fringe_frame_imaging(adinput=None, operation='median'):
+def make_fringe_frame_imaging(adinput=None, operation='median', 
+                              suffix='_fringe'):
     """
     This function will create and return a single fringe image from all the 
     inputs.  It uses the CL script gifringe to create the fringe image.
@@ -26,6 +27,10 @@ def make_fringe_frame_imaging(adinput=None, operation='median'):
     
     :param operation: type of combining operation to use.
     :type operation: string, options: 'average', 'median'.
+
+    :param suffix: string to add on the end of the first input filename 
+                   to make the output filename.
+    :type suffix: string
     """
     
     # instantiate log
@@ -45,17 +50,13 @@ def make_fringe_frame_imaging(adinput=None, operation='median'):
         
         # Ensure there is more than one input to make a fringe frame from
         if (len(adinput)<2):
-            log.warning('Only one input was passed in for adinput, so '+
-                        'make_fringe_frame_imaging is simply passing the ' +
-                        'inputs into the outputs list without doing ' +
-                        'anything to them.')
-            adoutput_list = adinput
-            return adoutput_list
-        
+            raise Errors.InputError('Only one input was passed in for ' +
+                                    'adinput. At least two frames are ' +
+                                    'required to make a fringe' +
+                                    'frame.')
             
         # load and bring the pyraf related modules into the name-space
         pyraf, gemini, yes, no = pyrafLoader() 
-             
 
         # Clean up log and screen if multiple inputs
         log.fullinfo('+'*50, category='format')                                 
@@ -72,7 +73,7 @@ def make_fringe_frame_imaging(adinput=None, operation='median'):
            
         # Prepare input files, lists, parameters... for input to 
         # the CL script
-        clm = man.CLManager(imageIns=adinput, suffix='_fringe', 
+        clm = man.CLManager(imageIns=adinput, suffix=suffix, 
                             funcName='makeFringeFrame', 
                             combinedImages=True, log=log)
             
@@ -222,7 +223,7 @@ def scale_fringe_to_science(adinput=None, science=None,
         science = [science]
 
     # time stamp keyword
-    keyword = 'SCALEA2B'
+    keyword = 'SCALEFRG'
     
     # initialize output list
     adoutput_list = []

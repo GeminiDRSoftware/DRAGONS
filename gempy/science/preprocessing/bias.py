@@ -147,6 +147,7 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
                       clm.imageInsFiles(type='string'))
         
             gemini.gmos.gireduce(**clParamsDict)
+
             if gemini.gmos.gireduce.status:
                 raise Errors.ScienceError('gireduce failed for inputs '+
                              clm.imageInsFiles(type='string'))
@@ -161,7 +162,7 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
             ad_out = imageOuts[0]
             ad_out.filename = ad.filename
             
-            # Verify gireduce was actually ran on the file
+            # Verify gireduce was actually run on the file
             if ad_out.phu_get_key_value('GIREDUCE'): 
                 # If gireduce was ran, then log the changes to the files 
                 # it made
