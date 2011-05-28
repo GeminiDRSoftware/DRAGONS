@@ -22,8 +22,6 @@ try:
     from astrodata.AstroData import *
     from optparse import OptionParser
 
-    from astrodata.adutils import terminal
-    from astrodata.adutils.terminal import TerminalController
 
     import traceback as tb
 except:
@@ -38,13 +36,6 @@ if opti:
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as
 # a demo for GeminiData... see options documentation.
-
-REASLSTDOUT = sys.stdout
-REALSTDERR = sys.stderr
-fstdout = terminal.FilteredStdout()
-fstdout.addFilter( terminal.ColorFilter())
-sys.stdout = fstdout   
-termsize = terminal.getTerminalSize()
 
 # parsing the command line
 parser = OptionParser()
@@ -75,7 +66,7 @@ parser.add_option("-y", "--typology", dest="onlyTypology", action="store_true",
         help="Compare only to the processing status dictionary of classifications")
 parser.add_option("-f", "--filemask", dest="filemask", default = None,
         help="Only files matching the given regular expression will be displayed")
-parser.add_option("-c", "--showcalibrations", dest="showCals", action="store_true",
+parser.add_option("--showcalibrations", dest="showCals", action="store_true",
         help="When set, show any locally available calibrations")
 parser.add_option("-x", "--dontrecurse", dest="stayTop", action="store_true",
         help="When set, don't recurse subdirs.")
@@ -93,8 +84,21 @@ parser.add_option("-w", "--where", dest="where", default = None,
         help="Allows a condition to test, should use descriptors") 
 parser.add_option("-r", "--recipe", "--reduce", dest="recipe", default = None,
         help="Allows a condition to test, should use descriptors") 
-
+parser.add_option("-c", "--color", dest = "usecolor", action = "store_true", 
+        help="Colorizes the display")
 (options, args) = parser.parse_args()
+
+if options.usecolor == False or options.usecolor == None:
+    import os
+    os.environ["TERM"] = ""
+from astrodata.adutils import terminal
+from astrodata.adutils.terminal import TerminalController
+REASLSTDOUT = sys.stdout
+REALSTDERR = sys.stderr
+fstdout = terminal.FilteredStdout()
+fstdout.addFilter( terminal.ColorFilter())
+sys.stdout = fstdout   
+termsize = terminal.getTerminalSize()
 
 #set up terminal
 terminal.forceWidth = options.forceWidth
@@ -116,7 +120,6 @@ if (options.listdescriptors):
     print "${UNDERLINE}Available Descriptors${NORMAL}"
 
     for funtuple in funs:
-        print repr(funtuple)
         funame = funtuple[0]
         fun = funtuple[1]
         if "_" != funame[0]:
@@ -135,15 +138,20 @@ else:
         
         if (osd == "all" or osd == "err"):
             import CalculatorInterface
-            funs = dir(CalculatorInterface.CalculatorInterface)
             descs = []
             if osd == "err":
                 descs.append("err")
-            for fun in funs:
-                if not fun.startswith("_"):
-                    descs.append(funame)
             
-            options.showdescriptors = ",".join(descs) 
+            funs = inspect.getmembers(  CalculatorInterface.CalculatorInterface, 
+                                        inspect.ismethod)
+
+            for funtuple in funs:
+                funame = funtuple[0]
+                fun = funtuple[1]
+                if "_" != funame[0]:
+                    descs.append(funame)
+
+                    options.showdescriptors = ",".join(descs) 
 
         if opti:
             print "Calling DataSpider.typewalk(..)"
