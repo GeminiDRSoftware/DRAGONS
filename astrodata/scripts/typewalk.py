@@ -16,6 +16,7 @@ if opti:
     print "Starting Main Imports"
 # import pdb
 try:
+    import inspect
     import astrodata 
     from astrodata.DataSpider import *
     from astrodata.AstroData import *
@@ -109,12 +110,17 @@ showStack = True
 if (options.listdescriptors):
     from astrodata import Descriptors
     import CalculatorInterface
-    funs = dir(CalculatorInterface.CalculatorInterface)
+    funs = inspect.getmembers(  CalculatorInterface.CalculatorInterface, 
+                                inspect.ismethod)
     descs = []
     print "${UNDERLINE}Available Descriptors${NORMAL}"
-    for fun in funs:
-        if "_" != fun[0] and (fun.lower() == fun):
-            descs.append(fun)
+
+    for funtuple in funs:
+        print repr(funtuple)
+        funame = funtuple[0]
+        fun = funtuple[1]
+        if "_" != funame[0]:
+            descs.append(funame)
     if True:
         print "\t"+"\n\t".join(descs)
     else:
@@ -134,8 +140,8 @@ else:
             if osd == "err":
                 descs.append("err")
             for fun in funs:
-                if not fun.startswith("_") and (fun.lower() == fun):
-                    descs.append(fun)
+                if not fun.startswith("_"):
+                    descs.append(funame)
             
             options.showdescriptors = ",".join(descs) 
 
