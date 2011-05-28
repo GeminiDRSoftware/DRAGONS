@@ -61,7 +61,7 @@ class Calculator(object):
     usage = ""
     throwExceptions = True 
         
-    stdkey_dict = globalStdkeyDict
+    stdkey_dict = None
     _specifickey_dict = None
     _update_stdkey_dict = None
     
@@ -69,7 +69,7 @@ class Calculator(object):
         #print "C69: %s \n%s \n%s" % (repr(self), 
         #                         repr(self._update_stdkey_dict),
         #                         repr(self.stdkey_dict) )
-        stdkeydict = copy(self.stdkey_dict)
+        stdkeydict = copy(globalStdkeyDict)
         
         selfmro = list(inspect.getmro(self.__class__))
         #print "C75:", repr(selfmro)
@@ -85,6 +85,7 @@ class Calculator(object):
                 pass
                 #print "C85: no update for", repr(cls)
         self._specifickey_dict = stdkeydict
+        self.stdkey_dict = stdkeydict
         # print "C79:", self._specifickey_dict["key_central_wavelength"]
         
     
