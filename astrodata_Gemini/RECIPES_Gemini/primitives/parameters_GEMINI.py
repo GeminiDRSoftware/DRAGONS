@@ -123,7 +123,7 @@
         "type"          : "str",
         "userOverride"  : True,
         },
-    "statScale":{
+    "stats_scale":{
         "default"       : True,
         "recipeOverride": True,
         "type"          : "bool",

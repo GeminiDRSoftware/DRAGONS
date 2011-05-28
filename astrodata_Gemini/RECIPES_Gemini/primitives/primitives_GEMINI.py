@@ -3,6 +3,7 @@ from datetime import datetime
 import shutil
 import time
 
+from astrodata import AstroData
 from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
@@ -447,11 +448,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         """
         This primitive will scale the fringes to their matching science data
         in the inputs.
-        The primitive getProcessedFringe must have been ran prior to this in 
+        The primitive getProcessedFringe must have been run prior to this in 
         order to find and load the matching fringes into memory.
         
-        :param statScale: Use statistics to calculate the scale values?
-        :type statScale: Python boolean (True/False)
+        :param stats_scale: Use statistics to calculate the scale values?
+        :type stats_scale: Python boolean (True/False)
         
         :param logLevel: Verbosity setting for log messages to the screen.
         :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
@@ -467,12 +468,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         # Get the fringes. Make this better.
-        inputs = rc.get_inputs(style="AD", category="standard")
+        inputs = rc.get_inputs(style="AD", category="main")
         fringes = []
         for input in inputs:
             fringes.append(AstroData(rc.get_cal(input, "fringe")))
         # Loop over each input AstroData object in the input list
+        count = 0
         for ad in rc.get_inputs(style="AD"):
+            fringe = fringes[count]
             # Check whether the scaleFringeToScience primitive has been run
             # previously
             if ad.phu_get_key_value("SCALEFRG"):
@@ -483,11 +486,12 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the scale_fringe_to_science user level function
-            ad = pp.scale_fringe_to_science(adinput=ad, fringes=fringes,
-                                            statScale=rc["statScale"])
+            ad = pp.scale_fringe_to_science(adinput=fringe, science=ad,
+                                            stats_scale=rc["stats_scale"])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
+            count += 1
         # Report the list of output AstroData objects and the scaled fringe
         # frames to the reduction context
         rc.report_output(adoutput_list, category="fringe")
@@ -859,16 +863,16 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "subtractFringe", "starting"))
         # Retrieving the appropriate fringe for the first of the inputs
         adOne = rc.get_inputs(style="AD")[0]
-        #fringes=rc.get_inputs(style="AD", category="fringe")
+        #fringe=rc.get_inputs(style="AD", category="fringe")
         ###################BULL CRAP FOR TESTING ######################### 
         from copy import deepcopy
-        fringes = deepcopy(adOne)
-        fringes.filename = "TEMPNAMEforFRINGE.fits"
-        fringes.phu_set_key_value("ORIGNAME","TEMPNAMEforFRINGE.fits")
+        fringe = deepcopy(adOne)
+        fringe.filename = "TEMPNAMEforFRINGE.fits"
+        fringe.phu_set_key_value("ORIGNAME","TEMPNAMEforFRINGE.fits")
         ##################################################################
         # Call the subtract_fringe user level function
-        output = pp.subtract_fringe(adInputs=rc.get_inputs(style="AD"),
-                                    fringes=fringes) 
+        output = pp.subtract_fringe(adinput=rc.get_inputs(style="AD"),
+                                    fringe=fringe) 
         # Report the output of the user level function to the reduction
         # context
         rc.report_output(output, category="standard")
