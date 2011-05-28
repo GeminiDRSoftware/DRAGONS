@@ -329,7 +329,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, 'exception_info'):
                 raise dataset.exception_info
-        if stripID:
+        if stripID or pretty:
             # Strip the component ID from the two filter name values
             filter1 = string.removeComponentID(filter1)
             filter2 = string.removeComponentID(filter2)
