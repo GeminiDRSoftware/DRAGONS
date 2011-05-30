@@ -133,8 +133,8 @@ class ImageQualityRequest( ReductionObjectRequest ):
         self.fwhmMean = fwhm_mean
         self.fwhmSigma = fwhm_sigma
         desc = Descriptors.get_calculator( ad )
-        self.pixelScale = desc.fetch_value( 'PIXSCALE', ad ) # doesn't work, need to use ad.pixel_scale()
-        self.seeing = self.fwhmMean# * self.pixelScale
+        self.pixelScale = ad.pixel_scale().as_pytype()
+        self.seeing = self.fwhmMean * self.pixelScale
         
     def __str__(self):
         tempStr = "-" * 40
