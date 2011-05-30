@@ -92,7 +92,7 @@ def generate_display_id( dataset, version ):
 
 
 def generate_astro_data_id( dataset, version="1_0" ):
-    '''
+    """
     An id to be used to identify AstroData types. This is used for:
     
     1) Calibrations:
@@ -120,14 +120,12 @@ def generate_astro_data_id( dataset, version="1_0" ):
     
     @return: An astrodata id.
     @rtype: string  
-    '''
+    """
     if type(dataset) == str:
         ad = AstroData( dataset )
-        desc = Descriptors.get_calculator( ad )
-        return desc.fetch_value('DATALAB', ad)
+        return ad.data_label().as_pytype()
     elif type( dataset ) == AstroData:
-        desc = Descriptors.get_calculator( dataset )
-        return desc.fetch_value('DATALAB', dataset)
+        return dataset.data_label().as_pytype()
     else:
         raise "BAD ARGUMENT TYPE"
     
