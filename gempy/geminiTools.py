@@ -460,3 +460,20 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
                                 ext.get_key_value(key)), category="header")
             else:
                 log.info("No value found for keyword %s" % (key))
+
+def validate_input(input=None):
+    """
+    The validate_input helper function is used to validate the inputs given to
+    the user level functions.
+    """
+    # If the input is None, raise an exception
+    if input is None:
+        raise Errors.InputError("The input cannot be None")
+    # If the input is a single AstroData object, put it in a list
+    if not isinstance(input, list):
+        input = [input]
+    # If the input is an empty list, raise an exception
+    if len(input) == 0:
+        raise Errors.InputError("The input cannot be an empty list")
+    # Now, input is a list that contains one or more AstroData objects
+    return input
