@@ -214,7 +214,7 @@ def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
         gemini.giflat(**clParamsDict)
         if gemini.giflat.status:
             raise Errors.OutputError("The IRAF task giflat failed")
-         else:
+        else:
             log.status("The IRAF task giflat completed sucessfully")
         # Create the output AstroData object by loading the output file from
         # gemcombine into AstroData, remove intermediate temporary files from
