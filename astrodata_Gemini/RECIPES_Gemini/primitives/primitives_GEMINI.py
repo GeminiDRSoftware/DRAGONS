@@ -816,25 +816,28 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtractDark", "starting"))
-        # Retrieving the appropriate dark for the first of the inputs
-        adOne = rc.get_inputs(style="AD")[0]
-        #processedDark = AstroData(rc.get_cal(adOne,"dark"))
-        ###################BULL CRAP FOR TESTING ######################### 
-        from copy import deepcopy
-        processedDark = deepcopy(adOne)
-        processedDark.filename = "TEMPNAMEforDARK.fits"
-        processedDark.phu_set_key_value("ORIGNAME","TEMPNAMEforDARK.fits")
-        ###################################################################
-        # Taking care of the case where there was no, or an invalid flat 
-        if processedDark.count_exts("SCI") == 0:
-            raise Errors.PrimitiveError("Invalid processed dark " +
-                                        "retrieved")
-        # Call the subtract_dark user level function
-        output = pp.subtract_dark(adInputs=rc.get_inputs(style="AD"),
-                                  darks=processedDark)
-        # Report the output of the user level function to the reduction
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Check whether the subtractDark primitive has been run previously
+            if ad.phu_get_key_value("SUBDARK"):
+                log.warning("%s has already been processed by " \
+                            "subtractDark" % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+            # Get the appropriate dark for this AstroData object
+            dark = AstroData(rc.get_cal(ad, "dark"))
+            # Call the subtract_dark user level function
+            ad = pp.subtract_dark(adinput=ad, dark=dark)
+            # Append the output AstroData object (which is currently in the
+            # form of a list) to the list of output AstroData objects
+            adoutput_list.append(ad[0])
+        # Report the list of output AstroData objects to the reduction
         # context
-        rc.report_output(output)
+        rc.report_output(adoutput_list)
         
         yield rc
     
