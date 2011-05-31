@@ -15,8 +15,8 @@ def stack_frames(adinput=None, suffix=None, operation="average"):
     variance extensions are created from the stacked science extensions and the
     data quality extensions are propagated to the output AstroData object.
     
-    NOTE: The inputs to this function MUST be prepared. 
-
+    NOTE: The inputs to this function MUST be prepared.
+    
     Either a 'main' type logger object, if it exists, or a null logger 
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
@@ -55,12 +55,12 @@ def stack_frames(adinput=None, suffix=None, operation="average"):
         # primitive 
         clPrimParams = {
             # Retrieving the inputs as a list from the CLManager
-            "input"       :clm.imageInsFiles(type="listFile"),
+            "input"   : clm.imageInsFiles(type="listFile"),
             # Maybe allow the user to override this in the future
-            "output"      :clm.imageOutsFiles(type="string"),
+            "output"  : clm.imageOutsFiles(type="string"),
             # This returns a unique/temp log file for IRAF
-            "logfile"     :clm.templog.name,
-            "reject"      :"none",
+            "logfile" : clm.templog.name,
+            "reject"  : "none",
             }
         # Get the input parameters for IRAF as specified by the user
         fl_vardq = no
@@ -71,9 +71,9 @@ def stack_frames(adinput=None, suffix=None, operation="average"):
                 if ad["VAR"]:
                     fl_vardq = yes
         clSoftcodedParams = {
-            "fl_vardq"      : fl_vardq,
-            "fl_dqprop"     : fl_dqprop,
-            "combine"       : operation,
+            "fl_vardq"  : fl_vardq,
+            "fl_dqprop" : fl_dqprop,
+            "combine"   : operation,
             }
         # Get the default parameters for IRAF and update them using the above
         # dictionaries
