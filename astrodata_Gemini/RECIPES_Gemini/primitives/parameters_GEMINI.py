@@ -164,7 +164,7 @@
         "type"          : "str",
         "userOverride"  : False,
         },
-    "method":{
+    "operation":{
         "default"       : "average",
         "recipeOverride": True,
         "type"          : "str",

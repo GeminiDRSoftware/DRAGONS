@@ -669,7 +669,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Call the stack_frames user level function
         adoutput = sk.stack_frames(adinput=rc.get_inputs(style="AD"),
                                    suffix=rc["suffix"],
-                                   method=rc["method"])
+                                   operation=rc["operation"])
         # Report the list containing a single AstroData object to the reduction
         # context
         rc.report_output(adoutput)
