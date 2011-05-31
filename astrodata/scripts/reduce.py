@@ -72,9 +72,11 @@ b = datetime.now()
 cachedirs = [".reducecache",
              ".reducecache/storedcals",
              ".reducecache/storedcals/storedbiases",
+             ".reducecache/storedcals/storeddarks",
              ".reducecache/storedcals/storedflats",
              ".reducecache/storedcals/retrievedbiases",
-             ".reducecache/storedcals/retrievedflats",                        
+             ".reducecache/storedcals/retrieveddarks",
+             ".reducecache/storedcals/retrievedflats",
              ]
 CALDIR = ".reducecache/storedcals"
 cachedict = {} # constructed below             
@@ -369,7 +371,7 @@ def command_line():
         
     if options.add_cal != None:
         if options.cal_type == None:
-            print "Reduce requires a calibration type. Use --cal-type. For more " + \
+            print "Reduce requires a calibration type. Use --caltype. For more " + \
             "information use '-h' or '--help'."
             sys.exit(1)
         elif not os.access( options.add_cal, os.R_OK ):
@@ -386,11 +388,11 @@ def command_line():
             co.add_cal( AstroData(arg), options.cal_type, os.path.abspath(options.add_cal) )
         co.persist_cal_index( calindfile )
         print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
-        sys.exit(0)
+        #sys.exit(0)
         
     elif options.rem_cal:
         if options.cal_type == None:
-            print "Reduce requires a calibration type. Use --cal-type. For more " + \
+            print "Reduce requires a calibration type. Use --caltype. For more " + \
             "information use '-h' or '--help'."
             sys.exit(1)
         
@@ -444,8 +446,7 @@ def command_line():
     options.globalParams = {}
     options.globalParams.update(clgparms)
     options.globalParams.update(pfgparms)
-       
-            
+    
     return input_files
 
 from astrodata import Proxies
@@ -504,7 +505,8 @@ def OLDcommandClause(ro, coi):
                 msg += 'A suitable %s found:\n' %(str(typ))
                 
                 storenames = {"bias":"retrievedbiases",
-                              "flat":"retrievedflats"
+                              "flat":"retrievedflats",
+                              "dark":"retrieveddarks",
                               }
                 calfname = os.path.join(coi[storenames[typ]], os.path.basename(calurl))
                 if os.path.exists(calfname):
@@ -676,7 +678,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
     #print "r232: profiling end"
     #prof.close()
     #raise "over"
-    
+
     log.status("Starting Reduction #%d of %d" % (i, numReductions))
     if infiles:
         for infile in infiles:
@@ -703,7 +705,6 @@ for infiles in allinputs: #for dealing with multiple sets of files.
 
     # add command clause
     ro.register_command_clause(command_clause)
-        
     if options.recipename == None:
         if options.astrotype == None:
             reclist = rl.get_applicable_recipes(infiles[0]) #**
@@ -752,16 +753,19 @@ for infiles in allinputs: #for dealing with multiple sets of files.
     log.status(title)
     log.status(tb)
     if options.recipename == None:
-        log.status("Recipe(s) found by dataset type:")
+        if len(recdict) == 0:
+            log.error("No recipes found")
+            sys.exit(1)
+        else:
+            log.status("Recipe(s) found by dataset type:")
     else:
         log.status("A recipe was specified:")
-        
+
     for typ in recdict.keys():
         recs = recdict[typ]
         log.info("  for type: %s" % typ)
         for rec in recs:
             log.info("    %s" % rec)
-    
     
     bReportHistory = False
     cwlist = []
