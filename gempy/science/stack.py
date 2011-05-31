@@ -9,7 +9,7 @@ from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
-def stack_frames(adinput=None, suffix=None, method="average"):
+def stack_frames(adinput=None, suffix=None, operation="average"):
     """
     This user level function will stack the input AstroData objects. New
     variance extensions are created from the stacked science extensions and the
@@ -24,15 +24,15 @@ def stack_frames(adinput=None, suffix=None, method="average"):
     :param adinput: Astrodata inputs to be combined
     :type adinput: Astrodata objects, either a single or a list of objects
     
-    :param method: type of combining method to use.
-    :type method: string, options: 'average', 'median'.
+    :param operation: type of combining operation to use.
+    :type operation: string, options: 'average', 'median'.
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # The stack_frames user level function cannot stack one AstroData object.
     # If the adinput list contains a single AstroData object, raise an
     # exception
@@ -63,17 +63,17 @@ def stack_frames(adinput=None, suffix=None, method="average"):
             "reject"      :"none",
             }
         # Get the input parameters for IRAF as specified by the user
+        fl_vardq = no
+        fl_dqprop = no
         for ad in adinput:
-            if ad["VAR"] and ad["DQ"]:
-                fl_vardq = yes
+            if ad["DQ"]:
                 fl_dqprop = yes
-            else:
-                fl_vardq = no
-                fl_dqprop = no
+                if ad["VAR"]:
+                    fl_vardq = yes
         clSoftcodedParams = {
             "fl_vardq"      : fl_vardq,
             "fl_dqprop"     : fl_dqprop,
-            "combine"       : method,
+            "combine"       : operation,
             }
         # Get the default parameters for IRAF and update them using the above
         # dictionaries
