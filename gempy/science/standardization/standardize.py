@@ -14,9 +14,9 @@ def standardize_headers_f2(adinput=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSI"
@@ -93,9 +93,9 @@ def standardize_headers_gemini(adinput=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSG"
@@ -166,9 +166,9 @@ def standardize_headers_gmos(adinput=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSI"
@@ -229,9 +229,9 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZSTRUC"
@@ -248,14 +248,14 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                                         % (ad.filename))
             # Standardize the structure of the input AstroData
             # object. Raw FLAMINGOS-2 data have three dimensions (i.e.,
-            # 2048x2048x1), so check whether the third extension has a length
+            # 2048x2048x1), so check whether the third dimension has a length
             # of one and remove it
             for ext in ad:
                 if len(ext.data.shape) == 3:
                     # Remove the single-dimensional axis from the pixel data
                     ext.data = np.squeeze(ext.data)
                     if len(ext.data.shape) == 2:
-                        log.info("Removed third extension from %s" \
+                        log.info("Removed third dimension from %s" \
                                  % ad.filename)
                     if len(ext.data.shape) == 3:
                         # The np.squeeze method only removes a dimension from
@@ -324,9 +324,9 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZSTRUC"
