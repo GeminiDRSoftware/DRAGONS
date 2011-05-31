@@ -15,9 +15,9 @@ def validate_data_f2(adinput=None, repair=False):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "VALDATA"
@@ -71,9 +71,9 @@ def validate_data_gmos(adinput=None, repair=False):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = gt.validate_input(input=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "VALDATA"
