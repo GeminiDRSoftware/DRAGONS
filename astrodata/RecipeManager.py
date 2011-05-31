@@ -276,9 +276,9 @@ class ReductionContext(dict):
             filename = data
         calrec = CalibrationRecord(filename, calname, caltyp, timestamp)
         key = (adID, caltyp)
-        #print "RM542:", key, calrec
+        #print "RM542:", key, repr(calrec)
         self.calibrations.update({key: calrec})
-        
+    
     def add_callback(self, name, function):
         callbacks = self.callbacks
         if name in callbacks:
@@ -485,7 +485,7 @@ class ReductionContext(dict):
         @return: The URI of the currently stored calibration or None.
         @rtype: str or None 
         '''
-        #"RM467:"+ repr(data)+repr( type( data ))
+        #print "RM467:"+ repr(data)+repr( type( data ))
         adID = idFac.generate_astro_data_id(data)
         #filename = os.path.abspath(filename)
         key = (adID, caltype)
@@ -809,7 +809,7 @@ class ReductionContext(dict):
     
     def persist_cal_index(self, filename = None, newindex = None):
         # should call PRS!
-        return
+        #return
         #print "Calibration List Before Persist:"
         #print self.calsummary()
         if newindex != None:
