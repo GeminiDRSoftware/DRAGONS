@@ -257,6 +257,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             if stripID or pretty:
                 ret_prism = string.removeComponentID(ret_prism)
         
+        else:
+            ret_prism = prism
+
         return ret_prism
     
     def read_mode(self, dataset, **args):
