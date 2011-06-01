@@ -1035,19 +1035,19 @@ integrates other functionality.
             namedext = False
 	    
             for hdu in hdul[1:]:
-    	        # print "AD642:",hdu.name
+    	        #print "AD1036:",hdu.name
 
                 if hdu.name or ("extname" in hdu.header): 
                     namedext = True
-                    #print "AD615: Named", hdu.header["extname"]
+                    #print "AD1040: Named", hdu.header["extname"]
                 else:
-                    # print "AD617: Not Named"
+                    #print "AD1042: Not Named"
                     pass
                     
             if namedext == False:
-                # print "AD567: No named extension"
+                #print "AD1046: No named extension"
                 l = len(hdul) # len w/phu
-                # print "AD567: len of hdulist ",l
+                #print "AD1048: len of hdulist ",l
 
                 
                 # nhdul = [hdul[0]]
@@ -1088,12 +1088,14 @@ integrates other functionality.
         if (self.mode == "readonly"):
             if rename == True  or rename == None:
                 if filename != None or filename != self.filename:
-                    raise ADREADONLY("Cannot use AstroData.write(..) on this instance, "
-                                 "file opened in readonly mode, either open for "
-                                 "update/writing or rename the file.")
+                    msg =  "Cannot use AstroData.write(..) on this instance,"
+                    msg += "file opened in readonly mode, either open for "
+                    msg += "update/writing or rename the file."
+                    raise Errors.AstroDataError(msg)
             else:
                 if filename == None or filename == self.filename:
-                    raise ADREADONLY("Attemt to write out readonly AstroData instance.")
+                    msg = "Attemt to write out readonly AstroData instance."
+                    raise Errors.AstroDataError(msg)
         
         if rename == None:
             if filename == None:

@@ -20,6 +20,12 @@ class ArithError(Error):
     For general Exceptions raised within the arith.py toolbox
     """
     message = 'Exception Raised in arith toolbox'
+
+class AstroDataError(Error):
+    """
+    For general Exceptions raised in the AstroData Class Module
+    """
+    message = 'Exception Raised in AstroData.py'
     
 class CalcError(Error):
     """
