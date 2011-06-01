@@ -2,10 +2,10 @@ from nose.tools import *
 
 import file_urls 
 from astrodata import AstroData
+from astrodata import Errors
 
 testfile = file_urls.testdatafile_1
 
-@raises(Exception)
 def accessmode_test1():
     '''ACCESSMODE: test1 -load ad readonly and try to write  
     '''
@@ -13,11 +13,15 @@ def accessmode_test1():
     ad = AstroData(testfile)
     print('\tad = AstroData(testfile)')
     print('\tad.write()')
-    ad.write()
+    throwexcept = False
+    try:
+        ad.write()
+    except Errors.AstroDataError,e:
+        throwexcept = True
+        print("\t%s" % e)
+    assert_true(throwexcept)
 
-@raises(Exception)
 def accessmode_test2():
-    '''ACCESSMODE: test2 -subdata will not close the original hdulist  
+    '''ACCESSMODE: test2 -  
     '''
-    raise typeError("pass?")
     
