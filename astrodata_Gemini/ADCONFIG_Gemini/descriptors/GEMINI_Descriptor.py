@@ -15,12 +15,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def airmass(self, dataset, **args):
         # Get the airmass value from the header of the PHU
         airmass = dataset.phu_get_key_value(
-            self._specifickey_dict['key_airmass'])
+            self._specifickey_dict["key_airmass"])
         if airmass is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Validate the airmass value
         if airmass < 1.0:
@@ -34,19 +34,19 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # The amp_read_area descriptor is only specific to GMOS data. The code
         # below will be replaced with the GMOS specific amp_read_area
         # descriptor function located in GMOS/GMOS_Descriptor.py for data with
-        # an AstroData Type of 'GMOS'. For all other Gemini data, raise an
+        # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
     def cass_rotator_pa(self, dataset, **args):
         # Get the cassegrain rotator position angle from the header of the PHU
         cass_rotator_pa = dataset.phu_get_key_value(
-            self._specifickey_dict['key_cass_rotator_pa'])
+            self._specifickey_dict["key_cass_rotator_pa"])
         if cass_rotator_pa is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Validate the cassegrain rotator position angle value
         if cass_rotator_pa < -360.0 or cass_rotator_pa > 360.0:
@@ -60,31 +60,31 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                            asNanometers=False, asAngstroms=False, **args):
         # For most Gemini data, the central wavelength is recorded in
         # micrometers
-        input_units = 'micrometers'
+        input_units = "micrometers"
         # Determine the output units to use
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         if unit_arg_list.count(True) == 1:
             # Just one of the unit arguments was set to True. Return the
             # central wavelength in these units
             if asMicrometers:
-                output_units = 'micrometers'
+                output_units = "micrometers"
             if asNanometers:
-                output_units = 'nanometers'
+                output_units = "nanometers"
             if asAngstroms:
-                output_units = 'angstroms'
+                output_units = "angstroms"
         else:
             # Either none of the unit arguments were set to True or more than
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters
-            output_units = 'meters'
+            output_units = "meters"
         # Get the central wavelength value from the header of the PHU.
         raw_central_wavelength = dataset.phu_get_key_value(
-            self._specifickey_dict['key_central_wavelength'])
+            self._specifickey_dict["key_central_wavelength"])
         if raw_central_wavelength is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         else:
             central_wavelength = float(raw_central_wavelength)
@@ -106,7 +106,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
         # dictionary (self._specifickey_dict).
         coadds = dataset.phu_get_key_value(
-            self._specifickey_dict['key_coadds'])
+            self._specifickey_dict["key_coadds"])
         if coadds is None:
             # Return 1 as the default value for the number of coadds for Gemini
             # data
@@ -122,15 +122,15 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_data_section = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset['SCI']:
+        for ext in dataset["SCI"]:
             # Get the data section from the header of each pixel data extension
             raw_data_section = ext.get_key_value(
-                self._specifickey_dict['key_data_section'])
+                self._specifickey_dict["key_data_section"])
             if raw_data_section is None:
                 # The get_key_value() function returns None if a value cannot
                 # be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(ext, 'exception_info'):
+                if hasattr(ext, "exception_info"):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the data section string that uses
@@ -143,6 +143,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 data_section = string.sectionStrToIntList(raw_data_section)
                 ret_data_section.update({
                     (ext.extname(), ext.extver()):data_section})
+        if ret_data_section == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_data_section
     
@@ -153,12 +158,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         # Get the decker position from the header of the PHU
         decker = dataset.phu_get_key_value(
-            self._specifickey_dict['key_decker'])
+            self._specifickey_dict["key_decker"])
         if decker is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if pretty:
             stripID = True
@@ -177,16 +182,16 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_detector_section = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset['SCI']:
+        for ext in dataset["SCI"]:
             # Get the detector section from the header of each pixel data
             # extension
             raw_detector_section = ext.get_key_value(
-                self._specifickey_dict['key_detector_section'])
+                self._specifickey_dict["key_detector_section"])
             if raw_detector_section is None:
                 # The get_key_value() function returns None if a value cannot
                 # be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(ext, 'exception_info'):
+                if hasattr(ext, "exception_info"):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the detector section string that 
@@ -200,6 +205,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     raw_detector_section)
                 ret_detector_section.update({
                     (ext.extname(), ext.extver()):detector_section})
+        if ret_detector_section == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_detector_section
     
@@ -209,11 +219,16 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_detector_x_bin = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset['SCI']:
+        for ext in dataset["SCI"]:
             # Return a dictionary with the binning of the x-axis integer (set
             # to 1 as default for Gemini data) as the value
             ret_detector_x_bin.update({
                 (ext.extname(), ext.extver()):int(1)})
+        if ret_detector_x_bin == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_detector_x_bin
     
@@ -223,11 +238,16 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_detector_y_bin = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset['SCI']:
+        for ext in dataset["SCI"]:
             # Return a dictionary with the binning of the y-axis integer (set
             # to 1 as default for Gemini data) as the value
             ret_detector_y_bin.update({
                 (ext.extname(), ext.extver()):int(1)})
+        if ret_detector_y_bin == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_detector_y_bin
     
@@ -237,12 +257,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
         # dictionary (self._specifickey_dict)
         disperser = dataset.phu_get_key_value(
-            self._specifickey_dict['key_disperser'])
+            self._specifickey_dict["key_disperser"])
         if disperser is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if pretty:
             stripID = True
@@ -263,19 +283,19 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # The dispersion axis can only be obtained from data that does not
         # have an AstroData Type of IMAGE and that has been prepared (since
         # the dispersion axis keyword is written during the prepare step)
-        if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
+        if "IMAGE" not in dataset.types and "PREPARED" in dataset.types:
             # Loop over the science extensions in the dataset
-            for ext in dataset['SCI']:
+            for ext in dataset["SCI"]:
                 # Get the dispersion axis from the header of each pixel data
                 # extension
                 dispersion_axis = ext.get_key_value(
-                    self._specifickey_dict['key_dispersion_axis'])
+                    self._specifickey_dict["key_dispersion_axis"])
                 if dispersion_axis is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
                     # the exception. It will be dealt with by the
                     # CalculatorInterface.
-                    if hasattr(ext, 'exception_info'):
+                    if hasattr(ext, "exception_info"):
                         raise ext.exception_info
                 # Return a dictionary with the dispersion axis integer as
                 # the value
@@ -283,22 +303,27 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     (ext.extname(), ext.extver()):int(dispersion_axis)})
         else:
             raise Errors.DescriptorTypeError()
+        if ret_dispersion_axis == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_dispersion_axis
     
     def exposure_time(self, dataset, **args):
         # Get the exposure time value from the header of the PHU
         exposure_time = dataset.phu_get_key_value(
-            self._specifickey_dict['key_exposure_time'])
+            self._specifickey_dict["key_exposure_time"])
         if exposure_time is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # If the data have been prepared, take the (total) exposure time value
         # directly from the appropriate keyword
-        if 'PREPARED' in dataset.types:
+        if "PREPARED" in dataset.types:
             # Get the total exposure time value from the header of the PHU
             ret_exposure_time = float(exposure_time)
         else:
@@ -308,7 +333,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, 'exception_info'):
+                if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             ret_exposure_time = float(exposure_time * coadds)
         
@@ -319,15 +344,15 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # filter name keywords may be defined in a local key dictionary
         # (stdkey_dict<INSTRUMENT>) but are read from the updated global key
         # dictionary (self._specifickey_dict)
-        key_filter1 = self._specifickey_dict['key_filter1']
-        key_filter2 = self._specifickey_dict['key_filter2']
+        key_filter1 = self._specifickey_dict["key_filter1"]
+        key_filter2 = self._specifickey_dict["key_filter2"]
         filter1 = dataset.phu_get_key_value(key_filter1)
         filter2 = dataset.phu_get_key_value(key_filter2)
         if filter1 is None or filter2 is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID or pretty:
             # Strip the component ID from the two filter name values
@@ -337,19 +362,19 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # name string as the value
         ret_filter_name = {}
         if pretty:
-            # Remove any filters that have the value 'open' or 'Open'
-            if 'open' not in filter1 and 'Open' not in filter1:
+            # Remove any filters that have the value "open" or "Open"
+            if "open" not in filter1 and "Open" not in filter1:
                 ret_filter_name.update({key_filter1:str(filter1)})
-            if 'open' not in filter2 and 'Open' not in filter2:
+            if "open" not in filter2 and "Open" not in filter2:
                 ret_filter_name.update({key_filter2:str(filter2)})
             if len(ret_filter_name) == 0:
-                ret_filter_name = 'open'
-            if 'Block' in filter1 or 'Block' in filter2:
-                ret_filter_name = 'blank'
-            if 'Dark' in filter1 or 'Dark' in filter2:
-                ret_filter_name = 'blank'
-            if 'DK' in filter1 or 'DK' in filter2:
-                ret_filter_name = 'dark'
+                ret_filter_name = "open"
+            if "Block" in filter1 or "Block" in filter2:
+                ret_filter_name = "blank"
+            if "Dark" in filter1 or "Dark" in filter2:
+                ret_filter_name = "blank"
+            if "DK" in filter1 or "DK" in filter2:
+                ret_filter_name = "dark"
         else:
             # Return a dictionary with the filter name string as the value
             ret_filter_name.update({key_filter1:str(filter1),
@@ -362,12 +387,12 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             stripID = True
         # Get the focal plane mask value from the header of the PHU.
         focal_plane_mask = dataset.phu_get_key_value(
-            self._specifickey_dict['key_focal_plane_mask'])
+            self._specifickey_dict["key_focal_plane_mask"])
         if focal_plane_mask is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID:
             # Return the focal plane mask string with the component ID stripped
@@ -382,25 +407,25 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # The gain_setting descriptor is only specific to GMOS data. The code
         # below will be replaced with the GMOS specific gain_setting
         # descriptor function located in GMOS/GMOS_Descriptor.py for data with
-        # an AstroData Type of 'GMOS'. For all other Gemini data, raise an
+        # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
     def local_time(self, dataset, **args):
         # Get the local time from the header of the PHU
         local_time = dataset.phu_get_key_value(
-            self._specifickey_dict['key_local_time'])
+            self._specifickey_dict["key_local_time"])
         if local_time is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Validate the local time value. The assumption is that the standard
         # mandates HH:MM:SS[.S]. We don't enforce the number of decimal places.
         # These are somewhat basic checks, it's not completely rigorous. Note
         # that seconds can be > 59 when leap seconds occurs
-        if re.match('^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$', local_time):
+        if re.match("^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$", local_time):
             ret_local_time = str(local_time)
         else:
             raise Errors.InvalidValueError()
@@ -416,19 +441,19 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # AstroData Type of IMAGE and that has been cut (since the MDF row ID
         # keyword is written during the cut step). As there is no CUT type yet,
         # just check whether the dataset has been prepared.
-        if 'IMAGE' not in dataset.types and 'PREPARED' in dataset.types:
+        if "IMAGE" not in dataset.types and "PREPARED" in dataset.types:
             # Loop over the science extensions of the dataset
-            for ext in dataset['SCI']:
+            for ext in dataset["SCI"]:
                 # Get the MDF row ID from the header of each pixel data
                 # extension
                 mdf_row_id = ext.get_key_value(
-                    self._specifickey_dict['key_mdf_row_id'])
+                    self._specifickey_dict["key_mdf_row_id"])
                 if mdf_row_id is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
                     # the exception. It will be dealt with by the
                     # CalculatorInterface.
-                    if hasattr(ext, 'exception_info'):
+                    if hasattr(ext, "exception_info"):
                         raise ext.exception_info
                 # Return a dictionary with the MDF row ID integer as the
                 # value
@@ -436,6 +461,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     (ext.extname(), ext.extver()):int(mdf_row_id)})
         else:
             raise Errors.DescriptorTypeError()
+        if ret_mdf_row_id == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_mdf_row_id
     
@@ -443,7 +473,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # The nod_count descriptor is only specific to GMOS data. The code
         # below will be replaced with the GMOS specific nod_count
         # descriptor function located in GMOS/GMOS_Descriptor.py for data with
-        # an AstroData Type of 'GMOS'. For all other Gemini data, raise an
+        # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
@@ -451,7 +481,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # The nod_pixels descriptor is only specific to GMOS data. The code
         # below will be replaced with the GMOS specific nod_pixels
         # descriptor function located in GMOS/GMOS_Descriptor.py for data with
-        # an AstroData Type of 'GMOS'. For all other Gemini data, raise an
+        # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
@@ -461,16 +491,16 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_overscan_section = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset['SCI']:
+        for ext in dataset["SCI"]:
             # Get the overscan section from the header of each pixel data
             # extension
             raw_overscan_section = ext.get_key_value(
-                self._specifickey_dict['key_overscan_section'])
+                self._specifickey_dict["key_overscan_section"])
             if raw_overscan_section is None:
                 # The get_key_value() function returns None if a value cannot
                 # be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(ext, 'exception_info'):
+                if hasattr(ext, "exception_info"):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the overscan section string that 
@@ -484,6 +514,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     raw_overscan_section)
                 ret_overscan_section.update({
                     (ext.extname(), ext.extver()):overscan_section})
+        if ret_overscan_section == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_overscan_section
     
@@ -499,7 +534,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # The read_speed_setting descriptor is only specific to GMOS data. The
         # code below will be replaced with the GMOS specific read_speed_setting
         # descriptor function located in GMOS/GMOS_Descriptor.py for data with
-        # an AstroData Type of 'GMOS'. For all other Gemini data, raise an
+        # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
@@ -510,27 +545,27 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # defined in the local key dictionary (stdkeyDictGEMINI) but are read
         # from the updated global key dictionary (self._specifickey_dict)
         rawpireq = dataset.phu_get_key_value(
-            self._specifickey_dict['key_raw_pi_requirements_met'])
+            self._specifickey_dict["key_raw_pi_requirements_met"])
         rawgemqa = dataset.phu_get_key_value(
-            self._specifickey_dict['key_raw_gemini_qa'])
+            self._specifickey_dict["key_raw_gemini_qa"])
         if rawpireq is None or rawgemqa is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Calculate the derived QA state
-        ret_qa_state = '%s:%s' % (rawpireq, rawgemqa)
-        if rawpireq == 'UNKNOWN' or rawgemqa == 'UNKNOWN':
-            ret_qa_state = 'Undefined'
-        if rawpireq.upper() == 'YES' and rawgemqa.upper() == 'USABLE':
-            ret_qa_state = 'Pass'
-        if rawpireq.upper() == 'NO' and rawgemqa.upper() == 'USABLE':
-            ret_qa_state = 'Usable'
-        if rawgemqa.upper() == 'BAD':
-            ret_qa_state = 'Fail'
-        if rawpireq.upper() == 'CHECK' or rawgemqa.upper() == 'CHECK':
-            ret_qa_state = 'CHECK'
+        ret_qa_state = "%s:%s" % (rawpireq, rawgemqa)
+        if rawpireq == "UNKNOWN" or rawgemqa == "UNKNOWN":
+            ret_qa_state = "Undefined"
+        if rawpireq.upper() == "YES" and rawgemqa.upper() == "USABLE":
+            ret_qa_state = "Pass"
+        if rawpireq.upper() == "NO" and rawgemqa.upper() == "USABLE":
+            ret_qa_state = "Usable"
+        if rawgemqa.upper() == "BAD":
+            ret_qa_state = "Fail"
+        if rawpireq.upper() == "CHECK" or rawgemqa.upper() == "CHECK":
+            ret_qa_state = "CHECK"
         
         return ret_qa_state
     
@@ -542,7 +577,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
         return ret_ut_date
@@ -553,13 +588,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # header keywords that might tell us. DATE-OBS can also give us a full
         # date-time combination, so we check for this too.
         hdu = dataset.hdulist
-        for kw in ['DATE-OBS', self._specifickey_dict['key_ut_date'], 'DATE', \
-            'UTDATE']:
+        for kw in ["DATE-OBS", self._specifickey_dict["key_ut_date"], "DATE", \
+            "UTDATE"]:
             try:
                 utdate_hdr = hdu[0].header[kw].strip()
             except KeyError:
                 #print "Didn't get a utdate from keyword %s" % kw
-                utdate_hdr = ''
+                utdate_hdr = ""
 
             # Validate. The definition is taken from the FITS
             # standard document v3.0. Must be YYYY-MM-DD or
@@ -569,14 +604,14 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # valid when leap seconds occur.
 
             # Did we get a full date-time string?
-            if re.match('(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)', utdate_hdr):
+            if re.match("(\d\d\d\d-[01]\d-[0123]\d)(T)([012]\d:[012345]\d:\d\d.*\d*)", utdate_hdr):
                 ut_datetime = dateutil.parser.parse(utdate_hdr)
                 #print "Got a full date-time from %s: %s = %s" % (kw, utdate_hdr, ut_datetime)
                 # If we got a full datetime, then just return it and we're done already!
                 return ut_datetime
 
             # Did we get a date (only) string?
-            match = re.match('\d\d\d\d-[01]\d-[0123]\d', utdate_hdr)
+            match = re.match("\d\d\d\d-[01]\d-[0123]\d", utdate_hdr)
             if match:
                 #print "got a date from %s: %s" % (kw, utdate_hdr)
                 break
@@ -585,7 +620,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 pass
 
             # Did we get a *horrible* early niri style string DD/MM/YY[Y] - YYYY = 1900 + YY[Y]?
-            match = re.match('(\d\d)/(\d\d)/(\d\d+)', utdate_hdr)
+            match = re.match("(\d\d)/(\d\d)/(\d\d+)", utdate_hdr)
             if(match):
                 #print "horrible niri format"
                 d = int(match.groups()[0])
@@ -596,7 +631,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     utdate_hdr = "%d-%02d-%02d" % (y, m, d)
                     break
             else:
-                utdate_hdr = ''
+                utdate_hdr = ""
 
 
         # OK, at this point, utdate_hdr should contain either an empty string
@@ -609,22 +644,22 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
 
         # Get and validate the ut time header, if present. We try several
         # header keywords that might contain a ut time.
-        for kw in [self._specifickey_dict['key_ut_time'], 'UT', 'TIME-OBS', 'STARTUT']:
+        for kw in [self._specifickey_dict["key_ut_time"], "UT", "TIME-OBS", "STARTUT"]:
             try:
                 uttime_hdr = hdu[0].header[kw].strip()
             except KeyError:
                 #print "Didn't get a uttime from keyword %s" % kw
-                uttime_hdr = ''
+                uttime_hdr = ""
             # The standard mandates HH:MM:SS[.S...] 
             # OK, we allow single digits to cope with crap data
             # These are somewhat basic checks, it's not completely rigorous
             # Note that seconds can be > 59 when leap seconds occurs
-            if re.match('^([012]?\d)(:)([012345]?\d)(:)(\d\d?\.?\d*)$', uttime_hdr):
+            if re.match("^([012]?\d)(:)([012345]?\d)(:)(\d\d?\.?\d*)$", uttime_hdr):
                 #print "Got UT time from keyword %s: %s" % (kw, uttime_hdr)
                 break
             else:
                 #print "Could not parse a UT time from keyword %s: %s" % (kw, uttime_hdr)
-                uttime_hdr = ''
+                uttime_hdr = ""
         # OK, at this point, uttime_hdr should contain either an empty string
         # or a valid UT time string, ie HH:MM:SS[.S...]
           
@@ -647,7 +682,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Maybe there's an MJD_OBS header we can use
         try:
             #print "Trying to use MJD_OBS"
-            mjd = hdu[0].header['MJD_OBS']
+            mjd = hdu[0].header["MJD_OBS"]
             if(mjd > 1):
                 # MJD zero is 1858-11-17T00:00:00.000 UTC
                 mjdzero = datetime.datetime(1858, 11, 17, 0, 0, 0, 0, None)
@@ -665,7 +700,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Maybe there's an OBSSTART header we can use
         try:
             #print "Trying to use OBSSTART"
-            obsstart = hdu[0].header['OBSSTART'].strip()
+            obsstart = hdu[0].header["OBSSTART"].strip()
             if(obsstart):
                 ut_datetime = dateutil.parser.parse(obsstart)
                 #print "Did it by OBSSTART"
@@ -685,9 +720,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         if(not utdate_hdr):
             #print "Desperately trying FRMNAME, filename etc"
             try:
-                frmname = hdu[1].header['FRMNAME']
+                frmname = hdu[1].header["FRMNAME"]
             except (KeyError, ValueError, IndexError):
-                frmname = ''
+                frmname = ""
             for string in [frmname, os.path.basename(dataset.filename)]:
                 try:
                     #print "... Trying to Parse: %s" % string
@@ -738,7 +773,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
         return ret_ut_time
@@ -749,26 +784,26 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # states keywords are defined in the local key dictionary
         # (stdkeyDictGEMINI) but are read from the updated global key
         # dictionary (self._specifickey_dict)
-        aowfs = dataset.phu_get_key_value(self._specifickey_dict['key_aowfs'])
-        oiwfs = dataset.phu_get_key_value(self._specifickey_dict['key_oiwfs'])
-        pwfs1 = dataset.phu_get_key_value(self._specifickey_dict['key_pwfs1'])
-        pwfs2 = dataset.phu_get_key_value(self._specifickey_dict['key_pwfs2'])
+        aowfs = dataset.phu_get_key_value(self._specifickey_dict["key_aowfs"])
+        oiwfs = dataset.phu_get_key_value(self._specifickey_dict["key_oiwfs"])
+        pwfs1 = dataset.phu_get_key_value(self._specifickey_dict["key_pwfs1"])
+        pwfs2 = dataset.phu_get_key_value(self._specifickey_dict["key_pwfs2"])
         if aowfs is None or oiwfs is None or pwfs1 is None or pwfs2 is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # If any of the probes are guiding, add them to the list
         wavefront_sensors = []
-        if aowfs == 'guiding':
-            wavefront_sensors.append('AOWFS')
-        if oiwfs == 'guiding':
-            wavefront_sensors.append('OIWFS')
-        if pwfs1 == 'guiding':
-            wavefront_sensors.append('PWFS1')
-        if pwfs2 == 'guiding':
-            wavefront_sensors.append('PWFS2')
+        if aowfs == "guiding":
+            wavefront_sensors.append("AOWFS")
+        if oiwfs == "guiding":
+            wavefront_sensors.append("OIWFS")
+        if pwfs1 == "guiding":
+            wavefront_sensors.append("PWFS1")
+        if pwfs2 == "guiding":
+            wavefront_sensors.append("PWFS2")
         if len(wavefront_sensors) == 0:
             # If no probes are guiding, raise an exception
             raise Errors.CalcError()
@@ -776,7 +811,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # Return a unique, sorted, wavefront sensor identifier string with
             # an ampersand separating each wavefront sensor name
             wavefront_sensors.sort
-            ret_wavefront_sensor = str('&'.join(wavefront_sensors))
+            ret_wavefront_sensor = str("&".join(wavefront_sensors))
         
         return ret_wavefront_sensor
     
@@ -786,25 +821,30 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_wavelength_reference_pixel = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset['SCI']:
+        for ext in dataset["SCI"]:
             # Get the reference pixel of the central wavelength from the header
             # of each pixel data extension. The reference pixel of the central
             # wavelength keyword may be defined in a local key dictionary
             # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
             # dictionary (self._specifickey_dict)
             wavelength_reference_pixel = ext.get_key_value(
-                self._specifickey_dict['key_wavelength_reference_pixel'])
+                self._specifickey_dict["key_wavelength_reference_pixel"])
             if wavelength_reference_pixel is None:
                 # The get_key_value() function returns None if a value cannot
                 # be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(ext, 'exception_info'):
+                if hasattr(ext, "exception_info"):
                     raise ext.exception_info
             # Return a dictionary with the reference pixel of the central
             # wavelength float as the value
             ret_wavelength_reference_pixel.update({
                 (ext.extname(), ext.extver()):
                 float(wavelength_reference_pixel)})
+        if ret_wavelength_reference_pixel == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_wavelength_reference_pixel
     

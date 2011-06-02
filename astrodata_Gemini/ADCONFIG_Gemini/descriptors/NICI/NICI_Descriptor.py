@@ -21,26 +21,29 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Note: 2010 data has the keywords in the PHU but earlier data (not
         # sure where the line is) doesn't. Need to find out when the keyword
         # locations changed ...
-        key_exposure_time_r = self._specifickey_dict['key_exposure_time_r']
+        key_exposure_time_r = self._specifickey_dict["key_exposure_time_r"]
         exposure_time_r = dataset.phu_get_key_value(key_exposure_time_r)
-        key_exposure_time_b = self._specifickey_dict['key_exposure_time_b']
+        key_exposure_time_b = self._specifickey_dict["key_exposure_time_b"]
         exposure_time_b = dataset.phu_get_key_value(key_exposure_time_b)
-        coadds_r = dataset.phu_get_key_value(self._specifickey_dict['key_coadds_r'])
-        coadds_b = dataset.phu_get_key_value(self._specifickey_dict['key_coadds_b'])
+        coadds_r = dataset.phu_get_key_value(
+            self._specifickey_dict["key_coadds_r"])
+        coadds_b = dataset.phu_get_key_value(
+            self._specifickey_dict["key_coadds_b"])
         if exposure_time_r is None or exposure_time_b is None or \
             coadds_r is None or coadds_b is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Return a dictionary with the exposure time keyword names as the key
         # and the total exposure time float as the value
         ret_exposure_time = {}
         total_exposure_time_r = float(exposure_time_r * coadds_r)
         total_exposure_time_b = float(exposure_time_b * coadds_b)
-        ret_exposure_time.update({key_exposure_time_r:total_exposure_time_r, \
-            key_exposure_time_b:total_exposure_time_b})
+        ret_exposure_time.update(
+            {key_exposure_time_r:total_exposure_time_r,
+             key_exposure_time_b:total_exposure_time_b})
         
         return ret_exposure_time
     
@@ -49,15 +52,15 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         # filter name keywords are defined in the local key dictionary
         # (stdkeyDictNICI) but are read from the updated global key dictionary
         # (self._specifickey_dict)
-        key_filter_r = self._specifickey_dict['key_filter_r']
-        key_filter_b = self._specifickey_dict['key_filter_b']
+        key_filter_r = self._specifickey_dict["key_filter_r"]
+        key_filter_b = self._specifickey_dict["key_filter_b"]
         filter_r = dataset.phu_get_key_value(key_filter_r)
         filter_b = dataset.phu_get_key_value(key_filter_b)
         if filter_r is None or filter_b is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if pretty:
             stripID = True
@@ -68,8 +71,8 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return a dictionary with the keyword names as the key and the filter
         # name string as the value
         ret_filter_name = {}
-        ret_filter_name.update({key_filter_r:str(filter_r), \
-            key_filter_b:str(filter_b)})
+        ret_filter_name.update(
+            {key_filter_r:str(filter_r), key_filter_b:str(filter_b)})
         
         return ret_filter_name
     

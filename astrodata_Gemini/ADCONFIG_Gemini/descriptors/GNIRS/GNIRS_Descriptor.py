@@ -18,12 +18,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     gnirsConfigDict = None
     
     def __init__(self):
-        self.gnirsArrayDict = \
-            Lookups.get_lookup_table('Gemini/GNIRS/GNIRSArrayDict',
-                                   'gnirsArrayDict')
-        self.gnirsConfigDict = \
-            Lookups.get_lookup_table('Gemini/GNIRS/GNIRSConfigDict',
-                                   'gnirsConfigDict')
+        self.gnirsArrayDict = Lookups.get_lookup_table(
+            "Gemini/GNIRS/GNIRSArrayDict", "gnirsArrayDict")
+        self.gnirsConfigDict = Lookups.get_lookup_table(
+            "Gemini/GNIRS/GNIRSConfigDict", "gnirsConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
@@ -37,20 +35,20 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID:
-            if pretty and prism.startswith('MIR'):
+            if pretty and prism.startswith("MIR"):
                 # Return the stripped and pretty disperser string. If the
                 # prism is a mirror, don't list it in the pretty disperser. 
                 disperser = string.removeComponentID(grating)
             else:
                 # Return the stripped disperser string
-                disperser = '%s&%s' % (string.removeComponentID(grating), \
-                    string.removeComponentID(prism))
+                disperser = "%s&%s" % (string.removeComponentID(grating),
+                                       string.removeComponentID(prism))
         else:
             # Return the disperser string
-            disperser = '%s&%s' % (grating, prism)
+            disperser = "%s&%s" % (grating, prism)
         
         ret_disperser = str(disperser)
         
@@ -66,19 +64,19 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if pretty:
             # Disregard the decker if it's in long slit mode
-            if 'Long' in decker:
+            if "Long" in decker:
                 focal_plane_mask = slit
             # Append XD to the slit name if the decker is in XD mode
-            elif 'XD' in decker:
-                focal_plane_mask = '%s%s' % (slit, 'XD')
+            elif "XD" in decker:
+                focal_plane_mask = "%s%s" % (slit, "XD")
             else:
-                focal_plane_mask = '%s&%s' % (slit, decker)
+                focal_plane_mask = "%s&%s" % (slit, decker)
         else:
-            focal_plane_mask = '%s&%s' % (slit, decker)
+            focal_plane_mask = "%s&%s" % (slit, decker)
         ret_focal_plane_mask = str(focal_plane_mask)
         
         return ret_focal_plane_mask
@@ -86,13 +84,15 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     def gain(self, dataset, **args):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictGNIRS) but
-        # is read from the updated global key dictionary (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        # is read from the updated global key dictionary
+        # (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         bias_values = self.gnirsArrayDict.keys()
         count = 0
@@ -119,24 +119,25 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         descriptor function repairs the header values to only list the grating.
         """
         # Get the grating value from the header of the PHU.
-        grating = dataset.phu_get_key_value(self._specifickey_dict['key_grating'])
+        grating = dataset.phu_get_key_value(
+            self._specifickey_dict["key_grating"])
         if grating is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # The format of the grating string is currently (2011) nnn/mmCAM_Gnnnn
         # nnn is a 2 or 3 digit number (lines per mm)
-        # /mm is literally '/mm'
+        # /mm is literally "/mm"
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
-        # _G is literally '_G'
+        # _G is literally "_G"
         # nnnn is the 4 digit component ID.
-        cre = re.compile('([\d/m]+)([A-Z]*)(_G)(\d+)')
+        cre = re.compile("([\d/m]+)([A-Z]*)(_G)(\d+)")
         m = cre.match(grating)
         if m:
             parts = m.groups()
-            ret_grating = '%s%s%s' % (parts[0], parts[2], parts[3])
+            ret_grating = "%s%s%s" % (parts[0], parts[2], parts[3])
             if stripID or pretty:
                 ret_grating = string.removeComponentID(ret_grating)
         
@@ -145,13 +146,15 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     def non_linear_level(self, dataset, **args):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictGNIRS) but
-        # is read from the updated global key dictionary (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        # is read from the updated global key dictionary
+        # (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Get the saturation level using the appropriate descriptor
         saturation_level = dataset.saturation_level()
@@ -159,10 +162,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Determine whether the dataset has been corrected for non-linearity
-        if dataset.phu_get_key_value('NONLINCR'):
+        if dataset.phu_get_key_value("NONLINCR"):
             corrected = True
         else:
             corrected = False
@@ -197,14 +200,16 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def pixel_scale(self, dataset, **args):
         # Get the prism, decker and disperser from the header of the PHU.
-        prism = dataset.phu_get_key_value(self._specifickey_dict['key_prism'])
-        decker = dataset.phu_get_key_value(self._specifickey_dict['key_decker'])
-        disperser = dataset.phu_get_key_value(self._specifickey_dict['key_grating'])
+        prism = dataset.phu_get_key_value(self._specifickey_dict["key_prism"])
+        decker = dataset.phu_get_key_value(
+            self._specifickey_dict["key_decker"])
+        disperser = dataset.phu_get_key_value(
+            self._specifickey_dict["key_grating"])
         if prism is None or decker is None or disperser is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Get the camera using the appropriate descriptor
         camera = dataset.camera().as_pytype()
@@ -212,10 +217,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         pixel_scale_key = (prism, decker, disperser, camera)
-        if pixel_scale_key in getattr(self, 'gnirsConfigDict'):
+        if pixel_scale_key in getattr(self, "gnirsConfigDict"):
             row = self.gnirsConfigDict[pixel_scale_key]
         else:
             raise Errors.TableKeyError()
@@ -237,23 +242,23 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         function repairs the header values to only list the prism.
         """
         # Get the prism value from the header of the PHU.
-        prism = dataset.phu_get_key_value(self._specifickey_dict['key_prism'])
+        prism = dataset.phu_get_key_value(self._specifickey_dict["key_prism"])
         if prism is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # The format of the prism string is currently (2011) [CAM+]prism_Gnnnn
         # CAM is the camera: {L|S}{B|R}[{L|S}[X]}
-        # + is a literal '+'
+        # + is a literal "+"
         # prism is the actual prism name
         # nnnn is the 4 digit component ID.
-        cre = re.compile('([LBSR]*\+)*([A-Z]*)(_G)(\d+)')
+        cre = re.compile("([LBSR]*\+)*([A-Z]*)(_G)(\d+)")
         m = cre.match(prism)
         if m:
             parts = m.groups()
-            ret_prism = '%s%s%s' % (parts[1], parts[2], parts[3])
+            ret_prism = "%s%s%s" % (parts[1], parts[2], parts[3])
             if stripID or pretty:
                 ret_prism = string.removeComponentID(ret_prism)
         
@@ -268,24 +273,25 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # ndavgs keywords are defined in the local key dictionary
         # (stdkeyDictGNIRS) but are read from the updated global key dictionary
         # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
-        ndavgs = dataset.phu_get_key_value(self._specifickey_dict['key_ndavgs'])
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        ndavgs = dataset.phu_get_key_value(
+            self._specifickey_dict["key_ndavgs"])
         if lnrs is None or ndavgs is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if lnrs == 32 and ndavgs == 16:
-            read_mode = 'Very Faint Objects'
+            read_mode = "Very Faint Objects"
         elif lnrs == 16 and ndavgs == 16:
-            read_mode = 'Faint Objects'
+            read_mode = "Faint Objects"
         elif lnrs == 1 and ndavgs == 16:
-            read_mode = 'Bright Objects'
+            read_mode = "Bright Objects"
         elif lnrs == 1 and ndavgs == 1:
-            read_mode = 'Very Bright Objects'
+            read_mode = "Very Bright Objects"
         else:
-            read_mode = 'Invalid'
+            read_mode = "Invalid"
         ret_read_mode = str(read_mode)
         
         return ret_read_mode
@@ -296,14 +302,16 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # header of the PHU. The biasvolt, lnrs and ndavgs keywords are
         # defined in the local key dictionary (stdkeyDictGNIRS) but are read
         # from the updated global key dictionary (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
-        ndavgs = dataset.phu_get_key_value(self._specifickey_dict['key_ndavgs'])
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        ndavgs = dataset.phu_get_key_value(
+            self._specifickey_dict["key_ndavgs"])
         if biasvolt is None or lnrs is None or ndavgs is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
@@ -311,7 +319,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         bias_values = self.gnirsArrayDict.keys()
         count = 0
@@ -325,8 +333,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         if count == 0:
             Errors.TableKeyError()
         
-        ret_read_noise = float((read_noise * math.sqrt(coadds)) \
-                / (math.sqrt(lnrs) * math.sqrt(ndavgs)))
+        ret_read_noise = float((read_noise * math.sqrt(coadds)) /
+                               (math.sqrt(lnrs) * math.sqrt(ndavgs)))
         
         return ret_read_noise
     
@@ -337,12 +345,13 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # biasvolt keyword is defined in the local key dictionary
         # (stdkeyDictGNIRS) but is read from the updated global key dictionary
         # (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
@@ -350,7 +359,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         bias_values = self.gnirsArrayDict.keys()
         count = 0
@@ -378,12 +387,12 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         same component ID as they're they same physical component.
         """
         # Get the slit value from the header of the PHU.
-        slit = dataset.phu_get_key_value(self._specifickey_dict['key_slit'])
+        slit = dataset.phu_get_key_value(self._specifickey_dict["key_slit"])
         if slit is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID or pretty:
             ret_slit = string.removeComponentID(slit)
@@ -397,19 +406,20 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # biasvolt keyword is defined in the local key dictionary
         # (stdkeyDictGNIRS) but is read from the updated global key dictionary
         # (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if abs(biasvolt + 0.3) < 0.1:
-            well_depth_setting = 'Deep'
+            well_depth_setting = "Deep"
         elif abs(biasvolt + 0.6) < 0.1:
-            well_depth_setting = 'Shallow'
+            well_depth_setting = "Shallow"
         else:
-            well_depth_setting = 'Invalid'
+            well_depth_setting = "Invalid"
         # Return the well depth setting string
         ret_well_depth_setting = str(well_depth_setting)
         

@@ -18,12 +18,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     nifsConfigDict = None
     
     def __init__(self):
-        self.nifsArrayDict = \
-            Lookups.get_lookup_table('Gemini/NIFS/NIFSArrayDict',
-                                   'nifsArrayDict')
-        self.nifsConfigDict = \
-            Lookups.get_lookup_table('Gemini/NIFS/NIFSConfigDict',
-                                   'nifsConfigDict')
+        self.nifsArrayDict = Lookups.get_lookup_table(
+            "Gemini/NIFS/NIFSArrayDict", "nifsArrayDict")
+        self.nifsConfigDict = Lookups.get_lookup_table(
+            "Gemini/NIFS/NIFSConfigDict", "nifsConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
@@ -31,13 +29,15 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             stripID = True
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
-        # is read from the updated global key dictionary (self._specifickey_dict)
-        disperser = dataset.phu_get_key_value(self._specifickey_dict['key_disperser'])
+        # is read from the updated global key dictionary
+        # (self._specifickey_dict)
+        disperser = dataset.phu_get_key_value(
+            self._specifickey_dict["key_disperser"])
         if disperser is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID:
             # Return the stripped disperser string
@@ -51,14 +51,15 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Get the filter name value from the header of the PHU. The filter name
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
-        # are read from the updated global key dictionary (self._specifickey_dict)
-        filter_name = \
-            dataset.phu_get_key_value(self._specifickey_dict['key_filter_name'])
+        # are read from the updated global key dictionary
+        # (self._specifickey_dict)
+        filter_name = dataset.phu_get_key_value(
+            self._specifickey_dict["key_filter_name"])
         if filter_name is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if pretty:
             stripID = True
@@ -68,21 +69,23 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             # Return the filter name string
             ret_filter_name = str(filter_name)
-        if filter_name == 'Blocked':
-            ret_filter_name = 'blank'
+        if filter_name == "Blocked":
+            ret_filter_name = "blank"
         
         return ret_filter_name
     
     def gain(self, dataset, **args):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
-        # is read from the updated global key dictionary (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        # is read from the updated global key dictionary
+        # (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         bias_values = self.nifsArrayDict.keys()
         count = 0
@@ -104,13 +107,15 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     def non_linear_level(self, dataset, **args):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
-        # is read from the updated global key dictionary (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        # is read from the updated global key dictionary
+        # (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Get the saturation level using the appropriate descriptor
         saturation_level = dataset.saturation_level()
@@ -118,11 +123,11 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Determine whether the dataset has been / will be corrected for
         # non-linearity
-        if dataset.phu_get_key_value('NONLINCR'):
+        if dataset.phu_get_key_value("NONLINCR"):
             corrected = True
         else:
             corrected = False
@@ -167,10 +172,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         pixel_scale_key = (focal_plane_mask, disperser, filter_name)
-        if pixel_scale_key in getattr(self, 'nifsConfigDict'):
+        if pixel_scale_key in getattr(self, "nifsConfigDict"):
             row = self.nifsConfigDict[pixel_scale_key]
         else:
             raise Errors.TableKeyError()
@@ -188,23 +193,25 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) and the the bias
         # value (biasvolt) from the header of the PHU. The lnrs and biasvolt
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
-        # are read from the updated global key dictionary (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        # are read from the updated global key dictionary
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if lnrs is None or biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if lnrs == 1:
-            read_mode = 'Bright Object'
+            read_mode = "Bright Object"
         elif lnrs == 4:
-            read_mode = 'Medium Object'
+            read_mode = "Medium Object"
         elif lnrs == 16:
-            read_mode = 'Faint Object'
+            read_mode = "Faint Object"
         else:
-            read_mode = 'Invalid'
+            read_mode = "Invalid"
         # Return the read mode string
         ret_read_mode = str(read_mode)
         
@@ -214,14 +221,16 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) and the the bias
         # value (biasvolt) from the header of the PHU. The lnrs and biasvolt
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
-        # are read from the updated global key dictionary (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        # are read from the updated global key dictionary
+        # (self._specifickey_dict)
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if lnrs is None or biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
@@ -229,7 +238,7 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         bias_values = self.nifsArrayDict.keys()
         count = 0
@@ -243,8 +252,8 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         if count == 0:
             Errors.TableKeyError()
         # Return the read noise float
-        ret_read_noise = float((read_noise * math.sqrt(coadds)) \
-            / math.sqrt(lnrs))
+        ret_read_noise = float((read_noise * math.sqrt(coadds)) /
+                               math.sqrt(lnrs))
         
         return ret_read_noise
     
@@ -253,13 +262,15 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     def saturation_level(self, dataset, **args):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
-        # is read from the updated global key dictionary (self._specifickey_dict)
-        biasvolt = dataset.phu_get_key_value(self._specifickey_dict['key_bias'])
+        # is read from the updated global key dictionary
+        # (self._specifickey_dict)
+        biasvolt = dataset.phu_get_key_value(
+            self._specifickey_dict["key_bias"])
         if biasvolt is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
@@ -267,7 +278,7 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         bias_values = self.nifsArrayDict.keys()
         count = 0

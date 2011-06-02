@@ -20,42 +20,39 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     niriSpecDict = None
     
     def __init__(self):
-        self.niriSpecDict = \
-            Lookups.get_lookup_table('Gemini/NIRI/NIRISpecDict',
-                                   'niriSpecDict')
-        self.niriFilternameMapConfig = \
-            Lookups.get_lookup_table('Gemini/NIRI/NIRIFilterMap',
-                                   'niriFilternameMapConfig')
+        self.niriSpecDict = Lookups.get_lookup_table(
+            "Gemini/NIRI/NIRISpecDict", "niriSpecDict")
+        self.niriFilternameMapConfig = Lookups.get_lookup_table(
+            "Gemini/NIRI/NIRIFilterMap", "niriFilternameMapConfig")
         self.makeFilternameMap()
-        
-        self.nsappwave = \
-            Lookups.get_lookup_table('Gemini/IR/nsappwavepp.fits', 1)
+        self.nsappwave = Lookups.get_lookup_table(
+            "Gemini/IR/nsappwavepp.fits", 1)
         GEMINI_DescriptorCalc.__init__(self)
     
-    def central_wavelength(self, dataset, asMicrometers=False, \
-        asNanometers=False, asAngstroms=False, **args):
+    def central_wavelength(self, dataset, asMicrometers=False,
+                           asNanometers=False, asAngstroms=False, **args):
         # Currently for NIRI data, the central wavelength is recorded in
         # angstroms
-        input_units = 'angstroms'
+        input_units = "angstroms"
         # Determine the output units to use
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         if unit_arg_list.count(True) == 1:
             # Just one of the unit arguments was set to True. Return the
             # central wavelength in these units
             if asMicrometers:
-                output_units = 'micrometers'
+                output_units = "micrometers"
             if asNanometers:
-                output_units = 'nanometers'
+                output_units = "nanometers"
             if asAngstroms:
-                output_units = 'angstroms'
+                output_units = "angstroms"
         else:
             # Either none of the unit arguments were set to True or more than
             # one of the unit arguments was set to True. In either case,
             # return the central wavelength in the default units of meters
-            output_units = 'meters'
+            output_units = "meters"
         # The central_wavelength from nsappwave can only be obtained from data
         # that does not have an AstroData Type of IMAGE
-        if 'IMAGE' not in dataset.types:
+        if "IMAGE" not in dataset.types:
             # Get the focal plane mask and disperser values using the
             # appropriate descriptors
             focal_plane_mask = dataset.focal_plane_mask()
@@ -64,26 +61,26 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, 'exception_info'):
+                if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             # Get the central wavelength value from the nsappwave lookup
             # table
             count = 0
             for row in self.nsappwave.data:
-                if focal_plane_mask == row.field('MASK') and \
-                    disperser == row.field('GRATING'):
+                if focal_plane_mask == row.field("MASK") and \
+                   disperser == row.field("GRATING"):
                     count += 1
-                    if row.field('LAMBDA'):
-                        raw_central_wavelength = float(row.field('LAMBDA'))
+                    if row.field("LAMBDA"):
+                        raw_central_wavelength = float(row.field("LAMBDA"))
                     else:
                         raise Errors.TableValueError()
             if count == 0:
                 raise Errors.TableKeyError()
             # Use the utilities function convert_units to convert the central
             # wavelength value from the input units to the output units
-            ret_central_wavelength = \
-                GemCalcUtil.convert_units(input_units=input_units, \
-                input_value=float(raw_central_wavelength), \
+            ret_central_wavelength = GemCalcUtil.convert_units(
+                input_units=input_units,
+                input_value=float(raw_central_wavelength),
                 output_units=output_units)
         else:
             raise Errors.DescriptorTypeError()
@@ -96,36 +93,41 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_data_section = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset['SCI']:
+        for ext in dataset["SCI"]:
             # Get the region of interest from the header of each pixel data
             # extension. The region of interest keywords are defined in the
             # local key dictionary (stdkeyDictNIRI) but is read from the
-            # updated global key dictionary (self._specifickey_dict). The values
-            # from the header use 0-based indexing.
-            x_start = ext.get_key_value(self._specifickey_dict['key_lowrow'])
-            x_end = ext.get_key_value(self._specifickey_dict['key_hirow'])
-            y_start = ext.get_key_value(self._specifickey_dict['key_lowcol'])
-            y_end = ext.get_key_value(self._specifickey_dict['key_hicol'])
+            # updated global key dictionary (self._specifickey_dict). The
+            # values from the header use 0-based indexing.
+            x_start = ext.get_key_value(self._specifickey_dict["key_lowrow"])
+            x_end = ext.get_key_value(self._specifickey_dict["key_hirow"])
+            y_start = ext.get_key_value(self._specifickey_dict["key_lowcol"])
+            y_end = ext.get_key_value(self._specifickey_dict["key_hicol"])
             if x_start is None or x_end is None or y_start is None or \
                 y_end is None:
-                # The get_key_value() function returns None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
-                if hasattr(ext, 'exception_info'):
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, "exception_info"):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the data section string that uses
                 # 1-based indexing as the value. 
-                data_section = '[%d:%d,%d:%d]' % (x_start + 1, x_end + 1, \
+                data_section = "[%d:%d,%d:%d]" % (x_start + 1, x_end + 1, \
                     y_start + 1, y_end + 1)
-                ret_data_section.update({(ext.extname(), \
-                    ext.extver()):str(data_section)})
+                ret_data_section.update(
+                    {(ext.extname(), ext.extver()):str(data_section)})
             else:
                 # Return a dictionary with the data section tuple that uses
                 # 0-based indexing as the value
                 data_section = (x_start, x_end, y_start, y_end)
-                ret_data_section.update({(ext.extname(), \
-                    ext.extver()):data_section})
+                ret_data_section.update(
+                    {(ext.extname(), ext.extver()):data_section})
+        if ret_data_section == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_data_section
     
@@ -137,22 +139,23 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # value from the header of the PHU. The filter name keyword is defined
         # in the local key dictionary (stdkeyDictNIRI) but is read from the
         # updated global key dictionary (self._specifickey_dict)
-        filter3 = dataset.phu_get_key_value(self._specifickey_dict['key_filter3'])
+        filter3 = dataset.phu_get_key_value(
+            self._specifickey_dict["key_filter3"])
         if filter3 is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-        # Check if the filter name contains the string 'grism'. If it does, set
+        # Check if the filter name contains the string "grism". If it does, set
         # the disperser to the filter name value
-        if 'grism' in filter3:
+        if "grism" in filter3:
             disperser = filter3
         else:
-            # If the filter name value does not contain the string 'grism',
+            # If the filter name value does not contain the string "grism",
             # return MIRROR like GMOS
-            disperser = 'MIRROR'
-        if stripID and disperser is not 'MIRROR':
+            disperser = "MIRROR"
+        if stripID and disperser is not "MIRROR":
             # Return the disperser string with the component ID stripped
             ret_disperser = string.removeComponentID(disperser)
         else:
@@ -170,14 +173,17 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # three filter name keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but is read from the updated global key dictionary
         # (self._specifickey_dict)
-        filter1 = dataset.phu_get_key_value(self._specifickey_dict['key_filter1'])
-        filter2 = dataset.phu_get_key_value(self._specifickey_dict['key_filter2'])
-        filter3 = dataset.phu_get_key_value(self._specifickey_dict['key_filter3'])
+        filter1 = dataset.phu_get_key_value(
+            self._specifickey_dict["key_filter1"])
+        filter2 = dataset.phu_get_key_value(
+            self._specifickey_dict["key_filter2"])
+        filter3 = dataset.phu_get_key_value(
+            self._specifickey_dict["key_filter3"])
         if filter1 is None or filter2 is None or filter3 is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID:
             filter1 = string.removeComponentID(filter1)
@@ -201,8 +207,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def gain(self, dataset, **args):
         # Get the gain value from the lookup table
-        if 'gain' in getattr(self, 'niriSpecDict'):
-            gain = self.niriSpecDict['gain']
+        if "gain" in getattr(self, "niriSpecDict"):
+            gain = self.niriSpecDict["gain"]
         else:
             raise Errors.TableKeyError()
         # Return the gain float
@@ -219,12 +225,12 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found 
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # The array is non-linear at some fraction of the saturation level.
         # Get this fraction from the lookup table
-        if 'linearlimit' in getattr(self, 'niriSpecDict'):
-            linearlimit = self.niriSpecDict['linearlimit']
+        if "linearlimit" in getattr(self, "niriSpecDict"):
+            linearlimit = self.niriSpecDict["linearlimit"]
         else:
             raise Errors.TableKeyError()
         # Return the non linear level integer
@@ -239,20 +245,21 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # matrix elements keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
         # (self._specifickey_dict)
-        cd11 = dataset.phu_get_key_value(self._specifickey_dict['key_cd11'])
-        cd12 = dataset.phu_get_key_value(self._specifickey_dict['key_cd12'])
-        cd21 = dataset.phu_get_key_value(self._specifickey_dict['key_cd21'])
-        cd22 = dataset.phu_get_key_value(self._specifickey_dict['key_cd22'])
+        cd11 = dataset.phu_get_key_value(self._specifickey_dict["key_cd11"])
+        cd12 = dataset.phu_get_key_value(self._specifickey_dict["key_cd12"])
+        cd21 = dataset.phu_get_key_value(self._specifickey_dict["key_cd21"])
+        cd22 = dataset.phu_get_key_value(self._specifickey_dict["key_cd22"])
         if cd11 is None or cd12 is None or cd21 is None or cd22 is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Calculate the pixel scale using the WCS matrix elements
-        pixel_scale = 3600 * \
-            (math.sqrt(math.pow(cd11, 2) + math.pow(cd12, 2)) + \
-            math.sqrt(math.pow(cd21, 2) + math.pow(cd22, 2))) / 2
+        pixel_scale = 3600 * (math.sqrt(math.pow(cd11, 2) +
+                                        math.pow(cd12, 2)) +
+                              math.sqrt(math.pow(cd21, 2) +
+                                        math.pow(cd22, 2))) / 2
         # Return the pixel scale float
         ret_pixel_scale = float(pixel_scale)
         
@@ -265,22 +272,23 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # The filter name keyword is defined in the local key dictionary
         # (stdkeyDictNIRI) but is read from the updated global key dictionary
         # (self._specifickey_dict)
-        filter3 = dataset.phu_get_key_value(self._specifickey_dict['key_filter3'])
+        filter3 = dataset.phu_get_key_value(
+            self._specifickey_dict["key_filter3"])
         if filter3 is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-        # Check if the filter name contains the string 'grism'. If it does, set
+        # Check if the filter name contains the string "grism". If it does, set
         # the disperser to the filter name value
-        if filter3.startswith('pup'):
+        if filter3.startswith("pup"):
             pupil_mask = filter3
         else:
-            # If the filter name value does not contain the string 'grism',
+            # If the filter name value does not contain the string "grism",
             # return MIRROR like GMOS
-            pupil_mask = 'MIRROR'
-        if stripID and pupil_mask is not 'MIRROR':
+            pupil_mask = "MIRROR"
+        if stripID and pupil_mask is not "MIRROR":
             # Return the pupil mask string with the component ID stripped
             ret_pupil_mask = string.removeComponentID(pupil_mask)
         else:
@@ -295,22 +303,23 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # ndavgs keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
         # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict['key_lnrs'])
-        ndavgs = dataset.phu_get_key_value(self._specifickey_dict['key_ndavgs'])
+        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        ndavgs = dataset.phu_get_key_value(
+            self._specifickey_dict["key_ndavgs"])
         if lnrs is None or ndavgs is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if lnrs == 16 and ndavgs == 16:
-            read_mode = 'Low Background'
+            read_mode = "Low Background"
         elif lnrs == 1 and ndavgs == 16:
-            read_mode = 'Medium Background'
+            read_mode = "Medium Background"
         elif lnrs == 1 and ndavgs == 1:
-            read_mode = 'High Background'
+            read_mode = "High Background"
         else:
-            read_mode = 'Invalid'
+            read_mode = "Invalid"
         # Return the read mode string
         ret_read_mode = str(read_mode)
         
@@ -325,17 +334,17 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Use the value of the read mode to get the read noise from the lookup
         # table
-        if read_mode == 'Low Background':
-            key = 'lowreadnoise'
-        if read_mode == 'High Background':
-            key = 'readnoise'
+        if read_mode == "Low Background":
+            key = "lowreadnoise"
+        if read_mode == "High Background":
+            key = "readnoise"
         else:
-            key = 'medreadnoise'
-        if key in getattr(self, 'niriSpecDict'):
+            key = "medreadnoise"
+        if key in getattr(self, "niriSpecDict"):
             read_noise = self.niriSpecDict[key]
         else:
             raise Errors.TableKeyError()
@@ -356,15 +365,15 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # The descriptor functions return None if a value cannot be found 
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Use the value of the well depth setting to get the well depth from
         # the lookup table
-        if well_depth_setting == 'Shallow':
-            key = 'shallowwell'
-        if well_depth_setting == 'Deep':
-            key = 'deepwell'
-        if key in getattr(self, 'niriSpecDict'):
+        if well_depth_setting == "Shallow":
+            key = "shallowwell"
+        if well_depth_setting == "Deep":
+            key = "deepwell"
+        if key in getattr(self, "niriSpecDict"):
             well = self.niriSpecDict[key]
         else:
             raise Errors.TableKeyError()
@@ -381,23 +390,24 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # avdduc and avdet keywords are defined in the local key dictionary
         # (stdkeyDictNIRI) but are read from the updated global key dictionary
         # (self._specifickey_dict)
-        avdduc = dataset.phu_get_key_value(self._specifickey_dict['key_avdduc'])
-        avdet = dataset.phu_get_key_value(self._specifickey_dict['key_avdet'])
+        avdduc = dataset.phu_get_key_value(
+            self._specifickey_dict["key_avdduc"])
+        avdet = dataset.phu_get_key_value(self._specifickey_dict["key_avdet"])
         if avdduc is None or avdet is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         biasvolt = avdduc - avdet
-        shallowbias = self.niriSpecDict['shallowbias']
-        deepbias = self.niriSpecDict['deepbias']
+        shallowbias = self.niriSpecDict["shallowbias"]
+        deepbias = self.niriSpecDict["deepbias"]
         if abs(biasvolt - shallowbias) < 0.05:
-            well_depth_setting = 'Shallow'
+            well_depth_setting = "Shallow"
         elif abs(biasvolt - deepbias) < 0.05:
-            well_depth_setting = 'Deep'
+            well_depth_setting = "Deep"
         else:
-            well_depth_setting = 'Invalid'
+            well_depth_setting = "Invalid"
         # Return the well depth setting string
         ret_well_depth_setting = str(well_depth_setting)
         
@@ -407,11 +417,11 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def filternameFrom(self, filters, **args):
         
-        # reject 'open' 'grism' and 'pupil'
+        # reject "open" "grism" and "pupil"
         filters2 = []
         for filt in filters:
             filtlow = filt.lower()
-            if 'open' in filtlow or 'grism' in filtlow or 'pupil' in filtlow:
+            if "open" in filtlow or "grism" in filtlow or "pupil" in filtlow:
                 pass
             else:
                 filters2.append(filt)
@@ -421,13 +431,13 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # blank means an opaque mask was in place, which of course
         # blocks any other in place filters
         
-        if 'blank' in filters:
-            filtername = 'blank'
+        if "blank" in filters:
+            filtername = "blank"
         elif len(filters) == 0:
-            filtername = 'open'
+            filtername = "open"
         else:
             filters.sort()
-            filtername = str('&'.join(filters))
+            filtername = str("&".join(filters))
         
         return filtername
     

@@ -15,12 +15,12 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def dec(self, dataset, **args):
         # Get the declination from the header of the PHU
-        dec = dataset.phu_get_key_value(self._specifickey_dict['key_dec'])
+        dec = dataset.phu_get_key_value(self._specifickey_dict["key_dec"])
         if dec is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Return the declination float
         ret_dec = float(astrotools.degsextodec(dec))
@@ -32,12 +32,13 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         # keyword is defined in the local key dictionary (stdkeyDictPHOENIX)
         # but are read from the updated global key dictionary
         # (self._specifickey_dict)
-        filter_name = dataset.phu_get_key_value(self._specifickey_dict['key_filter'])
+        filter_name = dataset.phu_get_key_value(
+            self._specifickey_dict["key_filter"])
         if filter_name is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if pretty:
             stripID = True
@@ -52,12 +53,12 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def ra(self, dataset, **args):
         # Get the declination from the header of the PHU
-        ra = dataset.phu_get_key_value(self._specifickey_dict['key_ra'])
+        ra = dataset.phu_get_key_value(self._specifickey_dict["key_ra"])
         if ra is None:
-            # The phu_get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, 'exception_info'):
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         # Return the declination float
         ret_ra = float(astrotools.degsextodec(ra))
