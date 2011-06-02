@@ -35,6 +35,13 @@ class CalcError(Error):
     """
     message = "Descriptor unable to calculate value"
 
+class CorruptDataError(Error):
+    """
+    Exception raised for instances when an AstroData object was not
+    automatically assigned (EXTNAME, EXTVER) data extensions
+    """
+    message = "The AstroData object was not assigned a 'SCI' extension"
+
 class DescriptorTypeError(Error):
     """
     Exception raised for instances when a descriptor function cannot return a
@@ -68,7 +75,8 @@ class IncompatibleOperand(Error):
 
 class InputError(Error):
     """
-    Exception raised for instances when an input value is None or empty
+    Exception raised for instances when an input value is invalid. This
+    includes whether it is None or empty
     """
     message = "Input is None or empty"
     
@@ -86,6 +94,12 @@ class ManagersError(Error):
     For general Exceptions raised within the managers.py toolbox
     """
     message = 'Exception Raised in managers toolbox'
+
+class MatchShapeError(Error):
+    """
+    Exception raised for instances when two arrays do not match in shape
+    """
+    message = "The two arrays do not match in shape"
 
 class OutputError(Error):
     """
