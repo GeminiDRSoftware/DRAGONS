@@ -400,11 +400,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_gain_setting = {}
-        # If the data have not been prepared, take the raw gain value directly
-        # from the appropriate keyword
-        if "PREPARED" not in dataset.types:
-            # Loop over the science extensions in the dataset
-            for ext in dataset["SCI"]:
+        # Loop over the science extensions in the dataset
+        for ext in dataset["SCI"]:
+            # If the data have not been prepared, take the raw gain value directly
+            # from the appropriate keyword
+            if 'PREPARED' not in dataset.types:
                 # Get the gain from the header of each pixel data extension.
                 gain = ext.get_key_value(self._specifickey_dict["key_gain"])
                 if gain is None:
@@ -414,17 +414,31 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     # CalculatorInterface.
                     if hasattr(ext, "exception_info"):
                         raise ext.exception_info
-                if gain > 3.0:
-                    gain_setting = "high"
-                else:
-                    gain_setting = "low"
-                # Return a dictionary with the gain setting string as the
-                # value
-                ret_gain_setting.update({
-                    (ext.extname(), ext.extver()):str(gain_setting)})
-        else:
-            # Can you return the gain_setting without using the raw gain value?
-            raise Errors.DescriptorTypeError()
+            else:
+                # For PREPARED data, we get the GAINORIG header
+                # We could call the gain descriptor here, but at least PROCESSED_BIAS
+                # files have completely bogus GAIN headers, which we need to avoid, and
+                # purely for determining the gain_setting, GAINORIG is sufficient.
+                gain = ext.get_key_value('GAINORIG')
+                if gain is None:
+                    # The get_key_value() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(ext, "exception_info"):
+                        raise ext.exception_info
+
+
+            
+            if gain > 3.0:
+                gain_setting = "high"
+            else:
+                gain_setting = "low"
+            # Return a dictionary with the gain setting string as the
+            # value
+            ret_gain_setting.update({
+                (ext.extname(), ext.extver()):str(gain_setting)})
+
         if ret_gain_setting == {}:
             # If the dictionary is still empty, the AstroData object was not
             # autmatically assigned a "SCI" extension and so the above for loop
