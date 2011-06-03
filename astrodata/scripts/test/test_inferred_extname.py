@@ -12,7 +12,6 @@ testfile = file_urls.testdatafile_1
 def inferred_extname_test1():
     """inferred_extname_test1 -Check extension names are inferred 'SCI'
     """
-    ad = ''
     alist = []
     blist = []
     testhdulist = pyfits.open(testfile)
