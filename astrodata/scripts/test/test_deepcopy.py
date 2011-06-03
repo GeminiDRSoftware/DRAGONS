@@ -11,7 +11,7 @@ from astrodata import AstroData
 testfile = file_urls.testdatafile_1
 
 def deepcopy_test_1():
-    """DEEPCOPY: test1 -Compare hdulist object ids between ad and deepcopy(ad)
+    """deepcopy_test1 -Compare hdulist object ids between ad and deepcopy(ad)
     """
     print("\n\tTest input file: %s" % testfile)
     ad = AstroData(testfile)
@@ -29,7 +29,7 @@ def deepcopy_test_1():
     adDeepcopy.close()
 
 def deepcopy_test_2():
-    """DEEPCOPY: test2 -Check that attribute change does not affect deepcopy
+    """deepcopy_test2 -Check that attribute change does not affect deepcopy
     """
     print("\n\tTest input file: %s" % testfile)
     ad = AstroData(testfile)

@@ -9,7 +9,7 @@ from astrodata import AstroData
 testfile = file_urls.testdatafile_1
 
 def ad_close_test1():
-    '''AD_CLOSE: test1 -calls hdulist.close() and sets ad.hdulist to None  
+    '''ad_close_test1 -calls hdulist.close() and sets ad.hdulist to None  
     '''
     print('\n\t* testfile: %s' % testfile)
     ad = AstroData(testfile)
@@ -21,7 +21,7 @@ def ad_close_test1():
     print('\tad.hdulist == None')
 
 def ad_close_test2():
-    '''AD_CLOSE: test2 -subdata will not close the original hdulist  
+    '''ad_close_test2 -subdata will not close the original hdulist  
     '''
     print('\n\t* testfile: %s' % testfile)
     ad = AstroData(testfile)

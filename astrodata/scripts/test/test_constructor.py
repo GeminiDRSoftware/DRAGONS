@@ -21,7 +21,7 @@ def checkad(ad):
     ad.close()
 
 def constructor_test1():
-    """CONSTRUCTOR: test1 -Create AstroData instance using filename
+    """constructor_test1 -Create AstroData instance using filename
     """
     print("\n\tTest input file: %s" % testfile)
     ad = AstroData(testfile)
@@ -29,7 +29,7 @@ def constructor_test1():
     checkad(ad)
 
 def constructor_test2():
-    """CONSTRUCTOR: test2 -Create AstroData instance using hdulist
+    """constructor_test2 -Create AstroData instance using hdulist
     """
     print("\n\tTest input file: %s" % testfile)
     hdulist = pyfits.open(testfile)
@@ -39,7 +39,7 @@ def constructor_test2():
     hdulist.close()
 
 def constructor_test3():
-    """CONSTRUCTOR: test3 -Create AstroData instance using phu and data
+    """constructor_test3 -Create AstroData instance using phu and data
     """
     raise SkipTest
     print("\n\tTest input file: %s" % testfile)

@@ -45,7 +45,7 @@ def result_handler(msg, cmsg, exval, cexval, debug, outstr):
 
 
 def dv_operators_test1():
-    """DV_OPERATORS: test1 -Python operators vs. descriptor value operators 
+    """dv_operators_test1 -Python operators vs. descriptor value operators 
     """
     #raise SkipTest
     ad = AstroData(testfile)

@@ -10,8 +10,9 @@ import file_urls
 testfile = file_urls.testdatafile_1
 
 def inferred_extname_test1():
-    """INFERRED_EXTNAME: test1 -Check extension names are inferred 'SCI'
+    """inferred_extname_test1 -Check extension names are inferred 'SCI'
     """
+    ad = ''
     alist = []
     blist = []
     testhdulist = pyfits.open(testfile)
@@ -32,7 +33,7 @@ def inferred_extname_test1():
     blist = []
 
 def inferred_extname_test2():
-    """INFERRED_EXTNAME: test2 -Inferred naming off when input ext named
+    """inferred_extname_test2 -Inferred naming off when input ext named
     """
     testhdulist = pyfits.open(testfile)
     alist = []
