@@ -48,31 +48,49 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_exposure_time
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
-        # Get the two filter name values from the header of the PHU. The two
-        # filter name keywords are defined in the local key dictionary
-        # (stdkeyDictNICI) but are read from the updated global key dictionary
-        # (self._specifickey_dict)
-        key_filter_r = self._specifickey_dict["key_filter_r"]
-        key_filter_b = self._specifickey_dict["key_filter_b"]
-        filter_r = dataset.phu_get_key_value(key_filter_r)
-        filter_b = dataset.phu_get_key_value(key_filter_b)
-        if filter_r is None or filter_b is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_filter_name = {}
+        # For NICI, the red filter is defined in the first science extension,
+        # while the blue filter is defined in the second science extension. Get
+        # the two filter name values from the header of each pixel data
+        # extension. The two filter name keywords are defined in the local key
+        # dictionary (stdkeyDictNICI) but are read from the updated global key
+        # dictionary (self._specifickey_dict)
+        count = 0
+        for ext in dataset:
+            # Assigning a "SCI" extension doesn't work for NICI right now ...
+            if count == 0:
+                filter_r = ext.get_key_value(
+                    self._specifickey_dict["key_filter_r"])
+                filter_b = None
+                count += 1
+            else:
+                filter_b = ext.get_key_value(
+                    self._specifickey_dict["key_filter_b"])
+        if (filter_r is None) or (filter_b is None):
+            # The get_key_value() function returns None if a value cannot be
+            # found and stores the exception info. Re-raise the exception. It
+            # will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+            else:
+                raise Errors.Error("No second science extension")
         if pretty:
             stripID = True
         if stripID:
             # Strip the component ID from the two filter name values
             filter_r = string.removeComponentID(filter_r)
             filter_b = string.removeComponentID(filter_b)
-        # Return a dictionary with the keyword names as the key and the filter
-        # name string as the value
-        ret_filter_name = {}
+        # Return a dictionary with the dispersion axis integer as the value
         ret_filter_name.update(
-            {key_filter_r:str(filter_r), key_filter_b:str(filter_b)})
+            {("SCI", 1):str(filter_r), ("SCI", 2):str(filter_b)})
+        if ret_filter_name == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
         
         return ret_filter_name
     
