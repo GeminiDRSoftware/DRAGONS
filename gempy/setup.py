@@ -20,7 +20,9 @@ from distutils.core import setup
 MODULENAME = 'gempy'
 
 # PACKAGES and PACKAGE_DIRS
-SUBMODULES = ['instruments']
+SUBMODULES = ['science',
+              'science.preprocessing',
+              'science.standardization']
 PACKAGES = [MODULENAME]
 for m in SUBMODULES:
     PACKAGES.append('.'.join([MODULENAME,m]))
@@ -36,12 +38,19 @@ for p in PACKAGES:
                      'INSTALL',
                      ]
 
-DATA_FILES = None
+DATA_FILES = []
+DOC_DIR = os.path.join('share','gempy')
+svndir = re.compile('.svn')
+for root, dirs, files in os.walk('doc'):
+    if not svndir.search(root) and len(files) > 0:
+        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
+        DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
+        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
 
 # SCRIPTS
 #GEMPY_SCRIPTS = [ os.path.join('iqtool','iqtool'),
 #                 ]
-SCRIPTS = []
+SCRIPTS = [os.path.join('scripts','cleanir.py')]
 #SCRIPTS.extend(GEMPY_SCRIPTS)
 
 EXTENSIONS = None
