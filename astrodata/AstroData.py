@@ -61,9 +61,6 @@ class ADExcept:
 class ADNOTFOUND(ADExcept):
     pass
     
-class ADREADONLY(ADExcept):
-    pass
-    
 class ADBADARGS(ADExcept):
     pass
     
@@ -77,13 +74,6 @@ class SingleHDUMemberExcept(ADExcept):
         else:
             self.message = "SingleHDUMember: "+msg     
 
-class OutputExists(ADExcept):
-    def __init__(self, msg=None):
-        if msg == None:
-            self.message = "Output Exists"
-        else:
-            self.message = "Output Exists: "+ msg
-            
 
 #FUNCTIONS
 def re_header_keys(rekey, header):
@@ -1125,7 +1115,7 @@ integrates other functionality.
             if clobber:
                 os.remove(fname)
             else:
-                raise OutputExists(fname)
+                raise Errors.OutputExists(fname)
         hdul.writeto(fname)
             
     
@@ -1913,7 +1903,7 @@ def prep_output(input_ary = None, name = None, clobber = False):
     if name != None:
         if os.path.exists(name):
             if clobber == False:
-                raise OutputExists(name)
+                raise Errors.OutputExists(name)
             else:
                 os.remove(name)
         retgd.filename = name

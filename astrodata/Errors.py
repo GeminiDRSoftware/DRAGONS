@@ -26,6 +26,13 @@ class AstroDataError(Error):
     For general Exceptions raised in the AstroData Class Module
     """
     message = 'Exception Raised in AstroData.py'
+
+class OutputExists(AstroDataError):
+    def __init__(self, msg=None):
+        if msg == None:
+            self.message = "Cannot overwrite existing file."
+        else:
+            self.message = "Cannot overwrite existing file, "+ msg
     
 class CalcError(Error):
     """
