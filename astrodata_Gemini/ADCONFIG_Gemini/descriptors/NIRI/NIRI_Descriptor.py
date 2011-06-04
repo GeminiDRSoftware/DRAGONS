@@ -189,7 +189,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             filter1 = string.removeComponentID(filter1)
             filter2 = string.removeComponentID(filter2)
             filter3 = string.removeComponentID(filter3)
-        ##### Should this return a dictionary like GMOS?
         # Create list of filter values
         filters = [filter1, filter2, filter3]
         if pretty:
