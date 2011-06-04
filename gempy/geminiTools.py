@@ -240,6 +240,47 @@ def log_message(function, name, message_type):
     else:
         return None
 
+def make_dict(key_list=None, value_list=None):
+    """
+    The make_dict function creates a dictionary with the elements in 'key_list'
+    as the key and the elements in 'value_list' as the value to create an
+    association between the input science dataset (the 'key_list') and a, for
+    example, dark that is needed to be subtracted from the input science
+    dataset. This function also does some basic checks to ensure that the
+    filters, exposure time etc are the same.
+
+    :param key: List containing one or more AstroData objects
+    :type key: AstroData
+
+    :param value: List containing one or more AstroData objects
+    :type value: AstroData
+    """
+    # Check the inputs have matching filters, binning and SCI shapes.
+    #checkInputsMatch(adInsA=darks, adInsB=adInputs)
+    ret_dict = {}
+    if len(key_list) == 1 and len(value_list) == 1:
+        # There is only one key and one value - create a single entry in the
+        # dictionary
+        ret_dict[key_list[0]] = value_list[0]
+    elif len(key_list) > 1 and len(value_list) == 1:
+        # There is only one value for the list of keys
+        while i in range (0, len(key_list)):
+            ret_dict[key_list[i]] = value_list[0]
+    elif len(key_list) > 1 and len(value_list) > 1:
+        # There is one value for each key. Check that the lists are the same
+        # length
+        if len(key_list) != len(value_list):
+            msg = """Number of AstroData objects in key_list does not match
+            with the number of AstroData objects in value_list. Please provide
+            lists containing the same number of AstroData objects. Please
+            supply either a single AstroData object in value_list to be applied
+            to all AstroData objects in key_list OR the same number of
+            AstroData objects in value_list as there are in key_list"""
+            raise Errors.InputError(msg)
+        while i in range (0, len(key_list)):
+            ret_dict[key_list[i]] = value_list[i]
+    return ret_dict
+
 def mark_history(adinput=None, keyword=None):
     """
     The function to use near the end of a python user level function to 
@@ -324,12 +365,13 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
     log = gemLog.getGeminiLog()
     historyComment = None
     keyAndCommentDict = {
-        'bunit':['BUNIT', 'Physical units'],
+        'bunit':['BUNIT', 'Physical units of the array values'],
         'count_exts("SCI")':['NSCIEXT', 'Number of science extensions'],
         'dispersion_axis()':['DISPAXIS','Dispersion axis'],
         'filter_name(stripID=True, pretty=True)':
             ['FILTER', 'Combined filter name'],
         'gain()':['GAIN', 'Gain [electrons/ADU]'],
+        'gain_setting()':['GAINSET', 'Gain setting (low / high)'],
         'non_linear_level()':['NONLINEA', 'Non-linear regime [ADU]'],
         'numext':['NEXTEND', 'Number of extensions'],
         'pixel_scale()':['PIXSCALE', 'Pixel scale [arcsec/pixel]'],
