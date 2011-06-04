@@ -58,7 +58,9 @@ def adu_to_electrons(adinput):
             log.fullinfo("~"*50, category="header")
             # Data now has units of electrons
             gt.update_key_value(adinput=ad, function="bunit",
-                                value="electrons", extname="SCI")
+                                value="electron", extname="SCI")
+            gt.update_key_value(adinput=ad, function="bunit",
+                                value="electron*electron", extname="VAR")
             log.fullinfo("-"*50, category="header") 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
@@ -218,16 +220,6 @@ lincorlookup = {
 #                                   "Gain prior to unit conversion (e-/ADU)")
 #                sciExt.header.update("GAIN", 1.0, 
 #                                  "Physical units is electrons") 
-#                sciExt.header.update("BUNIT","electrons" , "Physical units")
-#                # Logging the changes to the header keys
-#                log.fullinfo("SCI extension number "+str(sciExt.extver())+
-#                             " keywords updated/added:\n", 
-#                             category="header")
-#                log.fullinfo("GAINORIG = "+str(gainorig), 
-#                             category="header" )
-#                log.fullinfo("GAIN = "+str(1.0), category="header" )
-#                log.fullinfo("BUNIT = "+"electrons", category="header" )
-#                log.fullinfo("-"*50, category="header")
 #            # Updating VAR headers if they exist (not updating any 
 #            # DQ headers as no changes were made to them here)
 #            for varExt in adOut["VAR"]:
@@ -236,15 +228,3 @@ lincorlookup = {
 #                # there initially, so all good not to check ahead. 
 #                del varExt.header["GAINORIG"]
 #                del varExt.header["GAIN"]
-#                
-#                # Updating then logging the change to the BUNIT 
-#                # key in the VAR header
-#                varExt.header.update("BUNIT","electrons squared" , 
-#                                   "Physical units")
-#                # Logging the changes to the VAR extensions header keys
-#                log.fullinfo("VAR extension number "+str(varExt.extver())+
-#                             " keywords updated/added:\n",
-#                              category="header")
-#                log.fullinfo("BUNIT = "+"electrons squared", 
-#                             category="header" )
-#                log.fullinfo("-"*50, category="header")
