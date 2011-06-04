@@ -203,6 +203,9 @@ def standardize_headers_gmos(adinput=None):
             # Gain
             gt.update_key_value(adinput=ad, function="gain()",
                                 extname="SCI")
+            # Gain setting
+            gt.update_key_value(adinput=ad, function="gain_setting()",
+                                extname="SCI")
             # Dispersion axis
             if "IMAGE" not in ad.types:
                 gt.update_key_value(adinput=ad, function="dispersion_axis()",
