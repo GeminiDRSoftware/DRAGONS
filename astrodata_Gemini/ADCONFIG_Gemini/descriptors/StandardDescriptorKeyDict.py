@@ -20,6 +20,7 @@ globalStdkeyDict = {
     "key_filter_name":"FILTNAME",
     "key_focal_plane_mask":"FPMASK",
     "key_gain":"GAIN",
+    "key_gain_setting":"GAINSET",
     "key_grating":"GRATING",
     "key_instrument":"INSTRUME",
     "key_local_time":"LT",
