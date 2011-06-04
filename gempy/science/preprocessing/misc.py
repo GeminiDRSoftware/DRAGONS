@@ -208,23 +208,3 @@ lincorlookup = {
     ("High Background", 1024, "Deep"):
         (21000, 0.007680816203, 3.581914163e-06, 1.820403678e-10),
                }
-            
-#### THE BELOW SHOULD BE UPDATED USING MULT IN ARITH TOOLBOX
-#            # Updating SCI headers
-#            for sciExt in adOut["SCI"]:
-#                # Retrieving this SCI extension"s gain
-#                gainorigDict = sciExt.gain()
-#                gainorig = gainorigDict[(sciExt.extname(), sciExt.extver())] 
-#                # Updating this SCI extension"s header keys
-#                sciExt.header.update("GAINORIG", gainorig, 
-#                                   "Gain prior to unit conversion (e-/ADU)")
-#                sciExt.header.update("GAIN", 1.0, 
-#                                  "Physical units is electrons") 
-#            # Updating VAR headers if they exist (not updating any 
-#            # DQ headers as no changes were made to them here)
-#            for varExt in adOut["VAR"]:
-#                # Ensure there are no GAIN and GAINORIG header keys for 
-#                # the VAR extension. No errors are thrown if they aren"t 
-#                # there initially, so all good not to check ahead. 
-#                del varExt.header["GAINORIG"]
-#                del varExt.header["GAIN"]
