@@ -88,4 +88,11 @@ class Calculator(object):
         self.stdkey_dict = stdkeydict
         # print "C79:", self._specifickey_dict["key_central_wavelength"]
         
+        
+    def get_descriptor_key(self, name):
+        try:
+            return self.stdkey_dict[name]
+        except KeyError:
+            return None
+            
     
