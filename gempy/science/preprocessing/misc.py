@@ -29,7 +29,7 @@ def adu_to_electrons(adinput):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "ADUTOELE"
@@ -91,7 +91,7 @@ def nonlinearity_correct(adinput=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "LINCORR"

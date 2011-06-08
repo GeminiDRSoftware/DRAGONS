@@ -32,7 +32,7 @@ def stack_frames(adinput=None, suffix=None, operation="average"):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # The stack_frames user level function cannot stack one AstroData object.
     # If the adinput list contains a single AstroData object, raise an
     # exception

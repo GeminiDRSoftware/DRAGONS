@@ -10,8 +10,8 @@ from gempy import geminiTools as gt
 from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
-def make_fringe_frame_imaging(adinput=None, operation='median', 
-                              suffix='_fringe'):
+def make_fringe_frame_gmos_image(adinput=None, operation='median', 
+                                 suffix='_fringe'):
     """
     This function will create and return a single fringe image from all the 
     inputs.  It uses the CL script gifringe to create the fringe image.
@@ -36,9 +36,9 @@ def make_fringe_frame_imaging(adinput=None, operation='median',
     # instantiate log
     log = gemLog.getGeminiLog()
 
-    # make adinput a list if it is not one already
-    if not isinstance(adinput,list):
-        adinput = [adinput]
+    # ensure that adinput is not None and make it into a list
+    # if it is not one already
+    adinput = gt.validate_input(adinput=adinput)
 
     # time stamp keyword
     keyword = 'FRINGE'
@@ -92,7 +92,7 @@ def make_fringe_frame_imaging(adinput=None, operation='median',
             # Maybe allow the user to override this in the future. 
             'outimage'    :clm.imageOutsFiles(type='string'), 
             # This returns a unique/temp log file for IRAF  
-            'logfile'     :clm.templog.name,                   
+            'logfile'     :clm.templog.name,
             'fl_vardq'    :fl_vardq,
             }
     
@@ -216,11 +216,10 @@ def scale_fringe_to_science(adinput=None, science=None,
     # instantiate log
     log = gemLog.getGeminiLog()
 
-    # make adinput and science into lists if are not already
-    if not isinstance(adinput,list):
-        adinput = [adinput]
-    if not isinstance(science, list):
-        science = [science]
+    # ensure that adinput and science are not None and make 
+    # them into lists if they are not already
+    adinput = gt.validate_input(adinput=adinput)
+    science = gt.validate_input(adinput=science)
 
     # time stamp keyword
     keyword = 'SCALEFRG'
@@ -373,11 +372,10 @@ def subtract_fringe(adinput=None, fringe=None):
     # instantiate log
     log = gemLog.getGeminiLog()
 
-    # make adinput and fringe into lists if they are not already
-    if not isinstance(adinput,list):
-        adinput = [adinput]
-    if not isinstance(fringe,list):
-        fringe = [fringe]
+    # ensure that adinput and fringe are not None and make 
+    # them into lists if they are not already
+    adinput = gt.validate_input(adinput=adinput)
+    fringe = gt.validate_input(adinput=fringe)
 
     # time stamp keyword
     keyword = 'SUBFRING'

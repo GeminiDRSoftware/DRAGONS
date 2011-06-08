@@ -34,8 +34,8 @@ def subtract_dark(adinput=None, dark=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
-    dark = gt.validate_input(input=dark)
+    adinput = gt.validate_input(adinput=adinput)
+    dark = gt.validate_input(adinput=dark)
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by dark as the value
     dark_dict = gt.make_dict(key_list=adinput, value_list=dark)

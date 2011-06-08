@@ -503,19 +503,19 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
             else:
                 log.info("No value found for keyword %s" % (key))
 
-def validate_input(input=None):
+def validate_input(adinput=None):
     """
     The validate_input helper function is used to validate the inputs given to
     the user level functions.
     """
-    # If the input is None, raise an exception
-    if input is None:
-        raise Errors.InputError("The input cannot be None")
-    # If the input is a single AstroData object, put it in a list
-    if not isinstance(input, list):
-        input = [input]
-    # If the input is an empty list, raise an exception
-    if len(input) == 0:
-        raise Errors.InputError("The input cannot be an empty list")
-    # Now, input is a list that contains one or more AstroData objects
-    return input
+    # If the adinput is None, raise an exception
+    if adinput is None:
+        raise Errors.InputError("The adinput cannot be None")
+    # If the adinput is a single AstroData object, put it in a list
+    if not isinstance(adinput, list):
+        adinput = [adinput]
+    # If the adinput is an empty list, raise an exception
+    if len(adinput) == 0:
+        raise Errors.InputError("The adinput cannot be an empty list")
+    # Now, adinput is a list that contains one or more AstroData objects
+    return adinput

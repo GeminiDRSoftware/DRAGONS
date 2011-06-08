@@ -38,8 +38,8 @@ def divide_by_flat(adinput=None, flat=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
-    flat = gt.validate_input(input=flat)
+    adinput = gt.validate_input(adinput=adinput)
+    flat = gt.validate_input(adinput=flat)
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by flat as the value
     flat_dict = gt.make_dict(key_list=adinput, value_list=flat)
@@ -91,7 +91,7 @@ def normalize_flat_image(adinput=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "NORMFLAT"
@@ -165,7 +165,7 @@ def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "NORMFLAT"

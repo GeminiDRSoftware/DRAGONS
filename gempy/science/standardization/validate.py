@@ -17,7 +17,7 @@ def validate_data_f2(adinput=None, repair=False):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "VALDATA"
@@ -73,7 +73,7 @@ def validate_data_gmos(adinput=None, repair=False):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "VALDATA"

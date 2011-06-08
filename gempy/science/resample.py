@@ -41,9 +41,9 @@ def mosaic_detectors(adinput, tile=False, interpolator='linear'):
     # instantiate log
     log = gemLog.getGeminiLog()
 
-    # make adinput a list if it is not one already
-    if not isinstance(adinput,list):
-        adinput = [adinput]
+    # ensure that adinput is not None and make it into a list
+    # if it is not one already
+    adinput = gt.validate_input(adinput=adinput)
 
     # time stamp keyword
     keyword = 'MOSAIC'

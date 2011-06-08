@@ -32,7 +32,7 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
     and used within this function.
 
     FOR FUTURE
-    This function has many GMOS dependencies that would be great to work out
+    This function has many GMOS dependencies that would be great to work out   
     so that this could be made a more general function (say at the Gemini
     level). In the future the parameters can be looked into and the CL 
     script can be upgraded to handle things like row based overscan
@@ -54,9 +54,9 @@ def overscan_subtract_gmos(adinput=None, overscan_section=''):
     # instantiate log
     log = gemLog.getGeminiLog()
 
-    # make adinput a list if it is not one already
-    if not isinstance(adinput,list):
-        adinput = [adinput]
+    # ensure that adinput is not None and make it into a list
+    # if it is not one already
+    adinput = gt.validate_input(adinput=adinput)
 
     # time stamp keyword
     keyword = 'OVERSUB'
@@ -201,9 +201,9 @@ def overscan_trim(adinput=None):
     # instantiate log
     log = gemLog.getGeminiLog()
 
-    # make adinput a list if it is not one already
-    if not isinstance(adinput,list):
-        adinput = [adinput]
+    # ensure that adinput is not None and make it into a list
+    # if it is not one already
+    adinput = gt.validate_input(adinput=adinput)
 
     # time stamp keyword
     keyword = 'OVERTRIM'
@@ -350,11 +350,10 @@ def subtract_bias(adinput=None, bias=None):
     # instantiate log
     log = gemLog.getGeminiLog()
 
-    # make adinput and bias into lists if they are not already
-    if not isinstance(adinput,list):
-        adinput = [adinput]
-    if not isinstance(bias,list):
-        bias = [bias]
+    # ensure that adinput and bias are not None and make 
+    # them into lists if they are not already
+    adinput = gt.validate_input(adinput=adinput)
+    bias = gt.validate_input(adinput=bias)
 
     # time stamp keyword
     keyword = 'BIASCORR'

@@ -16,7 +16,7 @@ def standardize_headers_f2(adinput=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSI"
@@ -95,7 +95,7 @@ def standardize_headers_gemini(adinput=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSG"
@@ -168,7 +168,7 @@ def standardize_headers_gmos(adinput=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSI"
@@ -234,7 +234,7 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZSTRUC"
@@ -329,7 +329,7 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
     log = gemLog.getGeminiLog()
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
-    adinput = gt.validate_input(input=adinput)
+    adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZSTRUC"
