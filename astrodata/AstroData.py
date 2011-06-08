@@ -999,6 +999,18 @@ integrates other functionality.
                         mode = 'append'
                     self.hdulist = pyfits.open(self.filename, mode = mode)
                     self.mode = mode
+                    if len(self.hdulist) == 1:   # This is a single FITS
+                        hdu = self.hdulist[0]
+                        nhdu = pyfits.PrimaryHDU()
+                        hdulist = pyfits.HDUList([nhdu])
+                        imagehdu = pyfits.ImageHDU(header=hdu.header,data=hdu.data)
+                        hdulist.append(imagehdu)
+                        self.hdulist=hdulist
+                        kafter = 'GCOUNT'
+                        if not hdu.header.has_key(kafter): kafter = None
+                        if hdu.header.get('TFIELDS'): kafter = 'TFIELDS'
+                        hdu.header.update("EXTNAME", "SCI", "added by AstroData", after=kafter)
+
 		    #print "AD591:", self.hdulist[1].header["EXTNAME"]
                     #print "AD543: opened with pyfits", len(self.hdulist)
                 except IOError:
