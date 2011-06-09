@@ -5,6 +5,7 @@ import sys
 import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils import varutil
 from astrodata.ConfigSpace import lookup_path
@@ -20,7 +21,7 @@ def add_dq(adinput=None, bpm=None):
     that BPM will be used to determine the DQ extension for all input AstroData
     object(s). If more than one BPM is provided, the number of BPM AstroData
     objects must match the number of input AstroData objects.
-
+    
     :param adinput: Astrodata inputs to have a DQ extension added
     :type adinput: Astrodata
     
@@ -30,8 +31,8 @@ def add_dq(adinput=None, bpm=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
@@ -39,6 +40,11 @@ def add_dq(adinput=None, bpm=None):
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
+        # Call the _select_bpm helper function to get the appropriate BPMs for 
+        # the input AstroData objects in the form of a dictionary, where the
+        # key is the input AstroData object and the value is the BPM for that
+        # AstroData object
+        bpm_dict = _select_bpm(adinput=adinput, bpm=bpm)
         # Loop over each input AstroData object in the input list
         for ad in adinput:
             # Check whether the add_dq user level function has been
@@ -46,9 +52,8 @@ def add_dq(adinput=None, bpm=None):
             if ad.phu_get_key_value(keyword) or ad["DQ"]:
                 raise Errors.InputError("%s has already been processed by " \
                                         "add_dq" % (ad.filename))
-            # Call the _select_bpm helper function to get the appropriate BPM
-            # for the input AstroData object
-            bpmfile = _select_bpm(adinput=ad, bpm=bpm)
+            # Get the appropriate BPM for this AstroData object
+            bpm = bpm_dict[ad]
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
                 # Get the non-linear level and the saturation level as integers
@@ -72,12 +77,15 @@ def add_dq(adinput=None, bpm=None):
                     saturation_array = saturation_array.astype(np.int16)
                 # Create a single DQ extension from the three arrays (BPM,
                 # non-linear and saturated)
-                dq_array = np.add(bpmfile.data, non_linear_array,
+                dq_array = np.add(bpm.data, non_linear_array,
                                   saturation_array)
                 # Create a DQ AstroData object
-                dq = AstroData(header=bpmfile.header, data=dq_array)
+                dq = AstroData(header=bpm.header, data=dq_array)
                 # Name the extension appropriately
                 dq.rename_ext("DQ", ver=ext.extver())
+                # Check that the DQ extensions has BITPIX=16, NAXIS=2,
+                # PCOUNT=0, GCOUNT=1, BUNIT=bit, BPMFILE=bpm.filename,
+                # EXTVER=ad.extver(), EXTNAME=DQ 
             # Append the DQ AstroData object to the input AstroData object
             ad.append(moredata=dq)
             log.status("Adding the DQ extension to the input AstroData " \
@@ -103,7 +111,7 @@ def add_mdf(adinput=None, mdf=None):
     Either a 'main' type logger object, if it exists, or a null logger 
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
-          
+    
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
     
@@ -116,8 +124,8 @@ def add_mdf(adinput=None, mdf=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
@@ -129,14 +137,14 @@ def add_mdf(adinput=None, mdf=None):
         for ad in adinput:
             # Check whether the add_mdf user level function has been
             # run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(keyword) or ad["MDF"]:
                 raise Errors.InputError("%s has already been processed by " \
                                         "add_mdf" % (ad.filename))
             # Call the _select_mdf helper function to get the appropriate MDF
             # for the input AstroData object
             mdffile = _select_mdf(adinput=ad, mdf=mdf)
-            # Append the MDF to the input AstroData object
-            ad.append(mdffile)
+            # Append the MDF AstroData object to the input AstroData object
+            ad.append(moredata=mdffile)
             log.status("Adding the MDF %s to the input AstroData object %s" \
                        % (mdffile.filename, ad.filename))
             # Add the appropriate time stamps to the PHU
@@ -151,37 +159,27 @@ def add_mdf(adinput=None, mdf=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def add_var(adinput=None):
+def add_var(adinput=None, read_noise=False, poisson_noise=False):
     """
-    This function uses numpy to calculate the variance of each SCI frame
-    in the input files and appends it as a VAR frame using AstroData.
+    This user level function (ulf) is used to add a VAR extension to the input
+    AstroData object.
     
-    The calculation will follow the formula:
-    variance = (read noise/gain)2 + max(data,0.0)/gain
+    :param adinput: Astrodata inputs to have a DQ extension added
+    :type adinput: Astrodata
     
-    NOTE:
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
+    :param read_noise: set to True to add the read noise component of the
+                       variance to the variance extension
+    :type read_noise: Python boolean
     
-    :param adInputs: Astrodata inputs to have VAR extensions added to
-    :type adInputs: Astrodata objects, either a single or a list of objects
-    
-    :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length
-                    as adInputs.
-    
-    :param suffix: 
-        string to add on the end of the input filenames 
-        (or outNames if not None) for the output filenames.
-    :type suffix: string
-    
+    :param poisson_noise: set to True to add the Poisson noise component of the
+                          variance to the variance extension
+    :type poisson_noiseadinput: Python boolean
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
     # Define the keyword to be used for the time stamp for this user level
     # function
@@ -191,11 +189,11 @@ def add_var(adinput=None):
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
-            # Check whether the add_var user level function has been
-            # run previously
-            if ad.phu_get_key_value(keyword) or ad["VAR"]:
-                raise Errors.InputError("%s has already been processed by " \
-                                        "add_var" % (ad.filename))
+            if ad["VAR"]:
+                # Find out whether the read noise or the poisson noise
+                # component of the variance already exists in the variance
+                # extension
+                pass
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
                 # The variance extension is determined using
@@ -230,238 +228,111 @@ def add_var(adinput=None):
 
 def _select_bpm(adinput=None, bpm=None):
     """
-    This help functions is used to select the appropriate BPM depending on the
-    input AstroData object. The returned BPM will have the same dimensions as
-    the input AstroData object.
+    The _select_bpm helper function is used to select the appropriate BPM
+    depending on the single input AstroData object. The returned BPM will have
+    the same dimensions as the input AstroData object.
     """
-    ## Matching size of BPM array to that of the SCI data array
-    # Getting the data section as a int list of form:
-    # [y1, y2, x1, x2] 0-based and non-inclusive
-    ### This section might need to be upgraded in the future
-    ### for more general use instead of just 1x1 and 2x2 imaging
-    #if ad[("SCI",1)].get_key_value("CCDSUM")=="1 1":
-    #    bpm = BPM_11
-    #elif ad[("SCI",1)].get_key_value("CCDSUM")=="2 2":
-    #    bpm = BPM_22
-    #datsecList = sciExt.data_section().as_pytype()
-    #dsl = datsecList
-    #datasecShape = (dsl[1]-dsl[0], dsl[3]-dsl[2])
-    # Creating a zeros array the same size as SCI array
-    # for this extension
-    #BPMArrayOut = np.zeros(sciExt.data.shape, 
-    #                       dtype=np.int16)
-    # Loading up zeros array with data from BPM array
-    # if the sizes match then there is no change, else
-    # output BPM array will be "padded with zeros" or 
-    # "not bad pixels" to match SCI"s size.
-    #if BPMArrayIn.shape==datasecShape:
-    #    log.fullinfo("BPM data was found to be of a different size "
-    #                 "than the SCI, so padding the BPM"s data to "
-    #                 "match the SCI.")
-    #    BPMArrayOut[dsl[0]:dsl[1], dsl[2]:dsl[3]] = BPMArrayIn
-    #elif BPMArrayIn.shape==BPMArrayOut.shape:
-    #    BPMArrayOut = BPMArrayIn
-    # Extracting the BPM data array for this extension
-    #BPMArrayIn = bpmAD.data
-    # Extracting the BPM header for this extension to be 
-    # later converted to a DQ header
-    #dqheader = bpmAD.header
-    # Preparing the non linear and saturated pixel arrays
-    # Append the BPM file to the input AstroData instance
-    # Getting the filename for the BPM and removing any paths
-    #bpm_name = os.path.basename(bpm.filename)
-    # Extracting the matching DQ extension from the BPM 
-    #bpm_data = bpm[("DQ",sciExt.extver())].data
-    #if matchSize:
-        # Getting the data section as a int list of form:
-        # [y1, y2, x1, x2] 0-based and non-inclusive
-        #datsecList = sciExt.data_section().as_pytype()
-        #dsl = datsecList
-        #datasecShape = (dsl[1]-dsl[0], dsl[3]-dsl[2])
-        
-        # Creating a zeros array the same size as SCI array
-        # for this extension
-        #BPMArrayOut = np.zeros(sciExt.data.shape, 
-        #                       dtype=np.int16)
-        # Loading up zeros array with data from BPM array
-        # if the sizes match then there is no change, else
-        # output BPM array will be "padded with zeros" or 
-        # "not bad pixels" to match SCI"s size.
-        #if bpm_data.shape == datasecShape:
-        #    log.fullinfo("BPM data was found to be of a different "
-        #                 "size than the SCI, so padding the BPM's "
-        #                 "data to match the SCI.")
-        #    BPMArrayOut[dsl[0]:dsl[1], dsl[2]:dsl[3]] = bpm_data
-        #elif bpm_data.shape == BPMArrayOut.shape:
-        #    BPMArrayOut = bpm_data
-    # Don't match size
-    #else:
-    #    BPMArrayOut = bpm_data
-    # Append the BPM file to the input AstroData instance
-    # Getting the filename for the BPM and removing any paths
-    #bpm_name = os.path.basename(bpm.filename)
-    # Extracting the matching DQ extension from the BPM 
-    #bpm_data = bpm[("DQ",sciExt.extver())].data
-    # Matching size of BPM array to that of the SCI data array
-    # Creating a header for the BPM array and updating
-    # further updating to this header will take place in 
-    # addDQ primitive
-    #BPMheader = pf.Header() 
-    #BPMheader.update("BITPIX", 16, 
-    #                "number of bits per data pixel")
-    #BPMheader.update("NAXIS", 2)
-    #BPMheader.update("PCOUNT", 0, 
-    #                "required keyword; must = 0")
-    #BPMheader.update("GCOUNT", 1, 
-    #                "required keyword; must = 1")
-    #BPMheader.update("BUNIT", "bit", "Physical units")
-    #BPMheader.update("BPMFILE", BPMfilename, 
-    #                    "Bad Pixel Mask file name")
-    #BPMheader.update("EXTVER", sciExt.extver(), 
-    #                    "Extension Version")
-    # This extension will be renamed DQ in addDQ
-    #BPMheader.update("EXTNAME", "BPM", "Extension Name")
-
-    bpm = AstroData(lookup_path(bpm_dict["F2"]))
-    bpm.data = np.squeeze(bpm.data)
-    bpm.data = bpm.data.astype(np.int16)
+    if bpm is not None:
+        # The user supplied an input to the bpm parameter
+        if not isinstance(bpm, list):
+            bpm_list = [bpm]
+    else:
+        # Initialize the list of output BPM AstroData objects
+        bpm_list = []
+        # If no BPM is supplied, try to find an appropriate one. Get the
+        # dictionary containing the list of BPMs for all instruments and modes 
+        all_bpm_dict = Lookups.get_lookup_table('Gemini/BPMDict', 'bpm_dict')
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            # The BPMs are keyed by the instrument and the binning. Get the
+            # instrument, the x binning and the y binning values using the
+            # appropriate descriptors 
+            instrument = ad.instrument()
+            detector_x_bin = ad.detector_x_bin()
+            detector_y_bin = ad.detector_y_bin()
+            # Create the key
+            if instrument is None or detector_x_bin is None or detector_x_bin \
+               is None:
+                if hasattr(ad, 'exception_info'):
+                    raise ad.exception_info
+            key = "%s_%s_%s" % (instrument, detector_x_bin, detector_y_bin)
+            # Get the BPM from the look up table
+            if key in all_bpm_dict:
+                bpm = AstroData(lookup_path(all_bpm_dict[key]))
+            else:
+                raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
+            bpm_list.append(bpm)
+    # Check that the returned BPM is the same size as the input AstroData
+    # object
+    for ad in adinput:
+        for ext in ad["SCI"]:
+            extver = ext.extver()
+            bpmext = bpm["SCI",extver]
+            # Needed for F2 - will be removed when a proper BPM for F2 is done
+            bpmext.data = np.squeeze(bpmext.data)
+            if bpmext.data.shape != ext.data.shape:
+                raise Errors.MatchError()
+            # Ensure that the bpm has a data type of int16
+            bpmext.data = bpmext.data.astype(np.int16)
+    # Create a dictionary that has the AstroData objects specified by adinput
+    # as the key and the AstroData objects specified by bpm as the value
+    ret_bpm_dict = gt.make_dict(key_list=adinput, value_list=bpm_list)
     
-    return bpm
+    return ret_bpm_dict
 
-bpm_dict = {
-    "GMOS11": "Gemini/GMOS/BPM/GMOS_BPM_11.fits",
-    "GMOS22": "Gemini/GMOS/BPM/GMOS_BPM_22.fits",
-    "F2": "Gemini/F2/BPM/F2_bpm.fits",
-    }
-
-#def _select_mdf(adinput=None):
-    # Renaming the extension"s extname="MDF" and extver=1, even if 
-    # they all ready these values just to be sure.
-    #mdffile.rename_ext("MDF",1)
-    #mdffile.set_key_value("EXTNAME","MDF", "Extension name")
-    #mdffile.set_key_value("EXTVER",1,"Extension version")
-    # If no MDF is supplied, try to find an appropriate one. First, check
-    # the "MASKNAME" keyword
-    #maskname = ad.phu_get_key_value("MASKNAME")
-    #if maskname is not None:
-    #    if "IFU" in ad.types:
-    #        # The input AstroData object has an AstroData Type of "IFU".
-    #        # Use the value of the MASKNAME keyword to determine the
-    #        # appropriate MDF
-    #        if "GMOS-S" in ad.types:
-    #            mdf_prefix = "gsifu"
-    #        if "GMOS-N" in ad.types:
-    #            mdf_prefix = "gnifu"
-    #        mdf_name = "%s%s" % (mdf_prefix, mdf_dict[maskname])
-    #    else:
-    #        # The MASKNAME keyword defines the actual name of an MDF
-    #        if not maskname.endswith(".fits"):
-    #            mdf_name = "%s.fits" % maskname
-    #        else:
-    #            mdf_name = str(maskname)
-    #    # Check if the MDF exists in the current working directory
-    #    if os.path.exists(mdf_name):
-    #        mdf = AstroData(mdf_name)
-    #    # Check if the MDF exists in the gemini_python package
-    #    elif os.path.exists(lookup_path("Gemini/GMOS/MDF/%s" % mdf_name)):
-    #        mdf = AstroData(lookup_path("Gemini/GMOS/MDF/%s" % mdf_name))
-    #    else:
-    #        raise Errors.InputError("The MDF file %s was not found " \
-    #                                "either in the current working " \
-    #                                "directory or in the gemini_python " \
-    #                                "package" % (mdf_name))
-    # If mdf is a single AstroData object, put it in a list
-    #if not isinstance(mdf, list):
-    #    mdf = [mdf]
+def _select_mdf(ad=None, mdf=None):
+    """
+    The _select_mdf helper function is used to select the appropriate MDF
+    depending on the single input AstroData object. The returned MDF will have
+    a single extension.
+    """
+    if mdf is not None:
+        # The user supplied an input to the mdf parameter
+        if not isinstance(mdf, list):
+            mdf_list = [mdf]
+    else:
+        # Initialize the list of output MDF AstroData objects
+        mdf_list = []
+        # If no MDF is supplied, try to find an appropriate one. Get the
+        # dictionary containing the list of MDFs for all instruments and modes 
+        all_mdf_dict = Lookups.get_lookup_table('Gemini/MDFDict', 'mdf_dict')
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            # The MDFs are keyed by the instrument and the MASKNAME. Get the
+            # instrument and the MASKNAME values using the appropriate
+            # descriptors 
+            instrument = ad.instrument()
+            mask_name = ad.phu_get_key_value("MASKNAME")
+            # Create the key
+            if instrument is None or mask_name is None:
+                if hasattr(ad, 'exception_info'):
+                    raise ad.exception_info
+            key = "%s_%s" % (instrument, mask_name)
+            # Get the MDF from the look up table
+            if key in all_mdf_dict:
+                mdf = AstroData(lookup_path(all_mdf_dict[key]))
+            else:
+                # The MASKNAME keyword defines the actual name of an MDF
+                if not mask_name.endswith(".fits"):
+                    mdf_name = "%s.fits" % mask_name
+                else:
+                    mdf_name = str(maskname)
+                # Check if the MDF exists in the current working directory
+                if os.path.exists(mdf_name):
+                    mdf = AstroData(mdf_name)
+                else:
+                    msg = "The MDF file %s was not found either in the " \
+                          "current working directory or in the " \
+                          "gemini_python package" % (mdf_name)
+                    raise Errors.InputError(msg)
+            mdf_list.append(mdf)
+    # Name the extension appropriately
+    mdf.rename_ext("MDF", 1)
     # Check if the MDF is a single extension fits file
-    #for mdffile in mdf:
-    #    if len(mdffile) > 1:
-    #       raise Errors.InputError("Please provide a single extension fits " \
-    #                                "file for the MDF")
-    # Check if the input AstroData object already has an MDF
-    #for ad in adinput:
-    #    if ad["MDF"]:
-    #        raise Errors.InputError("Input AstroData object already has an " \
-    #                                "MDF attached")
-    #mdfdict = {}
-    #if len(mdf) > 1:
-        # Check whether the number of MDFs match the number of input AstroData
-        # objects
-    #    if len(adinput) != len(mdf):
-    #        raise Errors.InputError("Please supply either a single MDF to " \
-    #                               "be applied to all AstroData objects OR " \
-    #                                "the same number of MDFs as there are " \
-    #                                "input AstroData objects")
-    #    else:
-            # Create a dictionary where the key is the input AstroData object
-            # and the value is the MDF file to be added to the input AstroData
-            # object
-    #        while i in range (0,len(adinput)):
-    #            mdfdict[adinput[i]] = mdf[i]
-    # If mdf is a single AstroData object, put it in a list
-    #if not isinstance(mdf, list):
-    #    mdf = [mdf]
-    # Check if the MDF is a single extension fits file
-    #for mdffile in mdf:
-    #    if len(mdffile) > 1:
-    #       raise Errors.InputError("Please provide a single extension fits " \
-    #                                "file for the MDF")
-    # Check if the input AstroData object already has an MDF
-    #for ad in adinput:
-    #    if ad["MDF"]:
-    #        raise Errors.InputError("Input AstroData object already has an " \
-    #                                "MDF attached")
-    #mdfdict = {}
-    #if len(mdf) > 1:
-        # Check whether the number of MDFs match the number of input AstroData
-        # objects
-    #    if len(adinput) != len(mdf):
-    #        raise Errors.InputError("Please supply either a single MDF to " \
-    #                               "be applied to all AstroData objects OR " \
-    #                                "the same number of MDFs as there are " \
-    #                                "input AstroData objects")
-    #    else:
-            # Create a dictionary where the key is the input AstroData object
-            # and the value is the MDF file to be added to the input AstroData
-            # object
-    #        while i in range (0,len(adinput)):
-    #            mdfdict[adinput[i]] = mdf[i]
-    # Renaming the extension"s extname="MDF" and extver=1, even if 
-    # they all ready these values just to be sure.
-    #mdffile.rename_ext("MDF",1)
-    #mdffile.set_key_value("EXTNAME","MDF", "Extension name")
-    #mdffile.set_key_value("EXTVER",1,"Extension version")
-    # Check the inputs
-    #if not isinstance(input1, list):
-    #    input1 = [input1]
-    #if not isinstance(input2, list):
-    #    input2 = [input2]
-    ## Check if the input AstroData object already has input2 attached
-    #for ad in input1:
-    #    if ad[input2type]:
-    #        raise Errors.InputError("Input AstroData object already has an " \
-    #                                "%s attached", input2type)
-    #if len(input2) > 1:
-    #    # Check whether the number of MDFs match the number of input AstroData
-    #    # objects
-    #    if len(input1) != len(input2):
-    #        raise Errors.InputError("Please supply either a single %s to " \
-    #                               "be applied to all AstroData objects OR " \
-    #                                "the same number of %ss as there are " \
-    #                                "input AstroData objects" \
-    #                                % (input2type, input2type))
-    #    else:
-    #        # Create a dictionary where the key is the input AstroData object
-    #        # and the value is the input2 file to be added to the input
-    #        # AstroData object
-    #        while i in range (0,len(input1)):
-    #            dict[input1[i]] = input2[i]
-
-mdf_dict = {
-    "IFU-2": "_slits_mdf.fits",
-    "IFU-B": "_slitb_mdf.fits",
-    "IFU-R": "_slitr_mdf.fits",
-    "IFU-NS-2": "_ns_slits_mdf.fits",
-    "IFU-NS-B": "_ns_slitb_mdf.fits",
-    "IFU-NS-R": "_ns_slitr_mdf.fits",
-    }
+    if len(mdf) > 1:
+        raise Errors.InputError("The MDF is not a single extension fits file")
+    # Create a dictionary that has the AstroData objects specified by adinput
+    # as the key and the AstroData objects specified by mdf as the value
+    ret_mdf_dict = gt.make_dict(key_list=adinput, value_list=mdf_list)
+        
+    return ret_mdf_dict
