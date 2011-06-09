@@ -30,9 +30,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         disperser = dataset.phu_get_key_value(
-            self._specifickey_dict["key_disperser"])
+            self.get_descriptor_key("key_disperser"))
         if disperser is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -52,9 +52,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the filter name value from the header of the PHU. The filter name
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
         # are read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         filter_name = dataset.phu_get_key_value(
-            self._specifickey_dict["key_filter_name"])
+            self.get_descriptor_key("key_filter_name"))
         if filter_name is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -78,9 +78,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         biasvolt = dataset.phu_get_key_value(
-            self._specifickey_dict["key_bias"])
+            self.get_descriptor_key("key_bias"))
         if biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -108,9 +108,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         biasvolt = dataset.phu_get_key_value(
-            self._specifickey_dict["key_bias"])
+            self.get_descriptor_key("key_bias"))
         if biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -194,10 +194,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # value (biasvolt) from the header of the PHU. The lnrs and biasvolt
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
         # are read from the updated global key dictionary
-        # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        # (self.get_descriptor_key())
+        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
         biasvolt = dataset.phu_get_key_value(
-            self._specifickey_dict["key_bias"])
+            self.get_descriptor_key("key_bias"))
         if lnrs is None or biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -222,10 +222,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # value (biasvolt) from the header of the PHU. The lnrs and biasvolt
         # keywords are defined in the local key dictionary (stdkeyDictNIFS) but
         # are read from the updated global key dictionary
-        # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        # (self.get_descriptor_key())
+        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
         biasvolt = dataset.phu_get_key_value(
-            self._specifickey_dict["key_bias"])
+            self.get_descriptor_key("key_bias"))
         if lnrs is None or biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -263,9 +263,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biasvolt) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictNIFS) but
         # is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         biasvolt = dataset.phu_get_key_value(
-            self._specifickey_dict["key_bias"])
+            self.get_descriptor_key("key_bias"))
         if biasvolt is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.

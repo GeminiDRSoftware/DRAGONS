@@ -14,11 +14,11 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the exposure time and the number of extensions from the header of
         # the PHU. The exposure time and the number of extensions keywords are
         # defined in the local key dictionary (stdkeyDictMICHELLE) but are read
-        # from the updated global key dictionary (self._specifickey_dict)
+        # from the updated global key dictionary (self.get_descriptor_key())
         exposure_time = dataset.phu_get_key_value(
-            self._specifickey_dict["key_exposure_time"])
+            self.get_descriptor_key("key_exposure_time"))
         extensions = dataset.phu_get_key_value(
-            self._specifickey_dict["key_numext"])
+            self.get_descriptor_key("key_numext"))
         if exposure_time is None or extensions is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -42,9 +42,9 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the filter name value from the header of the PHU. The filter name
         # keyword is defined in the local key dictionary (stdkeyDictMICHELLE)
         # but is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         filter_name = dataset.phu_get_key_value(
-            self._specifickey_dict["key_filter_name"])
+            self.get_descriptor_key("key_filter_name"))
         if filter_name is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -64,9 +64,9 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
     def read_mode(self, dataset, **args):
         # Get the read mode from the header of the PHU. The read mode is
         # defined in the local key dictionary (stdkeyDictMICHELLE) but is read
-        # from the updated global key dictionary (self._specifickey_dict)
+        # from the updated global key dictionary (self.get_descriptor_key())
         read_mode = dataset.phu_get_key_value(
-            self._specifickey_dict["key_read_mode"])
+            self.get_descriptor_key("key_read_mode"))
         if read_mode is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.

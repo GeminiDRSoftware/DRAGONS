@@ -15,7 +15,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def airmass(self, dataset, **args):
         # Get the airmass value from the header of the PHU
         airmass = dataset.phu_get_key_value(
-            self._specifickey_dict["key_airmass"])
+            self.get_descriptor_key("key_airmass"))
         if airmass is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -41,7 +41,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def cass_rotator_pa(self, dataset, **args):
         # Get the cassegrain rotator position angle from the header of the PHU
         cass_rotator_pa = dataset.phu_get_key_value(
-            self._specifickey_dict["key_cass_rotator_pa"])
+            self.get_descriptor_key("key_cass_rotator_pa"))
         if cass_rotator_pa is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -79,7 +79,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             output_units = "meters"
         # Get the central wavelength value from the header of the PHU.
         raw_central_wavelength = dataset.phu_get_key_value(
-            self._specifickey_dict["key_central_wavelength"])
+            self.get_descriptor_key("key_central_wavelength"))
         if raw_central_wavelength is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -104,9 +104,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Get the number of coadds from the header of the PHU. The number of
         # coadds keyword may be defined in a local key dictionary
         # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
-        # dictionary (self._specifickey_dict).
+        # dictionary (self.get_descriptor_key()).
         coadds = dataset.phu_get_key_value(
-            self._specifickey_dict["key_coadds"])
+            self.get_descriptor_key("key_coadds"))
         if coadds is None:
             # Return 1 as the default value for the number of coadds for Gemini
             # data
@@ -125,7 +125,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         for ext in dataset["SCI"]:
             # Get the data section from the header of each pixel data extension
             raw_data_section = ext.get_key_value(
-                self._specifickey_dict["key_data_section"])
+                self.get_descriptor_key("key_data_section"))
             if raw_data_section is None:
                 # The get_key_value() function returns None if a value cannot
                 # be found and stores the exception info. Re-raise the
@@ -158,7 +158,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         """
         # Get the decker position from the header of the PHU
         decker = dataset.phu_get_key_value(
-            self._specifickey_dict["key_decker"])
+            self.get_descriptor_key("key_decker"))
         if decker is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -186,7 +186,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # Get the detector section from the header of each pixel data
             # extension
             raw_detector_section = ext.get_key_value(
-                self._specifickey_dict["key_detector_section"])
+                self.get_descriptor_key("key_detector_section"))
             if raw_detector_section is None:
                 # The get_key_value() function returns None if a value cannot
                 # be found and stores the exception info. Re-raise the
@@ -255,9 +255,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword may be defined in a local key dictionary
         # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
-        # dictionary (self._specifickey_dict)
+        # dictionary (self.get_descriptor_key())
         disperser = dataset.phu_get_key_value(
-            self._specifickey_dict["key_disperser"])
+            self.get_descriptor_key("key_disperser"))
         if disperser is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -289,7 +289,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Get the dispersion axis from the header of each pixel data
                 # extension
                 dispersion_axis = ext.get_key_value(
-                    self._specifickey_dict["key_dispersion_axis"])
+                    self.get_descriptor_key("key_dispersion_axis"))
                 if dispersion_axis is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
@@ -314,7 +314,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def exposure_time(self, dataset, **args):
         # Get the exposure time value from the header of the PHU
         exposure_time = dataset.phu_get_key_value(
-            self._specifickey_dict["key_exposure_time"])
+            self.get_descriptor_key("key_exposure_time"))
         if exposure_time is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -343,11 +343,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Get the two filter name values from the header of the PHU. The two
         # filter name keywords may be defined in a local key dictionary
         # (stdkey_dict<INSTRUMENT>) but are read from the updated global key
-        # dictionary (self._specifickey_dict)
+        # dictionary (self.get_descriptor_key())
         filter1 = dataset.phu_get_key_value(
-            self._specifickey_dict["key_filter1"])
+            self.get_descriptor_key("key_filter1"))
         filter2 = dataset.phu_get_key_value(
-            self._specifickey_dict["key_filter2"])
+            self.get_descriptor_key("key_filter2"))
         if filter1 is None or filter2 is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -400,7 +400,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             stripID = True
         # Get the focal plane mask value from the header of the PHU.
         focal_plane_mask = dataset.phu_get_key_value(
-            self._specifickey_dict["key_focal_plane_mask"])
+            self.get_descriptor_key("key_focal_plane_mask"))
         if focal_plane_mask is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -427,7 +427,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     def local_time(self, dataset, **args):
         # Get the local time from the header of the PHU
         local_time = dataset.phu_get_key_value(
-            self._specifickey_dict["key_local_time"])
+            self.get_descriptor_key("key_local_time"))
         if local_time is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -460,7 +460,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Get the MDF row ID from the header of each pixel data
                 # extension
                 mdf_row_id = ext.get_key_value(
-                    self._specifickey_dict["key_mdf_row_id"])
+                    self.get_descriptor_key("key_mdf_row_id"))
                 if mdf_row_id is None:
                     # The get_key_value() function returns None if a value
                     # cannot be found and stores the exception info. Re-raise
@@ -498,43 +498,14 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
-    def overscan_section(self, dataset, pretty=False, **args):
-        # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
-        ret_overscan_section = {}
-        # Loop over the science extensions in the dataset
-        for ext in dataset["SCI"]:
-            # Get the overscan section from the header of each pixel data
-            # extension
-            raw_overscan_section = ext.get_key_value(
-                self._specifickey_dict["key_overscan_section"])
-            if raw_overscan_section is None:
-                # The get_key_value() function returns None if a value cannot
-                # be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(ext, "exception_info"):
-                    raise ext.exception_info
-            if pretty:
-                # Return a dictionary with the overscan section string that 
-                # uses 1-based indexing as the value
-                ret_overscan_section.update({
-                    (ext.extname(), ext.extver()):str(raw_overscan_section)})
-            else:
-                # Return a dictionary with the overscan section list that 
-                # uses 0-based, non-inclusive indexing as the value
-                overscan_section = string.sectionStrToIntList(
-                    raw_overscan_section)
-                ret_overscan_section.update({
-                    (ext.extname(), ext.extver()):overscan_section})
-        if ret_overscan_section == {}:
-            # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
-            # was not entered
-            raise Errors.CorruptDataError()
-        
-        return ret_overscan_section
-    
+    def overscan_section(self, dataset, **args):
+        # The overscan_section descriptor is only specific to GMOS data. The
+        # code below will be replaced with the GMOS specific overscan_section 
+        # descriptor function located in GMOS/GMOS_Descriptor.py for data with
+        # an AstroData Type of "GMOS". For all other Gemini data, raise an
+        # exception if this descriptor is called.
+        raise Errors.ExistError()
+
     def read_mode(self, dataset, **args):
         # The read_mode descriptor is only specific to GNIRS, MICHELLE, NIFS
         # and NIRI data. The code below will be replaced with the GNIRS,
@@ -556,11 +527,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # and the value for the raw Gemini Quality Assessment (rawgemqa) from
         # the header of the PHU. The rawpireq and rawgemqa keywords are
         # defined in the local key dictionary (stdkeyDictGEMINI) but are read
-        # from the updated global key dictionary (self._specifickey_dict)
+        # from the updated global key dictionary (self.get_descriptor_key())
         rawpireq = dataset.phu_get_key_value(
-            self._specifickey_dict["key_raw_pi_requirements_met"])
+            self.get_descriptor_key("key_raw_pi_requirements_met"))
         rawgemqa = dataset.phu_get_key_value(
-            self._specifickey_dict["key_raw_gemini_qa"])
+            self.get_descriptor_key("key_raw_gemini_qa"))
         if rawpireq is None or rawgemqa is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -601,7 +572,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # header keywords that might tell us. DATE-OBS can also give us a full
         # date-time combination, so we check for this too.
         hdu = dataset.hdulist
-        for kw in ["DATE-OBS", self._specifickey_dict["key_ut_date"], "DATE", \
+        for kw in ["DATE-OBS", self.get_descriptor_key("key_ut_date"), "DATE", \
             "UTDATE"]:
             try:
                 utdate_hdr = hdu[0].header[kw].strip()
@@ -657,7 +628,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
 
         # Get and validate the ut time header, if present. We try several
         # header keywords that might contain a ut time.
-        for kw in [self._specifickey_dict["key_ut_time"], "UT", "TIME-OBS", "STARTUT"]:
+        for kw in [self.get_descriptor_key("key_ut_time"), "UT", "TIME-OBS", "STARTUT"]:
             try:
                 uttime_hdr = hdu[0].header[kw].strip()
             except KeyError:
@@ -796,11 +767,11 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # pwfs1 and pwfs2, respectively) from the header of the PHU. The probe
         # states keywords are defined in the local key dictionary
         # (stdkeyDictGEMINI) but are read from the updated global key
-        # dictionary (self._specifickey_dict)
-        aowfs = dataset.phu_get_key_value(self._specifickey_dict["key_aowfs"])
-        oiwfs = dataset.phu_get_key_value(self._specifickey_dict["key_oiwfs"])
-        pwfs1 = dataset.phu_get_key_value(self._specifickey_dict["key_pwfs1"])
-        pwfs2 = dataset.phu_get_key_value(self._specifickey_dict["key_pwfs2"])
+        # dictionary (self.get_descriptor_key())
+        aowfs = dataset.phu_get_key_value(self.get_descriptor_key("key_aowfs"))
+        oiwfs = dataset.phu_get_key_value(self.get_descriptor_key("key_oiwfs"))
+        pwfs1 = dataset.phu_get_key_value(self.get_descriptor_key("key_pwfs1"))
+        pwfs2 = dataset.phu_get_key_value(self.get_descriptor_key("key_pwfs2"))
         if aowfs is None or oiwfs is None or pwfs1 is None or pwfs2 is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -839,9 +810,9 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             # of each pixel data extension. The reference pixel of the central
             # wavelength keyword may be defined in a local key dictionary
             # (stdkey_dict<INSTRUMENT>) but is read from the updated global key
-            # dictionary (self._specifickey_dict)
+            # dictionary (self.get_descriptor_key())
             wavelength_reference_pixel = ext.get_key_value(
-                self._specifickey_dict["key_wavelength_reference_pixel"])
+                self.get_descriptor_key("key_wavelength_reference_pixel"))
             if wavelength_reference_pixel is None:
                 # The get_key_value() function returns None if a value cannot
                 # be found and stores the exception info. Re-raise the

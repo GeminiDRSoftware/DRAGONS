@@ -39,8 +39,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        # (self.get_descriptor_key)
+        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -67,8 +67,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        # (self.get_descriptor_key)
+        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -98,8 +98,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        # (self.get_descriptor_key)
+        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -121,8 +121,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary
         # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self._specifickey_dict)
-        lnrs = dataset.phu_get_key_value(self._specifickey_dict["key_lnrs"])
+        # (self.get_descriptor_key)
+        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -142,7 +142,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def x_offset(self, dataset, **args):
         # Get the y offset from the header of the PHU.
-        y_offset = dataset.phu_get_key_value(globalStdkeyDict["key_yoffset"])
+        y_offset = dataset.phu_get_key_value(
+            self.get_descriptor_key("key_y_offset"))
         if y_offset is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -155,7 +156,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def y_offset(self, dataset, **args):
         # Get the x offset from the header of the PHU.
-        x_offset = dataset.phu_get_key_value(globalStdkeyDict["key_xoffset"])
+        x_offset = dataset.phu_get_key_value(
+            self.get_descriptor_key("key_x_offset"))
         if x_offset is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.

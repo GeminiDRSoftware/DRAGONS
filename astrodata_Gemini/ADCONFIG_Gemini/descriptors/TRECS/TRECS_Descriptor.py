@@ -36,9 +36,9 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the disperser value from the header of the PHU. The disperser
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
         # is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         disperser = dataset.phu_get_key_value(
-            self._specifickey_dict["key_disperser"])
+            self.get_descriptor_key("key_disperser"))
         if disperser is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -84,9 +84,9 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the dispersion value from the header of the PHU. The dispersion
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
         # is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         raw_dispersion = dataset.phu_get_key_value(
-            self._specifickey_dict["key_dispersion"])
+            self.get_descriptor_key("key_dispersion"))
         if raw_dispersion is None:
             # The get_key_value() function returns None if a value cannot be
             # found and stores the exception info. Re-raise the exception. It
@@ -113,9 +113,9 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the bias value (biaslevel) from the header of the PHU. The bias
         # keyword is defined in the local key dictionary (stdkeyDictTRECS) but
         # is read from the updated global key dictionary
-        # (self._specifickey_dict)
+        # (self.get_descriptor_key())
         biaslevel = dataset.phu_get_key_value(
-            self._specifickey_dict["key_bias"])
+            self.get_descriptor_key("key_bias"))
         if biaslevel is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
