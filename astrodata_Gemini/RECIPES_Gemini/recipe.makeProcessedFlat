@@ -5,13 +5,21 @@
 # appended.
 
 prepare
+
+#addDQ
+#addVAR(readnoise=True)
+
 overscanCorrect
-addVARDQ
-#writeOutputs
-getProcessedBias
-#localGetProcessedBias
+
 biasCorrect
+
+#aduToElectrons
+
+#addVAR(poisson=True)
+
 #showInputs
-addToList
-makeNormalizedFlat
+#addToList
+
+stackFrames
+normalize
 storeProcessedFlat(clob=True)

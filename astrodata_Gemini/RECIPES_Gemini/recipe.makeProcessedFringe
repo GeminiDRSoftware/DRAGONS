@@ -1,0 +1,28 @@
+# This recipe will perform the preparation and corrections
+# needed to convert the inputs into a single fringe calibration file.  
+# Output is stored in a directory specified by the parameters of the
+# storeProcessedFringe primitive with the suffix '_fringe.fits'
+# appended to the name of the first input file.
+
+prepare
+
+#addDQ
+#addVAR(readnoise=True)
+
+overscanCorrect
+
+biasCorrect
+
+#aduToElectrons
+
+#addVAR(poisson=True)
+
+flatCorrect
+
+#showInputs
+#addToList
+
+makeFringe
+
+#writeOutputs
+storeProcessedFringe(clob=True)

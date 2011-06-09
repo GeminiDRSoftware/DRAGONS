@@ -6,14 +6,15 @@
 
 prepare
 
+#addDQ
+#addVAR(readnoise=True)
+
 overscanCorrect
 
-addVARDQ
-
 #showInputs
-addToList
+#addToList
 
-averageCombine
+stackFrames
 
 #writeOutputs
 storeProcessedBias(clob=True)
