@@ -126,10 +126,9 @@ def normalize_flat_image(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
-                              fl_vardq='AUTO', suffix=None):
+def normalize_flat_image_gmos(adinput=None, trim=False, overscan=False):
     """
-    This function will combine the input flats (adInputs) and then normalize  
+    This function will combine the input flats (adinput) and then normalize  
     them using the CL script giflat.
     
     WARNING: The giflat script used here replaces the previously 
@@ -146,19 +145,12 @@ def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
     :param adinput: Astrodata input flat(s) to be combined and normalized
     :type adinput: Astrodata
     
-    :param fl_trim: Trim the overscan region from the frames?
-    :type fl_trim: Python boolean (True/False)
+    :param trim: Trim the overscan region from the frames?
+    :type trim: Python boolean (True/False)
     
-    :param fl_over: Subtract the overscan level from the frames?
-    :type fl_over: Python boolean (True/False)
+    :param overscan: Subtract the overscan level from the frames?
+    :type overscan: Python boolean (True/False)
     
-    :param fl_vardq: Create variance and data quality frames?
-    :type fl_vardq: Python boolean (True/False), OR string 'AUTO' to do 
-                    it automatically if there are VAR and DQ frames in the 
-                    inputs.
-                    NOTE: 'AUTO' uses the first input to determine if VAR and  
-                    DQ frames exist, so, if the first does, then the rest MUST 
-                    also have them as well.
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -176,16 +168,16 @@ def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
         pyraf, gemini, yes, no = pyrafLoader()
         # Use the CL manager to get the input parameters
         clm = mgr.CLManager(imageIns=adinput, funcName="normalizeFlat",
-                            suffix=suffix, combinedImages=True, log=log)
+                            suffix="_out", combinedImages=True, log=log)
         if not clm.status:
             raise Errors.InputError("Please provide prepared inputs")
         # Get the input parameters for IRAF as specified by the stackFrames
         # primitive 
         clPrimParams = {
             # Retrieving the inputs as a list from the CLManager
-            "input"   : clm.imageInsFiles(type="listFile"),
+            "inflats" : clm.imageInsFiles(type="listFile"),
             # Maybe allow the user to override this in the future
-            "output"  : clm.imageOutsFiles(type="string"),
+            "outflat" : clm.imageOutsFiles(type="string"),
             # This returns a unique/temp log file for IRAF
             "logfile" : clm.templog.name,
             "reject"  : "none",
@@ -200,8 +192,8 @@ def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
                     fl_vardq = yes
         clSoftcodedParams = {
             "fl_vardq"  : fl_vardq,
-            "fl_over"   : gt.pyrafBoolean(fl_over),
-            "fl_trim"   : gt.pyrafBoolean(fl_trim),
+            "fl_over"   : gt.pyrafBoolean(overscan),
+            "fl_trim"   : gt.pyrafBoolean(trim),
             }
         # Get the default parameters for IRAF and update them using the above
         # dictionaries
@@ -210,7 +202,7 @@ def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
         clParamsDict.update(clSoftcodedParams)
         # Log the parameters
         gt.logDictParams(clParamsDict)
-        # Call gemcombine
+        # Call giflat
         gemini.giflat(**clParamsDict)
         if gemini.giflat.status:
             raise Errors.OutputError("The IRAF task giflat failed")
@@ -219,9 +211,10 @@ def normalize_flat_image_gmos(adinput=None, fl_trim=False, fl_over=False,
         # Create the output AstroData object by loading the output file from
         # gemcombine into AstroData, remove intermediate temporary files from
         # disk 
-        adoutput, junk, junk = clm.finishCL() 
+        adoutput, junk, junk = clm.finishCL()
+        adoutput[0].filename = ad.filename
         # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=ad, keyword=keyword)
+        gt.mark_history(adinput=adoutput[0], keyword=keyword)
         # Return the output AstroData object
         return adoutput
     except:
