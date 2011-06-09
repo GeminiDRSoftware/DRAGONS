@@ -23,7 +23,19 @@
         "default"       : "_varAdded",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
+        },
+    "read_noise":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
+        },
+    "poisson_noise":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
         },
     },
  "aduToElectrons":{

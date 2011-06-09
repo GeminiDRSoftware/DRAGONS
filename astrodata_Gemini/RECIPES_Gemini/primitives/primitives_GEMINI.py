@@ -135,7 +135,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the add_var user level function
-            ad = sdz.add_var(adinput=ad)
+            ad = sdz.add_var(adinput=ad, read_noise=rc["read_noise"],
+                             poisson_noise=rc["poisson_noise"])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])

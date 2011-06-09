@@ -5,8 +5,9 @@
 
 prepare
 addDQ
+addVAR(read_noise=True)
 #nonlinearityCorrect
 aduToElectrons
-addVAR
+addVAR(poisson_noise=True)
 stackFrames
 storeProcessedDark

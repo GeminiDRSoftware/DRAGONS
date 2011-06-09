@@ -7,10 +7,11 @@
 prepare
 addDQ
 writeOutputs(suffix="_dq", strip=True)
+addVAR(read_noise=True)
 #nonlinearityCorrect
 aduToElectrons
 writeOutputs(suffix="_aduToEle", strip=True)
-addVAR
+addVAR(poisson_noise=True)
 writeOutputs(suffix="_var", strip=True)
 #removeThermalEmissionFromFlat
 stackFrames
@@ -18,3 +19,14 @@ writeOutputs(suffix="_stack", strip=True)
 normalize
 writeOutputs(suffix="_flat", strip=True)
 storeProcessedFlat
+
+# OR
+#prepare
+#addDQ
+#nonlinearityCorrect
+#aduToElectrons
+#addVAR(read_noise=True, poisson_noise=True)
+#removeThermalEmissionFromFlat
+#stackFrames
+#normalize
+#storeProcessedFlat

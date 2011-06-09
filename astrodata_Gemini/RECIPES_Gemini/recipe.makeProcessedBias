@@ -1,20 +1,11 @@
-# This recipe will perform the preparation and corrections
-# needed to convert the inputs into a single averaged bias calibration file.  
-# Output is stored in a directory specified
-# by the parameters of the storeProcessedBias primitive 
-# with the postfix '_preparedbias.fits' to the name of the first input file.
+# This recipe performs the standardization and corrections needed to convert 
+# the raw input bias images into a single stacked bias image. This output 
+# processed bias is stored on disk using storeProcessedBias and has a name 
+# equal to the name of the first input bias image with "_bias.fits" appended.
 
 prepare
-
 #addDQ
-#addVAR(readnoise=True)
-
+#addVAR(read_noise=True)
 overscanCorrect
-
-#showInputs
-#addToList
-
 stackFrames
-
-#writeOutputs
-storeProcessedBias(clob=True)
+storeProcessedBias

@@ -5,21 +5,12 @@
 # appended.
 
 prepare
-
 #addDQ
-#addVAR(readnoise=True)
-
+#addVAR(read_noise=True)
 overscanCorrect
-
 biasCorrect
-
 #aduToElectrons
-
-#addVAR(poisson=True)
-
-#showInputs
-#addToList
-
+#addVAR(poisson_noise=True)
 stackFrames
 normalize
-storeProcessedFlat(clob=True)
+storeProcessedFlat
