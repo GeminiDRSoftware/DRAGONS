@@ -138,12 +138,12 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         if m:
             parts = m.groups()
             ret_grating = "%s%s%s" % (parts[0], parts[2], parts[3])
-            if stripID or pretty:
-                ret_grating = string.removeComponentID(ret_grating)
-        
         else:
             # If the regex didn't match, just pass through the raw value
             ret_grating = grating
+        if stripID or pretty:
+            ret_grating = string.removeComponentID(ret_grating)
+        
         return ret_grating
     
     def non_linear_level(self, dataset, **args):
