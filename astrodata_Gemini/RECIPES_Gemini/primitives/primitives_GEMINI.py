@@ -126,14 +126,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         adoutput_list = []
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs(style="AD"):
-            # Check whether the addVAR primitive has been run previously
-            if ad.phu_get_key_value("ADDVAR"):
-                log.warning("%s has already been processed by addVAR" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
             # Call the add_var user level function
             ad = sdz.add_var(adinput=ad, read_noise=rc["read_noise"],
                              poisson_noise=rc["poisson_noise"])
