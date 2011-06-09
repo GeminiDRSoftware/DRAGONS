@@ -504,9 +504,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             if fringe.count_exts("SCI") == 0:
                 log.warning("Could not find an appropriate fringe for %s" \
                             % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
+                # Append a blank entry to the fringe list
+                adoutput_list.append(None)
                 continue
 
             # Call the scale_fringe_to_science user level function
@@ -517,8 +516,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
             count += 1
+
         # Report the list of output AstroData objects and the scaled fringe
         # frames to the reduction context
+
         rc.report_output(adoutput_list, stream="fringe")
         rc.report_output(rc.get_inputs(style="AD"), stream="main")
         
@@ -927,21 +928,54 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtractFringe", "starting"))
-        # Retrieving the appropriate fringe for the first of the inputs
-        adOne = rc.get_inputs(style="AD")[0]
-        #fringe=rc.get_inputs(style="AD", category="fringe")
-        ###################BULL CRAP FOR TESTING ######################### 
-        from copy import deepcopy
-        fringe = deepcopy(adOne)
-        fringe.filename = "TEMPNAMEforFRINGE.fits"
-        fringe.phu_set_key_value("ORIGNAME","TEMPNAMEforFRINGE.fits")
-        ##################################################################
-        # Call the subtract_fringe user level function
-        output = pp.subtract_fringe(adinput=rc.get_inputs(style="AD"),
-                                    fringe=fringe) 
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Get inputs from their streams
+        adinput = rc.get_inputs(style="AD", stream="main")
+        fringes = rc.get_inputs(style="AD", stream="fringe")
+
+        # Check that there are as many fringes as inputs
+        if len(adinput)!=len(fringes):
+            log.warning("Fringe input list does not match science input list;" +
+                        "no fringe-correction will be performed.")
+            adoutput_list = adinput
+        else:
+
+            # Loop over input science and fringe AstroData inputs
+            for i in range(0,len(adinput)):
+
+                ad = adinput[i]
+                fringe = fringes[i]
+
+                # Check whether the subtractFringe primitive has been run
+                # previously
+                if ad.phu_get_key_value("SUBFRING"):
+                    log.warning("%s has already been processed by " +
+                                "subtractFringe" % (ad.filename))
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
+
+                # Check for valid fringe
+                if fringe.count_exts("SCI") == 0:
+                    log.warning("Could not find an appropriate fringe for %s" %
+                                (ad.filename))
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
+
+                # Call the subtract_fringe user level function
+                ad = pp.subtract_fringe(adinput=ad, fringe=fringe) 
+                
+                adoutput_list.append(ad[0])
+
         # Report the output of the user level function to the reduction
         # context
-        rc.report_output(output, category="standard")
+        rc.report_output(adoutput_list, stream="main")
         
         yield rc
     
