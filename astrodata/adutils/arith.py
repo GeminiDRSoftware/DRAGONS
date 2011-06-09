@@ -352,13 +352,14 @@ def add(inputA, inputB):
     # Return the fully updated output astrodata object 
     return out     
         
-def sub(inputA, inputB):
+def sub(input1, input2):
     """
-    A function to subtract a input science image from another image or a 
-    floating point integer. If inputB is an AstroData MEF then this function 
-    will loop through the SCI, VAR and DQ frames to subtract each SCI of the 
-    inputB from the inputA SCI of the same EXTVER. It will apply a bitwise-or 
-    to the DQ frames to preserve their binary formats.
+    The sub function subtracts an AstroData object or a single value (input2)
+    from an AstroData object (input1). If input2 is an AstroData object, the
+    sub function will subtract each science extension in the input2 AstroData
+    object with the corresponding science extension in the input1 AstroData
+    object and update the variance and data quality plans accordingly.
+    
     The VAR frames output will follow:
     
     If inputB is an AstroData instance:
@@ -366,114 +367,83 @@ def sub(inputA, inputB):
     Else:
     varOut=varA 
     
-    If the inputB is a float integer then only the SCI frames of inputA will 
-    each have the float value subtracted while the VAR and DQ frames of 
-    inputA are left alone.
-    #$$$$$$$$$$ ARE WE SURE WE DON'T WANT TO OFFER THE ABILITY FOR inputB 
-    TO BE A FLOAT LIST OR DICT???????
+    If input2 is a single value, the single value is subtracted from the
+    science extensions of the input1 AstroData object.
     
-    @param inputA: input image to be subtracted by inputB
-    @type inputA: a MEF or single extension fits file in the form of an 
-                  AstroData instance
+    @param input1: input image to be that will have input2 subtracted from it
+    @type input1: AstroData
     
-    @param inputB: inputB to subtracted from inputA 
-    @type inputB: a MEF of SCI, VAR and DQ frames in the form of an AstroData 
-                  instance or a float int 
-    #$$$$$ OR A SINGLE EXTENSION FITS FILE TOO???
-    
+    @param input2: input to be subtracted from input1
+    @type input2: a MEF of SCI, VAR and DQ frames in the form of an AstroData
+                  instance, a float list or a single float (list must be 
+                  in order of the SCI extension EXTVERs) OR a dictionary 
+                  of the format {('SCI',#):##,('SCI',#):##...} 
+                  where # are the EXTVERs of the SCI extensions 
+                  and ## are the corresponding float values 
+                  to multiply that extension by.
     """
-    # Rename inputs to shorter names to save typing
-    inA = inputA
-    inB = inputB 
-    # Preparing the output astrodata instance
-    out=AstroData.prep_output(input_ary = inA, clobber = False)
-    
-    # Check if inputB is of type float, if so, perform the float specific
-    # addition calculations
-    if isinstance(inB, float):
-        # Loop through the SCI extensions of InputA
-        for sci in inA['SCI']:
-            # Retrieve the EXTVER for this extension
+    # Check to see if input2 is a dictionary, list, float or int
+    if isinstance(input2, dict) or isinstance(input2, list) or \
+       isinstance(input2, float) or isinstance(input2, int):
+        # Create a dictionary of identical values for each extension if the 
+        # input is a single float
+        if isinstance(input2, float) or isinstance(input2, int):
+            input2_dict = {}
+            for ext in input1["SCI"]:
+                # Retrieve the EXTVER for this extension
+                extver = ext.extver()
+                # Add element to the dictionary for this extension
+                input2_dict[("SCI", extver)] = input2
+        # Create a dictionary if the input is a list of values
+        if isinstance(input2, list):
+            input2_dict = {}
+            for ext in input1["SCI"]:
+                extver = ext.extver()
+                input2_dict[("SCI", extver)] = input2[extver-1]
+        # Just rename the variable if input2 is already a dictionary
+        if isinstance(input2, dict):
+            input2_dict = input2
+        
+        # input2 is now stored in a dictionary
+        for sci in input1["SCI"]:
+            # Retrieve the extension version for this extension
             extver = sci.extver()
-            # Start with the out SCI HDU being the current 
-            # we assume there are at least SCI extensions in the input
-            outsci = deepcopy(inA[('SCI', extver)]) 
-            
-            try:
-                # Subtracting the SCI frames by the constant
-                outsci.data = np.subtract(inA[('SCI', extver)].data, inB)
-                # Append updated SCI extension to the output 
-                out.append(outsci)
-                
-                # Appending the inputA VAR and DQ frames un-edited to the output
-                # ie no change, just propagate the frames
-                
-                # Check there are VAR frames to propagate
-                if inA.count_exts('VAR') == inA.count_exts('SCI'): 
-                    # Start with the out VAR HDU being the current
-                    outvar = deepcopy(inA[('VAR', extver)])
-                    # Just propagate VAR frames to the output
-                    out.append(outvar) 
-                    # ie there are DQ frames to operate on 
-                if inA.count_exts('DQ') == inA.count_exts('SCI'): 
-                    # Start with the out DQ HDU being the current 
-                    outdq = deepcopy(inA[('DQ', extver)]) 
-                    # Just propagate DQ frames to the output  
-                    out.append(outdq) 
-            except:
-                raise
-            
-    # Check to see if the denominator is of type astrodata.AstroData
-    elif isinstance(inB, astrodata.AstroData):
-        # Loop through the SCI extensions
-        for sci in inA['SCI']:
+            # Retrieving the input2 value for this extension from the
+            # dictionary
+            input2 = input2_dict[("SCI", extver)]
+            # Multiply the science extension by the input2 value
+            sci.data = np.subtract(sci.data, input2)
+    
+    # Check to see if input2 is of type astrodata.AstroData.AstroData
+    elif isinstance(input2, astrodata.AstroData):
+        # Loop over each science extension in the input AstroData object
+        for sci in input1["SCI"]:
             # Retrieving the version of this extension
-            extver = sci.extver()  
-            # Start with the out SCI HDU being the current,
-            # we assume there are at least SCI extensions in the input    
-            outsci = deepcopy(inA[('SCI', extver)])    
-               
-            try:
-                # Making sure arrays are same size/shape
-                if inA[('SCI', extver)].data.shape == \
-                inB[('SCI', extver)].data.shape: 
-                    #  Subtracting the SCI frames
-                    outsci.data = np.subtract(inA[('SCI', extver)].data, 
-                                              inB[('SCI', extver)].data)
-                    out.append(outsci)
-                    
-                    # Check there are an equal numbers of VAR frames to 
-                    # operate on
-                    if inA.count_exts('VAR') == inB.count_exts('VAR') == \
-                    inA.count_exts('SCI'): 
-                        # Start with the out VAR HDU being the current 
-                        outvar = deepcopy(inA[('VAR', extver)])
-                        # Creating the output VAR frame following
-                        # varOut= varA + varB
-                        outvar.data = np.add(inA[('VAR', extver)].data, 
-                                           inB[('VAR', extver)].data)
-                        # Append the updated out VAR frame to the output
-                        out.append(outvar)
-                    # Check there are an equal number of DQ frames to operate on
-                    if inA.count_exts('DQ') == inB.count_exts('DQ') == \
-                    inA.count_exts('SCI'):  
-                        # Start with the out DQ HDU being the current
-                        outdq = deepcopy(inA[('DQ', extver)])       
-                        # Performing bitwise-or 'adding' DQ frames 
-                        outdq.data = np.bitwise_or(inA[('DQ', extver)].data, 
-                                                 inB[('DQ', extver)].data)
-                        # Append the updated out DQ frame to the output 
-                        out.append(outdq)
-                
-                # If arrays are different sizes then raise an exception
-                else:
-                    raise ArithError('different numbers of SCI, VAR extensions')
-            except:
-                raise 
-     
-    # If the input was not of type astrodata or float, raise an exception
+            extver = sci.extver()
+            # Make sure arrays are same size/shape
+            if input1[("SCI", extver)].data.shape == \
+               input2[("SCI", extver)].data.shape: 
+                # Multiply the science extensions together
+                sci.data = np.subtract(input1[("SCI", extver)].data,
+                                       input2[("SCI", extver)].data)
+                # Update the variance extension in input1 if a variance
+                # extension exists in input2
+                if input1["VAR", extver] and input2["VAR", extver]:
+                    # Creating the output VAR frame following
+                    # varOut= varA + varB
+                    input1["VAR", extver].data = np.add(
+                        input1[("VAR", extver)].data,
+                        input2[("VAR", extver)].data)
+                # Update the data quality extension in input1 if a data quality
+                # extension exists in input2
+                if input1["DQ", extver] and input2["DQ", extver]:
+                    input1["DQ", extver].data = np.bitwise_or(
+                        input1[("DQ", extver)].data,
+                        input2[("DQ", extver)].data)
+    
+    # If the input was not of type astrodata, float, float list or dictionary
+    # then raise an exception
     else:
-        raise            
-    # Return the fully updated output astrodata object 
-    return out 
-
+        raise
+    # Return the fully updated output astrodata object
+    return input1
