@@ -321,7 +321,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         for ad in rc.get_inputs(style="AD"):
             # Check whether the standardizeHeaders primitive has been run
             # previously
-            if ad.phu_get_key_value("STDHDRSI"):
+            if ad.phu_get_key_value("SDZHDRSI"):
                 log.warning("%s has already been processed by " \
                             "standardizeHeaders" % (ad.filename))
                 # Append the input AstroData object to the list of output
@@ -417,18 +417,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
 
-            #processedBias = AstroData(rc.get_cal(ad,'bias'))
-            ####################BULL CRAP FOR TESTING ##########################
-            from copy import deepcopy
-            processedBias = deepcopy(ad)
-            processedBias.filename = 'TEMPNAMEforBIAS.fits'
-            processedBias.phu_set_key_value('ORIGNAME','TEMPNAMEforBIAS.fits')
-            processedBias.history_mark(key='GBIAS', 
-                             comment='fake key to trick CL that GBIAS was ran')
-            ####################################################################
-            log.status('Using bias '+processedBias.filename+' to correct the inputs')
-            ad = pp.subtract_bias(adinput=ad, 
-                                  bias=processedBias)
+            bias = AstroData(rc.get_cal(ad,'bias'))
+            log.status('Using bias '+bias.filename+' to correct the inputs')
+            ad = pp.subtract_bias(adinput=ad, bias=bias)
             adoutput_list.append(ad[0])
 
         # Report the list of output AstroData objects to the reduction

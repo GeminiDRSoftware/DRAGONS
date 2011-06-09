@@ -230,26 +230,43 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "divideByFlat", "starting"))
-        # Retrieving the appropriate flat for the first of the inputs
-        adOne = rc.get_inputs(style="AD")[0]
-        #processedFlat = AstroData(rc.get_cal(adOne,"flat"))
-        ###################BULL CRAP FOR TESTING ######################### 
-        from copy import deepcopy
-        processedFlat = deepcopy(adOne)
-        processedFlat.filename = "TEMPNAMEforFLAT.fits"
-        processedFlat.phu_set_key_value("ORIGNAME","TEMPNAMEforFLAT.fits")
-        ###################################################################
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Check whether the divideByFlat primitive has been run previously
+            if ad.phu_get_key_value("DIVFLAT"):
+                log.warning("%s has already been processed by divideByFlat" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
+            # Retrieve the appropriate flat
+            flat = AstroData(rc.get_cal(ad,"flat"))
+
+            # Take care of the case where there was no, or an invalid flat 
+            if flat.count_exts("SCI") == 0:
+                log.warning("Could not find an appropriate flat for %s" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
+            # Call the divide_by_flat user level function
+            ad = pp.divide_by_flat(adinput=rc.get_inputs(style="AD"),
+                                       flat=flat)
+
+            # Append the output AstroData object (which is currently in the
+            # form of a list) to the list of output AstroData objects
+            adoutput_list.append(ad[0])        
         
-        # Taking care of the case where there was no, or an invalid flat 
-        if processedFlat.count_exts("SCI") == 0:
-            raise Errors.PrimitiveError("Invalid processed flat " +
-                                        "retrieved")
-        # Call the divide_by_flat user level function
-        output = pp.divide_by_flat(adinput=rc.get_inputs(style="AD"),
-                                   flats=processedFlat)
         # Report the list of output AstroData objects to the reduction
         # context
-        rc.report_output(output)
+        rc.report_output(adoutput_list)
         
         yield rc
      
@@ -467,15 +484,9 @@ class GEMINIPrimitives(GENERALPrimitives):
                                  "starting"))
         # Initialize the list of output AstroData objects
         adoutput_list = []
-        # Get the fringes. Make this better.
-        inputs = rc.get_inputs(style="AD", category="main")
-        fringes = []
-        for input in inputs:
-            fringes.append(AstroData(rc.get_cal(input, "fringe")))
         # Loop over each input AstroData object in the input list
         count = 0
         for ad in rc.get_inputs(style="AD"):
-            fringe = fringes[count]
             # Check whether the scaleFringeToScience primitive has been run
             # previously
             if ad.phu_get_key_value("SCALEFRG"):
@@ -485,17 +496,31 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
+
+            # Get the appropriate fringe frame
+            fringe = AstroData(rc.get_cal(ad, "fringe"))
+
+            # Take care of the case where there was no, or an invalid fringe 
+            if fringe.count_exts("SCI") == 0:
+                log.warning("Could not find an appropriate fringe for %s" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
             # Call the scale_fringe_to_science user level function
             ad = pp.scale_fringe_to_science(adinput=fringe, science=ad,
                                             stats_scale=rc["stats_scale"])
+
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
             count += 1
         # Report the list of output AstroData objects and the scaled fringe
         # frames to the reduction context
-        rc.report_output(adoutput_list, category="fringe")
-        rc.report_output(rc.get_inputs(style="AD"), category="main")
+        rc.report_output(adoutput_list, stream="fringe")
+        rc.report_output(rc.get_inputs(style="AD"), stream="main")
         
         yield rc
     
@@ -790,6 +815,44 @@ class GEMINIPrimitives(GENERALPrimitives):
             ad.write(os.path.join(rc["storedflats"], ad.filename), 
                      clobber=rc["clob"])
             log.fullinfo("Flat written to %s" % (rc["storedflats"])),
+        
+        yield rc
+    
+    def storeProcessedFringe(self, rc):
+        """
+        This should be a primitive that interacts with the calibration 
+        system (MAYBE) but that isn't up and running yet. Thus, this will 
+        just strip the extra postfixes to create the 'final' name for the 
+        makeProcessedFringe outputs and write them to disk in a storedcals
+        folder.
+        
+        :param clob: Write over any previous file with the same name that
+                     all ready exists?
+        :type clob: Python boolean (True/False)
+                    default: False
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (i.e.,
+                        'critical', 'status', 'fullinfo'...)
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "storeProcessedFringe",
+                                 "starting"))
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Updating the file name with the suffix for this primitive and
+            # then report the new file to the reduction context
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_fringe",
+                                             strip=True)
+            log.status("File name of stored fringe is %s" % ad.filename)
+            # Write the fringe frame to disk
+            ad.write(os.path.join(rc["storedfringes"], ad.filename), 
+                     clobber=rc["clob"])
+            log.fullinfo("Fringe written to %s" % (rc["storedfringes"])),
         
         yield rc
     

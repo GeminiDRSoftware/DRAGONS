@@ -21,6 +21,21 @@
         "userOverride"  : True,
         },
     },
+ "makeFringe":{
+    "suffix":{
+        # String to be post pended to the output of makeFringe
+        "default"       : "_fringe",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : False,
+        },
+    "operation":{
+        "default"       : "median",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    },
 # The standardizeStructure primitive is actually located in the
 # primtives_GMOS.py file, but the add_mdf parameter should be set to False as
 # default for data with an AstroData Type of IMAGE.

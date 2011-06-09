@@ -57,3 +57,28 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         rc.report_output(adoutput_list)
         yield rc
     
+
+    def makeFringe(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "makeFringe", "starting"))
+
+        adinput = rc.get_inputs(style="AD")
+        if len(adinput)<2:
+            log.warning('Only one frame provided as input; at least two ' +
+                        'frames are required. Not making fringe frame.')
+            adoutput = adinput
+        else:
+            # Call the make_fringe_gmos_image user level function
+            adoutput = pp.make_fringe_gmos_image(adinput=adinput,
+                                                      suffix=rc["suffix"],
+                                                      operation=rc["operation"])
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput)
+        
+        yield rc
