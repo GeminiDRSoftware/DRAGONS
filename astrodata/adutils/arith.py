@@ -76,8 +76,8 @@ def div(numerator, denominator):
                 numerator["VAR", extver].data = np.multiply(
                     numerator[("VAR", extver)].data, denominator*denominator)
             
-    # Check to see if the denominator is of type astrodata.AstroData.AstroData
-    elif isinstance(denominator, astrodata.AstroData.AstroData):
+    # Check to see if the denominator is of type astrodata.AstroData
+    elif isinstance(denominator, astrodata.AstroData):
         # Loop over each science extension in the input AstroData object
         for sci in numerator["SCI"]:
             # Retrieving the version of this extension
@@ -189,8 +189,8 @@ def mult(input1, input2):
                 input1["VAR", extver].data = np.multiply(
                     input1[("VAR", extver)].data, input2*input2)
     
-    # Check to see if input2 is of type astrodata.AstroData.AstroData
-    elif isinstance(input2, astrodata.AstroData.AstroData):
+    # Check to see if input2 is of type astrodata.AstroData
+    elif isinstance(input2, astrodata.AstroData):
         # Loop over each science extension in the input AstroData object
         for sci in input1["SCI"]:
             # Retrieving the version of this extension
@@ -296,8 +296,8 @@ def add(inputA, inputB):
                     out.append(outdq) 
             except:
                 raise
-    # Check to see if the denominator is of type astrodata.AstroData.AstroData
-    elif isinstance(inB, astrodata.AstroData.AstroData):
+    # Check to see if the denominator is of type astrodata.AstroData
+    elif isinstance(inB, astrodata.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
             # Retrieving the version of this extension
@@ -423,7 +423,7 @@ def sub(inputA, inputB):
             except:
                 raise
             
-    # Check to see if the denominator is of type astrodata.AstroData.AstroData
+    # Check to see if the denominator is of type astrodata.AstroData
     elif isinstance(inB, astrodata.AstroData):
         # Loop through the SCI extensions
         for sci in inA['SCI']:
