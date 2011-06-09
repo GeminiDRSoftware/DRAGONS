@@ -264,7 +264,7 @@ def make_dict(key_list=None, value_list=None):
         ret_dict[key_list[0]] = value_list[0]
     elif len(key_list) > 1 and len(value_list) == 1:
         # There is only one value for the list of keys
-        while i in range (0, len(key_list)):
+        for i in range (0, len(key_list)):
             ret_dict[key_list[i]] = value_list[0]
     elif len(key_list) > 1 and len(value_list) > 1:
         # There is one value for each key. Check that the lists are the same
@@ -277,7 +277,7 @@ def make_dict(key_list=None, value_list=None):
             to all AstroData objects in key_list OR the same number of
             AstroData objects in value_list as there are in key_list"""
             raise Errors.InputError(msg)
-        while i in range (0, len(key_list)):
+        for i in range (0, len(key_list)):
             ret_dict[key_list[i]] = value_list[i]
     return ret_dict
 
