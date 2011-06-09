@@ -10,7 +10,7 @@ from gempy import geminiTools as gt
 from gempy import managers as man
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
-def make_fringe_frame_gmos_image(adinput=None, operation='median', 
+def make_fringe_gmos_image(adinput=None, operation='median', 
                                  suffix='_fringe'):
     """
     This function will create and return a single fringe image from all the 
