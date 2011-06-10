@@ -32,8 +32,17 @@ class OutputExists(AstroDataError):
         if msg == None:
             self.message = "Cannot overwrite existing file."
         else:
-            self.message = "Cannot overwrite existing file, "+ msg
-    
+            self.message = "Cannot overwrite existing file, " + msg
+
+class SingleHDUMemberExcept(AstroDataError):
+    def __init__(self, msg=None):
+        if msg == None:
+            tmpmes = "This member or method can only be called for"
+            tmpmes += " Single HDU AstroData instances"
+            self.message = tmpmes
+        else:
+            self.message = "SingleHDUMember: " + msg     
+
 class CalcError(Error):
     """
     Exception raised for instances when the keyword required for calculation

@@ -3,77 +3,29 @@ __docformat__ = "restructuredtext" #for epydoc
 
 import sys
 import os
+import re
+from datetime import datetime
 from copy import copy, deepcopy
+
 import pyfits
 
 from AstroDataType import *
-
 import Descriptors
 # this gets SCI (== "SCI") etc
 from gemconstants import *
 import Calculator
-
 from astrodata.adutils import arith
 from astrodata import Errors
-
+from adutils.netutil import urlfetch
 try:
     from CalculatorInterface import CalculatorInterface
 except ImportError:
     class CalculatorInterface:
         pass
 
-import re
-from datetime import datetime
-
-from adutils.netutil import urlfetch
-
 verbose = False
 verboseLoadTypes = True
 verbt = False
-
-
-class ADExcept:
-    """This class is an exception class for the Calculator module"""
-    
-    def __init__(self, msg="Exception Raised in AstroData system"):
-        """
-        :param: msg: a string description about why this exception was thrown
-        
-        :type: msg: string
-
-        This constructor accepts a string C{msg} argument
-        which will be printed out by the default exception 
-        handling system, or which is otherwise available to whatever code
-        does catch the exception raised.
-        
-        """
-        self.message = msg
-    def __str__(self):
-        """
-        :returns: string representation of this exception, the self.message member
-        :rtype: string
-        
-        This string operator allows the default exception handling to
-        print the message associated with this exception.
-        """
-        return self.message
-        
-class ADNOTFOUND(ADExcept):
-    pass
-    
-class ADBADARGS(ADExcept):
-    pass
-    
-class ADBADARGUMENT(ADExcept):
-    pass
-    
-class SingleHDUMemberExcept(ADExcept):
-    def __init__(self, msg=None):
-        if msg == None:
-            self.message = "This member can only be called for Single HDU AstroData instances"
-        else:
-            self.message = "SingleHDUMember: "+msg     
-
 
 #FUNCTIONS
 def re_header_keys(rekey, header):
@@ -101,9 +53,6 @@ def re_header_keys(rekey, header):
        retset = None
        
     return retset
-
-class gdExcept:
-    pass
 
 class AstroData(object, CalculatorInterface):
     """
@@ -544,7 +493,9 @@ integrates other functionality.
         elif isinstance(moredata, pyfits.core._AllHDU):
             self.hdulist.append(moredata)
         else:
-            raise ADBADARGUMENT("The 'moredata' argument is of and unsupported type: %s" % str(type(moredata)))
+            message = "The 'moredata' argument is of and unsupported type: "
+            message += str(moredata)
+            raise Errors.AstroDataError(message)
     
     def close(self):
         """The close(..) function will close the HDUList associated with this
@@ -592,17 +543,16 @@ integrates other functionality.
         if type(index) == tuple:
             index = self.get_int_ext(index, hduref=True)
         # print "AD416", type(index), index
-            
         
         if (moredata == None):
             if len(self.hdulist) == 0:
-                self.hdulist.insert(index, pyfits.PrimaryHDU(data = data, header=header))
+                self.hdulist.insert(index, pyfits.PrimaryHDU(data=data, header=header))
             else:
-                self.hdulist.insert(index,pyfits.ImageHDU(data = data, header=header))
+                self.hdulist.insert(index,pyfits.ImageHDU(data=data, header=header))
         elif isinstance(moredata, AstroData):
             for hdu in moredata.hdulist[1:]:
                 self.hdulist.insert(index, hdu)
-                index+=1
+                index += 1
         elif type(moredata) is pyfits.HDUList:
             for hdu in moredata[1:]:
                 self.hdulist.insert(index, hdu)
@@ -610,7 +560,7 @@ integrates other functionality.
         elif isinstance(moredata. pyfits.core._AllHDU):
             self.hdulist.insert(index, moredata)
                
-    def infostr(self, as_html = False):
+    def infostr(self, as_html=False):
         """
         :param as_html: boolean that indicates if the string should be HTML
                        formatted or not
@@ -638,12 +588,11 @@ integrates other functionality.
             for ext in self:
                 rets += "<li>(%s, %s)</li>" % (ext.extname(), str(ext.extver()))
             rets += "</ul>"
-                     
         return rets
         
     def except_if_single(self):
         if len(self.hdulist) != 2:
-            raise SingleHDUMemberExcept()
+            raise Errors.SingleHDUMemberExcept()
             
     def extname(self):
         self.except_if_single()
@@ -656,14 +605,10 @@ integrates other functionality.
             retv = int(retv)
         return retv
         
-
     def get_data(self):
         """
-        :raise: gdExcept if AstroData instance has more than one extension 
-            (not including PHU).
         :return: data array associated with the single extension
         :rtype: pyfits.ndarray
-
 
         The *get_data(..)* member is the function behind the property-style
         "data" member and returns appropriate HDU's data member(s) specifically
@@ -680,26 +625,24 @@ integrates other functionality.
                 # gd is a single-HDU index
                 gd.data = newdata
 
-            # assuming the named extension exists, sd will be a single-HDU AstroData
+            # assuming the named extension exists,
+            # sd will be a single-HDU AstroData
             sd = dataset[("SCI",1)]
         """
         hdl = self.gethdul()
         if len(hdl) == 2:
             retv = hdl[1].data
         else:
-            # print "gd207: %d" % len(hdl)
-            raise ADExcept("get_data must be called on single extension instances")
-            
+            raise Errors.SingleHDUMemberExcept()
         self.relhdul()
-        return retv
 
     def set_data(self, newdata):
         """
         :param newdata: new data objects
         :type newdata: numarray.numarraycore.NumArray
 
-        :raise gdExcept: if AstroData instance has more than one extension 
-            (not including PHU).
+        :raise SingleHDUMemberExcept: if AstroData instance has more than one
+            extension (not including PHU).
 
         This function sets the data member of a data section of an AstroDat
         object, specifically for the case in which the AstroData instance has
@@ -714,8 +657,7 @@ integrates other functionality.
             # note: should we check type of newdata?
             hdl[1].data = newdata
         else:
-            raise gdError()
-            
+            raise SingleHDUMemberExcept()
         self.relhdul()
         return
     
@@ -733,7 +675,8 @@ integrates other functionality.
         :return: header
         :rtype: pyfits.Header
 
-        :raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
+        :raise SingleHDUMemberExcept: Will raise an exception if more
+            than one extension exists. 
             (note: The PHU is not considered an extension in this case)
         
         The get_header(..) function returns the header member for Single-HDU
@@ -751,8 +694,7 @@ integrates other functionality.
                 retv = hdl[1].header
             else:
                 #print "numexts = %d" % len(hdl)
-                raise gdExcept()
-
+                raise SingleHDUMemberExcept()
             self.relhdul()
             return retv
         else: 
@@ -767,18 +709,19 @@ integrates other functionality.
         
         :type header: pyfits.Header
         
-        :param extension: Extension index from which to retrieve header, if None
+        :param extension: Extension index to retrieve header, if None
             or not present then this must be a single extension AstroData
             instance, which contains just the PHU and a single data extension,
             and the data extension's header is returned.
 
         :type extension: int or tuple, pyfits compatible extension index
         
-        :raise gdExcept: Will raise a gdExcept exception if more than one extension exists. 
+        :raise SingleHDUMemberExcept: Will raise an exception if more than one
+            extension exists. 
 
         The set_header(..) function sets the extension header member for single
         extension (which are those that have only one extension plus PHU). This
-        case  is assured when iterating over extensions using AstroData, e.g.::
+        case  is assured when iterating over extensions using AstroData, e.g.:
 
             for gd in dataset[SCI]: 
                 ...
@@ -788,7 +731,7 @@ integrates other functionality.
             if len(hdl) == 2:
                 hdl[1].header = header
             else:
-                raise gdExcept("Not single extension AstroData instance, cannot call without explicit extension index.")
+                raise SingleHDUMemberExcept()
 
             self.relhdul()
         else:
@@ -908,7 +851,8 @@ integrates other functionality.
         if ver == None:
             ver = 1
         if not self.has_single_hdu():
-            raise SingleHDUMemberExcept("ad.setExtname(%s,%s)"%(str(name), str(ver)))
+            message = ("ad.setExtname(%s,%s)"%(str(name), str(ver)))
+            raise Errors.SingleHDUMemberExcept(message)
         
         if True:
             hdu = self.hdulist[1]
@@ -989,7 +933,7 @@ integrates other functionality.
                 self.hdulist = pyfits.HDUList([phu])
             else:
                 if not os.path.exists(source):
-                    raise ADNOTFOUND("Cannot open "+source)
+                    raise IOError("Cannot open " + source)
                 self.filename = source
                 self.__origFilename = source
                 try:
@@ -1098,38 +1042,33 @@ integrates other functionality.
                 if filename == None or filename == self.filename:
                     msg = "Attemt to write out readonly AstroData instance."
                     raise Errors.AstroDataError(msg)
-        
         if rename == None:
             if filename == None:
                 rename = False
             else:
                 rename = True
-            
-
         fname = filename
         hdul = self.gethdul()
         if fname == None:
             if rename == True:
-                raise ADBADARGS("Option rename=True but filename is None")
+                mes = ("Option rename=True but filename is None")
+                raise Errors.AstroDataError(mes)
             fname = self.filename
         else:
             if rename == True:
                 self.filename = fname
-           
-        # by here fname is either the name passed in, or if None, it is self.filename
+        # by here fname is either the name passed in, or if None,
+        #    it is self.filename
         if (fname == None):
             # @@FUTURE:
             # perhaps create tempfile name and use it?
-            raise gdExcept()
-           
-        
+            raise Errors.AstroDataError("fname is None")
         if os.path.exists(fname):
             if clobber:
                 os.remove(fname)
             else:
                 raise Errors.OutputExists(fname)
         hdul.writeto(fname)
-            
     
     def get_hdulist(self):
         """
@@ -1141,13 +1080,13 @@ integrates other functionality.
         """
         self.hdurefcount = self.hdurefcount + 1
         return self.hdulist
-                
     gethdul = get_hdulist # function alias
     
     def release_hdulist(self):
         """
-        This function will release a reference to the HDUList... don't call unless you have called
-        L{get_hdulist} at some prior point. Note, this function is aliased to L{relhdul(..)<relhdul>}.
+        This function will release a reference to the HDUList... don't call 
+        unless you have called L{get_hdulist} at some prior point. 
+        (Note, release_hdulist is aliased to L{relhdul(..)<relhdul>})
         """
         self.hdurefcount = self.hdurefcount - 1
         return
@@ -1155,9 +1094,11 @@ integrates other functionality.
             
     def get_classification_library(self):
         """
-        This function will return a handle to the ClassificationLibrary.  NOTE: the ClassificationLibrary
-        is a singleton, this call will either return the currently extant instance or, if not extant,
+        This function will return a handle to the ClassificationLibrary.  
+        NOTE: the ClassificationLibrary is a singleton, this call will either
+        return the currently extant instance or, if not extant,
         will create the classification library (using the default context).
+        
         :return: A reference to the system classification library
         :rtype: L{ClassificationLibrary}
         """
@@ -1183,7 +1124,6 @@ integrates other functionality.
                 pary.append(typ)
         return pary
 
-    
     def get_types(self, prune = False):
         """
         :param prune: flag which controls 'pruning' the returned type list so that only the
@@ -1218,7 +1158,6 @@ integrates other functionality.
         provided as a service for higher level code, e.g. primitives and scripts
         which make use of the distinction.
         """
-        
         retary = self.discover_types()
         if prune :
             # since there is no particular order to identifying types, I've deced to do this
@@ -1227,8 +1166,6 @@ integrates other functionality.
             #  basic algo: run through types, if one is a supertype of another, 
             #  remove the supertype
             retary = self.prune_typelist(retary)
-            
-        
         return retary
         
     def discover_types(self, all  = False):
@@ -1772,7 +1709,7 @@ integrates other functionality.
 def correlate( *iary):
     """
     :param iary: A list of AstroData instances for which a correlation dictionary
-        will be constructedto produce a correlation dict for
+        will be constructed to produce a correlation dict.
     :type iary: list of AstroData instance
     :returns: a list of tuples containing correlated extensions from the arguments. 
     :rtype: list of tuples
@@ -1796,16 +1733,11 @@ def correlate( *iary):
         with the given (EXTNAME,EXTVER) for that tuple.
     """
     numinputs = len(iary)
-    
     if numinputs < 1:
-        raise gdExcept()
-    
+        raise Errors.AstroDataError("Inputs for correlate method < 1")
     outlist = []
-    
     outrow = []
-    
     baseGD = iary[0]
-    
     for extinbase in baseGD:
         try:
             extname = extinbase.header["EXTNAME"]
@@ -1815,8 +1747,7 @@ def correlate( *iary):
             extver  = extinbase.header["EXTVER"]
         except:
             extver  = 0
-            
-        outrow = [ extinbase ]
+        outrow = [extinbase]
         #print "gd610: (%s,%d)" % (extname,extver)
         for gd in iary[1:]:
             correlateExt = gd[(extname, extver)]
@@ -1888,7 +1819,7 @@ def prep_output(input_ary = None, name = None, clobber = False):
         observation, configurable by the Astrodata Structures system. 
     """ 
     if input_ary == None: 
-        raise gdExcept() 
+        raise Errors.AstroDataError("prep_output input is None") 
         return None
 
     if type(input_ary) != list:
