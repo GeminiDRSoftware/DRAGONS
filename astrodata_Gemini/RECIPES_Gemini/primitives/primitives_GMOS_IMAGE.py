@@ -59,6 +59,14 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
 
     def makeFringe(self, rc):
+        """
+        This primitive makes a fringe frame by masking out sources
+        in the science frames and stacking them together.  It calls 
+        gifringe to do so, so works only for GMOS imaging currently.
+        When called in the context of a science reduction script,
+        separateFringe should be run first, then makeFringe run with 
+        the parameter stream="fringe".
+        """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -72,13 +80,39 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         'frames are required. Not making fringe frame.')
             adoutput = adinput
         else:
-            # Call the make_fringe_gmos_image user level function
-            adoutput = pp.make_fringe_gmos_image(adinput=adinput,
-                                                      suffix=rc["suffix"],
-                                                      operation=rc["operation"])
+            # Call the make_fringe_image_gmos user level function
+            adoutput = pp.make_fringe_image_gmos(adinput=adinput,
+                                                 suffix=rc["suffix"],
+                                                 operation=rc["operation"])
 
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput)
+        
+        yield rc
+
+    def separateFringe(self,rc):
+        """
+        This primitive sends images to be used for making the fringe
+        frame into the "fringe" stream.  Currently, all it does is report
+        the main inputs (all science frames) to the fringe stream.  It may
+        be desirable later to include handling for frames taken solely
+        for the purpose of making fringe frames (similar to the way sky
+        frames are handled).
+        """
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "separateFringe", "starting"))
+
+        # Get input frames
+        adinput = rc.get_inputs(style="AD")
+
+        # Report them to both the fringe stream and the main stream
+        rc.report_output(adinput,stream="fringe")
+        rc.report_output(adinput,stream="main")
         
         yield rc
