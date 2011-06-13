@@ -5,24 +5,12 @@
 # appended to the name of the first input file.
 
 prepare
-
 #addDQ
-#addVAR(readnoise=True)
-
+#addVAR(read_noise=True)
 overscanCorrect
-
 biasCorrect
-
 #aduToElectrons
-
-#addVAR(poisson=True)
-
+#addVAR(poisson_noise=True)
 flatCorrect
-
-#showInputs
-#addToList
-
 makeFringe
-
-#writeOutputs
-storeProcessedFringe(clob=True)
+storeProcessedFringe
