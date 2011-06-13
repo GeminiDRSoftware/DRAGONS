@@ -5,13 +5,13 @@ import os, sys
 import time
 from datetime import datetime
 from astrodata import Errors
-from gempy import managers as man
+from astrodata.adutils import gemLog
+from gempy import geminiTools as gt
 
-def measure_iq(adInputs, function='both', display=True, qa=True,
-               keepDats=False):
+def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True):
     """
     This function will detect the sources in the input images and fit
-    both Gaussian and Moffat models to their profiles and calculate the 
+    either Gaussian or Moffat models to their profiles and calculate the 
     Image Quality and seeing from this.
     
     Since the resultant parameters are formatted into one nice string and 
@@ -21,86 +21,70 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
     {adIn1.filename:formatted results string for adIn1, 
     adIn2.filename:formatted results string for adIn2,...}
     
-    There are also .dat files that result from this function written to the 
-    current working directory under the names 'measure_iq'+adIn.filename+'.dat'.
-    ex: input filename 'N20100311S0090.fits', 
-    .dat filename 'measure_iqN20100311S0090.dat'
-    
     NOTE:
     Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
+    (ie, no log file, no messages to screen) will be retrieved/created
+    and used within this function.
     
     Warning:
-    ALL inputs of adInputs must have either 1 SCI extension, indicating they 
+    ALL inputs of adinput must have either 1 SCI extension, indicating they 
     have been mosaic'd, or 3 like a normal un-mosaic'd GMOS image.
     
-    :param adInputs: Astrodata inputs to have their image quality measured
-    :type adInputs: Astrodata objects, either a single or a list of objects
+    :param adinput: Astrodata inputs to have their image quality measured
+    :type adinput: Astrodata objects, either a single or a list of objects
     
-    :param function: Function for centroid fitting
-    :type function: string, can be: 'moffat','gauss' or 'both'; 
-                    Default 'both'
+    :param centroid_function: Function for centroid fitting
+    :type centroid_function: string, can be: 'moffat','gauss' or 'both'; 
+                    Default: 'moffat'
                     
     :param display: Flag to turn on displaying the fitting to ds9
     :type display: Python boolean (True/False)
-                   Default: True
+                   Default: False
                   
-    :param qa: flag to use a grid of sub-windows for detecting the sources in 
-               the image frames, rather than the entire frame all at once.
+    :param qa: flag to use a limited number of sources to estimate the IQ
+               NOTE: in the future, this parameters should be replaced with
+               a max_sources parameter that determines how many sources to
+               use.
     :type qa: Python boolean (True/False)
               default: True
     
-    :param keepDats: flag to keep the .dat files that provide detailed results 
-                     found while measuring the input's image quality.
-    :type keepDats: Python boolean (True/False)
-                    default: False
-    
-    :param outNames: filenames of output(s)
-    :type outNames: String, either a single or a list of strings of same length
-                    as adInputs.
-    
-    :param suffix: string to add on the end of the input filenames 
-                    (or outNames if not None) for the output filenames.
-    :type suffix: string
-    
     """
-    
-    # Instantiate ScienceFunctionManager object
-    sfm = man.ScienceFunctionManager(adInputs, None, 'tmp', 
-                                      funcName='measure_iq') 
-    # Perform start up checks of the inputs, prep/check of outnames, and get log
-    # NOTE: outNames are not needed, but sfm.startUp creates them automatically.
-    adInputs, outNames, log = sfm.startUp()
-    
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    keyword = "MEASREIQ"
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
     
     try:
-        # Importing getiq module to perform the source detection and IQ
+        # Import the getiq module to perform the source detection and IQ
         # measurements of the inputs
         from iqtool.iq import getiq
         
-        # Initializing a total time sum variable for logging purposes 
+        # Initialize a total time sum variable for logging purposes 
         total_IQ_time = 0
         
-        # Creating dictionary for output strings to be returned in
-        outDict = {}
-        
-        # Loop through the inputs to perform the non-linear and saturated
-        # pixel searches of the SCI frames to update the BPM frames into
-        # full DQ frames. 
-        for ad in adInputs:                     
-            # Writing the input to disk under a temp name in the current 
-            # working directory for getiq to use to be deleted after getiq
-            tmpWriteName = 'measure_iq'+os.path.basename(ad.filename)
-            log.fullinfo('The inputs to measureIQ must be in the'+
-                         ' current working directory for it to work '+\
-                         'correctly, so writting it temperarily to file '+
+        # Loop over each input AstroData object
+        for ad in adinput:
+            # Write the input to disk under a temp name in the current 
+            # working directory for getiq to use (to be deleted after getiq)
+            tmpWriteName = 'tmp_measure_iq'+os.path.basename(ad.filename)
+            log.fullinfo('Writing input temporarily to file '+
                          tmpWriteName)
             ad.write(tmpWriteName, rename=False)
             
             # Automatically determine the 'mosaic' parameter for gemiq
             # if there are 3 SCI extensions -> mosaic=False
             # if only one -> mosaic=True, else raise error
+            # NOTE: this may be a problem for the new GMOS-N CCDs
             numExts = ad.count_exts('SCI')
             if numExts==1:
                 mosaic = True
@@ -116,70 +100,67 @@ def measure_iq(adInputs, function='both', display=True, qa=True,
             
             log.debug('Calling getiq.gemiq for input '+ad.filename)
             
-            # Calling the gemiq function to detect the sources and then
+            # Call the gemiq function to detect the sources and then
             # measure the IQ of the current image 
-            iqdata = getiq.gemiq(tmpWriteName, function=function, 
-                                  verbose=True, display=display, 
-                                  mosaic=mosaic, qa=qa,
-                                  debug=True)####
+            iqdata = getiq.gemiq(tmpWriteName, function=centroid_function, 
+                                 display=display, mosaic=mosaic, qa=qa,
+                                 verbose=False, debug=False)
             
             # End time for measuring IQ of current file
             et = time.time()
             total_IQ_time = total_IQ_time + (et - st)
-            # Logging the amount of time spent measuring the IQ 
+            # Log the amount of time spent measuring the IQ 
             log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
             log.fullinfo('~'*45, category='format')
             
-            # If input was writen to temp file on disk, delete it
+            # If input was written to temp file on disk, delete it
             if os.path.exists(tmpWriteName):
                 os.remove(tmpWriteName)
-                log.fullinfo('The temporarily written to disk file, '+
-                             tmpWriteName+ ', was removed from disk.')
+                log.fullinfo('Temporary file ' +
+                             tmpWriteName+ ' removed from disk.')
             
-            # Deleting the .dat file from disk if requested
-            if not keepDats:
-                datName = os.path.splitext(tmpWriteName)[0]+'.dat'
-                os.remove(datName)
-                log.fullinfo('The temporarily written to disk file, '+
-                             datName+ ', was removed from disk.')
+            # Delete the .dat file from disk
+            # NOTE: this information should be stored in the OBJCAT
+            datName = os.path.splitext(tmpWriteName)[0]+'.dat'
+            os.remove(datName)
+            log.fullinfo('Temporary file '+
+                         datName+ ' removed from disk.')
                 
             # iqdata is list of tuples with image quality metrics
             # (ell_mean, ellSig, fwhmMean, fwhmSig)
-            # First check if it is empty (ie. gemiq failed in someway)
+            # First check if it is empty (ie. gemiq failed in some way)
             if len(iqdata) == 0:
                 log.warning('Problem Measuring IQ Statistics, '+
                             'none reported')
             # If it all worked, then format the output and log it
             else:
-                # Formatting this output for printing or logging                
+                # Format this output for printing or logging                
                 fnStr = 'Filename:'.ljust(19)+ad.filename
-                emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
-                esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
                 fmStr = 'FWHM Mean:'.ljust(19)+str(iqdata[0][2])
                 fsStr = 'FWHM Sigma:'.ljust(19)+str(iqdata[0][3])
-                sStr = 'Seeing:'.ljust(19)+str(iqdata[0][2])
-                psStr = 'PixelScale:'.ljust(19)+str(ad.pixel_scale()[('SCI',1)])
-                vStr = 'VERSION:'.ljust(19)+'None' #$$$$$ made on ln12 of ReductionsObjectRequest.py, always 'None' it seems.
-                tStr = 'TIMESTAMP:'.ljust(19)+str(datetime.now())
-                # Create final formated string
-                finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'\
-                                +fmStr+'\n'+fsStr+'\n'+sStr+'\n'+psStr+\
-                                '\n'+vStr+'\n'+tStr+'\n'+'-'*45
+                emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
+                esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
+                # Create final formatted string
+                finalStr = '-'*45+'\n'+fnStr+'\n'+fmStr+'\n'+fsStr+'\n'\
+                                +emStr+'\n'+esStr+'\n'+'-'*45
                 # Log final string
                 log.stdinfo(finalStr, category='IQ')
                 
-                # appending formated string to the output dictionary
-                outDict[ad.filename] = finalStr
-                
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=keyword)
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
         # Logging the total amount of time spent measuring the IQ of all
         # the inputs
         log.debug('Total measureIQ time: '+repr(total_IQ_time), 
                     category='IQ')
         
-        #returning complete dictionary for use by the user if desired
-        return outDict
+        # Return the list of output AstroData objects
+        return adoutput_list
     except:
-        # logging the exact message from the actual exception that was raised
-        # in the try block. Then raising a general ScienceError with message.
+        # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
