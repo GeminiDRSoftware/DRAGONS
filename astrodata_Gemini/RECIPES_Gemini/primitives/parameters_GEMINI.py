@@ -81,15 +81,15 @@
         },
     },
  "measureIQ":{
-    "function":{
-        # Default can be moffat, gauss or both
-        "default"       : "both",
+    "centroid_function":{
+        # Can be moffat, gauss or both
+        "default"       : "moffat",
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : False,
         },
     "display":{
-        "default"       : True,
+        "default"       : False,
         "recipeOverride": True,
         "type"          : "bool",
         "userOverride"  : True,

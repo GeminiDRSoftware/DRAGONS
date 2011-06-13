@@ -405,7 +405,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             # Call the measure_iq user level function
-            ad = qa.measure_iq(adinput=ad, function=rc["function"],
+            ad = qa.measure_iq(adinput=ad, 
+                               centroid_function=rc["centroid_function"],
                                display=rc["display"], qa=rc["qa"])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
