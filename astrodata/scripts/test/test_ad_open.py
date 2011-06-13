@@ -62,9 +62,9 @@ def checkad(ad):
     
     #check data type is numpy array
     for i in range(len(ad)):
-        eq_(type(ad.hdulist[i+1].data), numpy.ndarray)
-        print('\ttype(ad.hdulist[%s].data) = numpy.ndarray' % (i+1))
-
+        typeofdata = str(type(ad.hdulist[i+1].data))
+        print('\ttype(ad.hdulist[%s].data) = %s' % ((i+1), typeofdata ))
+    
     #check imageHdu propagation
     print('\tcheck data propagation')
     for i in range(len(ad)):
@@ -117,22 +117,65 @@ def ad_open_test4():
     hdulist_sef.close()
 
 def ad_open_test5():
-    '''ad_open_test5 -open ad instance with pyfits header and 3 ext MEF
+    '''ad_open_test5 -open null ad instance  
     '''
-    raise SkipTest
-    print('\n\tTest input file: %s' % mef_file)
-    hdulist_mef = pyfits.open(mef_file)
-    print('\thdulist_mef = pyfits.open(%s)' % mef_file)
-    header = hdulist_mef[0].header
-    print('\theader = hdulist_mef[1].header')
-    data = hdulist_mef[1].data
-    print('\tdata = hdulist_mef[1].data')
+    ad = AstroData()
+    print('\tad = AstroData()')
+    checkad(ad)
+
+def ad_open_test6():
+    '''ad_open_test6 -open ad with phu (pyfits PrimaryHDU from single ext fits)
+    '''
+    print('\n\tTest input file: %s' % sef_file)
+    hdulist_sef = pyfits.open(sef_file)
+    print('\thdulist_sef = pyfits.open(%s)' % sef_file)
+    ad = AstroData(phu=hdulist_sef[0])
+    print('\tad = AstroData(phu=hdulist_sef[0])')
+    checkad(ad)
+    hdulist_sef.close()
+
+def ad_open_test7():
+    '''ad_open_test7 -open ad with phu = PrimaryHDU.header (single ext fits)
+    '''
+    print('\n\tTest input file: %s' % sef_file)
+    hdulist_sef = pyfits.open(sef_file)
+    print('\thdulist_sef = pyfits.open(%s)' % sef_file)
+    ad = AstroData(phu=hdulist_sef[0].header)
+    print('\tad = AstroData(phu=hdulist_sef[0].header)')
+    checkad(ad)
+    hdulist_sef.close()
+
+def ad_open_test8():
+    '''ad_open_test8 -open ad with phu, header, and data (single ext fits)
+    '''
+    print('\n\tTest input file: %s' % sef_file)
+    hdulist_sef = pyfits.open(sef_file)
+    print('\thdulist_sef = pyfits.open(%s)' % sef_file)
+    phu = hdulist_sef[0]
+    print('phu = hdulist_sef[0]')
+    header = hdulist_sef[1].header
+    print('header = hdulist_sef[1].header')
+    data = hdulist_sef[1].data
+    print('data = hdulist_sef[1].data')
+    ad = AstroData(phu=phu, header=header, data=data)
+    print('\tad = AstroData(phu=phu, header=header, data=data)')
+    checkad(ad)
+    hdulist_sef.close()
+
+def ad_open_test9():
+    '''ad_open_test9 -open ad with header and data (no phu, single ext fits)
+    '''
+    print('\n\tTest input file: %s' % sef_file)
+    hdulist_sef = pyfits.open(sef_file)
+    print('\thdulist_sef = pyfits.open(%s)' % sef_file)
+    header = hdulist_sef[1].header
+    print('header = hdulist_sef[1].header')
+    data = hdulist_sef[1].data
+    print('data = hdulist_sef[1].data')
     ad = AstroData(header=header, data=data)
     print('\tad = AstroData(header=header, data=data)')
-    #ad.append(hdulist_mef[3].data)
-    #ad.insert(hdulist_mef[2].data, 1)
     checkad(ad)
-    hdulist_mef.close()
+    hdulist_sef.close()
 
 
 
