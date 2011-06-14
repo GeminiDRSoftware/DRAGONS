@@ -616,21 +616,25 @@ integrates other functionality.
         quite minimal.
         """
         if not as_html:
-            rets = "\n<ad> = current astrodata instance"
-            rets += "\n<ad>.filename = %s" % str(self.filename)
+            rets = ""
+            rets += "<ad>.filename: %s" % str(self.filename)
+            rets += "\n<ad>.mode: %s" % str(self.mode)
+            rets += "\n<ad>.phu: Objid=%s," % str(id(self.phu))
+            rets += " Type=%s" % str(type(self.hdulist))
+            rets += "\nNo. Name Ver     ObjID\t\t Type(<ad>[No.].hdulist[1])"
             count = 0
-            rets += "\nNo. (Name,Ver) \t ObjID\t\tType(ext)"
             for ext in self:
                 if ext.extname() is None and ext.extver() is None:
                     rets += "\n\t* There are no extensions *"
                 else:
-                    rets += "\n%(ct)s   ('%(nm)s', %(vr)s)\t%(id)s\t%(h)s" % \
+                    rets += "\n%(ct)s   %(nm)s   %(vr)s\t%(id)s\t%(h)s" % \
                         {"ct":str(count),
                         "nm":str(ext.extname()),
                         "vr":str(ext.extver()),
                         "id":id(ext.hdulist[1]),
                         "h":str(ext.hdulist[1])}
                 count += 1
+            rets += "\n\n<ad>.hdulist.info()"
         else:
             rets="<b>Extension List</b>: %d in file" % len(self)
             rets+="<ul>"
