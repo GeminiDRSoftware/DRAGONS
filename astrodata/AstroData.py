@@ -9,6 +9,7 @@ from copy import copy, deepcopy
 
 import pyfits
 
+import astrodata
 from AstroDataType import *
 import Descriptors
 # this gets SCI (== "SCI") etc
@@ -600,7 +601,7 @@ integrates other functionality.
         elif isinstance(moredata. pyfits.core._AllHDU):
             self.hdulist.insert(index, moredata)
                
-    def infostr(self, as_html=False):
+    def infostr(self, as_html=False, verbose=True):
         """
         :param as_html: boolean that indicates if the string should be HTML
                        formatted or not
@@ -615,13 +616,21 @@ integrates other functionality.
         quite minimal.
         """
         if not as_html:
-            rets = ""
-            rets += self.filename+"\n"
+            rets = "\n<ad> = current astrodata instance"
+            rets += "\n<ad>.filename = %s" % str(self.filename)
+            count = 0
+            rets += "\nNo. (Name,Ver) \t ObjID\t\tType(ext)"
             for ext in self:
-                rets += "\tid of (%(nam)s,%(ver)s) = %(id)s\n" % {
-                    "nam":str(ext.extname()),
-                    "ver":str(ext.extver()),
-                    "id":id(ext.hdulist[1])}
+                if ext.extname() is None and ext.extver() is None:
+                    rets += "\n\t* There are no extensions *"
+                else:
+                    rets += "\n%(ct)s   ('%(nm)s', %(vr)s)\t%(id)s\t%(h)s" % \
+                        {"ct":str(count),
+                        "nm":str(ext.extname()),
+                        "vr":str(ext.extver()),
+                        "id":id(ext.hdulist[1]),
+                        "h":str(ext.hdulist[1])}
+                count += 1
         else:
             rets="<b>Extension List</b>: %d in file" % len(self)
             rets+="<ul>"
@@ -675,6 +684,7 @@ integrates other functionality.
         else:
             raise Errors.SingleHDUMemberExcept()
         self.relhdul()
+        return retv
 
     def set_data(self, newdata):
         """
@@ -699,7 +709,7 @@ integrates other functionality.
         else:
             raise SingleHDUMemberExcept()
         self.relhdul()
-        return
+        return 
     
     data = property(get_data, set_data, None, """
             The data property can only be used for single-HDU AstroData
@@ -1586,40 +1596,31 @@ integrates other functionality.
         self.relhdul()
         return 
    
-    def info(self, pyraf_version = False):
-        """The info(..) function prints self.infostr() unless pyraf_version is
-        set to true the pyfits.HDUList.info(..) function
-        on this instance's "hdulist" member.  This function outputs information
-        about the datasets HDUList to standard out. The output can be misleading
-        as it displays info about the HDUList, e.g. the integer
-        indexes given are relative to the HDUList and not the AstroData
-        instance. The AstroData aware verson of this function is AstroData.infostr(..)
-        which returns the report as a string.
+    def info(self, verbose=True):
+        """The info(..) function prints self.infostr() and 
+        pyfits.HDUList.info unless verbose=False
         AstroData.info() is maintained for convienience and low level debugging.
         """
-        if pyraf_version:
+        print self.infostr()       
+        if verbose:
             self.hdulist.info()
-        else:
-            print self.infostr()       
+
     def display_id(self):
         import IDFactory
         return IDFactory.generate_stackable_id(self)
- 
-        
-        
+    
     # MID LEVEL MEF INFORMATION
-    #
     def count_exts(self, extname):
         """
         :param extname: the name of the extension, equivalent to the
-                        value associated with the "EXTNAME" key in the extension header.
+                       value associated with the "EXTNAME" key in the extension 
+                       header.
         :type extname: string
         :returns: number of extensions of that name
         :rtype: int
         
         The count_exts(..) function counts the extensions of a given name
         (as stored in the HDUs "EXTVER" header). 
-
         """
         hdul = self.gethdul()
         maxl = len(hdul)
