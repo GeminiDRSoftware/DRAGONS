@@ -143,6 +143,13 @@ class PrimitiveError(Error):
     """
     message = "An error occurred during a primitive"
 
+class ReduceError(Error):
+    """
+    Exception raised for general errors in reduce.py
+    """
+    message = "An error occurred in reduce.py"
+    
+
 class ScienceError(Error):
     """
     Exception raised for general errors inside of a user level 'science'
