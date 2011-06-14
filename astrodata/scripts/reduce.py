@@ -40,7 +40,7 @@ a = datetime.now()
 
 import astrodata
 from astrodata import RecipeManager
-from astrodata.AstroData import ADExcept, ADNOTFOUND
+from astrodata import Errors
 from astrodata.AstroData import AstroData
 from astrodata.AstroDataType import get_classification_library
 from astrodata.RecipeManager import ReductionContext
@@ -653,7 +653,8 @@ else:
         try:
             ad = AstroData(inp)
             nl.append(ad)
-        except ADNOTFOUND:
+        except:
+            # note: should we raise an exception here?
             err = "Can't Load Dataset: %s" % inp
             log.warning(err)
             
