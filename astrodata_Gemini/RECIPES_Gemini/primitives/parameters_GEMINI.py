@@ -47,6 +47,66 @@
         "userOverride"  : True,
         },
     },
+ "alignToReferenceImage":{
+    "suffix":{
+        # String to be post pended to the output of alignToReferenceImage
+        "default"       : "_align",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "interpolator":{
+        "default":"linear",
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"str",
+        "uiLevel":"UIBASIC"
+        },
+    },
+"correctWCSToReferenceImage":{
+    "suffix":{
+        # String to be post pended to the output of correctWCSToReferenceImage
+        "default"       : "_register",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "method":{
+        "default":"sources",
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"str",
+        "uiLevel":"UIBASIC"
+        },
+    "fallback":{
+        "default":None,
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"str",
+        "uiLevel":"UIBASIC"
+        },
+    "cull_sources":{
+        "default":False,
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"bool",
+        "uiLevel":"UIBASIC"
+        },
+    "rotate":{
+        "default":False,
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"bool",
+        "uiLevel":"UIBASIC"
+        },
+    "scale":{
+        "default":False,
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"bool",
+        "uiLevel":"UIBASIC"
+        },
+   },
  "divideByFlat":{
     "suffix":{
         # String to be post pended to the output of divideByFlat

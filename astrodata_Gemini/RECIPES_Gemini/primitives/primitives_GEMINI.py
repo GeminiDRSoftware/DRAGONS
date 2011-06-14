@@ -9,6 +9,8 @@ from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 from gempy.science import preprocessing as pp
+from gempy.science import registration as rg
+from gempy.science import resample as rs
 from gempy.science import qa
 from gempy.science import stack as sk
 from gempy.science import standardization as sdz
@@ -27,6 +29,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         return rc
     init.pt_hide = True
     
+
     def addDQ(self, rc):
         """
         This primitive will create a numpy array for the data quality 
@@ -177,6 +180,59 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def alignToReferenceImage(self, rc):
+        """
+        This primitive applies the transformation encoded in the input images
+        WCSs to align them with a reference image, in reference image pixel
+        coordinates.  The reference image is taken to be the first image in
+        the input list.
+
+        By default, the transformation into the reference frame is done via
+        interpolation.  The interpolator parameter specifies the interpolation 
+        method.  The options are nearest-neighbor, bilinear, or nth-order 
+        spline, with n = 2, 3, 4, or 5.  If interpolator is None, 
+        no interpolation is done: the input image is shifted by an integer
+        number of pixels, such that the center of the frame matches up as
+        well as possible.  The variance plane, if present, is transformed in
+        the same way as the science data.  
+
+        The data quality plane, if present, must be handled a little
+        differently.  DQ flags are set bit-wise, such that each pixel is the 
+        sum of any of the following values: 0=good pixel,
+        1=bad pixel (from bad pixel mask), 2=nonlinear, 4=saturated, etc.
+        To transform the DQ plane without losing flag information, it is
+        unpacked into separate masks, each of which is transformed in the same
+        way as the science data.  A pixel is flagged if it had greater than
+        1% influence from a bad pixel.  The transformed masks are then added
+        back together to generate the transformed DQ plane.
+        
+        In order not to lose any data, the output image arrays (including the
+        reference image's) are expanded with respect to the input image arrays.
+        The science and variance data arrays are padded with zeros; the DQ
+        plane is padded with ones.  
+
+        The WCS keywords in the headers of the output images are updated
+        to reflect the transformation.
+
+        :param interpolator: type of interpolation desired
+        :type interpolator: string, possible values are None, 'nearest', 
+                            'linear', 'spline2', 'spline3', 'spline4', 
+                            or 'spline5'
+
+        :param suffix: string to add on the end of the input filenames to 
+                       generate output filenames
+        :type suffix: string
+        
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        log.debug(gt.log_message("primitive", "alignToReferenceImage", 
+                                 "starting"))
+        adoutput_list = rs.align_to_reference_image(
+                                         adinput=rc.get_inputs(style='AD'),
+                                         interpolator=rc['interpolator'])
+        rc.report_output(adoutput_list)
+        yield rc
+
     def clearCalCache(self, rc):
         # print "pG61:", rc.calindfile
         rc.persist_cal_index(rc.calindfile, newindex={})
@@ -192,6 +248,107 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
      
+    def correctWCSToReferenceImage(self, rc):
+        """ 
+        This primitive registers images to a reference image by correcting
+        the relative error in their world coordinate systems.  The function
+        uses points of reference common to the reference image and the
+        input images to fit the input WCS to the reference one.  The fit
+        is done by a least-squares minimization of the difference between
+        the reference points in the input image pixel coordinate system.
+        This function is intended to be followed by the align_to_reference_image
+        function, which applies the relative transformation encoded in the
+        WCS to transform input images into the reference image pixel
+        coordinate system.
+        
+        The primary registration method is intended to be by direct mapping
+        of sources in the image frame to correlated sources in the reference
+        frame. This method fails when there are no correlated sources in the
+        field, or when the WCSs are very far off to begin with.  As a back-up
+        method, the user can try correcting the WCS by the shifts indicated 
+        in the POFFSET and QOFFSET header keywords (option fallback='header'), 
+        or by hand-selecting common points of reference in an IRAF display
+        (option fallback='user').  By default, only the direct method is
+        attempted, as it is expected that the relative WCS will generally be
+        more correct than either indirect method.  If the user prefers not to
+        attempt direct mapping at all, they may set method to either 'user'
+        or 'header'.
+
+        In order to use the direct mapping method, sources must have been
+        detected in the frame and attached to the AstroData instance in an 
+        OBJCAT extension.  This can be accomplished via the detectSources
+        primitive.  Running time is optimal, and sometimes the solution is 
+        more robust, when there are not too many sources in the OBJCAT.  Try
+        running detectSources with threshold=20.  The solution may also be
+        more robust if sub-optimal sources are rejected from the set of 
+        correlated sources (use option cull_sources=True).  This option may
+        substantially increase the running time if there are many sources in
+        the OBJCAT.
+
+        It is expected that the relative difference between the WCSs of 
+        images to be combined should be quite small, so it may not be necessary
+        to allow rotation and scaling degrees of freedom when fitting the image
+        WCS to the reference WCS.  However, if it is desired, the options 
+        rotate and scale can be used to allow these degrees of freedom.  Note
+        that these options refer to rotation/scaling of the WCS itself, not the
+        images.  Significant rotation and scaling of the images themselves 
+        will generally already be encoded in the WCS, and will be corrected for
+        when the images are aligned.
+
+        The WCS keywords in the headers of the output images are updated
+        to contain the optimal registration solution.
+
+        Log messages will go to a 'main' type logger object, if it exists.
+        or a null logger (ie. no log file, no messages to screen) if it does 
+        not.
+
+        :param method: method to use to generate reference points. Options
+                       are 'sources' to directly map sources from the input
+                       image to the reference image, 'user' to select 
+                       reference points by cursor from an IRAF display, 
+                       or 'header' to generate reference points from the 
+                       POFFSET and QOFFSET keywords in the image headers.
+        :type method: string, either 'sources', 'user', or 'header'
+        
+        :param fallback: back-up method for generating reference points.
+                         if the primary method fails.  The 'sources' option
+                         cannot be used as the fallback.
+        :type fallback: string, either 'user' or 'header'.  
+        
+        :param cull_sources: flag to indicate whether sub-optimal sources 
+                             should be rejected before attempting a direct
+                             mapping. If True, sources that are saturated, 
+                             not well-fit by a Gaussian, too broad, or too
+                             elliptical will be eliminated from the
+                             list of reference points.
+        :type cull_sources: bool
+    
+        :param rotate: flag to indicate whether the input image WCSs should
+                       be allowed to rotate with respect to the reference image
+                       WCS
+        :type rotate: bool
+
+        :param scale: flag to indicate whether the input image WCSs should
+                      be allowed to scale with respect to the reference image
+                      WCS.  The same scale factor is applied to all dimensions.
+        :type scale: bool
+
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+        log.debug(gt.log_message("primitive", "correctWCSToReferenceImage", 
+                                 "starting"))
+        
+        adoutput_list = rg.correct_wcs_to_reference_image(
+                                          adinput=rc.get_inputs(style='AD'),
+                                          method=rc['method'], 
+                                          fallback=rc['fallback'],
+                                          cull_sources=rc['cull_sources'],
+                                          rotate=rc['rotate'], 
+                                          scale=rc['scale'])
+        rc.report_output(adoutput_list)
+      
+        yield rc
+
     def crashReduce(self, rc):
         raise "Crashing"
         yield rc
