@@ -683,7 +683,7 @@ integrates other functionality.
                 rets += "\nFor this reason there are many aliases, which are"
                 rets += "\nlisted here for a 3 ext MEF."
                 rets += "\n\n\tName Mapping for Primary and Sub-data AD"
-                rets += "\n\nad.phu == ad.hulist[0]"
+                rets += "\n\nad.phu == ad.hdulist[0]"
                 rets += "\n"+s+"== ad[0].hdulist[0] == ad('SCI', 1).hdulist[0]"    
                 rets += "\n"+s+"== ad[1].hdulist[0] == ad('SCI', 2).hdulist[0]"    
                 rets += "\n"+s+"== ad[2].hdulist[0] == ad('SCI', 3).hdulist[0]"    
