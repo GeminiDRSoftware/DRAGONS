@@ -618,6 +618,8 @@ integrates other functionality.
         """
         if not as_html:
             hdulisttype = ""
+            
+            #Check basic structure of ad
             if isinstance(self, astrodata.AstroData):
                 selftype = "AstroData"
             if isinstance(self.hdulist, pyfits.core.HDUList):
@@ -627,6 +629,8 @@ integrates other functionality.
             if isinstance(self.phu.header, pyfits.core.Header):
                 phuHeaderType = "Header"
             rets = ""
+            
+            # Create Primary AD info
             rets += "\nFilename: %s" % str(self.filename)
             rets += "\n Obj. ID: %s" % str(id(self))
             rets += "\n    Type: %s" % selftype
@@ -642,31 +646,34 @@ integrates other functionality.
             for ext in self:
                 if len(self) == 1:
                     count = ext.extver() - 1
-                if ext.extname() is None and ext.extver() is None:
+                if ext.extname() is None:
                     rets += "\n\t* There are no extensions *"
                 else:
-                    extType = "Unknown"
+                    # Check hdulist instances
+                    extType = ""
                     if isinstance(ext.hdulist[1], pyfits.core.ImageHDU):
                         extType = "ImageHDU"
-                    extHeaderType = "Unknown"
+                    extHeaderType = ""
                     if isinstance(ext.hdulist[1].header, pyfits.core.Header):
                         extHeaderType = "Header"
-                    extDataType = "Unknown"
+                    extDataType = ""
                     if isinstance(ext.hdulist[1].data, numpy.ndarray):
                         extDataType = "ndarray"
-                    rets += "\n[%(ct)s] ('%(nm)s', %(vr)s)\t   %(id)s\t%(h)s" % \
-                       {"ct":str(count),
-                        "nm":str(ext.extname()),
-                        "vr":str(ext.extver()),
-                        "id":id(ext.hdulist[1]),
-                        "h":extType}
-                    rets +="\n\t.header\t   %s\t%s" % \
-                        (id(ext.hdulist[1].header), extHeaderType)  
-                    rets +="\n\t.data\t   %s\t%s" % \
-                        (id(ext.hdulist[1].data), extDataType)
+                    if ext.hdulist[1].data is None:
+                        extDataType = "None"
+                    
+                    # Create sub-data info lines
+                    rets += "\n[%s]  ('%s', %s)\t" % (str(count), 
+                        str(ext.extname()), str(ext.extver()))
+                    rets += "   %s\t%s" % (id(ext.hdulist[1]), extType)
+                    if extType == "ImageHDU":
+                        rets +="\n\t.header\t   %s\t%s" % \
+                            (id(ext.hdulist[1].header), extHeaderType)  
+                        rets +="\n\t.data\t   %s\t%s" % \
+                            (id(ext.hdulist[1].data), extDataType)
                 count += 1
             if verbose:
-                rets += "\n\n<ad>.hdulist.info()"
+                rets += "\n\n<AD>.hdulist.info()"
         else:
             rets="<b>Extension List</b>: %d in file" % len(self)
             rets+="<ul>"
