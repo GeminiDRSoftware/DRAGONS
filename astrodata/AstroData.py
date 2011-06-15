@@ -8,6 +8,7 @@ from datetime import datetime
 from copy import copy, deepcopy
 
 import pyfits
+import numpy
 
 import astrodata
 from AstroDataType import *
@@ -601,7 +602,7 @@ integrates other functionality.
         elif isinstance(moredata. pyfits.core._AllHDU):
             self.hdulist.insert(index, moredata)
                
-    def infostr(self, as_html=False, verbose=True):
+    def infostr(self, as_html=False, verbose=False):
         """
         :param as_html: boolean that indicates if the string should be HTML
                        formatted or not
@@ -616,25 +617,56 @@ integrates other functionality.
         quite minimal.
         """
         if not as_html:
+            hdulisttype = ""
+            if isinstance(self, astrodata.AstroData):
+                selftype = "AstroData"
+            if isinstance(self.hdulist, pyfits.core.HDUList):
+                hdulisttype = "HDUList"
+            if isinstance(self.phu, pyfits.core.PrimaryHDU):
+                phutype = "PrimaryHDU"
+            if isinstance(self.phu.header, pyfits.core.Header):
+                phuHeaderType = "Header"
             rets = ""
-            rets += "<ad>.filename: %s" % str(self.filename)
-            rets += "\n<ad>.mode: %s" % str(self.mode)
-            rets += "\n<ad>.phu: Objid=%s," % str(id(self.phu))
-            rets += " Type=%s" % str(type(self.hdulist))
-            rets += "\nNo. Name Ver     ObjID\t\t Type(<ad>[No.].hdulist[1])"
+            rets += "\nFilename: %s" % str(self.filename)
+            rets += "\n Obj. ID: %s" % str(id(self))
+            rets += "\n    Type: %s" % selftype
+            rets += "\n    Mode: %s" % str(self.mode)
+            rets += "\n\nNo.    Name\t    Obj. ID\t  Type"
+            rets += "\n     hdulist\t   %s\t%s " % \
+                (str(id(self.hdulist)), hdulisttype)
+            rets += "\n     phu\t   %s\t%s " %  \
+                (str(id(self.phu)), phutype)
+            rets += "\n     phu.header    %s\t%s " %  \
+                (str(id(self.phu.header)), phuHeaderType)
             count = 0
             for ext in self:
+                if len(self) == 1:
+                    count = ext.extver() - 1
                 if ext.extname() is None and ext.extver() is None:
                     rets += "\n\t* There are no extensions *"
                 else:
-                    rets += "\n%(ct)s   %(nm)s   %(vr)s\t%(id)s\t%(h)s" % \
-                        {"ct":str(count),
+                    extType = "Unknown"
+                    if isinstance(ext.hdulist[1], pyfits.core.ImageHDU):
+                        extType = "ImageHDU"
+                    extHeaderType = "Unknown"
+                    if isinstance(ext.hdulist[1].header, pyfits.core.Header):
+                        extHeaderType = "Header"
+                    extDataType = "Unknown"
+                    if isinstance(ext.hdulist[1].data, numpy.ndarray):
+                        extDataType = "ndarray"
+                    rets += "\n[%(ct)s] ('%(nm)s', %(vr)s)\t   %(id)s\t%(h)s" % \
+                       {"ct":str(count),
                         "nm":str(ext.extname()),
                         "vr":str(ext.extver()),
                         "id":id(ext.hdulist[1]),
-                        "h":str(ext.hdulist[1])}
+                        "h":extType}
+                    rets +="\n\t.header\t   %s\t%s" % \
+                        (id(ext.hdulist[1].header), extHeaderType)  
+                    rets +="\n\t.data\t   %s\t%s" % \
+                        (id(ext.hdulist[1].data), extDataType)
                 count += 1
-            rets += "\n\n<ad>.hdulist.info()"
+            if verbose:
+                rets += "\n\n<ad>.hdulist.info()"
         else:
             rets="<b>Extension List</b>: %d in file" % len(self)
             rets+="<ul>"
@@ -1023,7 +1055,7 @@ integrates other functionality.
                 raise
             except:
                 raise
-                raise ADExcept("discover types failed")
+                raise Errors.AstroDataError("discover types failed")
                 
 
         # do inferences
@@ -1482,7 +1514,7 @@ integrates other functionality.
         if len(self.hdulist) == 2:
             return self.ext_get_key_value(0,key)
         else:
-            raise ADExcept("getHeaderValue must be called on single extension instance")
+            raise Errors.AstroDataError("getHeaderValue must be called on single extension instance")
     getHeaderValue = get_key_value
 
     def set_key_value(self, key, value, comment=None):
@@ -1600,12 +1632,12 @@ integrates other functionality.
         self.relhdul()
         return 
    
-    def info(self, verbose=True):
+    def info(self, verbose=False):
         """The info(..) function prints self.infostr() and 
         pyfits.HDUList.info unless verbose=False
         AstroData.info() is maintained for convienience and low level debugging.
         """
-        print self.infostr()       
+        print self.infostr(verbose=verbose)       
         if verbose:
             self.hdulist.info()
 
