@@ -571,11 +571,10 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # First, we try and figure out the date, looping through several
         # header keywords that might tell us. DATE-OBS can also give us a full
         # date-time combination, so we check for this too.
-        hdu = dataset.hdulist
-        for kw in ["DATE-OBS", self.get_descriptor_key("key_ut_date"), "DATE", \
-            "UTDATE"]:
+        for kw in ["DATE-OBS", self.get_descriptor_key("key_ut_date"), "DATE",
+                   "UTDATE"]:
             try:
-                utdate_hdr = hdu[0].header[kw].strip()
+                utdate_hdr = dataset.phu_get_key_value(kw).strip()
             except KeyError:
                 #print "Didn't get a utdate from keyword %s" % kw
                 utdate_hdr = ""
@@ -630,7 +629,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # header keywords that might contain a ut time.
         for kw in [self.get_descriptor_key("key_ut_time"), "UT", "TIME-OBS", "STARTUT"]:
             try:
-                uttime_hdr = hdu[0].header[kw].strip()
+                uttime_hdr = dataset.phu_get_key_value(kw).strip()
             except KeyError:
                 #print "Didn't get a uttime from keyword %s" % kw
                 uttime_hdr = ""
@@ -666,7 +665,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Maybe there's an MJD_OBS header we can use
         try:
             #print "Trying to use MJD_OBS"
-            mjd = hdu[0].header["MJD_OBS"]
+            mjd = dataset.phu_get_key_value("MJD_OBS")
             if(mjd > 1):
                 # MJD zero is 1858-11-17T00:00:00.000 UTC
                 mjdzero = datetime.datetime(1858, 11, 17, 0, 0, 0, 0, None)
@@ -684,7 +683,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # Maybe there's an OBSSTART header we can use
         try:
             #print "Trying to use OBSSTART"
-            obsstart = hdu[0].header["OBSSTART"].strip()
+            obsstart = dataset.phu_get_key_value("OBSSTART").strip()
             if(obsstart):
                 ut_datetime = dateutil.parser.parse(obsstart)
                 #print "Did it by OBSSTART"
@@ -704,7 +703,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         if(not utdate_hdr):
             #print "Desperately trying FRMNAME, filename etc"
             try:
-                frmname = hdu[1].header["FRMNAME"]
+                for ext in dataset:
+                    frmname = ext.get_key_value("FRMNAME")
             except (KeyError, ValueError, IndexError):
                 frmname = ""
             for string in [frmname, os.path.basename(dataset.filename)]:
