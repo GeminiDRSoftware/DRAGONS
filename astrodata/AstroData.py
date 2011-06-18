@@ -764,8 +764,8 @@ integrates other functionality.
         :param newdata: new data objects
         :type newdata: numarray.numarraycore.NumArray
 
-        :raise SingleHDUMemberExcept: if AstroData instance has more than one
-            extension (not including PHU).
+        :raise Errors.SingleHDUMemberExcept: if AstroData instance has more 
+            than one extension (not including PHU).
 
         This function sets the data member of a data section of an AstroDat
         object, specifically for the case in which the AstroData instance has
@@ -780,7 +780,7 @@ integrates other functionality.
             # note: should we check type of newdata?
             hdl[1].data = newdata
         else:
-            raise SingleHDUMemberExcept()
+            raise Errors.SingleHDUMemberExcept()
         self.relhdul()
         return 
     
@@ -798,7 +798,7 @@ integrates other functionality.
         :return: header
         :rtype: pyfits.Header
 
-        :raise SingleHDUMemberExcept: Will raise an exception if more
+        :raise Errors.SingleHDUMemberExcept: Will raise an exception if more
             than one extension exists. 
             (note: The PHU is not considered an extension in this case)
         
@@ -817,7 +817,7 @@ integrates other functionality.
                 retv = hdl[1].header
             else:
                 #print "numexts = %d" % len(hdl)
-                raise SingleHDUMemberExcept()
+                raise Errors.SingleHDUMemberExcept()
             self.relhdul()
             return retv
         else: 
@@ -839,8 +839,8 @@ integrates other functionality.
 
         :type extension: int or tuple, pyfits compatible extension index
         
-        :raise SingleHDUMemberExcept: Will raise an exception if more than one
-            extension exists. 
+        :raise Errors.SingleHDUMemberExcept: Will raise an exception if more 
+            than one extension exists. 
 
         The set_header(..) function sets the extension header member for single
         extension (which are those that have only one extension plus PHU). This
@@ -854,7 +854,7 @@ integrates other functionality.
             if len(hdl) == 2:
                 hdl[1].header = header
             else:
-                raise SingleHDUMemberExcept()
+                raise Errors.SingleHDUMemberExcept()
 
             self.relhdul()
         else:
@@ -974,8 +974,7 @@ integrates other functionality.
         if ver == None:
             ver = 1
         if not self.has_single_hdu():
-            message = ("ad.setExtname(%s,%s)"%(str(name), str(ver)))
-            raise Errors.SingleHDUMemberExcept(message)
+            raise Errors.SingleHDUMemberExcept()
         
         if True:
             hdu = self.hdulist[1]
