@@ -3,16 +3,10 @@ from nose.tools import *
 import file_urls 
 from astrodata import AstroData
 
-testfile = file_urls.testdatafile_1
+mef_file = file_urls.testdatafile_1
+sef_file = file_urls.testdatafile_1
 
-def iterator_protocol_test1():
-    '''iterator_protocol_test1 -Use __iter__() and next() to iterate over ad
-    '''
-    print('\n\t#Also tests that AstroData Objects are being iterated and')
-    print('\t#that the iterated ad is mapped to the original ad.hdulist')
-    print('\t*testfile: %s' % testfile)
-    ad = AstroData(testfile)
-    print('\tad = AstroData(testfile)')
+def iterprotocol(ad):
     aditerImageObjectIdList = []
     hduImageObjectIdList = []
     for a in ad:
@@ -30,3 +24,22 @@ def iterator_protocol_test1():
     ad.close()
     print('\tad.close()')
 
+def iterator_protocol_test1():
+    '''iterator_protocol_test1 -MEF __iter__() and next()
+    '''
+    print('\n\t#Also tests that AstroData Objects are being iterated and')
+    print('\t#that the iterated ad is mapped to the original ad.hdulist')
+    print('\t*mef_file: %s' % mef_file)
+    print('\tad = AstroData(mef_file)')
+    ad = AstroData(mef_file)
+    iterprotocol(ad)
+
+def iterator_protocol_test2():
+    '''iterator_protocol_test2 -single ext. __iter__() and next()
+    '''
+    print('\n\t#Also tests that AstroData Objects are being iterated and')
+    print('\t#that the iterated ad is mapped to the original ad.hdulist')
+    print('\t*sef_file: %s' % mef_file)
+    print('\tad = AstroData(sef_file)')
+    ad = AstroData(sef_file)
+    iterprotocol(ad)

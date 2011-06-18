@@ -1,5 +1,3 @@
-import sys
-import os
 import pyfits
 
 from nose.tools import *
@@ -7,14 +5,12 @@ from nose.tools import *
 from astrodata import AstroData
 import file_urls
 
-testfile = file_urls.testdatafile_1
+mef_file = file_urls.testdatafile_1
+sef_file = file_urls.testdatafile_1
 
-def inferred_extname_test1():
-    """inferred_extname_test1 -Check extension names are inferred 'SCI'
-    """
+def inferredsci(testhdulist):
     alist = []
     blist = []
-    testhdulist = pyfits.open(testfile)
     for hdu in testhdulist[1:]:
         alist.append(hdu.name)
     print "\n\tList of ext. names of input:", repr(alist)
@@ -31,10 +27,7 @@ def inferred_extname_test1():
     alist = []
     blist = []
 
-def inferred_extname_test2():
-    """inferred_extname_test2 -Inferred naming off when input ext named
-    """
-    testhdulist = pyfits.open(testfile)
+def turnoff(testhdulist):
     alist = []
     blist = []
     if testhdulist[1].name == "SCI":
@@ -50,4 +43,26 @@ def inferred_extname_test2():
     print "\tList of ext. names after AD instance:", repr(blist)
     eq_(alist, blist, msg="Inferred naming is on")
 
+def inferred_extname_test1():
+    """inferred_extname_test1 -raw ad MEF extname is inferred 'SCI'
+    """
+    testhdulist = pyfits.open(mef_file)
+    inferredsci(testhdulist)
 
+def inferred_extname_test2():
+    """inferred_extname_test2 -ad MEF inferred off when input ext named
+    """
+    testhdulist = pyfits.open(mef_file)
+    turnoff(testhdulist)
+
+def inferred_extname_test3():
+    """inferred_extname_test3 -raw ad single ext. extname is inferred 'SCI'
+    """
+    testhdulist = pyfits.open(sef_file)
+    inferredsci(testhdulist)
+
+def inferred_extname_test4():
+    """inferred_extname_test4 -ad single ext. inferred off when input ext named
+    """
+    testhdulist = pyfits.open(sef_file)
+    turnoff(testhdulist)
