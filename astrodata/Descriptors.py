@@ -250,6 +250,8 @@ class DescriptorValue():
             # the pytype and self.val type are different
             if cast_type == "string":
                 return str(self.val)
+            elif cast_type == "dict":
+                return self.dict_val
             elif cast_type == "float":
                 return float(self.val)
             elif cast_type == "int":
@@ -259,6 +261,8 @@ class DescriptorValue():
         else:
             if cast_type == "string":
                 return str(self.val)
+            elif cast_type == "dict":
+                return self.dict_val
             elif cast_type == "float":
                 return float(self.val)
             elif cast_type == "int":
