@@ -727,6 +727,12 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         log.fullinfo("Inputs:", category="inputs")
+        if "stream" in rc:
+            stream = rc["stream"]
+        else:
+            stream = "MAIN"
+            
+        log.fullinfo("stream: "+stream)
         for inf in rc.inputs:
             log.fullinfo("  %s" % inf.filename, category="inputs")
         

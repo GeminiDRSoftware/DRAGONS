@@ -81,3 +81,41 @@ class GENERALPrimitives(PrimitiveSet):
                 rc.add_input(a)
         
         yield rc
+
+    def forwardInput(self, rc):
+        
+        if rc["to_stream"] != None:
+            stream = rc["to_stream"]
+        else:
+            stream = "main"
+        
+        
+        if "by_token" in rc:
+            bt = rc["by_token"]
+            for ar in rc.inputs:
+                if bt in ar.filename:
+                    rc.report_output(ar.ad, stream = stream)
+        else:
+            inputs = rc.get_inputs_as_astrodata()
+            rc.report_output(inputs, stream = stream)
+        yield rc
+    forwardStream = forwardInput
+    
+    def showOutputs(self, rc):
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        streams = rc.outputs.keys()
+        streams.sort()
+        streams.remove("main")
+        streams.insert(0,"main")
+        for stream in streams:
+            log.info("stream: "+stream)
+            if len(rc.outputs[stream])>0:
+                for adr in rc.outputs[stream]:
+                    log.info(str(adr))
+            else:
+                log.info("    empty")                
+    
+        yield rc
