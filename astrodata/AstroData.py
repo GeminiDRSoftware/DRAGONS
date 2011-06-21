@@ -29,7 +29,6 @@ verbose = False
 verboseLoadTypes = True
 verbt = False
 
-#FUNCTIONS
 def re_header_keys(rekey, header):
     """
     :param rekey: a regular expresion to match to keys in header
@@ -44,7 +43,6 @@ def re_header_keys(rekey, header):
     This utility function returns a list of keys from 
     the header passed in which match the given regular expression.
     """
-    
     retset = []
     for k in header.ascardlist().keys():
         # print "gd278: key=%s" % k
@@ -53,7 +51,6 @@ def re_header_keys(rekey, header):
 
     if len(retset) == 0:
        retset = None
-       
     return retset
 
 class AstroData(object, CalculatorInterface):
@@ -85,24 +82,24 @@ all  instrument-mode-specific behavior. The configuration contains type
 definitions, meta-data functions, information lookup tables, and any other code
 or information needed to handle specific types of dataset.
 
-This allows AstroData to manage access to the dataset for convienience and consistency.
+This allows AstroData to manage access to the dataset for convienience and
+consistency.
 For example AstroData is able...:
 
 - ... to allow reduction scripts to have easy access to dataset classification 
   information in a consistent way across all instrument-modes
 - ... to provide consistent interfaces for obtaining common meta-data across all
   instrument modes
-- ... to relates internal extensions, e.g. discriminate between science and variance
-  arrays and associate them properly
+- ... to relates internal extensions, e.g. discriminate between science and 
+  variance arrays and associate them properly
 - ... to help propagate header-data units important to the given instrument mode,
   but unknown to general purpose transformations
 
-AstroData's purpose in general is to provid smart dataset-centered interfaces
+AstroData's purpose in general is to provide smart dataset-centered interfaces
 which adapt to dataset type. The primary interfaces of note are for file
 handling, dataset-type checking, and managing meta-data, but AstroData also
 integrates other functionality.
 """
-    
     types = None
     typesStatus = None
     typesTypology = None
@@ -132,76 +129,74 @@ integrates other functionality.
                     storeClobber=False):
         """
         :param dataset: the dataset to load, either a filename (string), an
-                    AstroData instance, or a pyfits.HDUList 
-        :type dataset:  string,
-                    AstroData, HDUList
+            AstroData instance, or a pyfits.HDUList 
+        :type dataset:  string, AstroData, HDUList
 
         :param mode: IO access mode, same as pyfits mode ("readonly", "update",
-                    "or append") with one additional AstroData-specific mode,
-                    "new". If the mode is "new", and a filename is provided,  the
-                    constructor checks the named file does not exist, and if it
-                    does not already exist, it creates an empty AstroData of that
-                    name (to save the filename), but does not write it to disk. 
-                    Such an AstroData instance is ready to have HDUs appended,
-                    and to be written to disk at the user's command with
-                    "ad.write()".
+            "or append") with one additional AstroData-specific mode, "new".
+            If the mode is "new", and a filename is provided, the constructor
+            checks the named file does not exist, and if it does not already
+            exist, it creates an empty AstroData of that name (to save the
+            filename), but does not write it to disk. Such an AstroData 
+            instance is ready to have HDUs appended, and to be written to disk
+            at the user's command with "ad.write()".
         :type mode: string
         
-        :param exts: (advanced) a list of extension indexes in the parent HDUList
-                    that this instance should refer to, given  integer or 
-                    (EXTNAME, EXTVER) tuples specifying each extention in the
-                    "pyfits" index space where the PHU is at index 0, the first data
-                    extension is at index 1, and so on. I.e. 
-                    This is primarilly intended for internal use creating
-                    "sub-data", which are AstroData instances that represent
-                    a slice, or subset, of some other AstroData instance.
-                    NOTE: if present this option will override and
-                    obscure the extInsts argument which will be ignored. 
-                    Example of subdata: 'sci_subdata = ad["SCI"]'
-                    is constructed passing the "SCI"
-                    extensions to this constructor.  The 'sci_subdata' object
-                    would consist of its own AstroData instance referring to
-                    it's own HDUList, but the HDUs in this list would still be
-                    shared with the 'ad' object, and appear in its HDUList as
-                    well.
+        :param exts: (advanced) a list of extension indexes in the parent
+            HDUList that this instance should refer to, given  integer or 
+            (EXTNAME, EXTVER) tuples specifying each extention in the "pyfits"
+            index space where the PHU is at index 0, the first data extension
+            is at index 1, and so on. I.e. This is primarilly intended for 
+            internal use creating "sub-data", which are AstroData instances
+            that represent a slice, or subset, of some other AstroData instance.
+            
+            NOTE: if present this option will override and obscure the extInsts
+            argument which will be ignored. 
+            
+            Example of sub-data:
+
+                sci_subdata = ad["SCI"]
+
+            The sub-data is is created by passing "SCI" as an argument to the
+            constructor. The 'sci_subdata' object would consist of its own 
+            AstroData instance referring to it's own HDUList, but the HDUs in
+            this list would still be shared (in memory) with the 'ad' object,
+            and appear in its HDUList as well.
         :type exts: list
         
         :param extInsts: a list of extensions this instance should contain,
-                    given as actual pyfits.HDU instances. NOTE: if the
-                    "exts" argument is also set, this argument is ignored.
+            given as actual pyfits.HDU instances. NOTE: if the "exts" argument
+            is also set, this argument is ignored.
         :type extInsts: list of pyfits.HDU objects
 
         :param phu: primary header unit. This object is propagated to all 
-                    astrodata sub-data ImageHDUs. Special handling is made
-                    for header instances that are passed in as this arg., 
-                    where a phu will be created and the '.header' will be
-                    assigned.       
-                    (ex. hdulist[0], ad.phu, ad[0].hdulist[0], 
-                    ad['SCI',1].hdulist[0], ad[0].phu, ad['SCI',1].phu, and 
-                    all the previous with .header appended) 
+            astrodata sub-data ImageHDUs. Special handling is made for header
+            instances that are passed in as this arg., where a phu will be 
+            created and the '.header' will be assigned (ex. hdulist[0], ad.phu,
+            ad[0].hdulist[0], ad['SCI',1].hdulist[0], ad[0].phu, 
+            ad['SCI',1].phu, and all the previous with .header appended) 
         :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
 
         :param header: extension header for images (ex. hdulist[1].header,
-                    ad[0].hdulist[1].header, ad['SCI',1].hdulist[1].header)
+            ad[0].hdulist[1].header, ad['SCI',1].hdulist[1].header)
         :type phu: pyfits.core.Header
 
         :param data: the image pixel array (ex. hdulist[1].data,
-                    ad[0].hdulist[1].data, ad['SCI',1].hdulist[1].data)
+            ad[0].hdulist[1].data, ad['SCI',1].hdulist[1].data)
         :type data: numpy.ndarray
         
         :param store: directory where a copy of the original file will be 
-                    stored. Special handling is done for remote files.
+            stored. Special handling is done for remote files.
         :type store: string
         
         :param storeClobber: remote file handling for existing files with the
-                    same name.  If true will save, if not, will delete.
+            same name.  If true will save, if not, will delete.
         :type storeClobber: boolean
-
 
         The AstroData constructor constructs an in-memory representation of a
         dataset. If given a filename it uses pyfits to open the dataset, reads
-        the header and detects applicable types. Binary data, such as pixel data,
-        is left on disk until referenced.
+        the header and detects applicable types. Binary data, such as pixel
+        data, is left on disk until referenced.
         """
         
         # not actually sure we should open right away, but 
@@ -276,7 +271,6 @@ integrates other functionality.
                 else:
                     raise TypeError("phu is of an unsupported type")
                 dataset.append(pyfits.ImageHDU(data=data, header=header))
-            
         if fname == None:
             self.open(dataset, mode)
         else:
@@ -284,11 +278,12 @@ integrates other functionality.
             #   filename that urlretrieve returns.  Nice to use since it's 
             #   guarenteed to be unique.  But it's only on disk to load (we
             #   could build the stream up from the open url but that might be
-            #   a pain (depending on how well pyfits cooperates)... and this means
-            #   we don't need to load the whole file into memory.
+            #   a pain (depending on how well pyfits cooperates)... and this 
+            #   means we don't need to load the whole file into memory.
             self.open(fname, mode)
             if store == None:
-                # because if store == None then file was retrieved to a persistent location
+                # because if store == None, file was retrieved to a persistent
+                # location
                 os.remove(fname)
     
     def __del__(self):
@@ -296,7 +291,6 @@ integrates other functionality.
         counting and behaves differently when this instance is subdata, since
         in that case some other instance "owns" the pyfits HDUs instance.
         """
-        
         if self.borrowed_hdulist:
             self.container.relhdul()
             self.hdulist = None
@@ -318,9 +312,9 @@ integrates other functionality.
         :param ext: The integeter index, indexing(EXTNAME, EXTVER) tuple,
             EXTNAME name for the desired subdata. If an int or tuple, a  single
             extension is wrapped with an AstroData instance, and
-            "single-extension" members of the AstroData object can be used. If a
-            string is given then all extensions with the given EXTNAME will be
-            wrapped by the  new AstroData instance.
+            "single-extension" members of the AstroData object can be used. If
+            a string is given then all extensions with the given EXTNAME will
+            be wrapped by the  new AstroData instance.
         :type ext: string, int, or tuple
         
         :returns: an AstroData instance associated with the subset of data.
@@ -340,28 +334,27 @@ integrates other functionality.
         associated with the same MEF, sharing some of the the same actual HDUs
         in memory as  datasetA. The object in "datasetB" will behave as if the
         SCI extensions are its only members, and it does in fact have its own
-        pyfits.HDUList. Note that datasetA and datasetB share the PHU and
-        also the data structures of the HDUs they have in common, so that  a
-        change to "datasetA[('SCI',1)].data" will change the
+        pyfits.HDUList. Note that datasetA and datasetB share the PHU and also
+        the data structures of the HDUs they have in common, so that a change
+        to "datasetA[('SCI',1)].data" will change the 
         "datasetB[('SCI',1)].data" member and vice versa. They are in fact both
-        references to the same numpy array in memory. The HDUList is a different
-        list, however, that references common HDUs. If a subdata related
-        AstroData object is written to disk, the resulting MEF will contain only
-        the extensions in datasetB's HDUList.
+        references to the same numpy array in memory. The HDUList is a 
+        different list, however, that references common HDUs. If a subdata 
+        related AstroData object is written to disk, the resulting MEF will
+        contain only the extensions in datasetB's HDUList.
 
-        :note: Integer extensions start at 0 for the data-containing extensions,
-            not at the PHU as with pyfits.  This is important: ad[0] is the
-            first content extension, in traditional MEF percpective, the
-            extension AFTER the PHU; it is not the PHU!  In AstroData instances,
-            the PHU is purely a header, and not counted as an extension in the
-            way that headers generally are not counted as their own elements in
-            the array they contain meta-data for.  The PHU can be accessed  with
-            the code, ''ad.phu'', or via the AstroData PHU-related member
-            functions.
+        :note: Integer extensions start at 0 for the data-containing 
+            extensions, not at the PHU as with pyfits.  This is important:
+            ad[0] is the first content extension, in traditional MEF 
+            percpective, the extension AFTER the PHU; it is not the PHU!  In
+            AstroData instances, the PHU is purely a header, and not counted
+            as an extension in the way that headers generally are not counted
+            as their own elements in the array they contain meta-data for.
+            The PHU can be accessed  with the code, ''ad.phu'', or via the
+            AstroData PHU-related member functions.
         """
         hdul = self.gethdul()
         # ext can be tuple, an int, or string ("EXTNAME")
-        
         exs = []
         if (type(ext) == str):
             # str needs to be EXTNAME, so we go over the extensions
@@ -374,20 +367,17 @@ integrates other functionality.
             for i in range(0,maxl):
                 try:
                     # note, only count extension in our extension
-                    
                     if (hdul[i].header["EXTNAME"] == extname):
                         try:
                             extver = int(hdul[i].header["EXTVER"])
                         except KeyError:
                             extver = 1
-                            
                         exs.append((extname, extver))
              #           print "gd87:hdul[i] == hdul[%s]" % exs
                 except KeyError:
                     #print " gd84: keyerror:[%s]" % extname
                     pass
             self.relhdul()
-
             return AstroData(self, exts=exs)
             
         elif (type (ext) == tuple) or (type(ext) == int):
@@ -407,7 +397,6 @@ integrates other functionality.
                 self.relhdul()
                 print "AD426: keyerror"
                 return None
-
             gdpart = AstroData(self, exts=[ext])
             self.relhdul()
             # print "gd132: %s" % str(gdpart)
@@ -422,7 +411,7 @@ integrates other functionality.
         return len(self.hdulist)-1
     
         
-    #ITERATOR FUNCTIONS
+    # ITERATOR PROTOCOL FUNCTIONS
     def __iter__(self):
         """This function exists so that AstroData can be used as an iterator.
         It initializes the iteration process, resetting the index of the 
@@ -442,8 +431,8 @@ integrates other functionality.
         the MEF to which it refers, then this iterator goes through that subset
         in order.
         
-        :returns: a single extension AstroData instance representing the 'current'
-        extension in the AstroData iteration loop.
+        :returns: a single extension AstroData instance representing the
+            'current' extension in the AstroData iteration loop.
         :rtype: AstroData
         """
         try:
@@ -495,9 +484,9 @@ integrates other functionality.
             self.mode = "update"
         self._filename = newfn
 
-    filename = property(get_filename, set_filename, None, "The filename member is "
-                "monitored so that the mode can be changed from readonly when the "
-                "filename is changed.")
+    filename = property(get_filename, set_filename, None, "The filename"
+                " member is monitored so that the mode can be changed from"
+                " readonly when the filename is changed.")
     
     def append(self, moredata=None, data=None, header=None):
         """
@@ -506,10 +495,10 @@ integrates other functionality.
             When present, data and header arguments will be ignored.
         :type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
         
-        :param data: if moredata *is not* specified, data and header should  both
-            be set and are used to construct a new HDU which is then added to
-            the  AstroData object. The 'data' argument should be set to a 
-            valid numpy array.
+        :param data: if moredata *is not* specified, data and header should 
+            both be set and are used to construct a new HDU which is then 
+            added to the  AstroData object. The 'data' argument should be set
+            to a valid numpy array.
         :type data: numarray.numaraycore.NumArray
         
         :param header: if moredata *is not* specified, data and header are used
@@ -523,9 +512,11 @@ integrates other functionality.
         """
         if (moredata == None):
             if len(self.hdulist) == 0:
-                self.hdulist.append(pyfits.PrimaryHDU(data = data, header=header))
+                self.hdulist.append(pyfits.PrimaryHDU(data = data, \
+                    header=header))
             else:
-                self.hdulist.append(pyfits.ImageHDU(data = data, header=header))
+                self.hdulist.append(pyfits.ImageHDU(data = data, \
+                    header=header))
         elif isinstance(moredata, AstroData):
             for hdu in moredata.hdulist[1:]:
                 self.hdulist.append(hdu)
@@ -543,9 +534,8 @@ integrates other functionality.
         """The close(..) function will close the HDUList associated with this
         AstroData instance. If this is subdata, e.g. (sd = gd[SCI] where gd is
         another AstroData instance, sd is "sub-data")  then sd.close() will not
-        close the original hdulist because gd will actually own the hold on that
-        HDUList and its related file."""
-        
+        close the original hdulist because gd will actually own the hold on 
+        that HDUList and its related file."""
         if self.borrowed_hdulist:
             self.container.relhdul()
             self.hdulist = None
@@ -557,25 +547,22 @@ integrates other functionality.
     def insert(self, index, moredata=None, data=None, header=None):
         """
         :param index: the extension index, either an int or (EXTNAME, EXTVER)
-                      pair before which the extension is to be inserted. Note,
-                      the first data extension is [0], you cannot insert before
-                      the PHU.
+            pair before which the extension is to be inserted. Note, the 
+            first data extension is [0], you cannot insert before the PHU.
         :type index: integer or (EXTNAME,EXTVER) tuple
         
-        :param moredata: Either an AstroData instance, an HDUList instance,  or
-                      an HDU instance. When present, data and header will be
-                      ignored.
+        :param moredata: Either an AstroData instance, an HDUList instance, or
+            an HDU instance. When present, data and header will be ignored.
         :type moredata: pyfits.HDU, pyfits.HDUList, or AstroData
         
         :param data: if moredata *is not* specified, data and header should 
-                     both be set and are used to construct
-                     a new HDU which is then added to the 
-                     AstroData instance.
+            both be set and are used to construct a new HDU which is then 
+            added to the AstroData instance.
         :type data: numarray.numaraycore.NumArray
 
-        :param header: if moredata *is not* specified, data and header are used to make 
-                       an HDU which is then added to the HDUList associated with this
-                       AstroData instance.
+        :param header: if moredata *is not* specified, data and header are 
+            used to make an HDU which is then added to the HDUList associated
+            with this AstroData instance.
         :type header: pyfits.Header
 
         This function inserts more data units (aka an "HDU") to the AstroData
@@ -585,12 +572,13 @@ integrates other functionality.
         if type(index) == tuple:
             index = self.get_int_ext(index, hduref=True)
         # print "AD416", type(index), index
-        
         if (moredata == None):
             if len(self.hdulist) == 0:
-                self.hdulist.insert(index, pyfits.PrimaryHDU(data=data, header=header))
+                self.hdulist.insert(index, pyfits.PrimaryHDU(data=data, \
+                    header=header))
             else:
-                self.hdulist.insert(index,pyfits.ImageHDU(data=data, header=header))
+                self.hdulist.insert(index,pyfits.ImageHDU(data=data, \
+                    header=header))
         elif isinstance(moredata, AstroData):
             for hdu in moredata.hdulist[1:]:
                 self.hdulist.insert(index, hdu)
@@ -809,7 +797,6 @@ integrates other functionality.
         
             for gd in dataset[SCI]: 
                 ...
-
         """
         if extension == None:
             hdl = self.gethdul()
@@ -855,12 +842,11 @@ integrates other functionality.
                 hdl[1].header = header
             else:
                 raise Errors.SingleHDUMemberExcept()
-
             self.relhdul()
         else:
             self.hdulist[extension].header = header
                     
-    header = property(get_header,set_header, None, """
+    header = property(get_header, set_header, None, """
                 The header property can only be used for single-HDU AstroData
                 instances, such as those returned during iteration. It is a
                 property attribute which uses *get_header(..)* and
@@ -878,12 +864,9 @@ integrates other functionality.
         :rtype: pyfits.Header
         """
         hdl = self.gethdul()
-        
         retary = []
-        
         for hdu in hdl:
             retary.append(hdu.header)
-
         self.relhdul()
         return retary
 
@@ -912,7 +895,6 @@ integrates other functionality.
             rdict.update({fun:val})
         return rdict
         
-    
     def get_int_ext(self, extension, hduref=False):
         """getInxExt takes an extension index, either an integer
         or (EXTNAME, EXTVER) tuple, and returns the index location
@@ -925,7 +907,6 @@ integrates other functionality.
         if type(extension) == int:
             return extension + 1
         if type(extension) == tuple:
-            
             for i in range(1, len( self.hdulist)):
                 hdu = self.hdulist[i]
                 nam = hdu.header.get("extname", None)
@@ -963,35 +944,32 @@ integrates other functionality.
                     call the new pyfits.HDUList(..) function.
         """
         # @@TODO: change to use STSCI provided function.
-        
         if force != True and self.borrowed_hdulist:
-            raise ADExcept("cannot setExtname on subdata")
-        
+            raise Errors.AstroDataError("cannot setExtname on subdata")
         if type(name) == tuple:
             name = name[0]
             ver = name[1]
-        
         if ver == None:
             ver = 1
         if not self.has_single_hdu():
             raise Errors.SingleHDUMemberExcept()
-        
         if True:
             hdu = self.hdulist[1]
             nheader = hdu.header
-            kafter = 'GCOUNT'
-            if nheader.get('TFIELDS'): kafter = 'TFIELDS'
-            nheader.update("extname", name, "added by AstroData", after=kafter)
-            nheader.update("extver", ver, "added by AstroData", after='EXTNAME')
+            kafter = "GCOUNT"
+            if nheader.get("TFIELDS"): kafter = "TFIELDS"
+            nheader.update("extname", name, "added by AstroData", \
+                after=kafter)
+            nheader.update("extver", ver, "added by AstroData", \
+                after="EXTNAME")
             hdu.name = name
             hdu._extver = ver
             # print "AD553:", repr(hdu.__class__)
+    #alias
     setExtname = rename_ext
-            
-            
 
     def open(self, source, mode = "readonly"):
-        '''
+        """
         :param source: source contains some reference for the dataset to 
                        be opened and associated with this instance. Generally
                        it would be a filename, but can also be
@@ -1002,20 +980,19 @@ integrates other functionality.
 
         :param mode: IO access mode, same as the pyfits open mode, "readonly,
                      "update", or "append".  The mode is passed to pyfits so
-                     if it is an illegal mode name, pyfits will be the subsystem
-                     reporting the error. 
+                     if it is an illegal mode name, pyfits will be the
+                     subsystem reporting the error. 
         
         :type mode: string
 
-        This function wraps a source dataset, which can be in memory as another 
+        This function wraps a source dataset, which can be in memory as another
         AstroData or pyfits HDUList, or on disk, given as the string filename.
         
         Please note that generally one does not use "open" directly, but passes
-        the filename to the AstroData constructor. The constructor uses open(..)
-        however.  Most users should use the constructor, which may perform extra
-        operations.
-        '''
-                
+        the filename to the AstroData constructor. The constructor uses
+        open(..) however.  Most users should use the constructor, which may 
+        perform extra operations.
+        """
         inferRAW = True
         # might not be a filename, if AstroData instance is passed in
         #  then it has opened or gets to open the data...
@@ -1025,12 +1002,12 @@ integrates other functionality.
             self.__origFilename = source.filename
             self.borrowed_hdulist = True
             self.container = source
+            
             # @@REVISIT: should this cache copy of types be here?
             # probably not... works now where type is PHU dependent, but
             # this may not remain the case... left for now.
             if (source.types != None) and (len(source.types) != 0):
                 self.types = source.types
-                        
             chdu = source.gethdul()
             # include the phu no matter what
             sublist = [chdu[0]]
@@ -1044,6 +1021,7 @@ integrates other functionality.
                 sublist += self.extInsts
             self.hdulist = pyfits.HDUList(sublist)
             # print "AD559:", self.hdulist[1].header["EXTVER"]
+        
         elif type(source) == pyfits.HDUList:
             self.hdulist = source
         elif isinstance(source, pyfits.core._AllHDU):
@@ -1059,23 +1037,27 @@ integrates other functionality.
                 self.filename = source
                 self.__origFilename = source
                 try:
-                    if mode == 'new':
+                    if mode == "new":
                         if os.access(self.filename, os.F_OK):
                             os.remove(self.filename)
-                        mode = 'append'
-                    self.hdulist = pyfits.open(self.filename, mode = mode)
+                        mode = "append"
+                    self.hdulist = pyfits.open(self.filename, mode=mode)
                     self.mode = mode
                     if len(self.hdulist) == 1:   # This is a single FITS
                         hdu = self.hdulist[0]
                         nhdu = pyfits.PrimaryHDU()
                         hdulist = pyfits.HDUList([nhdu])
-                        imagehdu = pyfits.ImageHDU(header=hdu.header,data=hdu.data)
+                        imagehdu = pyfits.ImageHDU(header=hdu.header, \
+                            data=hdu.data)
                         hdulist.append(imagehdu)
                         self.hdulist=hdulist
-                        kafter = 'GCOUNT'
-                        if not hdu.header.has_key(kafter): kafter = None
-                        if hdu.header.get('TFIELDS'): kafter = 'TFIELDS'
-                        hdu.header.update("EXTNAME", "SCI", "added by AstroData", after=kafter)
+                        kafter = "GCOUNT"
+                        if not hdu.header.has_key(kafter): 
+                            kafter = None
+                        if hdu.header.get("TFIELDS"): 
+                            kafter = "TFIELDS"
+                        hdu.header.update("EXTNAME", "SCI", \
+                            "added by AstroData", after=kafter)
 
 		    #print "AD591:", self.hdulist[1].header["EXTNAME"]
                     #print "AD543: opened with pyfits", len(self.hdulist)
@@ -1083,7 +1065,6 @@ integrates other functionality.
                     print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
                     raise
 
-        #if mode != 'append':
         if len(self.hdulist):
             try:
                 self.discover_types()
@@ -1092,45 +1073,38 @@ integrates other functionality.
             except:
                 raise
                 raise Errors.AstroDataError("discover types failed")
-                
-
-        # do inferences
+        
         if inferRAW and self.is_type("RAW"):
-            
             # for raw, if no extensions are named
             # infer the name as "SCI"
             hdul = self.hdulist
             namedext = False
-	    
             for hdu in hdul[1:]:
     	        #print "AD1036:",hdu.name
-
                 if hdu.name or ("extname" in hdu.header): 
                     namedext = True
                     #print "AD1040: Named", hdu.header["extname"]
                 else:
                     #print "AD1042: Not Named"
                     pass
-                    
             if namedext == False:
                 #print "AD1046: No named extension"
                 l = len(hdul) # len w/phu
                 #print "AD1048: len of hdulist ",l
-
-                
                 # nhdul = [hdul[0]]
                 # nhdulist = pyfits.HDUList(nhdul)
-
                 for i in range(1, l):
                     hdu = hdul[i]
-                    kafter = 'GCOUNT'
-                    if hdu.header.get('TFIELDS'): kafter = 'TFIELDS'
-                    hdu.header.update("EXTNAME", "SCI", "added by AstroData", after=kafter)
-                    hdu.header.update("EXTVER", i, "added by AstroData", after='EXTNAME')
+                    kafter = "GCOUNT"
+                    if hdu.header.get("TFIELDS"): kafter = "TFIELDS"
+                    hdu.header.update("EXTNAME", "SCI", \
+                        "added by AstroData", after=kafter)
+                    hdu.header.update("EXTVER", i, \
+                        "added by AstroData", after="EXTNAME")
                     hdu.name = SCI
                     hdu._extver = i
                     
-    def write(self, filename = None, clobber = False, rename=None):
+    def write(self, filename=None, clobber=False, rename=None):
         """
         :param fname: file name to write to, optional if instance already has
                       name, which might not be the case for new AstroData
@@ -1139,14 +1113,14 @@ integrates other functionality.
         :param clobber: This flag drives if AstroData will overwrite an existing
                     file.
         :type clobber: bool
-        :param rename: This flag allows you to write the AstroData instance to a
-            new filename, but leave the "current" name in tact.
+        :param rename: This flag allows you to write the AstroData instance to
+            a new filename, but leave the "current" name in tact.
         :type rename: bool
 
         The write function acts similarly to the pyfits HDUList.writeto(..)
-        function if a filename is given, or like pyfits.HDUList.update(..) if no
-        name is given, using whatever the current name is set to. When a name is
-        given, this becomes the new on-disk name of the AstroData object and
+        function if a filename is given, or like pyfits.HDUList.update(..) if 
+        no name is given, using whatever the current name is set to. When a name
+        is given, this becomes the new on-disk name of the AstroData object and
         will be used on subsequent calls to  write for which a filename is not
         provided. If the clobber flag is False (the default) then write(..)
         throws an exception if the file already exists.
@@ -1194,9 +1168,10 @@ integrates other functionality.
     
     def get_hdulist(self):
         """
-        This function retrieves the HDUList. NOTE: The HDUList should also be "released"
-        by calling L{release_hdulist}, as access is reference-counted. This function is
-        also aliased to L{gethdul(..)<gethdul>}.
+        This function retrieves the HDUList. NOTE: The HDUList should also be
+        "released" by calling L{release_hdulist}, as access is reference
+        counted. This function is also aliased to L{gethdul(..)<gethdul>}.
+        
         :return: The AstroData's HDUList as returned by pyfits.open()
         :rtype: pyfits.HDUList
         """
@@ -1229,7 +1204,6 @@ integrates other functionality.
                 self.classification_library = ClassificationLibrary()
             except CLAlreadyExists, s:
                 self.classification_library = s.clInstance
-	                
         return self.classification_library
     
     def prune_typelist(self, typelist):
@@ -1246,18 +1220,19 @@ integrates other functionality.
                 pary.append(typ)
         return pary
 
-    def get_types(self, prune = False):
+    def get_types(self, prune=False):
         """
-        :param prune: flag which controls 'pruning' the returned type list so that only the
-              leaf node type for a given set of related types is returned.
+        :param prune: flag which controls 'pruning' the returned type list 
+            so that only the leaf node type for a given set of related types
+            is returned.
         :type prune: bool
         :returns: a list of classification names that apply to this data
         :rtype: list of strings
 
-        The get_types(..) function returns a list of type names, where type names
-        are as always, strings. It is possible to "prune" the list so that only
-        leaf nodes are returned, which is useful when features (such as descriptors)
-        are set and leaf node settings take priority.  
+        The get_types(..) function returns a list of type names, where type 
+        names are as always, strings. It is possible to "prune" the list so
+        that only leaf nodes are returned, which is useful when features (such
+        as descriptors) are set and leaf node settings take priority.  
          
         Note: types are divided into two categories, one intended for types
         which represent processing status (i.e. RAW vs PREPARED), and another
@@ -1270,20 +1245,21 @@ integrates other functionality.
         typological types use get_typology(..).  Note that the system does not
         enforce what checks are actually performed by types in each category,
         that is, one could miscategorize a type when authoring a configuration
-        package. Both classifications use the same DataClassification objects to
-        classify datasets. It is up to  those implementing the
+        package. Both classifications use the same DataClassification objects
+        to classify datasets. It is up to  those implementing the
         type-specific configuration package to ensure types related to status
         appear in the correct part of the configuration space.
         
         Currently the distinction betwen status and typology is not used by the
         system (e.g. in type-specific default recipe assignments) and is
-        provided as a service for higher level code, e.g. primitives and scripts
-        which make use of the distinction.
+        provided as a service for higher level code, e.g. primitives and
+        scripts which make use of the distinction.
         """
         retary = self.discover_types()
         if prune :
-            # since there is no particular order to identifying types, I've deced to do this
-            # here rather than try to build the list with this in mind (i.e. passing prune to
+            # since there is no particular order to identifying types, 
+            # I've deced to do this here rather than try to build the list
+            # with this in mind (i.e. passing prune to
             # ClassificationLibrary.discover_types()
             #  basic algo: run through types, if one is a supertype of another, 
             #  remove the supertype
@@ -1329,11 +1305,11 @@ integrates other functionality.
         Type library. "Status" classifications are those which tend to change
         during the reduction of a dataset based on the amount of processing as
         opposed to instrument-mode classifications, such as GMOS_MOS,  which
-        will tend to persist. e.g. RAW vs PREPARED.  Strictly a "status" type is
-        any type defined in or below the status part of the classification
-        configuration, i.e. in the Gemini type configuration any type definition
-        files in or below the "astrodata_Gemini/ADCONFIG/classification/status" 
-        directory.
+        will tend to persist. e.g. RAW vs PREPARED.  Strictly a "status" type 
+        is any type defined in or below the status part of the classification
+        configuration, i.e. in the Gemini type configuration any type 
+        definition files in or below the 
+        "astrodata_Gemini/ADCONFIG/classification/status" directory.
 
         :returns: a list of string classification names
         :rtype: list of strings
@@ -1341,7 +1317,6 @@ integrates other functionality.
         retary = self.discover_status()
         if prune:
             retary = self.prune_typelist(retary)
-
         return retary
     
     def discover_status(self):
@@ -1351,11 +1326,9 @@ integrates other functionality.
         :returns: a list of classification name strings
         :rtype: list of strings
         """
-
         if (self.typesStatus == None):
             cl = self.get_classification_library()
             self.typesStatus = cl.discover_status(self)
-            
         return self.typesStatus
 
     def get_typology(self):
@@ -1388,21 +1361,21 @@ integrates other functionality.
         if (self.typesTypology == None):
             cl = self.get_classification_library()
             self.typesTypology = cl.discover_typology(self)
-            
         return self.typesTypology
-
         
     def is_type(self, *typenames):
         """
         :param typename: specifies the type name to check.
         :type typename: string
-        :returns: True if the given type applies to this dataset, False otherwise.
+        :returns: True if the given type applies to this dataset,
+            False otherwise
         :rtype: Bool
 
         This function checks the AstroData object to see if it is the
         given type(s) and returns True if so.
         
-        :note: "AstroData.check_type(..)" is an alias for "AstroData.is_type(..)".
+        :note: "AstroData.check_type(..)" is an alias for 
+            "AstroData.is_type(..)".
         
         """
         if (self.types == None):
@@ -1414,7 +1387,6 @@ integrates other functionality.
                 pass
             else:
                 return False
-                
         return True
     check_type = is_type
 
@@ -1425,14 +1397,11 @@ integrates other functionality.
         :returns: a list of keys from the PHU that matched C{rekey}
         :rtype: list
         
-        The re_phukeys(..) function returns all keys in this dataset's PHU which
-        match the given  regular expression.
-        
+        The re_phukeys(..) function returns all keys in this dataset's PHU 
+        which match the given  regular expression.
         """
         phuh = self.hdulist[0].header
-        
         retset = re_header_keys(rekey, phuh)
-            
         return retset
             
     # PHU manipulations
@@ -1454,12 +1423,12 @@ integrates other functionality.
             retval = hdus[0].header[key]
             if isinstance(retval, pyfits.core.Undefined):
                 raise Errors.UndefinedKeyError()
-            if retval == '' or retval == ' ':
+            if retval == "" or retval == " ":
                 raise Errors.EmptyKeyError()
             self.relhdul()
             return retval
         except:
-            setattr(self, 'exception_info', sys.exc_info()[1])
+            setattr(self, "exception_info", sys.exc_info()[1])
             return None
     phuValue = phu_get_key_value
     phuHeader = phuValue
@@ -1489,10 +1458,8 @@ integrates other functionality.
     def set_phu(self, phu):
         self.hdulist[0] = phu
         return
-        
     phu = property(get_phu, set_phu)
 
-            
     def translate_int_ext(self, integer):
         """This function is used internally to support AstroData
         instances associated with a subset of the full MEF file
@@ -1506,8 +1473,7 @@ integrates other functionality.
         :rtype: int | tuple
         :returns: the pyfits-index, relative to the containing HDUList
         """
-
-        return integer+1
+        return integer + 1
 # for the life of me I can't remember why I'm using self.extensions...
 # @@TODO: remove self.extensions completely?  might be useful to know
 # the hdu's extension in the original file... ?
@@ -1526,9 +1492,9 @@ integrates other functionality.
 
         The get_key_value(..) function is used to get the value associated
         with a given key in the data-header unit of a single-HDU
-        AstroData instance (such as returned by iteration). The value argument will be converted to
-        string, so it must have a string operator member function or be passed
-        in as string. 
+        AstroData instance (such as returned by iteration). The value argument
+        will be converted to string, so it must have a string operator member
+        function or be passed in as string. 
         
         :note: 
         
@@ -1550,7 +1516,8 @@ integrates other functionality.
         if len(self.hdulist) == 2:
             return self.ext_get_key_value(0,key)
         else:
-            raise Errors.AstroDataError("getHeaderValue must be called on single extension instance")
+            mes = "getHeaderValue must be called on single extension instance"
+            raise Errors.AstroDataError(mes)
     getHeaderValue = get_key_value
 
     def set_key_value(self, key, value, comment=None):
@@ -1585,7 +1552,8 @@ integrates other functionality.
         if len(self.hdulist) == 2:
             self.ext_set_key_value(0, key, value, comment)
         else:
-            raise ADExcept("set_key_value must be called on single extension instance")
+            mes = "set_key_value must be called on single extension instance"
+            raise Errors.AstroDataError(mes)
            
     def ext_get_key_value(self, extension, key):
         """
@@ -1609,23 +1577,22 @@ integrates other functionality.
         
         # if (self.extensions != None) and (not extension in self.extensions):
         #    return None
-            
         hdul = self.gethdul()
         try:
             exthd = hdul[extension]
         except KeyError:
-            raise ADExcept("No such extension: %s" % str(extension))
+            mes = "No such extension: %s" % str(extension)
+            raise Errors.AstroDataError(mes)
         try:
             retval = exthd.header[key]
             if isinstance(retval, pyfits.core.Undefined):
                 raise Errors.UndefinedKeyError()
-            if retval == '' or retval == ' ':
+            if retval == "" or retval == " ":
                 raise Errors.EmptyKeyError()
             return retval
         except:
-            setattr(self, 'exception_info', sys.exc_info()[1])
+            setattr(self, "exception_info", sys.exc_info()[1])
             return None
-        # print "AD914:", key, "=",retval
     
     def ext_set_key_value(self, extension, key, value, comment=None):
         """
@@ -1660,11 +1627,11 @@ integrates other functionality.
         try:
             tx = self.hdulist[extension]
         except:
-            raise ADExcept("Extension %s not present in AstroData instance" % str(origextension))
-            
+            mes = "Extension %s not present in AstroData instance" % \
+                str(origextension)
+            raise Errors.AstroDataError(mes)
         hdul = self.gethdul()
         hdul[extension].header.update(key, value, comment)
-            
         self.relhdul()
         return 
    
@@ -1700,7 +1667,8 @@ integrates other functionality.
         for i in range(1,maxl):
             try:
                 # note, only count extension in our subdata extension list
-                if (self.extensions == None) or ((extname,i) in self.extensions):
+                if (self.extensions == None) or \
+                    ((extname, i) in self.extensions):
                     if (hdul[i].header["EXTNAME"] == extname):
                         count += 1
             except KeyError:
@@ -1709,7 +1677,6 @@ integrates other functionality.
                     count += 1  # in this case we are counting when there is no
                                 # EXTNAME in the header
         self.relhdul()
-        
         return count
         
     def get_hdu(self, extid):
@@ -1746,21 +1713,20 @@ integrates other functionality.
         """
         if stomp:
             self.tlm = datetime.now().isoformat()[0:-7]
-        elif (stomp==False) and (self.tlm==None):
+        elif (stomp == False) and (self.tlm == None):
             self.tlm = datetime.now().isoformat()[0:-7]
-        if comment==None and key!=None:
-            comment='UT Time stamp for '+key
+        if comment == None and key != None:
+            comment = "UT Time stamp for " + key
         
         # Updating PHU with specified key and GEM-TLM    
         if key !=None:
             self.phu_set_key_value(key,self.tlm,comment)
-            self.phu_set_key_value('GEM-TLM',self.tlm, 
-                'UT Last modification with GEMINI')
+            self.phu_set_key_value("GEM-TLM", self.tlm, 
+                "UT Last modification with GEMINI")
         # Only updating the GEM-TLM PHU key
         else:
-             self.phu_set_key_value('GEM-TLM',self.tlm,
-                'UT Last modification with GEMINI')     
-        
+             self.phu_set_key_value("GEM-TLM", self.tlm,
+                "UT Last modification with GEMINI")     
         # Returning the current time for logging if desired
         return self.tlm        
     
@@ -1777,58 +1743,45 @@ integrates other functionality.
         returned, NOT the value in the PHU. The value in the PHU can always be
         found using ad.phu_get_key_value('ORIGNAME').
         """
-        # Grabbing value of 'ORIGNAME' from PHU
-        phuOrigFilename = self.phu_get_key_value('ORIGNAME')
-        
-        # Grabbing value of astrodata instances private member
-        # '__origFilename' if it exists
+        phuOrigFilename = self.phu_get_key_value("ORIGNAME")
         origFilename = self.__origFilename
+        
         if origFilename != None:
             origFilename = os.path.basename(self.__origFilename)
+        
         if origFilename == phuOrigFilename == None:
             # No private member value was found so throw an exception
-            mes = 'failed to have its original filename stored when astrodata'
-            mes += 'instantiated it'
+            mes = "failed to have its original filename stored when astrodata"
+            mes += "instantiated it"
             raise Errors.AstroDataError(self.filename + mes)
         elif (phuOrigFilename is None) and (origFilename is not None):
             # phu key doesn't exist yet, so add it
-            mes = 'Original name of file prior to processing'
-            self.phu_set_key_value('ORIGNAME', origFilename, mes)
-        # The check below is extra at the moment, but could be useful in the future
-        elif (phuOrigFilename is not None) and (origFilename is not None):
+            mes = "Original name of file prior to processing"
+            self.phu_set_key_value("ORIGNME", origFilename, mes)
+        # The check could be useful in the future
+        #elif (phuOrigFilename is not None) and (origFilename is not None):
             # phu key exists, so check if it matches private members value
-            if phuOrigFilename != origFilename:
+            #if phuOrigFilename != origFilename:
                 #$$ They don't match, do something?
-                pass
-            else:
-                #$$ They match, do something?
-                pass
         else:
             # last choice, private one is None, but phu one isn't
             origFilename = phuOrigFilename
-        
-        # Returning the filename for logging if desired   
         return origFilename
 
-    def div(self,denominator):
-        
-        adOut=arith.div(self,denominator)
-        return adOut
+    def div(self, denominator):
+        return arith.div(self,denominator)
 
-    def mult(self,input_b):
-        adOut=arith.mult(self,input_b)
-        return adOut
+    def mult(self, input_b):
+        return arith.mult(self,input_b)
     
-    def add(self,input_b):
-        adOut=arith.add(self,input_b)
-        return adOut
+    def add(self, input_b):
+        return arith.add(self, input_b)
     
-    def sub(self,input_b):
-        adOut=arith.sub(self,input_b)
-        return adOut
+    def sub(self, input_b):
+        return arith.sub(self, input_b)
     
 # SERVICE FUNCTIONS and FACTORIES
-def correlate( *iary):
+def correlate(*iary):
     """
     :param iary: A list of AstroData instances for which a correlation dictionary
         will be constructed to produce a correlation dict.
@@ -1880,7 +1833,6 @@ def correlate( *iary):
                 break
             else:
                 outrow.append(correlateExt)
-        
         #print "gd621: %d %d" %(len(outrow), numinputs)
         if len(outrow) == numinputs:
             # if the outrow is short then some input didn't correlate with the
@@ -1888,7 +1840,7 @@ def correlate( *iary):
             outlist.append(outrow)
     return outlist    
 
-def prep_output(input_ary = None, name = None, clobber = False):
+def prep_output(input_ary=None, name=None, clobber=False):
     """
     :param input_ary: The input array from which propagated content (such as
         the  source PHU) will be taken. Note: the zero-th element in the list
@@ -1943,7 +1895,6 @@ def prep_output(input_ary = None, name = None, clobber = False):
     if input_ary == None: 
         raise Errors.AstroDataError("prep_output input is None") 
         return None
-
     if type(input_ary) != list:
         iary = [input_ary]
     else:
@@ -1958,13 +1909,11 @@ def prep_output(input_ary = None, name = None, clobber = False):
     outlist = [outphu]
 
     #perform extension propagation
-     
     newhdulist = pyfits.HDUList(outlist)
-    
     retgd = AstroData(newhdulist, mode = "update")
+    
     # Ensuring the prepared output has the __origFilename private variable
     retgd._AstroData__origFilename = input_ary._AstroData__origFilename
-    
     if name != None:
         if os.path.exists(name):
             if clobber == False:
@@ -1972,5 +1921,4 @@ def prep_output(input_ary = None, name = None, clobber = False):
             else:
                 os.remove(name)
         retgd.filename = name
-    
     return retgd
