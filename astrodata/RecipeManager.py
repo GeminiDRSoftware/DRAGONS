@@ -8,6 +8,7 @@ import pickle # for persisting the calibration index
 import socket # to get host name for local statistics
 #------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
+from Errors import ReduceError
 import traceback
 import AstroDataType
 from AstroDataType import get_classification_library
@@ -35,7 +36,7 @@ centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
 
 #------------------------------------------------------------------------------ 
-
+MAINSTREAM = "main"
 class RecipeExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -125,6 +126,7 @@ class ReductionContext(dict):
     arguments = None
     cache_files = None
     _localparms = None # dictionary with local args (given in recipe as args, generally)
+    _nonstandard_stream = None
     user_params = None # meant to be UserParams instance
     proxy_id = 1 # used to ensure uniqueness
     ro = None
@@ -142,7 +144,7 @@ class ReductionContext(dict):
         self.inputs_history = []
         self.calibrations = {}
         self.rorqs = []
-        self.outputs = {"standard":[]}
+        self.outputs = {"main":[]}
         self.stephistory = {}
         self.hostname = socket.gethostname()
         self.display_name = None
@@ -158,7 +160,7 @@ class ReductionContext(dict):
         self.stackeep = StackKeeper(local=False)
         self.stackKeeper = self.stackeep # "stackeep" is not a good name
         self.fringes = FringeKeeper()
-        
+        self._nonstandard_stream = []
     def __getitem__(self, arg):
         """Note, the ReductionContext version of __getitem__ returns None instead of throwing a KeyError.
         """
@@ -175,7 +177,12 @@ class ReductionContext(dict):
         else:
             retval = self.convert_parm_to_val(arg, value)
         return retval
-       
+    
+    def __contains__(self, thing):
+        if thing in self._localparms:
+            return True
+        return dict.__contains__(self, thing)
+            
     def convert_parm_to_val(self, parmname, value):
         legalvartypes = ["bool", 
                         "int",
@@ -227,8 +234,8 @@ class ReductionContext(dict):
         #no loop initiated for stkrqs object printouts yet
         tempStr = tempStr + "\noutputs = " 
         
-        if self.outputs["standard"] != []:
-            for out_obj in self.outputs["standard"]:
+        if self.outputs[MAINSTREAM] != []:
+            for out_obj in self.outputs[MAINSTREAM]:
                 tempStr = tempStr + str(out_obj)
         else:
             tempStr = tempStr + str(self.outputs)
@@ -425,7 +432,7 @@ class ReductionContext(dict):
         val = self.step_moment(stepname, "end")
         # this step saves inputs
         self.stephistory.update({key: val})
-        # this step moves outputs["standard"] to inputs
+        # this step moves outputs[MAINSTREAM] to inputs
         # and clears outputs
         self.finalize_outputs()
         self.localparms = None
@@ -438,16 +445,18 @@ class ReductionContext(dict):
         is not affected.
         """
         # only push is outputs is filled
-        if len(self.outputs["standard"]) != 0:
+        if len(self.outputs[MAINSTREAM]) != 0:
             # don't do this if the set is empty, it's a non-IO primitive
             ##@@TODO: The below if statement could be redundant because this is done
             # in addInputs
             if self.original_inputs == None:
+                # SAY WHAT?  why deepcopy?
+                # ack!
                 self.original_inputs = deepcopy(self.inputs)
             
-            #print "OUTPUTS:", self.outputs["standard"]
+            #print "OUTPUTS:", self.outputs[MAINSTREAM]
             newinputlist = []
-            for out in self.outputs['standard']:
+            for out in self.outputs['main']:
                 if type(out) == AstroDataRecord:
                     newinputlist.append(out)
                 else:
@@ -455,7 +464,7 @@ class ReductionContext(dict):
                                        % {'val':str(out), 'typ':str(type(out))})
             
             self.inputs = newinputlist
-            self.outputs.update({"standard":[]})
+            self.outputs.update({MAINSTREAM:[]})
    
 #------------------ FINISH ----------------------------------------------------   
     def is_finished(self, arg=None):
@@ -525,20 +534,21 @@ class ReductionContext(dict):
             return self.outputs
         elif style == "AD": #@@HARDCODED: means "as AstroData instances"
             retl = []
-            for inp in self.outputs['standard']:
+            for inp in self.outputs['main']:
                 if inp.ad == None:
                     inp.load()
                 retl.append(inp.ad)
             return retl
         elif style == "FN": #@@HARDCODED: means "as Filenames"
-            retl = [inp.filename for inp in self.outputs['standard']]
+            retl = [inp.filename for inp in self.outputs['main']]
             return retl
         else:
             return None # this should not happen, but given a mispelled style arg    
 
-    def get_inputs_as_astro_data(self):
+    def get_inputs_as_astrodata(self):
         return self.get_inputs(style="AD")
-        
+    get_inputs_as_astro_data = get_inputs_as_astrodata
+    
     def get_inputs_as_filenames(self):
         return self.get_inputs(style="FN")
 
@@ -722,7 +732,7 @@ class ReductionContext(dict):
             return ""
         else:
             outputlist = []
-            for inp in self.outputs['standard']: 
+            for inp in self.outputs['main']: 
                 outputlist.append(inp.filename)
             #print "RM289:", outputlist
             #"""
@@ -981,7 +991,7 @@ class ReductionContext(dict):
                         "stepname":str(sh[dt]['stepname']),
                         "mark":str(sh[dt]['mark']),
                         "inputs":str(",".join(sh[dt]['inputs'])),
-                        "outputs":str(",".join(sh[dt]['outputs']['standard'])),
+                        "outputs":str(",".join(sh[dt]['outputs']['main'])),
                         "time":str(dt),
                         "elapsed":elapsed,
                     }
@@ -997,7 +1007,7 @@ class ReductionContext(dict):
                 line = "\x1b[1m" + line + "\x1b[22m" + "\n"
                 retstr += line
                 
-            if len(sh[dt]["outputs"]["standard"]) != 0:
+            if len(sh[dt]["outputs"][MAINSTREAM]) != 0:
                 retstr += " | ".center(wide) + "\n"
                 retstr += "\|/".center(wide) + "\n"
                 retstr += " ' ".center(wide) + "\n"
@@ -1010,15 +1020,18 @@ class ReductionContext(dict):
         
         return retstr
         
-    def report_output(self, inp, category="standard", load=True):
+    def report_output(self, inp, stream=MAINSTREAM, load=True):
         ##@@TODO: Read the new way code is done.
-        if category != "standard":
-            raise RecipeExcept("You may only use " + 
-                "'standard' category output at this time.")
+        #if category != MAINSTREAM:
+        #    raise RecipeExcept("You may only use " + 
+        #        "'main' category output at this time.")
+        
+        if stream not in self.outputs:
+            self.outputs.update({stream:[]})
         if type(inp) == str:
-            self.outputs[category].append(AstroDataRecord(inp, self.display_id, load=load))
+            self.outputs[stream].append(AstroDataRecord(inp, self.display_id, load=load))
         elif isinstance(inp, AstroData):
-            self.outputs[category].append(AstroDataRecord(inp))
+            self.outputs[stream].append(AstroDataRecord(inp))
         elif type(inp) == list:
             for temp in inp:
                 # This is a good way to check if IRAF failed.
@@ -1040,7 +1053,9 @@ class ReductionContext(dict):
                 else:
                     raise "RM292 type: " + str(type(temp))
                 #print "RM344:", orecord
-                self.outputs[category].append(orecord)
+                if stream not in self.outputs:
+                    self.outputs.update({stream:[]})
+                self.outputs[stream].append(orecord)
     
     def restore_cal_index(self, filename):
         if os.path.exists(filename):
@@ -1212,6 +1227,13 @@ class ReductionContext(dict):
             newpath = os.path.join(path, fn) 
             newlist.append(newpath)
         return newlist
+        
+    def switch_stream(self, switch_to = None):
+        if switch_to not in self.outputs:
+            raise ReduceError(
+                        '"%s" stream does not exist, cannot switch to it' 
+                            % repr(switch_to))
+        
     
 def open_if_name(dataset):
     """Utility function to handle accepting datasets as AstroData

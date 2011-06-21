@@ -5,8 +5,8 @@ from xml.dom import minidom
 CALMGR = "http://hbffits2.hi.gemini.edu/calmgr"
 LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
 #"None # needs to have adcc http port in
-CALTYPEDICT = { "bias": "processed_bias",
-                "flat": "processed_flat",
+CALTYPEDICT = { "bias": "bias",
+                "flat": "flat",
                 "processed_bias": "processed_bias",
                 "processed_flat": "processed_flat"}
 

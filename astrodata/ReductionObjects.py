@@ -102,7 +102,7 @@ class ReductionObject(object):
         # will be NONE if there are no current inputs, maintain current
         # curPrimType
         if correctPrimType and correctPrimType != self.curPrimType:
-            print "RO98:", repr(correctPrimType), repr(self.curPrimType)
+            # print "RO98:", repr(correctPrimType), repr(self.curPrimType)
             newprimset  = self.recipeLib.retrieve_primitive_set(astrotype=correctPrimType)
             self.add_prim_set(newprimset)
             self.curPrimType = correctPrimType
@@ -128,6 +128,10 @@ class ReductionObject(object):
         primset.init(context)
         context.parameter_collate(self.curPrimType, primset, primname)
         from RecipeManager import SettingFixedParam
+        nonStandardStream = None
+        if context["stream"] != None:
+            #print "RO132: got stream arg", context["stream"]
+            nonStandardStream = context.switch_stream(context["stream"])
         try:
             for rc in prim(context):
                 # @@note: call the command clause callback here
@@ -149,6 +153,8 @@ class ReductionObject(object):
         context.curPrimName = None
         self.curPrimName = prevprimname
         yield context.end(primname)
+        if nonStandardStream:
+            context.restore_stream(from_stream = nonStandardStream)
         context.localparms = savedLocalparms
         log.status("ENDING %s: %s" % (btype, primname))
         yield context
