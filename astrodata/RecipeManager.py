@@ -1141,7 +1141,7 @@ class ReductionContext(dict):
         for orig in self.original_inputs:
             Sid = purpose + idFac.generate_stackable_id(orig.ad, ver)
             stackUEv = GetStackableRequest()
-            stackUEv.stkID = Sid
+            stackUEv.stk_id = Sid
             self.add_rq(stackUEv)
                 
     def rq_stack_update(self, purpose = ""):
@@ -1153,8 +1153,8 @@ class ReductionContext(dict):
         for inp in self.inputs:
             stackUEv = UpdateStackableRequest()
             Sid = purpose + idFac.generate_stackable_id(inp.ad, ver)
-            stackUEv.stkID = Sid
-            stackUEv.stkList = inp.filename
+            stackUEv.stk_id = Sid
+            stackUEv.stk_list = inp.filename
             self.add_rq(stackUEv)
     #better name?
     rq_stack_put = rq_stack_update

@@ -110,11 +110,11 @@ class GetStackableRequest( ReductionObjectRequest ):
     '''
     def __init__( self, stk_id=None ):
         super( GetStackableRequest, self ).__init__()
-        self.stkID = stk_id
+        self.stk_id = stk_id
         
     def __str__(self):
         tempStr = super( GetStackableRequest, self ).__str__()
-        tempStr = tempStr + "ID: " + str( self.stkID )
+        tempStr = tempStr + "ID: " + str( self.stk_id )
         
         return tempStr
 
@@ -159,14 +159,14 @@ class UpdateStackableRequest( ReductionObjectRequest ):
     '''
     def __init__( self, stk_id=None, stk_list=[] ):
         super( UpdateStackableRequest, self ).__init__()
-        self.stkID = stk_id
-        self.stkList = stk_list
+        self.stk_id = stk_id
+        self.stk_list = stk_list
     
         
     def __str__(self):
         tempStr = super( UpdateStackableRequest, self ).__str__()
-        tempStr = tempStr + "ID: " + str( self.stkID ) + "\n" + \
-                    "STACKABLE LIST: " + str( self.stkList )
+        tempStr = tempStr + "ID: " + str( self.stk_id ) + "\n" + \
+                    "STACKABLE LIST: " + str( self.stk_list )
         
         return tempStr
 
