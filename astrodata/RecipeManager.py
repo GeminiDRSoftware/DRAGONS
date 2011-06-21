@@ -5,7 +5,7 @@ import new
 import os
 import inspect
 import pickle # for persisting the calibration index
-import socket # to get host name for local statistics
+import socket # to get host name for local statistics
 #------------------------------------------------------------------------------ 
 from astrodata.AstroData import AstroData
 from Errors import ReduceError
@@ -528,23 +528,23 @@ class ReductionContext(dict):
             return retl
         else:
             return None # this should not happen, but given a mispelled style arg
-         
     def get_outputs(self, style=None):
-        if style==None:
-            return self.outputs
-        elif style == "AD": #@@HARDCODED: means "as AstroData instances"
-            retl = []
-            for inp in self.outputs['main']:
-                if inp.ad == None:
-                    inp.load()
-                retl.append(inp.ad)
-            return retl
-        elif style == "FN": #@@HARDCODED: means "as Filenames"
-            retl = [inp.filename for inp in self.outputs['main']]
-            return retl
+        return self.get_stream(style = style, stream = "main", empty = False)
+        
+    def get_stream(self, style=None, stream = None, empty = True):
+        if stream == None:
+            stream = "main"
+        
+        if stream in self.outputs:
+            outputs = self.outputs[stream]
         else:
-            return None # this should not happen, but given a mispelled style arg    
-
+            return None
+            
+        if empty:
+            self.outputs.update({stream:[]})
+        
+        return outputs
+            
     def get_inputs_as_astrodata(self):
         return self.get_inputs(style="AD")
     get_inputs_as_astro_data = get_inputs_as_astrodata
