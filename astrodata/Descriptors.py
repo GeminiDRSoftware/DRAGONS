@@ -74,7 +74,6 @@ class DescriptorValue():
     unit = None
     def __init__(self,  initval, 
                         format = None, 
-                        asDict = None, 
                         name = "unknown", 
                         ad = None, 
                         pytype = None,
@@ -123,13 +122,12 @@ class DescriptorValue():
             val = None
         else:
             self.val = initval
-            self.dict_val = {"*":initval}
+            self.dict_val = {('SCI', 1):initval}
         
         #NOTE:
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
-        self.asDict = asDict
         self.name = name
         
         if format:
@@ -177,7 +175,6 @@ class DescriptorValue():
             val = self.is_collapsable()
         return retstr
     
-    
     def collapse_dict_val(self):
         value = self.is_collapsable()
         if value == None:
@@ -190,9 +187,6 @@ class DescriptorValue():
         # got here then all values were identical
         return value
 
-   
-    
-    
     def convert_value_to(self, new_units, new_type = None):
         # retval = self.unit.convert(self.val, new_units)
         newDict = copy(self.dict_val)
@@ -216,9 +210,7 @@ class DescriptorValue():
                                     pytype = pytype,
                                     name = self.name,
                                     format = self.format)
-
         return retval
-
     
     def for_db(self):
         oldformat = self.format
@@ -228,40 +220,80 @@ class DescriptorValue():
         if type(val) == tuple:
             val = str(val)
         return val
-    def as_pytype(self):
+
+    def as_pytype(self, cast_type=None, convert_all=False):
         self.val = self.is_collapsable()
         if self.val == None:
-            curform = self.format
-            retstr =  str(self)
-            return retstr
+            if cast_type == "dict":
+                return self.dict_val
+            elif cast_type == "int" and convert_all:
+                newdict = self.dict_val
+                for key in newdict.keys():
+                    newdict[key] = int(newdict[key])
+                return newdict
+            elif cast_type == "float" and convert_all:
+                newdict = self.dict_val
+                for key in newdict.keys():
+                    newdict[key] = float(newdict[key])
+                return newdict
+            elif cast_type == "string" and convert_all:
+                newdict = self.dict_val
+                for key in newdict.keys():
+                    newdict[key] = repr(newdict[key])
+                return newdict
+            else:
+                curform = self.format
+                retstr =  str(self)
+                return retstr
         elif self.pytype != type(self.val):
-            return self.pytype(self.val)
+            # this means self.val is collapsable and 
+            # the pytype and self.val type are different
+            if cast_type == "string":
+                return str(self.val)
+            elif cast_type == "float":
+                return float(self.val)
+            elif cast_type == "int":
+                return int(self.val)
+            else:
+                return self.pytype(self.val)
         else:
-            return self.val
-    
+            if cast_type == "string":
+                return str(self.val)
+            elif cast_type == "float":
+                return float(self.val)
+            elif cast_type == "int":
+                return int(self.val)
+            else:
+                return self.val
     # alias
     for_numpy = as_pytype
+
+    def as_dict(self):
+        return self.dict_val
             
-    
     def info(self):
         dvstr = ""
-        keys = self.dict_val.keys()
-        keys.sort()
-        for key in keys:
-            
-            dvstr += str(key)
-            dvstr += ": "
-            dvstr += str(self.dict_val[key])
-            dvstr += "\n                      "
-        retstr = """\
-descriptor value for: %(name)s
-        single value: %(val)s
-    extension values: %(dict_val)s
-        """ % {"name":self.name,
-               "val": repr(self.val),
-               "dict_val":dvstr
-              }
-
+        print("\nDescriptor Value Info:")
+        print("\t.name      = %s" % self.name)
+        print("\t.val       = %s" % repr(self.val))
+        print("\ttype(.val) = %s" % type(self.val))
+        print("\t.pytype    = %s" % str(self.pytype))
+        if self.is_collapsable() is None:
+            keys = self.dict_val.keys()
+            keys.sort()
+            lkeys = len(keys)
+            count = 0
+            for key in keys:
+                if count == 0:
+                    print("\t.dict_val  = {\t%s:%s," % (str(key), repr(self.dict_val[key])))
+                elif count == lkeys - 1:
+                    print("\t\t\t%s:%s}" % (str(key), repr(self.dict_val[key])))
+                else: 
+                    print("\t\t\t%s:%s," % (str(key), repr(self.dict_val[key])))
+                count += 1
+        else:
+            print("\t.dict_val  = %s" % str(self.dict_val))
+        print("\t.is_collapsable() = %s" % str(self.is_collapsable()))
     
     def is_collapsable(self):
         oldvalue = None
