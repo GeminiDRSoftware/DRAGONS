@@ -122,7 +122,9 @@ class DescriptorValue():
             val = None
         else:
             self.val = initval
-            self.dict_val = {('SCI', 1):initval}
+            self.dict_val = {}
+            for ext in ad["SCI"]:
+                self.dict_val.update({(ext.extname(),ext.extver()) : self.val})
         
         #NOTE:
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
@@ -221,22 +223,22 @@ class DescriptorValue():
             val = str(val)
         return val
 
-    def as_pytype(self, cast_type=None, convert_all=False):
+    def as_pytype(self, as_type=None, convert_values=False):
         self.val = self.is_collapsable()
         if self.val == None:
-            if cast_type == "dict":
+            if as_type == "dict":
                 return self.dict_val
-            elif cast_type == "int" and convert_all:
+            elif as_type == "int" and convert_values:
                 newdict = self.dict_val
                 for key in newdict.keys():
                     newdict[key] = int(newdict[key])
                 return newdict
-            elif cast_type == "float" and convert_all:
+            elif as_type == "float" and convert_values:
                 newdict = self.dict_val
                 for key in newdict.keys():
                     newdict[key] = float(newdict[key])
                 return newdict
-            elif cast_type == "string" and convert_all:
+            elif as_type == "string" and convert_values:
                 newdict = self.dict_val
                 for key in newdict.keys():
                     newdict[key] = repr(newdict[key])
@@ -248,56 +250,67 @@ class DescriptorValue():
         elif self.pytype != type(self.val):
             # this means self.val is collapsable and 
             # the pytype and self.val type are different
-            if cast_type == "string":
+            if as_type == "string":
                 return str(self.val)
-            elif cast_type == "dict":
+            elif as_type == "dict":
                 return self.dict_val
-            elif cast_type == "float":
+            elif as_type == "float":
                 return float(self.val)
-            elif cast_type == "int":
+            elif as_type == "int":
                 return int(self.val)
             else:
                 return self.pytype(self.val)
         else:
-            if cast_type == "string":
+            if as_type == "string":
                 return str(self.val)
-            elif cast_type == "dict":
+            elif as_type == "dict":
                 return self.dict_val
-            elif cast_type == "float":
+            elif as_type == "float":
                 return float(self.val)
-            elif cast_type == "int":
+            elif as_type == "int":
                 return int(self.val)
             else:
                 return self.val
     # alias
     for_numpy = as_pytype
 
+    # the as_<type> aliases
     def as_dict(self):
-        return self.dict_val
-            
+        return self.as_pytype("dict")
+
+    def as_str(self):
+        return self.as_pytype("string")
+
+    def as_float(self):
+        return self.as_pytype("float", convert_values=True)
+
+    def as_int(self):
+        return self.as_pytype("int", convert_values=True)        
+    
     def info(self):
         dvstr = ""
         print("\nDescriptor Value Info:")
-        print("\t.name      = %s" % self.name)
-        print("\t.val       = %s" % repr(self.val))
-        print("\ttype(.val) = %s" % type(self.val))
-        print("\t.pytype    = %s" % str(self.pytype))
-        if self.is_collapsable() is None:
-            keys = self.dict_val.keys()
-            keys.sort()
-            lkeys = len(keys)
-            count = 0
-            for key in keys:
-                if count == 0:
-                    print("\t.dict_val  = {\t%s:%s," % (str(key), repr(self.dict_val[key])))
-                elif count == lkeys - 1:
-                    print("\t\t\t%s:%s}" % (str(key), repr(self.dict_val[key])))
-                else: 
-                    print("\t\t\t%s:%s," % (str(key), repr(self.dict_val[key])))
-                count += 1
-        else:
-            print("\t.dict_val  = %s" % str(self.dict_val))
+        print("\t.name             = %s" % self.name)
+        print("\t.val              = %s" % repr(self.val))
+        print("\ttype(.val)        = %s" % type(self.val))
+        print("\t.pytype           = %s" % str(self.pytype))
+        print("\t.unit             = %s" % str(self.unit))
         print("\t.is_collapsable() = %s" % str(self.is_collapsable()))
+        keys = self.dict_val.keys()
+        keys.sort()
+        lkeys = len(keys)
+        count = 0
+        for key in keys:
+            if count == 0:
+                print("\t.dict_val         = {%s:%s," % \
+                    (str(key), repr(self.dict_val[key])))
+            elif count == lkeys - 1:
+                print("%s%s:%s}" % (" " * 29, str(key),\
+                    repr(self.dict_val[key])))
+            else: 
+                print("%s%s:%s," % (" " * 29, str(key),\
+                    repr(self.dict_val[key])))
+            count += 1
     
     def is_collapsable(self):
         oldvalue = None
@@ -318,7 +331,10 @@ class DescriptorValue():
         val = self.is_collapsable()
         
         if val == None:
-            raise Errors.DescriptorValueTypeError("DescriptorValue contains complex result (differs for different extension) and cannot be used as a simple %s" % str(self.pytype))
+            mes =  "DescriptorValue contains complex result (differs for"
+            mes += "different extension) and cannot be used as a simple "
+            mes += str(self.pytype)
+            raise Errors.DescriptorValueTypeError(mes)
         else:
             if type(val) != self.pytype:
                 val = self.as_pytype()
@@ -396,7 +412,10 @@ class DescriptorValue():
         val = self.is_collapsable()
         
         if val == None:
-            raise Errors.DescriptorValueTypeError("DescriptorValue contains complex result (differs for different extension) and cannot be used as a simple %s" % str(self.pytype))
+            mes =  "DescriptorValue contains complex result (differs for "
+            mes += "different extension) and cannot be used as a simple"
+            mes += str(self.pytype)
+            raise Errors.DescriptorValueTypeError(mes)
         else:
             if type(val) != self.pytype:
                 val = self.as_pytype()
