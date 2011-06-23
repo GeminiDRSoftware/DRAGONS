@@ -3,6 +3,7 @@ import os
 import traceback
 from astrodata import AstroData
 from astrodata.adutils import gemLog
+import inspect
 
 log = None
 
@@ -133,6 +134,12 @@ class ReductionObject(object):
             #print "RO132: got stream arg", context["stream"]
             nonStandardStream = context.switch_stream(context["stream"])
         try:
+            #2.6 feature
+            #if inspect.isgeneratorfunction(prim):
+            #    print "it's a primitive"
+            #else:
+            #    print "it's not a primitive"
+            
             for rc in prim(context):
                 # @@note: call the command clause callback here
                 # @@note2: no, this yields and the command loop act that way
@@ -145,8 +152,8 @@ class ReductionObject(object):
             print "${RED}"+str(e)+"${NORMAL}"
         except TypeError,e:
             print 'Recieved TypeError: "%s" during iteration' % e
-            msg = "The running primitive, '%s', probably lacks 'yield rc'." % primname
-            raise IterationError(msg)
+            msg = "The running primitive, '%s'." % primname
+            raise # IterationError(msg)
         except:
             print "%(name)s failed due to an exception." %{'name':primname}
             raise
