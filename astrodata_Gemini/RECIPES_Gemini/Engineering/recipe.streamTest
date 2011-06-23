@@ -2,4 +2,6 @@ forwardStream(to_stream=BIGSTREAM)
 simpleStreamTest(stream=BIGSTREAM)
 forwardStream(to_stream=SMALLSTREAM)
 simpleStreamTest(stream=SMALLSTREAM)
+clearStream(the_stream=BIGSTREAM)
+clearStream(the_stream=SMALLSTREAM)
 showOutputs
