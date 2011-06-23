@@ -49,7 +49,7 @@ def add_dq(adinput=None, bpm=None):
         for ad in adinput:
             # Check whether the add_dq user level function has been
             # run previously
-            if ad.phu_get_key_value(keyword) or ad["DQ"]:
+            if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "add_dq" % (ad.filename))
             # Get the appropriate BPM for this AstroData object
@@ -60,36 +60,48 @@ def add_dq(adinput=None, bpm=None):
                 # using the appropriate descriptors
                 non_linear_level = ext.non_linear_level().as_pytype()
                 saturation_level = ext.saturation_level().as_pytype()
+                log.fullinfo("Non linear level = %d" % non_linear_level)
+                log.fullinfo("Saturation level = %d" % saturation_level)
                 # Create an array that contains pixels that have a value of 2
                 # when that pixel is in the non-linear regime in the input
                 # science extension
                 if non_linear_level is not None:
-                    non_linear_array = np.where((ext.data > non_linear_level) \
-                        & (ext.data < saturation_level), 2, 0)
+                    non_linear_array = np.where(
+                        ((ext.data >= non_linear_level) &
+                        (ext.data < saturation_level)), 2, 0)
                     # Set the data type of the array to be int16
                     non_linear_array = non_linear_array.astype(np.int16)
                 # Create an array that contains pixels that have a value of 4
                 # when that pixel is saturated in the input science extension
                 if saturation_level is not None:
                     saturation_array = np.where(
-                        ext.data > saturation_level, 4, 0)
+                        ext.data >= saturation_level, 4, 0)
                     # Set the data type of the array to be int16
                     saturation_array = saturation_array.astype(np.int16)
                 # Create a single DQ extension from the three arrays (BPM,
-                # non-linear and saturated)
-                dq_array = np.add(bpm.data, non_linear_array,
+                # non-linear and saturated). BPMs have an EXTNAME equal to "DQ"
+                bpmext = bpm["DQ", ext.extver()]
+                dq_array = np.add(bpmext.data, non_linear_array,
                                   saturation_array)
                 # Create a DQ AstroData object
-                dq = AstroData(header=bpm.header, data=dq_array)
+                log.fullinfo("Using %s[DQ, %d] BPM for %s[%s, %d]" % \
+                             (bpm.filename, ext.extver(), ad.filename,
+                              ext.extname(), ext.extver()))
+                dq = AstroData(header=bpmext.header, data=dq_array)
                 # Name the extension appropriately
                 dq.rename_ext("DQ", ver=ext.extver())
                 # Check that the DQ extensions has BITPIX=16, NAXIS=2,
                 # PCOUNT=0, GCOUNT=1, BUNIT=bit, BPMFILE=bpm.filename,
                 # EXTVER=ad.extver(), EXTNAME=DQ 
-            # Append the DQ AstroData object to the input AstroData object
-            ad.append(moredata=dq)
-            log.status("Adding the DQ extension to the input AstroData " \
-                       "object %s" % (ad.filename))
+                # Append the DQ AstroData object to the input AstroData object.
+                # Check whether an extension with the same name as the DQ
+                # AstroData object already exists in the input AstroData object
+                if ad["DQ", ext.extver()]:
+                    raise Errors.Error("A [DQ, %d] extension already exists " \
+                                       "in %s" % (ext.extver(), ad.filename))
+                log.info("Adding the [DQ, %d] extension to the input " \
+                         "AstroData object %s" % (ext.extver(), ad.filename))
+                ad.append(moredata=dq)
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             # Append the output AstroData object to the list of output
@@ -263,17 +275,24 @@ def _select_bpm(adinput=None, bpm=None):
                 raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
             bpm_list.append(bpm)
     # Check that the returned BPM is the same size as the input AstroData
-    # object
+    # object. Loop over each input AstroData object in the input list
     for ad in adinput:
+        # Loop over each science extension in each input AstroData object
         for ext in ad["SCI"]:
-            extver = ext.extver()
-            bpmext = bpm["SCI",extver]
-            # Needed for F2 - will be removed when a proper BPM for F2 is done
-            bpmext.data = np.squeeze(bpmext.data)
-            if bpmext.data.shape != ext.data.shape:
-                raise Errors.MatchError()
+            # BPMs have an EXTNAME equal to "DQ"
+            bpmext = bpm["DQ", ext.extver()]
             # Ensure that the bpm has a data type of int16
             bpmext.data = bpmext.data.astype(np.int16)
+            if bpmext.data.shape != ext.data.shape:
+                # Get the data_section value of the science extension using the
+                # appropriate descriptor 
+                y1, y2, x1, x2 = ext.data_section().val
+                # Copy the pixel data of the BPM into the data section of an
+                # array that is the same size as the pixel data of the science
+                # extension
+                new_bpm_data = np.zeros(ext.data.shape, dtype=np.int16)
+                new_bpm_data[y1:y2,x1:x2] = bpmext.data
+                bpmext.data = new_bpm_data
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by bpm as the value
     ret_bpm_dict = gt.make_dict(key_list=adinput, value_list=bpm_list)
