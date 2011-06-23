@@ -7,7 +7,7 @@
         "default"       : "_normalized",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
  # The standardizeStructure primitive is actually located in the
@@ -19,7 +19,7 @@
         "default"       : "_sdzStruct",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "add_mdf":{
         "default"       : False,
