@@ -6,7 +6,7 @@
         "default"       : "_sdzHdrs",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
  "standardizeStructure":{
@@ -15,7 +15,7 @@
         "default"       : "_sdzStruct",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "add_mdf":{
         "default"       : True,
@@ -30,7 +30,7 @@
         "default"       : "_validated",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "repair":{
         "default"       : True,
