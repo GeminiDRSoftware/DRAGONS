@@ -43,7 +43,7 @@ def adu_to_electrons(adinput):
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "adu_to_electrons" % (ad.filename))
-            # Get the gain value using the appropriate descriptors
+            # Get the gain value using the appropriate descriptor
             gain = ad.gain().as_pytype()
             # Multiply the science extension by the gain and the variance
             # extension by the gain squared
@@ -52,11 +52,10 @@ def adu_to_electrons(adinput):
                      (ad.filename, gain))
             ad = ad.mult(gain)
             # Update the physical units keyword in the header of the AstroData
-            # object. Formatting so logger looks organized for these messages
+            # object. Data now has units of electrons
             log.fullinfo("*"*50, category="header")
             log.fullinfo("File = %s" % ad.filename, category="header")
             log.fullinfo("~"*50, category="header")
-            # Data now has units of electrons
             gt.update_key_value(adinput=ad, function="bunit",
                                 value="electron", extname="SCI")
             gt.update_key_value(adinput=ad, function="bunit",
