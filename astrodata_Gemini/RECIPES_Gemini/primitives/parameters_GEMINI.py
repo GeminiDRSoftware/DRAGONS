@@ -234,13 +234,13 @@
         "default"       : "_stacked",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "operation":{
         "default"       : "average",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
  "storeProcessedBias":{
