@@ -65,6 +65,9 @@ class DescriptorTypeError(Error):
     """
     message = "Unable to return a value for data of this AstroData Type"
 
+class DescriptorValueError(Error):
+    pass
+
 class DescriptorValueTypeError(Error):
     pass
     
