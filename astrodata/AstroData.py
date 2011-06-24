@@ -596,13 +596,13 @@ integrates other functionality.
                        formatted or not
         :type as_html: bool
         
+        :param verbose: boolean that will add alias and object id info
+        :type verbose: bool
+
         The infostr(..) function is used to get a string ready for display
         either as plain text or HTML.  It provides AstroData-relative
         information, unlike the pyfits-forwarded function AstroData.info(),
         and so uses AstroData relative indexes, descriptors, and so on.  
-        
-        The format of this string is subject to change and is at the moment 
-        quite minimal.
         """
         if not as_html:
             hdulisttype = ""
@@ -620,16 +620,27 @@ integrates other functionality.
             
             # Create Primary AD info
             rets += "\nFilename: %s" % str(self.filename)
-            rets += "\n Obj. ID: %s" % str(id(self))
+            if verbose:
+                rets += "\n Obj. ID: %s" % str(id(self))
             rets += "\n    Type: %s" % selftype
             rets += "\n    Mode: %s" % str(self.mode)
-            rets += "\n\nNo.    Name\t    Obj. ID\t  Type"
-            rets += "\n     hdulist\t   %s\t%s " % \
-                (str(id(self.hdulist)), hdulisttype)
-            rets += "\n     phu\t   %s\t%s " %  \
-                (str(id(self.phu)), phutype)
-            rets += "\n     phu.header    %s\t%s " %  \
-                (str(id(self.phu.header)), phuHeaderType)
+            if verbose:
+                rets += "\n\nAD No.    Name          Type      MEF No."
+                rets += "  Cards    Dimensions   Format   ObjectID   "
+                rets += "\n%shdulist%s%s%s%s" % (" "*8, " "*7, \
+                    hdulisttype, " "*45, str(id(self.hdulist)))
+                rets += "\n%sphu%s%s    0%s%d%s%s" % (" "*8, " "*11, \
+                    phutype, " "*7, len(self.phu._header.ascard),\
+                    " "*27, str(id(self.phu)))
+                rets += "\n%sphu.header%s%s%s%s" % (" "*8, " "*4, \
+                    phuHeaderType, " "*46, str(id(self.phu.header)))
+            else:
+                rets += "\n\nAD No.    Name          Type      MEF No."
+                rets += "  Cards    Dimensions   Format   "
+                rets += "\n%shdulist%s%s" % (" "*8, " "*7, hdulisttype)
+                rets += "\n%sphu%s%s    0%s%d" % (" "*8, " "*11, \
+                    phutype, " "*7, len(self.phu._header.ascard))
+                rets += "\n%sphu.header%s%s" % (" "*8, " "*4, phuHeaderType)
             count = 0
             for ext in self:
                 if len(self) == 1:
@@ -651,47 +662,86 @@ integrates other functionality.
                         extDataType = "None"
                     
                     # Create sub-data info lines
-                    rets += "\n[%s]  ('%s', %s)\t" % (str(count), 
-                        str(ext.extname()), str(ext.extver()))
-                    rets += "   %s\t%s" % (id(ext.hdulist[1]), extType)
+                    adno_ = "[" + str(count) + "]"
+                    name_ = "('" + str(ext.extname()) + "', "
+                    name_ += str(ext.extver()) + ")"
+                    cards_ = len(self.hdulist[count + 1]._header.ascard)
                     if extType == "ImageHDU":
-                        rets +="\n\t.header\t   %s\t%s" % \
-                            (id(ext.hdulist[1].header), extHeaderType)  
-                        rets +="\n\t.data\t   %s\t%s" % \
-                            (id(ext.hdulist[1].data), extDataType)
+                        dimention_ = self.hdulist[count + 1].data.shape
+                        format_ = self.hdulist[count + 1].data.dtype.name
+                    else:
+                        dimention_ = "{?}"
+                        format_ = "?"
+                    if verbose:
+                        rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s  %s" % \
+                            (adno_, name_, extType, count + 1, cards_, \
+                                dimention_, format_, \
+                                str(id(self.hdulist[count+1])))
+                        if extType == "ImageHDU":
+                            rets +="\n           .header    %s%s%s" % \
+                                (extHeaderType, " "*46, \
+                                str(id(self.hdulist[count + 1].header)))
+                            rets +="\n           .data      %s%s%s" % \
+                                (extDataType, " "*45, \
+                                str(id(self.hdulist[count + 1].data)))
+                    else:
+                        rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s" % \
+                            (adno_, name_, extType, count + 1, cards_, \
+                                dimention_, format_)
+                        if extType == "ImageHDU":
+                            rets +="\n           .header    %s" % extHeaderType 
+                            rets +="\n           .data      %s" % extDataType
                 count += 1
             if verbose:
-                s = "       "
-                rets += "\n\nAn AstroData (AD) instance is always connected to"
-                rets += "\nits sub-data. Sub-data is a seperate AD that "
-                rets += "\nallows users to access header and image data"
-                rets += "\ndirectly (ex ad[0].header, ad('SCI', 1).data)"
-                rets += "\nThe sub-data and Primary AD share the same phu and"
-                rets += "\nphu.header, as well as some of the hdulist exts."
-                rets += "\nFor this reason there are many aliases, which are"
-                rets += "\nlisted here for a 3 ext MEF."
-                rets += "\n\n\tName Mapping for Primary and Sub-data AD"
-                rets += "\n\nad.phu == ad.hdulist[0]"
-                rets += "\n"+s+"== ad[0].hdulist[0] == ad('SCI', 1).hdulist[0]"    
-                rets += "\n"+s+"== ad[1].hdulist[0] == ad('SCI', 2).hdulist[0]"    
-                rets += "\n"+s+"== ad[2].hdulist[0] == ad('SCI', 3).hdulist[0]"    
-                rets += "\n"+s+"== ad[0].phu == ad[1].phu == ad[2].phu"    
-                rets += "\n"+s+"== ad('SCI', 1).phu"          
-                rets += "\n"+s+"== ad('SCI', 2).phu"          
-                rets += "\n"+s+"== ad('SCI', 3).phu"          
-                rets += "\n*for phu headers append '.header' above"                    
-                rets += "\nad[0].data == ad.hdulist[1].data"          
-                rets += "\n           == ad.('SCI', 1).data"          
-                rets += "\nad[1].data == ad.hdulist[2].data"          
-                rets += "\n           == ad.('SCI', 2).data"          
-                rets += "\nad[2].data == ad.hdulist[3].data"          
-                rets += "\n           == ad.('SCI', 3).data"          
-                rets += "\n*for ext headers replace 'data' with 'header' above"          
-                rets += "\nNOTE: Filenmame is propagated to the sub-data"
-                rets += "\n      one way, from Primary to all sub-data. Also "
-                rets += "\n      mode for sub-data ('update') is unchangeable"
-                rets += "\n\n\t\tPyfits Generated Info Table"
-                rets += "\nad.hdulist.info()"
+                s = " "*24
+                rets += """
+
+
+Sub-data Information:
+
+An AstroData instance (AD) is always associated with a second AstroData
+instance, or sub-data(AD[]).  This allows users the convenience of accessing
+header and image data directly (ex ad[0].data, ad('SCI', 1).data).  Both the
+AD and sub-data share objects in memory, which cause many aliases (see below).
+Also note that the sub-data mode='update' property cannot be changed and 
+AD.filename is assigned to AD[].filename but cannot be changed by the sub-data
+instance.
+                
+      Name Mapping for AD and sub-data(AD[]) for a 3 ext. MEF
+
+AD.phu == AD.hdulist[0] == AD[0].hdulist[0] == AD('SCI', 1).hdulist[0] 
+                        == AD[1].hdulist[0] == AD('SCI', 2).hdulist[0]
+                        == AD[2].hdulist[0] == AD('SCI', 3).hdulist[0]
+                        == AD[0].phu == AD('SCI', 1).phu 
+                        == AD[1].phu == AD('SCI', 2).phu
+                        == AD[2].phu == AD('SCI', 3).phu
+
+AD.phu.header == all of the above with .header appended
+
+AD[0].data == AD.hdulist[1].data == AD.('SCI', 1).data          
+AD[1].data == AD.hdulist[2].data == AD.('SCI', 2).data          
+AD[2].data == AD.hdulist[3].data == AD.('SCI', 3).data          
+    
+AD[0].header == AD.hdulist[1].header == AD.('SCI', 1).header          
+AD[1].header == AD.hdulist[2].header == AD.('SCI', 2).header        
+AD[2].header == AD.hdulist[3].header == AD.('SCI', 3).header
+
+                     Relationship to pyfits
+
+The AD creates a pyfits HDUList (if not supplied by one) and attaches it 
+to itself as AD.hdulist.  The sub-data also creates its own unique HDUList as 
+AD[?].hdulist or AD('?', ?).hdulist, but shares in memory the phu (including
+the phu header) with the primary AD HDUList. 
+
+The AD.hdulist may have more than one extension, however, the sub-data is 
+limited to one extension. This sub-data hdulist extension shares memory with
+its corresponding AD.hdulist extension (ex. AD[0].hdulist[1] == AD.hdulist[1])
+
+One important difference to note is that astrodata begins its first element 
+'0' with data (ImageHDU), where pyfits HDUList begins its first element '0'
+with meta-data (PrimaryHDU). This causes a 'one off' discrepancy. 
+
+                """
         else:
             rets="<b>Extension List</b>: %d in file" % len(self)
             rets+="<ul>"
@@ -1637,12 +1687,9 @@ integrates other functionality.
    
     def info(self, verbose=False):
         """The info(..) function prints self.infostr() and 
-        pyfits.HDUList.info unless verbose=False
-        AstroData.info() is maintained for convienience and low level debugging.
+        is maintained for convienience and low level debugging.
         """
         print self.infostr(verbose=verbose)       
-        if verbose:
-            self.hdulist.info()
 
     def display_id(self):
         import IDFactory
