@@ -58,6 +58,13 @@ class CorruptDataError(Error):
     """
     message = "The AstroData object was not assigned a 'SCI' extension"
 
+
+class DescriptorsError(Error):
+    """
+    For general exceptions raised in the Descriptors.py module
+    """
+    message = "Exception raised in Descriptors.py"
+
 class DescriptorTypeError(Error):
     """
     Exception raised for instances when a descriptor function cannot return a
