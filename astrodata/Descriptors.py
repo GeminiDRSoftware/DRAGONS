@@ -34,41 +34,17 @@ def whoami():
     
 def whocalledme():
     return inspect.stack()[2][3]
-   
           
-class DescriptorExcept:
-    """This class is an exception class for the Descriptor module"""
-    def __init__(self, msg="Exception Raised in Descriptor system"):
-        """This constructor accepts a string C{msg} argument
-        which will be printed out by the default exception 
-        handling system, or which is otherwise available to whatever code
-        does catch the exception raised.
-        @param msg: a string description about why this exception was thrown
-        @type msg: string
-        """        
-        self.message = msg
-    def __str__(self):
-        """This string operator allows the default exception handling to
-        print the message associated with this exception.
-        @returns: string representation of this exception, the self.message member
-        @rtype: string"""
-        return self.message
-dExcept = DescriptorExcept
-
-class DescriptorValueBadCast(DescriptorExcept):
-    pass
-    
 # NOTE: to address the issue of Descriptors module being a singleton, instead of the 
 # approach used for the ClassificationLibrary, we use the descriptors module
 # itself as the singleton and thus these module level "globals" which serve
 # the purpose of acting as a central location for Descriptor behavior.
+
 firstrun = True
-
-
 
 class DescriptorValue():
     dict_val = None
-    val = None
+    _val = None
     name = None
     pytype = None
     unit = None
@@ -121,15 +97,19 @@ class DescriptorValue():
             self.dict_val = initval
             val = None
         else:
-            self.val = initval
+            self._val = initval
             self.dict_val = {}
             for ext in ad["SCI"]:
-                self.dict_val.update({(ext.extname(),ext.extver()) : self.val})
+                self.dict_val.update({(ext.extname(),ext.extver()) : self._val})
         
         #NOTE:
-        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
-        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
-        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept in memory due to descriptor values persisting
+        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept 
+        #   in memory due to descriptor values persisting
+        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept 
+        #   in memory due to descriptor values persisting
+        # DO NOT SAVE AD INSTANCE, we don't want AD instances kept 
+        #   in memory due to descriptor values persisting
+       
         self.name = name
         
         if format:
@@ -139,24 +119,22 @@ class DescriptorValue():
         else:
             self.format = None
         # do after object is set up
-        self.val = self.is_collapsable() # note, tricky thing, doesn't return true, returns value
+        self._val = self.collapse_value() 
     
     
     def __float__(self):
         value = self.collapse_dict_val()
         return float(value)
     
-    
     def __int__(self):
         value = self.collapse_dict_val()
         return int(value)
-    
     
     def __str__(self):
         format = self.format
         # do any automatic format heuristics
         if format == None:
-            val = self.is_collapsable()
+            val = self.collapse_value()
             if val == None:
                 format = "as_dict"
             else:
@@ -167,20 +145,20 @@ class DescriptorValue():
         if  format == "as_dict":
             retstr = str(self.dict_val)
         elif format == "db" or format == "value":
-            val = self.is_collapsable()
+            val = self.collapse_value()
             if val != None:
                 retstr = str(val)
             else:
                 parts = [str(val) for val in self.dict_val.values()]
                 retstr = "+".join(parts)
         elif format == "value":
-            val = self.is_collapsable()
+            val = self.collapse_value()
         return retstr
     
     def collapse_dict_val(self):
-        value = self.is_collapsable()
+        value = self.collapse_value()
         if value == None:
-            raise DescriptorValueBadCast("\n"
+            raise Errors.DescriptorsError("\n"
                 "Cannot convert DescriptorValue to scaler " 
                 "as the value varies across extensions \n"
                 "-------------------------------------\n"
@@ -190,7 +168,7 @@ class DescriptorValue():
         return value
 
     def convert_value_to(self, new_units, new_type = None):
-        # retval = self.unit.convert(self.val, new_units)
+        # retval = self.unit.convert(self._val, new_units)
         newDict = copy(self.dict_val)
         for key in self.dict_val:
             val = self.dict_val[key]
@@ -224,78 +202,79 @@ class DescriptorValue():
         return val
 
     def as_pytype(self, as_type=None, convert_values=False):
-        self.val = self.is_collapsable()
-        if self.val == None:
-            if as_type == "dict":
-                return self.dict_val
-            elif as_type == "int" and convert_values:
-                newdict = self.dict_val
-                for key in newdict.keys():
-                    newdict[key] = int(newdict[key])
-                return newdict
-            elif as_type == "float" and convert_values:
-                newdict = self.dict_val
-                for key in newdict.keys():
-                    newdict[key] = float(newdict[key])
-                return newdict
-            elif as_type == "string" and convert_values:
-                newdict = self.dict_val
-                for key in newdict.keys():
-                    newdict[key] = repr(newdict[key])
-                return newdict
+        if self._val == None:
+            if convert_values is True and as_type != None:
+                if as_type == dict:
+                    return self.dict_val
+                elif as_type == list:
+                    keys = self.dict_val.keys()
+                    keys.sort()
+                    retlist = []
+                    for key in keys:
+                        retlist.append(self.dict_val[key])
+                    return retlist
+                else:
+                    retdict = self.dict_val
+                    for key in retdict.keys():
+                        if as_type == str:
+                            retdict[key] = repr(retdict[key])
+                        else:
+                            retdict[key] = as_type(retdict[key])
+                    return retdict
+            elif convert_values is False and as_type != None:
+                if as_type == dict:
+                    return self.dict_val
+                elif as_type == list:
+                    keys = self.dict_val.keys()
+                    keys.sort()
+                    retlist = []
+                    for key in keys:
+                        retlist.append(self.dict_val[key])
+                    return retlist
+                elif as_type == str:
+                    return str(self)
+                else:
+                    raise TypeError("Not supported")
             else:
-                curform = self.format
-                retstr =  str(self)
-                return retstr
-        elif self.pytype != type(self.val):
-            # this means self.val is collapsable and 
-            # the pytype and self.val type are different
-            if as_type == "string":
-                return str(self.val)
-            elif as_type == "dict":
+                return str(self)
+        elif as_type != None:
+            if as_type == dict:
                 return self.dict_val
-            elif as_type == "float":
-                return float(self.val)
-            elif as_type == "int":
-                return int(self.val)
+            elif as_type == list:
+                newlist =[]
+                newlist.append(self.pytype(self._val))
+                return newlist
             else:
-                return self.pytype(self.val)
+                return as_type(self._val) 
         else:
-            if as_type == "string":
-                return str(self.val)
-            elif as_type == "dict":
-                return self.dict_val
-            elif as_type == "float":
-                return float(self.val)
-            elif as_type == "int":
-                return int(self.val)
-            else:
-                return self.val
+            return self.pytype(self._val)
     # alias
     for_numpy = as_pytype
 
     # the as_<type> aliases
     def as_dict(self):
-        return self.as_pytype("dict")
+        return self.as_pytype(dict)
 
+    def as_list(self):
+        return self.as_pytype(list)
+    
     def as_str(self):
-        return self.as_pytype("string")
+        return self.as_pytype(str)
 
     def as_float(self):
-        return self.as_pytype("float", convert_values=True)
+        return self.as_pytype(float, convert_values=True)
 
     def as_int(self):
-        return self.as_pytype("int", convert_values=True)        
+        return self.as_pytype(int, convert_values=True)        
     
     def info(self):
         dvstr = ""
         print("\nDescriptor Value Info:")
         print("\t.name             = %s" % self.name)
-        print("\t.val              = %s" % repr(self.val))
-        print("\ttype(.val)        = %s" % type(self.val))
+        print("\t._val              = %s" % repr(self._val))
+        print("\ttype(._val)        = %s" % type(self._val))
         print("\t.pytype           = %s" % str(self.pytype))
         print("\t.unit             = %s" % str(self.unit))
-        print("\t.is_collapsable() = %s" % str(self.is_collapsable()))
         keys = self.dict_val.keys()
         keys.sort()
         lkeys = len(keys)
@@ -312,7 +291,7 @@ class DescriptorValue():
                     repr(self.dict_val[key])))
             count += 1
     
-    def is_collapsable(self):
+    def collapse_value(self):
         oldvalue = None
         for key in self.dict_val:
             value = self.dict_val[key]
@@ -320,15 +299,14 @@ class DescriptorValue():
                 oldvalue = value
             else:
                 if oldvalue != value:
-                    self.val = None
+                    self._val = None
                     return None
         # got here then all values were identical
-        self.val = value
+        self._val = value
         return value
     
-        
     def overloaded(self, other):
-        val = self.is_collapsable()
+        val = self.collapse_value()
         
         if val == None:
             mes =  "DescriptorValue contains complex result (differs for"
@@ -409,7 +387,7 @@ class DescriptorValue():
     
     
     def overloaded_cmp(self,other):
-        val = self.is_collapsable()
+        val = self.collapse_value()
         
         if val == None:
             mes =  "DescriptorValue contains complex result (differs for "
@@ -452,7 +430,6 @@ class DescriptorValue():
             except:
                 pass
         raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),myfuncname))
-    
     
 
     # overloaded operators (used for int and float)  
@@ -607,7 +584,7 @@ if (True):
                             msg += "... %s\n" % fullpath
                             msg += "... was already set to %s\n" %centralCalculatorIndex[key]
                             msg += "... this is a fatal error"
-                            raise DescriptorExcept(msg)
+                            raise Errors.DescriptorsError(msg)
                         
                     centralCalculatorIndex.update(calculatorIndex)
 
@@ -663,7 +640,7 @@ def get_calculator(dataset):
                     ot = cl.get_type_obj(calctype)
                     if not ot.is_subtype_of(nt):
                         # if more than one type applies, they must have a subtype
-                        raise dExcept()
+                        raise Errors.DescriptorsError()
         except KeyError:
             pass  # just wasn't in dictionary, no problem, most types don't have
                   #  calculators
