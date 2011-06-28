@@ -158,7 +158,6 @@ class GeminiLogger(object):
         """
         # Create console and file handlers
         self.ch = logging.StreamHandler(sys.stdout)
-        self.err = logging.StreamHandler(sys.stderr)
         
         self.fh = logging.FileHandler(self._logName)
         
@@ -196,18 +195,14 @@ class GeminiLogger(object):
         # Check if log has handlers and if so, close them to alleviate double 
         # messaging from multiple handers to same file or console
         self = checkHandlers(self, remove=True)
-       
-        # filter experiment
+        
+        #add filter
         f1 = SingleLevelFilter(logging.ERROR, False)
         self.ch.addFilter(f1)
-        f2 = SingleLevelFilter(logging.ERROR, True)
-        self.err.addFilter(f2)
-
 
         # Add console and file handlers to the logger
         self.logger.addHandler(self.ch)
         self.logger.addHandler(self.fh)
-        self.logger.addHandler(self.err)
 
     def setConsoleLevel(self, logLevel):
         """
@@ -220,7 +215,6 @@ class GeminiLogger(object):
         """
         if (logLevel == 10):
             self.ch.setLevel(logging.DEBUG)
-            self.err.setLevel(logging.ERROR)
         elif (logLevel == 6):
             # set to new FULLINFO value (15)
             self.ch.setLevel(self.FULLINFO)
@@ -240,7 +234,6 @@ class GeminiLogger(object):
             #ie. 'MAX' out the level so it is above all existing log levels
             # so no messages will ever have a high enough level to go to screen.
             self.ch.setLevel(100)
-            self.err.setLevel(100)
         else:
             # set to default, CRITICAL, if all else are false
             self.ch.setLevel(logging.CRITICAL)
@@ -477,9 +470,13 @@ class GeminiLogger(object):
             category = self._errorDefaultCategory
         b = callInfo()
         msgs = str(msg).split('\n')
+        #file_handler = open(self._logName, w)
         for line in msgs:
             #The ERROR is a temp fix until a solution can be found
-            self.logger.error("ERROR    40- " + category.ljust(10) + '-' + 
+            sys.stderr.write("ERROR    40- " + category.ljust(10) + '-' +
+                b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' +
+                str(b[1]).ljust(3) + ' - ' + line + "\n")
+            self.logger.error(category.ljust(10) + '-' + 
                 b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' + 
                 str(b[1]).ljust(3) + ' - ' + line)
     
