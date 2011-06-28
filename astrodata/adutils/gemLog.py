@@ -7,6 +7,19 @@ from astrodata.Errors import Error
 
 _listOfLoggers = None
 
+
+# Used to apply stderr stdout stream
+class SingleLevelFilter(logging.Filter):
+    def __init__(self, passlevel, reject):
+        self.passlevel = passlevel
+        self.reject = reject
+
+    def filter(self, record):
+        if self.reject:
+            return (record.levelno == self.passlevel)
+        else:
+            return (record.levelno != self.passlevel)
+
 class GeminiLogger(object):
     """
     This is a logger object for use througout the Gemini recipe system and 
@@ -144,7 +157,9 @@ class GeminiLogger(object):
         of (FULLINFO).
         """
         # Create console and file handlers
-        self.ch = logging.StreamHandler()
+        self.ch = logging.StreamHandler(sys.stdout)
+        self.err = logging.StreamHandler(sys.stderr)
+        
         self.fh = logging.FileHandler(self._logName)
         
         ## Set level for the file handler 
@@ -157,7 +172,7 @@ class GeminiLogger(object):
         else:
             self._fhLogLevel = self.FULLINFO
         self.fh.setLevel(self._fhLogLevel)
-            
+
     def finalizeHandlers(self):
         """
         This function will set up the console and file message formats, remove 
@@ -169,19 +184,31 @@ class GeminiLogger(object):
                                         '%(levelno)d- %(message)s')
         fh_formatter = logging.Formatter('%(asctime)s %(levelname)-8s '+
                                          '%(levelno)d- %(message)s')
+        err_formatter = logging.Formatter('%(levelname)-8s '+
+                                        '%(levelno)d---- %(message)s')
         
         # Add formatters to the handlers
         self.ch.setFormatter(ch_formatter)
-        self.fh.setFormatter(fh_formatter) 
+        self.fh.setFormatter(fh_formatter)
+        # Neet to revisit this, not formatting correctly
+        #self.fh.setFormatter(ch_formatter)
         
         # Check if log has handlers and if so, close them to alleviate double 
         # messaging from multiple handers to same file or console
         self = checkHandlers(self, remove=True)
-           
+       
+        # filter experiment
+        f1 = SingleLevelFilter(logging.ERROR, False)
+        self.ch.addFilter(f1)
+        f2 = SingleLevelFilter(logging.ERROR, True)
+        self.err.addFilter(f2)
+
+
         # Add console and file handlers to the logger
         self.logger.addHandler(self.ch)
-        self.logger.addHandler(self.fh)    
-    
+        self.logger.addHandler(self.fh)
+        self.logger.addHandler(self.err)
+
     def setConsoleLevel(self, logLevel):
         """
         A function to set the level in the console handler.
@@ -193,6 +220,7 @@ class GeminiLogger(object):
         """
         if (logLevel == 10):
             self.ch.setLevel(logging.DEBUG)
+            self.err.setLevel(logging.ERROR)
         elif (logLevel == 6):
             # set to new FULLINFO value (15)
             self.ch.setLevel(self.FULLINFO)
@@ -208,10 +236,11 @@ class GeminiLogger(object):
             self.ch.setLevel(logging.ERROR)
         elif (logLevel == 1):
             self.ch.setLevel(logging.CRITICAL)
-        elif (logLevel==0):
+        elif (logLevel== 0):
             #ie. 'MAX' out the level so it is above all existing log levels
             # so no messages will ever have a high enough level to go to screen.
             self.ch.setLevel(100)
+            self.err.setLevel(100)
         else:
             # set to default, CRITICAL, if all else are false
             self.ch.setLevel(logging.CRITICAL)
@@ -449,8 +478,10 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.error(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
-                              b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+line)
+            #The ERROR is a temp fix until a solution can be found
+            self.logger.error("ERROR    40- " + category.ljust(10) + '-' + 
+                b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' + 
+                str(b[1]).ljust(3) + ' - ' + line)
     
 def callInfo():
     """ A function used by log levels debug, critical, warning and error 
