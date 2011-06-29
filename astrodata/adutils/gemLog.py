@@ -194,7 +194,7 @@ class GeminiLogger(object):
         
         # Check if log has handlers and if so, close them to alleviate double 
         # messaging from multiple handers to same file or console
-        self = checkHandlers(self, remove=True)
+        #self = checkHandlers(self, remove=True)
         
         #add filter
         f1 = SingleLevelFilter(logging.ERROR, False)
@@ -614,7 +614,6 @@ def getGeminiLog(logLevel=None, logType='main'):
     _geminiLogger = None
     
     #print '\nGL547: logger list: '+repr(_listOfLoggers)##########
-    
     # No logger list (ie, not even one log object) exists, so create an 
     # alloff=True log to be passed back (ie, no log file, no msgs to screen)
     if not _listOfLoggers:
@@ -627,6 +626,7 @@ def getGeminiLog(logLevel=None, logType='main'):
         # doesn't exist in list.
         mainLog = None
         # Loop through logs in list
+        #print "gemLog 629 _listOfLoggers = ", _listOfLoggers
         for log in _listOfLoggers:                
             # The log of the type requested is found in list
             if log.logtype()==logType:
