@@ -10,36 +10,18 @@ import gdpgutil
 from ReductionObjectRequests import CalibrationRequest
 #------------------------------------------------------------------------------ 
 from astrodata.adutils import gemLog
+from Errors import CalibrationDefinitionLibraryError as CDLExcept
+from Errors import AstroDataError
 
-class CDLExcept:
-    """This class is an exception class for the Calculator module"""
-    
-    def __init__(self, msg="Exception Raised in CalibrationDefinitionLibarary"):
-        """This constructor accepts a string C{msg} argument
-        which will be printed out by the default exception 
-        handling system, or which is otherwise available to whatever code
-        does catch the exception raised.
-        
-        :param: msg: a string description about why this exception was thrown
-        
-        :type: msg: string
-        """
-        self.message = msg
-    def __str__(self):
-        """This string operator allows the default exception handling to
-        print the message associated with this exception.
-        :returns: string representation of this exception, the self.message member
-        :rtype: string"""
-        return self.message
                
-class CalibrationDefinitionLibrary( object ):
+class CalibrationDefinitionLibrary(object):
     '''
     This class deals with obtaining request data from XML calibration files and generating 
-    the corresponding request.    
+    the corresponding request.  
     '''  
     log=None  
     
-    def __init__( self ):
+    def __init__(self):
         '''
         Goes into ConfigSpace and gets all the file URIs to create a XML index.
         '''
@@ -99,7 +81,7 @@ class CalibrationDefinitionLibrary( object ):
                                "to Calibration Service." % inp.filename)
                 try:
                     inp.write(clobber = True)
-                except astrodata.data.ADREADONLY:
+                except AstroDataError("Mode is readonly"):
                     self.log.warning("Skipped writing dataset, as it was "
                                 "readonly input. This write "
                                 "is done to ensure the file in memory is on disk "
