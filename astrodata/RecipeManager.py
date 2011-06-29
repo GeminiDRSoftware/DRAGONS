@@ -104,10 +104,14 @@ class UserParams(object):
             self.user_param_dict[up.astrotype][up.primname].update({up.param:up.value})
             
 class ReductionContext(dict):
-    """The ReductionContext is used by primitives and recipiesen, hidden in 
-    the later case, to get input and report output. This allows primitives
-    to be controlled in many different running environments, from pipelines
-    to command line interactive reduction.
+    """The ReductionContext is used by primitives and recipiesen, hidden in the
+    later case, to get input and report output. This allows primitives to be
+    controlled in many different running environments, from pipelines to command
+    line interactive reduction.
+    
+    :sort: __init__,__contains__,__getitem__,__str__,
+        _*,a*,b*,c*,d*,e*,f*,g*,h*,i*,j*,k*,l*,m*,n*,o*,p*,q*,r*,
+        s*,t*,u*,v*,w*,x*,y*,z*
     """
     inputs = None
     original_inputs = None
@@ -133,6 +137,7 @@ class ReductionContext(dict):
     # dictionary with local args (given in recipe as args, generally)
     _localparms = None 
     _nonstandard_stream = None
+    _current_stream = None
     user_params = None # meant to be UserParams instance
     proxy_id = 1 # used to ensure uniqueness
     ro = None
@@ -168,7 +173,7 @@ class ReductionContext(dict):
         self.stackKeeper = self.stackeep # "stackeep" is not a good name
         self.fringes = FringeKeeper()
         self._nonstandard_stream = []
-    
+        self.current_stream = MAINSTREAM
     def __getitem__(self, arg):
         """Note, the ReductionContext version of __getitem__ returns None
         instead of throwing a KeyError.
@@ -301,10 +306,16 @@ class ReductionContext(dict):
     def clear_input(self):
         self.inputs = []
         
-    def addInputs(self, filelist):
+    def add_inputs(self, filelist):
         for f in filelist:
             self.add_input(f)
-            
+    def addInputs(self, filelist):
+        print "called addInputs: deprecated, to be removed !!!!please change to add_inputss!!!!!"
+        import traceback
+        traceback.print_exc()
+        
+        self.add_inputs(filelist)
+        
     def add_input(self, filenames):
         '''
         Add input to be processed the next batch around. If this is the first
@@ -536,13 +547,21 @@ class ReductionContext(dict):
             retl = [inp.filename for inp in self.inputs]
             return retl
         else:
-            # this should not happen, but given a mispelled style arg
-            return None 
-    
-    def get_outputs(self, style=None):
-        return self.get_stream(style=style, stream="main", empty=False)
+            return None # this should not happen, but given a mispelled style arg
+    def get_outputs(self, style = None):
+        return self.get_stream(style = style, stream = MAINSTREAM, empty = False)
         
     def get_stream(self, stream=MAINSTREAM, empty=True):
+        """
+        :param stream: A string name for the stream in question.  
+            To use the standard stream do no set.
+        :type stream: str
+        :param empty: A boolean used to control if the stream is
+            emptied, defaults to "True".
+        
+        Get stream returns a list of AstroData instances in the given stream.
+        Currently they have to have been opened datasets.
+        """
         if stream in self.outputs:
             outputs = self.outputs[stream]
         else:
@@ -593,11 +612,32 @@ class ReductionContext(dict):
         retval = self.stackeep.get_stack_ids(cachefile )
         return retval
  
-    def get_stack(self, id):
+    def get_list(self, id):
+        """
+        :param id: Lists are assiciated with arbitrary identifiers,
+            passed as strings.  See IDFactory for ids built from
+            standard astrodata characteristics.
+        :type id: str
+        
+        The list functionality allows storing dataset names in a list
+        which is shared by all instances of reduce running in a given
+        directory.  The list is kept by an adcc instance in charge of that
+        sub-directory.  The "get_list" function retrieves a list that has
+        already been requested via "rq_stack_get()" which initiates the
+        interprocess request.
+        
+        This function does not block, and if the stack was not requested
+        prior to a yeild, prior to this call, then None or an out of date
+        version of this list will be retrieved.
+        
+        :note: "get_stack" calls get_list but takes a "purpose" to which it adds
+               a stackingID as a suffix to the list identifier.
+        
+        """
         cachefile = self.get_cache_file("stackIndexFile")
         retval = self.stackeep.get(id, cachefile )
         return retval
- 
+    
     def inputs_as_str(self, strippath=True):
         if self.inputs == None:
             return ""
@@ -1032,6 +1072,19 @@ class ReductionContext(dict):
         return retstr
         
     def report_output(self, inp, stream=MAINSTREAM, load=True):
+        """
+        :param inp: The inputs to report (add to the given or current stream).
+            Input can be a string (filename), an AstroData instance, a list of
+            strings and AstroData instances.  Each individual dataset is
+            wrapped in an AstroDataRecord and stored in the current stream.
+        :type inp: str, AstroData instance, or list
+        :param stream: If not specified the default ("main") stream is used.
+            If specified the named stream is used, and created if necessary.
+        :type stream: str
+        :param load: A boolean (default: True) which specifies if string
+            arguments (pathnames) should be loaded or if an unloaded
+            AstroData record should be created with only the path.
+        """
         ##@@TODO: Read the new way code is done.
         #if category != MAINSTREAM:
         #    raise RecipeExcept("You may only use " + 
@@ -1162,6 +1215,26 @@ class ReductionContext(dict):
     rq_iqput = rq_iq
         
     def rq_stack_get(self, purpose = ""):
+        """
+        :param purpose: The purpose is a string prepended to the stackingID
+                        used to identify the list (see get_list).
+        :type purpose: str
+        
+        The stackingID (see IDFactory module) is used to identify the list.
+        The first input in the rc.inputs list is used as the reference image 
+        to generate  
+        the stackingID portion of the list identifier.
+        
+        The stackingID function in IDFactory is meant to produce identical
+        stacking identifiers for different images which can/should be stacked 
+        together, e.g. based
+        on program id and/or other details.  Again, see IDFactory for the
+        particular algorithm in use.
+        
+        :note: a versioning system is latent within the code, and is added
+            to the id to allow adaptation in the future if identifer construction
+            methods change.
+        """
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for orig in self.original_inputs:
@@ -1172,7 +1245,21 @@ class ReductionContext(dict):
                 
     def rq_stack_update(self, purpose = ""):
         '''
-        This function creates requests to update a stack list.
+        :param purpose: The purpose argument is a string prefixed to the
+            generated stackingID.  This allows two images which would
+            produce identical stackingIDs to go in different lists,
+            i.e. such as a fringe frame which, which might be prepended with
+            "fringe" as the purpose.
+            
+        :type purpose: str
+        
+        This function creates requests to update a stack list with the files
+        in the current rc.inputs list.  Each will go in a stack based on its
+        own stackingID (prepended with "purpose").
+        
+        :note: this function places a message on an outbound message queue
+            which will not be sent until the next "yield", allowing the
+            ReductionObject command clause to execute.
         '''
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
@@ -1203,14 +1290,44 @@ class ReductionContext(dict):
         self.irafstdout = so
         return
     
-    def stack_append(self, id, files, cachefile = None):
-        self.stackeep.add(id, files, cachefile)
+    def list_append(self, id, files, cachefile = None):
+        """
+        :param id: A string which identifies the list to append the listed 
+            filenames to.
+        :type id: str
+        :param files: A list of filenames to add to the list.
+        :type files: list of str
+        :param cachefile: The filename to use to store the list.
+        :type cachefile: str
         
-    def stack_inputs_as_str(self, id):        
+        The caller is expected to supply cachefile, though in principle
+        a value of "None" could mean the "default cachefile" this is not
+        supported by the adcc as of yet, since the desired behavior is for
+        reduce instances running in the same directory to cooperate, and those
+        running in separate directories be kept separate, and this is 
+        implemented by providing an argument for cachefile which is in a 
+        generated subdirectory (hidden) based on the startup directory
+        for the reduce process.  
+        
+        The adcc will negotiate all contention and race conditions regarding
+        multiple applications manipulating a list simultaneously in separate
+        process.
+        """
+        self.stackeep.add(id, files, cachefile)
+    stack_append = list_append
+        
+    def list_inputs_as_str(self, id):
+        """
+        :param id: The identifier of the list to return as a comma separated string w/ no whitespace
+        :type id: str
+        
+        This is used to provide the list of names as a single string.
+        """
         #pass back the stack files as strings
         stack = self.stackeep.get(id)
         return ",".join(stack.filelist)
-    
+    stack_inputs_as_str = list_inputs_as_str
+
     def step_moment(self, stepname, mark):
         val = { "stepname"  : stepname,
                 "indent"    : self.indent,
@@ -1240,11 +1357,49 @@ class ReductionContext(dict):
         return newlist
         
     def switch_stream(self, switch_to = None):
+        """
+        :param switch_to: The string name of the stream to switch to. The 
+            named stream must already exist.
+            
+            :note: This function is used by the infrastructure (in an
+            application such as reduce and in the ReductionContext) 
+            to switch the stream being used. Reported outputs then goes to
+            the specified stream.
+        """
         if switch_to not in self.outputs:
             raise ReduceError(
                         '"%s" stream does not exist, cannot switch to it' 
                             % repr(switch_to))
         
+        self.current_stream = switch_to
+        self._nonstandard_stream.append(switch_to)
+        for ad in self.outputs[switch_to]:
+            self.add_input(ad)
+        #print "RM1360:", repr(self._nonstandard_stream)
+        return switch_to
+        
+    def restore_stream(self, from_stream = None):
+        """
+        :param from_stream: This is the stream being reverted from. It does not
+            need to be passed in but can be used to ensure it is the same
+            stream the rc thinks it is  popping off.
+        :type from_stream: str
+        
+        Revert to the last stream prior to previous switch_stream(..) call.
+        """
+        
+        if len(self._nonstandard_stream) > 0:
+            prevstream = self._nonstandard_stream.pop()
+            if from_stream and prevstream != from_stream:
+                raise ReduceError("from_stream does not match last stream")
+            if len(self._nonstandard_stream)>0:
+                self.current_stream = self._nonstandard_stream[-1]
+            else:
+                self.current_stream = MAINSTREAM
+            
+        else:
+            raise ReduceError("Can't revert stream because there is no stream on stream list. The switch_stream(..) function not called.")
+                    
     
 def open_if_name(dataset):
     """Utility function to handle accepting datasets as AstroData
