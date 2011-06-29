@@ -8,6 +8,7 @@ from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+from gempy.science import photometry as ph
 from gempy.science import preprocessing as pp
 from gempy.science import registration as rg
 from gempy.science import resample as rs
@@ -353,6 +354,35 @@ class GEMINIPrimitives(GENERALPrimitives):
         raise "Crashing"
         yield rc
     
+    def detectSources(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "detectSources", "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs(style="AD"):
+            # Call the detect_sources user level function
+            ad = ph.detect_sources(adinput=ad,
+                                   sigma=rc["sigma"],
+                                   threshold=rc["threshold"],
+                                   fwhm=rc["fwhm"],
+                                   method=rc["method"])
+            # Append the output AstroData object (which is currently in the
+            # form of a list) to the list of output AstroData objects
+            adoutput_list.append(ad[0])
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
+
     def display(self, rc):
         rc.rq_display(display_id=rc["display_id"])
         

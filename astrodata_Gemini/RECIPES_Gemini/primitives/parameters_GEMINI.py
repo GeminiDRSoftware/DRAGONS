@@ -107,6 +107,39 @@
         "uiLevel":"UIBASIC"
         },
    },
+ "detectSources":{
+    "suffix":{
+        # String to be post pended to the output of detectSources
+        "default"       : "_sourceDetected",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "fwhm":{
+        "default"       : 5.5,
+        "recipeOverride": True,
+        "type"          : "float",
+        "userOverride"  : True,
+        },
+    "method":{
+        "default"       : "daofind",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "sigma":{
+        "default"       : None,
+        "recipeOverride": True,
+        "type"          : "float",
+        "userOverride"  : True,
+        },
+    "threshold":{
+        "default"       : 5.0,
+        "recipeOverride": True,
+        "type"          : "float",
+        "userOverride"  : True,
+        },
+    },
  "divideByFlat":{
     "suffix":{
         # String to be post pended to the output of divideByFlat
