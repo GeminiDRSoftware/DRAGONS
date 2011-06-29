@@ -202,6 +202,11 @@ class DescriptorValue():
         return val
 
     def as_pytype(self, as_type=None, convert_values=False):
+        """This function will convert the DV instance to its pytype or
+        any other type specified. Special handling is done for 
+        dictionary and lists.
+        """
+        # case where the value cannot collapse (dict, list)
         if self._val == None:
             if convert_values is True and as_type != None:
                 if as_type == dict:
@@ -235,8 +240,17 @@ class DescriptorValue():
                     return str(self)
                 else:
                     raise TypeError("Not supported")
+            elif convert_values is False and self.pytype == list:
+                keys = self.dict_val.keys()
+                keys.sort()
+                retlist = []
+                for key in keys:
+                    retlist.append(self.dict_val[key])
+                return retlist
             else:
                 return str(self)
+        
+        # case where value is a single value (int, str, float)
         elif as_type != None:
             if as_type == dict:
                 return self.dict_val
