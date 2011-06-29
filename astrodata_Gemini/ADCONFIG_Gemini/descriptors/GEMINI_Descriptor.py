@@ -134,12 +134,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the data section string that uses
-                # 1-based indexing as the value
+                # 1-based indexing as the value in the form [x1:x2,y1:y2]
                 ret_data_section.update({
                     (ext.extname(), ext.extver()):str(raw_data_section)})
             else:
                 # Return a dictionary with the data section list that uses
-                # 0-based, non-inclusive indexing as the value
+                # 0-based, non-inclusive indexing as the value in the form
+                # [y1, y2, z1, x2]
                 data_section = string.sectionStrToIntList(raw_data_section)
                 ret_data_section.update({
                     (ext.extname(), ext.extver()):data_section})
@@ -195,12 +196,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the detector section string that 
-                # uses 1-based indexing as the value
+                # uses 1-based indexing as the value in the form [x1:x2,y1:y2]
                 ret_detector_section.update({
                     (ext.extname(), ext.extver()):str(raw_detector_section)})
             else:
                 # Return a dictionary with the detector section list that 
-                # uses 0-based, non-inclusive indexing as the value
+                # uses 0-based, non-inclusive indexing as the value in the form
+                # [y1, y2, z1, x2]
                 detector_section = string.sectionStrToIntList(
                     raw_detector_section)
                 ret_detector_section.update({
