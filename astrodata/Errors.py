@@ -51,6 +51,12 @@ class CalcError(Error):
     """
     message = "Descriptor unable to calculate value"
 
+class CalibrationDefinitionLibraryError(Error):
+    """
+    Exceptions raised for CallibrationDefinitionLibrary.py
+    """
+    message = "Exception raised in CalibrationDefinitionLibrary.py"
+
 class CorruptDataError(Error):
     """
     Exception raised for instances when an AstroData object was not
