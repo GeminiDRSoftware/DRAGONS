@@ -700,9 +700,9 @@ class ReductionContext(dict):
                         exs += "\tprimitive = %s\n" % primname
                         exs += "\tparameter = %s\n" % str(param)
                         exs += "\t\tattempt to set to = %s\n" % self[param]
-                        exs += "\t\tfixed setting = %s\n" % primset.param_dict[primname][param]["default"]
-
-                        raise SettingFixedParam(exs, astrotype = astrotype)
+                        exs += "\t\tfixed setting = %s\n" % \
+                            primset.param_dict[primname][param]["default"]
+                        raise SettingFixedParam(exs, astrotype=astrotype)
             
             # users override everything else if  it gets here... and is allowed
             if correctUPD:
@@ -717,13 +717,14 @@ class ReductionContext(dict):
                             exs += "\tprimitive = %s\n" % primname
                             exs += "\tparameter = %s\n" % str(param)
                             exs += "\t\tattempt to set to = %s\n" % correctUPD[param]
-                            exs += "\t\tfixed setting = %s\n" % primset.param_dict[primname][param]["default"]
-                            
+                            exs += "\t\tfixed setting = %s\n" % \
+                                primset.param_dict[primname][param]["default"]
                             raise SettingFixedParam(exs, astrotype = astrotype)
                         else:
                             self.localparms.update({param:correctUPD[param]})
                     else:
                         self.localparms.update({param:correctUPD[param]})              
+    
     def param_names(self, subset = None):
         if subset == "local":
             return self.localparms.keys()
@@ -733,7 +734,6 @@ class ReductionContext(dict):
             retl = list(lpkeys | rckeys)
             return retl
                                                                 
-    
     def outputs_as_str(self, strippath=True):
         if self.outputs == None:
             return ""
@@ -776,18 +776,22 @@ class ReductionContext(dict):
                 self.status = "RUNNING"
         
         return self.is_paused()
+    
     def pause(self):
         self.call_callbacks("pause")
         self.is_paused(True)
+    
     def unpause (self):
         self.is_paused(False)
     paused = property(is_paused, is_paused)
+    
     def request_pause(self):
         self.control("pause") 
+    
     def pause_requested(self):
         return self.cmd_request == "pause"
-    #--------------------------------------------------------------------------- 
     #------------------ PAUSE ----------------------------------------------------
+    
     def paramsummary(self):
         '''
         A util function for printing out all the parameters for this reduction 
