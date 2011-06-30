@@ -43,7 +43,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log.debug(gt.log_message("primitive", "normalize", "starting"))
         adoutput_list = []
         for ad in rc.get_inputs(style='AD'):
-            if ad.phu_get_key_value('GIFLAT'):
+            if ad.phu_get_key_value('NORMFLAT'):
                 log.warning('%s has already been processed by normalize' %
                             (ad.filename))
                 adoutput_list.append(ad)
