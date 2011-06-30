@@ -9,7 +9,8 @@ from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
-def stack_frames(adinput=None, suffix=None, operation="average"):
+def stack_frames(adinput=None, suffix=None, operation="average", 
+                 reject_method="none"):
     """
     This user level function will stack the input AstroData objects. New
     variance extensions are created from the stacked science extensions and the
@@ -60,7 +61,6 @@ def stack_frames(adinput=None, suffix=None, operation="average"):
             "output"  : clm.imageOutsFiles(type="string"),
             # This returns a unique/temp log file for IRAF
             "logfile" : clm.templog.name,
-            "reject"  : "none",
             }
         # Get the input parameters for IRAF as specified by the user
         fl_vardq = no
@@ -74,6 +74,7 @@ def stack_frames(adinput=None, suffix=None, operation="average"):
             "fl_vardq"  : fl_vardq,
             "fl_dqprop" : fl_dqprop,
             "combine"   : operation,
+            "reject"    : reject_method,
             }
         # Get the default parameters for IRAF and update them using the above
         # dictionaries
