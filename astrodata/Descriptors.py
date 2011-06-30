@@ -283,6 +283,9 @@ class DescriptorValue():
     def as_int(self):
         return self.as_pytype(int, convert_values=True)        
     
+    def get_value(self, as_type=None, convert_values=False):
+        return self.as_pytype(as_type=as_type, convert_values=convert_values)
+
     def info(self):
         dvstr = ""
         print("\nDescriptor Value Info:")
