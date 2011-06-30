@@ -126,7 +126,7 @@ def normalize_flat_image(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def normalize_flat_image_gmos(adinput=None, trim=False, overscan=False):
+def normalize_flat_image_gmos(adinput=None):
     """
     This function will combine the input flats (adinput) and then normalize  
     them using the CL script giflat.
@@ -144,12 +144,6 @@ def normalize_flat_image_gmos(adinput=None, trim=False, overscan=False):
     
     :param adinput: Astrodata input flat(s) to be combined and normalized
     :type adinput: Astrodata
-    
-    :param trim: Trim the overscan region from the frames?
-    :type trim: Python boolean (True/False)
-    
-    :param overscan: Subtract the overscan level from the frames?
-    :type overscan: Python boolean (True/False)
     
     """
     # Instantiate the log. This needs to be done outside of the try block,
@@ -192,8 +186,8 @@ def normalize_flat_image_gmos(adinput=None, trim=False, overscan=False):
                     fl_vardq = yes
         clSoftcodedParams = {
             "fl_vardq"  : fl_vardq,
-            "fl_over"   : gt.pyrafBoolean(overscan),
-            "fl_trim"   : gt.pyrafBoolean(trim),
+            "fl_over"   : False,
+            "fl_trim"   : False,
             }
         # Get the default parameters for IRAF and update them using the above
         # dictionaries
