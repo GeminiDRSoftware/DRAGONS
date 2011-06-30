@@ -6,7 +6,7 @@
         "default"       : "_mosaicked",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "tile":{
         "default"       : False,
@@ -29,7 +29,7 @@
         "default"       : "_overSub",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "overscan_section":{
         "default"       : "",
@@ -44,7 +44,7 @@
         "default"       : "_overTrim",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
  "standardizeHeaders":{
@@ -53,7 +53,7 @@
         "default"       : "_sdzHdrs",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
 "standardizeStructure":{
@@ -62,7 +62,7 @@
         "default"       : "_sdzStruct",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "add_mdf":{
         "default"       : True,
@@ -77,7 +77,7 @@
         "default"       : "_biasCorrected",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "bias":{
         "default"       : None,
@@ -92,7 +92,7 @@
         "default"       : "_validated",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "repair":{
         "default"       : True,

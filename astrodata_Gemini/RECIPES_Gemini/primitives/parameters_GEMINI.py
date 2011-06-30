@@ -14,7 +14,7 @@
         "default"       : "",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
  "addVAR":{
@@ -146,7 +146,7 @@
         "default"       : "_flatCorrected",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "flat":{
         "default"       : None,
@@ -170,7 +170,7 @@
         "default"       : "",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
  "measureIQ":{
@@ -179,7 +179,7 @@
         "default"       : "moffat",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "display":{
         "default"       : False,
@@ -220,7 +220,7 @@
         "default"       : "_scaled",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "fringe":{
         "default"       : None,
@@ -240,7 +240,7 @@
         "default"       : "",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     },
  "showParameters":{
@@ -271,6 +271,12 @@
         },
     "operation":{
         "default"       : "average",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "reject_method":{
+        "default"       : "none",
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : True,
@@ -306,7 +312,7 @@
         "default"       : "_darkCorrected",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "dark":{
         "default"       : None,
@@ -321,7 +327,7 @@
         "default"       : "_fringeCorrected",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "fringe":{
         "default"       : None,

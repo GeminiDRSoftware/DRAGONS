@@ -1,36 +1,24 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS_IMAGE.py file, in alphabetical order.
-{"normalize":{
-    "suffix":{
-        # String to be post pended to the output of normalize
-        "default"       : "_normalized",
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : False,
-        },
-    "trim":{
-        "default"       : False,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : False,
-        },
-    "overscan":{
-        "default"       : False,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : True,
-        },
-    },
- "makeFringe":{
+{"makeFringe":{
     "suffix":{
         # String to be post pended to the output of makeFringe
         "default"       : "_fringe",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "operation":{
         "default"       : "median",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    },
+ "normalize":{
+    "suffix":{
+        # String to be post pended to the output of normalize
+        "default"       : "_normalized",
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : True,
@@ -45,7 +33,7 @@
         "default"       : "_sdzStruct",
         "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : False,
+        "userOverride"  : True,
         },
     "add_mdf":{
         "default"       : False,
