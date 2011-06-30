@@ -49,9 +49,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            ad = pp.normalize_flat_image_gmos(adinput=ad,
-                                              trim=rc["trim"],
-                                              overscan=rc["overscan"])
+            ad = pp.normalize_flat_image_gmos(adinput=ad)
             adoutput_list.append(ad[0])
 
         rc.report_output(adoutput_list)
