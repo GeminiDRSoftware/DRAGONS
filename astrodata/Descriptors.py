@@ -250,14 +250,16 @@ class DescriptorValue():
             else:
                 return str(self)
         
-        # case where value is a single value (int, str, float)
+        # case where value is a single ext fits (int, str, float)
         elif as_type != None:
             if as_type == dict:
                 return self.dict_val
-            elif as_type == list:
+            elif as_type == list and self.pytype != list:
                 newlist =[]
                 newlist.append(self.pytype(self._val))
                 return newlist
+            elif self.pytype == list:
+                return self._val
             else:
                 return as_type(self._val) 
         else:
