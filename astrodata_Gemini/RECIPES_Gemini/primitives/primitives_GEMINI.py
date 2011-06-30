@@ -228,8 +228,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         log.debug(gt.log_message("primitive", "alignToReferenceImage", 
                                  "starting"))
-        adoutput_list = rs.align_to_reference_image(
-                                         adinput=rc.get_inputs(style='AD'),
+        adinput = rc.get_inputs(style='AD')
+        if len(adinput)<2:
+            log.warning("At least two images must be provided to " +
+                        "alignToReferenceImage")
+            # Report input to RC without change
+            adoutput_list = adinput
+        else:
+            adoutput_list = rs.align_to_reference_image(
+                                         adinput=adinput,
                                          interpolator=rc['interpolator'])
         rc.report_output(adoutput_list)
         yield rc
@@ -338,14 +345,22 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
         log.debug(gt.log_message("primitive", "correctWCSToReferenceImage", 
                                  "starting"))
-        
-        adoutput_list = rg.correct_wcs_to_reference_image(
-                                          adinput=rc.get_inputs(style='AD'),
-                                          method=rc['method'], 
-                                          fallback=rc['fallback'],
-                                          cull_sources=rc['cull_sources'],
-                                          rotate=rc['rotate'], 
-                                          scale=rc['scale'])
+
+        # Check that there are at least two images to register
+        adinput = rc.get_inputs(style='AD')
+        if len(adinput)<2:
+            log.warning("At least two images must be provided to " +
+                        "correctWCSToReferenceImage")
+            # Report input to RC without change
+            adoutput_list = adinput
+        else:
+            adoutput_list = rg.correct_wcs_to_reference_image(
+                                               adinput=adinput,
+                                               method=rc['method'], 
+                                               fallback=rc['fallback'],
+                                               cull_sources=rc['cull_sources'],
+                                               rotate=rc['rotate'], 
+                                               scale=rc['scale'])
         rc.report_output(adoutput_list)
       
         yield rc
@@ -583,14 +598,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         adoutput_list = []
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs(style="AD"):
-            # Check whether the measureIQ primitive has been run previously
-            if ad.phu_get_key_value("MEASREIQ"):
-                log.warning("%s has already been processed by measureIQ" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
             # Call the measure_iq user level function
             ad = qa.measure_iq(adinput=ad, 
                                centroid_function=rc["centroid_function"],
@@ -880,12 +887,20 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "stackFrames", "starting"))
         # Call the stack_frames user level function
-        adoutput = sk.stack_frames(adinput=rc.get_inputs(style="AD"),
+        adinput = rc.get_inputs(style='AD')
+        if len(adinput)<2:
+            log.warning("At least two frames must be provided to " +
+                        "stackFrames")
+            # Report input to RC without change
+            adoutput_list = adinput
+        else:
+            adoutput_list = sk.stack_frames(adinput=rc.get_inputs(style="AD"),
                                    suffix=rc["suffix"],
-                                   operation=rc["operation"])
+                                   operation=rc["operation"],
+                                   reject_method=rc["reject_method"])
         # Report the list containing a single AstroData object to the reduction
         # context
-        rc.report_output(adoutput)
+        rc.report_output(adoutput_list)
         
         yield rc
     
