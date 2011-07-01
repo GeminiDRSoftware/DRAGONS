@@ -139,9 +139,16 @@ class AstroDataRecord( ReductionContextRecord ):
         self.ad = AstroData(self.filename)
         
     def __str__(self):
-        rets = """    display_id = %s
-    filename  = %s
-    timestamp = %s
-    parent    = %s
-    astrodata = %s \n""" % ( str(self.display_id), str(self.filename), self.timestamp, self.parent, str(self.ad) )
+        rets = """
+     ad.filename = %s
+    display_id   = %s
+    filename     = %s
+    timestamp    = %s
+    parent       = %s
+    astrodata    = %s \n""" % ( self.ad.filename, 
+                                str(self.display_id),
+                                str(self.filename), 
+                                self.timestamp, 
+                                self.parent, 
+                                str(self.ad) )
         return rets  

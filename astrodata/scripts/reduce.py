@@ -831,11 +831,12 @@ for infiles in allinputs: #for dealing with multiple sets of files.
 
                     # add input files
                     if infiles:
-                        co.add_input(infiles)
+                        #co.add_input(infiles)
+                        co.populate_stream(infiles)
                     co.set_iraf_stdout(irafstdout)
                     co.set_iraf_stderr(irafstdout)
 
-                    # odl way rl.retrieve_parameters(infile[0], co, rec)
+                   # odl way rl.retrieve_parameters(infile[0], co, rec)
                     if hasattr(options, "user_params"):
                         co.user_params = options.user_params
                     if hasattr(options, "globalParams"):

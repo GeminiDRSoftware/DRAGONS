@@ -121,7 +121,6 @@ class ReductionObject(object):
         btype = primset.btype
         log.status("STARTING %s: %s" % (btype,primname))
                 
-        context.begin(primname)
         # primset init should perhaps be called ready
         # because it needs to be called each step because though
         # this primset may have been initted, it takes the context
@@ -131,8 +130,11 @@ class ReductionObject(object):
         from RecipeManager import SettingFixedParam
         nonStandardStream = None
         if context["stream"] != None:
-            #print "RO132: got stream arg", context["stream"]
+            # print "RO132: got stream arg", context["stream"]
             nonStandardStream = context.switch_stream(context["stream"])
+        
+        context.begin(primname)
+        
         try:
             #2.6 feature
             #if inspect.isgeneratorfunction(prim):
@@ -144,7 +146,10 @@ class ReductionObject(object):
                 # @@note: call the command clause callback here
                 # @@note2: no, this yields and the command loop act that way
                 # @@.....: and it is in run, which caps the yields which must
-                # @@.....: call the command clause.
+                # @@.....: call the command clause.\
+                if rc == None:
+                    raise ReductionExcept(
+                            "Primitive '%s' returned None for rc on yield" % primname)
                 if rc.is_finished():
                     break
                 yield rc
@@ -159,9 +164,13 @@ class ReductionObject(object):
             raise
         context.curPrimName = None
         self.curPrimName = prevprimname
+        #print "RO165:", repr(context.outputs)
         yield context.end(primname)
+        #print "RO167:", repr(context.outputs)
+        
         if nonStandardStream:
             context.restore_stream(from_stream = nonStandardStream)
+            
         context.localparms = savedLocalparms
         log.status("ENDING %s: %s" % (btype, primname))
         yield context

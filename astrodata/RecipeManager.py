@@ -134,10 +134,12 @@ class ReductionContext(dict):
     callbacks = None
     arguments = None
     cache_files = None
+    
     # dictionary with local args (given in recipe as args, generally)
     _localparms = None 
     _nonstandard_stream = None
     _current_stream = None
+    _output_streams = None
     user_params = None # meant to be UserParams instance
     proxy_id = 1 # used to ensure uniqueness
     ro = None
@@ -173,7 +175,8 @@ class ReductionContext(dict):
         self.stackKeeper = self.stackeep # "stackeep" is not a good name
         self.fringes = FringeKeeper()
         self._nonstandard_stream = []
-        self.current_stream = MAINSTREAM
+        self._current_stream = MAINSTREAM
+        self._output_streams = []
     def __getitem__(self, arg):
         """Note, the ReductionContext version of __getitem__ returns None
         instead of throwing a KeyError.
@@ -372,6 +375,7 @@ class ReductionContext(dict):
         self.indent += 1
         self.stephistory.update({key: val}) 
         self.lastBeginDt = key
+        self.initialize_inputs()
         return self
         
     def get_begin_mark(self, stepname, indent=None):
@@ -453,6 +457,7 @@ class ReductionContext(dict):
         # and clears outputs
         self.finalize_outputs()
         self.localparms = None
+        self._output_streams = []
         return self
     
     def finalize_outputs(self):
@@ -461,8 +466,8 @@ class ReductionContext(dict):
         outputs become the new inputs. Calibrations and non-standard output
         is not affected.
         """
-        # only push is outputs is filled
-        if len(self.outputs[MAINSTREAM]) != 0:
+        # only push if outputs is filled
+        if len(self.outputs[self._current_stream]) != 0:
             # don't do this if the set is empty, it's a non-IO primitive
             ##@@TODO: The below if statement could be redundant because this 
             # is done in addInputs
@@ -473,17 +478,19 @@ class ReductionContext(dict):
             
             #print "OUTPUTS:", self.outputs[MAINSTREAM]
             newinputlist = []
-            for out in self.outputs['main']:
-                if type(out) == AstroDataRecord:
-                    newinputlist.append(out)
-                else:
-                    mes = "Bad Argument: Wrong Type '%(val)s' '%(typ)s'." \
-                        % {'val':str(out), 'typ':str(type(out))}
-                    raise RuntimeError(mes)
+            # this code to be executed in initialize_inputs
             
-            self.inputs = newinputlist
-            self.outputs.update({MAINSTREAM:[]})
-   
+    def initialize_inputs(self):
+        newinputlist = []
+        for out in self.outputs[self._current_stream]:
+            if type(out) == AstroDataRecord:
+                newinputlist.append(out)
+            else:
+                mes = "Bad Argument: Wrong Type '%(val)s' '%(typ)s'." \
+                    % {'val':str(out), 'typ':str(type(out))}
+                raise RuntimeError(mes)
+            
+        self.inputs = newinputlist
     
     # finish and is_finished is combined using property
     def is_finished(self, arg=None):
@@ -611,7 +618,10 @@ class ReductionContext(dict):
         cachefile = self.get_cache_file("stackIndexFile")
         retval = self.stackeep.get_stack_ids(cachefile )
         return retval
- 
+    
+    def populate_stream(self, infiles, stream=None, load = True):
+        return self.report_output(infiles, stream = stream, load = load)
+        
     def get_list(self, id):
         """
         :param id: Lists are assiciated with arbitrary identifiers,
@@ -1071,7 +1081,7 @@ class ReductionContext(dict):
         
         return retstr
         
-    def report_output(self, inp, stream=MAINSTREAM, load=True):
+    def report_output(self, inp, stream=None, load=True):
         """
         :param inp: The inputs to report (add to the given or current stream).
             Input can be a string (filename), an AstroData instance, a list of
@@ -1089,9 +1099,21 @@ class ReductionContext(dict):
         #if category != MAINSTREAM:
         #    raise RecipeExcept("You may only use " + 
         #        "'main' category output at this time.")
-        
+        # print "RM1101:", self.ro.curPrimName, "stream:", repr(stream)
+        if stream == None:
+            stream = self._current_stream
+        # print "RM1105:", self.ro.curPrimName, "stream:", stream
+            
+        # this clause saves the output stream so we know when to 
+        # the first report happens so we can clear the set at that time.
+        if stream not in self._output_streams:
+            self._output_streams.append(stream)
+            self.outputs.update({stream:[]})
+            
+        # this clause makes sure there is a list in self.outputs
         if stream not in self.outputs:
             self.outputs.update({stream:[]})
+            
         if type(inp) == str:
             self.outputs[stream].append(AstroDataRecord(inp, self.display_id, load=load))
         elif isinstance(inp, AstroData):
@@ -1371,7 +1393,7 @@ class ReductionContext(dict):
                         '"%s" stream does not exist, cannot switch to it' 
                             % repr(switch_to))
         
-        self.current_stream = switch_to
+        self._current_stream = switch_to
         self._nonstandard_stream.append(switch_to)
         for ad in self.outputs[switch_to]:
             self.add_input(ad)
@@ -1387,15 +1409,18 @@ class ReductionContext(dict):
         
         Revert to the last stream prior to previous switch_stream(..) call.
         """
+        print "RM1391: restore_stream"
         
         if len(self._nonstandard_stream) > 0:
             prevstream = self._nonstandard_stream.pop()
             if from_stream and prevstream != from_stream:
                 raise ReduceError("from_stream does not match last stream")
+            # copy 
+                
             if len(self._nonstandard_stream)>0:
-                self.current_stream = self._nonstandard_stream[-1]
+                self._current_stream = self._nonstandard_stream[-1]
             else:
-                self.current_stream = MAINSTREAM
+                self._current_stream = MAINSTREAM
             
         else:
             raise ReduceError("Can't revert stream because there is no stream on stream list. The switch_stream(..) function not called.")
