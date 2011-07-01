@@ -9,65 +9,66 @@ from gempy import geminiTools as gt
 
 def adu_to_electrons(adinput):
     """
-    This function will convert the inputs from having pixel values in ADU to 
-    that of electrons by use of the arith 'toolbox'.
+    The adu_to_electrons user level function will convert the units of the
+    pixel data extensions of the input AstroData object from ADU to electrons
+    by multiplying by the gain.
     
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
-
-    Note: 
-    the SCI extensions of the input AstroData objects must have 'GAIN'
-    header key values available to multiply them by for conversion to 
-    e- units.
-    
-    :param adinput: Astrodata inputs to be converted to Electron pixel units
-    :type adinput: Astrodata objects, either a single or a list of objects
+    :param adinput: Astrodata object(s) to be converted from ADU to electrons
+    :type adinput: Astrodata
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "ADUTOELE"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the adu_to_electrons user level function has been
             # run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "adu_to_electrons" % (ad.filename))
-            # Get the gain value using the appropriate descriptor
+            
+            # Convert the pixel data in the AstroData object from ADU to
+            # electrons. First, get the gain value using the appropriate
+            # descriptor
             gain = ad.gain().as_pytype()
-            # Multiply the science extension by the gain and the variance
-            # extension by the gain squared
+            # Now multiply the pixel data in the science extension by the gain
+            # and the pixel data in the variance extension by the gain squared
             log.info("Converting %s from ADU to electrons by multiplying " \
                      "the science extension by the gain = %s" % \
                      (ad.filename, gain))
             ad = ad.mult(gain)
-            # Update the physical units keyword in the header of the AstroData
-            # object. Data now has units of electrons
-            log.fullinfo("*"*50, category="header")
-            log.fullinfo("File = %s" % ad.filename, category="header")
-            log.fullinfo("~"*50, category="header")
+            
+            # Update the headers of the AstroData Object. The pixel data now
+            # has units of electrons so update the physical units keyword.
             gt.update_key_value(adinput=ad, function="bunit",
                                 value="electron", extname="SCI")
             gt.update_key_value(adinput=ad, function="bunit",
                                 value="electron*electron", extname="VAR")
-            log.fullinfo("-"*50, category="header") 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -85,25 +86,32 @@ def nonlinearity_correct(adinput=None):
     uncorrectable pixels, or do we want to just add those pixels to the DQ
     plane with a specific value?
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "LINCORR"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the nonlinearity_correct user level function has
             # been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "nonlinearity_correct" % (ad.filename))
+            
             # Get the appropriate information using the descriptors
             coadds = ad.coadds()
             read_mode = ad.read_mode().as_pytype()
@@ -116,6 +124,7 @@ def nonlinearity_correct(adinput=None):
                 # exception.
                 if hasattr(ad, "exception_info"):
                     raise ad.exception_info
+            
             # Check the raw exposure time (i.e., per coadd). First, convert
             # the total exposure time returned by the descriptor back to
             # the raw exposure time
@@ -124,30 +133,39 @@ def nonlinearity_correct(adinput=None):
                 log.critical("The raw exposure time is outside the " + \
                     "range used to derive correction.")
                 raise Errors.InvalidValueError()
+            
             # Check the read mode and well depth setting values
             if read_mode == "Invalid" or well_depth_setting == "Invalid":
                 raise Errors.CalcError()
+            
             # Print the descriptor values
             log.info("The number of coadds = %s" % coadds)
             log.info("The read mode = %s" % read_mode)
             log.info("The total exposure time = %s" % total_exposure_time)
             log.info("The well depth = %s" % well_depth_setting)
+            
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
+                
                 # Get the size of the raw pixel data
                 naxis2 = ext.get_key_value("NAXIS2")
+                
                 # Get the raw pixel data
                 raw_pixel_data = ext.data
+                
                 # Divide the raw pixel data by the number of coadds
                 if coadds > 1:
                     raw_pixel_data = raw_pixel_data / coadds
+                
                 # Determine the mean of the raw pixel data
                 raw_mean_value = np.mean(raw_pixel_data)
                 log.info("The mean value of the raw pixel data in " +
                     "%s is %.8f" % (ext.filename, raw_mean_value))
+                
                 # Create the key used to access the coefficients that are
                 # used to correct for non-linearity
                 key = (read_mode, naxis2, well_depth_setting)
+                
                 # Get the coefficients from the lookup table
                 if lincorlookup[key]:
                     maximum_counts, coeff1, coeff2, coeff3 = \
@@ -156,9 +174,11 @@ def nonlinearity_correct(adinput=None):
                     raise Errors.TableKeyError()
                 log.info("Coefficients used = %.12f, %.9e, %.9e" % \
                     (coeff1, coeff2, coeff3))
+                
                 # Create a new array that contains the corrected pixel data
                 corrected_pixel_data = raw_pixel_data + \
                     coeff2 * raw_pixel_data**2 + coeff3 * raw_pixel_data**3
+                
                 # nirlin replaces pixels greater than maximum_counts with 0
                 # Set the pixels to 0 if they have a value greater than the
                 # maximum counts
@@ -167,26 +187,34 @@ def nonlinearity_correct(adinput=None):
                 #corrected_pixel_data[corrected_pixel_data > \
                 # maximum_counts] = 0
                 # Should probably add the above to the DQ plane
+                
                 # Multiply the corrected pixel data by the number of coadds
                 if coadds > 1:
                     corrected_pixel_data = corrected_pixel_data * coadds
+                
                 # Write the corrected pixel data to the output object
                 ext.data = corrected_pixel_data
+                
                 # Determine the mean of the corrected pixel data
                 corrected_mean_value = np.mean(ext.data)
                 log.info("The mean value of the corrected pixel data in " +
                     "%s is %.8f" % (ext.filename, corrected_mean_value))
+            
             # Correct the exposure time by adding coeff1
             total_exposure_time = total_exposure_time + coeff1
             log.info("The corrected total exposure time = %f" % \
                 total_exposure_time)
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))

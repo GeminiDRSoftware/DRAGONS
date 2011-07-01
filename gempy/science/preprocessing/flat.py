@@ -33,41 +33,52 @@ def divide_by_flat(adinput=None, flat=None):
                  match the length of the inputs.
     :type flat: AstroData
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
     flat = gt.validate_input(adinput=flat)
+    
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by flat as the value
     flat_dict = gt.make_dict(key_list=adinput, value_list=flat)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "DIVFLAT"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the divide_by_flat user level function has been
             # run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "divide_by_flat" % (ad.filename))
+            
             # Divide the adinput by the flat
-            flat = flat_dict[ad]
             log.info("Dividing the input AstroData object %s by the flat " \
                      "(%s)" % (ad.filename, flat.filename))
-            ad = ad.div(flat)
+            ad = ad.div(flat_dict[ad])
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -78,7 +89,7 @@ def normalize_flat_image(adinput=None):
     The normalize_flat_image user level function will normalize each science
     extension of the input AstroData object(s) and automatically update the
     variance and data quality extensions, if they exist.
-       
+    
     Either a 'main' type logger object, if it exists, or a null logger 
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
@@ -86,41 +97,54 @@ def normalize_flat_image(adinput=None):
     :param adinput: Astrodata input flat(s) to be combined and normalized
     :type adinput: Astrodata
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "NORMFLAT"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the normalize_flat_image user level function has
             # been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "normalize_flat_image" % (ad.filename))
+            
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
-                # Calculate the mean value of the science extension
+
+                # Normalise the input AstroData object. Calculate the mean
+                # value of the science extension
                 mean = np.mean(ext.data)
                 # Divide the science extension by the mean value of the science
                 # extension
                 log.info("Normalizing %s[%s,%d] by dividing by the mean = %f" \
                          % (ad.filename, ext.extname(), ext.extver(), mean))
                 ext = ext.div(mean)
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -128,23 +152,22 @@ def normalize_flat_image(adinput=None):
 
 def normalize_flat_image_gmos(adinput=None):
     """
-    This function will combine the input flats (adinput) and then normalize  
+    This function will combine the input flats (adinput) and then normalize
     them using the CL script giflat.
     
     WARNING: The giflat script used here replaces the previously 
-    calculated DQ frames with its own versions.  This may be corrected 
+    calculated DQ frames with its own versions. This may be corrected 
     in the future by replacing the use of the giflat
     with a Python routine to do the flat normalizing.
     
-    NOTE: The inputs to this function MUST be prepared. 
-
+    NOTE: The inputs to this function MUST be prepared.
+    
     Either a 'main' type logger object, if it exists, or a null logger 
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
     
     :param adinput: Astrodata input flat(s) to be combined and normalized
     :type adinput: Astrodata
-    
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 

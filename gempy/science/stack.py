@@ -28,22 +28,28 @@ def stack_frames(adinput=None, suffix=None, operation="average",
     :param operation: type of combining operation to use.
     :type operation: string, options: 'average', 'median'.
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # The stack_frames user level function cannot stack one AstroData object.
     # If the adinput list contains a single AstroData object, raise an
     # exception
     if len(adinput) == 1:
         raise Errors.InputError("Cannot stack a single AstroData object")
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "STACK"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Load PyRAF
         pyraf, gemini, yes, no = pyrafLoader()
@@ -52,6 +58,7 @@ def stack_frames(adinput=None, suffix=None, operation="average",
                             suffix=suffix, combinedImages=True, log=log)
         if not clm.status:
             raise Errors.InputError("Please provide prepared inputs")
+        
         # Get the input parameters for IRAF as specified by the stackFrames
         # primitive 
         clPrimParams = {
@@ -62,6 +69,7 @@ def stack_frames(adinput=None, suffix=None, operation="average",
             # This returns a unique/temp log file for IRAF
             "logfile" : clm.templog.name,
             }
+        
         # Get the input parameters for IRAF as specified by the user
         fl_vardq = no
         fl_dqprop = no
@@ -76,6 +84,7 @@ def stack_frames(adinput=None, suffix=None, operation="average",
             "combine"   : operation,
             "reject"    : reject_method,
             }
+        
         # Get the default parameters for IRAF and update them using the above
         # dictionaries
         clParamsDict = CLDefaultParamsDict("gemcombine")
@@ -89,14 +98,18 @@ def stack_frames(adinput=None, suffix=None, operation="average",
             raise Errors.OutputError("The IRAF task gemcombine failed")
         else:
             log.status("The IRAF task gemcombine completed sucessfully")
+        
         # Create the output AstroData object by loading the output file from
         # gemcombine into AstroData, remove intermediate temporary files from
         # disk 
-        adstack, junk, junk = clm.finishCL() 
+        adstack, junk, junk = clm.finishCL()
+        
         # Add the appropriate time stamps to the PHU
         gt.mark_history(adinput=ad, keyword=keyword)
+        
         # Return the output AstroData object
         return adstack
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
