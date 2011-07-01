@@ -9,6 +9,7 @@ from ReductionContextRecords import AstroDataRecord
 import subprocess
 import os
 from copy import copy,deepcopy
+from AstroData import Errors
 
 uselocalcalserv = False
 batchno = 100
@@ -183,9 +184,9 @@ class DataSpider(object):
                             #
                             # NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE  NOTE
                             
-                        except ADExcept:
-                            print "${RED}Could not open %s as AstroData${NORMAL}" %fname
-                            raise
+                        except:
+                            mes = "Could not open %s as AstroData" % fname
+                            raise Errors.AstroDataError(mes)
                             continue
 
                         gain = 0
@@ -527,8 +528,8 @@ class DataSpider(object):
                        
                         try:
                             fl = AstroData(fname)
-                        except ADExcept:
-                            # print "${RED}Could not open %s as AstroData${NORMAL}" %fname
+                        except:
+                            mes = "Could not open %s as AstroData" % fname
                             continue
 
                         gain = 0
