@@ -1,10 +1,6 @@
-# Author: Kyle Mede, April 2011
-# This module provides functions that perform variance frame calculations
-# and the creation of their headers on AstroData objects
+# This module contains functions that calculate variance using the input
+# dataset
 
-import os
-
-import pyfits as pf
 import numpy as np
 import astrodata
 from astrodata.AstroData import AstroData
@@ -168,73 +164,3 @@ def varianceArrayCalculator(sciExtA=None, sciExtB=None, constB=None,
     except:
         
         raise 
-
-def calculateInitialVarianceArray(sciExt=None):
-    """
-    This function uses numpy to calculate the variance of a SCI extension
-    of an AstroData instance.
-    
-    The calculation will follow the formula:
-    variance = (read noise/gain)2 + max(data,0.0)/gain
-    
-    returns variance as a numpy array.
-    
-    This array should be put into the .data part of the variance extension 
-    of the astrodata instance this array is being calculated with matching
-    EXTVER of the SCI extension it was calculated for.
-    
-    :param sciExt: science extension of an astrodata instance
-    :type sciExt: Astrodata single extension
-    """
-    try:
-        # var = (read noise/gain)**2 + max(data,0.0)/gain
-                        
-        # Retrieving necessary values (read noise, gain)
-        readNoise=sciExt.read_noise().as_pytype()
-        gain = sciExt.gain().as_pytype()
-        # Creating (read noise/gain) constant
-        rnOverG=readNoise/gain
-        # Convert negative numbers (if they exist) to zeros
-        maxArray=np.where(sciExt.data>0.0,sciExt.data,0.0)
-        #maxArray=sciExt.data[np.where(sciExt.data>0.0,0)]
-        # Creating max(data,0.0)/gain array
-        maxOverGain=np.divide(maxArray,gain)
-        # Putting it all together
-        varArray=np.add(maxOverGain,rnOverG*rnOverG)
-    
-        # return calculated variance numpy array
-        return varArray
-    except:
-        raise
-
-def createInitialVarianceHeader(extver=None,shape=None):
-    """
-    This function creates a variance pyfits header object and loads it up with 
-    the standard header keys.
-    Since these are basically the same for all initial variance frames, 
-    excluding the EXTVER key, this func is very simple :-)
-    
-    NOTE: maybe this function should be further generalized in the future to 
-    handle variance frames with more than two axes? IFU VAR frames?
-    
-    :param extver: extension version to put into the EXTVER header key matching
-                   the SCI extension's EXTVER
-    :type extver: int
-    
-    :param shape: shape of data array for this VAR extension. 
-                  Can be found using ad['VAR',extver].data.shape
-    :type shape: tuple. ex. (2304,1024), , ie(number of rows, number of columns)
-    """    
-    # Creating the variance frame's header with pyfits and updating it     
-    varheader = pf.Header()
-    varheader.update('XTENSION','IMAGE','IMAGE extension')
-    varheader.update('BITPIX', -32,'number of bits per data pixel')
-    varheader.update('NAXIS', 2)
-    varheader.update('NAXIS1',shape[1],'length of data axis 1')
-    varheader.update('NAXIS2',shape[0],'length of data axis 2')
-    varheader.update('PCOUNT', 0, 'required keyword; must = 0')
-    varheader.update('GCOUNT', 1, 'required keyword; must = 1')
-    varheader.update('EXTNAME', 'VAR', 'Extension Name')
-    varheader.update('EXTVER', extver, 'Extension Version')
-    
-    return varheader
