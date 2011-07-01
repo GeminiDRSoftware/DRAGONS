@@ -558,7 +558,7 @@ class ReductionContext(dict):
     def get_outputs(self, style = None):
         return self.get_stream(style = style, stream = MAINSTREAM, empty = False)
         
-    def get_stream(self, stream=MAINSTREAM, empty=True):
+    def get_stream(self, stream=MAINSTREAM, empty=False):
         """
         :param stream: A string name for the stream in question.  
             To use the standard stream do no set.
