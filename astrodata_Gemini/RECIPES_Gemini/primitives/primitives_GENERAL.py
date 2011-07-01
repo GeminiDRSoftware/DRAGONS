@@ -2,6 +2,8 @@ import os
 from astrodata.adutils import gemLog
 from astrodata.ReductionObjects import PrimitiveSet
 
+from gempy import geminiTools as gt
+
 class GENERALPrimitives(PrimitiveSet):
     """
     This is the class containing all of the primitives for the GENERAL level of
@@ -97,7 +99,7 @@ class GENERALPrimitives(PrimitiveSet):
         if rc["to_stream"] != None:
             stream = rc["to_stream"]
         else:
-            stream = "main"
+            stream = None
         
         
         if "by_token" in rc:
@@ -105,6 +107,7 @@ class GENERALPrimitives(PrimitiveSet):
             for ar in rc.inputs:
                 if bt in ar.filename:
                     rc.report_output(ar.ad, stream = stream)
+            # print "pG110:",repr(rc.outputs)
         else:
             inputs = rc.get_inputs_as_astrodata()
             rc.report_output(inputs, stream = stream)
@@ -120,12 +123,34 @@ class GENERALPrimitives(PrimitiveSet):
         streams.sort()
         streams.remove("main")
         streams.insert(0,"main")
+        tstream = rc["streams"]
+        
         for stream in streams:
-            log.info("stream: "+stream)
-            if len(rc.outputs[stream])>0:
-                for adr in rc.outputs[stream]:
-                    log.info(str(adr))
-            else:
-                log.info("    empty")                
+            if tstream == None or stream in tstream:
+                log.info("stream: "+stream)
+                if len(rc.outputs[stream])>0:
+                    for adr in rc.outputs[stream]:
+                        log.info(str(adr))
+                else:
+                    log.info("    empty")                
     
+        yield rc
+
+    def change(self, rc):
+        inputs = rc.get_inputs_as_astrodata()
+        # print "pG140:", repr(rc.current_stream), repr(rc._nonstandard_stream)
+        
+        if rc["changeI"] == None:
+            rc.update({"changeI":0})
+        
+        changeI = rc["changeI"]
+        ci = "_"+str(changeI)
+        
+        rc.update({"changeI":changeI+1})
+        for ad in inputs:
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=ci,
+                                             strip=False)
+            # print "pG152:", ad.filename
+        rc.report_output(inputs)
+        
         yield rc

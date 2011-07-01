@@ -1,7 +1,5 @@
 forwardStream(to_stream=BIGSTREAM)
 simpleStreamTest(stream=BIGSTREAM)
-forwardStream(to_stream=SMALLSTREAM)
-simpleStreamTest(stream=SMALLSTREAM)
-clearStream(stream=BIGSTREAM)
-clearStream(stream=SMALLSTREAM)
-showOutputs
+change(stream="flat")
+# clearStream(stream=BIGSTREAM)
+showOutputs()

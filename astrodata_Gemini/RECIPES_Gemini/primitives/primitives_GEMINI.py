@@ -768,7 +768,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         if "stream" in rc:
             stream = rc["stream"]
         else:
-            stream = "MAIN"
+            stream = "main"
             
         log.fullinfo("stream: "+stream)
         for inf in rc.inputs:
