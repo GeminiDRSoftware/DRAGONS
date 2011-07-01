@@ -511,7 +511,6 @@ class CLManager(object):
                 gprep = ad.phu_get_key_value('GPREPARE')
                 if gprep is None:
                     prepare_date = ad.phu_get_key_value('PREPARE')
-                    print prepare_date
                     ad.phu_set_key_value('GPREPARE', prepare_date, 
                                          'UT Time stamp for GPREPARE')
                 else:
