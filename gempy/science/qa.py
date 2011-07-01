@@ -5,6 +5,7 @@ import os, sys
 import time
 from datetime import datetime
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 
@@ -134,17 +135,37 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                             'none reported')
             # If it all worked, then format the output and log it
             else:
+
+                # correct the seeing measurement to zenith
+                fwhm = iqdata[0][2]
+                airmass = float(ad.airmass())
+                if airmass is not None:
+                    corrected = fwhm * airmass**(-0.6)
+                else:
+                    log.warning("Airmass not found, not correcting to zenith")
+                    corrected = fwhm
+
+                # Get IQ constraint band corresponding to
+                # the corrected FWHM number
+                iq_band = _iq_band(adinput=ad,fwhm=corrected)[0]
+
                 # Format this output for printing or logging                
-                fnStr = 'Filename:'.ljust(19)+ad.filename
-                fmStr = 'FWHM Mean:'.ljust(19)+str(iqdata[0][2])
-                fsStr = 'FWHM Sigma:'.ljust(19)+str(iqdata[0][3])
-                emStr = 'Ellipticity Mean:'.ljust(19)+str(iqdata[0][0])
-                esStr = 'Ellipticity Sigma:'.ljust(19)+str(iqdata[0][1])
+                llen = 27
+                fnStr = 'Filename:'.ljust(llen)+ad.filename
+                emStr = 'Ellipticity Mean:'.ljust(llen)+str(iqdata[0][0])
+                esStr = 'Ellipticity Sigma:'.ljust(llen)+str(iqdata[0][1])
+                fmStr = 'FWHM Mean:'.ljust(llen)+str(iqdata[0][2])
+                fsStr = 'FWHM Sigma:'.ljust(llen)+str(iqdata[0][3])
+                csStr = 'Zenith-corrected FWHM:'.ljust(llen)+str(corrected)
+                if iq_band!='':
+                    filter = ad.filter_name(pretty=True)
+                    iqStr = 'IQ band for %s filter:' % filter
+                    iqStr = iqStr.ljust(llen) + 'IQ'+iq_band
                 # Create final formatted string
-                finalStr = '-'*45+'\n'+fnStr+'\n'+fmStr+'\n'+fsStr+'\n'\
-                                +emStr+'\n'+esStr+'\n'+'-'*45
+                finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'+\
+                           fmStr+'\n'+fsStr+'\n'+csStr+'\n'+iqStr+'\n'+'-'*45
                 # Log final string
-                log.stdinfo(finalStr, category='IQ')
+                log.status(finalStr, category='IQ')
                 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
@@ -160,6 +181,94 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
         
         # Return the list of output AstroData objects
         return adoutput_list
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
+
+
+def _iq_band(adinput=None,fwhm=None):
+    """
+    Helper function to take WFS, filter, and airmass information from
+    an AstroData instance and use it to convert a seeing FWHM into
+    an IQ constraint band.
+
+    :param adinput: Input images for which the FWHM has been measured
+    :type adinput: Astrodata objects, either a single or a list of objects
+
+    :param fwhm: Measured FWHM of stars in image, in arcsec
+    :type fwhm: float, either a single or a list that matches the length
+                of the adinput list
+    """
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+    fwhm = gt.validate_input(adinput=fwhm)
+
+    # Initialize the list of output IQ band strings
+    str_output = []
+
+    try:
+
+        # get the IQ band definitions from a lookup table
+        iqConstraints = Lookups.get_lookup_table("Gemini/IQConstraints",
+                                                 "iqConstraints")
+
+        # if there is only one FWHM listed for all adinput, copy
+        # that entry into a list that matches the length of the
+        # adinput list
+        if len(fwhm)==1:
+            fwhm = [fwhm[0] for ad in adinput]
+        else:
+            # otherwise check that length of fwhm list matches 
+            # the length of the adinput list
+            if len(adinput)!=len(fwhm):
+                raise Errors.InputError("fwhm list must match length of " +
+                                        "adinput list")
+        
+        # Loop over each input AstroData object in the input list
+        count=0
+        for ad in adinput:
+
+            wfs = str(ad.wavefront_sensor())
+            filter = str(ad.filter_name(pretty=True))
+
+            # default value for iq band
+            iq = ''
+
+            # check that ad has valid WFS, filter
+            if wfs is not None and filter is not None:
+                if filter in iqConstraints.keys():
+                    if wfs in iqConstraints[filter].keys():
+
+                        # get limits for this observation
+                        iq20 = iqConstraints[filter][wfs]['20']
+                        iq70 = iqConstraints[filter][wfs]['70']
+                        iq85 = iqConstraints[filter][wfs]['85']
+
+                        # get iq band
+                        if fwhm[count]<iq20:
+                            iq='20'
+                        elif fwhm[count]<iq70:
+                            iq='70'
+                        elif fwhm[count]<iq85:
+                            iq='85'
+                        else:
+                            iq='Any'
+            
+            # Append the iq band string to the output
+            str_output.append(iq)
+            count+=1
+
+        # Return the list of output AstroData objects
+        return str_output
+
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
