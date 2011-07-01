@@ -397,12 +397,12 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
             log.debug("Keyword %s = %s already exists in the PHU" \
                   % (key, original_value))
             comment = '(UPDATED) %s' % comment
-            msg = "updated"
+            msg = "updated in"
             historyComment = "The keyword %s = %s was overwritten in the " \
                              "PHU by AstroData" % (key, original_value)
         else:
             comment = '(NEW) %s' % comment
-            msg = "added"
+            msg = "added to"
         # Use exec to perform the requested function on input
         try:
             exec('output_value = adinput.%s' % function)
@@ -416,9 +416,9 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
             if output_value != original_value:
                 # Update the header and write a history comment
                 adinput.phu_set_key_value(key, str(output_value), comment)
-                log.info("PHU keyword %s = %s %s" \
-                         % (key, adinput.phu_get_key_value(key), msg),
-                         category='header')
+                log.info("PHU keyword %s = %s %s %s" \
+                         % (key, adinput.phu_get_key_value(key), msg,
+                            adinput.filename), category='header')
                 if original_value is None:
                     # A new keyword was written to the PHU. Update the
                     # historyComment accordingly.
@@ -456,10 +456,10 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
                 log.debug("Keyword %s = %s already in extension %s,%s" \
                           % (key, original_value, extname, ext.extver()))
                 comment = '(UPDATED) %s' % comment
-                msg = "updated"
+                msg = "updated in"
             else:
                 comment = '(NEW) %s' % comment
-                msg = "added"
+                msg = "added to"
             # Use exec to perform the requested function on input
             try:
                 exec('output_value = ext.%s' % function)
@@ -473,9 +473,9 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
                 if output_value != original_value:
                     # Update the header and write a history comment
                     ext.set_key_value(key, str(output_value), comment)
-                    log.info("%s,%s keyword %s = %s %s" \
+                    log.info("%s,%s keyword %s = %s %s %s" \
                              % (extname, ext.extver(), key,
-                                ext.get_key_value(key), msg),
+                                ext.get_key_value(key), msg, adinput.filename),
                              category="header")
                     if original_value is None:
                         # A new keyword was written to the pixel data
