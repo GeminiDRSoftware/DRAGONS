@@ -526,7 +526,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         for inp in rc.inputs:
             sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
         for sid in sidset:
-            stacklist = rc.get_stack(sid) #.filelist
+            stacklist = rc.get_list(sid) #.filelist
             log.fullinfo("List for stack id=%s" % sid, category="list")
             for f in stacklist:
                 rc.report_output(f)
@@ -697,6 +697,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 continue
 
             # Call the scale_fringe_to_science user level function
+            # (this returns the scaled fringe frame)
             ad = pp.scale_fringe_to_science(adinput=fringe, science=ad,
                                             stats_scale=rc["stats_scale"])
 
@@ -709,7 +710,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # frames to the reduction context
 
         rc.report_output(adoutput_list, stream="fringe")
-        rc.report_output(rc.get_inputs(style="AD"), stream="main")
+        rc.report_output(rc.get_inputs(style="AD"))
         
         yield rc
     
@@ -807,7 +808,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             for inp in rc.inputs:
                 sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
         for sid in sidset:
-            stacklist = rc.get_stack(sid) #.filelist
+            stacklist = rc.get_list(sid) #.filelist
             log.status("List for stack id=%s" % sid, category="list")
             if len(stacklist) > 0:
                 for f in stacklist:
@@ -1135,8 +1136,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         adoutput_list = []
 
         # Get inputs from their streams
-        adinput = rc.get_inputs(style="AD", stream="main")
-        fringes = rc.get_inputs(style="AD", stream="fringe")
+        adinput = rc.get_inputs(style="AD")
+        fringes = rc.get_stream(stream="fringe")
 
         # Check that there are as many fringes as inputs
         if len(adinput)!=len(fringes):
@@ -1190,7 +1191,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         if rc["lastTime"] and not rc["start"]:
             td = cur - rc["lastTime"]
             elap = " (%s)" % str(td)
-        log.fullinfo("Time: %s %s" % (str(datetime.now()), elap))
+        log.status("Time: %s %s" % (str(datetime.now()), elap))
         rc.update({"lastTime":cur})
         
         yield rc
