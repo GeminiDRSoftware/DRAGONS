@@ -11,38 +11,42 @@ def standardize_headers_f2(adinput=None):
     """
     This user level function is used to update headers of FLAMINGOS-2 data.
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSI"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the standardize_headers_f2 user level function has
             # been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_headers_f2" \
                                         % (ad.filename))
+            
             # Standardize the headers of the input AstroData object. First,
             # update the keywords in the headers that are common to all Gemini
             # data. The standardize_headers_gemini user level function returns
             # a list, so select the first element.
             ad = standardize_headers_gemini(adinput=ad)[0]
+            
             # Now, update the keywords in the headers that are specific to
             # FLAMINGOS-2
             log.status("Updating keywords that are specific to FLAMINGOS-2")
-            # Formatting so logger looks organized for these messages
-            log.fullinfo("*"*50, category="header") 
-            log.fullinfo("File = %s" % ad.filename, category="header")
-            log.fullinfo("~"*50, category="header")
             # Filter name (required for IRAF?)
             gt.update_key_value(adinput=ad,
                                 function=
@@ -61,15 +65,17 @@ def standardize_headers_f2(adinput=None):
             if "IMAGE" not in ad.types:
                 gt.update_key_value(adinput=ad, function="dispersion_axis()",
                                     extname="SCI")
-            log.fullinfo("-"*50, category="header")
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -86,36 +92,39 @@ def standardize_headers_gemini(adinput=None):
     Either a 'main' type logger object, if it exists, or a null logger (i.e.,
     no log file, no messages to screen) will be retrieved/created in the
     ScienceFunctionManager and used within this function.
-          
+    
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSG"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the standardize_headers_gemini user level function
             # has been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_headers_gemini" \
                                         % (ad.filename))
+            
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are common to all Gemini data
-            # Formatting so logger looks organized for these messages
-            log.fullinfo("*"*50, category="header")
-            log.fullinfo("File = %s" % ad.filename, category="header")
-            log.fullinfo("~"*50, category="header")
             # Number of science extensions
             gt.update_key_value(adinput=ad, function="count_exts(\"SCI\")",
                                 extname="PHU")
@@ -125,7 +134,6 @@ def standardize_headers_gemini(adinput=None):
             # Number of extensions
             gt.update_key_value(adinput=ad, function="numext", value=len(ad),
                                 extname="PHU")
-            log.fullinfo("-"*50, category="header")
             # Non linear level
             gt.update_key_value(adinput=ad, function="non_linear_level()",
                                 extname="SCI")
@@ -135,15 +143,17 @@ def standardize_headers_gemini(adinput=None):
             # Physical units (assuming raw data has units of ADU)
             gt.update_key_value(adinput=ad, function="bunit", value="adu",
                                 extname="SCI")
-            log.fullinfo("-"*50, category="header") 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -159,41 +169,45 @@ def standardize_headers_gmos(adinput=None):
     Either a 'main' type logger object, if it exists, or a null logger (i.e.,
     no log file, no messages to screen) will be retrieved/created in the
     ScienceFunctionManager and used within this function.
-          
+    
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZHDRSI"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the standardize_headers_gmos user level function
             # has been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_headers_gmos" \
                                         % (ad.filename))
+            
             # Standardize the headers of the input AstroData object. First,
             # update the keywords in the headers that are common to all Gemini
             # data. The standardize_headers_gemini user level function returns
             # a list, so select the first element.
             ad = standardize_headers_gemini(adinput=ad)[0]
+            
             # Now, update the keywords in the headers that are specific to GMOS
             log.status("Updating keywords that are specific to GMOS")
-            # Formatting so logger looks organized for these messages
-            log.fullinfo("*"*50, category="header") 
-            log.fullinfo("File = %s" % ad.filename, category="header")
-            log.fullinfo("~"*50, category="header")
             # Pixel scale
             gt.update_key_value(adinput=ad, function="pixel_scale()",
                                 extname="SCI")
@@ -210,15 +224,17 @@ def standardize_headers_gmos(adinput=None):
             if "IMAGE" not in ad.types:
                 gt.update_key_value(adinput=ad, function="dispersion_axis()",
                                     extname="SCI")
-            log.fullinfo("-"*50, category="header")
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -229,26 +245,33 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
     This user level function is used to standardize the structure of
     FLAMINGOS-2 data.
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZSTRUC"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the standardize_structure_f2 user level function
             # has been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_structure_f2" \
                                         % (ad.filename))
+            
             # Standardize the structure of the input AstroData
             # object. Raw FLAMINGOS-2 data have three dimensions (i.e.,
             # 2048x2048x1), so check whether the third dimension has a length
@@ -269,6 +292,7 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                     log.debug("Dimensions of %s[%s,%d] = %s" \
                               % (ad.filename, ext.extname(), ext.extver(), \
                               str(ext.data.shape)))
+            
             if add_mdf:
                 # Check whether the input AstroData object has an AstroData 
                 # Type of IMAGE, since MDFs should only be added to
@@ -279,14 +303,18 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                                             "'IMAGE'" % (ad.filename))
                 # Call the add_mdf user level function
                 ad = add_mdf(adinput=ad, mdf=mdf)
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -307,7 +335,7 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
     Either a 'main' type logger object, if it exists, or a null logger 
     (ie, no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
-          
+    
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
     
@@ -324,26 +352,33 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
                      the inputs and the inputs must ALL be of type SPECT.
     :type mdf: String, or list of strings.
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "SDZSTRUC"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the standardize_structure_gmos user level function
             # has been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_structure_gmos" \
                                         % (ad.filename))
+            
             # Standardize the structure of the input AstroData object.
             # ACTUALLY DO SOMETHING HERE?
             if add_mdf:
@@ -356,14 +391,18 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
                                             "'IMAGE'" % (ad.filename))
                 # Call the add_mdf user level function
                 ad = add_mdf(adinput=ad, mdf=mdf)
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))

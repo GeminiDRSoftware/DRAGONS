@@ -12,35 +12,46 @@ def validate_data_f2(adinput=None, repair=False):
     """
     This user level function is used to validate FLAMINGOS-2 data.
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "VALDATA"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the validate_data_f2 user level function has been
             # run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "validate_data_f2" % (ad.filename))
+            
             # Validate the input AstroData object. ACTUALLY DO SOMETHING HERE?
             log.info("No validation required for FLAMINGOS-2")
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
@@ -59,7 +70,7 @@ def validate_data_gmos(adinput=None, repair=False):
     Either a 'main' type logger object, if it exists, or a null logger (i.e.,
     no log file, no messages to screen) will be retrieved/created in the 
     ScienceFunctionManager and used within this function.
-          
+    
     :param adinput: A list containing one or more AstroData instances to be
                   validated
     :type adinput: Astrodata
@@ -68,25 +79,32 @@ def validate_data_gmos(adinput=None, repair=False):
                    Note: this feature does not work yet.
     :type repair: Python boolean
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "VALDATA"
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
+    
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+            
             # Check whether the validate_data_gmos user level function has been
             # run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
                                         "validate_data_gmos" % (ad.filename))
+            
             # Validate the input AstroData object. Ensure that the input have
             # 1, 3, 6 or 12 extensions
             numext = ad.count_exts("SCI")
@@ -103,14 +121,18 @@ def validate_data_gmos(adinput=None, repair=False):
             else:
                 log.info("The GMOS input file has been validated: %s " \
                          "contains %d extensions" % (ad.filename, numext))
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             gt.mark_history(adinput=ad, keyword="PREPARE")
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+        
         # Return the list of output AstroData objects
         return adoutput_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
