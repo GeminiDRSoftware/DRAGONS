@@ -1,4 +1,4 @@
-c#!/usr/bin/env python
+#!/usr/bin/env python
 #
 # 2007 Jul 8  - Andrew W Stephens - alpha version
 # 2007 Jul 9  - AWS - beta version
@@ -37,6 +37,9 @@ c#!/usr/bin/env python
 # 2010 Oct 12 - AWS - GNIRS row filtering using an 8-pixel wide kernel
 # 2010 Dec 21 - AWS - add grid filter
 # 2010 Dec 28 - AWS - select GNIRS pattern region based on camera & slit
+# 2011 Feb 03 - AWS - use extension 2 for nsprepared GNIRS data
+# 2011 Feb 05 - AWS - add input glob expansion
+# 2011 May 05 - AWS - output 32-bit files
 
 # To Do:
 # GNIRS: Mask out padding when a DQ or pixel mask is available
@@ -51,12 +54,16 @@ c#!/usr/bin/env python
 
 import datetime
 import getopt
+import glob
+import matplotlib.pyplot as pyplot
 import numpy
 import os
 import pyfits
+from scipy.optimize import leastsq
 import string
 import sys
 
+version = '2011 May 5'
 
 #-----------------------------------------------------------------------
 
@@ -83,10 +90,10 @@ def usage():
     print '       repeated for all four quadrants and the cleaned frame is written'
     print '       to c<infile> (or the file specified with the -o flag).  The'
     print '       pattern derived for each quadrant may be saved with the -p flag.'
-    print ' '
+    print ''
     print '       Pattern noise is often accompanied by an offset in the bias'
     print '       values between the four quadrants.  One may want to use the'
-    print '       -b flag to try to remove this offset.  This attempts to match'
+    print '       -q flag to try to remove this offset.  This attempts to match'
     print '       the iteratively determined median value of each quadrant.'
     print '       This method works best with sky subtraction (i.e. with the -s'
     print '       flag), and does not work well if there are large extended objects'
@@ -94,7 +101,7 @@ def usage():
     print '       entire frame, although the -c flag will only use a central'
     print '       portion of the image.  Note that the derived quadrant offsets'
     print '       will be applied to the output pattern file.'
-    print ' '
+    print ''
     print '       Removing the pattern from spectroscopy is more difficult because'
     print '       of many vertical sky lines.  By default f/6 spectroscopy with the'
     print '       2-pixel or blue slits (which do not fill the detector), uses the'
@@ -107,7 +114,12 @@ def usage():
     print '       subtract the sky, determine and save the pattern via the -p flag,'
     print '       then subtract the pattern from the original image.  One may use'
     print '       the -a flag to force using all of the pixels for the pattern'
-    print '       determination.\n'
+    print '       determination.'
+    print ''
+    print '       Note that you may use glob expansion in infile, however, the'
+    print '       entire string must then be quoted or any pattern matching'
+    print '       characters (*,?) must be escaped with a backslash.'
+    print ''
     print 'OPTIONS'
     print '       -a : use all pixels for pattern determination'
     print '       -b <badpixelmask> : specify a bad pixel mask (overrides DQ plane)'
@@ -126,104 +138,127 @@ def usage():
     print '       -x <size> : set pattern x size in pix [16]'
     print '       -y <size> : set pattern y size in pix [4]\n'
     print 'VERSION'
-    print '       2011 Jan 4'
+    print '       ', version
     print ''
     raise SystemExit
 
 #-----------------------------------------------------------------------
 
-try:
-    opts, args = getopt.getopt(sys.argv[1:], 'ab:c:d:fg:hmo:p:qrs:tx:y:v', ['q1=','q2=','q3=','q4='])
-except getopt.GetoptError, err:
-    print str(err)
-    usage()
-    sys.exit(2)
+def main():
+    global allpixels, applygridfilter, bad, badmask
+    global bias1, bias2, bias3, bias4, biasadjust
+    global cfrac, force, graph, median, output
+    global patternfile, datadir, rowfilter, savepattern
+    global skyfile, skysub, subtractrowmedian, pxsize, pysize, verbose
+    
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'ab:c:d:fg:hmo:p:qrs:tx:y:v', ['q1=','q2=','q3=','q4='])
+    except getopt.GetoptError, err:
+        print str(err)
+        usage()
+        sys.exit(2)
 
-if (len(args)) != 1:
-    usage()
+    if (len(args)) != 1:
+        usage()
 
-allpixels = False
-applygridfilter = False
-bad = -9.e6              # value assigned to bad pixels
-badmask = 'DQ'
-bias1 = 0.0
-bias2 = 0.0
-bias3 = 0.0
-bias4 = 0.0
-biasadjust = False
-cfrac = 1.0              # use whole image
-force = False
-graph = 0
-median = False
-output = 'default'
-patternfile = ''
-datadir = ''
-rowfilter = False
-savepattern = False
-skyfile = ''
-skysub = False
-subtractrowmedian = False
-pxsize = 16
-pysize = 4
-verbose = False
+    nargs = len(sys.argv[1:])
+    nopts = len(opts)
 
-for o, a in opts:
-    if o in ('-a'):        # force using all pixels for pattern determination
-        allpixels = True
-    elif o in ('-b'):
-        badmask = a
-    elif o in ('-c'):      # use central fraction for bias normalization
-        cfrac = float(a)
-    elif o in ('-d'):      # input data directory
-        datadir = a
-    elif o in ('-f'):      # force pattern subtraction in every quadrant
-        force = True
-    elif o in ('-g'):      # graph results
-        graph = int(a)
-    elif o in ('-o'):      # specify cleaned output file
-        output = a
-    elif o in ('-m'):
-        median = True
-    elif o in ('-p'):      # write pattern file
-        patternfile = a
-        savepattern = True
-    elif o in ('-q'):      # try to adjust quadrant bias values
-        biasadjust = True
-    elif o in ('--q1'):    # bias offset for quadrant 1
-        bias1 = float(a)
-    elif o in ('--q2'):
-        bias2 = float(a)
-    elif o in ('--q3'):
-        bias3 = float(a)
-    elif o in ('--q4'):
-        bias4 = float(a)
-    elif o in ('-r'):      # row filtering
-        rowfilter = True
-    elif o in ('-s'):      # sky frame
-        skyfile = a
-        skysub = True
-    elif o in ('-t'):      # test grid filter
-        applygridfilter = True
-    elif o in ('-x'):      # specify pattern x-dimension
-        pxsize = int(a)
-    elif o in ('-y'):      # specify pattern y-dimension
-        pysize = int(a)
-    elif o in ('-v'):      # verbose debugging output
-        verbose = True
-    else:
-        assert False, "unhandled option"
+    allpixels = False
+    applygridfilter = False
+    bad = -9.e6              # value assigned to bad pixels
+    badmask = 'DQ'
+    bias1 = 0.0
+    bias2 = 0.0
+    bias3 = 0.0
+    bias4 = 0.0
+    biasadjust = False
+    cfrac = 1.0              # use whole image
+    force = False
+    graph = 0
+    median = False
+    output = 'default'
+    patternfile = ''
+    datadir = ''
+    rowfilter = False
+    savepattern = False
+    skyfile = ''
+    skysub = False
+    subtractrowmedian = False
+    pxsize = 16
+    pysize = 4
+    verbose = False
 
-if (biasadjust):
-    from scipy.optimize import leastsq
+    for o, a in opts:
+        if o in ('-a'):        # force using all pixels for pattern determination
+            allpixels = True
+        elif o in ('-b'):
+            badmask = a
+        elif o in ('-c'):      # use central fraction for bias normalization
+            cfrac = float(a)
+        elif o in ('-d'):      # input data directory
+            datadir = a
+        elif o in ('-f'):      # force pattern subtraction in every quadrant
+            force = True
+        elif o in ('-g'):      # graph results
+            graph = int(a)
+        elif o in ('-o'):      # specify cleaned output file
+            output = a
+        elif o in ('-m'):
+            median = True
+        elif o in ('-p'):      # write pattern file
+            patternfile = a
+            savepattern = True
+        elif o in ('-q'):      # try to adjust quadrant bias values
+            biasadjust = True
+        elif o in ('--q1'):    # bias offset for quadrant 1
+            bias1 = float(a)
+        elif o in ('--q2'):
+            bias2 = float(a)
+        elif o in ('--q3'):
+            bias3 = float(a)
+        elif o in ('--q4'):
+            bias4 = float(a)
+        elif o in ('-r'):      # row filtering
+            rowfilter = True
+        elif o in ('-s'):      # sky frame
+            skyfile = a
+            skysub = True
+        elif o in ('-t'):      # test grid filter
+            applygridfilter = True
+        elif o in ('-x'):      # specify pattern x-dimension
+            pxsize = int(a)
+        elif o in ('-y'):      # specify pattern y-dimension
+            pysize = int(a)
+        elif o in ('-v'):      # verbose debugging output
+            verbose = True
+        else:
+            assert False, "unhandled option"
 
-if (graph > 0):
-    import matplotlib.pyplot as pyplot
+    inputfile = args[0]
 
+    files = glob.glob(inputfile)
+    if (verbose):
+        print '...input = ', inputfile
+        print '...files = ', files
+
+    print ''
+    
+    for f in files:
+        if IsFits(f):
+            cleanir(f)
+        else: # file list
+            print 'Expanding ' + f + '...\n'
+            inlist = open(f,'r')
+            for line in inlist:
+                cleanir(line.strip())
+            inlist.close()
 
 #-----------------------------------------------------------------------
 
 def IsFits(infile):
-    
+    global datadir
+
     # If the file exists and has a .fits extension assume that it is FITS:
     if os.path.exists(datadir + infile):
         if infile.endswith('.fits'):
@@ -466,12 +501,14 @@ def GridFilter(img):
 
 #-----------------------------------------------------------------------
 
-def ProcessFrame(inputfile):
+def cleanir(inputfile):
     global allpixels, badmask, biasadjust, cfrac, force, median, rowfilter, skysub, verbose
     global bias1, bias2, bias3, bias4
     global inputmedian, inputstddev
     global datadir, output, pattern, patternfile, skyfile, pxsize, pysize, qxsize, qysize
     global bins, bincenters, inputmean, imputmedian, inputstddev, lsigma, hsigma
+
+    print 'CLEANIR v.', version
 
     havedq = False           # we have DQ information
 
@@ -563,14 +600,17 @@ def ProcessFrame(inputfile):
 
     if ( next == 1 ):
         sci = 0
-    else:
+    elif ( next < 5 ):
         sci = 1
+    else:
+        sci = 2
     if (verbose):
         print '...assuming the science data are in extension', sci
 
-    image = numpy.array(hdulist[sci].data, dtype=numpy.double)
+    image = numpy.array(hdulist[sci].data)
     if (verbose):
         print '...SCI: ', image
+        print image.dtype.name
 
     try:
         naxis1,naxis2 = hdulist[sci].header['naxis1'], hdulist[sci].header['naxis2']
@@ -579,7 +619,7 @@ def ProcessFrame(inputfile):
         pyfits.info(inputfile)
         sys.exit(2)
     print '...image dimensions = ', naxis1, 'x', naxis2
-    
+
     try:
         instrument = hdulist[0].header['INSTRUME']
         if (verbose):
@@ -589,9 +629,17 @@ def ProcessFrame(inputfile):
         instrument = 'INDEF'
         allpixels = True
 
+    try:
+        nscut = hdulist[0].header['NSCUT']
+        nscut = True
+    except:
+        nscut = False
+    if (verbose):
+        print '...nscut =', nscut
+
     if instrument == 'GNIRS':
         print '...padding the top of GNIRS image...'
-        pad = numpy.zeros((2,naxis1))           # create 2D array of padding
+        pad = numpy.zeros((2,naxis1), dtype=numpy.float32) # create 2D array of padding        
         image = numpy.append(image,pad,axis=0)  # append the padding array to the end
         if (verbose):
             print '...new image: ', image
@@ -704,7 +752,7 @@ def ProcessFrame(inputfile):
             sky.verify('fix')
         else:
             sky.verify('silentfix')
-        skyimage = numpy.array(sky[sci].data, dtype=numpy.double)
+        skyimage = numpy.array(sky[sci].data)
 
         if instrument == 'GNIRS':
             print '...padding the top of the GNIRS sky...'
@@ -1117,6 +1165,8 @@ def ProcessFrame(inputfile):
 
     if instrument == 'GNIRS':
         print '...removing GNIRS padding...'
+        # remove 2-pixel padding on top of image:
+        # syntax: delete(array, [rows to delete], axis=0)
         newimage = numpy.delete(newimage, [naxis2-1,naxis2-2], axis=0)
 
     print '...writing', outputfile
@@ -1145,23 +1195,11 @@ def ProcessFrame(inputfile):
     # Close file
     
     hdulist.close()
-
     print ' '
 
 #-----------------------------------------------------------------------
 
 if __name__ == '__main__':
-
-    inputfile = args[0]
-    
-    print ''
-    if IsFits(inputfile):
-        ProcessFrame(inputfile)
-    else:
-        print 'Expanding ' + inputfile + '...\n'
-        inputlist = open(inputfile,'r')
-        for line in inputlist:
-            ProcessFrame(line.strip())
-        inputlist.close()
+    main()
 
 #-----------------------------------------------------------------------

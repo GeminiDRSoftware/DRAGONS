@@ -50,7 +50,7 @@ for root, dirs, files in os.walk('doc'):
 # SCRIPTS
 #GEMPY_SCRIPTS = [ os.path.join('iqtool','iqtool'),
 #                 ]
-SCRIPTS = [os.path.join('scripts','cleanir.py')]
+#SCRIPTS = [os.path.join('scripts','cleanir.py')]
 #SCRIPTS.extend(GEMPY_SCRIPTS)
 
 EXTENSIONS = None
