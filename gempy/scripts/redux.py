@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+
+import os
+import sys
+from optparse import OptionParser
+from astrodata import AstroData
+from astrodata.adutils import gemutil as gu
+
+# Define site here
+localsite = "Gemini-North"
+
+if __name__=='__main__':
+
+    # Get command line options and arguments
+    parser = OptionParser()
+    parser.set_usage(parser.get_usage()[:-1] + " infile")
+    parser.add_option("-c", "--clean", action="store_true",
+                      dest="clean", default=False,
+                      help="Restore to default state: remove all caches, " + \
+                           "reduce instances, and adcc instances")
+    parser.add_option("-d", "--directory", action="store",
+                      dest="directory", default=None,
+                      help="Specify an input data directory, if not adata " + \
+                           "and not included in name.")
+    parser.add_option("-p", "--prefix", action="store",
+                      dest="prefix", default=None,
+                      help="Specify a file prefix if not auto " + \
+                           "(ie. (N/S)YYYYMMDDS).")
+    (options,args) = parser.parse_args()
+
+    # If cleaning desired, call superclean to clear out cache and
+    # kill old reduce and adcc processes
+    if options.clean:
+        print "\nRestoring redux to default state:" + \
+              "\nall stack and calibration associations will be lost.\n"
+        os.system("superclean -rac")
+        print ""
+        sys.exit()
+
+    
+    if len(args)!=1:
+        parser.print_help()
+        sys.exit()
+
+    # Get data directory from user or from site defaults
+    directory = "."
+    if options.directory:
+        directory = options.directory
+    elif localsite=="Gemini-North":
+        directory = "/net/archie/staging/perm/"
+    elif localsite=="Gemini-South":
+        directory = "/net/reggie/staging/perm/"
+
+    # Get file prefix from user; otherwise, use auto
+    prefix = "auto"
+    if options.prefix:
+        prefix = options.prefix
+    
+    # Convert argument into valid file name
+    try:
+        imgpath,imgname = gu.imageName(args[0], rawpath=directory,
+                                       prefix=prefix,
+                                       observatory=localsite, verbose=False)
+    except IOError:
+        print "\nFile %s was not found.\n" % args[0]
+        sys.exit()
+
+    # Check that file is a GMOS IMAGE; other types are not yet supported
+    ad = AstroData(imgpath)
+    if "GMOS_IMAGE" not in ad.types or ad.focal_plane_mask()!="Imaging":
+        print "\nFile %s is not a supported type." % imgname + \
+              "\nOnly GMOS images can be reduced at this time.\n"
+        sys.exit()
+
+    # Call reduce with generic GMOS reduction recipe
+    print "\nBeginning reduction for file %s, %s\n" % (imgname,ad.data_label()) 
+    reduce_cmd = "reduce --logLevel stdinfo " + \
+                 "-p clobber=True,add_mdf=False " + \
+                 "-r reduce " + imgpath
+    os.system(reduce_cmd)
+
+    print ""
+
