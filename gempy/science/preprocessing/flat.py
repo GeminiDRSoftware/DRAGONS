@@ -66,7 +66,7 @@ def divide_by_flat(adinput=None, flat=None):
             
             # Divide the adinput by the flat
             log.info("Dividing the input AstroData object %s by the flat " \
-                     "(%s)" % (ad.filename, flat.filename))
+                     "(%s)" % (ad.filename, flat_dict[ad].filename))
             ad = ad.div(flat_dict[ad])
             
             # Add the appropriate time stamps to the PHU
