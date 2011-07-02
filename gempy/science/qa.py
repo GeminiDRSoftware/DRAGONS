@@ -139,33 +139,36 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                 # correct the seeing measurement to zenith
                 fwhm = iqdata[0][2]
                 airmass = float(ad.airmass())
-                if airmass is not None:
-                    corrected = fwhm * airmass**(-0.6)
-                else:
+                if fwhm is None:
+                    log.warning("No good seeing measurement found.")
+                elif airmass is None:
                     log.warning("Airmass not found, not correcting to zenith")
                     corrected = fwhm
+                else:
+                    corrected = fwhm * airmass**(-0.6)
 
-                # Get IQ constraint band corresponding to
-                # the corrected FWHM number
-                iq_band = _iq_band(adinput=ad,fwhm=corrected)[0]
+                    # Get IQ constraint band corresponding to
+                    # the corrected FWHM number
+                    iq_band = _iq_band(adinput=ad,fwhm=corrected)[0]
 
-                # Format this output for printing or logging                
-                llen = 27
-                fnStr = 'Filename:'.ljust(llen)+ad.filename
-                emStr = 'Ellipticity Mean:'.ljust(llen)+str(iqdata[0][0])
-                esStr = 'Ellipticity Sigma:'.ljust(llen)+str(iqdata[0][1])
-                fmStr = 'FWHM Mean:'.ljust(llen)+str(iqdata[0][2])
-                fsStr = 'FWHM Sigma:'.ljust(llen)+str(iqdata[0][3])
-                csStr = 'Zenith-corrected FWHM:'.ljust(llen)+str(corrected)
-                if iq_band!='':
-                    filter = ad.filter_name(pretty=True)
-                    iqStr = 'IQ band for %s filter:' % filter
-                    iqStr = iqStr.ljust(llen) + 'IQ'+iq_band
-                # Create final formatted string
-                finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'+\
-                           fmStr+'\n'+fsStr+'\n'+csStr+'\n'+iqStr+'\n'+'-'*45
-                # Log final string
-                log.status(finalStr, category='IQ')
+                    # Format output for printing or logging                
+                    llen = 27
+                    fnStr = 'Filename:'.ljust(llen)+ad.filename
+                    emStr = 'Ellipticity Mean:'.ljust(llen)+str(iqdata[0][0])
+                    esStr = 'Ellipticity Sigma:'.ljust(llen)+str(iqdata[0][1])
+                    fmStr = 'FWHM Mean:'.ljust(llen)+str(iqdata[0][2])
+                    fsStr = 'FWHM Sigma:'.ljust(llen)+str(iqdata[0][3])
+                    csStr = 'Zenith-corrected FWHM:'.ljust(llen)+str(corrected)
+                    if iq_band!='':
+                        filter = ad.filter_name(pretty=True)
+                        iqStr = 'IQ band for %s filter:' % filter
+                        iqStr = iqStr.ljust(llen) + 'IQ'+iq_band
+                    # Create final formatted string
+                    finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'+\
+                               fmStr+'\n'+fsStr+'\n'+csStr+'\n'+iqStr+'\n'+\
+                               '-'*45
+                    # Log final string
+                    log.status(finalStr, category='IQ')
                 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
