@@ -269,6 +269,12 @@
         "type"          : "str",
         "userOverride"  : True,
         },
+    "mask_type":{
+        "default"       : "none",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        }, 
     "operation":{
         "default"       : "average",
         "recipeOverride": True,

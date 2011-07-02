@@ -76,7 +76,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         if len(adinput)<2:
             log.warning('Only one frame provided as input; at least two ' +
                         'frames are required. Not making fringe frame.')
-            adoutput = adinput
+            adoutput = []
         else:
             # Call the make_fringe_image_gmos user level function
             adoutput = pp.make_fringe_image_gmos(adinput=adinput,
