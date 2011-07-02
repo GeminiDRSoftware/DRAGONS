@@ -84,9 +84,9 @@ def divide_by_flat(adinput=None, flat=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def normalize_flat_image(adinput=None):
+def normalize_image(adinput=None):
     """
-    The normalize_flat_image user level function will normalize each science
+    The normalize_image user level function will normalize each science
     extension of the input AstroData object(s) and automatically update the
     variance and data quality extensions, if they exist.
     
@@ -108,7 +108,7 @@ def normalize_flat_image(adinput=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "NORMFLAT"
+    keyword = "NORMLIZE"
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -117,11 +117,11 @@ def normalize_flat_image(adinput=None):
         # Loop over each input AstroData object in the input list
         for ad in adinput:
             
-            # Check whether the normalize_flat_image user level function has
+            # Check whether the normalize_image user level function has
             # been run previously
             if ad.phu_get_key_value(keyword):
                 raise Errors.InputError("%s has already been processed by " \
-                                        "normalize_flat_image" % (ad.filename))
+                                        "normalize_image" % (ad.filename))
             
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
