@@ -210,7 +210,15 @@ class GMOSPrimitives(GEMINIPrimitives):
                             (ad.filename))
                 adoutput_list.append(ad)
                 continue
-                
+
+            # Check for either a 3-extension (E2V) or 
+            # 12-extension (Hamamatsu) file
+            nsciext = ad.count_exts('SCI')
+            if nsciext!=3 and nsciext!=12:
+                log.warning('%s cannot be mosaicked.' % ad.filename)
+                adoutput_list.append(ad)
+                continue
+
             ad = rs.mosaic_detectors(adinput=ad, 
                                      tile=rc['tile'], 
                                      interpolator=rc['interpolator'])           
@@ -222,76 +230,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         rc.report_output(adoutput_list)                
         yield rc
 
-    def overscanSubtract(self,rc):
-        """
-        This primitive uses the CL script gireduce to subtract the overscan 
-        from the input images.
-        
-        :param overscan_section: biassec parameter of format 
-                                 '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
-        :type overscan_section: string. default: 
-                                '[2:25,1:2304],[2:25,1:2304],[1032:1055,1:2304]'
-                                is ideal for 2x2 GMOS data.
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
-        """
-        log = gemLog.getGeminiLog(logType=rc['logType'],
-                                  logLevel=rc['logLevel'])
-        log.debug(gt.log_message('primitive', 'overscanSubtract', 'starting'))
-        
-        adoutput_list = []
-        for ad in rc.get_inputs(style='AD'):
-            if ad.phu_get_key_value('OVERSUB'):
-                log.warning('%s has already been processed by overscanSubtract' %
-                            (ad.filename))
-                adoutput_list.append(ad)
-                continue
-
-            ad = pp.overscan_subtract_gmos(adinput=ad,
-                                       overscan_section=rc['overscan_section'])
-            adoutput_list.append(ad[0])
-
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-
-        yield rc    
-
-    def overscanTrim(self,rc):
-        """
-        This primitive uses AstroData to trim the overscan region 
-        from the input images and update their headers.
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (ie. 'critical'  
-                        , 'status', 'fullinfo'...)
-        """
-        log = gemLog.getGeminiLog(logType=rc['logType'],
-                                  logLevel=rc['logLevel'])
-
-        log.debug(gt.log_message('primitive', 'overscanTrim', 'starting'))
-        
-        adoutput_list = []
-        for ad in rc.get_inputs(style='AD'):
-            if ad.phu_get_key_value('OVERTRIM'):
-                log.warning('%s has already been processed by overscanTrim' %
-                            (ad.filename))
-                adoutput_list.append(ad)
-                continue
-            
-            ad = pp.overscan_trim(adinput=ad)
-            adoutput_list.append(ad[0])
-
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)   
-
-        yield rc
-         
     def standardizeHeaders(self,rc):
         """
         This primitive is used to update and add keywords to the headers of the
@@ -341,7 +279,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
     def standardizeStructure(self,rc):
         """
-        This primitive will to add an MDF to the
+        This primitive will add an MDF to the
         inputs if they are of type SPECT, those of type IMAGE will be handled
         by the standardizeStructure in the primitives_GMOS_IMAGE set
         where no MDF will be added.
@@ -428,6 +366,76 @@ class GMOSPrimitives(GEMINIPrimitives):
 
         yield rc
     
+    def subtractOverscan(self,rc):
+        """
+        This primitive uses the CL script gireduce to subtract the overscan 
+        from the input images.
+        
+        :param overscan_section: biassec parameter of format 
+                                 '[#:#,#:#],[#:#,#:#],[#:#,#:#]'
+        :type overscan_section: string. default: 
+                                '[2:25,1:2304],[2:25,1:2304],[1032:1055,1:2304]'
+                                is ideal for 2x2 GMOS data.
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 'critical'  
+                        , 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+        log.debug(gt.log_message('primitive', 'subtractOverscan', 'starting'))
+        
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('SUBOVER'):
+                log.warning('%s has already been processed by subtractOverscan'%
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+
+            ad = pp.subtract_overscan_gmos(adinput=ad,
+                                       overscan_section=rc['overscan_section'])
+            adoutput_list.append(ad[0])
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc    
+
+    def trimOverscan(self,rc):
+        """
+        This primitive uses AstroData to trim the overscan region 
+        from the input images and update their headers.
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (ie. 
+                        'critical', 'status', 'fullinfo'...)
+        """
+        log = gemLog.getGeminiLog(logType=rc['logType'],
+                                  logLevel=rc['logLevel'])
+
+        log.debug(gt.log_message('primitive', 'trimOverscan', 'starting'))
+        
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('TRIMOVER'):
+                log.warning('%s has already been processed by trimOverscan' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+            
+            ad = pp.trim_overscan(adinput=ad)
+            adoutput_list.append(ad[0])
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)   
+
+        yield rc
+         
     def validateData(self, rc):
         """
         This primitive is used to validate GMOS data, specifically. It will
