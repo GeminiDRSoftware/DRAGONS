@@ -1,0 +1,6 @@
+showInputs
+writeOutputs(suffix='_tmp',strip=True)
+addToList
+getList
+measureIQ
+showInputs
