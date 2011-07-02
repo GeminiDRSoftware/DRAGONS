@@ -348,7 +348,7 @@ def _select_bpm(adinput=None, bpm=None):
             if bpmext.data.shape != ext.data.shape:
                 # Get the data_section value of the science extension using the
                 # appropriate descriptor
-                y1, y2, x1, x2 = ext.data_section().as_pytype()
+                x1, x2, y1, y2 = ext.data_section().as_pytype()
                 # Copy the pixel data of the BPM into the data section of an
                 # array that is the same size as the pixel data of the science
                 # extension
