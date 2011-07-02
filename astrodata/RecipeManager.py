@@ -621,7 +621,10 @@ class ReductionContext(dict):
     
     def populate_stream(self, infiles, stream=None, load = True):
         self.report_output(infiles, stream = stream, load = load)
-        self._output_streams = []
+        print repr(self._output_streams)
+        if stream == None:
+            stream = self._current_stream
+        self._output_streams.remove(stream)
         return
         
     def get_list(self, id):
