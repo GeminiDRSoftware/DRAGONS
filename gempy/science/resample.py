@@ -405,7 +405,7 @@ def align_to_reference_image(adinput, interpolator='linear'):
 
                             # add the flags into the overall mask
                             trans_data += trans_mask
-                            del trans_data; trans_data = None
+                            del trans_mask; trans_mask = None
 
                     else: 
 
