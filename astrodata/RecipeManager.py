@@ -620,7 +620,9 @@ class ReductionContext(dict):
         return retval
     
     def populate_stream(self, infiles, stream=None, load = True):
-        return self.report_output(infiles, stream = stream, load = load)
+        self.report_output(infiles, stream = stream, load = load)
+        self._output_streams = []
+        return
         
     def get_list(self, id):
         """
@@ -1102,8 +1104,7 @@ class ReductionContext(dict):
         # print "RM1101:", self.ro.curPrimName, "stream:", repr(stream)
         if stream == None:
             stream = self._current_stream
-        # print "RM1105:", self.ro.curPrimName, "stream:", stream
-            
+        print "RM1105:", self.ro.curPrimName, "stream:", stream
         # this clause saves the output stream so we know when to 
         # the first report happens so we can clear the set at that time.
         if stream not in self._output_streams:
