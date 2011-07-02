@@ -17,7 +17,7 @@ class F2_IMAGEPrimitives(F2Primitives):
     
     def normalize(self, rc):
         """
-        This primitive normalises the input flat
+        This primitive normalises the input flat AstroData object
         """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
@@ -36,8 +36,8 @@ class F2_IMAGEPrimitives(F2Primitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            # Call the normalize_flat_image user level function
-            ad = pp.normalize_flat_image(adinput=ad)
+            # Call the normalize_image user level function
+            ad = pp.normalize_image(adinput=ad)
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
