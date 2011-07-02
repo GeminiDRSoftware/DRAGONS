@@ -23,30 +23,6 @@
         "tag"           : ["cl_iraf","ui_advanced"],
          },
     },
-"overscanSubtract":{
-    "suffix":{
-        # String to be post pended to the output of overscanSubtract
-        "default"       : "_overSub",
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : True,
-        },
-    "overscan_section":{
-        "default"       : "",
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : True,
-        },
-    },
-"overscanTrim":{
-    "suffix":{
-        # String to be post pended to the output of overscanTrim
-        "default"       : "_overTrim",
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : True,
-        },
-    },
  "standardizeHeaders":{
     "suffix":{
         # String to be post pended to the output of standardizeHeaders
@@ -81,6 +57,30 @@
         },
     "bias":{
         "default"       : None,
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    },
+"subtractOverscan":{
+    "suffix":{
+        # String to be post pended to the output of overscanSubtract
+        "default"       : "_overSub",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "overscan_section":{
+        "default"       : "",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    },
+"trimOverscan":{
+    "suffix":{
+        # String to be post pended to the output of overscanTrim
+        "default"       : "_overTrim",
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : True,
