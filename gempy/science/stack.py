@@ -10,7 +10,7 @@ from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def stack_frames(adinput=None, suffix=None, operation="average", 
-                 reject_method="none"):
+                 reject_method="none", mask_type="none"):
     """
     This user level function will stack the input AstroData objects. New
     variance extensions are created from the stacked science extensions and the
@@ -83,6 +83,7 @@ def stack_frames(adinput=None, suffix=None, operation="average",
             "fl_dqprop" : fl_dqprop,
             "combine"   : operation,
             "reject"    : reject_method,
+            "masktype"  : mask_type,
             }
         
         # Get the default parameters for IRAF and update them using the above
