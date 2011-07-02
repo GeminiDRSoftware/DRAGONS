@@ -1285,5 +1285,5 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status("writing to file %s" % outfilename)
             # AstroData checks if the output exists and raises an exception
             ad.write(filename=outfilename, clobber=rc["clobber"])
-        
+            rc.report_output(ad)
         yield rc
