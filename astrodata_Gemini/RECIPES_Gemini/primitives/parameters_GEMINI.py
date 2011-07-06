@@ -182,14 +182,12 @@
         "userOverride"  : True,
         },
     "display":{
-        "default"       : False,
+        "default"       : True,
         "recipeOverride": True,
         "type"          : "bool",
         "userOverride"  : True,
         },
     "qa":{
-        # A flag to use a grid of sub-windows for detecting the sources in the
-        # image frames, rather than the entire frame all at once
         "default"       : True,
         "recipeOverride": True,
         "type"          : "bool",
