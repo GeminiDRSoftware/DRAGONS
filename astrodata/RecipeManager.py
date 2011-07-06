@@ -1393,9 +1393,10 @@ class ReductionContext(dict):
             the specified stream.
         """
         if switch_to not in self.outputs:
-            raise ReduceError(
-                        '"%s" stream does not exist, cannot switch to it' 
-                            % repr(switch_to))
+            #raise ReduceError(
+            #            '"%s" stream does not exist, cannot switch to it' 
+            #                % repr(switch_to))
+            self.outputs.update({switch_to:[]})
         
         self._current_stream = switch_to
         self._nonstandard_stream.append(switch_to)
