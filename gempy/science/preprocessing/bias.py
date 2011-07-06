@@ -206,11 +206,8 @@ def subtract_overscan_gmos(adinput=None, overscan_section=''):
     This function uses the CL script gireduce to subtract the overscan 
     from the input images.
     
-    WARNING: 
-    The gireduce script used here replaces the previously 
-    calculated DQ frames with its own versions.  This may be corrected 
-    in the future by replacing the use of the gireduce
-    with a Python routine to do the overscan subtraction.
+    Variance and DQ planes, if they exist, will be saved and restored
+    after gireduce has been run.
 
     NOTE:
     The inputs to this function MUST be prepared.
@@ -261,14 +258,9 @@ def subtract_overscan_gmos(adinput=None, overscan_section=''):
             # Clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')
 
-            # Determine whether VAR/DQ needs to be propagated
-            if (ad.count_exts('VAR') == 
-                ad.count_exts('DQ') == 
-                ad.count_exts('SCI')):
-                fl_vardq=yes
-            else:
-                fl_vardq=no
-
+            # Save VAR and DQ extensions
+            var_ext = ad['VAR']
+            dq_ext = ad['DQ']
             
             # Prepare input files, lists, parameters... for input to 
             # the CL script
@@ -302,9 +294,9 @@ def subtract_overscan_gmos(adinput=None, overscan_section=''):
               # This returns a unique/temp log file for IRAF
               'logfile'     :clm.templog.name,      
               'fl_over'     :yes, 
-              'fl_trim'    :no,
-              'outpref'    :'',
-              'fl_vardq'   :fl_vardq,
+              'fl_trim'     :no,
+              'outpref'     :'',
+              'fl_vardq'    :no,
                           }
             
             # Parameters from the Parameter file that are adjustable by the user
@@ -349,7 +341,14 @@ def subtract_overscan_gmos(adinput=None, overscan_section=''):
             
             ad_out = imageOuts[0]
             ad_out.filename = ad.filename
-            
+
+            # Restore VAR/DQ planes; no additional propagation 
+            # should be needed
+            if dq_ext is not None:
+                ad_out.append(dq_ext)
+            if var_ext is not None:
+                ad_out.append(var_ext)
+
             # Verify gireduce was actually run on the file
             if ad_out.phu_get_key_value('GIREDUCE'): 
                 # If gireduce was ran, then log the changes to the files 
@@ -450,11 +449,14 @@ def trim_overscan(adinput=None):
                     varExt.data=varExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
                     varExt.header['NAXIS1'] = dsl[1]-dsl[0]
                     varExt.header['NAXIS2'] = dsl[3]-dsl[2]
-                    varExt.header['DATASEC']=newDataSecStr
+                    varExt.header.update('DATASEC', newDataSecStr,
+                                        'Data section(s)')
                     varExt.header.update('TRIMSEC', datasecStr, 
                                          'Data section prior to trimming')
-                    varExt.header['CRPIX1'] = crpix1
-                    varExt.header['CRPIX2'] = crpix2
+                    varExt.header.update('CRPIX1', crpix1,
+                                         'RA at Ref pix in decimal degrees')
+                    varExt.header.update('CRPIX2', crpix2,
+                                         'DEC at Ref pix in decimal degrees')
 
                 if dqExt is not None:
                     # gireduce DQ planes do not include
@@ -464,11 +466,14 @@ def trim_overscan(adinput=None):
                         dqExt.data=dqExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
                     dqExt.header['NAXIS1'] = dsl[1]-dsl[0]
                     dqExt.header['NAXIS2'] = dsl[3]-dsl[2]
-                    dqExt.header['DATASEC']=newDataSecStr
+                    dqExt.header.update('DATASEC', newDataSecStr,
+                                        'Data section(s)')
                     dqExt.header.update('TRIMSEC', datasecStr, 
                                         'Data section prior to trimming')
-                    dqExt.header['CRPIX1'] = crpix1
-                    dqExt.header['CRPIX2'] = crpix2
+                    dqExt.header.update('CRPIX1', crpix1,
+                                         'RA at Ref pix in decimal degrees')
+                    dqExt.header.update('CRPIX2', crpix2,
+                                         'DEC at Ref pix in decimal degrees')
 
 
                 # Update logger with updated/added keywords to each SCI frame
