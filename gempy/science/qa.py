@@ -104,7 +104,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
             # Call the gemiq function to detect the sources and then
             # measure the IQ of the current image 
             iqdata = getiq.gemiq(tmpWriteName, function=centroid_function, 
-                                 display=display, mosaic=mosaic, qa=qa,
+                                 display=False, mosaic=mosaic, qa=qa,
                                  verbose=False, debug=False)
             
             # End time for measuring IQ of current file
@@ -143,32 +143,33 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                     log.warning("No good seeing measurement found.")
                 elif airmass is None:
                     log.warning("Airmass not found, not correcting to zenith")
-                    corrected = fwhm
+                    corr = fwhm
                 else:
-                    corrected = fwhm * airmass**(-0.6)
+                    corr = fwhm * airmass**(-0.6)
 
                     # Get IQ constraint band corresponding to
                     # the corrected FWHM number
-                    iq_band = _iq_band(adinput=ad,fwhm=corrected)[0]
+                    iq_band = _iq_band(adinput=ad,fwhm=corr)[0]
 
                     # Format output for printing or logging                
                     llen = 27
-                    fnStr = 'Filename:'.ljust(llen)+ad.filename
-                    emStr = 'Ellipticity Mean:'.ljust(llen)+str(iqdata[0][0])
-                    esStr = 'Ellipticity Sigma:'.ljust(llen)+str(iqdata[0][1])
-                    fmStr = 'FWHM Mean:'.ljust(llen)+str(iqdata[0][2])
-                    fsStr = 'FWHM Sigma:'.ljust(llen)+str(iqdata[0][3])
-                    csStr = 'Zenith-corrected FWHM:'.ljust(llen)+str(corrected)
+                    dlen = 32
+                    fnStr = 'Filename: '+ad.filename
+                    emStr = 'Ellipticity Mean:'.ljust(llen)+'%.3f'%iqdata[0][0]
+                    esStr = 'Ellipticity Sigma:'.ljust(llen)+'%.3f'%iqdata[0][1]
+                    fmStr = 'FWHM Mean:'.ljust(llen)+'%.3f'%iqdata[0][2]
+                    fsStr = 'FWHM Sigma:'.ljust(llen)+'%.3f'%iqdata[0][3]
+                    csStr = 'Zenith-corrected FWHM:'.ljust(llen)+'%.3f'%corr
                     if iq_band!='':
                         filter = ad.filter_name(pretty=True)
                         iqStr = 'IQ band for %s filter:' % filter
                         iqStr = iqStr.ljust(llen) + 'IQ'+iq_band
                     # Create final formatted string
-                    finalStr = '-'*45+'\n'+fnStr+'\n'+emStr+'\n'+esStr+'\n'+\
+                    finalStr = fnStr+'\n'+'-'*dlen+'\n'+emStr+'\n'+esStr+'\n'+\
                                fmStr+'\n'+fsStr+'\n'+csStr+'\n'+iqStr+'\n'+\
-                               '-'*45
+                               '-'*dlen
                     # Log final string
-                    log.status(finalStr, category='IQ')
+                    log.stdinfo(finalStr, category='IQ')
                 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
@@ -276,3 +277,4 @@ def _iq_band(adinput=None,fwhm=None):
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+

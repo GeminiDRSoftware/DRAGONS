@@ -65,10 +65,11 @@ def divide_by_flat(adinput=None, flat=None):
                                         "divide_by_flat" % (ad.filename))
             
             # Divide the adinput by the flat
-            log.info("Dividing the input AstroData object %s by the flat " \
-                     "(%s)" % (ad.filename, flat_dict[ad].filename))
+            log.stdinfo("Dividing the input AstroData object (%s) "\
+                        "by the flat:\n%s" % (ad.filename, 
+                                               flat_dict[ad].filename))
             ad = ad.div(flat_dict[ad])
-            
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
             
@@ -224,7 +225,7 @@ def normalize_flat_image_gmos(adinput=None):
         if gemini.giflat.status:
             raise Errors.OutputError("The IRAF task giflat failed")
         else:
-            log.status("The IRAF task giflat completed sucessfully")
+            log.fullinfo("The IRAF task giflat completed sucessfully")
         # Create the output AstroData object by loading the output file from
         # gemcombine into AstroData, remove intermediate temporary files from
         # disk 

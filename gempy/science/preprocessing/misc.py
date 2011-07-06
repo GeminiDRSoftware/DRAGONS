@@ -48,9 +48,9 @@ def adu_to_electrons(adinput):
             gain = ad.gain().as_pytype()
             # Now multiply the pixel data in the science extension by the gain
             # and the pixel data in the variance extension by the gain squared
-            log.info("Converting %s from ADU to electrons by multiplying " \
-                     "the science extension by the gain = %s" % \
-                     (ad.filename, gain))
+            log.stdinfo("Converting %s from ADU to electrons by multiplying " \
+                        "the science extension by the gain = %s" % \
+                        (ad.filename, gain))
             ad = ad.mult(gain)
             
             # Update the headers of the AstroData Object. The pixel data now

@@ -209,7 +209,7 @@ def correct_wcs_to_reference_image(adinput=None,
                     log.fullinfo('Number of objects in image %s: %d' %
                                  (ad.filename, n_test[i]))
         
-                    log.status('Cross-correlating sources in %s, %s' %
+                    log.stdinfo('Cross-correlating sources in %s, %s' %
                                (reference.filename, ad.filename))
                     obj_list = _correlate_sources(reference, ad, 
                                                   cull_sources=cull_sources)
@@ -477,7 +477,7 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
                     zip(x2[ind2], y2[ind2])]
 
         if cull_sources:
-            log.status('Rejecting non-Gaussian sources')
+            log.stdinfo('Rejecting non-Gaussian sources')
             obj_list_1 = np.array(_cull_sources(ad1, obj_list[0]))
             obj_list_2 = np.array(_cull_sources(ad2, obj_list[1]))
 
@@ -552,7 +552,7 @@ def _align_wcs(reference, adinput, objIns, rotate=False, scale=False):
         # copy input ad and rename
         ad = adinput[i]
 
-        log.status('Starting WCS adjustment for ' + ad.filename )
+        log.info('Adjusting WCS for ' + ad.filename )
 
         ref_xy, inp_xy = objIns[i]
         ref_xy = np.array(ref_xy)
@@ -618,7 +618,7 @@ def _align_wcs(reference, adinput, objIns, rotate=False, scale=False):
 
         # update WCS in ad
         if update:
-            log.status('Updating WCS in header')
+            log.info('Updating WCS in header')
             ad.phu_set_key_value('CRVAL1', wcstweak.wcs.wcs.crval[0])
             ad.phu_set_key_value('CRVAL2', wcstweak.wcs.wcs.crval[1])
             ad.phu_set_key_value('CD1_1', wcstweak.wcs.wcs.cd[0,0])

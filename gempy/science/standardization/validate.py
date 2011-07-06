@@ -39,7 +39,7 @@ def validate_data_f2(adinput=None, repair=False):
                                         "validate_data_f2" % (ad.filename))
             
             # Validate the input AstroData object. ACTUALLY DO SOMETHING HERE?
-            log.info("No validation required for FLAMINGOS-2")
+            log.stdinfo("No validation required for FLAMINGOS-2")
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)

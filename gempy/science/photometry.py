@@ -236,8 +236,8 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
                 obj_ra, obj_dec = wcs.wcs_pix2sky(obj_x,obj_y,1)
 
                 nobj = len(obj_ra)
-                log.info("Found %d sources for field in  %s['SCI',%d]" %
-                         (nobj,ad.filename,extver))
+                log.stdinfo("Found %d sources in %s['SCI',%d]" %
+                            (nobj,ad.filename,extver))
                 
                 adoutput = add_objcat(adinput=ad, extver=extver, 
                                       x=obj_x, y=obj_y, 

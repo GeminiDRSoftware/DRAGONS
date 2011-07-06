@@ -98,7 +98,7 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         if gemini.gemcombine.status:
             raise Errors.OutputError("The IRAF task gemcombine failed")
         else:
-            log.status("The IRAF task gemcombine completed sucessfully")
+            log.info("The IRAF task gemcombine completed sucessfully")
         
         # Create the output AstroData object by loading the output file from
         # gemcombine into AstroData, remove intermediate temporary files from

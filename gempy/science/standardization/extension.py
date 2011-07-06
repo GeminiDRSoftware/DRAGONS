@@ -116,7 +116,7 @@ def add_dq(adinput=None, bpm=None):
                     raise Errors.Error("A [DQ, %d] extension already exists " \
                                        "in %s" % (ext.extver(), ad.filename))
                 log.info("Adding the [DQ, %d] extension to the input " \
-                         "AstroData object %s" % (ext.extver(), ad.filename))
+                            "AstroData object %s" % (ext.extver(), ad.filename))
                 ad.append(moredata=dq)
             
             # Add the appropriate time stamps to the PHU
@@ -185,8 +185,8 @@ def add_mdf(adinput=None, mdf=None):
             
             # Append the MDF AstroData object to the input AstroData object
             ad.append(moredata=mdffile)
-            log.status("Adding the MDF %s to the input AstroData object %s" \
-                       % (mdffile.filename, ad.filename))
+            log.info("Adding the MDF %s to the input AstroData object %s" \
+                     % (mdffile.filename, ad.filename))
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
@@ -447,11 +447,11 @@ def _calculate_var(adinput=None, add_read_noise=False,
         log.warning("It is not recommended to add a poisson noise " \
                     "component to the variance of a bias frame")
     if add_poisson_noise and "GMOS" in adinput.types and \
-       not adinput.phu_get_key_value("BIASSUB"):
+       not adinput.phu_get_key_value("BIASCORR"):
         log.warning("It is not recommended to calulate a poisson noise " \
                     "component of the variance using data that still " \
                     "contains a bias level")
-    
+
     # Loop over the science extensions in the dataset
     for ext in adinput["SCI"]:
         
@@ -540,8 +540,8 @@ def _calculate_var(adinput=None, add_read_noise=False,
                     "extension as the variance extension already exists")
             else:
                 log.info("Combining the newly calculated variance with " \
-                         "the current variance extension %s[VAR,%d]" \
-                         % (adinput.filename, ext.extver()))
+                            "the current variance extension %s[VAR,%d]" \
+                            % (adinput.filename, ext.extver()))
                 adinput["VAR", ext.extver()].data = np.add(
                     adinput["VAR", ext.extver()].data, var_array_final)
         else:
@@ -556,7 +556,7 @@ def _calculate_var(adinput=None, add_read_noise=False,
             # Append the variance AstroData object to the input AstroData
             # object. 
             adinput.append(moredata=var)
-            log.status("Adding the variance extension to the input " \
-                       "AstroData object %s" % (adinput.filename))
-    
+            log.info("Adding the [VAR, %d] extension to the input " \
+                     "AstroData object %s" % (ext.extver(),adinput.filename))
+
     return adinput

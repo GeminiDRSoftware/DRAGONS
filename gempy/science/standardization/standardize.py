@@ -207,7 +207,7 @@ def standardize_headers_gmos(adinput=None):
             ad = standardize_headers_gemini(adinput=ad)[0]
             
             # Now, update the keywords in the headers that are specific to GMOS
-            log.status("Updating keywords that are specific to GMOS")
+            log.info("Updating keywords that are specific to GMOS")
             # Pixel scale
             gt.update_key_value(adinput=ad, function="pixel_scale()",
                                 extname="SCI")

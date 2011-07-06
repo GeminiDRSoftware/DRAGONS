@@ -218,7 +218,7 @@ def align_to_reference_image(adinput, interpolator='linear'):
         # now transform the data
         for i in range(1,len(adinput)):
 
-            log.status('\nStarting alignment for '+ adinput[i].filename)
+            log.info('Starting alignment for '+ adinput[i].filename)
 
             ad = adinput[i]
 
@@ -309,7 +309,7 @@ def align_to_reference_image(adinput, interpolator='linear'):
                 if extname not in ['SCI','VAR','DQ']:
                     continue
 
-                log.status('Transforming '+ad.filename+'['+extname+']')
+                log.info('Transforming '+ad.filename+'['+extname+']')
 
                 # Access pixel data
                 img_data = ext.data
@@ -576,7 +576,7 @@ def mosaic_detectors(adinput, tile=False, interpolator='linear'):
                 raise Errors.ScienceError('gireduce failed for inputs '+
                              clm.imageInsFiles(type='string'))
             else:
-                log.status('Exited the gmosaic CL script successfully')    
+                log.fullinfo('Exited the gmosaic CL script successfully')    
                 
                 
             # Rename CL outputs and load them back into memory 
@@ -590,8 +590,8 @@ def mosaic_detectors(adinput, tile=False, interpolator='linear'):
             # Verify gireduce was actually run on the file
             # then log file names of successfully reduced files
             if ad_out.phu_get_key_value('GMOSAIC'): 
-                log.fullinfo('\nFile '+ad_out.filename+\
-                             ' mosaicked successfully')
+                log.fullinfo('File '+ad_out.filename+\
+                            ' was successfully mosaicked')
 
             # Update GEM-TLM (automatic) and MOSAIC time stamps to the PHU
             # and update logger with updated/added time stamps
