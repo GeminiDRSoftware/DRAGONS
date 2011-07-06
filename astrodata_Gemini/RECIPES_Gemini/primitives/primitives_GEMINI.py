@@ -443,7 +443,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             flat = AstroData(rc.get_cal(ad,"flat"))
 
             # Take care of the case where there was no, or an invalid flat 
-            if flat.count_exts("SCI") == 0:
+            if flat is None or flat.count_exts("SCI") == 0:
                 log.warning("Could not find an appropriate flat for %s" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
@@ -527,10 +527,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
-            log.fullinfo("List for stack id=%s" % sid, category="list")
+            log.stdinfo("List for stack id=%s" % sid, category="list")
             for f in stacklist:
                 rc.report_output(f)
-                log.fullinfo("   %s" % os.path.basename(f),
+                log.stdinfo("   %s" % os.path.basename(f),
                              category="list")
         
         yield rc
@@ -558,6 +558,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         """
         rc.rq_cal("flat", rc.get_inputs(style="AD"))
+        yield rc
+    
+    def getProcessedFringe(self, rc):
+        """
+        A primitive to search and return the appropriate calibration flat from
+        a server for the given inputs.
+        
+        """
+        rc.rq_cal("fringe", rc.get_inputs(style="AD"))
         yield rc
     
     def measureIQ(self, rc):
@@ -1138,7 +1147,7 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         # Get inputs from their streams
         adinput = rc.get_inputs(style="AD")
-        fringes = rc.get_stream(stream="fringe")
+        fringes = rc.get_stream(stream="fringe",style="AD")
 
         # Check that there are as many fringes as inputs
         if len(adinput)!=len(fringes):
@@ -1164,7 +1173,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     continue
 
                 # Check for valid fringe
-                if fringe.count_exts("SCI") == 0:
+                if fringe is None or fringe.count_exts("SCI") == 0:
                     log.warning("Could not find an appropriate fringe for %s" %
                                 (ad.filename))
                     # Append the input AstroData object to the list of output
@@ -1192,7 +1201,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         if rc["lastTime"] and not rc["start"]:
             td = cur - rc["lastTime"]
             elap = " (%s)" % str(td)
-        log.status("Time: %s %s" % (str(datetime.now()), elap))
+        log.stdinfo("Time: %s %s" % (str(datetime.now()), elap))
         rc.update({"lastTime":cur})
         
         yield rc
@@ -1239,9 +1248,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Logging current values of suffix and prefix
-        log.status("suffix = %s" % str(rc["suffix"]))
-        log.status("prefix = %s" % str(rc["prefix"]))
-        log.status("strip = %s" % str(rc["strip"]))
+        log.info("suffix = %s" % str(rc["suffix"]))
+        log.info("prefix = %s" % str(rc["prefix"]))
+        log.info("strip = %s" % str(rc["strip"]))
         
         if rc["suffix"] and rc["prefix"]:
             log.critical("The input will have %s pre pended and %s post " +
@@ -1254,7 +1263,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 ad.filename = gt.fileNameUpdater(adIn=ad,
                                                  suffix=rc["suffix"],
                                                  strip=rc["strip"])
-                log.status("File name updated to %s" % ad.filename)
+                log.info("File name updated to %s" % ad.filename)
                 outfilename = os.path.basename(ad.filename)
             # If the value of "prefix" was set, then set the file name 
             # to be written to disk to be pre pended by it
@@ -1278,11 +1287,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             # to their current file names
             else:
                 outfilename = os.path.basename(ad.filename) 
-                log.status("not changing the file name to be written " +
+                log.info("not changing the file name to be written " +
                 "from its current name") 
             # Finally, write the file to the name that was decided 
             # upon above
-            log.status("writing to file %s" % outfilename)
+            log.stdinfo("Writing to file %s" % outfilename)
             # AstroData checks if the output exists and raises an exception
             ad.write(filename=outfilename, clobber=rc["clobber"])
             rc.report_output(ad)
