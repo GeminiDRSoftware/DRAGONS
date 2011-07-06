@@ -84,7 +84,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     raise PrimitiveError('gdisplay failed for input '+
                                          inputRecord.filename)
                 else:
-                    log.status('Exited the gdisplay CL script successfully')
+                    log.fullinfo('Exited the gdisplay CL script successfully')
                         
             except:
                 # This exception should allow for a smooth exiting if there is an 
@@ -355,8 +355,18 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
 
+            # Retrieve the appropriate bias
             bias = AstroData(rc.get_cal(ad,'bias'))
-            log.status('Using bias '+bias.filename+' to correct the inputs')
+
+            # Take care of the case where there was no, or an invalid bias
+            if bias is None or bias.count_exts("SCI") == 0:
+                log.warning("Could not find an appropriate bias for %s" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
             ad = pp.subtract_bias(adinput=ad, bias=bias)
             adoutput_list.append(ad[0])
 
