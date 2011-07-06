@@ -55,7 +55,7 @@ def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
     for count in range(0,len(adInsA)):
         A = adInsA[count]
         B = adInsB[count]
-        log.status('Checking inputs '+A.filename+' and '+B.filename)
+        log.fullinfo('Checking inputs '+A.filename+' and '+B.filename)
         
         if A.count_exts('SCI')!=B.count_exts('SCI'):
             log.error('Inputs have different numbers of SCI extensions.')
@@ -66,7 +66,7 @@ def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
             sciA = A[('SCI',extCount)]
             sciB = B[('SCI',extCount)]
             
-            log.status('Checking SCI extension '+str(extCount))
+            log.fullinfo('Checking SCI extension '+str(extCount))
             
             # Check shape/size
             if sciA.data.shape!=sciB.data.shape:
@@ -90,7 +90,7 @@ def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
                     raise Errors.ToolboxError('Extensions have different ' +
                                               'filters')
         
-        log.status('Inputs match')    
+        log.fullinfo('Inputs match')    
 
 def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
                     strip=False):
@@ -396,12 +396,14 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
             # The keyword exists, so store a history comment for later use
             log.debug("Keyword %s = %s already exists in the PHU" \
                   % (key, original_value))
-            comment = '(UPDATED) %s' % comment
+            if not comment.startswith('(UPDATED)'):
+                comment = '(UPDATED) %s' % comment
             msg = "updated in"
             historyComment = "The keyword %s = %s was overwritten in the " \
                              "PHU by AstroData" % (key, original_value)
         else:
-            comment = '(NEW) %s' % comment
+            if not comment.startswith('(NEW)'):
+                comment = '(NEW) %s' % comment
             msg = "added to"
         # Use exec to perform the requested function on input
         try:
@@ -455,10 +457,12 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
                 # The keyword exists, so store a history comment for later use
                 log.debug("Keyword %s = %s already in extension %s,%s" \
                           % (key, original_value, extname, ext.extver()))
-                comment = '(UPDATED) %s' % comment
+                if not comment.startswith('(UPDATED)'):
+                    comment = '(UPDATED) %s' % comment
                 msg = "updated in"
             else:
-                comment = '(NEW) %s' % comment
+                if not comment.startswith('(NEW)'):
+                    comment = '(NEW) %s' % comment
                 msg = "added to"
             # Use exec to perform the requested function on input
             try:
