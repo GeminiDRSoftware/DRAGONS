@@ -104,7 +104,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
             # Call the gemiq function to detect the sources and then
             # measure the IQ of the current image 
             iqdata = getiq.gemiq(tmpWriteName, function=centroid_function, 
-                                 display=False, mosaic=mosaic, qa=qa,
+                                 display=display, mosaic=mosaic, qa=qa,
                                  verbose=False, debug=False)
             
             # End time for measuring IQ of current file
@@ -128,7 +128,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                          datName+ ' removed from disk.')
                 
             # iqdata is list of tuples with image quality metrics
-            # (ell_mean, ellSig, fwhmMean, fwhmSig)
+            # (ellMean, ellSig, fwhmMean, fwhmSig)
             # First check if it is empty (ie. gemiq failed in some way)
             if len(iqdata) == 0:
                 log.warning('Problem Measuring IQ Statistics, '+
