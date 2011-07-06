@@ -167,6 +167,7 @@ def correct_wcs_to_reference_image(adinput=None,
         # (won't be modified)
         reference = adinput[0]
         adoutput_list.append(reference)
+        log.stdinfo('Reference image: '+reference.filename)
 
         # If no OBJCAT/no sources in reference image, or user choice,
         # use indirect alignment for all images at once
@@ -209,7 +210,7 @@ def correct_wcs_to_reference_image(adinput=None,
                     log.fullinfo('Number of objects in image %s: %d' %
                                  (ad.filename, n_test[i]))
         
-                    log.stdinfo('Cross-correlating sources in %s, %s' %
+                    log.fullinfo('Cross-correlating sources in %s, %s' %
                                (reference.filename, ad.filename))
                     obj_list = _correlate_sources(reference, ad, 
                                                   cull_sources=cull_sources)
