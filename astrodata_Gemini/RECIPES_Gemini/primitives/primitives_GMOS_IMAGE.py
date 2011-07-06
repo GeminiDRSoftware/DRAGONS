@@ -89,28 +89,3 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
 
-    def separateFringe(self,rc):
-        """
-        This primitive sends images to be used for making the fringe
-        frame into the "fringe" stream.  Currently, all it does is report
-        the main inputs (all science frames) to the fringe stream.  It may
-        be desirable later to include handling for frames taken solely
-        for the purpose of making fringe frames (similar to the way sky
-        frames are handled).
-        """
-
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "separateFringe", "starting"))
-
-        # Get input frames
-        adinput = rc.get_inputs(style="AD")
-
-        # Report them to both the fringe stream and the main stream
-        rc.report_output(adinput,stream="fringe")
-        rc.report_output(adinput,stream="main")
-        
-        yield rc
