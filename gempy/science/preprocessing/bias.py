@@ -69,7 +69,7 @@ def subtract_bias(adinput=None, bias=None):
             
             # Clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    
-            
+
             # Determine whether VAR/DQ needs to be propagated
             if (ad.count_exts('VAR') == 
                 ad.count_exts('DQ') == 
@@ -77,12 +77,15 @@ def subtract_bias(adinput=None, bias=None):
                 fl_vardq=yes
             else:
                 fl_vardq=no
-            
+
             # Get the right bias frame for this input
             if len(bias)>1:
                 this_bias = bias[count]
             else:
                 this_bias = bias[0]
+            log.stdinfo("Subtracting the following bias from the input " \
+                        "AstroData object (%s):\n%s" % (ad.filename, 
+                                                        this_bias.filename))
 
             # Prepare input files, lists, parameters... for input to 
             # the CL script
@@ -150,7 +153,7 @@ def subtract_bias(adinput=None, bias=None):
                 raise Errors.ScienceError('gireduce failed for inputs '+
                                           clm.imageInsFiles(type='string'))
             else:
-                log.status('Exited the gireduce CL script successfully')
+                log.fullinfo('Exited the gireduce CL script successfully')
                     
             # Rename CL outputs and load them back into memory 
             # and clean up the intermediate temp files written to disk
@@ -165,8 +168,8 @@ def subtract_bias(adinput=None, bias=None):
             # Verify gireduce was actually ran on the file
             # then log file names of successfully reduced files
             if ad_out.phu_get_key_value('GIREDUCE'): 
-                log.fullinfo('\nFile '+ad_out.filename+
-                             ' was bias-subtracted successfully')
+                log.fullinfo('File '+ad_out.filename+
+                             ' was successfully bias-subtracted.')
   
             # Update GEM-TLM (automatic) and BIASCORR time stamps to the PHU
             # and update logger with updated/added time stamps
@@ -188,7 +191,7 @@ def subtract_bias(adinput=None, bias=None):
             count = count+1
                 
             
-        log.warning('The CL script gireduce REPLACED any previously '+
+        log.fullinfo('The CL script gireduce REPLACED any previously '+
                     'calculated DQ frames')
         # Return the outputs list, even if there is only one output
         return adoutput_list
@@ -337,7 +340,7 @@ def subtract_overscan_gmos(adinput=None, overscan_section=''):
                 raise Errors.ScienceError('gireduce failed for inputs '+
                              clm.imageInsFiles(type='string'))
             else:
-                log.status('Exited the gireduce CL script successfully')
+                log.fullinfo('Exited the gireduce CL script successfully')
             
             # Rename CL outputs and load them back into memory, and 
             # clean up the intermediate tmp files written to disk
@@ -351,8 +354,8 @@ def subtract_overscan_gmos(adinput=None, overscan_section=''):
             if ad_out.phu_get_key_value('GIREDUCE'): 
                 # If gireduce was ran, then log the changes to the files 
                 # it made
-                log.fullinfo('\nFile '+ad_out.filename+
-                             ' had its overscan subtracted successfully')
+                log.fullinfo('File '+ad_out.filename+
+                             ' was successfully overscan-subtracted.')
                 
             # Update GEM-TLM (automatic) and BIASCORR time stamps to the PHU
             # and update logger with updated/added time stamps
@@ -400,7 +403,7 @@ def trim_overscan(adinput=None):
         
         # Loop through the inputs
         for ad in adinput:  
-                             
+
             # Clean up log and screen if multiple inputs
             log.fullinfo('+'*50, category='format')    
 
@@ -414,42 +417,39 @@ def trim_overscan(adinput=None):
                 # Get the data section 
                 # as a direct string from header
                 datasecStr = str(sciExt.data_section(pretty=True))
-                # int list of form [y1, y2, x1, x2] 0-based and non-inclusive
+                # int list of form [x1, x2, y1, y2] 0-based and non-inclusive
                 dsl = sciExt.data_section().as_pytype()
                 
                 # Update logger with the section being kept
-                log.stdinfo('\nfor '+ad.filename+' extension '+
-                            str(sciExt.extver())+
-                            ', keeping the data from the section '+
-                            datasecStr,'science')
+                log.fullinfo('For '+ad.filename+' extension '+
+                             str(sciExt.extver())+
+                             ', keeping the data from the section '+
+                             datasecStr,'science')
 
                 # Trim the data section from input SCI array
                 # and make it the new SCI data
-                # NOTE: first elements of arrays in python are inclusive
-                #       while last ones are exclusive, thus a 1 must be 
-                #       added for the final element to be included.
-                sciExt.data=sciExt.data[dsl[0]:dsl[1],dsl[2]:dsl[3]]
+                sciExt.data=sciExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
 
                 # Update header keys to match new dimensions
-                newDataSecStr = '[1:'+str(dsl[3]-dsl[2])+',1:'+\
-                                str(dsl[1]-dsl[0])+']' 
-                sciExt.header['NAXIS1'] = dsl[3]-dsl[2]
-                sciExt.header['NAXIS2'] = dsl[1]-dsl[0]
+                newDataSecStr = '[1:'+str(dsl[1]-dsl[0])+',1:'+\
+                                str(dsl[3]-dsl[2])+']' 
+                sciExt.header['NAXIS1'] = dsl[1]-dsl[0]
+                sciExt.header['NAXIS2'] = dsl[3]-dsl[2]
                 sciExt.header['DATASEC']=newDataSecStr
                 sciExt.header.update('TRIMSEC', datasecStr, 
                                    'Data section prior to trimming')
 
                 # Update WCS reference pixel coordinate
-                crpix1 = sciExt.get_key_value('CRPIX1') - dsl[2]
-                crpix2 = sciExt.get_key_value('CRPIX2') - dsl[0]
+                crpix1 = sciExt.get_key_value('CRPIX1') - dsl[0]
+                crpix2 = sciExt.get_key_value('CRPIX2') - dsl[2]
                 sciExt.header['CRPIX1'] = crpix1
                 sciExt.header['CRPIX2'] = crpix2
 
                 # If VAR and DQ planes present, update them to match
                 if varExt is not None:
-                    varExt.data=varExt.data[dsl[0]:dsl[1],dsl[2]:dsl[3]]
-                    varExt.header['NAXIS1'] = dsl[3]-dsl[2]
-                    varExt.header['NAXIS2'] = dsl[1]-dsl[0]
+                    varExt.data=varExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                    varExt.header['NAXIS1'] = dsl[1]-dsl[0]
+                    varExt.header['NAXIS2'] = dsl[3]-dsl[2]
                     varExt.header['DATASEC']=newDataSecStr
                     varExt.header.update('TRIMSEC', datasecStr, 
                                          'Data section prior to trimming')
@@ -461,9 +461,9 @@ def trim_overscan(adinput=None):
                     # overscan region, so don't trim DQ if it
                     # already matches the science
                     if dqExt.data.shape!=sciExt.data.shape:
-                        dqExt.data=dqExt.data[dsl[0]:dsl[1],dsl[2]:dsl[3]]
-                    dqExt.header['NAXIS1'] = dsl[3]-dsl[2]
-                    dqExt.header['NAXIS2'] = dsl[1]-dsl[0]
+                        dqExt.data=dqExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                    dqExt.header['NAXIS1'] = dsl[1]-dsl[0]
+                    dqExt.header['NAXIS2'] = dsl[3]-dsl[2]
                     dqExt.header['DATASEC']=newDataSecStr
                     dqExt.header.update('TRIMSEC', datasecStr, 
                                         'Data section prior to trimming')
