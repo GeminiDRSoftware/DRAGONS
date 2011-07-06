@@ -70,7 +70,7 @@ class CalibrationDefinitionLibrary(object):
                     # then asked to write something already on disk and we
                     # don't want to blindly clobber... throw informative error
                     msg = "Overwriting %s with in-memory version " + \
-                                 "to ensure a current version of the dataset" + \
+                                 "to ensure a current version of the dataset " + \
                                  "is available " + \
                                  "to Calibration Service." 
                     msg = msg % inp.filename
