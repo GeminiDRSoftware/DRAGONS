@@ -140,7 +140,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             else:
                 # Return a dictionary with the data section list that uses
                 # 0-based, non-inclusive indexing as the value in the form
-                # [y1, y2, z1, x2]
+                # [x1, x2, y1, y2]
                 data_section = string.sectionStrToIntList(raw_data_section)
                 ret_data_section.update({
                     (ext.extname(), ext.extver()):data_section})
@@ -202,7 +202,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             else:
                 # Return a dictionary with the detector section list that 
                 # uses 0-based, non-inclusive indexing as the value in the form
-                # [y1, y2, z1, x2]
+                # [x1, x2, y1, y2]
                 detector_section = string.sectionStrToIntList(
                     raw_detector_section)
                 ret_detector_section.update({
