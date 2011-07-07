@@ -959,6 +959,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             except:
                 log.status("CONTEXT AFTER FATAL ERROR")
                 log.status("-------------------------")
+                log.status(co.report())
                 if reduceServer:
                     #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
                     Proxies.reduceServer.finished=True

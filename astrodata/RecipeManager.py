@@ -9,6 +9,7 @@ from datetime import datetime
 from astrodata.AstroData import AstroData
 
 import traceback
+import astrodata
 import AstroDataType
 import ConfigSpace
 import Descriptors
@@ -847,40 +848,164 @@ class ReductionContext(dict):
         return self.cmd_request == "pause"
     #------------------ PAUSE ----------------------------------------------------
     
-    def paramsummary(self):
-        '''
-        A util function for printing out all the parameters for this reduction 
-        context in a semi-organized fashion.
+    def report(self):
+        """
+        Prints out a report of the contents of the context object 
         
         @return: The formatted message for all the current parameters.
         @rtype: str
-        '''
-        char = "-"
-        rets = '\n' + char * 40 + "\n"
-        rets += '''------Global Parameters------\n'''
+        """
+        rets = "\n\n" + "-" * 50  + "\n\n\n"
+        rets += " "*11 + "C O N T E X T  R E P O R T\n\n\n"
+        rets += "-" * 50 + "\n" 
+        #varlist = ["inputs", "original_inputs", "inputs_history", "outputs", 
+        #    "calibrations", "rorqs", "status", "reason", "cmd_request",
+        #    "hostname", "display_name", "stephistory", "stackeep", 
+        #    "calindfile", "display_mode", "display_id", "irafstdout",
+        #    "irafstderr", "callbacks", "arguments", "cache_files",
+        #    "_localparms", "_nonstandard_stream", "_current_stream", 
+        #    "user_params", "proxy_id", "ro", "cmd_history", "cmd_index"]
         
-        globval = "global"
+        varlist = ["inputs_history", "calibrations", "rorqs",
+            "status", "reason", "cmd_request", "hostname", "display_name",
+            "stackeep", "calindfile", "display_mode",
+            "display_id", "callbacks", "arguments",
+            "_nonstandard_stream",
+            "_current_stream", "proxy_id", "cmd_history",
+            "cmd_index"]
+            # removed irafstdout, irafstderr, cache_files, ro
         
-        def print_param(val, param):
-            # This temp function prints out the stuff inside an individual parameter.
-            # I have a feeling this and paramsummary will be moved to a util function.
-            tempStr = ""
-            list_of_params = param.keys()
-            list_of_params.sort()
-            tempStr += char * 40 + "\n"
-            for pars in list_of_params:
-                tempStr += str(param[pars]) + "\n"
-                tempStr += char * 40 + "\n"
-            return tempStr
+        # add in vars to show they are not there
+        if not self._localparms:
+            varlist.append("_localparms")
+        if not self.stephistory:
+            varlist.append("stephistory")
+        if not self.user_params:
+            varlist.append("user_params")
+        if not self.inputs:
+            varlist.append("inputs")
+        if not self.original_inputs:
+            varlist.append("original_inputs")
+
+        #inputs
+        if self.inputs:
+            rets += "\nInput (self.inputs, ReductionContextRecords):"
+            rets += "\n    %-20s : " % "RCR.filename"
+            for rcr in self.inputs:
+                rets += rcr.filename + "\n" + " "*23
+        
+        #original_inputs
+        if self.original_inputs:
+            rets += "\n\nOriginal Input (self.original_inputs,"
+            rets += " ReductionContextRecords):"
+            rets += "\n    %-20s : " % "RCR.filename"
+            for rcr in self.original_inputs:
+                rets += rcr.filename + "\n" + " "*23
+       
+        rets += "\nContext Variables (self.<var>):"
+        varlist.sort()
+        for var in varlist:
+            rets += "\n    %-20s = %s" % (var, eval("self.%s" % var ))
+        
+        #_localparms
+        if self._localparms:
+            rets += "\n\nLocal Parameters (self._localparms)"
+            pkeys = self._localparms.keys()
+            pkeys.sort
+            for pkey in pkeys:
+                rets += "\n    %-13s : %s" % \
+                    (str(pkey), str(self._localparms[pkey]))
+
+        # stephistory
+        if self.stephistory:
+            rets += "\n\nStep History (self.stephistory):"
+            shkeys = self.stephistory.keys()
+            shkeys.sort()
+            count = 0
+            for key in shkeys:
+                rets += "\n    " + "-"*15 + " S T E P " 
+                rets += str(count+1) + " " + "-"*15
+                rets += "\n    " + str(key) + ":"
+                sh_dict = self.stephistory[key]
+                sh_dictkeys = sh_dict.keys()
+                sh_dictkeys.sort()
+                if sh_dict.has_key("inputs"):
+                    rets += "\n%s%-10s : " % (" "*8, "inputs (self.inputs)")
+                    for rcr in sh_dict["inputs"]:
+                        if isinstance(rcr, \
+                astrodata.ReductionContextRecords.AstroDataRecord):
+                            rets += "'%s':\n\n    %s" % \
+                (str(jkey), "ReductionContextRecords.AstroDataRecord:")
+                            rets += str(rcr)
+                        else:
+                            rets += str(rcr)
+                    sh_dictkeys.remove("inputs")
+                for ikey in sh_dictkeys:
+                    if ikey != "outputs":
+                        rets += "\n%s%-10s : %s" % \
+                           (" "*8, str(ikey), sh_dict[ikey])
+                if sh_dict.has_key("outputs"):
+                    rets += "\n%s%-10s : " % (" "*8, "outputs (self.outputs)")
+                    outputs_dict = sh_dict["outputs"]
+                    outputs_dictkeys = outputs_dict.keys()
+                    outputs_dictkeys.sort()
+                    for jkey in outputs_dictkeys:
+                        for rcr in outputs_dict[jkey]:
+                            if isinstance(rcr, \
+                    astrodata.ReductionContextRecords.AstroDataRecord):
+                                rets += "'%s':\n\n    %s" % \
+                    (str(jkey), "ReductionContextRecords.AstroDataRecord:")
+                                rets += str(rcr)
+                            else:
+                                rets += str(rcr)
+                rets += "    " + "-"*41 + "\n\n"
+                count += 1
+
+        # user params (from original varlist)
+        if self.user_params:
+            rets += "User Parameters:"
+            rets += repr(self.user_params.user_param_dict)
+        rets += "\n"
+
+        # internal dictionary contents
+        cokeys = self.keys()
+        rets += "\n       I N T E R N A L  D I C T I O N A R Y\n"
+        loglist = []
+        cachedirs = []
+        others = []
+        for key in cokeys:
+            if key  == "cachedict":
+                rets += "\nCached Files (self[cachedict:{}]):\n"
+                cache_dict = self[key]
+                cdkeys = cache_dict.keys()
+                cdkeys.remove("storedcals")
+                cdkeys.remove("reducecache")
+                cdkeys.sort()
+                for ikey in cdkeys:
+                    dirfiles = os.listdir(cache_dict[ikey])
+                    if len(dirfiles) == 0:
+                        dirfiles = "None"
+                    rets += "    %-20s : %s\n" %(ikey, dirfiles)
+            elif key[:3] == "log":
+                loglist.append(key)
+            elif key == "reducecache" or key[:9] == "retrieved" or \
+                key[:6] == "stored":
+                cachedirs.append(key)
+            else:
+                others.append(key)
+
+        rets += "\nCache Directories (self[<dir>]):"
+        for dir_ in cachedirs:
+            rets +="\n    %-20s : %s" % (dir_, str(self[dir_]))
+        rets += "\n\nLogger Info (self[<log...>]):"
+        for l in loglist:
+            rets +="\n    %-20s : %s" % (l, str(self[l]))
+        if len(others) > 0:
+            rets += "\nOther (self[<Other>]):\n"
+            for o in others:
+                rets +="\n    %-20s : %s" % (o, str(self[o]))
             
-        rets += print_param(globval, self[globval])
-        list_of_prims = self.keys()
-        list_of_prims.sort()
-        for primname in list_of_prims:
-            if primname != globval:
-                rets += '''------%s Parameters------\n''' % (primname)
-                rets += print_param(primname, self[primname])
-        
+        rets += "\n\n" + "-" * 50  + "\n"
         return rets
     
     def persist_cal_index(self, filename = None, newindex = None):
