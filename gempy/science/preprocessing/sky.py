@@ -127,7 +127,7 @@ def make_fringe_image_gmos(adinput=None, operation='median',
             raise Errors.ScienceError('gifringe failed for inputs '+
                                       rc.inputs_as_str())
         else:
-            log.status('Exited the gifringe CL script successfully')
+            log.info('Exited the gifringe CL script successfully')
                     
         # Rename CL outputs and load them back into memory 
         # and clean up the intermediate temp files written to disk
@@ -245,6 +245,8 @@ def scale_fringe_to_science(adinput=None, science=None,
             scaleDict = {}
             # get matching B input
             adB = science[count]
+            log.stdinfo('Scaling fringe '+adA.filename+
+                        ' to input '+adB.filename)
             
             for sciExtA in adA['SCI']:
                 # Grab the A and B SCI extensions to operate on
@@ -259,7 +261,7 @@ def scale_fringe_to_science(adinput=None, science=None,
                     #                       (sciExtB.median+2.5*sciExtB.std)]} 
                     #                 > [sciExtB.median-3*sciExtB.std])
                     # scale = arrayB.std / sciExtA.std
-                    log.status('Using statistics to calculate the ' +
+                    log.info('Using statistics to calculate the ' +
                                'scaling factor')
                     # Get current SCI's stats_section
                     if stats_section is None:
@@ -283,8 +285,8 @@ def scale_fringe_to_science(adinput=None, science=None,
                                                     str(type(stats_section)))
                
                     cl = curStatsecList
-                    log.stdinfo('Using section '+repr(cl)+' of data to '+
-                                'calculate the scaling factor')      
+                    log.info('Using section '+repr(cl)+' of data to '+
+                             'calculate the scaling factor')      
                     # pull the data arrays from the extensions, 
                     # for the stats_section region
                     A = sciExtA.data[cl[0]:cl[1],cl[2]:cl[3]]
@@ -315,11 +317,11 @@ def scale_fringe_to_science(adinput=None, science=None,
                 
                 else:
                     # use the exposure times to calculate the scale
-                    log.status('Using exposure times to calculate the scaling'+
-                               ' factor')
+                    log.info('Using exposure times to calculate the scaling'+
+                             ' factor')
                     curScale = sciExtB.exposure_time() / sciExtA.exposure_time()
                 
-                log.stdinfo('Scale factor found = '+str(curScale))
+                log.info('Scale factor found = '+str(curScale))
                 
                 # load determined scale for this extension into scaleDict    
                 scaleDict[('SCI',sciExtA.extver())] = curScale
