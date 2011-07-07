@@ -255,6 +255,14 @@ class GEMINIPrimitives(GENERALPrimitives):
                     os.mkdir(cachedir)
         
         yield rc
+    
+    def contextReport(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        log.fullinfo(rc.report())
+    
+        yield rc
      
     def correctWCSToReferenceImage(self, rc):
         """ 
