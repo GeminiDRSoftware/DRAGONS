@@ -231,7 +231,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs(style='AD')
         if len(adinput)<2:
             log.warning("At least two images must be provided to " +
-                        "alignToReferenceImage")
+                        "alignToReferenceImage; no alignment performed.")
             # Report input to RC without change
             adoutput_list = adinput
         else:
@@ -350,7 +350,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs(style='AD')
         if len(adinput)<2:
             log.warning("At least two images must be provided to " +
-                        "correctWCSToReferenceImage")
+                        "correctWCSToReferenceImage; no correction performed.")
             # Report input to RC without change
             adoutput_list = adinput
         else:
@@ -900,7 +900,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs(style='AD')
         if len(adinput)<2:
             log.warning("At least two frames must be provided to " +
-                        "stackFrames")
+                        "stackFrames; no stacking performed.")
             # Report input to RC without change
             adoutput_list = adinput
         else:
@@ -1147,10 +1147,10 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         # Get inputs from their streams
         adinput = rc.get_inputs(style="AD")
-        fringes = rc.get_stream(stream="fringe",style="AD")
+        fringe_records = rc.get_stream(stream="fringe")
 
         # Check that there are as many fringes as inputs
-        if len(adinput)!=len(fringes):
+        if len(adinput)!=len(fringe_records):
             log.warning("Fringe input list does not match science input list;" +
                         "no fringe-correction will be performed.")
             adoutput_list = adinput
@@ -1160,7 +1160,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             for i in range(0,len(adinput)):
 
                 ad = adinput[i]
-                fringe = fringes[i]
+                fringe = fringe_records[i].ad
 
                 # Check whether the subtractFringe primitive has been run
                 # previously
