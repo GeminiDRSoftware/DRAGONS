@@ -387,7 +387,7 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
         raise Errors.Error("Unknown value for the 'function' parameter")
     else:
         key = keyAndCommentDict[function][0]
-        comment = keyAndCommentDict[function][1]
+        raw_comment = keyAndCommentDict[function][1]
     
     if extname == "PHU":
         # Check to see whether the keyword is already in the PHU
@@ -396,14 +396,12 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
             # The keyword exists, so store a history comment for later use
             log.debug("Keyword %s = %s already exists in the PHU" \
                   % (key, original_value))
-            if not comment.startswith('(UPDATED)'):
-                comment = '(UPDATED) %s' % comment
+            comment = '(UPDATED) %s' % raw_comment
             msg = "updated in"
             historyComment = "The keyword %s = %s was overwritten in the " \
                              "PHU by AstroData" % (key, original_value)
         else:
-            if not comment.startswith('(NEW)'):
-                comment = '(NEW) %s' % comment
+            comment = '(NEW) %s' % raw_comment
             msg = "added to"
         # Use exec to perform the requested function on input
         try:
@@ -457,12 +455,10 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
                 # The keyword exists, so store a history comment for later use
                 log.debug("Keyword %s = %s already in extension %s,%s" \
                           % (key, original_value, extname, ext.extver()))
-                if not comment.startswith('(UPDATED)'):
-                    comment = '(UPDATED) %s' % comment
+                comment = '(UPDATED) %s' % raw_comment
                 msg = "updated in"
             else:
-                if not comment.startswith('(NEW)'):
-                    comment = '(NEW) %s' % comment
+                comment = '(NEW) %s' % raw_comment
                 msg = "added to"
             # Use exec to perform the requested function on input
             try:
