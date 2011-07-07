@@ -30,6 +30,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for airmass"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.airmass(self, **args)
             
@@ -41,6 +45,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -80,6 +86,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for amp_read_area"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.amp_read_area(self, **args)
             
@@ -91,6 +101,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -122,6 +134,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for azimuth"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.azimuth(self, **args)
             
@@ -133,6 +149,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -164,6 +182,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for camera"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.camera(self, **args)
             
@@ -175,6 +197,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -207,6 +231,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for cass_rotator_pa"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.cass_rotator_pa(self, **args)
             
@@ -218,6 +246,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -264,6 +294,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for central_wavelength"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.central_wavelength(self, **args)
             
@@ -275,6 +309,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -306,6 +342,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for coadds"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.coadds(self, **args)
             
@@ -317,6 +357,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -348,6 +390,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for data_label"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.data_label(self, **args)
             
@@ -359,6 +405,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -404,6 +452,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for data_section"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.data_section(self, **args)
             
@@ -415,6 +467,8 @@ class CalculatorInterface:
                                    pytype = list )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -446,6 +500,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for dec"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.dec(self, **args)
             
@@ -457,6 +515,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -492,6 +552,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for decker"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.decker(self, **args)
             
@@ -503,6 +567,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -548,6 +614,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for detector_section"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.detector_section(self, **args)
             
@@ -559,6 +629,8 @@ class CalculatorInterface:
                                    pytype = list )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -597,6 +669,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for detector_x_bin"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.detector_x_bin(self, **args)
             
@@ -608,6 +684,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -646,6 +724,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for detector_y_bin"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.detector_y_bin(self, **args)
             
@@ -657,6 +739,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -692,6 +776,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for disperser"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.disperser(self, **args)
             
@@ -703,6 +791,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -749,6 +839,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for dispersion"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.dispersion(self, **args)
             
@@ -760,6 +854,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -791,6 +887,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for dispersion_axis"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.dispersion_axis(self, **args)
             
@@ -802,6 +902,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -833,6 +935,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for elevation"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.elevation(self, **args)
             
@@ -844,6 +950,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -875,6 +983,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for exposure_time"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.exposure_time(self, **args)
             
@@ -886,6 +998,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -922,6 +1036,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for filter_name"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.filter_name(self, **args)
             
@@ -933,6 +1051,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -968,6 +1088,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for focal_plane_mask"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.focal_plane_mask(self, **args)
             
@@ -979,6 +1103,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1016,6 +1142,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for gain"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.gain(self, **args)
             
@@ -1027,6 +1157,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1062,6 +1194,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for grating"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.grating(self, **args)
             
@@ -1073,6 +1209,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1104,6 +1242,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for gain_setting"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.gain_setting(self, **args)
             
@@ -1115,6 +1257,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1146,6 +1290,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for instrument"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.instrument(self, **args)
             
@@ -1157,6 +1305,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1188,6 +1338,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for local_time"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.local_time(self, **args)
             
@@ -1199,6 +1353,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1236,6 +1392,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for mdf_row_id"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.mdf_row_id(self, **args)
             
@@ -1247,6 +1407,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1279,6 +1441,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for nod_count"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.nod_count(self, **args)
             
@@ -1290,6 +1456,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1322,6 +1490,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for nod_pixels"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.nod_pixels(self, **args)
             
@@ -1333,6 +1505,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1365,6 +1539,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for non_linear_level"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.non_linear_level(self, **args)
             
@@ -1376,6 +1554,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1407,6 +1587,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for object"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.object(self, **args)
             
@@ -1418,6 +1602,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1450,6 +1636,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for observation_class"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.observation_class(self, **args)
             
@@ -1461,6 +1651,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1492,6 +1684,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for observation_epoch"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.observation_epoch(self, **args)
             
@@ -1503,6 +1699,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1534,6 +1732,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for observation_id"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.observation_id(self, **args)
             
@@ -1545,6 +1747,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1577,6 +1781,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for observation_type"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.observation_type(self, **args)
             
@@ -1588,6 +1796,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1619,6 +1829,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for overscan_section"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.overscan_section(self, **args)
             
@@ -1630,6 +1844,8 @@ class CalculatorInterface:
                                    pytype = list )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1661,6 +1877,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for pixel_scale"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.pixel_scale(self, **args)
             
@@ -1672,6 +1892,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1707,6 +1929,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for prism"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.prism(self, **args)
             
@@ -1718,6 +1944,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1750,6 +1978,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for program_id"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.program_id(self, **args)
             
@@ -1761,6 +1993,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1792,6 +2026,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for pupil_mask"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.pupil_mask(self, **args)
             
@@ -1803,6 +2041,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1835,6 +2075,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for qa_state"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.qa_state(self, **args)
             
@@ -1846,6 +2090,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1877,6 +2123,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for ra"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.ra(self, **args)
             
@@ -1888,6 +2138,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1920,6 +2172,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for raw_bg"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.raw_bg(self, **args)
             
@@ -1931,6 +2187,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -1963,6 +2221,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for raw_cc"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.raw_cc(self, **args)
             
@@ -1974,6 +2236,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2006,6 +2270,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for raw_iq"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.raw_iq(self, **args)
             
@@ -2017,6 +2285,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2049,6 +2319,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for raw_wv"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.raw_wv(self, **args)
             
@@ -2060,6 +2334,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2095,6 +2371,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for read_mode"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.read_mode(self, **args)
             
@@ -2106,6 +2386,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2143,6 +2425,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for read_noise"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.read_noise(self, **args)
             
@@ -2154,6 +2440,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2186,6 +2474,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for read_speed_setting"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.read_speed_setting(self, **args)
             
@@ -2197,6 +2489,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2229,6 +2523,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for saturation_level"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.saturation_level(self, **args)
             
@@ -2240,6 +2538,8 @@ class CalculatorInterface:
                                    pytype = int )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2275,6 +2575,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for slit"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.slit(self, **args)
             
@@ -2286,6 +2590,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2317,6 +2623,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for telescope"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.telescope(self, **args)
             
@@ -2328,6 +2638,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2359,6 +2671,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for ut_date"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.ut_date(self, **args)
             
@@ -2370,6 +2686,8 @@ class CalculatorInterface:
                                    pytype = datetime )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2426,6 +2744,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for ut_datetime"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.ut_datetime(self, **args)
             
@@ -2437,6 +2759,8 @@ class CalculatorInterface:
                                    pytype = datetime )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2468,6 +2792,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for ut_time"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.ut_time(self, **args)
             
@@ -2479,6 +2807,8 @@ class CalculatorInterface:
                                    pytype = datetime )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2512,6 +2842,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for wavefront_sensor"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.wavefront_sensor(self, **args)
             
@@ -2523,6 +2857,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2561,6 +2897,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for wavelength_reference_pixel"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.wavelength_reference_pixel(self, **args)
             
@@ -2572,6 +2912,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2604,6 +2946,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for well_depth_setting"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.well_depth_setting(self, **args)
             
@@ -2615,6 +2961,8 @@ class CalculatorInterface:
                                    pytype = str )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2646,6 +2994,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for x_offset"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.x_offset(self, **args)
             
@@ -2657,6 +3009,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
@@ -2688,6 +3042,10 @@ class CalculatorInterface:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for y_offset"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.y_offset(self, **args)
             
@@ -2699,6 +3057,8 @@ class CalculatorInterface:
                                    pytype = float )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise

@@ -28,6 +28,10 @@ class DescriptorDescriptor:
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for %(name)s"
+                    raise KeyError(msg)
             else:
                 retval = self.descriptor_calculator.%(name)s(self, **args)
             
@@ -39,6 +43,8 @@ class DescriptorDescriptor:
                                    pytype = %(pytype)s )
             return ret
         except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
             if (self.descriptor_calculator is None 
                 or self.descriptor_calculator.throwExceptions == True):
                 raise
