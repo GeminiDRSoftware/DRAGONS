@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import os
 import sys
+import subprocess
 from optparse import OptionParser
 from astrodata import AstroData
 from astrodata.adutils import gemutil as gu
@@ -35,8 +35,8 @@ if __name__=='__main__':
               "\nall stack and calibration associations will be lost;" + \
               "\nall temporary files will be removed.\n"
 
-        os.system("superclean -rac")
-        os.system("rm -f tmp*")
+        subprocess.call(["superclean", "-rac"])
+        subprocess.call(["rm", "-f", "tmp*"])
         print ""
         sys.exit()
 
@@ -77,11 +77,13 @@ if __name__=='__main__':
 
     # Call reduce with generic GMOS reduction recipe
     print "\nBeginning reduction for file %s, %s\n" % (imgname,ad.data_label()) 
-    reduce_cmd = "reduce --logLevel stdinfo " + \
-                 "-p clobber=True,clob=True,add_mdf=False," + \
-                 "mask_type='goodvalue' " + \
-                 "-r reduce " + imgpath
-    os.system(reduce_cmd)
+    reduce_cmd = ["reduce", 
+                  "--logLevel","stdinfo",
+                  "-p", "clobber=True,clob=True,add_mdf=False," + \
+                        "mask_type='goodvalue'",
+                  "-r", "qaReduce", 
+                  imgpath]
+    subprocess.call(reduce_cmd)
 
     print ""
 
