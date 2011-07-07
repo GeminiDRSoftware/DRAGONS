@@ -26,11 +26,11 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         data_section = "[1:2048,1:2048]"
         if pretty:
             # Return the data section string that uses 1-based indexing as the
-            # value
+            # value in the form [x1:x2,y1:y2]
             ret_data_section = data_section
         else:
             # Return the data section list that used 0-based, non-inclusive
-            # indexing as the value
+            # indexing as the value in the form [x1, x2, y1, y2]
             ret_data_section = string.sectionStrToIntList(data_section)
         
         return ret_data_section
