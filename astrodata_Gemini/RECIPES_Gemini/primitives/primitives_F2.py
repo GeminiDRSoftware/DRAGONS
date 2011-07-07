@@ -38,7 +38,7 @@ class F2Primitives(GEMINIPrimitives):
         for ad in rc.get_inputs(style="AD"):
             # Check whether the standardizeHeaders primitive has been run
             # previously
-            if ad.phu_get_key_value("SDZHDRS"):
+            if ad.phu_get_key_value("SDZHDRSI"):
                 log.warning("%s has already been processed by " \
                             "standardizeHeaders" % (ad.filename))
                 # Append the input AstroData object to the list of output
