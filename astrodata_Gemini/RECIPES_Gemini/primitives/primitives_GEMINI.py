@@ -163,7 +163,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         for ad in rc.get_inputs(style="AD"):
             # Check whether the aduToElectrons primitive has been run
             # previously
-            if ad.phu_get_key_value("ADU2ELEC"):
+            if ad.phu_get_key_value("ADUTOELE"):
                 log.warning("%s has already been processed by aduToElectrons" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
