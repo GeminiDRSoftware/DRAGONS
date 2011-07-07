@@ -119,7 +119,11 @@ class ReductionObject(object):
         
         # set type of prim for logging
         btype = primset.btype
-        log.status("STARTING %s: %s" % (btype,primname))
+        if btype=="PRIMITIVE":
+            spacer = "\n"
+        else:
+            spacer = "="*80+"\n"
+        log.status(spacer+"STARTING %s: %s" % (btype,primname))
                 
         # primset init should perhaps be called ready
         # because it needs to be called each step because though
@@ -172,7 +176,8 @@ class ReductionObject(object):
             context.restore_stream(from_stream = nonStandardStream)
             
         context.localparms = savedLocalparms
-        log.status("ENDING %s: %s" % (btype, primname))
+        if btype=="RECIPE":
+            log.status("\nENDING %s: %s\n" % (btype, primname) + spacer)
         yield context
         
     def runstep(self, primname, cfgobj):

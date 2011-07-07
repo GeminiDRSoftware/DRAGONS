@@ -395,7 +395,7 @@ integrates other functionality.
                 # print 'Extension "%s" does not exist' % str(ext)
                 # selector not valid
                 self.relhdul()
-                print "AD426: keyerror"
+                #print "AD426: keyerror"
                 return None
             gdpart = AstroData(self, exts=[ext])
             self.relhdul()

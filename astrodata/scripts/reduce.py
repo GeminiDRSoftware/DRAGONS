@@ -682,10 +682,10 @@ for infiles in allinputs: #for dealing with multiple sets of files.
     #prof.close()
     #raise "over"
 
-    log.status("Starting Reduction #%d of %d" % (i, numReductions))
+    log.info("Starting Reduction #%d of %d" % (i, numReductions))
     if infiles:
         for infile in infiles:
-            log.status("    %s" % (infile.filename))
+            log.info("    %s" % (infile.filename))
     currentReductionNum = i
     i += 1
     
@@ -752,17 +752,17 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             title += "\n    %s" % infiln
     tl = len(title)
     tb = " " * tl
-    log.status(tb)
-    log.status(title)
-    log.status(tb)
+    log.info(tb)
+    log.info(title)
+    log.info(tb)
     if options.recipename == None:
         if len(recdict) == 0:
             log.error("No recipes found")
             sys.exit(1)
         else:
-            log.status("Recipe(s) found by dataset type:")
+            log.info("Recipe(s) found by dataset type:")
     else:
-        log.status("A recipe was specified:")
+        log.info("A recipe was specified:")
 
     for typ in recdict.keys():
         recs = recdict[typ]
@@ -879,7 +879,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
 
 
                 if rawrec == False:
-                    log.status( "running recipe: '%s'\n" % rec)
+                    log.info( "running recipe: '%s'\n" % rec)
                     
                 # logic to handle:
                 #  * recipes in config path somewhere

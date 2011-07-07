@@ -621,7 +621,7 @@ class ReductionContext(dict):
     
     def populate_stream(self, infiles, stream=None, load = True):
         self.report_output(infiles, stream = stream, load = load)
-        print repr(self._output_streams)
+        #print repr(self._output_streams)
         if stream == None:
             stream = self._current_stream
         self._output_streams.remove(stream)
@@ -1107,7 +1107,7 @@ class ReductionContext(dict):
         # print "RM1101:", self.ro.curPrimName, "stream:", repr(stream)
         if stream == None:
             stream = self._current_stream
-        print "RM1105:", self.ro.curPrimName, "stream:", stream
+        #print "RM1105:", self.ro.curPrimName, "stream:", stream
         # this clause saves the output stream so we know when to 
         # the first report happens so we can clear the set at that time.
         if stream not in self._output_streams:
@@ -1414,7 +1414,7 @@ class ReductionContext(dict):
         
         Revert to the last stream prior to previous switch_stream(..) call.
         """
-        print "RM1391: restore_stream"
+        #print "RM1391: restore_stream"
         
         if len(self._nonstandard_stream) > 0:
             prevstream = self._nonstandard_stream.pop()

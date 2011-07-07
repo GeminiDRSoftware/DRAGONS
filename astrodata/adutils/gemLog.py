@@ -179,12 +179,11 @@ class GeminiLogger(object):
         finalized handlers to the the logger.
         """
         # Create formatters for console and file messages
-        ch_formatter = logging.Formatter('%(levelname)-8s '+
-                                        '%(levelno)d- %(message)s')
+        ch_formatter = logging.Formatter('%(message)s')
         fh_formatter = logging.Formatter('%(asctime)s %(levelname)-8s '+
                                          '%(levelno)d- %(message)s')
         err_formatter = logging.Formatter('%(levelname)-8s '+
-                                        '%(levelno)d---- %(message)s')
+                                          '---- %(message)s')
         
         # Add formatters to the handlers
         self.ch.setFormatter(ch_formatter)
@@ -394,7 +393,8 @@ class GeminiLogger(object):
         # Loop through the message lines in the list and log them
         for line in msgs:
             # Log the message with the category appended to the beginning 
-            self.logger.fullinfo(category.ljust(10)+'-'+line)
+            #self.logger.fullinfo(category.ljust(10)+'-'+line)
+            self.logger.fullinfo(line)
     
     # Comments for this function are the same as that of fullinfo function above
     def info(self, msg, category=None):
@@ -403,7 +403,8 @@ class GeminiLogger(object):
             category = self._infoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.info(category.ljust(10)+'-'+line)
+            #self.logger.info(category.ljust(10)+'-'+line)
+            self.logger.info(line)
      
      # Comments for this function are the same as that of fullinfo function above       
     def stdinfo(self, msg, category=None ):
@@ -412,7 +413,8 @@ class GeminiLogger(object):
             category = self._stdinfoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.stdinfo(category.ljust(10)+'-'+line)
+            #self.logger.stdinfo(category.ljust(10)+'-'+line)
+            self.logger.stdinfo(line)
     
     # Comments for this function are the same as that of fullinfo function above        
     def status(self, msg, category=None):
@@ -421,7 +423,8 @@ class GeminiLogger(object):
             category = self._statusDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.status(category.ljust(10)+'-'+line)
+            #self.logger.status(category.ljust(10)+'-'+line)
+            self.logger.status(line)
     
     def debug(self, msg, category=None): 
         """ The function to call for making 'debug' level log messages"""
@@ -447,9 +450,9 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.critical(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
-                                 b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+
-                                 line)
+            self.logger.critical(category.ljust(10).upper()+'-'+b[0].ljust(20)+
+                                 ' - '+b[2].ljust(20)+'-'+str(b[1]).ljust(3)+
+                                 ' - '+line)
             
     # Comments for this function are the same as that of debug function above    
     def warning(self, msg, category=None):
@@ -459,9 +462,10 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.warning(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
-                                b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+
-                                line)
+            #self.logger.warning(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
+            #                    b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+
+            #                    line)
+            self.logger.warning('WARNING - '+line)
             
     # Comments for this function are the same as that of debug function above    
     def error(self, msg, category=None):
@@ -473,9 +477,10 @@ class GeminiLogger(object):
         #file_handler = open(self._logName, w)
         for line in msgs:
             #The ERROR is a temp fix until a solution can be found
-            sys.stderr.write("ERROR    40- " + category.ljust(10) + '-' +
-                b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' +
-                str(b[1]).ljust(3) + ' - ' + line + "\n")
+            #sys.stderr.write("ERROR    40- " + category.ljust(10) + '-' +
+            #    b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' +
+            #    str(b[1]).ljust(3) + ' - ' + line + "\n")
+            sys.stderr.write('ERROR - ' + line)
             self.logger.error(category.ljust(10) + '-' + 
                 b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' + 
                 str(b[1]).ljust(3) + ' - ' + line)
@@ -583,7 +588,7 @@ def createGeminiLog(logName=None, logLevel=None, logType='main', debug=False,
         _listOfLoggers.append(_geminiLogger)
     except:
         raise Error('An error occured while trying to create logger object \
-                    named, '+logName+', of type, '+logType+'.')
+                    named, '+str(logName)+', of type, '+str(logType)+'.')
     
     return _geminiLogger
         
