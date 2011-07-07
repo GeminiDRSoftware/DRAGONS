@@ -536,12 +536,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the overscan section string that 
-                # uses 1-based indexing as the value
+                # uses 1-based indexing as the value in the form [x1:x2,y1:y2]
                 ret_overscan_section.update({
                     (ext.extname(), ext.extver()):str(raw_overscan_section)})
             else:
                 # Return a dictionary with the overscan section list that 
-                # uses 0-based, non-inclusive indexing as the value
+                # uses 0-based, non-inclusive indexing as the value in the form
+                # [x1, x2, y1, y2]
                 overscan_section = string.sectionStrToIntList(
                     raw_overscan_section)
                 ret_overscan_section.update({
