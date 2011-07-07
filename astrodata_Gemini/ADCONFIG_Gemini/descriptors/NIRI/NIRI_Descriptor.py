@@ -112,15 +112,16 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                     raise ext.exception_info
             if pretty:
                 # Return a dictionary with the data section string that uses
-                # 1-based indexing as the value. 
+                # 1-based indexing as the value in the form [x1:x2,y1:y2] 
                 data_section = "[%d:%d,%d:%d]" % (x_start + 1, x_end + 1, \
                     y_start + 1, y_end + 1)
                 ret_data_section.update(
                     {(ext.extname(), ext.extver()):str(data_section)})
             else:
-                # Return a dictionary with the data section tuple that uses
-                # 0-based indexing as the value
-                data_section = (x_start, x_end, y_start, y_end)
+                # Return a dictionary with the data section list that uses
+                # 0-based, non-inclusive indexing as the value in the form
+                # [x1, x2, y1, y2]
+                data_section = [x_start, x_end, y_start + 1, y_end + 1]
                 ret_data_section.update(
                     {(ext.extname(), ext.extver()):data_section})
         if ret_data_section == {}:
