@@ -165,10 +165,14 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                         iqStr = 'IQ band for %s filter:' % filter
                         iqStr = iqStr.ljust(llen) + 'IQ'+iq_band
                     # Create final formatted string
-                    finalStr = fnStr+'\n'+'-'*dlen+'\n'+emStr+'\n'+esStr+'\n'+\
-                               fmStr+'\n'+fsStr+'\n'+csStr+'\n'+iqStr+'\n'+\
+                    finalStr = '\n\t'+fnStr+'\n\t'+'-'*dlen+'\n\t'+emStr+\
+                               '\n\t'+esStr+'\n\t'+fmStr+'\n\t'+fsStr+\
+                               '\n\t'+csStr+'\n\t'+iqStr+'\n\t'+\
                                '-'*dlen
                     # Log final string
+                    if display:
+                        log.stdinfo('Sources used to measure IQ are marked ' +
+                                    'with blue circles.')
                     log.stdinfo(finalStr, category='IQ')
                 
             # Add the appropriate time stamps to the PHU
