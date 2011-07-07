@@ -1219,6 +1219,54 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
+    def group_id(self, format=None, **args):
+        """
+        Return the group_id value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the group_id
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "group_id")
+            if not hasattr(self.descriptor_calculator, "group_id"):
+                key = "key_"+"group_id"
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for group_id"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.group_id(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "group_id",
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
     def gain_setting(self, format=None, **args):
         """
         Return the gain_setting value

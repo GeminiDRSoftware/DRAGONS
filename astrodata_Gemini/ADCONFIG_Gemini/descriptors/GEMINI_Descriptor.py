@@ -426,6 +426,21 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
+    def group_id(self, dataset, **args):
+        # Get the observation id using the appropriate descriptor
+        observation_id = dataset.observation_id()
+        if observation_id is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        # Return the group id string, which is equal to the observation id for
+        # GEMINI data 
+        ret_group_id = "%s" % (observation_id)
+        
+        return ret_group_id
+    
     def local_time(self, dataset, **args):
         # Get the local time from the header of the PHU
         local_time = dataset.phu_get_key_value(

@@ -23,6 +23,7 @@ globalStdkeyDict = {
     "key_gain":"GAIN",
     "key_gain_setting":"GAINSET",
     "key_grating":"GRATING",
+    "key_group_id":"GROUPID",
     "key_instrument":"INSTRUME",
     "key_local_time":"LT",
     "key_mdf_row_id":"MDFROW",
