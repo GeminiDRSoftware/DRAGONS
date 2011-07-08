@@ -38,7 +38,7 @@ import numpy as np
 from numpy import where
 from datetime import datetime
 from astrodata.adutils.reduceutils import prsproxyweb
-from astrodata.adutils.reduceutils.prsproxyutil import calibrationSearch, CALMGR, CALTYPEDICT,urljoin
+from astrodata.adutils.reduceutils.prsproxyutil import calibration_search, CALMGR, CALTYPEDICT,urljoin
 
 from astrodata import AstroData
 
@@ -335,7 +335,7 @@ ports.close()
 writeADCCSR(clfn, vals=vals)
 
 server.register_function(get_version, "get_version")
-server.register_function(calibrationSearch, "calibrationSearch")
+server.register_function(calibration_search, "calibration_search")
 
 # store the port
 

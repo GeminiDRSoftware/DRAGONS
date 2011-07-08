@@ -18,7 +18,7 @@ def urljoin(*args):
     print "prs31:", repr(args), ret
     return ret
 
-def calibrationSearch(rq, fullResult = False):
+def calibration_search(rq, fullResult = False):
     from astrodata.FitsStorageFeatures import FitsStorageSetup
     fss = FitsStorageSetup() # note: uses current working directory!!!
     if not fss.is_setup():
