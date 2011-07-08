@@ -259,8 +259,13 @@ class GEMINIPrimitives(GENERALPrimitives):
     def contextReport(self, rc):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        log.fullinfo(rc.report())
+                                 logLevel=rc["logLevel"])
+        log.fullinfo(rc.report(report_history=rc["report_history"],
+                                internal_dict=rc["internal_dict"],
+                                 context_vars=rc["context_vars"],
+                                report_inputs=rc["report_inputs"],
+                            report_parameters=rc["report_parameters"],
+                                       showall=rc["showall"]))
     
         yield rc
      

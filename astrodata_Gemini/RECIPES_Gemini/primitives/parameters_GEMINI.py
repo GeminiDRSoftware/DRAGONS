@@ -63,6 +63,44 @@
         "uiLevel":"UIBASIC"
         },
     },
+"contextReport":{
+    "report_history":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
+        },
+    "internal_dict":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
+        },
+    "context_vars":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
+        },
+    "report_inputs":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
+        },
+    "report_parameters":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
+        },
+    "showall":{
+        "default"       : False,
+        "recipeOverride": True,
+        "type"          : "bool",
+        "userOverride"  : True,
+        },
+    },
 "correctWCSToReferenceImage":{
     "suffix":{
         # String to be post pended to the output of correctWCSToReferenceImage
