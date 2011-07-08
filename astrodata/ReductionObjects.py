@@ -118,12 +118,18 @@ class ReductionObject(object):
             raise ReductionExcept(msg)
         
         # set type of prim for logging
+        log.changeIndent(indentLevel=context.indent)
         btype = primset.btype
-        if btype=="PRIMITIVE":
-            spacer = "\n"
+        logstring = "%s: %s" % (btype,primname)
+        if context.indent==0:
+            # top-level recipe, add some extra demarcation
+            log.status("="*80)
+            spacer = "\n"+"="*80
+        elif btype=="PRIMITIVE":
+            spacer = "\n"+"-"*len(logstring)
         else:
-            spacer = "="*80+"\n"
-        log.status(spacer+"STARTING %s: %s" % (btype,primname))
+            spacer = "\n"+"="*len(logstring)
+        log.status(logstring + spacer)
                 
         # primset init should perhaps be called ready
         # because it needs to be called each step because though
@@ -176,8 +182,11 @@ class ReductionObject(object):
             context.restore_stream(from_stream = nonStandardStream)
             
         context.localparms = savedLocalparms
-        if btype=="RECIPE":
-            log.status("\nENDING %s: %s\n" % (btype, primname) + spacer)
+        if context.indent==0:
+            # top-level recipe, add some extra demarcation
+            log.changeIndent(indentLevel=context.indent)
+            log.status("="*80)
+        log.status("")
         yield context
         
     def runstep(self, primname, cfgobj):

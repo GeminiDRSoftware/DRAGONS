@@ -2,6 +2,7 @@
 import sys, os
 
 import logging
+import textwrap
 import traceback as tb
 from astrodata.Errors import Error
 
@@ -68,7 +69,7 @@ class GeminiLogger(object):
     """
     logger = None
     def __init__(self, logName=None, logLevel=1, logType='main', debug=False, 
-                 noLogFile=False, allOff=False):
+                 noLogFile=False, allOff=False, indentLevel=0):
         # Converting None -> 1(default) for logLevel, shouldn't happen though.
         if logLevel==None:
             logLevel = 1
@@ -149,6 +150,15 @@ class GeminiLogger(object):
         self._fullinfoDefaultCategory = 'fullinfo'
         self._debugDefaultCategory = 'debug'
         
+        # Set indentation parameter 
+        # (so that output from nested recipes will be indented)
+        self.indentLevel = indentLevel
+
+        # Define a text wrapper for formatting output lines
+        self.wrapper = textwrap.TextWrapper(width=80,break_long_words=False,
+                                       initial_indent=self.indentLevel*'  ',
+                                       subsequent_indent=self.indentLevel*'  ')
+
     def initializeHandlers(self):
         """
         A function to initialize and then set the file handler level depending
@@ -237,6 +247,12 @@ class GeminiLogger(object):
             # set to default, CRITICAL, if all else are false
             self.ch.setLevel(logging.CRITICAL)
     
+    def changeIndent(self, indentLevel=None):
+        self.indentLevel = indentLevel
+        self.wrapper = textwrap.TextWrapper(width=80,break_long_words=False,
+                                        initial_indent=self.indentLevel*'  ',
+                                        subsequent_indent=self.indentLevel*'  ')
+ 
     def changeLevels(self, logLevel=None, debug=None):
         """
         A function to allow for changing the level of the console handler 
@@ -392,10 +408,15 @@ class GeminiLogger(object):
         msgs = str(msg).split('\n')
         # Loop through the message lines in the list and log them
         for line in msgs:
-            # Log the message with the category appended to the beginning 
-            #self.logger.fullinfo(category.ljust(10)+'-'+line)
-            self.logger.fullinfo(line)
-    
+            # split long lines up
+            new_lines = self.wrapper.wrap(line)
+            # print blank line if msg was only whitespace
+            if len(new_lines)==0:
+                self.logger.fullinfo('')
+            else:
+                for new_line in new_lines:
+                    self.logger.fullinfo(new_line)
+
     # Comments for this function are the same as that of fullinfo function above
     def info(self, msg, category=None):
         """ The function to call for making 'info' level log messages"""
@@ -403,8 +424,14 @@ class GeminiLogger(object):
             category = self._infoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            #self.logger.info(category.ljust(10)+'-'+line)
-            self.logger.info(line)
+            # split long lines up and add indentation
+            new_lines = self.wrapper.wrap(line)
+            # print blank line if msg was only whitespace
+            if len(new_lines)==0:
+                self.logger.info('')
+            else:
+                for new_line in new_lines:
+                    self.logger.info(new_line)
      
      # Comments for this function are the same as that of fullinfo function above       
     def stdinfo(self, msg, category=None ):
@@ -413,9 +440,15 @@ class GeminiLogger(object):
             category = self._stdinfoDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            #self.logger.stdinfo(category.ljust(10)+'-'+line)
-            self.logger.stdinfo(line)
-    
+            # split long lines up and add indentation
+            new_lines = self.wrapper.wrap(line)
+            # print blank line if msg was only whitespace
+            if len(new_lines)==0:
+                self.logger.stdinfo('')
+            else:
+                for new_line in new_lines:
+                    self.logger.stdinfo(new_line)
+
     # Comments for this function are the same as that of fullinfo function above        
     def status(self, msg, category=None):
         """ The function to call for making 'status' level log messages"""
@@ -423,8 +456,14 @@ class GeminiLogger(object):
             category = self._statusDefaultCategory
         msgs = str(msg).split('\n')
         for line in msgs:
-            #self.logger.status(category.ljust(10)+'-'+line)
-            self.logger.status(line)
+            # split long lines up and add indentation
+            new_lines = self.wrapper.wrap(line)
+            # print blank line if msg was only whitespace
+            if len(new_lines)==0:
+                self.logger.status('')
+            else:
+                for new_line in new_lines:
+                    self.logger.status(new_line)
     
     def debug(self, msg, category=None): 
         """ The function to call for making 'debug' level log messages"""
@@ -437,10 +476,18 @@ class GeminiLogger(object):
         msgs = str(msg).split('\n')
         # Loop through the message lines in the list and log them
         for line in msgs:
-            # Log the message with a modified format to match recipe system 
-            # standards
-            self.logger.debug(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
-                              b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+line)
+            # split long lines up and add indentation
+            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
+                                          b[0].ljust(20)+' - '+
+                                          b[2].ljust(20)+'-' +
+                                          str(b[1]).ljust(3) +
+                                          ' - '+line)
+            # print blank line if msg was only whitespace
+            if len(new_lines)==0:
+                self.logger.debug('')
+            else:
+                for new_line in new_lines:
+                    self.logger.debug(new_line)
     
     # Comments for this function are the same as that of debug function above
     def critical(self, msg, category=None):
@@ -450,11 +497,20 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            self.logger.critical(category.ljust(10).upper()+'-'+b[0].ljust(20)+
-                                 ' - '+b[2].ljust(20)+'-'+str(b[1]).ljust(3)+
-                                 ' - '+line)
+            # split long lines up and add indentation
+            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
+                                          b[0].ljust(20)+' - '+
+                                          b[2].ljust(20)+'-' +
+                                          str(b[1]).ljust(3) +
+                                          ' - '+line)
+            # print blank line if msg was only whitespace
+            if len(new_lines)==0:
+                self.logger.critical('')
+            else:
+                for new_line in new_lines:
+                    self.logger.critical(new_line)
             
-    # Comments for this function are the same as that of debug function above    
+    # Comments for this function are the same as that of debug function above
     def warning(self, msg, category=None):
         """ The function to call for making 'warning' level log messages"""
         if category is None:
@@ -462,12 +518,16 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            #self.logger.warning(category.ljust(10)+'-'+b[0].ljust(20)+' - '+
-            #                    b[2].ljust(20)+'-'+str(b[1]).ljust(3)+' - '+
-            #                    line)
-            self.logger.warning('WARNING - '+line)
+            # split long lines up and add indentation
+            new_lines = self.wrapper.wrap('WARNING - '+line)
+            # print blank line if msg was only whitespace
+            if len(new_lines)==0:
+                self.logger.warning('')
+            else:
+                for new_line in new_lines:
+                    self.logger.warning(new_line)
             
-    # Comments for this function are the same as that of debug function above    
+    # Comments for this function are the same as that of debug function above
     def error(self, msg, category=None):
         """ The function to call for making 'error' level log messages"""
         if category is None:
@@ -480,7 +540,10 @@ class GeminiLogger(object):
             #sys.stderr.write("ERROR    40- " + category.ljust(10) + '-' +
             #    b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' +
             #    str(b[1]).ljust(3) + ' - ' + line + "\n")
-            sys.stderr.write('ERROR - ' + line)
+            # split long lines up and add indentation
+            new_lines = self.wrapper.wrap('ERROR - '+line)
+            for new_line in new_lines:
+                sys.stderr.write(new_line)
             self.logger.error(category.ljust(10) + '-' + 
                 b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' + 
                 str(b[1]).ljust(3) + ' - ' + line)
