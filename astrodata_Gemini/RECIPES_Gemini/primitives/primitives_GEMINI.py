@@ -548,7 +548,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         This primitive will check the files in the lists that are on disk,
         and then update the inputs list to include all members of the list.
         """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
         rc.rq_cal("bias", rc.get_inputs(style="AD"))
+        log.stdinfo("Found:")
+        for ad in rc.get_inputs(style="AD"):
+            cal = AstroData(rc.get_cal(ad, "bias"))
+            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
         yield rc
     
     def getProcessedDark(self, rc):
@@ -556,7 +563,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         A primitive to search and return the appropriate calibration dark from
         a server for the given inputs.
         """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
         rc.rq_cal("dark", rc.get_inputs(style="AD"))
+        log.stdinfo("Found:")
+        for ad in rc.get_inputs(style="AD"):
+            cal = AstroData(rc.get_cal(ad, "dark"))
+            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
         yield rc
     
     def getProcessedFlat(self, rc):
@@ -565,7 +579,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         a server for the given inputs.
         
         """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
         rc.rq_cal("flat", rc.get_inputs(style="AD"))
+        log.stdinfo("Found:")
+        for ad in rc.get_inputs(style="AD"):
+            cal = AstroData(rc.get_cal(ad, "flat"))
+            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
         yield rc
     
     def getProcessedFringe(self, rc):
@@ -574,7 +595,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         a server for the given inputs.
         
         """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
         rc.rq_cal("fringe", rc.get_inputs(style="AD"))
+        log.stdinfo("Found:")
+        for ad in rc.get_inputs(style="AD"):
+            cal = AstroData(rc.get_cal(ad, "fringe"))
+            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
         yield rc
     
     def measureIQ(self, rc):
