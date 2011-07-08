@@ -83,9 +83,9 @@ def subtract_bias(adinput=None, bias=None):
                 this_bias = bias[count]
             else:
                 this_bias = bias[0]
-            log.stdinfo("Subtracting the following bias from the input " \
-                        "AstroData object (%s):\n%s" % (ad.filename, 
-                                                        this_bias.filename))
+            log.info("Subtracting this bias from the input " \
+                         "AstroData object (%s):\n%s" % (ad.filename, 
+                                                         this_bias.filename))
 
             # Prepare input files, lists, parameters... for input to 
             # the CL script

@@ -65,8 +65,8 @@ def divide_by_flat(adinput=None, flat=None):
                                         "divide_by_flat" % (ad.filename))
             
             # Divide the adinput by the flat
-            log.stdinfo("Dividing the input AstroData object (%s) "\
-                        "by the flat:\n%s" % (ad.filename, 
+            log.info("Dividing the input AstroData object (%s) "\
+                     "by this flat:\n%s" % (ad.filename, 
                                                flat_dict[ad].filename))
             ad = ad.div(flat_dict[ad])
 

@@ -245,8 +245,8 @@ def scale_fringe_to_science(adinput=None, science=None,
             scaleDict = {}
             # get matching B input
             adB = science[count]
-            log.stdinfo('Scaling fringe '+adA.filename+
-                        ' to input '+adB.filename)
+            log.info('Scaling this fringe to input (%s):\n%s' %
+                        (adB.filename,adA.filename))
             
             for sciExtA in adA['SCI']:
                 # Grab the A and B SCI extensions to operate on
