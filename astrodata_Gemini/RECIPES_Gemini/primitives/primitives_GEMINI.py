@@ -740,11 +740,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             fringe = AstroData(rc.get_cal(ad, "fringe"))
 
             # Take care of the case where there was no, or an invalid fringe 
-            if fringe.count_exts("SCI") == 0:
+            if fringe.filename is None:
                 log.warning("Could not find an appropriate fringe for %s" \
                             % (ad.filename))
-                # Append a blank entry to the fringe list
-                adoutput_list.append(None)
+                # Append the blank fringe to the fringe list
+                adoutput_list.append(fringe)
                 continue
 
             # Call the scale_fringe_to_science user level function
@@ -1215,7 +1215,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     continue
 
                 # Check for valid fringe
-                if fringe is None or fringe.count_exts("SCI") == 0:
+                if fringe.filename is None:
                     log.warning("Could not find an appropriate fringe for %s" %
                                 (ad.filename))
                     # Append the input AstroData object to the list of output

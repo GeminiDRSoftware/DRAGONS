@@ -7,6 +7,5 @@
 # flat corrected.
 addToList(purpose="fringe")
 getList(purpose="fringe",to_stream="fringe")
-showInputs(stream="fringe")
 makeFringe(stream="fringe")
 storeProcessedFringe(stream="fringe")
