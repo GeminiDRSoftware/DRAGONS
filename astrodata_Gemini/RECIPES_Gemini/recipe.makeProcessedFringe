@@ -3,9 +3,10 @@
 # Output is stored in a directory specified by the parameters of the
 # storeProcessedFringe primitive with the suffix '_fringe.fits'
 # appended to the name of the first input file.
-# It is assumed that the input fringes have been overscan, bias, and
+# It is assumed that the input files have been overscan, bias, and
 # flat corrected.
 addToList(purpose="fringe")
-getList(purpose="fringe",stream="fringe")
+getList(purpose="fringe",to_stream="fringe")
+showInputs(stream="fringe")
 makeFringe(stream="fringe")
 storeProcessedFringe(stream="fringe")
