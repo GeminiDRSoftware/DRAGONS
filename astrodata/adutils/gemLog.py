@@ -156,8 +156,8 @@ class GeminiLogger(object):
 
         # Define a text wrapper for formatting output lines
         self.wrapper = textwrap.TextWrapper(width=80,break_long_words=False,
-                                       initial_indent=self.indentLevel*'  ',
-                                       subsequent_indent=self.indentLevel*'  ')
+                                       initial_indent=self.indentLevel*'   ',
+                                       subsequent_indent=self.indentLevel*'   ')
 
     def initializeHandlers(self):
         """
@@ -250,8 +250,8 @@ class GeminiLogger(object):
     def changeIndent(self, indentLevel=None):
         self.indentLevel = indentLevel
         self.wrapper = textwrap.TextWrapper(width=80,break_long_words=False,
-                                        initial_indent=self.indentLevel*'  ',
-                                        subsequent_indent=self.indentLevel*'  ')
+                                       initial_indent=self.indentLevel*'   ',
+                                       subsequent_indent=self.indentLevel*'   ')
  
     def changeLevels(self, logLevel=None, debug=None):
         """

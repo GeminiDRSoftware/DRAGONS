@@ -140,7 +140,7 @@ def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
         if iraf.gimverify.status != 0:
             iraf.gimverify(rawpath+image)
         if iraf.gimverify.status == 1:
-            log.error("Cannot access image"+image, category='IQ')
+            log.error("Cannot access image "+image, category='IQ')
             #raise SystemExit
         elif iraf.gimverify.status != 0:
             log.error("Image %s is not a MEF file"% (l_image), category='IQ')
