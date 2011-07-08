@@ -163,11 +163,11 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                     if iq_band!='':
                         filter = ad.filter_name(pretty=True)
                         iqStr = 'IQ band for %s filter:' % filter
-                        iqStr = iqStr.ljust(llen) + 'IQ'+iq_band
+                        iqStr = iqStr.ljust(llen) + ('IQ'+iq_band).rjust(5)
                     # Create final formatted string
-                    finalStr = '\n\t'+fnStr+'\n\t'+'-'*dlen+'\n\t'+emStr+\
-                               '\n\t'+esStr+'\n\t'+fmStr+'\n\t'+fsStr+\
-                               '\n\t'+csStr+'\n\t'+iqStr+'\n\t'+\
+                    finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+'\n    '+emStr+\
+                               '\n    '+esStr+'\n    '+fmStr+'\n    '+fsStr+\
+                               '\n    '+csStr+'\n    '+iqStr+'\n    '+\
                                '-'*dlen
                     # Log final string
                     if display:
