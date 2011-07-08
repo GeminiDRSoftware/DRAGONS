@@ -536,13 +536,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         purpose=rc["purpose"]
         if purpose is None:
             purpose = ""
+        
         for inp in rc.inputs:
             sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
             log.stdinfo("List for stack id=%s" % sid, category="list")
             for f in stacklist:
-                rc.report_output(f)
+                rc.report_output(f, stream=rc["to_stream"])
                 log.stdinfo("   %s" % os.path.basename(f),
                              category="list")
         
@@ -815,12 +816,12 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         log.fullinfo("Inputs:", category="inputs")
-        if "stream" in rc:
-            stream = rc["stream"]
-        else:
-            stream = "main"
+        #if "stream" in rc:
+        #    stream = rc["stream"]
+        #else:
+        #    stream = "main"
             
-        log.fullinfo("stream: "+stream)
+        log.fullinfo("stream: "+rc._current_stream)
         for inf in rc.inputs:
             log.fullinfo("  %s" % inf.filename, category="inputs")
         

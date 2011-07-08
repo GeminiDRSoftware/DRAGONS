@@ -85,13 +85,13 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
 
     def clearStream(self, rc):
-        print repr(rc)
+        # print repr(rc)
         if "stream" in rc:
             stream = rc['stream']
         else:
             stream = "main"
         
-        rc.get_stream(stream)
+        rc.get_stream(stream, empty=True)
         yield rc
         
     def forwardInput(self, rc):
