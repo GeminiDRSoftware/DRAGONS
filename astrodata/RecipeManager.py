@@ -848,13 +848,21 @@ class ReductionContext(dict):
         return self.cmd_request == "pause"
     #------------------ PAUSE ----------------------------------------------------
     
-    def report(self):
+    def report(self, report_history=False, internal_dict=False, context_vars=False, \
+                report_inputs=False, report_parameters=False, showall=False):
         """
         Prints out a report of the contents of the context object 
         
         @return: The formatted message for all the current parameters.
         @rtype: str
         """
+        if showall:
+            report_history = True
+            internal_dict = True
+            context_vars = True
+            report_inputs = True
+            report_parameters = True
+    
         rets = "\n\n" + "-" * 50  + "\n\n\n"
         rets += " "*11 + "C O N T E X T  R E P O R T\n\n\n"
         rets += "-" * 50 + "\n" 
@@ -887,46 +895,62 @@ class ReductionContext(dict):
         if not self.original_inputs:
             varlist.append("original_inputs")
 
-        #inputs
-        if self.inputs:
-            rets += "\nInput (self.inputs, ReductionContextRecords):"
-            rets += "\n    %-20s : " % "RCR.filename"
-            for rcr in self.inputs:
-                rets += rcr.filename + "\n" + " "*23
+        if report_inputs:
+            # inputs
+            if self.inputs:
+                rets += "\nInput (self.inputs)"
+                for rcr in self.inputs:
+                    if isinstance(rcr, \
+                        astrodata.ReductionContextRecords.AstroDataRecord):
+                        rets += "\n    ReductionContextRecords.AstroDataRecord:"
+                        rets += str(rcr)
+                        rets += rcr.ad.infostr()
         
-        #original_inputs
-        if self.original_inputs:
-            rets += "\n\nOriginal Input (self.original_inputs,"
-            rets += " ReductionContextRecords):"
-            rets += "\n    %-20s : " % "RCR.filename"
-            for rcr in self.original_inputs:
-                rets += rcr.filename + "\n" + " "*23
-       
-        rets += "\nContext Variables (self.<var>):"
-        varlist.sort()
-        for var in varlist:
-            rets += "\n    %-20s = %s" % (var, eval("self.%s" % var ))
+        if context_vars:
+            # original_inputs
+            if self.original_inputs:
+                rets += "\n\nOriginal Input (self.original_inputs,"
+                rets += " ReductionContextRecords):"
+                rets += "\n    %-20s : " % "RCR.filename"
+                for rcr in self.original_inputs:
+                    rets += rcr.filename + "\n" + " "*23
+           
+            
+            # context vars
+            rets += "\nContext Variables (self.<var>):"
+            varlist.sort()
+            for var in varlist:
+                rets += "\n    %-20s = %s" % (var, eval("self.%s" % var ))
         
-        #_localparms
-        if self._localparms:
-            rets += "\n\nLocal Parameters (self._localparms)"
-            pkeys = self._localparms.keys()
-            pkeys.sort
-            for pkey in pkeys:
-                rets += "\n    %-13s : %s" % \
-                    (str(pkey), str(self._localparms[pkey]))
+        if report_parameters:
+            # _localparms
+            if self._localparms:
+                rets += "\n\nLocal Parameters (self._localparms)"
+                pkeys = self._localparms.keys()
+                pkeys.sort
+                for pkey in pkeys:
+                    rets += "\n    %-13s : %s" % \
+                        (str(pkey), str(self._localparms[pkey]))
+            
+            # user params (from original varlist)
+            if self.user_params:
+                rets += "User Parameters:"
+                rets += repr(self.user_params.user_param_dict)
+            rets += "\n"
 
-        # stephistory
-        if self.stephistory:
-            rets += "\n\nStep History (self.stephistory):"
+        if self.stephistory and report_history == True:
+            # stephistory
+            rets += "\n\nStep History (self.stephistory):\n"
+            rets += "    " + "-"*41 + "\n\n"
             shkeys = self.stephistory.keys()
             shkeys.sort()
             count = 0
             for key in shkeys:
-                rets += "\n    " + "-"*15 + " S T E P " 
-                rets += str(count+1) + " " + "-"*15
-                rets += "\n    " + str(key) + ":"
                 sh_dict = self.stephistory[key]
+                rets += "\n" + "          S T E P " + str(count+1) 
+                rets += ": " + sh_dict["stepname"] 
+                rets += "\n\n\n    " + "-"*41
+                rets += "\n    " + str(key) + ":"
                 sh_dictkeys = sh_dict.keys()
                 sh_dictkeys.sort()
                 if sh_dict.has_key("inputs"):
@@ -956,55 +980,53 @@ class ReductionContext(dict):
                                 rets += "'%s':\n\n    %s" % \
                     (str(jkey), "ReductionContextRecords.AstroDataRecord:")
                                 rets += str(rcr)
+                                rets += "\n    OUTPUT AD.INFO (rcr.ad.infostr())"
+                                rets += rcr.ad.infostr() + "\n"
                             else:
                                 rets += str(rcr)
                 rets += "    " + "-"*41 + "\n\n"
                 count += 1
 
-        # user params (from original varlist)
-        if self.user_params:
-            rets += "User Parameters:"
-            rets += repr(self.user_params.user_param_dict)
-        rets += "\n"
 
-        # internal dictionary contents
-        cokeys = self.keys()
-        rets += "\n       I N T E R N A L  D I C T I O N A R Y\n"
-        loglist = []
-        cachedirs = []
-        others = []
-        for key in cokeys:
-            if key  == "cachedict":
-                rets += "\nCached Files (self[cachedict:{}]):\n"
-                cache_dict = self[key]
-                cdkeys = cache_dict.keys()
-                cdkeys.remove("storedcals")
-                cdkeys.remove("reducecache")
-                cdkeys.sort()
-                for ikey in cdkeys:
-                    dirfiles = os.listdir(cache_dict[ikey])
-                    if len(dirfiles) == 0:
-                        dirfiles = "None"
-                    rets += "    %-20s : %s\n" %(ikey, dirfiles)
-            elif key[:3] == "log":
-                loglist.append(key)
-            elif key == "reducecache" or key[:9] == "retrieved" or \
-                key[:6] == "stored":
-                cachedirs.append(key)
-            else:
-                others.append(key)
+        if internal_dict:
+            # internal dictionary contents
+            cokeys = self.keys()
+            rets += "\n       I N T E R N A L  D I C T I O N A R Y\n"
+            loglist = []
+            cachedirs = []
+            others = []
+            for key in cokeys:
+                if key  == "cachedict":
+                    rets += "\nCached Files (self[cachedict:{}]):\n"
+                    cache_dict = self[key]
+                    cdkeys = cache_dict.keys()
+                    cdkeys.remove("storedcals")
+                    cdkeys.remove("reducecache")
+                    cdkeys.sort()
+                    for ikey in cdkeys:
+                        dirfiles = os.listdir(cache_dict[ikey])
+                        if len(dirfiles) == 0:
+                            dirfiles = "None"
+                        rets += "    %-20s : %s\n" %(ikey, dirfiles)
+                elif key[:3] == "log":
+                    loglist.append(key)
+                elif key == "reducecache" or key[:9] == "retrieved" or \
+                    key[:6] == "stored":
+                    cachedirs.append(key)
+                else:
+                    others.append(key)
 
-        rets += "\nCache Directories (self[<dir>]):"
-        for dir_ in cachedirs:
-            rets +="\n    %-20s : %s" % (dir_, str(self[dir_]))
-        rets += "\n\nLogger Info (self[<log...>]):"
-        for l in loglist:
-            rets +="\n    %-20s : %s" % (l, str(self[l]))
-        if len(others) > 0:
-            rets += "\nOther (self[<Other>]):\n"
-            for o in others:
-                rets +="\n    %-20s : %s" % (o, str(self[o]))
-            
+            rets += "\nCache Directories (self[<dir>]):"
+            for dir_ in cachedirs:
+                rets +="\n    %-20s : %s" % (dir_, str(self[dir_]))
+            rets += "\n\nLogger Info (self[<log...>]):"
+            for l in loglist:
+                rets +="\n    %-20s : %s" % (l, str(self[l]))
+            if len(others) > 0:
+                rets += "\nOther (self[<Other>]):\n"
+                for o in others:
+                    rets +="\n    %-20s : %s" % (o, str(self[o]))
+                
         rets += "\n\n" + "-" * 50  + "\n"
         return rets
     
