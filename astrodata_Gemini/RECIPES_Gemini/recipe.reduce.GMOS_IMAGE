@@ -10,10 +10,7 @@ biasCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
-addToList(purpose="fringe")
-getList(purpose="fringe",stream="fringe")
-makeFringe(stream="fringe")
-storeProcessedFringe(stream="fringe")
+makeProcessedFringe
 fringeCorrect
 mosaicDetectors
 detectSources
@@ -22,7 +19,7 @@ addToList
 display
 measureIQ
 registerAndStack
-writeOutputs(suffix="_stacked",strip=True)
 detectSources
+writeOutputs(suffix="_stacked",strip=True)
 display
 measureIQ
