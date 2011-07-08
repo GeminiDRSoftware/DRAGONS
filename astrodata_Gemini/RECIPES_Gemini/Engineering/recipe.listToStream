@@ -1,0 +1,7 @@
+addToList(purpose="fringe")
+forwardInput(to_stream="backup")
+clearStream
+showList(purpose="all")
+showInputs
+getList(purpose="fringe", stream="backup", to_stream="fringe")
+showInputs(stream="fringe")
