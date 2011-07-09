@@ -559,9 +559,16 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         rc.rq_cal("bias", rc.get_inputs(style="AD"))
         log.stdinfo("Found:")
+        found = False
         for ad in rc.get_inputs(style="AD"):
             cal = AstroData(rc.get_cal(ad, "bias"))
-            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+            if cal.filename is None:
+                log.stdinfo("   No bias for %s" % ad.filename)
+            else:
+                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+                found = True
+        if not found:
+            rc.return_from_recipe()            
         yield rc
     
     def getProcessedDark(self, rc):
@@ -574,9 +581,16 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         rc.rq_cal("dark", rc.get_inputs(style="AD"))
         log.stdinfo("Found:")
+        found = False
         for ad in rc.get_inputs(style="AD"):
             cal = AstroData(rc.get_cal(ad, "dark"))
-            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+            if cal.filename is None:
+                log.stdinfo("   No dark for %s" % ad.filename)
+            else:
+                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+                found = True
+        if not found:
+            rc.return_from_recipe()            
         yield rc
     
     def getProcessedFlat(self, rc):
@@ -590,9 +604,16 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         rc.rq_cal("flat", rc.get_inputs(style="AD"))
         log.stdinfo("Found:")
+        found = False
         for ad in rc.get_inputs(style="AD"):
             cal = AstroData(rc.get_cal(ad, "flat"))
-            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+            if cal.filename is None:
+                log.stdinfo("   No flat for %s" % ad.filename)
+            else:
+                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+                found = True
+        if not found:
+            rc.return_from_recipe()            
         yield rc
     
     def getProcessedFringe(self, rc):
@@ -606,9 +627,16 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         rc.rq_cal("fringe", rc.get_inputs(style="AD"))
         log.stdinfo("Found:")
+        found = False
         for ad in rc.get_inputs(style="AD"):
             cal = AstroData(rc.get_cal(ad, "fringe"))
-            log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+            if cal.filename is None:
+                log.stdinfo("   No fringe for %s" % ad.filename)
+            else:
+                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+                found = True
+        if not found:
+            rc.return_from_recipe()            
         yield rc
     
     def measureIQ(self, rc):

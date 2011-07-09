@@ -189,9 +189,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         :param tile: tile images instead of mosaic
         :type tile: Python boolean (True/False), default is False
         
-        :param interpolator: Type of interpolation function to use accross
+        :param interpolation: Type of interpolation function to use accross
                              the chip gaps
-        :type interpolator: string, options: 'linear', 'nearest', 'poly3', 
+        :type interpolation: string, options: 'linear', 'nearest', 'poly3', 
                             'poly5', 'spine3', 'sinc'.
         
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -221,8 +221,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
             ad = rs.mosaic_detectors(adinput=ad, 
                                      tile=rc['tile'], 
-                                     interpolator=rc['interpolator'])           
-            
+                                     interpolation=rc['interpolation'])            
             adoutput_list.append(ad[0])
                 
         # Report the list of output AstroData objects to the reduction

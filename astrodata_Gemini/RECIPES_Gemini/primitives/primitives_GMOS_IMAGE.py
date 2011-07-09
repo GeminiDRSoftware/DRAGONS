@@ -78,10 +78,21 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         'frames are required. Not making fringe frame.')
             adoutput = []
         else:
-            # Call the make_fringe_image_gmos user level function
-            adoutput = pp.make_fringe_image_gmos(adinput=adinput,
-                                                 suffix=rc["suffix"],
-                                                 operation=rc["operation"])
+            # Check that filter is either i or z; this step doesn't
+            # help other filters
+            red = True
+            for ad in adinput:
+                filter = ad.filter_name(pretty=True)
+                if filter not in ['i','z']:
+                    log.warning('No fringe necessary for filter ' +
+                                filter + '; not creating fringe frame.')
+                    adoutput = []
+                    red = False
+            if red:
+                # Call the make_fringe_image_gmos user level function
+                adoutput = pp.make_fringe_image_gmos(adinput=adinput,
+                                                     suffix=rc["suffix"],
+                                                     operation=rc["operation"])
 
         # Report the list of output AstroData objects to the reduction
         # context
