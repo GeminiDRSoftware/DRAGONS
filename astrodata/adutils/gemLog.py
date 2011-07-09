@@ -543,7 +543,7 @@ class GeminiLogger(object):
             # split long lines up and add indentation
             new_lines = self.wrapper.wrap('ERROR - '+line)
             for new_line in new_lines:
-                sys.stderr.write(new_line)
+                sys.stderr.write(new_line+'\n')
             self.logger.error(category.ljust(10) + '-' + 
                 b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' + 
                 str(b[1]).ljust(3) + ' - ' + line)
