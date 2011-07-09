@@ -265,6 +265,12 @@ def add_var(adinput=None, read_noise=False, poisson_noise=False):
         # Loop over each input AstroData object in the input list
         for ad in adinput:
 
+            if read_noise:
+                log.stdinfo("Adding the read noise component of the variance.")
+            if poisson_noise:
+                log.stdinfo("Adding the poisson noise component of " +
+                            "the variance.")
+
             # Call the _calculate_var helper function to calculate and add the
             # variance extension to the input AstroData object
             ad = _calculate_var(adinput=ad, add_read_noise=read_noise,
