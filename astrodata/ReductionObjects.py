@@ -156,10 +156,17 @@ class ReductionObject(object):
                 # @@note: call the command clause callback here
                 # @@note2: no, this yields and the command loop act that way
                 # @@.....: and it is in run, which caps the yields which must
-                # @@.....: call the command clause.\
+                # @@.....: call the command clause.
                 if rc == None:
                     raise ReductionExcept(
-                            "Primitive '%s' returned None for rc on yield" % primname)
+                            "Primitive '%s' returned None for rc on yield\n" % primname)
+                rcmd = rc.pop_return_command()
+                
+                if rcmd == "return_from_recipe":
+                    rc.terminate_primitive()
+                    break
+                if rcmd == "terminate_primitive":
+                    break
                 if rc.is_finished():
                     break
                 yield rc

@@ -146,6 +146,8 @@ class ReductionContext(dict):
     ro = None
     cmd_history = None
     cmd_index = None
+    # return behavior
+    _return_command = None
      
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and
@@ -1364,6 +1366,16 @@ class ReductionContext(dict):
         print "RM1113:", repr(self.rorqs)
         print "RM1114:saveCmdHistorythis saves nothing atm! It's for the HTML iface"
         
+    def return_from_recipe(self):
+        self._return_command = "return_from_recipe"
+    
+    def terminate_primitive(self):
+        self._return_command = "terminate_primitive"
+    
+    def pop_return_command(self):
+        rc = self._return_command
+        self._return_command = None
+        return rc
         
     def rq_display(self, display_id=None):
         '''
