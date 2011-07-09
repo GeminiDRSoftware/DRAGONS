@@ -154,3 +154,16 @@ class GENERALPrimitives(PrimitiveSet):
         rc.report_output(inputs)
         
         yield rc
+
+    def log(self, rc):
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        msg = rc["msg"]
+        if msg == None:
+            msg = "..."
+        log.info(msg)
+        yield rc
+        
+    def returnFromRecipe(self, rc):
+        rc.return_from_recipe()
+        yield rc
