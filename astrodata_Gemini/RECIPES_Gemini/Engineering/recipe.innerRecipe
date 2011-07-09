@@ -1,0 +1,6 @@
+log(msg="inner recipe prim one")
+log(msg="inner recipe prim two")
+log(msg="inner recipe prim three")
+log(msg="inner recipe prim four")
+log(msg=[argtest])
+
