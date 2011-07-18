@@ -1,6 +1,6 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS_IMAGE.py file, in alphabetical order.
-{"makeFringe":{
+{"makeFringeFrame":{
     "suffix":{
         # String to be post pended to the output of makeFringe
         "default"       : "_fringe",

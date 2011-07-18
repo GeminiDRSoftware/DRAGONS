@@ -2,21 +2,29 @@
 # convert the raw input science images into a single stacked science
 # image.
 
+time
 prepare
+addDQ
+addVAR(read_noise=True)
 overscanCorrect
 biasCorrect
 #aduToElectrons
+addVAR(poisson_noise=True)
 flatCorrect
-makeProcessedFringe
+writeOutputs(suffix="_forFringe",strip=True)
+addToList(purpose="fringe")
+makeFringe
 fringeCorrect
 mosaicDetectors
 detectSources
-writeOutputs(suffix="_sourceDetected",strip=True)
-addToList
+writeOutputs(suffix="_forStack",strip=True)
+addToList(purpose="stack")
 display
 measureIQ
+getList(purpose="stack")
 registerAndStack
 detectSources
 writeOutputs(suffix="_stacked",strip=True)
 display
 measureIQ
+time

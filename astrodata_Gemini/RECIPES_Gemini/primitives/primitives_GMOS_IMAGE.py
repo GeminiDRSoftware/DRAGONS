@@ -56,30 +56,28 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         yield rc
     
 
-    def makeFringe(self, rc):
+    def makeFringeFrame(self, rc):
         """
         This primitive makes a fringe frame by masking out sources
         in the science frames and stacking them together.  It calls 
         gifringe to do so, so works only for GMOS imaging currently.
-        When called in the context of a science reduction script,
-        separateFringe should be run first, then makeFringe run with 
-        the parameter stream="fringe".
         """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "makeFringe", "starting"))
+        log.debug(gt.log_message("primitive", "makeFringeFrame", "starting"))
 
         adinput = rc.get_inputs(style="AD")
         if len(adinput)<2:
             log.warning('Only one frame provided as input; at least two ' +
                         'frames are required. Not making fringe frame.')
             adoutput = []
+            rc.return_from_recipe()
         else:
             # Check that filter is either i or z; this step doesn't
-            # help other filters
+            # help data taken in other filters
             red = True
             for ad in adinput:
                 filter = ad.filter_name(pretty=True)
@@ -88,6 +86,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                 filter + '; not creating fringe frame.')
                     adoutput = []
                     red = False
+                    rc.return_from_recipe()
+                    
             if red:
                 # Call the make_fringe_image_gmos user level function
                 adoutput = pp.make_fringe_image_gmos(adinput=adinput,

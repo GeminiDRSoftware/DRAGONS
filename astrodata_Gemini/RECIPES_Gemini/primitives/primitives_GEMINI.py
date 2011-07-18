@@ -455,8 +455,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Retrieve the appropriate flat
             flat = AstroData(rc.get_cal(ad,"flat"))
 
-            # Take care of the case where there was no, or an invalid flat 
-            if flat is None or flat.count_exts("SCI") == 0:
+            # Take care of the case where there was no flat 
+            if flat.filename is None:
                 log.warning("Could not find an appropriate flat for %s" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
@@ -542,6 +542,19 @@ class GEMINIPrimitives(GENERALPrimitives):
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
             log.stdinfo("List for stack id=%s" % sid, category="list")
+
+            # if only one file found and purpose="stack" or "fringe" then 
+            # bail from the calling recipe
+            if len(stacklist)<2:
+                if purpose=="stack":
+                    log.warning("Only one file found; not proceeding with " +
+                                "stacking.")
+                elif purpose=="fringe":
+                    log.warning("Only one file found; not proceeding with " +
+                                "making the fringe frame.")
+                rc.return_from_recipe()
+                yield rc
+
             for f in stacklist:
                 rc.report_output(f, stream=rc["to_stream"])
                 log.stdinfo("   %s" % os.path.basename(f),
@@ -728,10 +741,10 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.request_pause()
         yield rc
     
-    def scaleFringeToScience(self, rc):
+    def removeFringe(self, rc):
         """
         This primitive will scale the fringes to their matching science data
-        in the inputs.
+        in the inputs, then subtract them.
         The primitive getProcessedFringe must have been run prior to this in 
         order to find and load the matching fringes into memory.
         
@@ -747,18 +760,17 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "scaleFringeToScience",
+        log.debug(gt.log_message("primitive", "removeFringe",
                                  "starting"))
         # Initialize the list of output AstroData objects
         adoutput_list = []
         # Loop over each input AstroData object in the input list
-        count = 0
         for ad in rc.get_inputs(style="AD"):
-            # Check whether the scaleFringeToScience primitive has been run
+            # Check whether the removeFringe primitive has been run
             # previously
-            if ad.phu_get_key_value("SCALEFRG"):
+            if ad.phu_get_key_value("RMFRINGE"):
                 log.warning("%s has already been processed by " \
-                            "scaleFringeToScience" % (ad.filename))
+                            "removeFringe" % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -767,29 +779,25 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Get the appropriate fringe frame
             fringe = AstroData(rc.get_cal(ad, "fringe"))
 
-            # Take care of the case where there was no, or an invalid fringe 
+            # Take care of the case where there was no fringe 
             if fringe.filename is None:
                 log.warning("Could not find an appropriate fringe for %s" \
                             % (ad.filename))
-                # Append the blank fringe to the fringe list
-                adoutput_list.append(fringe)
+                # Append the input to the output without further processing
+                adoutput_list.append(ad)
                 continue
 
-            # Call the scale_fringe_to_science user level function
-            # (this returns the scaled fringe frame)
-            ad = pp.scale_fringe_to_science(adinput=fringe, science=ad,
-                                            stats_scale=rc["stats_scale"])
+            # Call the remove_fringe user level function
+            ad = pp.remove_fringe(adinput=ad, fringe=fringe,
+                                  stats_scale=rc["stats_scale"])
 
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
-            count += 1
 
         # Report the list of output AstroData objects and the scaled fringe
         # frames to the reduction context
-
-        rc.report_output(adoutput_list, stream="fringe")
-        rc.report_output(rc.get_inputs(style="AD"))
+        rc.report_output(adoutput_list)
         
         yield rc
     
@@ -1175,90 +1183,28 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
+
             # Get the appropriate dark for this AstroData object
             dark = AstroData(rc.get_cal(ad, "dark"))
+
+            # Take care of the case where there was no dark
+            if dark.filename is None:
+                log.warning("Could not find an appropriate dark for %s" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
             # Call the subtract_dark user level function
             ad = pp.subtract_dark(adinput=ad, dark=dark)
+
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
-        
-        yield rc
-    
-    def subtractFringe(self, rc):
-        """
-        This primitive will subtract each SCI extension of the inputs by those
-        of the corresponding fringe. If the inputs contain VAR or DQ frames,
-        those will also be updated accordingly due to the subtraction on the 
-        data.
-        
-        This is all conducted in pure Python through the arith 'toolbox' of 
-        astrodata. 
-        
-        It is currently assumed that the same fringe file will be applied to
-        all input images.
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "subtractFringe", "starting"))
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        # Get inputs from their streams
-        adinput = rc.get_inputs(style="AD")
-        fringe_records = rc.get_stream(stream="fringe")
-
-        # Check that there are as many fringes as inputs
-        if len(adinput)!=len(fringe_records):
-            log.warning("Fringe input list does not match science input list;" +
-                        "no fringe-correction will be performed.")
-            adoutput_list = adinput
-        else:
-
-            # Loop over input science and fringe AstroData inputs
-            for i in range(0,len(adinput)):
-
-                ad = adinput[i]
-                fringe = fringe_records[i].ad
-
-                # Check whether the subtractFringe primitive has been run
-                # previously
-                if ad.phu_get_key_value("SUBFRING"):
-                    log.warning("%s has already been processed by " +
-                                "subtractFringe" % (ad.filename))
-                    # Append the input AstroData object to the list of output
-                    # AstroData objects without further processing
-                    adoutput_list.append(ad)
-                    continue
-
-                # Check for valid fringe
-                if fringe.filename is None:
-                    log.warning("Could not find an appropriate fringe for %s" %
-                                (ad.filename))
-                    # Append the input AstroData object to the list of output
-                    # AstroData objects without further processing
-                    adoutput_list.append(ad)
-                    continue
-
-                # Call the subtract_fringe user level function
-                ad = pp.subtract_fringe(adinput=ad, fringe=fringe) 
-                
-                adoutput_list.append(ad[0])
-
-        # Report the output of the user level function to the reduction
-        # context
-        rc.report_output(adoutput_list, stream="main")
         
         yield rc
     

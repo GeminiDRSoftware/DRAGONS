@@ -1,3 +1,2 @@
 getProcessedFringe
-scaleFringeToScience
-subtractFringe
+removeFringe
